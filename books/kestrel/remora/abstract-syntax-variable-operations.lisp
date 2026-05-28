@@ -462,7 +462,7 @@
   :override
   ((type :pi
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (dim/shape-names-of-ispace-var-list type.params))
+               (dim/shape-names-of-ispace-var-set (set::mergesort type.params)))
               (dim-subst (omap::delete* bound-dim-vars
                                         (string-dim-map-fix dim-subst)))
               (shape-subst (omap::delete* bound-shape-vars
@@ -478,7 +478,7 @@
                                                      shape-subst))))
    (type :sigma
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (dim/shape-names-of-ispace-var-list type.params))
+               (dim/shape-names-of-ispace-var-set (set::mergesort type.params)))
               (dim-subst (omap::delete* bound-dim-vars
                                         (string-dim-map-fix dim-subst)))
               (shape-subst (omap::delete* bound-shape-vars
@@ -497,7 +497,8 @@
                                                    dim-subst
                                                    shape-subst)
               (b* (((mv bound-dim-vars bound-shape-vars)
-                    (dim/shape-names-of-ispace-var-list expr.ispaces))
+                    (dim/shape-names-of-ispace-var-set
+                     (set::mergesort expr.ispaces)))
                    (dim-subst (omap::delete* bound-dim-vars
                                              (string-dim-map-fix dim-subst)))
                    (shape-subst (omap::delete* bound-shape-vars
@@ -535,7 +536,7 @@
                                                           shape-subst)))))
    (atom :ilambda
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (dim/shape-names-of-ispace-var-list atom.params))
+               (dim/shape-names-of-ispace-var-set (set::mergesort atom.params)))
               (dim-subst (omap::delete* bound-dim-vars
                                         (string-dim-map-fix dim-subst)))
               (shape-subst (omap::delete* bound-shape-vars
@@ -551,7 +552,7 @@
                                                      shape-subst))))
    (bind :ifun
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (dim/shape-names-of-ispace-var-list bind.params))
+               (dim/shape-names-of-ispace-var-set (set::mergesort bind.params)))
               (dim-subst (omap::delete* bound-dim-vars
                                         (string-dim-map-fix dim-subst)))
               (shape-subst (omap::delete* bound-shape-vars
@@ -572,7 +573,8 @@
          (ispace-var-list-option-case
           bind.iparams?
           :some (b* (((mv bound-dim-vars bound-shape-vars)
-                      (dim/shape-names-of-ispace-var-list bind.iparams?.val))
+                      (dim/shape-names-of-ispace-var-set
+                       (set::mergesort bind.iparams?.val)))
                      (dim-subst (omap::delete* bound-dim-vars
                                                (string-dim-map-fix dim-subst)))
                      (shape-subst (omap::delete* bound-shape-vars
@@ -701,7 +703,8 @@
    (shape :dims (shape-dims (dim-list-subst-dim-vars shape.dims dim-subst)))
    (ispace :dim (ispace-dim (dim-subst-dim-vars ispace.dim dim-subst)))
    (type :pi (b* (((mv bound-dim-vars bound-shape-vars)
-                   (dim/shape-names-of-ispace-var-list type.params))
+                   (dim/shape-names-of-ispace-var-set
+                    (set::mergesort type.params)))
                   (dim-subst
                    (omap::delete* bound-dim-vars
                                   (string-dim-map-fix dim-subst)))
@@ -714,7 +717,8 @@
                                               dim-subst
                                               shape-subst))))
    (type :sigma (b* (((mv bound-dim-vars bound-shape-vars)
-                      (dim/shape-names-of-ispace-var-list type.params))
+                      (dim/shape-names-of-ispace-var-set
+                       (set::mergesort type.params)))
                      (dim-subst
                       (omap::delete* bound-dim-vars
                                      (string-dim-map-fix dim-subst)))
@@ -807,7 +811,7 @@
   :override
   ((type :pi
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (dim/shape-names-of-ispace-var-list type.params))
+               (dim/shape-names-of-ispace-var-set (set::mergesort type.params)))
               (dim-renam (omap::delete* bound-dim-vars
                                         (string-string-map-fix dim-renam)))
               (shape-renam (omap::delete* bound-shape-vars
@@ -822,7 +826,7 @@
                                                       shape-renam))))
    (type :sigma
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (dim/shape-names-of-ispace-var-list type.params))
+               (dim/shape-names-of-ispace-var-set (set::mergesort type.params)))
               (dim-renam (omap::delete* bound-dim-vars
                                         (string-string-map-fix dim-renam)))
               (shape-renam (omap::delete* bound-shape-vars
@@ -932,7 +936,7 @@
    (ispace :dim (ispace-dim (dim-rename-dim-vars ispace.dim dim-renam)))
    (type :pi
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (dim/shape-names-of-ispace-var-list type.params))
+               (dim/shape-names-of-ispace-var-set (set::mergesort type.params)))
               (dim-renam
                (omap::delete* bound-dim-vars
                               (string-string-map-fix dim-renam)))
@@ -946,7 +950,7 @@
                                            shape-renam))))
    (type :sigma
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (dim/shape-names-of-ispace-var-list type.params))
+               (dim/shape-names-of-ispace-var-set (set::mergesort type.params)))
               (dim-renam
                (omap::delete* bound-dim-vars
                               (string-string-map-fix dim-renam)))
