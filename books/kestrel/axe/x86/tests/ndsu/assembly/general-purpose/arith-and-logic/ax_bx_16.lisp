@@ -5,7 +5,7 @@
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Yusuf Moshood (yusuf.moshood@ndus.edu)
-;               Sudarshan Srinivasan (sudarshan.srinivasan@ndsu.edu)
+;         Sudarshan Srinivasan (sudarshan.srinivasan@ndsu.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
