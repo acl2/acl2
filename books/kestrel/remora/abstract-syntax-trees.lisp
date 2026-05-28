@@ -476,35 +476,6 @@
   :short "Fixtype of optional signs."
   :pred sign-optionp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod expo
-  :short "Fixtype of exponents."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are used in float literals.")
-   (xdoc::p
-    "The boolean flag says whether we have @('E') (@('t')) or @('e') @('nil');
-     this is not semantically relevant,
-     but we preserve the concrete syntax information.
-     An absent sign is semantically equivalent to a positive sign,
-     but we preserve the concrete syntax information.
-     We require at least one digit, per the ABNF grammar."))
-  ((upcase bool)
-   (sign? sign-option)
-   (digits dec-digit-char-list
-           :reqfix (if (consp digits) digits '(#\0))))
-  :require (consp digits)
-  :pred expop)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption expo-option
-  expo
-  :short "Fixtype of optional exponents."
-  :pred expo-optionp)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod int-lit
@@ -533,6 +504,35 @@
   :true-listp t
   :elementp-of-nil nil
   :pred int-lit-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod expo
+  :short "Fixtype of exponents."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used in float literals.")
+   (xdoc::p
+    "The boolean flag says whether we have @('E') (@('t')) or @('e') @('nil');
+     this is not semantically relevant,
+     but we preserve the concrete syntax information.
+     An absent sign is semantically equivalent to a positive sign,
+     but we preserve the concrete syntax information.
+     We require at least one digit, per the ABNF grammar."))
+  ((upcase bool)
+   (sign? sign-option)
+   (digits dec-digit-char-list
+           :reqfix (if (consp digits) digits '(#\0))))
+  :require (consp digits)
+  :pred expop)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption expo-option
+  expo
+  :short "Fixtype of optional exponents."
+  :pred expo-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
