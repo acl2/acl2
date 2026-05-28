@@ -171,6 +171,7 @@
           var+type
           var+type-list
           exprs/atoms/binds
+          prog
           string-dim-map
           string-shape-map)
   :result ispace-var-setp
@@ -231,6 +232,7 @@
           var+type
           var+type-list
           exprs/atoms/binds
+          prog
           string-type-map)
   :result type-var-setp
   :default nil
@@ -281,7 +283,8 @@
           type-list-option
           var+type
           var+type-list
-          exprs/atoms/binds)
+          exprs/atoms/binds
+          prog)
   :result ispace-var-setp
   :default nil
   :combine set::union
@@ -324,7 +327,8 @@
           type-list-option
           var+type
           var+type-list
-          exprs/atoms/binds)
+          exprs/atoms/binds
+          prog)
   :result type-var-setp
   :default nil
   :combine set::union
