@@ -184,7 +184,9 @@
             arm::strt-common
             arm::strt-encoding-a1-core
             arm::strt-encoding-a2-core
-            arm::tst-immediate-core)))
+            arm::tst-immediate-core
+
+            arm::execute-unconditional-instruction)))
 
 (defun lifter-rules32 ()
   (declare (xargs :guard t))

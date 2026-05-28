@@ -59,12 +59,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund bl-blx-common (inst-address imm32 targetInstrSet arm)
+  (declare (xargs :guard (and (addressp inst-address)
+                              (unsigned-byte-p 32 imm32)
+                              (member-equal targetInstrSet (list *InstrSet_Thumb* *InstrSet_ARM*)))
+                  :stobjs arm))
+  (b* ((arm (set-reg *lr* (if (== (CurrentInstrSet arm) *InstrSet_ARM*)
+                              (bvminus 32 (pcvalue inst-address) 4)
+                            (bvcat 31 (slice 31 1 (pcvalue inst-address)) 1 1))
+                     arm))
+       (targetAddress (if (== targetInstrSet *InstrSet_ARM*)
+                          (bvplus 32 (align (pcvalue inst-address) 4) imm32)
+                        (bvplus 32 (pcvalue inst-address) imm32)))
+       (arm (SelectInstrSet targetInstrSet arm)))
+    (BranchWritePC targetAddress arm)))
+
+(defund blx-core (inst-address h imm24 arm)
+  (declare (xargs :guard (and (addressp inst-address)
+                              (bitp h)
+                              (unsigned-byte-p 24 imm24))
+                  :stobjs arm))
+  (b* (;; EncodingSpecificOperations:
+       (imm32 (signextend (bvcat 24 imm24 2 (bvcat 1 h 1 #b0)) 26 32))
+       (targetInstrSet *InstrSet_Thumb*)
+       ;; end EncodingSpecificOperations
+       )
+    (bl-blx-common inst-address imm32 targetInstrSet arm)))
+
+;; This can go before execute-unconditional-instruction because its encoding has no COND field.
+(def-inst :blx-immediate
+    (blx-core inst-address h imm24 arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; See A5.7 Unconditional instructions
 ;; todo: flesh this out
-(defund execute-unconditional-instruction (arm inst)
-  (declare (xargs :guard (unsigned-byte-p 32 inst)
+(defund execute-unconditional-instruction (inst-address inst arm)
+  (declare (xargs :guard (and (addressp inst-address)
+                              (unsigned-byte-p 32 inst))
                   :stobjs arm))
-  (update-error (list :unsupported-unconditional-instruction inst) arm))
+  (let ((op1 (slice 27 20 inst)))
+    (cond ((equal #b101 (slice 7 5 op1)) ; see Encoding A2 of "BL, BLX (immediate)"
+           (blx-core inst-address
+                     (getbit 24 inst) ;; H
+                     (slice 23 0 inst) ;; imm24
+                     arm))
+          (t (update-error (list :unsupported-unconditional-instruction inst) arm)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -590,33 +630,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund bl-blx-common (inst-address imm32 targetInstrSet arm)
-  (declare (xargs :guard (and (addressp inst-address)
-                              (unsigned-byte-p 32 imm32)
-                              (member-equal targetInstrSet (list *InstrSet_Thumb* *InstrSet_ARM*)))
-                  :stobjs arm))
-  (b* ((arm (set-reg *lr* (if (== (CurrentInstrSet arm) *InstrSet_ARM*)
-                              (bvminus 32 (pcvalue inst-address) 4)
-                            (bvcat 31 (slice 31 1 (pcvalue inst-address)) 1 1))
-                     arm))
-       (targetAddress (if (== targetInstrSet *InstrSet_ARM*)
-                          (bvplus 32 (align (pcvalue inst-address) 4) imm32)
-                        (bvplus 32 (pcvalue inst-address) imm32)))
-       (arm (SelectInstrSet targetInstrSet arm)))
-    (BranchWritePC targetAddress arm)))
-
-(defund blx-core (inst-address h imm24 arm)
-  (declare (xargs :guard (and (addressp inst-address)
-                              (bitp h)
-                              (unsigned-byte-p 24 imm24))
-                  :stobjs arm))
-  (b* (;; EncodingSpecificOperations:
-       (imm32 (signextend (bvcat 24 imm24 2 (bvcat 1 h 1 #b0)) 26 32))
-       (targetInstrSet *InstrSet_Thumb*)
-       ;; end EncodingSpecificOperations
-       )
-    (bl-blx-common inst-address imm32 targetInstrSet arm)))
-
 (def-inst :bl
     (if (== cond #b1111)
         (blx-core inst-address 1 imm24 arm)
@@ -627,8 +640,6 @@
            )
         (bl-blx-common inst-address imm32 targetInstrSet arm))))
 
-(def-inst :blx-immediate
-    (blx-core inst-address h imm24 arm))
 
 (def-inst :blx-register
     (b* (;; EncodingSpecificOperations:
