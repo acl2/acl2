@@ -149,6 +149,20 @@
     :elementp-of-nil nil
     :pred type-value-listp))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type-value-result
+  :short "Fixtype of type values and errors."
+  :ok type-value
+  :pred type-value-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type-value-list-result
+  :short "Fixtype of (i) lists of type values and (ii) errors."
+  :ok type-value-list
+  :pred type-value-list-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod int-value
