@@ -2713,6 +2713,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-inst :rev
+    (b* (;; EncodingSpecificOperations:
+         (d (uint 4 rd))
+         (m (uint 4 rm))
+         ((when (or (== d 15)
+                    (== m 15)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (result (acl2::bvcat2 8 (slice 7 0 (reg m arm))
+                               8 (slice 15 8 (reg m arm))
+                               8 (slice 23 16 (reg m arm))
+                               8 (slice 31 24 (reg m arm))))
+         (arm (set-reg d result arm))
+         (arm (advance-pc arm)))
+      arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-inst :rev16
     (b* (;; EncodingSpecificOperations:
          (d (uint 4 rd))
@@ -2731,16 +2749,68 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-inst :revsh
+    (b* (;; EncodingSpecificOperations:
+         (d (uint 4 rd))
+         (m (uint 4 rm))
+         ((when (or (== d 15)
+                    (== m 15)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (result (bvcat 24 (SignExtend (slice 7 0 (reg m arm)) 8 24)
+                        8 (slice 15 8 (reg m arm))))
+         (arm (set-reg d result arm))
+         (arm (advance-pc arm)))
+      arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun rrx-core (s rd rm arm)
+  (declare (xargs :guard (and (bitp s)
+                              (unsigned-byte-p 4 rd)
+                              (unsigned-byte-p 4 rm))
+                  :stobjs arm))
+  (b* (;; EncodingSpecificOperations:
+       ((when (and (== rd #b1111)
+                   (== s #b1)))
+        (update-error (list *unsupported* :rrx) arm))
+       (d (uint 4 rd))
+       (m (uint 4 rm))
+       (setflags (== s #b1))
+       ;; end EncodingSpecificOperations
+       ((mv result carry) (shift_c 32 (reg m arm) *SRType_RRX* 1 (apsr.c arm))))
+    (if (== d 15)
+        (ALUWritePC result arm)
+      (b* ((arm (set-reg d result arm))
+           (arm (if setflags
+                    (let* ((arm (set-apsr.n (getbit 31 result) arm))
+                           (arm (set-apsr.z (IsZeroBit 32 result) arm))
+                           (arm (set-apsr.c carry arm))
+                           ;; APSR.V is unchanged
+                           )
+                      arm)
+                  arm))
+           (arm (advance-pc arm)))
+        arm))))
+
 (def-inst :rrx
+    (rrx-core s rd rm arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst :ror-immediate
     (b* (;; EncodingSpecificOperations:
          ((when (and (== rd #b1111)
                      (== s #b1)))
-          (update-error (list *unsupported* :rrx) arm))
+          (update-error (list *unsupported* :ror-immediate) arm)) ; todo
+         ((when (== imm5 #b00000))
+          (rrx-core s rd rm arm))
          (d (uint 4 rd))
          (m (uint 4 rm))
          (setflags (== s #b1))
+         ((mv & shift_n) (decodeImmShift #b11 imm5))
          ;; end EncodingSpecificOperations
-         ((mv result carry) (shift_c 32 (reg m arm) *SRType_RRX* 1 (apsr.c arm))))
+         ((mv result carry) (shift_c 32 (reg m arm) *SRType_ROR* shift_n (apsr.c arm))))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -2754,6 +2824,33 @@
                     arm))
              (arm (advance-pc arm)))
           arm))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst :ror-register
+    (b* (;; EncodingSpecificOperations:
+         (d (uint 4 rd))
+         (n (uint 4 rn))
+         (m (uint 4 rm))
+         (setflags (== s #b1))
+         ((when (or (== d 15)
+                    (== n 15)
+                    (== m 15)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (shift_n (uint 32 (slice 7 0 (reg m arm))))
+         ((mv result carry) (shift_c 32 (reg n arm) *SRType_ROR* shift_n (apsr.c arm)))
+         (arm (set-reg d result arm))
+         (arm (if setflags
+                  (let* ((arm (set-apsr.n (getbit 31 result) arm))
+                         (arm (set-apsr.z (IsZeroBit 32 result) arm))
+                         (arm (set-apsr.c carry arm))
+                         ;; APSR.V is unchanged
+                         )
+                    arm)
+                arm))
+         (arm (advance-pc arm)))
+      arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
