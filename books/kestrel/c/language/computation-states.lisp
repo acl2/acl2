@@ -1146,7 +1146,19 @@
              write-object
              nfix
              compustate-frames-number
-             compustate-scopes-numbers)))
+             compustate-scopes-numbers))
+
+  (defruled compustatep-of-write-object-auto/static/alloc-when-read
+    (implies (or (objdesign-case objdes :alloc)
+                 (objdesign-case objdes :static)
+                 (objdesign-case objdes :auto))
+             (b* ((val (read-object objdes compst))
+                  (compst1 (write-object objdes new-val compst)))
+               (implies (and (not (errorp val))
+                             (equal (type-of-value new-val)
+                                    (type-of-value val)))
+                        (compustatep compst1))))
+    :enable read-object))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
