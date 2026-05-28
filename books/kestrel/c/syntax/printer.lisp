@@ -4489,10 +4489,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-line-comment ((content nat-listp) (pstate pristatep))
+(define print-line-comment ((content uchar-listp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a line comment."
-  (b* ((content (nat-list-fix content)))
+  (b* ((content (uchar-list-fix content)))
     (if (grammar-character-listp content)
         (b* ((pstate (print-astring "// " pstate))
              (pstate (print-chars content pstate))
@@ -4501,6 +4501,7 @@
       (prog2$
        (raise "Internal error: non-grammatical line comment ~x0." content)
        (pristate-fix pstate))))
+  :guard-hints (("Goal" :in-theory (enable nat-listp-when-uchar-listp)))
   :hooks (:fix)
 
   ///

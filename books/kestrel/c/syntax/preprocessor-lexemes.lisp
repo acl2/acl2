@@ -177,7 +177,7 @@
      It consists of the code of the Unicode character.")
    (xdoc::p
     "For (block and line) comments, we include the content,
-     consisting of the codes of the characters.
+     consisting of the codes of the Unicode characters.
      For block comments, these are all the characters
      from just after the opening @('/*') to just before the closing @('*/').
      For line comments, these are all the characters
@@ -197,8 +197,8 @@
   (:string ((literal stringlit)))
   (:punctuator ((punctuator string)))
   (:other ((char uchar)))
-  (:block-comment ((content nat-list)))
-  (:line-comment ((content nat-list)))
+  (:block-comment ((content uchar-list)))
+  (:line-comment ((content uchar-list)))
   (:newline ((chars newline)))
   (:spaces ((count pos)))
   (:horizontal-tab ())

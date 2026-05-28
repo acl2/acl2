@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "file-paths")
+(include-book "unicode-characters")
 
 (include-book "kestrel/fty/dec-digit-char-list" :dir :system)
 (include-book "kestrel/fty/hex-digit-char-list" :dir :system)
@@ -74,20 +75,6 @@
      Restrictions on well-formed code can be formulated
      via separate predicates on the abstract syntax.
      The grammar does not capture many static constraints anyhow.")
-   (xdoc::p
-    "The use of natural numbers to represent @('c-char') and @('s-char')
-     in character constants and string literals is motivated by
-     the fact that we commit to Unicode characters,
-     even though [C17] and [C23] prescribe
-     no specific source character set [C17:5.2.1] [C23:5.3.1].
-     These days, Unicode should be sufficiently general;
-     note that ASCII is a subset of Unicode.
-     Thus, the natural numbers represent Unicode code points,
-     which include ASCII codes as a subset.
-     Although natural numbers are more general that Unicode code points,
-     and also more general than @('c-char') and @('s-char'),
-     it is fine for abstract syntax to be more general than concrete syntax.
-     However, we should probably switch to using @(tsee uchar).")
    (xdoc::p
     "The syntax of C has some known ambiguities,
      which cannot be disambiguated purely syntactically,
@@ -798,11 +785,9 @@
    (xdoc::p
     "This corresponds to @('c-char') in the ABNF grammar.")
    (xdoc::p
-    "As explained in @(see abstract-syntax),
-     the natural numbers represent Unicode code points.
-     We do not capture the restriction that the characters cannot be
+    "We do not capture the restriction that the characters cannot be
      single quote, backslash, or new-line."))
-  (:char ((code nat)))
+  (:char ((code uchar)))
   (:escape ((escape escape)))
   :pred c-char-p
   :layout :fulltree)
@@ -863,11 +848,9 @@
    (xdoc::p
     "This corresponds to @('s-char') in the ABNF grammar.")
    (xdoc::p
-    "As explained in @(see abstract-syntax),
-     the natural numbers represent Unicode code points.
-     We do not capture the restriction that the characters cannot be
+    "We do not capture the restriction that the characters cannot be
      double quote, backslash, or new-line."))
-  (:char ((code nat)))
+  (:char ((code uchar)))
   (:escape ((escape escape)))
   :pred s-char-p
   :layout :fulltree)
@@ -928,13 +911,11 @@
    (xdoc::p
     "This corresponds to @('h-char') in the ABNF grammar.")
    (xdoc::p
-    "As explained in @(see abstract-syntax),
-     the natural numbers represent Unicode code points.
-     We wrap the natural number in this fixtype for more abstraction,
-     and to facilitate the addition of restrictions on the number,
+    "We wrap the Unicode character in this fixtype for more abstraction,
+     and to facilitate the addition of restrictions on the character,
      namely that the character cannot be @('>') or a new-line,
      but for now we do not capture this restriction."))
-  ((code nat))
+  ((code uchar))
   :pred h-char-p
   :layout :fulltree)
 
@@ -951,7 +932,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection h-char-list->code-list ((x h-char-listp))
-  :returns (chars nat-listp)
+  :returns (chars uchar-listp)
   :short "Lift @(tsee h-char->code) to lists."
   (h-char->code x))
 
@@ -964,13 +945,11 @@
    (xdoc::p
     "This corresponds to @('q-char') in the ABNF grammar.")
    (xdoc::p
-    "As explained in @(see abstract-syntax),
-     the natural numbers represent Unicode code points.
-     We wrap the natural number in this fixtype for more abstraction,
-     and to facilitate the addition of restrictions on the number,
+    "We wrap the Unicode character in this fixtype for more abstraction,
+     and to facilitate the addition of restrictions on the character,
      namely that the character cannot be @('>') or a new-line,
      but for now we do not capture this restriction."))
-  ((code nat))
+  ((code uchar))
   :pred q-char-p
   :layout :fulltree)
 
@@ -987,7 +966,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection q-char-list->code-list ((x q-char-listp))
-  :returns (chars nat-listp)
+  :returns (chars uchar-listp)
   :short "Lift @(tsee q-char->code) to lists."
   (q-char->code x))
 
@@ -3684,7 +3663,7 @@
             (items trans-item-list)
             (elifs hash-elif-list)
             (else hash-else-option)))
-    (:line-comment ((content nat-listp)))
+    (:line-comment ((content uchar-list)))
     :pred trans-itemp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))

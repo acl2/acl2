@@ -1,0 +1,83 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains the grammar rules for expressions [C17:6.5] [C23:6.5]
+; that are specific to standard C without extensions.
+; Together with the generic rules in expressions.abnf,
+; they form the rules for identifiers for the GCC/Clang-extended dialects.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; As GCC and Clang extensions, we allow the following expressions.
+; Although [GCCM] and [CLE] do not provide explicit grammar rules,
+; we regard them as primary expressions, for the reasons explained below.
+;
+; - Statement expressions (i.e. parenthesized compound statements)
+;   [GCCM:6.12.1](https://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html).
+;   [CLE] only mentions them in passing, but Clang implementations accept them.
+;   Since they are parenthesized,
+;   it makes sense that they are primary expressions.
+;
+; - Calls of '__builtin_types_compatible_p'
+;   [GCCM:7.12](https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html)
+;   [CLE](https://clang.llvm.org/docs/LanguageExtensions.html#builtin-functions).
+;   Although normal function calls are postfix expressions,
+;   this is not a normal function because it takes type names as arguments,
+;   and it always starts with a known identifier,
+;   so it seems reasonable that they are primary expressions.
+;
+; - Calls of '__builtin_offsetof',
+;   [GCCM:6.12.8](https://gcc.gnu.org/onlinedocs/gcc/Offsetof.html)
+;   [CLE](https://clang.llvm.org/docs/LanguageExtensions.html#builtin-functions).
+;   Although normal function calls are postfix expressions,
+;   this is not a normal function because it takes a type name as argument,
+;   so it seems reasonable that they are primary expressions.
+;
+; - Calls of '__builtin_va_arg'
+;   [CLE](https://clang.llvm.org/docs/LanguageExtensions.html#builtin-functions).
+;   We did not find this documented in [GCCM],
+;   but GCC implementations accept it.
+;   Although normal function calls are postfix expressions,
+;   this is not a normal function because it takes a type name as argument,
+;   so it seems reasonable that they are primary expressions.
+;
+; - Primary expressions preceded by '__extension__'
+;   [GCCM](https://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html)
+;   [CLE](https://clang.llvm.org/docs/LanguageExtensions.html#implementation-defined-keywords).
+;   Experiments suggest that this keyword only applies to
+;   the subsequent primary expression,
+;   and not to a larger expression.
+;   The '__extension__' keyword and the expression are juxtaposed,
+;   without required parentheses;
+;   if there are parentheses, they belong to the expression,
+;   which is therefore a parenthesized primary expression.
+
+primary-expression = primary-expression-std
+                   / "(" compound-statement ")"
+                   / types-compatible-call
+                   / offsetof-call
+                   / va-arg-call
+                   / %s"__extension__" primary-expression
+
+types-compatible-call =
+    %s"__builtin_types_compatible_p" "(" type-name "," type-name ")"
+
+offsetof-call =
+    %s"__builtin_offsetof" "(" type-name "," offsetof-member-designator ")"
+
+offsetof-member-designator = identifier
+                           / offsetof-member-designator "." identifier
+                           / offsetof-member-designator "[" expression "]"
+
+va-arg-call = %s"__builtin_va_arg" "(" assignment-expression "," type-name ")"
+
+; TODO: add other kinds of expressions
