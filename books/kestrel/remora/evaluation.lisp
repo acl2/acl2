@@ -26,7 +26,9 @@
                           acl2::nat-listp-when-result-not-error
                           acl2::nat-list-listp-when-result-not-error
                           ispace-valuep-when-result-not-error
-                          ispace-value-listp-when-result-not-error)))
+                          ispace-value-listp-when-result-not-error
+                          type-valuep-when-result-not-error
+                          type-value-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -242,4 +244,81 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: continue
+(defines eval-types
+  :short "Evaluate types and lists of types."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-type ((type typep) (denv denvp))
+    :returns (tval type-value-resultp)
+    :parents (evaluation eval-types)
+    :short "Evaluate a type to a type value."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A variable is looked up in the environment.")
+     (xdoc::p
+      "A base type evaluates to itself.")
+     (xdoc::p
+      "For an array type,
+       we evaluate the element type and the shape,
+       and put the results together into an array type value.")
+     (xdoc::p
+      "A bracket type is treated similarly to an array type,
+       but instead of a shape we have a list of shapes,
+       and we concatenate all the naturals.")
+     (xdoc::p
+      "For a function type, we evaluate input and output types,
+       and put the resulting type values together into a function type value.")
+     (xdoc::p
+      "Universal, product, and sum types evaluate to themselves.
+       They are treated like lambda abstractions."))
+    (type-case
+     type
+     :var (b* ((var+val (omap::assoc type.var (denv->type-vars denv)))
+               ((unless var+val) (reserr nil)))
+            (cdr var+val))
+     :base (type-value-base type.type)
+     :array (b* (((ok elem-tval) (eval-type type.elem denv))
+                 ((ok nats) (eval-shape type.shape denv)))
+              (make-type-value-array :elem elem-tval :shape nats))
+     :bracket (b* (((ok elem-tval) (eval-type type.elem denv))
+                   ((ok natss) (eval-shape-list type.shapes denv))
+                   (nats (nat-append-all natss)))
+                (make-type-value-array :elem elem-tval :shape nats))
+     :fun (b* (((ok in-tvals) (eval-type-list type.in denv))
+               ((ok out-tval) (eval-type type.out denv)))
+            (make-type-value-fun :in in-tvals :out out-tval))
+     :forall (make-type-value-forall :params type.params :body type.body)
+     :pi (make-type-value-pi :params type.params :body type.body)
+     :sigma (make-type-value-sigma :params type.params :body type.body))
+    :measure (type-count type))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-type-list ((types type-listp) (denv denvp))
+    :returns (tvals type-value-list-resultp)
+    :parents (evaluation eval-types)
+    :short "Evaluate a list of types to a list of type values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We evaluate each type in turn
+       and return the list of results in the same order."))
+    (b* (((when (endp types)) nil)
+         ((ok tval) (eval-type (car types) denv))
+         ((ok tvals) (eval-type-list (cdr types) denv)))
+      (cons tval tvals))
+    :measure (type-list-count types))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv-mutual eval-types))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: eval-expr & eval-atom
