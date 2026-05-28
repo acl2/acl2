@@ -385,7 +385,9 @@
     (:uxtb (cond 4) 0 1 1 0 1 1 1 0 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
 
     ;; todo: uxt16
-    ;; todo: uxth
+
+    (:uxth (cond 4) 0 1 1 0 1 1 1 1 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
+
     ;; todo: vaba/vabal
     ;; todo: vabd/vabdl
     ;; todo: vabd floating point

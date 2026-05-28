@@ -3059,6 +3059,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund sub-sign (x y)
+  (declare (xargs :guard (and (unsigned-byte-p 32 x)
+                              (unsigned-byte-p 32 y))))
+  (b* (((mv result & &) (AddWithCarry 32 x (bvnot 32 y) 1)))
+    (getbit 31 result)))
+
+(defthm unsigned-byte-p-of-sub-sign
+  (implies (posp size)
+           (unsigned-byte-p size (sub-sign x y)))
+  :hints (("Goal" :in-theory (enable sub-sign))))
+
+(defund sub-zero (x y)
+  (declare (xargs :guard (and (unsigned-byte-p 32 x)
+                              (unsigned-byte-p 32 y))))
+  (b* (((mv result & &) (AddWithCarry 32 x (bvnot 32 y) 1)))
+    (IsZeroBit 32 result)))
+
+(defthm unsigned-byte-p-of-sub-zero
+  (implies (posp size)
+           (unsigned-byte-p size (sub-zero x y)))
+  :hints (("Goal" :in-theory (enable sub-zero))))
+
+(defund sub-carry (x y)
+  (declare (xargs :guard (and (unsigned-byte-p 32 x)
+                              (unsigned-byte-p 32 y))))
+  (b* (((mv & carry &) (AddWithCarry 32 x (bvnot 32 y) 1)))
+    carry))
+
+(defthm unsigned-byte-p-of-sub-carry
+  (implies (posp size)
+           (unsigned-byte-p size (sub-carry x y)))
+  :hints (("Goal" :in-theory (enable sub-carry))))
+
+;; Also includes underflow
+(defund sub-overflow (x y)
+  (declare (xargs :guard (and (unsigned-byte-p 32 x)
+                              (unsigned-byte-p 32 y))))
+  ;; todo: simplify:
+  (b* (((mv & & overflow) (AddWithCarry 32 x (bvnot 32 y) 1)))
+    overflow))
+
+(defthm unsigned-byte-p-of-sub-overflow
+  (implies (posp size)
+           (unsigned-byte-p size (sub-overflow x y)))
+  :hints (("Goal" :in-theory (enable sub-overflow))))
+
 (def-inst :sub-immediate
     (b* (;; EncodingSpecificOperations:
          ((when (and (== rn #b1111)
@@ -3087,7 +3133,42 @@
                         arm)
                     arm))
              (arm (advance-pc arm)))
-          arm))))
+          arm)))
+  :alt-body
+  (b* (;; EncodingSpecificOperations:
+       ((when (and (== rn #b1111)
+                   (== s #b0)))
+        ;; it's encoding A2 because of bits 24-21:
+        (adr-encoding-a2-core rd imm12 inst-address arm))
+       ;; No need to check for SUB (SP minus immediate)
+       ((when (and (== rd #b1111)
+                   (== s #b1)))
+        ;; todo:
+        (update-error (list *unsupported* :sub-immediate) arm))
+       (d (uint 4 rd))
+       (n (uint 4 rn))
+       (setflags (== s #b1))
+       (imm32 (ARMExpandImm imm12 arm))
+       ;; end EncodingSpecificOperations
+       (regn (reg n arm))
+       ((mv result & &) (AddWithCarry 32 regn (bvnot 32 imm32) 1)))
+    (if (== d 15)
+        (ALUWritePC result arm)
+      (b* ((arm (set-reg d result arm))
+           (arm (if setflags
+                    (let* ((arm (set-apsr.n (sub-sign regn imm32) arm))
+                           (arm (set-apsr.z (sub-zero regn imm32) arm))
+                           (arm (set-apsr.c (sub-carry regn imm32) arm))
+                           (arm (set-apsr.v (sub-overflow regn imm32) arm)))
+                      arm)
+                  arm))
+           (arm (advance-pc arm)))
+        arm)))
+  :alt-body-hints (("Goal" :in-theory '(execute-sub-immediate
+                                        sub-sign
+                                        sub-zero
+                                        sub-carry
+                                        sub-overflow))))
 
 (def-inst :sub-register
     (b* (;; EncodingSpecificOperations:
@@ -4558,5 +4639,21 @@
          ;; end EncodingSpecificOperations
          (rotated (ROR 32 (reg m arm) rotation))
          (arm (set-reg d (ZeroExtend (slice 7 0 rotated) 32) arm))
+         (arm (advance-pc arm)))
+      arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst :uxth
+    (b* (;; EncodingSpecificOperations:
+         (d (uint 4 rd))
+         (m (uint 4 rm))
+         (rotation (uint 32 (bvcat 2 rotate 3 0)))
+         ((when (or (== d 15)
+                    (== m 15)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (rotated (ROR 32 (reg m arm) rotation))
+         (arm (set-reg d (ZeroExtend (slice 15 0 rotated) 32) arm))
          (arm (advance-pc arm)))
       arm))

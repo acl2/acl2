@@ -402,3 +402,21 @@
 (defthm getbit-0-of-cmp-overflow
   (equal (getbit 0 (cmp-overflow x y))
          (cmp-overflow x y)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: more like this
+(defthm lt-condition-of-sub-sign-and-sub-overflow
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (lt-condition (sub-sign x y) (sub-overflow x y))
+                  (sbvlt 32 x y)))
+  :hints (("Goal" :in-theory (enable lt-condition sub-sign sub-overflow addwithcarry uint sint
+                                     acl2::bvchop-of-sum-cases
+                                     sbvlt
+                                     bvlt
+                                     bvnot
+                                     bvplus
+                                     lognot
+                                     acl2::logext-cases
+                                     acl2::getbit-of-+))))
