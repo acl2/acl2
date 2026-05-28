@@ -155,7 +155,7 @@
      (xdoc::p
       "For a shape consisting of a list of dimensions,
        we evaluate the dimensions,
-       we ensure that are non-negative,
+       we ensure that they are non-negative,
        and we return their list.")
      (xdoc::p
       "For a concatenation,
