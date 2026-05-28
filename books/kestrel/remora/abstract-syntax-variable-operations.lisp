@@ -355,22 +355,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atom/array-names-of-type-var-list ((vars type-var-listp))
-  :returns (mv (atom-names string-setp) (array-names string-setp))
-  :short "Extract the sets of atom and array type variable names
-          from a list of type variables."
-  (b* (((when (endp vars)) (mv nil nil))
-       ((mv atom-vars array-vars)
-        (atom/array-names-of-type-var-list (cdr vars)))
-       (var (car vars)))
-    (type-var-case
-     var
-     :atom (mv (set::insert var.name atom-vars) array-vars)
-     :array (mv atom-vars (set::insert var.name array-vars))))
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define dim/shape-names-of-ispace-var-set ((vars ispace-var-setp))
   :returns (mv (dim-names string-setp) (shape-names string-setp))
   :short "Extract the sets of dimension and shape variable names
@@ -624,7 +608,7 @@
   :override
   ((type :forall
          (b* (((mv bound-atom-vars bound-array-vars)
-               (atom/array-names-of-type-var-list type.params))
+               (atom/array-names-of-type-var-set (set::mergesort type.params)))
               (atom-subst (omap::delete* bound-atom-vars
                                          (string-type-map-fix atom-subst)))
               (array-subst (omap::delete* bound-array-vars
@@ -746,7 +730,7 @@
                      (type-var (type-var-array type.var.name))))))
    (type :forall
          (b* (((mv bound-atom-vars bound-array-vars)
-               (atom/array-names-of-type-var-list type.params))
+               (atom/array-names-of-type-var-set (set::mergesort type.params)))
               (atom-subst
                (omap::delete* bound-atom-vars
                               (string-type-map-fix atom-subst)))
@@ -857,7 +841,7 @@
   :override
   ((type :forall
          (b* (((mv bound-atom-vars bound-array-vars)
-               (atom/array-names-of-type-var-list type.params))
+               (atom/array-names-of-type-var-set (set::mergesort type.params)))
               (atom-renam (omap::delete* bound-atom-vars
                                          (string-type-map-fix atom-renam)))
               (array-renam (omap::delete* bound-array-vars
@@ -998,7 +982,7 @@
                      (type-var (type-var-array type.var.name))))))
    (type :forall
          (b* (((mv bound-atom-vars bound-array-vars)
-               (atom/array-names-of-type-var-list type.params))
+               (atom/array-names-of-type-var-set (set::mergesort type.params)))
               (atom-renam
                (omap::delete* bound-atom-vars
                               (string-string-map-fix atom-renam)))
