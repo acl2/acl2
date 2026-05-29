@@ -2444,7 +2444,8 @@
        as a GCC extension (see ABNF grammar)."))
     ((specs decl-spec-list)
      (declor param-declor)
-     (attribs attrib-spec-list)) ; GCC extension
+     (attribs attrib-spec-list) ; GCC extension
+     (info any))
     :pred param-declonp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))

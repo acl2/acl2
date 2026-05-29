@@ -1433,7 +1433,8 @@
       (mv (make-param-declon
             :specs spec
             :declor decl
-            :attribs paramdecl.attribs)
+            :attribs paramdecl.attribs
+            :info paramdecl.info)
           env))
     :measure (param-declon-count paramdecl))
 
