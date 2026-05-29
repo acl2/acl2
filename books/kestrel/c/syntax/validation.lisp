@@ -31,4 +31,5 @@
     "We provide an executable validator,
      which performs a (currently conservative) validation of C code,
      and also annotates the ASTs with information (e.g. calculated types)."))
-  :order-subtopics (validation-information))
+  :order-subtopics (validation-information
+                    validator))
