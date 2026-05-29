@@ -115,12 +115,12 @@
    :rule-classes nil))
 
 (defbitstruct gdtr/idtrBits
-  :short "Global and Local Descriptor Table Registers (GDTR and LDTR)."
+  :short "Global and Interrupt Descriptor Table Registers (GDTR and IDTR)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Intel manual, Mar'26, Vol. 3, Figure 2-6;
-     AMD manual, Mar'26, Vol. 2, Figures 4-7 and 4-8.")
+    "Intel manual, Mar 2026, Vol. 3A, Figure 2-6;
+     AMD manual, Mar 2026, Vol. 2, Figures 4-7 and 4-8.")
    (xdoc::p
     "We use 64 bits to accommodate the longer size."))
   ((base-addr 64bits)  ;; Segment Base Address
@@ -139,8 +139,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Intel manual, Mar'26, Vol. 3, Figure 3-8;
-     AMD manual, Jun'23, Vol. 2, Figures 4-14 and 4-20."))
+    "Intel manual, Mar 2026, Vol. 3A, Figure 3-8;
+     AMD manual, Mar 2026, Vol. 2, Figures 4-14 and 4-20."))
   ((limit15-0 16bits)  ;; Ignored in 64-bit mode
    (base15-0 16bits)   ;; Ignored in 64-bit mode
    (base23-16 8bits)   ;; Ignored in 64-bit mode
@@ -196,8 +196,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Intel manual, Mar'26, Vol. 3, Figure 3-8;
-     AMD manual, Mar'26, Vol. 2, Figures 4-15 and 4-21."))
+    "Intel manual, Mar 2026, Vol. 3A, Figure 3-8;
+     AMD manual, Mar 2026, Vol. 2, Figures 4-15 and 4-21."))
   ((limit15-0 16bits)  ;; Ignored in 64-bit mode
    (base15-0 16bits)   ;; Ignored in 64-bit mode
    (base23-16 8bits)   ;; Ignored in 64-bit mode
@@ -253,8 +253,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Intel manual, Mar'26, Vol. 3, Figure 3-11;
-     AMD manual, Mar'26, Vol. 2, Figure 4-22.")
+    "Intel manual, Mar 2026, Vol. 3A, Figure 3-11;
+     AMD manual, Mar 2026, Vol. 2, Figure 4-22.")
    (xdoc::p
     "This is for 64-bit mode;
      in 32-bit mode, the layout is different."))
@@ -306,8 +306,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Intel manual, Mar'26, Vol. 3, Figure 3-11;
-     AMD manual, Mar'26, Vol. 2, Figure 4-23.")
+    "Intel manual, Mar 2026, Vol. 3A, Figure 3-11;
+     AMD manual, Mar 2026, Vol. 2, Figure 4-23.")
    (xdoc::p
     "This is for 64-bit mode;
      in 32-bit mode, the layout is different."))
@@ -353,8 +353,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Intel manual, Mar'26, Vol. 3, Figure 3-11;
-     AMD manual, Mar'26, Vol. 2, Figures 4-24.")
+    "Intel manual, Mar 2026, Vol. 3A, Figure 3-11;
+     AMD manual, Mar 2026, Vol. 2, Figure 4-24.")
    (xdoc::p
     "This is for 64-bit mode;
      in 32-bit mode, the layout is different."))
@@ -369,7 +369,7 @@
    (offset31-16 16bits)
    (offset63-32 32bits)
    (res2 8bits)
-   (all-zeros? 5bits)   ;; Must all be 0
+   (all-zeroes? 5bits)  ;; Must all be 0
    (res3 19bits))
   :msb-first nil
   :inline t)
