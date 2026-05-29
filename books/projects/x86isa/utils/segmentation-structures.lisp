@@ -135,30 +135,32 @@
    :rule-classes nil))
 
 (defbitstruct code-segment-descriptorBits
-  :short "AMD manual, Jun'23, Vol. 2, Figures 4-20 and 4-14."
+  :short "Code segment descriptors."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Intel manual, Mar'26, Vol. 3, Figure 3-8;
+     AMD manual, Jun'23, Vol. 2, Figures 4-14 and 4-20."))
   ((limit15-0 16bits)  ;; Ignored in 64-bit mode
    (base15-0 16bits)   ;; Ignored in 64-bit mode
    (base23-16 8bits)   ;; Ignored in 64-bit mode
-   (a bitp)            ;; Ignored in 64-bit mode
-   (r bitp)            ;; Ignored in 64-bit mode
-   (c bitp)
-   (msb-of-type bitp)  ;; must be 1
-   (s bitp)            ;; S = 1 in 64-bit mode (code/data segment)
-   (dpl 2bits)
-   (p bitp)
+   (a bitp)            ;; Accessed; ignored in 64-bit mode
+   (r bitp)            ;; Readable; ignored in 64-bit mode
+   (c bitp)            ;; Conforming
+   (msb-of-type bitp)  ;; Must be 1
+   (s bitp)            ;; System descriptor (0 = system; 1 = code or data);
+                       ;; must be 1 in 64-bit mode
+   (dpl 2bits)         ;; Descriptor privilege level
+   (p bitp)            ;; Segment present
    (limit19-16 4bits)  ;; Ignored in 64-bit mode
-   (avl bitp)          ;; Ignored in 64-bit mode
-                       ;; As per AMD manuals, this is ignored
-                       ;; in 64-bit mode but the Intel manuals
-                       ;; say it's not.  We're following the
-                       ;; Intel manuals.
-   (l bitp)
-   (d bitp)
-   (g bitp)            ;; Ignored in 64-bit mode
-                       ;; As per AMD manuals, this is ignored
-                       ;; in 64-bit mode but the Intel manuals
-                       ;; say it's not.  We're following the
-                       ;; Intel manuals.
+   (avl bitp)          ;; Available for use by system software;
+                       ;; ignored in 64-bit mode according to AMD manual;
+                       ;; not ignored in 64-bit mode according to Intel manual
+   (l bitp)            ;; 64-bit segment
+   (d bitp)            ;; Default operation size
+   (g bitp)            ;; Granularity;
+                       ;; ignored in 64-bit mode according to AMD manual;
+                       ;; not ignored in 64-bit mode according to Intel manual
    (base31-24 8bits))  ;; Ignored in 64-bit mode
   :msb-first nil
   :inline t)
@@ -174,8 +176,8 @@
   ((a bitp)
    (r bitp)
    (c bitp)
-   (msb-of-type bitp) ;; must be 1
-   (s bitp)           ;; S = 1 in 64-bit mode
+   (msb-of-type bitp)
+   (s bitp)
    (dpl 2bits)
    (p bitp)
    (avl bitp)
