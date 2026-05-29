@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "initializer-validation")
+(include-book "validation-tables")
 (include-book "validation-information")
 (include-book "validator")
 
@@ -33,5 +34,6 @@
      which performs a (currently conservative) validation of C code,
      and also annotates the ASTs with information (e.g. calculated types)."))
   :order-subtopics (initializer-validation
+                    validation-tables
                     validation-information
                     validator))
