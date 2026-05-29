@@ -20,7 +20,7 @@
 (include-book "kestrel/fty/deffold-map" :dir :system)
 
 (include-book "../../syntax/abstract-syntax-operations")
-(include-book "../../syntax/validation-information")
+(include-book "../../syntax/validation-annotations")
 
 (include-book "qualified-ident")
 
