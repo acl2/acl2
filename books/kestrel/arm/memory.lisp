@@ -1396,7 +1396,7 @@
 
 (defthm armp-of-write
   (implies (and (natp n)
-                (unsigned-byte-p (* 8 n) val)
+                ;(unsigned-byte-p (* 8 n) val)
                 (unsigned-byte-p 32 addr)
                 (armp arm))
            (armp (write n addr val arm)))
