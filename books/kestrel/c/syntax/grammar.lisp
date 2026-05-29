@@ -24,7 +24,7 @@
 ; (depends-on "grammar/characters-c23.abnf")
 ; (depends-on "grammar/comments.abnf")
 ; (depends-on "grammar/keywords.abnf")
-; (depends-on "grammar/keywords-c17.abnf")
+; (depends-on "grammar/keywords-c17-noext.abnf")
 ; (depends-on "grammar/keywords-c17-gcc.abnf")
 ; (depends-on "grammar/keywords-c17-clang.abnf")
 ; (depends-on "grammar/keywords-c17-clang-cheri.abnf")
@@ -212,7 +212,7 @@
 
 (defgrammar keywords "keywords that form subsets for the various C dialects")
 
-(defgrammar keywords-c17
+(defgrammar keywords-c17-noext
   "keywords that are specific to the C17 dialect without extensions")
 
 (defgrammar keywords-c23
@@ -453,7 +453,7 @@
                  (dialect.clang (if dialect.cheri
                                     *grammar-keywords-c17-clang-cheri*
                                   *grammar-keywords-c17-clang*))
-                 (t *grammar-keywords-c17*))
+                 (t *grammar-keywords-c17-noext*))
       :c23 (cond (dialect.gcc *grammar-keywords-c23-gcc*)
                  (dialect.clang (if dialect.cheri
                                     *grammar-keywords-c23-clang-cheri*
