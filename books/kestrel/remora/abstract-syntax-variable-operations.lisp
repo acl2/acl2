@@ -472,7 +472,7 @@
      We check that @('vars') is disjoint from the free ispace variables
      of the dimension and shape substitutions.")
    (xdoc::p
-    "This is shared by the cases of @(tsee subst-ispace-vars-no-capture-p)
+    "This is shared by the cases of @(tsee ast-subst-ispace-vars-no-capture-p)
      for the constructs that bind ispace variables."))
   (set::emptyp
    (set::intersect
@@ -501,7 +501,7 @@
      We check that @('vars') is disjoint from the free type variables
      of the atom-kind and array-kind type substitutions.")
    (xdoc::p
-    "This is shared by the cases of @(tsee subst-type-vars-no-capture-p)
+    "This is shared by the cases of @(tsee ast-subst-type-vars-no-capture-p)
      for the constructs that bind type variables."))
   (set::emptyp
    (set::intersect
@@ -831,16 +831,15 @@
      of the two renaming maps.")
    (xdoc::p
     "This is shared by the cases of
-     @(tsee rename-ispace-vars-no-capture-p) and
-     @(tsee rename-type-vars-no-capture-p)
+     @(tsee ast-rename-ispace-vars-no-capture-p) and
+     @(tsee ast-rename-type-vars-no-capture-p)
      for the constructs that bind variables:
      the two maps are the dimension and shape renamings in the ispace case,
      and the atom-kind and array-kind renamings in the type case."))
   (set::emptyp
-   (set::intersect
-    (string-sfix names)
-    (set::union (omap::values (string-string-map-fix renam1))
-                (omap::values (string-string-map-fix renam2))))))
+   (set::intersect (string-sfix names)
+                   (set::union (omap::values (string-string-map-fix renam1))
+                               (omap::values (string-string-map-fix renam2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
