@@ -421,36 +421,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dim/shape-subst-no-capture-p ((vars ispace-var-setp)
-                                      (dim-subst string-dim-mapp)
-                                      (shape-subst string-shape-mapp))
-  :returns (yes/no booleanp)
-  :short "Check that a set of bound ispace variables is not captured
-          by a dimension substitution and a shape substitution."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "When a substitution of ispace variables descends under a construct
-     that binds the ispace variables in @('vars'),
-     after those bound variables have been removed from the substitution
-     (see @(tsee dim/shape-subst-remove-bound)),
-     none of the bound variables must occur free
-     among the values of the resulting substitution maps,
-     otherwise substituting under the binder would capture them.
-     We check that @('vars') is disjoint from the free ispace variables
-     of the dimension and shape substitutions.")
-   (xdoc::p
-    "This is shared by the cases of @(tsee subst-ispace-vars-no-capture-p)
-     for the constructs that bind ispace variables."))
-  (set::emptyp
-   (set::intersect
-    (ispace-var-set-fix vars)
-    (set::union
-     (string-dim-map-free-ispace-vars dim-subst)
-     (string-shape-map-free-ispace-vars shape-subst)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atom/array-subst-remove-bound ((vars type-var-setp)
                                        (atom-subst string-type-mapp)
                                        (array-subst string-type-mapp))
@@ -480,6 +450,35 @@
     (mv (omap::delete* bound-atom-vars (string-type-map-fix atom-subst))
         (omap::delete* bound-array-vars (string-type-map-fix array-subst))))
   :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dim/shape-subst-no-capture-p ((vars ispace-var-setp)
+                                      (dim-subst string-dim-mapp)
+                                      (shape-subst string-shape-mapp))
+  :returns (yes/no booleanp)
+  :short "Check that a set of bound ispace variables is not captured
+          by a dimension substitution and a shape substitution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When a substitution of ispace variables descends under a construct
+     that binds the ispace variables in @('vars'),
+     after those bound variables have been removed from the substitution
+     (see @(tsee dim/shape-subst-remove-bound)),
+     none of the bound variables must occur free
+     among the values of the resulting substitution maps,
+     otherwise substituting under the binder would capture them.
+     We check that @('vars') is disjoint from the free ispace variables
+     of the dimension and shape substitutions.")
+   (xdoc::p
+    "This is shared by the cases of @(tsee subst-ispace-vars-no-capture-p)
+     for the constructs that bind ispace variables."))
+  (set::emptyp
+   (set::intersect
+    (ispace-var-set-fix vars)
+    (set::union (string-dim-map-free-ispace-vars dim-subst)
+                (string-shape-map-free-ispace-vars shape-subst)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
