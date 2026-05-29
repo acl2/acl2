@@ -151,7 +151,7 @@
      as resulting after disambiguation.")
    (xdoc::p
     "We provide a collection of predicates that characterize "
-    (xdoc::seetopic "validation-anotations" "annotated abstract syntax")
+    (xdoc::seetopic "validation-annotations" "annotated abstract syntax")
     ", i.e. abstract syntax enhanced with
      the information added by the validator.")
    (xdoc::p
