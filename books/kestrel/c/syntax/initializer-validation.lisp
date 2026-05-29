@@ -72,7 +72,7 @@
   ;;   to reflect the case where we could not evaluate
   ;;   the integer constant expression of the designator.
   ;;   At the moment, we use the unknown initializer subobjects in this case.
-  (:array-index ((of type) (index nat) (range? acl2::nat-option)))
+  (:array-index ((of type) (index nat) (range? nat-option)))
   (:struct ((members type-struni-member-list
                      :reqfix (if (endp members)
                                  (list (irr-type-struni-member))
