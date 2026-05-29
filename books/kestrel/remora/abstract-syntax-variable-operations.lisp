@@ -480,6 +480,35 @@
     (set::union (string-dim-map-free-ispace-vars dim-subst)
                 (string-shape-map-free-ispace-vars shape-subst)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atom/array-subst-no-capture-p ((vars type-var-setp)
+                                       (atom-subst string-type-mapp)
+                                       (array-subst string-type-mapp))
+  :returns (yes/no booleanp)
+  :short "Check that a set of bound type variables is not captured
+          by an atom-kind and an array-kind type substitution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When a substitution of type variables descends under a construct
+     that binds the type variables in @('vars'),
+     after those bound variables have been removed from the substitution
+     (see @(tsee atom/array-subst-remove-bound)),
+     none of the bound variables must occur free
+     among the values of the resulting substitution maps,
+     otherwise substituting under the binder would capture them.
+     We check that @('vars') is disjoint from the free type variables
+     of the atom-kind and array-kind type substitutions.")
+   (xdoc::p
+    "This is shared by the cases of @(tsee subst-type-vars-no-capture-p)
+     for the constructs that bind type variables."))
+  (set::emptyp
+   (set::intersect
+    (type-var-set-fix vars)
+    (set::union (string-type-map-free-type-vars atom-subst)
+                (string-type-map-free-type-vars array-subst)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce subst-ispace-vars-no-capture-p
@@ -665,12 +694,9 @@
                (atom/array-subst-remove-bound (set::mergesort type.params)
                                               atom-subst
                                               array-subst)))
-           (and (set::emptyp
-                 (set::intersect
-                  (set::mergesort type.params)
-                  (set::union
-                   (string-type-map-free-type-vars atom-subst)
-                   (string-type-map-free-type-vars array-subst))))
+           (and (atom/array-subst-no-capture-p (set::mergesort type.params)
+                                               atom-subst
+                                               array-subst)
                 (type-subst-type-vars-no-capture-p type.body
                                                    atom-subst
                                                    array-subst)))))
