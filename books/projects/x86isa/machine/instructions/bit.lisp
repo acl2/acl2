@@ -831,39 +831,45 @@
 ;; INSTRUCTION: TZCNT
 ;; ======================================================================
 
-;; Helper for the tzcnt instruction
+;; Helper for the TZCNT instruction.
 (define tzcnt ((bits natp)
                (i natp)
                (n natp))
   :guard (<= i bits)
-  :returns (tzcnt-result natp :hyp (and (natp i)
-                                        (natp bits)
-                                        (<= i bits))
+  :returns (tzcnt-result natp
+                         :hyp (and (natp i)
+                                   (natp bits)
+                                   (<= i bits))
                          :hints (("Goal" :in-theory (enable natp))))
   :measure (acl2-count (- bits i))
   :hints (("Goal" :in-theory (enable natp)))
   (if (mbt (and (natp i)
                 (natp bits)
                 (<= i bits)))
-    (b* (((when (equal bits i)) bits)
-        ((when (logbitp i n)) i))
-       (tzcnt bits (1+ i) n))
+      (b* (((when (equal bits i)) bits)
+           ((when (logbitp i n)) i))
+        (tzcnt bits (1+ i) n))
     nil)
   ///
   (defthm tzcnt-bound
-          (implies (and (natp i)
-                        (natp bits)
-                        (<= i bits))
-                   (<= (tzcnt bits i n) bits))
-          :rule-classes :linear))
+    (implies (and (natp i)
+                  (natp bits)
+                  (<= i bits))
+             (<= (tzcnt bits i n) bits))
+    :rule-classes :linear))
 
 (def-inst x86-tzcnt
-  ;; F3 0F BC/r: TZCNT r16. r/m16
-  ;; F3 0F BC/r: TZCNT r32. r/m32
-  ;; F3 REX.W 0F BC/r: TZCNT r64. r/m64
 
-  ;; Note: see also POPCNT (largely a copy of this definition)
   :parents (two-byte-opcodes)
+
+  :short "TZCNT: Count the number of trailing zero bits."
+
+  :long
+  (xdoc::topstring
+   (xdoc::codeblock
+    "F3       0F BC /r   TZCNT r16. r/m16"
+    "F3       0F BC /r   TZCNT r32. r/m32"
+    "F3 REX.W 0F BC /r   TZCNT r64. r/m64"))
 
   :returns (x86 x86p :hyp (x86p x86))
 
@@ -873,15 +879,12 @@
 
   :body
 
-  ;; Note: opcode is the second byte of the two-byte opcode.
-
-  (b* (((the (integer 1 8) operand-size)
+  (b* (((the (integer 2 8) operand-size)
         (select-operand-size
          proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
        (p2 (prefixes->seg prefixes))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes->adr prefixes)))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
@@ -891,14 +894,21 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         proc-mode #.*gpr-access* operand-size inst-ac?
-         nil ;; Not a memory pointer operand
-         seg-reg p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate data
-         x86))
-       ((when flg0)
-        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               #.*gpr-access*
+                                               operand-size
+                                               inst-ac?
+                                               nil ;; not memory pointer operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ;; no immediate data
+                                               x86))
+       ((when flg0) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
         (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
@@ -910,10 +920,13 @@
 
        (result (tzcnt (ash operand-size 3) 0 source))
 
-       ;; Update the x86 state:
-       ;; ZF affected. CF, PF, AF, SF, and OF undefined.
-       (x86 (!rgfi-size operand-size (reg-index reg rex-byte *r*)
-                        result rex-byte x86))
+       ;; Update the x86 state.
+       ;; ZF and CF affected; PF, AF, SF, and OF undefined.
+       (x86 (!rgfi-size operand-size
+                        (reg-index reg rex-byte *r*)
+                        result
+                        rex-byte
+                        x86))
        (x86
         (let* ((x86 (!flgi :zf (if (equal result 0) 1 0) x86))
                (x86 (!flgi :cf (if (equal source 0) 1 0) x86))
