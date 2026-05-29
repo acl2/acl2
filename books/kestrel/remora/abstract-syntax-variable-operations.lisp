@@ -421,6 +421,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define dim/shape-subst-no-capture-p ((vars ispace-var-setp)
+                                      (dim-subst string-dim-mapp)
+                                      (shape-subst string-shape-mapp))
+  :returns (yes/no booleanp)
+  :short "Check that a set of bound ispace variables is not captured
+          by a dimension substitution and a shape substitution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When a substitution of ispace variables descends under a construct
+     that binds the ispace variables in @('vars'),
+     after those bound variables have been removed from the substitution
+     (see @(tsee dim/shape-subst-remove-bound)),
+     none of the bound variables must occur free
+     among the values of the resulting substitution maps,
+     otherwise substituting under the binder would capture them.
+     We check that @('vars') is disjoint from the free ispace variables
+     of the dimension and shape substitutions.")
+   (xdoc::p
+    "This is shared by the cases of @(tsee subst-ispace-vars-no-capture-p)
+     for the constructs that bind ispace variables."))
+  (set::emptyp
+   (set::intersect
+    (ispace-var-set-fix vars)
+    (set::union
+     (string-dim-map-free-ispace-vars dim-subst)
+     (string-shape-map-free-ispace-vars shape-subst)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atom/array-subst-remove-bound ((vars type-var-setp)
                                        (atom-subst string-type-mapp)
                                        (array-subst string-type-mapp))
@@ -497,12 +527,9 @@
                (dim/shape-subst-remove-bound (set::mergesort type.params)
                                              dim-subst
                                              shape-subst)))
-           (and (set::emptyp
-                 (set::intersect
-                  (set::mergesort type.params)
-                  (set::union
-                   (string-dim-map-free-ispace-vars dim-subst)
-                   (string-shape-map-free-ispace-vars shape-subst))))
+           (and (dim/shape-subst-no-capture-p (set::mergesort type.params)
+                                              dim-subst
+                                              shape-subst)
                 (type-subst-ispace-vars-no-capture-p type.body
                                                      dim-subst
                                                      shape-subst))))
@@ -511,12 +538,9 @@
                (dim/shape-subst-remove-bound (set::mergesort type.params)
                                              dim-subst
                                              shape-subst)))
-           (and (set::emptyp
-                 (set::intersect
-                  (set::mergesort type.params)
-                  (set::union
-                   (string-dim-map-free-ispace-vars dim-subst)
-                   (string-shape-map-free-ispace-vars shape-subst))))
+           (and (dim/shape-subst-no-capture-p (set::mergesort type.params)
+                                              dim-subst
+                                              shape-subst)
                 (type-subst-ispace-vars-no-capture-p type.body
                                                      dim-subst
                                                      shape-subst))))
@@ -528,12 +552,9 @@
                     (dim/shape-subst-remove-bound (set::mergesort expr.ispaces)
                                                   dim-subst
                                                   shape-subst)))
-                (and (set::emptyp
-                      (set::intersect
-                       (set::mergesort expr.ispaces)
-                       (set::union
-                        (string-dim-map-free-ispace-vars dim-subst)
-                        (string-shape-map-free-ispace-vars shape-subst))))
+                (and (dim/shape-subst-no-capture-p (set::mergesort expr.ispaces)
+                                                   dim-subst
+                                                   shape-subst)
                      (expr-subst-ispace-vars-no-capture-p expr.body
                                                           dim-subst
                                                           shape-subst)))))
@@ -546,12 +567,9 @@
                     (dim/shape-subst-remove-bound bound-ispace-vars
                                                   dim-subst
                                                   shape-subst)))
-                (and (set::emptyp
-                      (set::intersect
-                       bound-ispace-vars
-                       (set::union
-                        (string-dim-map-free-ispace-vars dim-subst)
-                        (string-shape-map-free-ispace-vars shape-subst))))
+                (and (dim/shape-subst-no-capture-p bound-ispace-vars
+                                                   dim-subst
+                                                   shape-subst)
                      (expr-subst-ispace-vars-no-capture-p expr.body
                                                           dim-subst
                                                           shape-subst)))))
@@ -560,12 +578,9 @@
                (dim/shape-subst-remove-bound (set::mergesort atom.params)
                                              dim-subst
                                              shape-subst)))
-           (and (set::emptyp
-                 (set::intersect
-                  (set::mergesort atom.params)
-                  (set::union
-                   (string-dim-map-free-ispace-vars dim-subst)
-                   (string-shape-map-free-ispace-vars shape-subst))))
+           (and (dim/shape-subst-no-capture-p (set::mergesort atom.params)
+                                              dim-subst
+                                              shape-subst)
                 (expr-subst-ispace-vars-no-capture-p atom.body
                                                      dim-subst
                                                      shape-subst))))
@@ -574,12 +589,9 @@
                (dim/shape-subst-remove-bound (set::mergesort bind.params)
                                              dim-subst
                                              shape-subst)))
-           (and (set::emptyp
-                 (set::intersect
-                  (set::mergesort bind.params)
-                  (set::union
-                   (string-dim-map-free-ispace-vars dim-subst)
-                   (string-shape-map-free-ispace-vars shape-subst))))
+           (and (dim/shape-subst-no-capture-p (set::mergesort bind.params)
+                                              dim-subst
+                                              shape-subst)
                 (type-option-subst-ispace-vars-no-capture-p bind.type?
                                                             dim-subst
                                                             shape-subst)
@@ -594,12 +606,9 @@
                        (set::mergesort bind.iparams?.val)
                        dim-subst
                        shape-subst)))
-                  (and (set::emptyp
-                        (set::intersect
-                         (set::mergesort bind.iparams?.val)
-                         (set::union
-                          (string-dim-map-free-ispace-vars dim-subst)
-                          (string-shape-map-free-ispace-vars shape-subst))))
+                  (and (dim/shape-subst-no-capture-p (set::mergesort bind.iparams?.val)
+                                                     dim-subst
+                                                     shape-subst)
                        (var+type-list-subst-ispace-vars-no-capture-p
                         bind.params
                         dim-subst
