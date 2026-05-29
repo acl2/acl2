@@ -30,7 +30,7 @@
 ; (depends-on "grammar/keywords-c17-clang-cheri.abnf")
 ; (depends-on "grammar/keywords-c23-noext.abnf")
 ; (depends-on "grammar/keywords-c23-gcc.abnf")
-; (depends-on "grammar/keywords-c23-clang.abnf")
+; (depends-on "grammar/keywords-c23-clang-nocheri.abnf")
 ; (depends-on "grammar/keywords-c23-clang-cheri.abnf")
 ; (depends-on "grammar/identifiers.abnf")
 ; (depends-on "grammar/identifiers-c17.abnf")
@@ -230,7 +230,7 @@
   "keywords that are specific to
    the C17 dialect with Clang and without CHERI extensions")
 
-(defgrammar keywords-c23-clang
+(defgrammar keywords-c23-clang-nocheri
   "keywords that are specific to
    the C23 dialect with Clang and without CHERI extensions")
 
@@ -457,7 +457,7 @@
       :c23 (cond (dialect.gcc *grammar-keywords-c23-gcc*)
                  (dialect.clang (if dialect.cheri
                                     *grammar-keywords-c23-clang-cheri*
-                                  *grammar-keywords-c23-clang*))
+                                  *grammar-keywords-c23-clang-nocheri*))
                  (t *grammar-keywords-c23-noext*)))
      ;; identifiers:
      *grammar-identifiers*
