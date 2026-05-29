@@ -115,8 +115,14 @@
    :rule-classes nil))
 
 (defbitstruct gdtr/idtrBits
-  :short "Intel manual, Mar'26, Vol. 2, Figure 2-6;
-          AMD manual, Mar'26, Vol. 2, Figures 4-7 and 4-8."
+  :short "Global and Local Descriptor Table Registers (GDTR and LDTR)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Intel manual, Mar'26, Vol. 3, Figure 2-6;
+     AMD manual, Mar'26, Vol. 2, Figures 4-7 and 4-8.")
+   (xdoc::p
+    "We use 64 bits to accommodate the longer size."))
   ((base-addr 64bits)  ;; Segment Base Address
    (limit     16bits)) ;; Segment Limit
   :msb-first nil
