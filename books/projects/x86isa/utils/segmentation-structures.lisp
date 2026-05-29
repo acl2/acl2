@@ -154,13 +154,10 @@
    (p bitp)            ;; Segment present
    (limit19-16 4bits)  ;; Ignored in 64-bit mode
    (avl bitp)          ;; Available for use by system software;
-                       ;; ignored in 64-bit mode according to AMD manual;
-                       ;; not ignored in 64-bit mode according to Intel manual
+                       ;; ignored in 64-bit mode
    (l bitp)            ;; 64-bit segment
    (d bitp)            ;; Default operation size
-   (g bitp)            ;; Granularity;
-                       ;; ignored in 64-bit mode according to AMD manual;
-                       ;; not ignored in 64-bit mode according to Intel manual
+   (g bitp)            ;; Granularity; ignored in 64-bit mode
    (base31-24 8bits))  ;; Ignored in 64-bit mode
   :msb-first nil
   :inline t)
@@ -195,22 +192,29 @@
    :rule-classes nil))
 
 (defbitstruct data-segment-descriptorBits
-  :short "AMD manual, Jun'23, Vol. 2, Figures 4-21 and 4-15."
+  :short "Data segment descriptors."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Intel manual, Mar'26, Vol. 3, Figure 3-8;
+     AMD manual, Mar'26, Vol. 2, Figures 4-15 and 4-21."))
   ((limit15-0 16bits)  ;; Ignored in 64-bit mode
    (base15-0 16bits)   ;; Ignored in 64-bit mode
    (base23-16 8bits)   ;; Ignored in 64-bit mode
-   (a bitp)            ;; Ignored in 64-bit mode
-   (w bitp)            ;; Ignored in 64-bit mode
-   (e bitp)            ;; Ignored in 64-bit mode
-   (msb-of-type bitp)  ;; must be 0
-   (s bitp)            ;; S = 1 in 64-bit mode (code/data segment)
-   (dpl 2bits)         ;; Ignored in 64-bit mode
-   (p bitp)            ;; !! NOT IGNORED: Segment present bit !!
+   (a bitp)            ;; Accessed; ignored in 64-bit mode
+   (w bitp)            ;; Read/write; ignored in 64-bit mode
+   (e bitp)            ;; Execute; ignored in 64-bit mode
+   (msb-of-type bitp)  ;; Must be 0
+   (s bitp)            ;; System descriptor (0 = system; 1 = code or data);
+                       ;; must be 1 in 64-bit mode
+   (dpl 2bits)         ;; Descriptor privilege level; ignored in 64-bit mode
+   (p bitp)            ;; Segment present
    (limit19-16 4bits)  ;; Ignored in 64-bit mode
-   (avl bitp)
-   (l bitp)            ;; L = 1 in 64-bit mode
-   (d/b bitp)          ;; Ignored in 64-bit mode
-   (g bitp)            ;; Ignored in 64-bit mode
+   (avl bitp)          ;; Available for use by system software;
+                       ;; ignored in 64-bit mode
+   (l bitp)            ;; 64-bit segment
+   (d/b bitp)          ;; Default operation size
+   (g bitp)            ;; Granularity; ignored in 64-bit mode
    (base31-24 8bits))  ;; Ignored in 64-bit mode
   :msb-first nil
   :inline t)
@@ -226,8 +230,8 @@
   ((a bitp)
    (w bitp)
    (e bitp)
-   (msb-of-type bitp) ;; must be 0
-   (s bitp)           ;; S = 1 in 64-bit mode
+   (msb-of-type bitp)
+   (s bitp)
    (dpl 2bits)
    (p bitp)
    (avl bitp)
