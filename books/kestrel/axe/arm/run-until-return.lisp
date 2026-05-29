@@ -60,10 +60,10 @@
 (defund update-call-stack-height-aux (instr call-stack-height arm)
   (declare (xargs :guard (and (unsigned-byte-p 32 instr) ; todo: use a recognizer
                               (integerp call-stack-height))
-                  :stobjs arm)
-           (ignore arm) ; todo
-           )
-  (+ (stack-height-adjustment instr) call-stack-height))
+                  :stobjs arm))
+  (if (not (equal *InstrSet_ARM* (isetstate arm)))
+      :not-in-arm-state
+    (+ (stack-height-adjustment instr) call-stack-height)))
 
 ;; Open only when we can determine the instruction
 (defopeners update-call-stack-height-aux :hyps ((syntaxp (quotep instr))))

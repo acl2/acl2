@@ -109,13 +109,15 @@
                                arm::execute-cmp-register-shifted-register
                                arm::execute-cmn-immediate
                                arm::execute-cmn-register
-                               arm::execute-cmn-register-shifted-register))
+                               arm::execute-cmn-register-shifted-register
+                               arm::execute-sub-immediate))
           '(arm::execute-cmp-immediate-alt
             arm::execute-cmp-register-alt
             arm::execute-cmp-register-shifted-register-alt
             arm::execute-cmn-immediate-alt
             arm::execute-cmn-register-alt
             arm::execute-cmn-register-shifted-register-alt
+            arm::execute-sub-immediate-alt ; todo: need alt defs for other sub rules
 
             ;; These support relieving hyps of the -alt rules:
             arm::cmn-immediate-argsp
@@ -124,6 +126,7 @@
             arm::cmp-immediate-argsp
             arm::cmp-register-argsp
             arm::cmp-register-shifted-register-argsp
+            arm::sub-immediate-argsp
 
             ;; Additional rules needed for the instruction semantics:
             arm::adr-common
@@ -181,7 +184,9 @@
             arm::strt-common
             arm::strt-encoding-a1-core
             arm::strt-encoding-a2-core
-            arm::tst-immediate-core)))
+            arm::tst-immediate-core
+
+            arm::execute-unconditional-instruction)))
 
 (defun lifter-rules32 ()
   (declare (xargs :guard t))
@@ -236,6 +241,9 @@
      arm::ls-condition-of-cmp-carry-and-cmp-zero
      arm::le-condition-cmp-idiom
      arm::gt-condition-cmp-idiom
+
+     ;; sub rules: ; todo: add more!
+     arm::lt-condition-of-sub-sign-and-sub-overflow
 
      arm::eq-condition-constant-opener
      arm::ne-condition-constant-opener
@@ -507,6 +515,13 @@
      arm::unsigned-byte-p-of-cmp-zero
      arm::unsigned-byte-p-of-cmp-carry
      arm::unsigned-byte-p-of-cmp-overflow
+
+     arm::unsigned-byte-p-of-sub-sign
+     arm::unsigned-byte-p-of-sub-zero
+     arm::unsigned-byte-p-of-sub-carry
+     arm::unsigned-byte-p-of-sub-overflow
+
+     acl2::getbit-identity ; overkill?  but we need to drop getbit 0 when applied to sub-sign, etc.
 
      )
    (shadowed-write-rules32)
