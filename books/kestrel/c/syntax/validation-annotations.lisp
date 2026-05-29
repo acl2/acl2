@@ -32,9 +32,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "When the validator checks the ASTs, it also adds annotation to them.
-     Here we define these annotations,
-     along with some operations involving those annotations."))
+    "The @(see validator) calculates and uses information, such as types,
+     and annotates the abstract syntax with some of this information.
+     Here we introduce fixtypes for this information,
+     and operations on those fixtypes.")
+   (xdoc::p
+    "We also introduce predicates over the abstract syntax,
+     to check that the annotations from the validator are present.
+     This is not the same as saying that the constructs are validated;
+     the predicates just say that information of the right type is present."))
   :order-subtopics t
   :default-parent t)
 
