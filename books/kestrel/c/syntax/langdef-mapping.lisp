@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "formalized")
+(include-book "abstract-syntax-formal-subset")
 
 (include-book "../language/abstract-syntax")
 

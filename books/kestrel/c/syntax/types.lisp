@@ -13,7 +13,7 @@
 
 (include-book "abstract-syntax-trees")
 (include-book "implementation-environments")
-(include-book "formalized")
+(include-book "abstract-syntax-formal-subset")
 (include-book "langdef-mapping")
 (include-book "uid")
 (include-book "file-paths")
