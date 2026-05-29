@@ -24,7 +24,6 @@
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 
-(include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
 (local (include-book "std/basic/inductions" :dir :system))
