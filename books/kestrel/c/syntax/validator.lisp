@@ -18,7 +18,10 @@
 (include-book "unambiguity")
 (include-book "type-specifier-lists")
 (include-book "storage-specifier-lists")
-(include-book "validation-information")
+(include-book "initializer-validation")
+(include-book "validation-tables")
+(include-book "validation-annotations")
+(include-book "null-pointer-constants")
 (include-book "translation-unit-comparison")
 
 (include-book "kestrel/utilities/messages" :dir :system)
