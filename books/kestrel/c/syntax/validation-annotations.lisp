@@ -226,6 +226,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod param-declon-info
+  :short "Fixtype of validation information for parameter declarations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to parameter declarations.
+     The information consists of the optional type of the declared parameter.
+     The type is absent for the special @('(void)') syntax
+     that denotes an empty parameter list,
+     where the single parameter declaration
+     does not actually declare a parameter."))
+  ((type type-option))
+  :pred param-declon-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod param-declor-nonabstract-info
   :short "Fixtype of validation information for
           non-abstract parameter declarators."
@@ -445,6 +462,12 @@
      (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
                   (absdeclor-option-annop (tyname->declor? tyname))
                   (tyname-infop (tyname->info tyname))))
+     (param-declon (and (decl-spec-list-annop
+                          (param-declon->specs param-declon))
+                        (param-declor-annop (param-declon->declor param-declon))
+                        (attrib-spec-list-annop
+                          (param-declon->attribs param-declon))
+                        (param-declon-infop (param-declon->info param-declon))))
      (param-declor :nonabstract (and (declor-annop
                                       (param-declor-nonabstract->declor
                                        param-declor))
@@ -571,6 +594,14 @@
                 (absdeclor-option-annop declor?)
                 (tyname-infop info)))
     :expand (tyname-annop (tyname specquals declor? info)))
+
+  (defruled param-declon-annop-of-param-declon
+    (equal (param-declon-annop (param-declon specs declor attribs info))
+           (and (decl-spec-list-annop specs)
+                (param-declor-annop declor)
+                (attrib-spec-list-annop attribs)
+                (param-declon-infop info)))
+    :expand (param-declon-annop (param-declon specs declor attribs info)))
 
   (defruled param-declor-annop-of-param-declor-nonabstract
     (equal (param-declor-annop (param-declor-nonabstract declor info))
@@ -762,6 +793,26 @@
              (tyname-infop (tyname->info tyname)))
     :enable tyname-annop)
 
+  (defruled decl-spec-list-annop-of-param-declon->specs
+    (implies (param-declon-annop param-declon)
+             (decl-spec-list-annop (param-declon->specs param-declon)))
+    :enable param-declon-annop)
+
+  (defruled param-declor-annop-of-param-declon->declor
+    (implies (param-declon-annop param-declon)
+             (param-declor-annop (param-declon->declor param-declon)))
+    :enable param-declon-annop)
+
+  (defruled attrib-spec-list-annop-of-param-declon->attribs
+    (implies (param-declon-annop param-declon)
+             (attrib-spec-list-annop (param-declon->attribs param-declon)))
+    :enable param-declon-annop)
+
+  (defruled param-declon-infop-of-param-declon->info
+    (implies (param-declon-annop param-declon)
+             (param-declon-infop (param-declon->info param-declon)))
+    :enable param-declon-annop)
+
   (defruled declor-annop-of-param-declor-nonabstract->declor
     (implies (and (param-declor-annop param-declor)
                   (param-declor-case param-declor :nonabstract))
@@ -844,6 +895,7 @@
      const-expr-annop-of-const-expr
      desiniter-annop-of-desiniter
      tyname-annop-of-tyname
+     param-declon-annop-of-param-declon
      param-declor-annop-of-param-declor-nonabstract
      param-declor-nonabstract-infop-of-param-declor-nonabstract->info
      init-declor-annop-of-init-declor
@@ -878,6 +930,10 @@
      absdeclor-option-annop-of-tyname->declor?
      tyname-infop-of-tyname->info
      declor-annop-of-param-declor-nonabstract->declor
+     decl-spec-list-annop-of-param-declon->specs
+     param-declor-annop-of-param-declon->declor
+     attrib-spec-list-annop-of-param-declon->attribs
+     param-declon-infop-of-param-declon->info
      decl-spec-list-annop-of-fundef->specs
      declor-annop-of-fundef->declor
      declon-list-annop-of-fundef->declons

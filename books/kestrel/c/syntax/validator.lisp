@@ -5495,13 +5495,19 @@
             (vstate (vstate-push-scope vstate))
             ((erp new-params type-params return-types0 vstate)
              (b* (((reterr) nil (irr-type-params) nil vstate)
-                  ((when (equal dirdeclor.params
-                                (list (make-param-declon
-                                       :specs (list (decl-spec-typespec
-                                                     (type-spec-void)))
-                                       :declor (param-declor-none)
-                                       :attribs nil))))
-                   (retok dirdeclor.params
+                  ((when (and (not (endp dirdeclor.params))
+                              (endp (rest dirdeclor.params))
+                              (equal (param-declon->specs
+                                       (first dirdeclor.params))
+                                     (list (decl-spec-typespec
+                                             (type-spec-void))))
+                              (equal (param-declon->declor
+                                       (first dirdeclor.params))
+                                     (param-declor-none))
+                              (not (param-declon->attribs
+                                     (first dirdeclor.params)))))
+                   (retok (list (change-param-declon (first dirdeclor.params)
+                                                    :info (make-param-declon-info :type nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -5748,13 +5754,19 @@
             (vstate (vstate-push-scope vstate))
             ((erp new-params type-params return-types0 vstate)
              (b* (((reterr) nil (irr-type-params) nil vstate)
-                  ((when (equal dirabsdeclor.params
-                                (list (make-param-declon
-                                       :specs (list (decl-spec-typespec
-                                                     (type-spec-void)))
-                                       :declor (param-declor-none)
-                                       :attribs nil))))
-                   (retok dirabsdeclor.params
+                  ((when (and (not (endp dirabsdeclor.params))
+                              (endp (rest dirabsdeclor.params))
+                              (equal (param-declon->specs
+                                       (first dirabsdeclor.params))
+                                     (list (decl-spec-typespec
+                                             (type-spec-void))))
+                              (equal (param-declon->declor
+                                       (first dirabsdeclor.params))
+                                     (param-declor-none))
+                              (not (param-declon->attribs
+                                     (first dirabsdeclor.params)))))
+                   (retok (list (change-param-declon (first dirabsdeclor.params)
+                                                    :info (make-param-declon-info :type nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -5872,10 +5884,12 @@
                 :array (make-type-pointer :to type.of)
                 :function (make-type-pointer :to type)
                 :otherwise type))
+         (info (param-declon-info type))
          ((when (not ident?))
           (retok (make-param-declon :specs new-specs
                                     :declor new-decl
-                                    :attribs paramdecl.attribs)
+                                    :attribs paramdecl.attribs
+                                    :info info)
                  type
                  (set::union types more-types)
                  vstate))
@@ -5893,7 +5907,8 @@
          (vstate (vstate-add-ord ident? ord-info vstate)))
       (retok (make-param-declon :specs new-specs
                                 :declor new-decl
-                                :attribs paramdecl.attribs)
+                                :attribs paramdecl.attribs
+                                :info info)
              type
              (set::union types more-types)
              vstate))
@@ -7368,12 +7383,26 @@
   :prepwork
   ((local (in-theory (enable acons)))
 
-   ;; Necessary for termination proof.
+   ;; The following theorems are (for some reason)
+   ;; necessary for the termination proof.
+
    (defrulel expr-count-min-when-complit-linear
      (implies (expr-case expr :complit)
               (<= 4 (expr-count expr)))
      :rule-classes :linear
-     :expand ((expr-count expr))))
+     :expand (expr-count expr))
+
+   (defrulel dirdeclor-count-when-function-linear
+     (implies (equal (dirdeclor-kind dirdeclor) :function-params)
+              (<= 4 (dirdeclor-count dirdeclor)))
+     :rule-classes :linear
+     :expand (dirdeclor-count dirdeclor))
+
+   (defrulel dirabsdeclor-count-when-function-linear
+     (implies (equal (dirabsdeclor-kind dirabsdeclor) :function)
+              (<= 4 (dirabsdeclor-count dirabsdeclor)))
+     :rule-classes :linear
+     :expand (dirabsdeclor-count dirabsdeclor)))
 
   ///
 
@@ -7648,6 +7677,12 @@
             '(:in-theory (enable valid-decl-spec-list)))
            ((acl2::occur-lst '(acl2::flag-is 'valid-initer) clause)
             '(:expand ((valid-initer initer ctx lifetime vstate steps))))
+           ((acl2::occur-lst '(acl2::flag-is 'valid-dirdeclor) clause)
+            '(:expand ((valid-dirdeclor dirdeclor fundef-params-p type vstate)
+                       (valid-dirdeclor dirdeclor nil type vstate)
+                       (valid-dirdeclor dirdeclor t type vstate))))
+           ((acl2::occur-lst '(acl2::flag-is 'valid-dirabsdeclor) clause)
+            '(:expand ((valid-dirabsdeclor dirabsdeclor type vstate))))
            (t nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
