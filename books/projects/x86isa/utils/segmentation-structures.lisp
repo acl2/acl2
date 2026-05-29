@@ -248,26 +248,31 @@
         (unsigned-byte-p 16 x))
    :rule-classes nil))
 
-;; System-Segment descriptors (64-bit mode): Note that the following
-;; layouts are different in 32-bit mode, or even in compatibility mode.
-
 (defbitstruct system-segment-descriptorBits
-  :short "AMD manual, Jun'23, Vol. 2, Figure 4-22."
+  :short "System segment descriptors, in 64-bit mode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Intel manual, Mar'26, Vol. 3, Figure 3-11;
+     AMD manual, Mar'26, Vol. 2, Figure 4-22.")
+   (xdoc::p
+    "This is for 64-bit mode;
+     in 32-bit mode, the layout is different."))
   ((limit15-0 16bits)
    (base15-0 16bits)
    (base23-16 8bits)
    (type 4bits)
-   (s bitp) ;; S = 0 in 64-bit mode
-   (dpl 2bits)
-   (p bitp)
+   (s bitp)            ;; System descriptor (0 = system; 1 = code or data)
+   (dpl 2bits)         ;; Descriptor privilege level
+   (p bitp)            ;; Segment present
    (limit19-16 4bits)
-   (avl bitp)
-   (res1 2bits) ;; L and D/B bits are ignored.
-   (g bitp)
+   (avl bitp)          ;; Available for use by system software
+   (res1 2bits)        ;; L and D/B bits are ignored
+   (g bitp)            ;; Granularity
    (base31-24 8bits)
    (base63-32 32bits)
    (res2 8bits)
-   (all-zeroes? 5bits) ;; Check whether these are all zeroes or not.
+   (all-zeroes? 5bits) ;; Must all be 0
    (res3 19bits))
   :msb-first nil
   :inline t)
@@ -281,7 +286,7 @@
 (defbitstruct system-segment-descriptor-attributesBits
   :short "Subset of @(tsee system-segment-descriptorBits)."
   ((type 4bits)
-   (s bitp) ;; S = 0 in 64-bit mode
+   (s bitp)
    (dpl 2bits)
    (p bitp)
    (avl bitp)
@@ -297,18 +302,26 @@
    :rule-classes nil))
 
 (defbitstruct call-gate-descriptorBits
-  :short "AMD manual, Jun'23, Vol. 2, Figure 4-23."
+  :short "Call-gate descriptors, in 64-bit mode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Intel manual, Mar'26, Vol. 3, Figure 3-11;
+     AMD manual, Mar'26, Vol. 2, Figure 4-23.")
+   (xdoc::p
+    "This is for 64-bit mode;
+     in 32-bit mode, the layout is different."))
   ((offset15-0 16bits)
    (selector 16bits)
    (res1 8bits)
    (type 4bits)
-   (s bitp) ;; S = 0 in 64-bit mode
-   (dpl 2bits)
-   (p bitp)
+   (s bitp)             ;; System descriptor (0 = system; 1 = code or data)
+   (dpl 2bits)          ;; Descriptor privilege level
+   (p bitp)             ;; Segment present
    (offset31-16 16bits)
    (offset63-32 32bits)
    (res2 8bits)
-   (all-zeroes? 5bits) ;; Check whether these are all zeroes or not.
+   (all-zeroes? 5bits)  ;; Must all be 0
    (res3 19bits))
   :msb-first nil
   :inline t)
@@ -336,21 +349,28 @@
    :rule-classes nil))
 
 (defbitstruct interrupt/trap-gate-descriptorBits
-  :short "AMD manual, Jun'23, Vol. 2, Figures 4-24 and 4-18."
+  :short "Interrupt-gate and trap-gate descriptors, in 64-bit mode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Intel manual, Mar'26, Vol. 3, Figure 3-11;
+     AMD manual, Mar'26, Vol. 2, Figures 4-24.")
+   (xdoc::p
+    "This is for 64-bit mode;
+     in 32-bit mode, the layout is different."))
   ((offset15-0 16bits)
    (selector 16bits)
-   (ist 3bits)
+   (ist 3bits)          ;; Interrupt stack table
    (res1 5bits)
    (type 4bits)
-   (s bitp) ;; S = 0 in 64-bit mode
-   (dpl 2bits)
-   (p bitp)
+   (s bitp)             ;; System descriptor (0 = system; 1 = code or data)
+   (dpl 2bits)          ;; Descriptor privilege level
+   (p bitp)             ;; Segment present
    (offset31-16 16bits)
    (offset63-32 32bits)
    (res2 8bits)
-   (all-zeros? 5bits) ;; Check whether these are all zeroes or not.
-   (res3 19bits)
-   )
+   (all-zeros? 5bits)   ;; Must all be 0
+   (res3 19bits))
   :msb-first nil
   :inline t)
 
@@ -361,13 +381,13 @@
    :rule-classes nil))
 
 (defbitstruct interrupt/trap-gate-descriptor-attributesBits
-  :short "Subset of @(tsee interrupt/trap-gate-descriptorBits) above."
+  :short "Subset of @(tsee interrupt/trap-gate-descriptorBits)."
   ((ist 3bits)
    (type 4bits)
    (s bitp)
    (dpl 2bits)
    (p bitp)
-   (unknownBits 5bits)) ;; TODO
+   (unknownBits 5bits))
   :msb-first nil
   :inline t)
 
