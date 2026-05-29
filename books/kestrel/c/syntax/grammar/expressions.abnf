@@ -29,4 +29,13 @@ primary-expression-std = identifier
                        / "(" expression ")"
                        / generic-selection
 
+generic-selection =
+    %s"_Generic" "(" assignment-expression "," generic-assoc-list ")"
+
+generic-assoc-list = generic-association
+                   / generic-assoc-list "," generic-association
+
+generic-association = type-name ":" assignment-expression
+                    / %s"default" ":" assignment-expression
+
 ; TODO: add other kinds of expressions
