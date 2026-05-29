@@ -634,9 +634,10 @@
                        (set::mergesort bind.iparams?.val)
                        dim-subst
                        shape-subst)))
-                  (and (dim/shape-subst-no-capture-p (set::mergesort bind.iparams?.val)
-                                                     dim-subst
-                                                     shape-subst)
+                  (and (dim/shape-subst-no-capture-p
+                        (set::mergesort bind.iparams?.val)
+                        dim-subst
+                        shape-subst)
                        (var+type-list-subst-ispace-vars-no-capture-p
                         bind.params
                         dim-subst
@@ -812,6 +813,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local
+ (defrule string-setp-of-mergesort
+   (implies (string-listp x)
+            (string-setp (set::mergesort x)))
+   :induct t
+   :enable (set::mergesort string-listp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define renaming-no-capture-p ((names string-setp)
+                               (renam1 string-string-mapp)
+                               (renam2 string-string-mapp))
+  :returns (yes/no booleanp)
+  :short "Check that a set of bound variable names is not captured
+          by a renaming consisting of two string-to-string maps."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When a renaming of ispace or type variables descends under a construct
+     that binds the variables whose names are in @('names'),
+     after those bound variables have been removed from the renaming,
+     none of the bound names must occur among the values of the renaming,
+     otherwise renaming under the binder would capture them.
+     We check that @('names') is disjoint from the omap values
+     of the two renaming maps.")
+   (xdoc::p
+    "This is shared by the cases of
+     @(tsee rename-ispace-vars-no-capture-p) and
+     @(tsee rename-type-vars-no-capture-p)
+     for the constructs that bind variables:
+     the two maps are the dimension and shape renamings in the ispace case,
+     and the atom-kind and array-kind renamings in the type case."))
+  (set::emptyp
+   (set::intersect
+    (acl2::string-sfix names)
+    (set::union (omap::values (string-string-map-fix renam1))
+                (omap::values (string-string-map-fix renam2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deffold-reduce rename-ispace-vars-no-capture-p
   :short "Check that renaming free ispace variables in ASTs
           does not result in variable capture."
@@ -850,11 +891,10 @@
                                         (string-string-map-fix dim-renam)))
               (shape-renam (omap::delete* bound-shape-vars
                                           (string-string-map-fix shape-renam))))
-           (and (set::emptyp
-                 (set::intersect
-                  (set::mergesort (ispace-var-list->name type.params))
-                  (set::union (omap::values dim-renam)
-                              (omap::values shape-renam))))
+           (and (renaming-no-capture-p
+                 (set::mergesort (ispace-var-list->name type.params))
+                 dim-renam
+                 shape-renam)
                 (type-rename-ispace-vars-no-capture-p type.body
                                                       dim-renam
                                                       shape-renam))))
@@ -865,11 +905,10 @@
                                         (string-string-map-fix dim-renam)))
               (shape-renam (omap::delete* bound-shape-vars
                                           (string-string-map-fix shape-renam))))
-           (and (set::emptyp
-                 (set::intersect
-                  (set::mergesort (ispace-var-list->name type.params))
-                  (set::union (omap::values dim-renam)
-                              (omap::values shape-renam))))
+           (and (renaming-no-capture-p
+                 (set::mergesort (ispace-var-list->name type.params))
+                 dim-renam
+                 shape-renam)
                 (type-rename-ispace-vars-no-capture-p type.body
                                                       dim-renam
                                                       shape-renam)))))
@@ -912,11 +951,10 @@
                                          (string-string-map-fix atom-renam)))
               (array-renam (omap::delete* bound-array-vars
                                           (string-string-map-fix array-renam))))
-           (and (set::emptyp
-                 (set::intersect
-                  (set::mergesort (type-var-list->name type.params))
-                  (set::union (omap::values atom-renam)
-                              (omap::values array-renam))))
+           (and (renaming-no-capture-p
+                 (set::mergesort (type-var-list->name type.params))
+                 atom-renam
+                 array-renam)
                 (type-rename-type-vars-no-capture-p type.body
                                                     atom-renam
                                                     array-renam)))))
