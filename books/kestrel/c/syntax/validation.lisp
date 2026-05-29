@@ -13,6 +13,7 @@
 (include-book "initializer-validation")
 (include-book "validation-tables")
 (include-book "validation-annotations")
+(include-book "null-pointer-constants")
 (include-book "validation-information")
 (include-book "validator")
 
@@ -37,5 +38,6 @@
   :order-subtopics (initializer-validation
                     validation-tables
                     validation-annotations
+                    null-pointer-constants
                     validation-information
                     validator))
