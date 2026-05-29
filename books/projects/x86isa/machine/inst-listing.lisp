@@ -10394,7 +10394,7 @@
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BSF" (OP :OP #xFBC :PFX :NO-PREFIX)
           (ARG :OP1 '(G V) :OP2 '(E V))
-          '(X86-BSF-OP/EN-RM)
+          '(X86-BSF)
           '((:UD (UD-LOCK-USED))))
     (INST "TZCNT" (OP :OP #xFBC :PFX :F3)
           (ARG :OP1 '(G V) :OP2 '(E V))

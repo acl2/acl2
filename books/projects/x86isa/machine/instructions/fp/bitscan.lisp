@@ -88,7 +88,7 @@
              :in-theory (e/d* () (bsf unsigned-byte-p))))
     :rule-classes :linear))
 
-(def-inst x86-bsf-Op/En-RM
+(def-inst x86-bsf
 
   :parents (two-byte-opcodes fp-opcodes)
 
