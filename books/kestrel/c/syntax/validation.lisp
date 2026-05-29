@@ -12,6 +12,7 @@
 
 (include-book "initializer-validation")
 (include-book "validation-tables")
+(include-book "validation-annotations")
 (include-book "validation-information")
 (include-book "validator")
 
@@ -35,5 +36,6 @@
      and also annotates the ASTs with information (e.g. calculated types)."))
   :order-subtopics (initializer-validation
                     validation-tables
+                    validation-annotations
                     validation-information
                     validator))
