@@ -4,6 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2026, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,10 +36,14 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author:
+; Alessandro Coglio   <www.alessandrocoglio.info>
 
 (in-package "X86ISA")
 
 (include-book "basic-structs")
+
+(include-book "xdoc/constructors" :dir :system)
 
 ;; We do these once, here, to avoid each defbitstruct below doing them locally:
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -56,22 +61,32 @@
 ;; ----------------------------------------------------------------------
 
 (defbitstruct hidden-segment-registerBits
-  :short "Intel manual, Feb'26, Vol. 3A, Figure 3-7."
-  ((base-addr 64bits)  ;; Segment Base Address
+  :short "Hidden part of segment registers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As shown in Intel manual, Mar 2026, Vol. 3A, Figure 3-7,
+     segment registers have a hidden part,
+     consisting of three fields.
+     These fields are \"cached\" from the segment descriptor (Figure 3-8):")
+   (xdoc::ul
+    (xdoc::li
+     "The base address is 32 bits in the segment descriptor,
+      so the 64 bits in @('base-addr') in this bitstruct can hold it.")
+    (xdoc::li
+     "The segment limit is 20 bits in the segment descriptor,
+      and based on the G (granularity) flag it covers up to 4 GiB,
+      so the 32 bits in @('limit') in this bitstruct can hold it.
+      IMPORTANT: this means that the cached limit field must be
+      populated only after G flag is taken into account.")
+    (xdoc::li
+     "There are 12 remaining bits in the segment descriptor,
+      so the 16 bits in @('attr') in this bitstruct can hold them.")))
+  ((base-addr 64bits)  ;; Base Address
    (limit     32bits)  ;; Segment Limit
    (attr      16bits)) ;; Attributes
   :inline t
   :msb-first nil)
-; These fields are "cached" from the segment descriptor (Figure 3-8):
-; - The Segment Base is 32 bits in the segment descriptor,
-;   so the 64 bits in BASE-ADDR above can hold it.
-; - The Segment Limit is 20 bits in the segment descriptor,
-;   and based on the G (granularity) flag it covers up to 4 GiB,
-;   so the 32 bits in LIMIT above can hold it.
-;   IMPORTANT: this means that the cached limit field must be
-;   populated only after G flag is taken into account.
-; - There are 12 remaining bits in the segment descriptor,
-;   so the 16 bits in ATTR above can hold them.
 
 (local
  (defthm hidden-segment-register-layout-ok
@@ -80,8 +95,14 @@
    :rule-classes nil))
 
 (defbitstruct segment-selectorBits
-  :short "Intel manual, Feb'26, Vol. 3A, Figure 3-6."
-  ((rpl    2bits)  ;; Requestor Privilege Level (RPL)
+  :short "Segment selectors."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the visible part of segment registers:
+     see Intel manual, Mar 2026, Vol. 3A, Figure 3-7.
+     The layout of a segment selector is in Figure 3-6."))
+  ((rpl    2bits)  ;; Requested Privilege Level (RPL)
    (ti      bitp)  ;; Table Indicator (0 = GDT, 1 = LDT)
    (index 13bits)) ;; Index of descriptor in GDT or LDT
   :inline t
