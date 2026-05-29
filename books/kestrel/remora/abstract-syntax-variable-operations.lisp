@@ -813,15 +813,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local
- (defrule string-setp-of-mergesort
-   (implies (string-listp x)
-            (string-setp (set::mergesort x)))
-   :induct t
-   :enable (set::mergesort string-listp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define renaming-no-capture-p ((names string-setp)
                                (renam1 string-string-mapp)
                                (renam2 string-string-mapp))
