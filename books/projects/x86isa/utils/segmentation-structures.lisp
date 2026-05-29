@@ -114,23 +114,6 @@
         (unsigned-byte-p 16 x))
    :rule-classes nil))
 
-(defbitstruct interrupt/trap-gate-descriptor-attributesBits
-  :short "Subset of @(tsee interrupt/trap-gate-descriptorBits) above."
-  ((ist 3bits)
-   (type 4bits)
-   (s bitp)
-   (dpl 2bits)
-   (p bitp)
-   (unknownBits 5bits)) ;; TODO
-  :msb-first nil
-  :inline t)
-
-(local
- (defthm interrupt/trap-gate-descriptor-attributes-layout-ok
-   (iff (interrupt/trap-gate-descriptor-attributesBits-p x)
-        (unsigned-byte-p 16 x))
-   :rule-classes nil))
-
 (defbitstruct gdtr/idtrBits
   :short "Intel manual, Mar'26, Vol. 2, Figure 2-6;
           AMD manual, Mar'26, Vol. 2, Figures 4-7 and 4-8."
@@ -363,6 +346,23 @@
  (defthm interrupt/trap-gate-descriptor-layout-ok
    (iff (interrupt/trap-gate-descriptorBits-p x)
         (unsigned-byte-p 128 x))
+   :rule-classes nil))
+
+(defbitstruct interrupt/trap-gate-descriptor-attributesBits
+  :short "Subset of @(tsee interrupt/trap-gate-descriptorBits) above."
+  ((ist 3bits)
+   (type 4bits)
+   (s bitp)
+   (dpl 2bits)
+   (p bitp)
+   (unknownBits 5bits)) ;; TODO
+  :msb-first nil
+  :inline t)
+
+(local
+ (defthm interrupt/trap-gate-descriptor-attributes-layout-ok
+   (iff (interrupt/trap-gate-descriptor-attributesBits-p x)
+        (unsigned-byte-p 16 x))
    :rule-classes nil))
 
 ;; ----------------------------------------------------------------------
