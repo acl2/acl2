@@ -838,7 +838,7 @@
      and the atom-kind and array-kind renamings in the type case."))
   (set::emptyp
    (set::intersect
-    (acl2::string-sfix names)
+    (string-sfix names)
     (set::union (omap::values (string-string-map-fix renam1))
                 (omap::values (string-string-map-fix renam2))))))
 
