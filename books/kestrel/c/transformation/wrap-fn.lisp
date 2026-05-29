@@ -25,7 +25,7 @@
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/code-ensembles")
-(include-book "../syntax/validation-information")
+(include-book "../syntax/validation-annotations")
 (include-book "../syntax/validator")
 (include-book "utilities/collect-idents")
 (include-book "utilities/fresh-ident")
@@ -131,12 +131,13 @@
   (b* (((reterr) nil nil nil)
        (blacklist (ident-set-fix blacklist))
        (params (param-declon-list-fix params))
-       ((when (equal params
-                     (list (make-param-declon
-                             :specs (list (decl-spec-typespec
-                                            (c$::type-spec-void)))
-                             :declor (param-declor-none)
-                             :attribs nil))))
+       ((when (and (not (endp params))
+                   (endp (rest params))
+                   (equal (c$::param-declon->specs (first params))
+                          (list (decl-spec-typespec (c$::type-spec-void))))
+                   (equal (c$::param-declon->declor (first params))
+                          (param-declor-none))
+                   (not (c$::param-declon->attribs (first params)))))
         ;; Special (void) case
         (retok blacklist params nil)))
     (wrap-fn-process-param-declon-list-loop params

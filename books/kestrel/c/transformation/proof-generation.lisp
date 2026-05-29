@@ -14,7 +14,7 @@
 
 (include-book "../syntax/ascii-identifiers")
 (include-book "../syntax/unambiguity")
-(include-book "../syntax/validation-information")
+(include-book "../syntax/validation-annotations")
 
 (include-book "kestrel/fty/pseudo-event-form-list" :dir :system)
 

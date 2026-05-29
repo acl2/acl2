@@ -107,7 +107,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ types
-  :parents (validation-information)
+  :parents (validation)
   :short "C types used by the validator."
   :long
   (xdoc::topstring

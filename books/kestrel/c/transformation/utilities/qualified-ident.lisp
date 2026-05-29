@@ -22,7 +22,7 @@
 (include-book "centaur/fty/deftypes" :dir :system)
 
 (include-book "../../syntax/abstract-syntax-operations")
-(include-book "../../syntax/validation-information")
+(include-book "../../syntax/validation-annotations")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (acl2::controlled-configuration)

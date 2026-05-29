@@ -68,7 +68,7 @@
       ") "
       (xdoc::seetopic "c$::code-ensembles" "code ensemble")
       ", in particular containing "
-      (xdoc::seetopic "c$::validation-information" "validation information")
+      (xdoc::seetopic "c$::validation-annotations" "validation information")
       ". This constant could result from @(tsee c$::input-files)
        or from some other "
       (xdoc::seetopic "transformation-tools" "transformation")
