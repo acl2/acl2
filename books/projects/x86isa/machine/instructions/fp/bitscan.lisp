@@ -44,7 +44,6 @@
 ;; ======================================================================
 
 (include-book "../../decoding-and-spec-utils")
-(include-book "base")
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ; =============================================================================
