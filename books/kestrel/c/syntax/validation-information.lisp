@@ -1360,8 +1360,12 @@
    (xdoc::p
     "This is the type of the annotations that
      the validator adds to parameter declarations.
-     The information consists of the type of the declared parameter."))
-  ((type type))
+     The information consists of the optional type of the declared parameter.
+     The type is absent for the special @('(void)') syntax
+     that denotes an empty parameter list,
+     where the single parameter declaration
+     does not actually declare a parameter."))
+  ((type type-option))
   :pred param-declon-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

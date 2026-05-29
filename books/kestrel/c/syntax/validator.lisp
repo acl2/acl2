@@ -5504,7 +5504,7 @@
                               (not (param-declon->attribs
                                      (first dirdeclor.params)))))
                    (retok (list (change-param-declon (first dirdeclor.params)
-                                                    :info (param-declon-info (type-void))))
+                                                    :info (make-param-declon-info :type nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -5763,7 +5763,7 @@
                               (not (param-declon->attribs
                                      (first dirabsdeclor.params)))))
                    (retok (list (change-param-declon (first dirabsdeclor.params)
-                                                    :info (param-declon-info (type-void))))
+                                                    :info (make-param-declon-info :type nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
