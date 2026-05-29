@@ -939,6 +939,117 @@
     x86))
 
 ;; ======================================================================
+;; INSTRUCTION: LZCNT
+;; ======================================================================
+
+;; Helper for the LZCNT instruction.
+(define lzcnt ((bits natp)
+               (i+1 natp) ; one plus the index of the bit being examined
+               (n natp))
+  :guard (<= i+1 bits)
+  :returns (lzcnt-result natp
+                         :hyp (and (natp i+1)
+                                   (natp bits)
+                                   (<= i+1 bits))
+                         :hints (("Goal" :in-theory (enable natp))))
+  :hints (("Goal" :in-theory (enable natp)))
+  (if (mbt (and (natp i+1)
+                (natp bits)
+                (<= i+1 bits)))
+      (b* (((when (equal i+1 0)) bits)
+           (i (1- i+1))
+           ((when (logbitp i n)) (- bits i+1)))
+        (lzcnt bits i n))
+    nil)
+  ///
+  (defthm lzcnt-bound
+    (implies (and (natp i+1)
+                  (natp bits)
+                  (<= i+1 bits))
+             (<= (lzcnt bits i+1 n) bits))
+    :rule-classes :linear))
+
+(def-inst x86-lzcnt
+
+  :parents (two-byte-opcodes)
+
+  :short "LZCNT: Count the number of leading zero bits."
+
+  :long
+  (xdoc::topstring
+   (xdoc::codeblock
+    "F3       0F BD /r   LZCNT r16. r/m16"
+    "F3       0F BD /r   LZCNT r32. r/m32"
+    "F3 REX.W 0F BD /r   LZCNT r64. r/m64"))
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :guard-hints (("Goal" :in-theory (e/d () ())))
+
+  :modr/m t
+
+  :body
+
+  (b* (((the (integer 2 8) operand-size)
+        (select-operand-size
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
+
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (inst-ac? t)
+       ((mv flg0
+            source
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               #.*gpr-access*
+                                               operand-size
+                                               inst-ac?
+                                               nil ;; not memory pointer operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ;; no immediate data
+                                               x86))
+       ((when flg0) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       (result (lzcnt (ash operand-size 3) 0 source))
+
+       ;; Update the x86 state.
+       ;; ZF and CF affected; PF, AF, SF, and OF undefined.
+       (x86 (!rgfi-size operand-size
+                        (reg-index reg rex-byte *r*)
+                        result
+                        rex-byte
+                        x86))
+       (x86
+        (let* ((x86 (!flgi :zf (if (equal result 0) 1 0) x86))
+               (x86 (!flgi :cf (if (equal source 0) 1 0) x86))
+               (x86 (!flgi-undefined :pf x86))
+               (x86 (!flgi-undefined :af x86))
+               (x86 (!flgi-undefined :sf x86))
+               (x86 (!flgi-undefined :of x86)))
+          x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
+;; ======================================================================
 ;; INSTRUCTION: BSWAP
 ;; ======================================================================
 

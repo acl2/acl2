@@ -10406,7 +10406,7 @@
           '((:UD (UD-LOCK-USED))))
     (INST "LZCNT" (OP :OP #xFBD :PFX :F3)
           (ARG :OP1 '(G V) :OP2 '(E V))
-          'NIL
+          '(X86-LZCNT)
           '((:UD (UD-LOCK-USED))))
     (INST "MOVSX" (OP :OP #xFBE)
           (ARG :OP1 '(G V) :OP2 '(E B))
