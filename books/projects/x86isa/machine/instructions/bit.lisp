@@ -37,11 +37,11 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-; Original Author(s):
+; Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
-; Contributing Author(s):
 ; Alessandro Coglio   <www.alessandrocoglio.info>
 ; Yahya Sohail        <yahya.sohail@intel.com>
+; Cuong Chau          <ckcuong@cs.utexas.edu>
 
 (in-package "X86ISA")
 
@@ -826,6 +826,135 @@
           x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
+
+; =============================================================================
+; INSTRUCTION: BSF
+; =============================================================================
+
+(define bsf ((index natp)
+             (x natp))
+  :returns (index natp :hyp (natp index)
+                  :rule-classes :type-prescription)
+  :prepwork
+  ((local
+    (in-theory (e/d* (bitops::ihsext-inductions bitops::ihsext-recursive-redefs)
+                     ()))))
+  (if (zp x)
+      0
+    (if (equal (loghead 1 x) 1)
+        index
+      (bsf (1+ index) (logtail 1 x))))
+
+  ///
+
+  (defthm bsf-zero
+    (equal (bsf index 0) 0))
+
+  (defthm bsf-posp-strict-lower-bound
+    (implies (and (posp x) (natp index))
+             (<= index (bsf index x)))
+    :rule-classes :linear)
+
+  (defrule bsf-posp-strict-upper-bound
+    (implies (and (posp x) (natp index))
+             (<= (bsf index x) (+ -1 (integer-length x) index)))
+    :rule-classes :linear
+    :disable acl2::mod-x-y-=-x+y-for-rationals
+    :prep-books ((set-induction-depth-limit 2)))
+
+  (defthm bsf-64
+    (implies (unsigned-byte-p 64 x)
+             (< (bsf 0 x) 64))
+    :hints (("Goal"
+             :cases ((zp x))
+             :in-theory (e/d* () (bsf unsigned-byte-p))))
+    :rule-classes :linear))
+
+(def-inst x86-bsf
+
+  :parents (two-byte-opcodes fp-opcodes)
+
+  :short "Bit scan forward"
+
+  :long
+  "<h3>Op/En = RM: \[OP REG, R/M\]</h3>
+          0F BC: BSF r16, r/m16<br/>
+          0F BC: BSF r32, r/m32<br/>
+  REX.W + 0F BC: BSF r64, r/m64<br/>"
+
+  :guard-hints (("Goal" :in-theory (enable reg-index)))
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
+  :body
+
+  (b* (((the (integer 2 8) operand-size)
+        (select-operand-size
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
+
+       ((the (unsigned-byte 4) rgf-index)
+        (reg-index reg rex-byte #.*r*))
+
+       (p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override*
+                 (prefixes->adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (inst-ac? t)
+       ((mv flg0
+            reg/mem
+            (the (integer 0 4) increment-RIP-by)
+            (the (signed-byte 64) ?addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                                #.*gpr-access*
+                                                operand-size
+                                                inst-ac?
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Update the x86 state:
+       (x86 (write-*ip proc-mode temp-rip x86))
+       (zf (if (int= reg/mem 0) 1 0))
+       (x86 (!flgi :zf zf x86))
+       ;; [Shilpi:] CF, OF, SF, AF, PF are always undefined.
+       (x86 (!flgi-undefined :cf x86))
+       (x86 (!flgi-undefined :of x86))
+       (x86 (!flgi-undefined :sf x86))
+       (x86 (!flgi-undefined :af x86))
+       (x86 (!flgi-undefined :pf x86))
+
+       ;; [Shilpi:] DEST (register rgf-index) should be undefined if
+       ;; reg/mem = 0.
+       ;; Yahya: AMD documents this instruction as leaving the destination
+       ;; operand unchanged when the source is 0. While Intel says it is
+       ;; undefined, their CPUs do the same thing in practice, and GCC appears
+       ;; to generate code relying on this behavior, so I use this behavior instead.
+       (x86 (if (int= reg/mem 0)
+              x86
+              (!rgfi-size operand-size rgf-index (bsf 0 reg/mem) rex-byte x86))))
+      x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: TZCNT
