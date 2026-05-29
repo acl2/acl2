@@ -25,7 +25,7 @@
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/code-ensembles")
-(include-book "../syntax/validation-information")
+(include-book "../syntax/validation-annotations")
 (include-book "../syntax/validator")
 (include-book "utilities/collect-idents")
 (include-book "utilities/fresh-ident")

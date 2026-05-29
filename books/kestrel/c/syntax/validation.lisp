@@ -10,11 +10,12 @@
 
 (in-package "C$")
 
+(include-book "uid")
+(include-book "types")
 (include-book "initializer-validation")
 (include-book "validation-tables")
 (include-book "validation-annotations")
 (include-book "null-pointer-constants")
-(include-book "validation-information")
 (include-book "validator")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -35,9 +36,10 @@
     "We provide an executable validator,
      which performs a (currently conservative) validation of C code,
      and also annotates the ASTs with information (e.g. calculated types)."))
-  :order-subtopics (initializer-validation
+  :order-subtopics (uid
+                    types
+                    initializer-validation
                     validation-tables
                     validation-annotations
                     null-pointer-constants
-                    validation-information
                     validator))

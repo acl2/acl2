@@ -268,7 +268,7 @@
        " the disambiguated abstract syntax representation
         obtained from the disambiguator,
         which annotated the abstract syntax with "
-       (xdoc::seetopic "validation-information" "validation information")
+       (xdoc::seetopic "validation-annotations" "validation information")
        "."))
      (xdoc::p
       "These levels of processing are ordered as")

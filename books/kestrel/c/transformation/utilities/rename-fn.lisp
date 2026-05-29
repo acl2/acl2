@@ -13,7 +13,7 @@
 (include-book "kestrel/fty/deffold-map" :dir :system)
 
 (include-book "../../syntax/abstract-syntax-trees")
-(include-book "../../syntax/validation-information")
+(include-book "../../syntax/validation-annotations")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 

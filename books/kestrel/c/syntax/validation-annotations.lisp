@@ -979,7 +979,7 @@
     :guard (and (stmt-unambp stmt)
                 (stmt-annop stmt))
     :returns (types type-option-setp)
-    :parents (validation-information stmts-types)
+    :parents (validation-annotations stmts-types)
     :short "Types of a statement, from the validation information."
     :long
     (xdoc::topstring
@@ -1028,7 +1028,7 @@
     :guard (and (comp-stmt-unambp cstmt)
                 (comp-stmt-annop cstmt))
     :returns (types type-option-setp)
-    :parents (validation-information stmts-types)
+    :parents (validation-annotations stmts-types)
     :short "Types of a compound statement, from the validation information."
     (block-item-list-types (comp-stmt->items cstmt))
     :measure (comp-stmt-count cstmt))
@@ -1037,7 +1037,7 @@
     :guard (and (block-item-unambp item)
                 (block-item-annop item))
     :returns (types type-option-setp)
-    :parents (validation-information stmts-types)
+    :parents (validation-annotations stmts-types)
     :short "Types of a block item, from the validation information."
     :long
     (xdoc::topstring
@@ -1055,7 +1055,7 @@
     :guard (and (block-item-list-unambp items)
                 (block-item-list-annop items))
     :returns (types type-option-setp)
-    :parents (validation-information stmts-types)
+    :parents (validation-annotations stmts-types)
     :short "Types of a list of block items, from the validation information."
     :long
     (xdoc::topstring
