@@ -818,7 +818,7 @@
                                           (string-string-map-fix shape-renam))))
            (and (set::emptyp
                  (set::intersect
-                  (set::mergesort type.params)
+                  (set::mergesort (ispace-var-list->name type.params))
                   (set::union (omap::values dim-renam)
                               (omap::values shape-renam))))
                 (type-rename-ispace-vars-no-capture-p type.body
@@ -833,7 +833,7 @@
                                           (string-string-map-fix shape-renam))))
            (and (set::emptyp
                  (set::intersect
-                  (set::mergesort type.params)
+                  (set::mergesort (ispace-var-list->name type.params))
                   (set::union (omap::values dim-renam)
                               (omap::values shape-renam))))
                 (type-rename-ispace-vars-no-capture-p type.body
@@ -865,8 +865,8 @@
      it does not depend on which keys of the renaming
      are actually free in the body of each binder."))
   :types (types)
-  :extra-args ((atom-renam string-type-mapp)
-               (array-renam string-type-mapp))
+  :extra-args ((atom-renam string-string-mapp)
+               (array-renam string-string-mapp))
   :result booleanp
   :default t
   :combine and
@@ -875,12 +875,12 @@
          (b* (((mv bound-atom-vars bound-array-vars)
                (atom/array-names-of-type-vars (set::mergesort type.params)))
               (atom-renam (omap::delete* bound-atom-vars
-                                         (string-type-map-fix atom-renam)))
+                                         (string-string-map-fix atom-renam)))
               (array-renam (omap::delete* bound-array-vars
-                                          (string-type-map-fix array-renam))))
+                                          (string-string-map-fix array-renam))))
            (and (set::emptyp
                  (set::intersect
-                  (set::mergesort type.params)
+                  (set::mergesort (type-var-list->name type.params))
                   (set::union (omap::values atom-renam)
                               (omap::values array-renam))))
                 (type-rename-type-vars-no-capture-p type.body
