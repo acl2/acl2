@@ -16,6 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define closedp ((x mapp))
+  :parents (omaps)
   :returns (yes/no booleanp)
   :short "Check if an omap is closed under its domain."
   :long

@@ -103,6 +103,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk identityp-sk ((x mapp))
+  :parents (identityp)
+  :short "An alternative definition of @(tsee identityp) using a skolem
+  function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This definition is sometimes preferable to @(tsee identityp). In
+  particular, to support @(see pick-a-point)-style reasoning."))
   (forall (k)
           (implies (assoc k x)
                    (equal (assoc k x)
