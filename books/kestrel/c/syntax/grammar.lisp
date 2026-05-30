@@ -401,13 +401,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgrammar expressions
-  "standard pragmas in all the C dialects")
+  "expressions in all the C dialects")
 
 (defgrammar expressions-std
-  "standard pragmas in the standard C dialects (i.e. without extensions)")
+  "expressions in the standard C dialects (i.e. without extensions)")
 
 (defgrammar expressions-ext
-  "standard pragmas in the non-standard C dialects (i.e. with extensions)")
+  "expressions in the non-standard C dialects (i.e. with extensions)")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
