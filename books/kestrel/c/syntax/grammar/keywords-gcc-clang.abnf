@@ -15,7 +15,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Keywords common to the GCC and Clang dialects.
+; Keywords in both the GCC and the Clang dialects.
 ; The GCC and Clang documentation does not seem to have
 ; a clear list of all their additional keywords in the style of [C17] and [C23].
 ; The list is inferred from the documentation,

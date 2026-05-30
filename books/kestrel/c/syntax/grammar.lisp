@@ -27,6 +27,7 @@
 ; (depends-on "grammar/keywords-c17.abnf")
 ; (depends-on "grammar/keywords-c23.abnf")
 ; (depends-on "grammar/keywords-gcc-clang.abnf")
+; (depends-on "grammar/keywords-gcc.abnf")
 ; (depends-on "grammar/keywords-c17-noext.abnf")
 ; (depends-on "grammar/keywords-c17-gcc.abnf")
 ; (depends-on "grammar/keywords-c17-clang-nocheri.abnf")
@@ -221,6 +222,9 @@
 
 (defgrammar keywords-gcc-clang
   "keywords that are specific to both the GCC and the Clang dialects")
+
+(defgrammar keywords-gcc
+  "keywords that are specific to the GCC dialects")
 
 (defgrammar keywords-c17-noext
   "keywords that are specific to the C17 dialect without extensions")
@@ -463,6 +467,7 @@
             *grammar-keywords-c17*
             (cond (dialect.gcc (append
                                 *grammar-keywords-gcc-clang*
+                                *grammar-keywords-gcc*
                                 *grammar-keywords-c17-gcc*))
                   (dialect.clang (append
                                   *grammar-keywords-gcc-clang*
@@ -474,6 +479,7 @@
             *grammar-keywords-c23*
             (cond (dialect.gcc (append
                                 *grammar-keywords-gcc-clang*
+                                *grammar-keywords-gcc*
                                 *grammar-keywords-c23-gcc*))
                   (dialect.clang (append
                                   *grammar-keywords-gcc-clang*
