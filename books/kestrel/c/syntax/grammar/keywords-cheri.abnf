@@ -11,13 +11,15 @@
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
 ; This file contains grammar rules for keywords
-; that form subsets for the various C dialects.
-; Together with the rules in the dialect-specific files keywords-*.abnf,
-; they define the keywords of each C dialect.
+; that are specific to the CHERI dialects.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Keywords in the CHERI dialects.
+; The CHERI documentation does not seem to have
+; a clear list of all their additional keywords in the style of [C17] and [C23].
+; The list is inferred from the documentation,
+; but the lists may be incomplete, and it will be extended as needed.
 
 keyword-cheri = %s"__capability"
               / %s"__intcap_t"
