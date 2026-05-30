@@ -22,7 +22,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ formalized-subset
+(defxdoc+ abstract-syntax-formal-subset
   :parents (syntax-for-tools)
   :short "Subset of the abstract syntax that has a formal semantics."
   :long
@@ -284,7 +284,7 @@
   (define expr-formalp ((expr exprp))
     :guard (expr-unambp expr)
     :returns (yes/no booleanp)
-    :parents (formalized-subset exprs-formalp)
+    :parents (abstract-syntax-formal-subset exprs-formalp)
     :short "Check if an expression has a formal dynamic semantics."
     :long
     (xdoc::topstring
@@ -375,7 +375,7 @@
   (define expr-list-formalp ((exprs expr-listp))
     :guard (expr-list-unambp exprs)
     :returns (yes/no booleanp)
-    :parents (formalized-subset exprs-formalp)
+    :parents (abstract-syntax-formal-subset exprs-formalp)
     :short "Check if all the expressions in a list of expressions
             have a formal dynamic semantics."
     (or (endp exprs)
@@ -656,7 +656,7 @@
   (define stmt-formalp ((stmt stmtp))
     :guard (stmt-unambp stmt)
     :returns (yes/no booleanp)
-    :parents (formalized-subset stmts-formalp)
+    :parents (abstract-syntax-formal-subset stmts-formalp)
     :short "Check if a statement has formal dynamic semantics."
     :long
     (xdoc::topstring
@@ -700,7 +700,7 @@
   (define comp-stmt-formalp ((cstmt comp-stmtp))
     :guard (comp-stmt-unambp cstmt)
     :returns (yes/no booleanp)
-    :parents (formalized-subset stmts-formalp)
+    :parents (abstract-syntax-formal-subset stmts-formalp)
     :short "Check if a compound statement has formal dynamic semantics."
     (b* (((comp-stmt cstmt) cstmt))
       (and (not cstmt.labels)
@@ -710,7 +710,7 @@
   (define block-item-formalp ((item block-itemp))
     :guard (block-item-unambp item)
     :returns (yes/no booleanp)
-    :parents (formalized-subset stmts-formalp)
+    :parents (abstract-syntax-formal-subset stmts-formalp)
     :short "Check if a block item has formal dynamic semantics."
     :long
     (xdoc::topstring
@@ -726,7 +726,7 @@
   (define block-item-list-formalp ((items block-item-listp))
     :guard (block-item-list-unambp items)
     :returns (yes/no booleanp)
-    :parents (formalized-subset stmts-formalp)
+    :parents (abstract-syntax-formal-subset stmts-formalp)
     :short "Check if a list of block items have formal dynamic semantics."
     :long
     (xdoc::topstring

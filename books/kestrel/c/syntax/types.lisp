@@ -2439,7 +2439,7 @@
      and struct types with tags.")
    (xdoc::p
     "This predicate can be regarded as an extension of
-     the collection of @('-formalp') predicates in @(see formalized-subset)."))
+     the collection of @('-formalp') predicates in @(see abstract-syntax-formal-subset)."))
   (or (and (member-eq (type-kind type)
                       '(:void
                         :char :uchar :schar

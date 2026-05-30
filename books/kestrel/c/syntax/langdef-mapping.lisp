@@ -56,7 +56,7 @@
     "We accompany these mapping functions with theorems showing that
      the functions always succeed (i.e. never return errors)
      on constructs in the subset of C with formal dynamic semantics,
-     as characterized by the @(see formalized-subset).
+     as characterized by the @(see abstract-syntax-formal-subset).
      Recall that the subset of C with formal dynamic semantics
      is a strict subset of the subset of C
      over which the mapping functions succeed.

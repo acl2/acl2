@@ -190,7 +190,7 @@
     " from the tool-oriented abstract syntax
      to the abstract syntax of the formal language definition,
      along with "
-    (xdoc::seetopic "formalized-subset" "predicates")
+    (xdoc::seetopic "abstract-syntax-formal-subset" "predicates")
     " to identify which subset of the abstract syntax
      not only maps to the language definition's abstract syntax,
      but is also covered by the formal semantics we have so far.")
@@ -218,4 +218,4 @@
                     output-files
                     mapping-to-language-definition
                     mapping-from-language-definition
-                    formalized-subset))
+                    abstract-syntax-formal-subset))
