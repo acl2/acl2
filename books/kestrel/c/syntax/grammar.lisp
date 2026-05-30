@@ -23,7 +23,6 @@
 ; (depends-on "grammar/characters-c17.abnf")
 ; (depends-on "grammar/characters-c23.abnf")
 ; (depends-on "grammar/comments.abnf")
-; (depends-on "grammar/keywords.abnf")
 ; (depends-on "grammar/keywords-c17.abnf")
 ; (depends-on "grammar/keywords-c23.abnf")
 ; (depends-on "grammar/keywords-gcc-clang.abnf")
@@ -201,14 +200,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar characters
-  "the source character set that are common to all the C dialects")
+(defgrammar characters "the source character set in all the C dialects")
 
-(defgrammar characters-c17
-  "the source character set that are specific to the C17 dialects")
+(defgrammar characters-c17 "the source character set in the C17 dialects")
 
-(defgrammar characters-c23
-  "the source character set that are specific to the C23 dialects")
+(defgrammar characters-c23 "the source character set in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -216,23 +212,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar keywords "keywords that form subsets for the various C dialects")
-
-(defgrammar keywords-c17 "keywords that are specific to the C17 dialects")
+(defgrammar keywords-c17 "keywords in the C17 dialects")
 
 (defgrammar keywords-c23 "keywords that are specific to the C23 dialects")
 
-(defgrammar keywords-gcc-clang
-  "keywords that are specific to both the GCC and the Clang dialects")
+(defgrammar keywords-gcc-clang "keywords in the GCC and Clang dialects")
 
-(defgrammar keywords-gcc
-  "keywords that are specific to the GCC dialects")
+(defgrammar keywords-gcc "keywords in the GCC dialects")
 
-(defgrammar keywords-clang
-  "keywords that are specific to the Clang dialects")
+(defgrammar keywords-clang "keywords in the Clang dialects")
 
-(defgrammar keywords-cheri
-  "keywords that are specific to the CHERI dialects")
+(defgrammar keywords-cheri "keywords in the CHERI dialects")
 
 (defgrammar keywords-c17-noext
   "keywords that are specific to the C17 dialect without extensions")
@@ -468,7 +458,6 @@
      ;; comments:
      *grammar-comments*
      ;; keywords:
-     *grammar-keywords*
      (c::standard-case
       dialect.std
       :c17 (append
@@ -481,7 +470,9 @@
                                   *grammar-keywords-gcc-clang*
                                   *grammar-keywords-clang*
                                   (if dialect.cheri
-                                      *grammar-keywords-c17-clang-cheri*
+                                      (append
+                                       *grammar-keywords-cheri*
+                                       *grammar-keywords-c17-clang-cheri*)
                                     *grammar-keywords-c17-clang-nocheri*)))
                   (t *grammar-keywords-c17-noext*)))
       :c23 (append
@@ -494,7 +485,9 @@
                                   *grammar-keywords-gcc-clang*
                                   *grammar-keywords-clang*
                                   (if dialect.cheri
-                                      *grammar-keywords-c23-clang-cheri*
+                                      (append
+                                       *grammar-keywords-cheri*
+                                       *grammar-keywords-c23-clang-cheri*)
                                     *grammar-keywords-c23-clang-nocheri*)))
                   (t *grammar-keywords-c23-noext*))))
      ;; identifiers:

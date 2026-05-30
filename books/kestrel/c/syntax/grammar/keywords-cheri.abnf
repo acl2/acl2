@@ -10,12 +10,10 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains grammar rules for keywords
-; that are specific to the CHERI dialects.
+; This file contains grammar rules for keywords in the CHERI dialects.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Keywords in the CHERI dialects.
 ; The CHERI documentation does not seem to have
 ; a clear list of all their additional keywords in the style of [C17] and [C23].
 ; The list is inferred from the documentation,

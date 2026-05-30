@@ -10,12 +10,10 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains grammar rules for keywords
-; that are specific to the Clang dialects.
+; This file contains grammar rules for keywords in the Clang dialects.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Keywords in the Clang dialects.
 ; The Clang documentation does not seem to have
 ; a clear list of all their additional keywords in the style of [C17] and [C23].
 ; The list is inferred from the documentation,
@@ -36,5 +34,3 @@ keyword-clang = %s"__datasizeof"
               / %s"_Null_unspecified"
               / %s"_Nullable"
               / %s"_Nullable_result"
-
-; These keywords are not in the GCC dialects.
