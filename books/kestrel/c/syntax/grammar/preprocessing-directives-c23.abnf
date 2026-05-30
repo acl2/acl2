@@ -10,7 +10,7 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains the grammar rules for preprocessing directives
+; This file contains grammar rules for preprocessing directives
 ; that are specific to the C23 standard [C23:6.10.1].
 ; Together with the generic rules in preprocessing-directives.abnf,
 ; they form the rules for preprocessing directives for the C23 dialects.

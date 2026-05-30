@@ -10,7 +10,7 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains rules for puncutators for the C23 dialects [C17:6.4.7].
+; This file contains grammar rules for puncutators for the C23 dialects [C17:6.4.7].
 ; The only difference with C17 is the addition of '::'.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

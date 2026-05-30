@@ -10,7 +10,7 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains the grammar rules for preprocessing directives
+; This file contains grammar rules for preprocessing directives
 ; [C17:6.10/1] [C23:6.10.1]
 ; that are common to all the C dialects.
 ; Together with the rules in the dialect-specific files

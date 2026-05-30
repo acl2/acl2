@@ -10,7 +10,7 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains the grammar rules for preprocessing lexemes
+; This file contains grammar rules for preprocessing lexemes
 ; which are common to all the C dialects.
 ; This does not correspond to any grammar rule in [C17] and [C23],
 ; but it defines the lexical units that the preprocessor handles:

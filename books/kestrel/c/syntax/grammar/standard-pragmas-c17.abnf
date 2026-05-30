@@ -10,7 +10,7 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains the grammar rules for standard pragmas
+; This file contains grammar rules for standard pragmas
 ; that are specific to the C17 standard [C17:6.10.6/2].
 ; Although [C17] does not have an explicit grammar rule for standard pragmas,
 ; but instead just lists the alternatives,

@@ -10,7 +10,7 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains the grammar rules for expressions [C17:6.5] [C23:6.5]
+; This file contains grammar rules for expressions [C17:6.5] [C23:6.5]
 ; that are specific to standard C without extensions.
 ; Together with the generic rules in expressions.abnf,
 ; they form the rules for identifiers for the GCC/Clang-extended dialects.

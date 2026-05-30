@@ -10,7 +10,7 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains the grammar rules for preprocessing expressions
+; This file contains grammar rules for preprocessing expressions
 ; that are common to all the C dialects.
 ; Together with the rules in the dialect-specific files
 ; preprocessing-expressions-*.abnf,
