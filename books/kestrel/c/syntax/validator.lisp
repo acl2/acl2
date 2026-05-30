@@ -1020,7 +1020,8 @@
      (i.e. it has the @('u8') prefix),
      it has an array type with element type @('char').
      If an encoding prefix is present,
-     the literal may have type @('wchar_t') or @('char16_t') or @('char32_t').
+     the array may have element type
+     @('wchar_t') or @('char16_t') or @('char32_t').
      Since we do not yet model the values of these type definitions,
      we return an array type with an unknown element type in these cases."))
   (b* (((reterr) (make-type-array :of (irr-type) :size nil))
