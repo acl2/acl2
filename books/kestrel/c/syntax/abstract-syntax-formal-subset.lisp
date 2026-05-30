@@ -54,7 +54,7 @@
     "Note that the subset of the abstract syntax for tools
      that corresponds to the abstract syntax of the language definition
      is implicitly defined by "
-    (xdoc::seetopic "mapping-to-language-definition"
+    (xdoc::seetopic "abstract-syntax-formal-mapping"
                     "mapping between the two abstract syntaxes")
     ": it is the subset for which the mapping does not return an error.
      We could also define separate predicates

@@ -2505,7 +2505,7 @@
    (xdoc::p
     "This function can be regarded as an extension of
      the collection of @('ldm-') functions
-     in @(see mapping-to-language-definition).
+     in @(see abstract-syntax-formal-mapping).
      The supported types are the same as discussed in @(tsee type-formalp)."))
   (b* (((reterr) (c::type-void)))
     (type-case

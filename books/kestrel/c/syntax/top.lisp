@@ -186,7 +186,7 @@
     "We plan to prove theorems connecting this tool-oriented syntax
      with the formal language definition in @(see c::language).
      We already provide a "
-    (xdoc::seetopic "mapping-to-language-definition" "(partial) mapping")
+    (xdoc::seetopic "abstract-syntax-formal-mapping" "(partial) mapping")
     " from the tool-oriented abstract syntax
      to the abstract syntax of the formal language definition,
      along with "
@@ -216,6 +216,6 @@
                     printing
                     input-files
                     output-files
-                    mapping-to-language-definition
+                    abstract-syntax-formal-mapping
                     mapping-from-language-definition
                     abstract-syntax-formal-subset))

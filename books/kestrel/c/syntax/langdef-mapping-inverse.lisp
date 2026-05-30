@@ -34,7 +34,7 @@
    (xdoc::p
     "This is the inverse mapping of "
     (xdoc::seetopic
-     "mapping-to-language-definition"
+     "abstract-syntax-formal-mapping"
      "the one from the tool-oriented syntax to the language definition")
     "."))
   :order-subtopics t
