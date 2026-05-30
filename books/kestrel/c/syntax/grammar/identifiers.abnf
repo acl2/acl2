@@ -10,10 +10,7 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains rules for identifiers
-; that are common to all the C dialects.
-; Together with the rules in the dialect-specific files identifiers-*.abnf,
-; they define the identifiers of each C dialect.
+; This file contains a grammar rule for identifiers in all the C dialects.
 
 ; Although the formulation of our rules differs between C17 and C23,
 ; the two formulations are equivalent:

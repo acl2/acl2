@@ -10,14 +10,15 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains a grammar rule for floating constants
-; in the C23 dialects without GCC extensions
-; [C23:6.4.5.3].
+; This file contains a grammar rule for keywords in the CHERI dialects.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-floating-suffix = %i"f"
-                / %i"l"
-                / %s"df" / %s"DF"
-                / %s"dd" / %s"DD"
-                / %s"dl" / %s"DL"
+; The CHERI documentation does not seem to have
+; a clear list of all their additional keywords in the style of [C17] and [C23].
+; The list is inferred from the documentation,
+; but the lists may be incomplete, and it will be extended as needed.
+
+keyword-cheri = %s"__capability"
+              / %s"__intcap_t"
+              / %s"__uintcap_t"

@@ -10,10 +10,8 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains the grammar rules for expressions [C17:6.5] [C23:6.5]
-; that are common to all the C dialects.
-; Together with the rules in the dialect-specific files expressions-*.abnf,
-; they define the expressions of each C dialect.
+; This file contains grammar rules for expressions in all the C dialects
+; [C17:6.5] [C23:6.5].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -28,5 +26,14 @@ primary-expression-std = identifier
                        / 1*string-literal
                        / "(" expression ")"
                        / generic-selection
+
+generic-selection =
+    %s"_Generic" "(" assignment-expression "," generic-assoc-list ")"
+
+generic-assoc-list = generic-association
+                   / generic-assoc-list "," generic-association
+
+generic-association = type-name ":" assignment-expression
+                    / %s"default" ":" assignment-expression
 
 ; TODO: add other kinds of expressions

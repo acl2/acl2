@@ -46,15 +46,6 @@
 ; (https://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html),
 ; which syntactically are identifiers (cf. the rule for labeled statements).
 
-generic-selection =
-    %s"_Generic" "(" assignment-expression "," generic-assoc-list ")"
-
-generic-assoc-list = generic-association
-                   / generic-assoc-list "," generic-association
-
-generic-association = type-name ":" assignment-expression
-                    / %s"default" ":" assignment-expression
-
 postfix-expression = primary-expression
                    / postfix-expression "[" expression "]"
                    / postfix-expression "(" [ argument-expression-list ] ")"

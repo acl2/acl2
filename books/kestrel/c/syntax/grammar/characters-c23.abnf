@@ -11,10 +11,8 @@
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
 ; This file contains grammar rules for the source character set
-; that are specific to the C23 standard.
-; Together with the generic rules in characters.abnf,
-; they form the rules for characters for the C23 dialects.
-; None of these rules have counterparts in the grammar in [C23].
+; in the C23 dialects.
+; These rules have no counterparts in the grammar in [C23].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

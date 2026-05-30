@@ -11,23 +11,17 @@
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
 ; This file contains grammar rules for keywords
-; in the C23 dialect with GCC extensions.
+; in the C23 dialect without extensions.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 keyword = keyword-c23
-        / keyword-gcc-clang
-        / keyword-gcc
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 alignas-keyword = %s"alignas" / %s"_Alignas"
 
-alignof-keyword = %s"alignof" / %s"_Alignof" / %s"__alignof" / %s"__alignof__"
-
-asm-keyword = %s"asm" / %s"__asm" / %s"__asm__"
-
-attribute-keyword = %s"__attribute" / %s"__attribute__"
+alignof-keyword = %s"alignof" / %s"_Alignof"
 
 bool-keyword = %s"bool" / %s"_Bool"
 
@@ -35,24 +29,28 @@ complex-keyword = %s"_Complex"
 
 const-keyword = %s"const"
 
-imag-keyword = %s"__imag__"
-
-inline-keyword = %s"inline" / %s"__inline" / %s"__inline__"
+inline-keyword = %s"inline"
 
 nullptr-keyword = %s"nullptr"
 
-real-keyword = %s"__real__"
+restrict-keyword = %s"restrict"
 
-restrict-keyword = %s"restrict" / %s"__restrict" / %s"__restrict__"
-
-signed-keyword = %s"signed" / %s"__signed" / %s"__signed__"
+signed-keyword = %s"signed"
 
 static-assert-keyword = %s"static_assert" / %s"_Static_assert"
 
 thread-local-keyword = %s"thread_local" / %s"_Thread_local"
 
-typeof-keyword = %s"typeof" / %s"__typeof" / %s"__typeof__"
+typeof-keyword = %s"typeof"
 
 typeof-unqual-keyword = %s"typeof_unqual"
 
-volatile-keyword = %s"volatile" / %s"__volatile" / %s"__volatile__"
+volatile-keyword = %s"volatile"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; remove when the rest of the grammar is modularized:
+
+asm-keyword = %s"asm" / %s"__asm" / %s"__asm__"
+
+attribute-keyword = %s"__attribute" / %s"__attribute__"

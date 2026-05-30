@@ -10,48 +10,69 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains grammar rules for keywords
-; that are specific to the C23 dialect without extensions.
-; These rules make use of some of the ones in keywords.abnf.
+; This file contains a grammar rule for keywords in the C23 dialects.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-keyword = keyword-c23
+; Keywords in the C23 standard [C23:6.4.2].
+; We include the alternative spellings in Table 6.1.
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-alignas-keyword = %s"alignas" / %s"_Alignas"
-
-alignof-keyword = %s"alignof" / %s"_Alignof"
-
-bool-keyword = %s"bool" / %s"_Bool"
-
-complex-keyword = %s"_Complex"
-
-const-keyword = %s"const"
-
-inline-keyword = %s"inline"
-
-nullptr-keyword = %s"nullptr"
-
-restrict-keyword = %s"restrict"
-
-signed-keyword = %s"signed"
-
-static-assert-keyword = %s"static_assert" / %s"_Static_assert"
-
-thread-local-keyword = %s"thread_local" / %s"_Thread_local"
-
-typeof-keyword = %s"typeof"
-
-typeof-unqual-keyword = %s"typeof_unqual"
-
-volatile-keyword = %s"volatile"
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; remove when the rest of the grammar is modularized:
-
-asm-keyword = %s"asm" / %s"__asm" / %s"__asm__"
-
-attribute-keyword = %s"__attribute" / %s"__attribute__"
+keyword-c23 = %s"alignas"
+            / %s"_Alignas" ; alternative to 'alignas'
+            / %s"alignof"
+            / %s"_Alignof" ; alternative to 'alignof'
+            / %s"auto"
+            / %s"bool"
+            / %s"_Bool" ; alternative to 'bool'
+            / %s"break"
+            / %s"case"
+            / %s"char"
+            / %s"const"
+            / %s"constexpr"
+            / %s"continue"
+            / %s"default"
+            / %s"do"
+            / %s"double"
+            / %s"else"
+            / %s"enum"
+            / %s"extern"
+            / %s"false"
+            / %s"float"
+            / %s"for"
+            / %s"goto"
+            / %s"if"
+            / %s"inline"
+            / %s"int"
+            / %s"long"
+            / %s"nullptr"
+            / %s"register"
+            / %s"restrict"
+            / %s"return"
+            / %s"short"
+            / %s"signed"
+            / %s"sizeof"
+            / %s"static"
+            / %s"static_assert"
+            / %s"_Static_assert" ; alternative to 'static_assert'
+            / %s"struct"
+            / %s"switch"
+            / %s"thread_local"
+            / %s"_Thread_local" ; alternative to 'thread_local'
+            / %s"true"
+            / %s"typedef"
+            / %s"typeof"
+            / %s"typeof_unqual"
+            / %s"union"
+            / %s"unsigned"
+            / %s"void"
+            / %s"volatile"
+            / %s"while"
+            / %s"_Atomic"
+            / %s"_BitInt"
+            / %s"_Complex"
+            / %s"_Decimal128"
+            / %s"_Decimal32"
+            / %s"_Decimal64"
+            / %s"_Generic"
+            / %s"_Imaginary"
+            / %s"_Noreturn"

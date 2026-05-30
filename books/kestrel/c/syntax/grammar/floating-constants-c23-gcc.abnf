@@ -10,12 +10,9 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains grammar rules for floating constants [C23:6.4.5.3]
-; that are specific to the C23 dialects with GCC extensions.
-; Together with the generic rules in floating-constants.abnf
-; and with the additional specialized rules in floating-constants-c23.abnf,
-; they form the rules for floating constants of
-; the C23 dialect with GCC extensions.
+; This file contains a grammar rule for floating constants
+; in the C23 dialect with GCC extensions
+; [C23:6.4.5.3].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
