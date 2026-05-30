@@ -20,7 +20,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ abstract-syntax-formal-mapping
+(defxdoc+ abstract-syntax-formal-mapping-direct
   :parents (syntax-for-tools)
   :short "Mapping from the tool-oriented syntax to the language definition."
   :long
@@ -417,7 +417,7 @@
   (define ldm-declor-obj ((declor declorp))
     :guard (declor-unambp declor)
     :returns (mv erp (declor1 c::obj-declorp))
-    :parents (abstract-syntax-formal-mapping ldm-declors/dirdeclors-obj)
+    :parents (abstract-syntax-formal-mapping-direct ldm-declors/dirdeclors-obj)
     :short "Map a declarator to
             an object declarator in the language definition."
     :long
@@ -438,7 +438,7 @@
   (define ldm-dirdeclor-obj ((dirdeclor dirdeclorp))
     :guard (dirdeclor-unambp dirdeclor)
     :returns (mv erp (declor1 c::obj-declorp))
-    :parents (abstract-syntax-formal-mapping ldm-declors/dirdeclors-obj)
+    :parents (abstract-syntax-formal-mapping-direct ldm-declors/dirdeclors-obj)
     :short "Map a direct declarator to
             an object declarator in the language definition."
     :long
@@ -723,7 +723,7 @@
   (define ldm-expr ((expr exprp))
     :guard (expr-unambp expr)
     :returns (mv erp (expr1 c::exprp))
-    :parents (abstract-syntax-formal-mapping ldm-exprs)
+    :parents (abstract-syntax-formal-mapping-direct ldm-exprs)
     :short "Map an expression to an expression in the language definition."
     (b* (((reterr) (c::expr-ident (c::ident "irrelevant"))))
       (expr-case
@@ -808,7 +808,7 @@
   (define ldm-expr-list ((exprs expr-listp))
     :guard (expr-list-unambp exprs)
     :returns (mv erp (exprs1 c::expr-listp))
-    :parents (abstract-syntax-formal-mapping ldm-exprs)
+    :parents (abstract-syntax-formal-mapping-direct ldm-exprs)
     :short "Map a list of expressions to
             a list of expressions in the language definition."
     (b* (((reterr) nil)
@@ -1515,7 +1515,7 @@
   (define ldm-stmt ((stmt stmtp))
     :guard (stmt-unambp stmt)
     :returns (mv erp (stmt1 c::stmtp))
-    :parents (abstract-syntax-formal-mapping ldm-stmts)
+    :parents (abstract-syntax-formal-mapping-direct ldm-stmts)
     :short "Map a statement to a statement in the language definition."
     (b* (((reterr) (c::stmt-null)))
       (stmt-case
@@ -1580,7 +1580,7 @@
   (define ldm-comp-stmt ((cstmt comp-stmtp))
     :guard (comp-stmt-unambp cstmt)
     :returns (mv erp (items c::block-item-listp))
-    :parents (abstract-syntax-formal-mapping ldm-stmts)
+    :parents (abstract-syntax-formal-mapping-direct ldm-stmts)
     :short "Map a compound statement to
             a list of block items in the language definition."
     :long
@@ -1599,7 +1599,7 @@
   (define ldm-block-item ((item block-itemp))
     :guard (block-item-unambp item)
     :returns (mv erp (item1 c::block-itemp))
-    :parents (abstract-syntax-formal-mapping ldm-stmts)
+    :parents (abstract-syntax-formal-mapping-direct ldm-stmts)
     :short "Map a block item to a block item in the language definition."
     (b* (((reterr) (c::block-item-stmt (c::stmt-null))))
       (block-item-case
@@ -1614,7 +1614,7 @@
   (define ldm-block-item-list ((items block-item-listp))
     :guard (block-item-list-unambp items)
     :returns (mv erp (items1 c::block-item-listp))
-    :parents (abstract-syntax-formal-mapping ldm-stmts)
+    :parents (abstract-syntax-formal-mapping-direct ldm-stmts)
     :short "Map a list of block items to
             a list of block items in the language definition."
     (b* (((reterr) nil)

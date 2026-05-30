@@ -24,7 +24,7 @@
 (include-book "input-files-doc")
 (include-book "output-files")
 (include-book "output-files-doc")
-(include-book "abstract-syntax-formal-mapping")
+(include-book "abstract-syntax-formal-mapping-direct")
 (include-book "abstract-syntax-formal-mapping-inverse")
 (include-book "abstract-syntax-formal-subset")
 (include-book "compilation-db")
@@ -186,7 +186,7 @@
     "We plan to prove theorems connecting this tool-oriented syntax
      with the formal language definition in @(see c::language).
      We already provide a "
-    (xdoc::seetopic "abstract-syntax-formal-mapping" "(partial) mapping")
+    (xdoc::seetopic "abstract-syntax-formal-mapping-direct" "(partial) mapping")
     " from the tool-oriented abstract syntax
      to the abstract syntax of the formal language definition,
      along with "
@@ -216,6 +216,6 @@
                     printing
                     input-files
                     output-files
-                    abstract-syntax-formal-mapping
+                    abstract-syntax-formal-mapping-direct
                     abstract-syntax-formal-mapping-inverse
                     abstract-syntax-formal-subset))

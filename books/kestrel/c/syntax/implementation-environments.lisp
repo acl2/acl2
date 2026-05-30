@@ -186,7 +186,7 @@
    (xdoc::p
     "The @('ldm') part of this function's name
      is related to the one used for the functions in
-     @(see abstract-syntax-formal-mapping),
+     @(see abstract-syntax-formal-mapping-direct),
      since we are mapping from the C syntax for tools
      to the formal language definition.")
    (xdoc::p

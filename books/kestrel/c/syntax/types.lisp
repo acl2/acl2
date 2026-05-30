@@ -14,7 +14,7 @@
 (include-book "abstract-syntax-trees")
 (include-book "implementation-environments")
 (include-book "abstract-syntax-formal-subset")
-(include-book "abstract-syntax-formal-mapping")
+(include-book "abstract-syntax-formal-mapping-direct")
 (include-book "uid")
 (include-book "file-paths")
 
@@ -2505,7 +2505,7 @@
    (xdoc::p
     "This function can be regarded as an extension of
      the collection of @('ldm-') functions
-     in @(see abstract-syntax-formal-mapping).
+     in @(see abstract-syntax-formal-mapping-direct).
      The supported types are the same as discussed in @(tsee type-formalp)."))
   (b* (((reterr) (c::type-void)))
     (type-case

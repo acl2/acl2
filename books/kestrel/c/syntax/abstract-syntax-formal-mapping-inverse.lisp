@@ -11,7 +11,7 @@
 (in-package "C$")
 
 (include-book "abstract-syntax-operations")
-(include-book "abstract-syntax-formal-mapping")
+(include-book "abstract-syntax-formal-mapping-direct")
 
 (include-book "../language/abstract-syntax")
 (include-book "../language/decimal-0-to-octal-0")
@@ -34,7 +34,7 @@
    (xdoc::p
     "This is the inverse mapping of "
     (xdoc::seetopic
-     "abstract-syntax-formal-mapping"
+     "abstract-syntax-formal-mapping-direct"
      "the one from the tool-oriented syntax to the language definition")
     "."))
   :order-subtopics t

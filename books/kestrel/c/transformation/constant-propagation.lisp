@@ -21,7 +21,7 @@
 (include-book "../language/dynamic-semantics")
 (include-book "../language/values")
 (include-book "../syntax/abstract-syntax-operations")
-(include-book "../syntax/abstract-syntax-formal-mapping")
+(include-book "../syntax/abstract-syntax-formal-mapping-direct")
 (include-book "../syntax/code-ensembles")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
