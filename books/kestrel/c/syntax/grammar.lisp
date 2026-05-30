@@ -214,7 +214,7 @@
 
 (defgrammar keywords-c17 "keywords in the C17 dialects")
 
-(defgrammar keywords-c23 "keywords that are specific to the C23 dialects")
+(defgrammar keywords-c23 "keywords in the C23 dialects")
 
 (defgrammar keywords-gcc-clang "keywords in the GCC and Clang dialects")
 
@@ -246,11 +246,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar identifiers "identifiers that are common to all the C dialects")
+(defgrammar identifiers "identifiers in all the C dialects")
 
-(defgrammar identifiers-c17 "identifiers that are specific to the C17 dialects")
+(defgrammar identifiers-c17 "identifiers in the C17 dialects")
 
-(defgrammar identifiers-c23 "identifiers that are specific to the C23 dialects")
+(defgrammar identifiers-c23 "identifiers in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -262,37 +262,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar integer-constants
-  "integer constants that are common to all the C dialects")
+(defgrammar integer-constants "integer constants in all the C dialects")
 
-(defgrammar integer-constants-c17
-  "integer constants that are specific to the C17 dialects")
+(defgrammar integer-constants-c17 "integer constants in the C17 dialects")
 
-(defgrammar integer-constants-c23
-  "integer constants that are specific to the C23 dialects")
+(defgrammar integer-constants-c23 "integer constants in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgrammar floating-constants
-  "floating constants that are common to all the C dialects")
+  "floating constants in all the C dialects")
 
 (defgrammar floating-constants-c17
-  "floating constants that are specific to C17 dialects")
+  "floating constants in C17 dialects")
 
 (defgrammar floating-constants-c23
-  "floating constants that are specific to C23 dialects")
+  "floating constants in C23 dialects")
 
 (defgrammar floating-constants-c17-nogcc
-  "floating constants that are specific to C17 dialects without GCC extensions")
+  "floating constants in C17 dialects without GCC extensions")
 
 (defgrammar floating-constants-c23-nogcc
-  "floating constants that are specific to C23 dialects without GCC extensions")
+  "floating constants in C23 dialects without GCC extensions")
 
 (defgrammar floating-constants-c17-gcc
-  "floating constants that are specific to C17 dialect with GCC extensions")
+  "floating constants in C17 dialect with GCC extensions")
 
 (defgrammar floating-constants-c23-gcc
-  "floating constants that are specific to C23 dialect with GCC extensions")
+  "floating constants in C23 dialect with GCC extensions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -304,67 +301,57 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar character-constants
-  "character constants that are common to all the C dialects")
+(defgrammar character-constants "character constants in all the C dialects")
 
-(defgrammar character-constants-c17
-  "character constants that are specific to the C17 dialects")
+(defgrammar character-constants-c17 "character constants in the C17 dialects")
 
-(defgrammar character-constants-c23
-  "character constants that are specific to the C23 dialects")
+(defgrammar character-constants-c23 "character constants in the C23 dialects")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgrammar simple-escapes-std
-  "simple escapes that are specific to
-   the dialects without GCC or Clang extensions")
+  "simple escapes in the standard C dialects (i.e. without extensions)")
 
 (defgrammar simple-escapes-ext
-  "simple escapes that are specific to
-   the dialects with GCC or Clang extensions")
+  "simple escapes in the non-standard C dialects (i.e. with extensions)")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar constants-c17
-  "constants that are specific to the C17 dialects")
+(defgrammar constants-c17 "constants in the C17 dialects")
 
-(defgrammar constants-c23
-  "constants that are specific to the C23 dialects")
+(defgrammar constants-c23 "constants in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar string-literals-c17
-  "string literals that are specific to the C17 dialects")
+(defgrammar string-literals-c17 "string literals in the C17 dialects")
 
-(defgrammar string-literals-c23
-  "string literals that are specific to the C23 dialects")
+(defgrammar string-literals-c23 "string literals in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar punctuators-c17
-  "punctuators that are specific to the C17 dialects")
+(defgrammar punctuators-c17 "punctuators in the C17 dialects")
 
-(defgrammar punctuators-c23
-  "punctuators that are specific to the C23 dialects")
+(defgrammar punctuators-c23 "punctuators in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar header-names
-  "header names that are specific to the C17 dialects")
+(defgrammar header-names "header names")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgrammar preprocessing-numbers-c17
-  "preprocessing numbers that are specific to the C17 dialects")
+  "preprocessing numbers in the C17 dialects")
 
 (defgrammar preprocessing-numbers-c23
-  "preprocessing numbers that are specific to the C23 dialects")
+  "preprocessing numbers in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgrammar preprocessing-tokens-c17
-  "preprocessing tokens that are specific to the C17 dialects")
+  "preprocessing tokens in the C17 dialects")
 
 (defgrammar preprocessing-tokens-c23
-  "preprocessing tokens that are specific to the C23 dialects")
+  "preprocessing tokens in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -373,35 +360,35 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgrammar preprocessing-expressions
-  "preprocessing expressions that are common to all the C dialects")
+  "preprocessing expressions in all the C dialects")
 
 (defgrammar preprocessing-expressions-c17
-  "preprocessing expressions that are specific to the C17 dialects")
+  "preprocessing expressions in the C17 dialects")
 
 (defgrammar preprocessing-expressions-c23
-  "preprocessing expressions that are specific to the C23 dialects")
+  "preprocessing expressions in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgrammar preprocessing-directives
-  "preprocessing directives that are common to all the C dialects")
+  "preprocessing directives in all the C dialects")
 
 (defgrammar preprocessing-directives-c17
-  "preprocessing directives that are specific to the C17 dialects")
+  "preprocessing directives in the C17 dialects")
 
 (defgrammar preprocessing-directives-c23
-  "preprocessing directives that are specific to the C23 dialects")
+  "preprocessing directives in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgrammar standard-pragmas
-  "standard pragmas that are common to all the C dialects")
+  "standard pragmas in all the C dialects")
 
 (defgrammar standard-pragmas-c17
-  "standard pragmas that are specific to the C17 dialects")
+  "standard pragmas in the C17 dialects")
 
 (defgrammar standard-pragmas-c23
-  "standard pragmas that are specific to the C23 dialects")
+  "standard pragmas in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -414,13 +401,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgrammar expressions
-  "standard pragmas that are common to all the C dialects")
+  "standard pragmas in all the C dialects")
 
 (defgrammar expressions-std
-  "standard pragmas that are specific to the standard C dialects")
+  "standard pragmas in the standard C dialects (i.e. without extensions)")
 
 (defgrammar expressions-ext
-  "standard pragmas that are specific to the GCC and Clang extensions")
+  "standard pragmas in the non-standard C dialects (i.e. with extensions)")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

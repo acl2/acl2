@@ -11,9 +11,8 @@
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
 ; This file contains rules for simple escape sequences
-; [C17:6.4.4.4/1] [C23:6.4.5.5]
-; that are specific to the C dialects without GCC or Clang extensions.
-; The file simple-escapes-ext.abnf contains rules for dialects with extensions.
+; in the C dialects without extensions (i.e. standard)
+; [C17:6.4.4.4/1] [C23:6.4.5.5].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

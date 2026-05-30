@@ -10,8 +10,7 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains grammar rules for comments [C17:6.4.9] [C23:6.4.9]
-; in all the C dialects.
+; This file contains grammar rules for comments [C17:6.4.9] [C23:6.4.9].
 ; These rules have no counterparts in the grammars in [C17] and [C23].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

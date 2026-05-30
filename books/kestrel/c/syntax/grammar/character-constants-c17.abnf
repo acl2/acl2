@@ -10,10 +10,8 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains rules for character constants
-; that are specific to the C17 standard [C17:6.4.4.4/1].
-; Together with the generic rules in character-constants.abnf,
-; they form the rules for character constants for the C17 dialects.
+; This file contains rules for character constants in the C17 dialects
+; [C17:6.4.4.4/1].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

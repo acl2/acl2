@@ -10,8 +10,8 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains rules for constants for the C23 dialects [C23:6.4.5.1].
-; We also include the predefined constants here [C23:6.4.5.6].
+; This file contains rules for constants in the C23 dialects
+; [C23:6.4.5.1] [C23:6.4.5.6].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
