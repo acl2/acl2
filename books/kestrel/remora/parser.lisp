@@ -753,7 +753,11 @@
 
 ;; ---- Type and ispace parameters ----
 
+(defparse-remora-rulename "atom-type-var")
+(defparse-remora-rulename "array-type-var")
 (defparse-remora-rulename "type-var")
+(defparse-remora-rulename "dim-ispace-var")
+(defparse-remora-rulename "shape-ispace-var")
 (defparse-remora-rulename "ispace-var")
 
 ;; ---- Dimensions, shapes, ispaces ----
@@ -1100,8 +1104,6 @@
 ;; ---- Types ----
 
 ;; Non-recursive type helpers (already-admitted dependencies only).
-(defparse-remora-rulename "atom-type-var")
-(defparse-remora-rulename "array-type-var")
 (defparse-remora-rulename "base-type")
 
 ;; Groups for keyword/operator alternatives in type rules.
@@ -1126,8 +1128,7 @@
     :short "Parse a @('type-exp')."
     (b* (;; Try non-recursive alternatives
          ((mv tree input1)
-          (b* (((try tree input1) (parse-atom-type-var input))
-               ((try tree input1) (parse-array-type-var input))
+          (b* (((try tree input1) (parse-type-var input))
                ((try tree input1) (parse-base-type input)))
             (parse-bracket-type input)))
          ((unless (reserrp tree))
