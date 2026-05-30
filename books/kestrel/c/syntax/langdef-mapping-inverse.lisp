@@ -11,7 +11,7 @@
 (in-package "C$")
 
 (include-book "abstract-syntax-operations")
-(include-book "langdef-mapping")
+(include-book "abstract-syntax-formal-mapping")
 
 (include-book "../language/abstract-syntax")
 (include-book "../language/decimal-0-to-octal-0")

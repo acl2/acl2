@@ -24,7 +24,7 @@
 (include-book "input-files-doc")
 (include-book "output-files")
 (include-book "output-files-doc")
-(include-book "langdef-mapping")
+(include-book "abstract-syntax-formal-mapping")
 (include-book "langdef-mapping-inverse")
 (include-book "abstract-syntax-formal-subset")
 (include-book "compilation-db")
