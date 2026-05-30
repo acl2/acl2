@@ -1,0 +1,79 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains grammar rules for keywords
+; that are specific to the C23 dialects.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Keywords in the C23 standard [C23:6.4.2].
+; We include the alternative spellings in Table 6.1.
+
+keyword-c23 = %s"alignas"
+            / %s"_Alignas" ; alternative to 'alignas'
+            / %s"alignof"
+            / %s"_Alignof" ; alternative to 'alignof'
+            / %s"auto"
+            / %s"bool"
+            / %s"_Bool" ; alternative to 'bool'
+            / %s"break"
+            / %s"case"
+            / %s"char"
+            / %s"const"
+            / %s"constexpr"
+            / %s"continue"
+            / %s"default"
+            / %s"do"
+            / %s"double"
+            / %s"else"
+            / %s"enum"
+            / %s"extern"
+            / %s"false"
+            / %s"float"
+            / %s"for"
+            / %s"goto"
+            / %s"if"
+            / %s"inline"
+            / %s"int"
+            / %s"long"
+            / %s"nullptr"
+            / %s"register"
+            / %s"restrict"
+            / %s"return"
+            / %s"short"
+            / %s"signed"
+            / %s"sizeof"
+            / %s"static"
+            / %s"static_assert"
+            / %s"_Static_assert" ; alternative to 'static_assert'
+            / %s"struct"
+            / %s"switch"
+            / %s"thread_local"
+            / %s"_Thread_local" ; alternative to 'thread_local'
+            / %s"true"
+            / %s"typedef"
+            / %s"typeof"
+            / %s"typeof_unqual"
+            / %s"union"
+            / %s"unsigned"
+            / %s"void"
+            / %s"volatile"
+            / %s"while"
+            / %s"_Atomic"
+            / %s"_BitInt"
+            / %s"_Complex"
+            / %s"_Decimal128"
+            / %s"_Decimal32"
+            / %s"_Decimal64"
+            / %s"_Generic"
+            / %s"_Imaginary"
+            / %s"_Noreturn"
