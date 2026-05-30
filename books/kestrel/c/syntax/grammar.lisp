@@ -224,35 +224,25 @@
 
 (defgrammar keywords-cheri "keywords in the CHERI dialects")
 
-(defgrammar keywords-c17-noext
-  "keywords that are specific to the C17 dialect without extensions")
+(defgrammar keywords-c17-noext "keywords in the C17 dialect without extensions")
 
-(defgrammar keywords-c23-noext
-  "keywords that are specific to the C23 dialect without extensions")
+(defgrammar keywords-c23-noext "keywords in the C23 dialect without extensions")
 
-(defgrammar keywords-c17-gcc
-  "keywords that are specific to
-   the C17 dialect with GCC and without CHERI extensions")
+(defgrammar keywords-c17-gcc "keywords in the C17 dialect with GCC extensions")
 
-(defgrammar keywords-c23-gcc
-  "keywords that are specific to
-   the C23 dialect with GCC and without CHERI extensions")
+(defgrammar keywords-c23-gcc "keywords in the C23 dialect with GCC extensions")
 
 (defgrammar keywords-c17-clang-nocheri
-  "keywords that are specific to
-   the C17 dialect with Clang and without CHERI extensions")
+  "keywords in the C17 dialect with Clang and without CHERI extensions")
 
 (defgrammar keywords-c23-clang-nocheri
-  "keywords that are specific to
-   the C23 dialect with Clang and without CHERI extensions")
+  "keywords in the C23 dialect with Clang and without CHERI extensions")
 
 (defgrammar keywords-c17-clang-cheri
-  "keywords that are specific to
-   the C17 dialect with Clang and CHERI extensions")
+  "keywords in the C17 dialect with Clang and CHERI extensions")
 
 (defgrammar keywords-c23-clang-cheri
-  "keywords that are specific to
-   the C23 dialect with Clang and CHERI extensions")
+  "keywords in the C23 dialect with Clang and CHERI extensions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

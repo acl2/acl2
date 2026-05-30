@@ -11,8 +11,7 @@
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
 ; This file contains grammar rules for keywords
-; that are specific to the C23 dialect without extensions.
-; These rules make use of some of the ones in keywords.abnf.
+; in the C23 dialect without extensions.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
