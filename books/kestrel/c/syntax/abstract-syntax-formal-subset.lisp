@@ -30,7 +30,7 @@
    (xdoc::p
     "The "
     (xdoc::seetopic "c$::syntax-for-tools" "C syntax for tools")
-    " is designed to cover all of C (currently after preprocessing),
+    " is designed to cover all of C,
      but the "
     (xdoc::seetopic "c::language" "formal language definition")
     " only covers a subset of C.
