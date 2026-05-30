@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,7 +10,12 @@
 
 (in-package "C$")
 
-(include-book "validation-information")
+(include-book "uid")
+(include-book "types")
+(include-book "initializer-validation")
+(include-book "validation-tables")
+(include-book "validation-annotations")
+(include-book "null-pointer-constants")
 (include-book "validator")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -31,4 +36,10 @@
     "We provide an executable validator,
      which performs a (currently conservative) validation of C code,
      and also annotates the ASTs with information (e.g. calculated types)."))
-  :order-subtopics (validation-information))
+  :order-subtopics (uid
+                    types
+                    initializer-validation
+                    validation-tables
+                    validation-annotations
+                    null-pointer-constants
+                    validator))

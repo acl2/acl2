@@ -1321,7 +1321,8 @@
          (gin (gin-update gin gout-declor)))
       (mv (make-param-declon :specs new-specs
                              :declor new-declor
-                             :attribs paramdeclon.attribs)
+                             :attribs paramdeclon.attribs
+                             :info paramdeclon.info)
           (change-gout (gout-no-thm gin)
                        :vartys gout-declor.vartys)))
     :measure (param-declon-count paramdeclon))
