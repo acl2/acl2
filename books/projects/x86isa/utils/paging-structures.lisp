@@ -97,7 +97,7 @@
   ;; - rename d to d/res
   ;; - rename ps to ps/pat
   ;; - split res1 into g/res for bit 8 and res1 for bits 10:9
-  ;; - split res2 into res2 for bits 58:52 and pkey/res for bits 63:59
+  ;; - split res2 into res2 for bits 58:52 and pkey/res for bits 62:59
   ;; We may do that at some point,
   ;; but the current names,
   ;; although not fully descriptive,
@@ -191,7 +191,7 @@
    (ps bitp)     ;; Page size (must be 0)
    (res2 3bits)  ;; Ignored (bits 10:8)
    (r bitp)      ;; Ignored for ordinary paging; restart for HLAT paging
-   (pd 40bits)   ;; Address of 4K-aligned page directory (bits 52:12, any M)
+   (pd 40bits)   ;; Address of 4K-aligned page directory (bits 51:12, any M)
    (res3 11bits) ;; Ignored (bits 62:52)
    (xd bitp))    ;; If IA32_EFER.NXE = 1, execute disable;
                  ;; otherwise reserved (must be 0)
