@@ -17,55 +17,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Keywords in the C17 standard [C17:6.4.1/1].
-
-keyword-c17 = %s"auto"
-            / %s"break"
-            / %s"case"
-            / %s"char"
-            / %s"const"
-            / %s"continue"
-            / %s"default"
-            / %s"do"
-            / %s"double"
-            / %s"else"
-            / %s"enum"
-            / %s"extern"
-            / %s"float"
-            / %s"for"
-            / %s"goto"
-            / %s"if"
-            / %s"inline"
-            / %s"int"
-            / %s"long"
-            / %s"register"
-            / %s"restrict"
-            / %s"return"
-            / %s"short"
-            / %s"signed"
-            / %s"sizeof"
-            / %s"static"
-            / %s"struct"
-            / %s"switch"
-            / %s"typedef"
-            / %s"union"
-            / %s"unsigned"
-            / %s"void"
-            / %s"volatile"
-            / %s"while"
-            / %s"_Alignas"
-            / %s"_Alignof"
-            / %s"_Atomic"
-            / %s"_Bool"
-            / %s"_Complex"
-            / %s"_Generic"
-            / %s"_Imaginary"
-            / %s"_Noreturn"
-            / %s"_Static_assert"
-            / %s"_Thread_local"
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Keywords in the C23 standard [C23:6.4.2].
 ; We include the alternative spellings in Table 6.1.
 

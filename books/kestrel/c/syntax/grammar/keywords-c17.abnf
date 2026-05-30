@@ -1,0 +1,63 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains grammar rules for keywords
+; that are specific to the C17 dialects.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Keywords in the C17 standard [C17:6.4.1/1].
+
+keyword-c17 = %s"auto"
+            / %s"break"
+            / %s"case"
+            / %s"char"
+            / %s"const"
+            / %s"continue"
+            / %s"default"
+            / %s"do"
+            / %s"double"
+            / %s"else"
+            / %s"enum"
+            / %s"extern"
+            / %s"float"
+            / %s"for"
+            / %s"goto"
+            / %s"if"
+            / %s"inline"
+            / %s"int"
+            / %s"long"
+            / %s"register"
+            / %s"restrict"
+            / %s"return"
+            / %s"short"
+            / %s"signed"
+            / %s"sizeof"
+            / %s"static"
+            / %s"struct"
+            / %s"switch"
+            / %s"typedef"
+            / %s"union"
+            / %s"unsigned"
+            / %s"void"
+            / %s"volatile"
+            / %s"while"
+            / %s"_Alignas"
+            / %s"_Alignof"
+            / %s"_Atomic"
+            / %s"_Bool"
+            / %s"_Complex"
+            / %s"_Generic"
+            / %s"_Imaginary"
+            / %s"_Noreturn"
+            / %s"_Static_assert"
+            / %s"_Thread_local"
