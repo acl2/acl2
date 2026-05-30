@@ -217,5 +217,5 @@
                     input-files
                     output-files
                     abstract-syntax-formal-mapping
-                    mapping-from-language-definition
+                    abstract-syntax-formal-mapping-inverse
                     abstract-syntax-formal-subset))

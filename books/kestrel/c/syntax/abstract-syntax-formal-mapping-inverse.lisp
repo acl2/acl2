@@ -26,7 +26,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ mapping-from-language-definition
+(defxdoc+ abstract-syntax-formal-mapping-inverse
   :parents (syntax-for-tools)
   :short "Mapping from the language definition to the tool-oriented syntax."
   :long
@@ -450,7 +450,7 @@
 
   (define ildm-expr ((expr c::exprp))
     :returns (expr1 exprp)
-    :parents (mapping-from-language-definition ildm-exprs)
+    :parents (abstract-syntax-formal-mapping-inverse ildm-exprs)
     :short "Map an expression in the language definition
             to an expression in the syntax for tools."
     (c::expr-case
@@ -495,7 +495,7 @@
 
   (define ildm-expr-list ((exprs c::expr-listp))
     :returns (exprs1 expr-listp)
-    :parents (mapping-from-language-definition ildm-exprs)
+    :parents (abstract-syntax-formal-mapping-inverse ildm-exprs)
     :short "Map a list of expressions in the language definition
             to a list of expressions in the syntax for tools."
     (cond ((endp exprs) nil)
@@ -766,7 +766,7 @@
 
   (define ildm-stmt ((stmt c::stmtp))
     :returns (stmt1 stmtp)
-    :parents (mapping-from-language-definition ildm-stmts)
+    :parents (abstract-syntax-formal-mapping-inverse ildm-stmts)
     :short "Map a statement in the language definition
             to a statement in the syntax for tools."
     (c::stmt-case
@@ -804,7 +804,7 @@
 
   (define ildm-block-item ((item c::block-itemp))
     :returns (item1 block-itemp)
-    :parents (mapping-from-language-definition ildm-stmts)
+    :parents (abstract-syntax-formal-mapping-inverse ildm-stmts)
     :short "Map a block item in the language definition
             to a block item in the syntax for tools."
     (c::block-item-case
@@ -819,7 +819,7 @@
 
   (define ildm-block-item-list ((items c::block-item-listp))
     :returns (items1 block-item-listp)
-    :parents (mapping-from-language-definition ildm-stmts)
+    :parents (abstract-syntax-formal-mapping-inverse ildm-stmts)
     :short "Map a list of block items in the language definition
             to a list of block items in the syntax for tools."
     (cond ((endp items) nil)
