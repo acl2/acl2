@@ -75,7 +75,7 @@ control-line-c17 =
 
 control-line-c23 = control-line-c17
                  / "#" %s"embed" pp-tokens new-line
-                 / "#" %s"warning" pp-tokens new-line
+                 / "#" %s"warning" [ pp-tokens ] new-line
 
 text-line = [ pp-tokens ] new-line
 
