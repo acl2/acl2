@@ -10,10 +10,8 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains grammar rules for expressions [C17:6.5] [C23:6.5]
-; that are common to all the C dialects.
-; Together with the rules in the dialect-specific files expressions-*.abnf,
-; they define the expressions of each C dialect.
+; This file contains grammar rules for expressions in all the C dialects
+; [C17:6.5] [C23:6.5].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

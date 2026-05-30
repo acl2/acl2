@@ -10,11 +10,8 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-
-; This file contains grammar rules for standard pragmas
-; that are specific to the C23 standard [C23:6.10.8].
-; Together with the generic rules in standard-pragmas.abnf,
-; they form the rules for standard pragmas for the C23 dialects.
+; This file contains grammar rules for standard pragmas in the C23 dialects
+; [C23:6.10.8].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

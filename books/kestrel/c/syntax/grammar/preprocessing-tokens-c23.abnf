@@ -10,8 +10,8 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains grammar rules for preprocessing tokens
-; for the C23 dialects [C17:6.4.1].
+; This file contains a grammar rule for preprocessing tokens
+; in the C23 dialects [C17:6.4.1].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

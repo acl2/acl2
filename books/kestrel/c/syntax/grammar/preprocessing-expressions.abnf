@@ -11,10 +11,7 @@
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
 ; This file contains grammar rules for preprocessing expressions
-; that are common to all the C dialects.
-; Together with the rules in the dialect-specific files
-; preprocessing-expressions-*.abnf,
-; they define the preprocessing expressions of each C dialect.
+; inall the C dialects.
 
 ; The notion of preprocessing expression is not explicitly in [C17] and [C23],
 ; but it is a useful one that we introduce:

@@ -10,8 +10,7 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains grammar rules for tokens [C17:6.4/1] [C23:6.4.1],
-; which are common to all the C dialects.
+; This file contains grammar rules for tokens [C17:6.4/1] [C23:6.4.1].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

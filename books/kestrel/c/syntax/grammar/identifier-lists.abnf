@@ -10,7 +10,7 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains grammar rules for lists of identifiers
+; This file contains a grammar rule for lists of identifiers
 ; [C17:6.7.6/1] [C23:6.10.1].
 ; In [C17] it is with the rules for declarators,
 ; while in [C23] it is with the rules for preprocessing directives;

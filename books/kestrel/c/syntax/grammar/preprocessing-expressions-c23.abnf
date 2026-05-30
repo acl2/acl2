@@ -11,9 +11,7 @@
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
 ; This file contains grammar rules for preprocessing expressions
-; that are specific to the C23 standard.
-; Together with the generic rules in preprocessing-expressions.abnf,
-; they form the rules for preprocessing expressions for the C23 dialects.
+; in the C23 dialects.
 ; See preprocessing-expressions.abnf for
 ; the rationale of preprocessing expressions.
 

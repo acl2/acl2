@@ -10,7 +10,7 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains grammar rules for floating constants
+; This file contains a grammar rule for floating constants
 ; in the C23 dialects without GCC extensions
 ; [C23:6.4.5.3].
 

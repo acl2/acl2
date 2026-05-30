@@ -10,7 +10,7 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains grammar rules for identifiers in all the C dialects.
+; This file contains a grammar rule for identifiers in all the C dialects.
 
 ; Although the formulation of our rules differs between C17 and C23,
 ; the two formulations are equivalent:
