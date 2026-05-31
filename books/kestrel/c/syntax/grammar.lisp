@@ -381,14 +381,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar standard-pragmas
-  "standard pragmas in all the C dialects")
+(defgrammar standard-pragmas "standard pragmas in all the C dialects")
 
-(defgrammar standard-pragmas-c17
-  "standard pragmas in the C17 dialects")
+(defgrammar standard-pragmas-c17 "standard pragmas in the C17 dialects")
 
-(defgrammar standard-pragmas-c23
-  "standard pragmas in the C23 dialects")
+(defgrammar standard-pragmas-c23 "standard pragmas in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
