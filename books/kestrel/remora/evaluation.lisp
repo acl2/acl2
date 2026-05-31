@@ -450,13 +450,15 @@
     (xdoc::topstring
      (xdoc::p
       "A variable is looked up in the dynamic environment;
-       it must be present, and its associated value is returned."))
+       it must be present, and its associated value is returned.")
+     (xdoc::p
+      "An atom expression evaluates to the value of its atom."))
     (expr-case
      expr
      :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
                ((unless var+val) (reserr nil)))
             (cdr var+val))
-     :atom (reserr :todo)
+     :atom (eval-atom expr.atom denv)
      :array (reserr :todo)
      :array-empty (reserr :todo)
      :frame (reserr :todo)
