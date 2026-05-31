@@ -446,10 +446,16 @@
     :returns (val value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate an expression to a value."
-    (declare (ignore denv))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A variable is looked up in the dynamic environment;
+       it must be present, and its associated value is returned."))
     (expr-case
      expr
-     :var (reserr :todo)
+     :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
+               ((unless var+val) (reserr nil)))
+            (cdr var+val))
      :atom (reserr :todo)
      :array (reserr :todo)
      :array-empty (reserr :todo)
