@@ -312,6 +312,20 @@
     :elementp-of-nil nil
     :pred value-listp))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult value-result
+  :short "Fixtype of values and errors."
+  :ok value
+  :pred value-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult value-list-result
+  :short "Fixtype of (i) lists of values and (ii) errors."
+  :ok value-list
+  :pred value-list-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines check-dim-values
