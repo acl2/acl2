@@ -496,10 +496,15 @@
     :returns (val value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate an atom to a value."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A base literal is evaluated to a base value,
+       which is embedded into a value."))
     (declare (ignore denv))
     (atom-case
      atom
-     :base (reserr :todo)
+     :base (value-base (eval-base-lit atom.lit))
      :lambda (reserr :todo)
      :tlambda (reserr :todo)
      :ilambda (reserr :todo)
