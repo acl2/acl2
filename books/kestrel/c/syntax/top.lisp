@@ -24,9 +24,9 @@
 (include-book "input-files-doc")
 (include-book "output-files")
 (include-book "output-files-doc")
-(include-book "langdef-mapping")
-(include-book "langdef-mapping-inverse")
-(include-book "formalized")
+(include-book "abstract-syntax-formal-mapping-direct")
+(include-book "abstract-syntax-formal-mapping-inverse")
+(include-book "abstract-syntax-formal-subset")
 (include-book "compilation-db")
 (include-book "infer-ienv")
 
@@ -186,11 +186,11 @@
     "We plan to prove theorems connecting this tool-oriented syntax
      with the formal language definition in @(see c::language).
      We already provide a "
-    (xdoc::seetopic "mapping-to-language-definition" "(partial) mapping")
+    (xdoc::seetopic "abstract-syntax-formal-mapping-direct" "(partial) mapping")
     " from the tool-oriented abstract syntax
      to the abstract syntax of the formal language definition,
      along with "
-    (xdoc::seetopic "formalized-subset" "predicates")
+    (xdoc::seetopic "abstract-syntax-formal-subset" "predicates")
     " to identify which subset of the abstract syntax
      not only maps to the language definition's abstract syntax,
      but is also covered by the formal semantics we have so far.")
@@ -216,6 +216,6 @@
                     printing
                     input-files
                     output-files
-                    mapping-to-language-definition
-                    mapping-from-language-definition
-                    formalized-subset))
+                    abstract-syntax-formal-mapping-direct
+                    abstract-syntax-formal-mapping-inverse
+                    abstract-syntax-formal-subset))

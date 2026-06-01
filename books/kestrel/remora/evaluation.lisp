@@ -28,7 +28,9 @@
                           ispace-valuep-when-result-not-error
                           ispace-value-listp-when-result-not-error
                           type-valuep-when-result-not-error
-                          type-value-listp-when-result-not-error)))
+                          type-value-listp-when-result-not-error
+                          valuep-when-result-not-error
+                          value-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -435,4 +437,139 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: eval-expr & eval-atom
+(defines eval-exprs/atoms/binds
+  :short "Evaluate expressions, atoms, and bindings."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-expr ((expr exprp) (denv denvp))
+    :returns (val value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate an expression to a value."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A variable is looked up in the dynamic environment;
+       it must be present, and its associated value is returned.")
+     (xdoc::p
+      "An atom expression evaluates to the value of its atom."))
+    (expr-case
+     expr
+     :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
+               ((unless var+val) (reserr nil)))
+            (cdr var+val))
+     :atom (eval-atom expr.atom denv)
+     :array (reserr :todo)
+     :array-empty (reserr :todo)
+     :frame (reserr :todo)
+     :frame-empty (reserr :todo)
+     :string (reserr :todo)
+     :app (reserr :todo)
+     :tapp (reserr :todo)
+     :iapp (reserr :todo)
+     :capp (reserr :todo)
+     :unbox (reserr :todo)
+     :bracket (reserr :todo)
+     :let (reserr :todo))
+    :measure (expr-count expr))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-expr-list ((exprs expr-listp) (denv denvp))
+    :returns (vals value-list-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate a list of expressions to a list of values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We evaluate each expression in turn
+       and return the list of results in the same order."))
+    (b* (((when (endp exprs)) nil)
+         ((ok val) (eval-expr (car exprs) denv))
+         ((ok vals) (eval-expr-list (cdr exprs) denv)))
+      (cons val vals))
+    :measure (expr-list-count exprs))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-atom ((atom atomp) (denv denvp))
+    :returns (val value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate an atom to a value."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A base literal is evaluated to a base value,
+       which is embedded into a value."))
+    (declare (ignore denv))
+    (atom-case
+     atom
+     :base (value-base (eval-base-lit atom.lit))
+     :lambda (reserr :todo)
+     :tlambda (reserr :todo)
+     :ilambda (reserr :todo)
+     :box (reserr :todo))
+    :measure (atom-count atom))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-atom-list ((atoms atom-listp) (denv denvp))
+    :returns (vals value-list-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate a list of atoms to a list of values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We evaluate each atom in turn
+       and return the list of results in the same order."))
+    (b* (((when (endp atoms)) nil)
+         ((ok val) (eval-atom (car atoms) denv))
+         ((ok vals) (eval-atom-list (cdr atoms) denv)))
+      (cons val vals))
+    :measure (atom-list-count atoms))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-bind ((bind bindp) (denv denvp))
+    :returns (new-denv denv-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate a binding, extending the dynamic environment."
+    (declare (ignore denv))
+    (bind-case
+     bind
+     :ispace (reserr :todo)
+     :type (reserr :todo)
+     :val (reserr :todo)
+     :fun (reserr :todo)
+     :tfun (reserr :todo)
+     :ifun (reserr :todo)
+     :cfun (reserr :todo))
+    :measure (bind-count bind))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-bind-list ((binds bind-listp) (denv denvp))
+    :returns (new-denv denv-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate a list of bindings,
+            threading the dynamic environment through them."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We evaluate each binding in turn,
+       extending the dynamic environment as we go,
+       and we return the final environment."))
+    (b* (((when (endp binds)) (denv-fix denv))
+         ((ok denv) (eval-bind (car binds) denv)))
+      (eval-bind-list (cdr binds) denv))
+    :measure (bind-list-count binds))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove eventually
+
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv-mutual eval-exprs/atoms/binds))

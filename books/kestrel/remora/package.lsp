@@ -55,6 +55,7 @@
                     str-fix
                     string=>nats
                     string-setp
+                    string-sfix
                     string-string-mapp
                     string-string-map-fix
                     string-string-map-pair

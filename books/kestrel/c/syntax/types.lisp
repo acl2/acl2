@@ -13,8 +13,8 @@
 
 (include-book "abstract-syntax-trees")
 (include-book "implementation-environments")
-(include-book "formalized")
-(include-book "langdef-mapping")
+(include-book "abstract-syntax-formal-subset")
+(include-book "abstract-syntax-formal-mapping-direct")
 (include-book "uid")
 (include-book "file-paths")
 
@@ -24,7 +24,6 @@
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 
-(include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
 (local (include-book "std/basic/inductions" :dir :system))
@@ -2440,7 +2439,7 @@
      and struct types with tags.")
    (xdoc::p
     "This predicate can be regarded as an extension of
-     the collection of @('-formalp') predicates in @(see formalized-subset)."))
+     the collection of @('-formalp') predicates in @(see abstract-syntax-formal-subset)."))
   (or (and (member-eq (type-kind type)
                       '(:void
                         :char :uchar :schar
@@ -2506,7 +2505,7 @@
    (xdoc::p
     "This function can be regarded as an extension of
      the collection of @('ldm-') functions
-     in @(see mapping-to-language-definition).
+     in @(see abstract-syntax-formal-mapping-direct).
      The supported types are the same as discussed in @(tsee type-formalp)."))
   (b* (((reterr) (c::type-void)))
     (type-case
