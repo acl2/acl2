@@ -11,12 +11,11 @@
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
 ; This file contains grammar rules for expressions
-; in the non-standard C dialects (i.e. with extensions)
-; [C17:6.5] [C23:6.5]
+; in the non-standard C dialects (i.e. with extensions).
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; As GCC and Clang extensions, we allow the following expressions.
+; As GCC and Clang extensions, we allow the following primary expressions.
 ; Although [GCCM] and [CLE] do not provide explicit grammar rules,
 ; we regard them as primary expressions, for the reasons explained below.
 ;
@@ -60,12 +59,11 @@
 ;   if there are parentheses, they belong to the expression,
 ;   which is therefore a parenthesized primary expression.
 
-primary-expression = primary-expression-std
-                   / "(" compound-statement ")"
-                   / types-compatible-call
-                   / offsetof-call
-                   / va-arg-call
-                   / %s"__extension__" primary-expression
+primary-expression-ext = "(" compound-statement ")"
+                       / types-compatible-call
+                       / offsetof-call
+                       / va-arg-call
+                       / %s"__extension__" primary-expression
 
 types-compatible-call =
     %s"__builtin_types_compatible_p" "(" type-name "," type-name ")"

@@ -17,9 +17,13 @@
 
 ; We define elif groups and control lines for C23.
 
-elif-group = elif-group-c23
+elif-group = elif-group-c17
+           / "#" %s"elifdef" identifier new-line [ group ]
+           / "#" %s"elifndef" identifier new-line [ group ]
 
-control-line = control-line-c23
+control-line = control-line-c17
+             / "#" %s"embed" pp-tokens new-line
+             / "#" %s"warning" [ pp-tokens ] new-line
 
 ; We add the rules for preprocessing parameters.
 
