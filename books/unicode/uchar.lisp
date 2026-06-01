@@ -456,8 +456,7 @@
 (defthm nat-listp-when-ustring?
   (implies (ustring? x)
            (nat-listp x))
-  :rule-classes ((:rewrite)
-                 (:forward-chaining)))
+  :rule-classes ((:forward-chaining)))
 
 (defthm ustring?-of-append
   (equal (ustring? (append x y))
