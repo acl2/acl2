@@ -933,7 +933,8 @@
   :returns (yes/no booleanp)
   :short "Check if a type is a scalar type [C17:6.2.5/21]."
   (or (type-arithmeticp type)
-      (type-case type :pointer))
+      (type-case type :pointer)
+      (type-case type :unknown-scalar))
 
   ///
 
@@ -942,7 +943,8 @@
                   (syntaxp (quotep kind)))
              (equal (type-scalarp type)
                     (or (type-arithmeticp type)
-                        (type-case type :pointer))))))
+                        (type-case type :pointer)
+                        (type-case type :unknown-scalar))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
