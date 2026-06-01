@@ -11,6 +11,10 @@
 
 (in-package "APT")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Utilities:
+
 (include-book "utilities/top")
 
 (include-book "def")
@@ -18,7 +22,13 @@
 (include-book "common-concepts")
 (include-book "common-options")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Transformations:
+
 (include-book "copy-function")
+
+(include-book "annotate-c-locals")
 
 (include-book "casesplit")
 
