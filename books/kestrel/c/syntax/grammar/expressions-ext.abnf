@@ -15,7 +15,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; As GCC and Clang extensions, we allow the following expressions.
+; As GCC and Clang extensions, we allow the following primary expressions.
 ; Although [GCCM] and [CLE] do not provide explicit grammar rules,
 ; we regard them as primary expressions, for the reasons explained below.
 ;

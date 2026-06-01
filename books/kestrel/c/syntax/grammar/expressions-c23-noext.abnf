@@ -17,4 +17,7 @@
 
 primary-expression = primary-expression-std
 
+postfix-expression = postfix-expression-std
+                   / postfix-expression-c23
+
 ; TODO: add other kinds of expressions

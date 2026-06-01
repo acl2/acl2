@@ -10,18 +10,11 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains grammar rules for expressions
-; in the C23 dialects with extensions.
+; This file contains grammar rules for expressions in the C17 dialects.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Since C23 already includes empty compound literals,
-; we do not need to add them here to postfix expressions, unlike C17.
+; Compound literals in C17 [C17:6.5.2/1] are different from C23.
 
-primary-expression = primary-expression-std
-                   / primary-expression-ext
-
-postfix-expression = postfix-expression-std
-                   / postfix-expression-c23
-
-; TODO: add other kinds of expressions
+postfix-expression-c17 = "(" type-name ")" "{" initializer-list "}"
+                       / "(" type-name ")" "{" initializer-list "," "}"

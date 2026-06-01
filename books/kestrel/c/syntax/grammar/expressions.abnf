@@ -35,4 +35,18 @@ generic-assoc-list = generic-association
 generic-association = type-name ":" assignment-expression
                     / %s"default" ":" assignment-expression
 
+; Most postfix expressions are the same in the C17 and C23 standards
+; [C17:6.5.2/1] [C23:6.5.3.1].
+
+postfix-expression-std = primary-expression
+                       / postfix-expression "[" expression "]"
+                       / postfix-expression "(" [ argument-expression-list ] ")"
+                       / postfix-expression "." identifier
+                       / postfix-expression "->" identifier
+                       / postfix-expression "++"
+                       / postfix-expression "--"
+
+argument-expression-list = assignment-expression
+                         / argument-expression-list "," assignment-expression
+
 ; TODO: add other kinds of expressions
