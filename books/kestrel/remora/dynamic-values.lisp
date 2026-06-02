@@ -461,7 +461,7 @@
 
 (std::deflist value-list-wfp (x)
   :guard (value-listp x)
-  :short "Check the dimension well-formedness of a list of values."
+  :short "Lift @(tsee value-wfp) to lists."
   (value-wfp x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
