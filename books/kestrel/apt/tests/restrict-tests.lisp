@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "restrict")
+(include-book "../restrict")
 
 (include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/testing/must-be-redundant" :dir :system)

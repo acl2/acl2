@@ -9,7 +9,7 @@
 
 (in-package "ACL2")
 
-(include-book "simplify")
+(include-book "../simplify")
 (include-book "std/testing/must-be-redundant" :dir :system)
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "kestrel/utilities/deftest" :dir :system)

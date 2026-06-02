@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "expdata")
+(include-book "../expdata")
 
 (include-book "std/testing/must-be-redundant" :dir :system)
 (include-book "std/testing/must-succeed-star" :dir :system)

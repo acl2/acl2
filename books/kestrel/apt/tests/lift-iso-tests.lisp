@@ -12,8 +12,8 @@
 (in-package "ACL2")
 
 
-(include-book "lift-iso")
-(include-book "../sequences/defforall")
+(include-book "../lift-iso")
+(include-book "kestrel/sequences/defforall" :dir :system)
 
 (include-book "arithmetic-5/top" :dir :system)
 (include-book "std/testing/must-be-redundant" :dir :system)
@@ -88,8 +88,7 @@
   :returns (b booleanp)
   (cond ((null x) t)
         ((atom x) nil)
-        ((not (int10 (car x))) nil) 
+        ((not (int10 (car x))) nil)
         ((all-int10b (cdr x))
          t)))
 (apt::lift-iso all-int10b int10-iso-int20)
-

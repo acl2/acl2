@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "rename-calls")
+(include-book "../rename-calls")
 (include-book "std/testing/must-be-redundant" :dir :system)
 
 (defund foo (x) (* (+ 1 1) x))
