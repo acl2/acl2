@@ -203,7 +203,11 @@
         but we do not yet indicate in the implementation environment
         what primitive type is equivalent to @('wchar_t').
         Therefore, we give such character constants the unknown type,
-        which is always acceptable."))
+        which is always acceptable.")
+      (xdoc::li
+       "An ``unknown scalar'' type that restricts
+        the previously described unknown type to be at least scalar.
+        This is useful to improve the precision of our validation."))
      (xdoc::p
       "Besides the approximations noted above,
        currently we do not capture atomic types [C17:6.2.5/20],
@@ -242,6 +246,7 @@
     (:pointer ((to type)))
     (:function ((ret type) (params type-params)))
     (:unknown ())
+    (:unknown-scalar ())
     :pred typep
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
@@ -1063,7 +1068,7 @@
      is implementation-defined,
      and could even vary based on the program,
      as mentioned in footnote 131 of [C17:6.7.2.2/4].
-     Thus, for now we promote the (one) enumerated type to unknown."))
+     Thus, for now we promote the (one) enumerated type to unknown scalar."))
   (type-case
    type
    :bool (type-sint)
@@ -1078,7 +1083,7 @@
    :ushort (if (<= (ienv->ushort-max ienv) (ienv->sint-max ienv))
                (type-sint)
              (type-uint))
-   :enum (type-unknown)
+   :enum (type-unknown-scalar)
    :otherwise (type-fix type))
 
   ///
@@ -1226,7 +1231,8 @@
      which is normally also the type of
      the result of the arithmetic operation.")
    (xdoc::p
-    "If either type is unkwnon, the result is the unkwnon type too.
+    "If either type is unknown, the result is the unknown scalar type;
+     we know that it must be at least scalar.
      This case will eventually go away,
      once we have a full type system in our validator.")
    (xdoc::p
@@ -1270,8 +1276,10 @@
            (type2 (type-integer-promote type2 ienv)))
         (cond
          ((or (type-case type1 :unknown)
-              (type-case type2 :unknown))
-          (type-unknown))
+              (type-case type1 :unknown-scalar)
+              (type-case type2 :unknown)
+              (type-case type2 :unknown-scalar))
+          (type-unknown-scalar))
          ((equal type1 type2)
           type1)
          ((and (type-signed-integerp type1)
@@ -1371,10 +1379,16 @@
      (xdoc::p
       "See @(tsee type-compatible-p) for a description
        of what type compatibility means and how we check it."))
-    (or (type-case y :unknown)
+    (or (type-case x :unknown)
+        (type-case y :unknown)
+        (and (type-case x :unknown-scalar)
+             (type-scalarp y))
+        (and (type-case y :unknown-scalar)
+             (type-scalarp x))
+        ;; The case of X and Y both unknown scalar
+        ;; is covered by (EQUAL (TYPE-FIX X) (TYPE-FIX Y)) at the end.
         (type-case
           x
-          :unknown t
           :struct
           (type-case
             y
@@ -1789,7 +1803,12 @@
      is established by the following cases:")
    (xdoc::ul
     (xdoc::li
-     "If either type is unknown, the types are compatible.")
+     "If any type is unknown, the types are compatible.")
+    (xdoc::li
+     "If neither type is unknown,
+      and one of the types is unknown scalar,
+      then the types are compatible iff
+      the other type is scalar or unknown scalar.")
     (xdoc::li
      "Structure type compatibility depends on
       whether they are declared in the same translation unit.
@@ -2073,6 +2092,9 @@
           :unknown (mv (type-fix x)
                        (type-completions-fix completions)
                        (uid-fix next-uid))
+          :unknown-scalar (mv (type-fix x)
+                              (type-completions-fix completions)
+                              (uid-fix next-uid))
           :otherwise (mv (irr-type)
                          (type-completions-fix completions)
                          (uid-fix next-uid)))
@@ -2108,6 +2130,9 @@
         :unknown (mv (type-fix y)
                      (type-completions-fix completions)
                      (uid-fix next-uid))
+        :unknown-scalar (mv (type-fix y)
+                            (type-completions-fix completions)
+                            (uid-fix next-uid))
         :otherwise (mv (type-fix x)
                        (type-completions-fix completions)
                        (uid-fix next-uid))))
@@ -2274,12 +2299,19 @@
   (xdoc::topstring
    (xdoc::p
     "In our approximate type system,
-     a composite type is a type that is compatible with both input types.
+     a composite type is a type that is compatible with both input types,
+     which must be compatible with each other
+     (we plan to add a guard for that).
      For function types, further constraints apply.
      See @(tsee type-params-composite-aux).")
    (xdoc::p
     "When taking the composite of the unknown type with any other type,
      we take the other type as the composite.
+     When taking the composite of the unknown scalar type with any other type
+     (not the unknown type, already covered by the previous sentence),
+     we take the other type as composite;
+     note that only the unknown scalar type and (known) scalar types
+     are compatible with the unknown scalar type.
      Our choice to take the more specific of the two compatible types
      is consistent with the general pattern
      of constraints outlined by the standard
@@ -2341,7 +2373,8 @@
                  nil))
       :pointer ienv.pointer-bytes
       :function nil
-      :unknown nil))
+      :unknown nil
+      :unknown-scalar nil))
   :measure (type-count type))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2543,7 +2576,8 @@
      :pointer (b* (((erp refd-type) (ldm-type type.to)))
                 (retok (c::make-type-pointer :to refd-type)))
      :function (reterr (msg "Type ~x0 not supported." (type-fix type)))
-     :unknown (reterr (msg "Type ~x0 not supported." (type-fix type)))))
+     :unknown (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :unknown-scalar (reterr (msg "Type ~x0 not supported." (type-fix type)))))
   :measure (type-count type)
   :verify-guards :after-returns
 

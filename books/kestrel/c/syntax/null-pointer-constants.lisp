@@ -46,6 +46,7 @@
   (type-case
    type
    :unknown t
+   :unknown-scalar t
    :pointer (b* (((unless (or (type-case type.to :void)
                               (type-case type.to :unknown)))
                   nil)
