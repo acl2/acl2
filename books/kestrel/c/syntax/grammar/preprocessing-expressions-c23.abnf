@@ -43,4 +43,5 @@ has-c-attribute-express = "__has_c_attribute" "(" pp-tokens ")"
 
 pp-specific-unary-expression = defined-macro-expression
                              / has-include-expression
+                             / has-embed-expression
                              / has-c-attribute-express
