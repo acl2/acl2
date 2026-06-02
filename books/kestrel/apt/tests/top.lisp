@@ -25,7 +25,7 @@
 (include-book "schemalg-concrete-tests")
 (include-book "schemalg-divconq-list-0-1-template-tests")
 (include-book "schemalg-divconq-oset-0-1-template-tests")
-;(include-book "simplify-conjunctions-tests") ; todo: name clash
+(include-book "simplify-conjunctions-tests")
 (include-book "simplify-defun-sk-tests")
 (include-book "simplify-defun-tests")
 (include-book "simplify-defun-with-cgen-tests")

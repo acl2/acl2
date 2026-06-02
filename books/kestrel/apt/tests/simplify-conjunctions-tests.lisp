@@ -16,14 +16,14 @@
 
 (acl2::add-known-boolean natp) ; todo: automate
 
-(defund foo1 (x) (and (natp x) (natp x)))
-(def foo1.new (simplify-conjunctions foo1))
+(defund conj1 (x) (and (natp x) (natp x)))
+(def conj1.new (simplify-conjunctions conj1))
 (must-be-redundant
- (defund foo1.new (x) (declare (xargs :verify-guards nil)) (natp x)) ; one occurence of natp got removed
- (defthm foo1-becomes-foo1.new (equal (foo1 x) (foo1.new x))))
+ (defund conj1.new (x) (declare (xargs :verify-guards nil)) (natp x)) ; one occurence of natp got removed
+ (defthm conj1-becomes-conj1.new (equal (conj1 x) (conj1.new x))))
 
-(defund foo2 (x y) (and (natp x) (equal x 3) (< x y)))
-(def foo2.new (simplify-conjunctions foo2))
+(defund conj2 (x y) (and (natp x) (equal x 3) (< x y)))
+(def conj2.new (simplify-conjunctions conj2))
 (must-be-redundant
- (defund foo2.new (x y) (declare (xargs :verify-guards nil)) (and (equal x 3) (< 3 y))) ; x got replaced by 3 and (natp 3) got evaluated
- (defthm foo2-becomes-foo2.new (equal (foo2 x y) (foo2.new x y))))
+ (defund conj2.new (x y) (declare (xargs :verify-guards nil)) (and (equal x 3) (< 3 y))) ; x got replaced by 3 and (natp 3) got evaluated
+ (defthm conj2-becomes-conj2.new (equal (conj2 x y) (conj2.new x y))))
