@@ -10,8 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "simplify-conjunctions")
-(include-book "def")
+(include-book "../simplify-conjunctions")
+(include-book "../def")
 (include-book "std/testing/must-be-redundant" :dir :system)
 
 (acl2::add-known-boolean natp) ; todo: automate
