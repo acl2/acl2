@@ -1,16 +1,25 @@
 (in-package "CPP")
 
+(include-book "cpp-expr-parser")
+
 ;; Standalone lambda parsing branch, not in mutual recursion.
 (define parse-cpp-primary-lambda ((tok-span spanp) (parstate parstatep))
   :returns (mv erp
                (expr cpp-expr-p)
                (span spanp)
                (new-parstate parstatep :hyp (parstatep parstate)))
-  (b* (;; tok? = '[' was consumed — put it back for parse-cpp-capture-list
+  (b* (;; tok? = '[' was consumed - put it back for parse-cpp-capture-list
        (parstate (unread-token parstate))
        ;; Parse captures '[' ... ']'
-       ((erp captures & parstate) (parse-cpp-capture-list-for-lambda parstate))
-       ;; Parse parameter list '(' params ')'
+       ((erp captures & parstate) (parse-cpp-capture-list parstate))
+       ;; Consume '(' before parameter list
+       ((erp lparen? lparen-span parstate) (read-token parstate))
+       ((unless (token-punctuatorp lparen? "("))
+        (reterr-msg :where (span->start lparen-span)
+                    :expected "'(' to begin lambda parameter list"
+                    :found lparen?
+                    :extra nil))
+       ;; Parse parameter list (after '(' consumed)
        ((erp params & parstate) (parse-cpp-param-list parstate))
        ;; Record parsize before consuming '{'
        (psize-lambda (parsize parstate))
