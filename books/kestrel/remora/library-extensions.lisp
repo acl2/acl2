@@ -24,4 +24,5 @@
     "These are used in the Remora library but are more general,
      and should be moved to more general libraries eventually."))
   :order-subtopics (nat-list-operations
-                    integer-list-operations))
+                    integer-list-operations
+                    list-theorems))
