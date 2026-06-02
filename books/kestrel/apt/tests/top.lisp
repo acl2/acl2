@@ -28,7 +28,7 @@
 (include-book "simplify-conjunctions-tests")
 (include-book "simplify-defun-sk-tests")
 (include-book "simplify-defun-tests")
-(include-book "simplify-defun-with-cgen-tests")
+;; (include-book "simplify-defun-with-cgen-tests") ; exclude due to trust tag
 (include-book "simplify-term-tests")
 (include-book "simplify-tests")
 (include-book "tailrec-tests")
