@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "rename-params")
+(include-book "../rename-params")
 (include-book "kestrel/utilities/deftest" :dir :system)
 
 ;trivial test

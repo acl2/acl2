@@ -1,6 +1,6 @@
 ; Tests of the finite-difference transformation
 ;
-; Copyright (C) 2015-2021 Kestrel Institute
+; Copyright (C) 2015-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "finite-difference")
+(include-book "../finite-difference")
 (include-book "kestrel/utilities/deftest" :dir :system)
 
 ;TODO: Test :check-guard option.

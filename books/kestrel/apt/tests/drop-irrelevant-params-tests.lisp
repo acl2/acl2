@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "drop-irrelevant-params")
+(include-book "../drop-irrelevant-params")
 (include-book "kestrel/utilities/deftest" :dir :system)
 
 ;; ----------------------------------------------------------------------

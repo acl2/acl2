@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "wrap-output")
+(include-book "../wrap-output")
 (include-book "kestrel/utilities/deftest" :dir :system)
 
 ;; Simple Test of wrapping a non-recursive function:
