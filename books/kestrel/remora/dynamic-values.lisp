@@ -358,9 +358,7 @@
      the dimensions are needed to check the containing values.
      So these functions define, simultaneously,
      predicates on values saying whether the values are well-formed,
-     and functions returning dimensions of well-formed values.")
-   (xdoc::p
-    "These functions do not check type constraints on values."))
+     and functions returning dimensions of well-formed values."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
