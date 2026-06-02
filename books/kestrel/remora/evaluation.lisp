@@ -17,6 +17,10 @@
 (include-book "kestrel/fty/integer-result" :dir :system)
 (include-book "kestrel/fty/integer-list-result" :dir :system)
 
+(local (include-book "list-theorems"))
+
+(local (include-book "std/basic/nfix" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -437,6 +441,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define vector-with-empty-dim ((dims nat-listp) (elem-type typep))
+  :guard (and (member-equal 0 dims)
+              (type-atomp elem-type))
+  :returns (val valuep)
+  :short "Build a vector value with an empty dimension."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to evaluate empty array expressions,
+     which must have at least one zero dimension and an atom type for elements,
+     as expressed by the guard.")
+   (xdoc::p
+    "We look at the first dimension,
+     which must be present because otherwise 0 could not be in the list.
+     If that dimension is 0, we return the empty vector
+     with the remaining dimensions and the element type.
+     If that dimension is not 0,
+     we recursively build a vector value
+     for the remaining dimensions (which must still include a 0)
+     and the element type,
+     and we replicate the value as many times as the first dimension,
+     to obtain the final vector value."))
+  (b* (((when (not (mbt (consp dims)))) (value-vector-empty nil elem-type))
+       (dim (lnfix (car dims))))
+    (if (= dim 0)
+        (make-value-vector-empty :dims (cdr dims) :atom elem-type)
+      (value-vector
+       (repeat dim (vector-with-empty-dim (cdr dims) elem-type)))))
+  :verify-guards :after-returns
+
+  ///
+
+  (defret check-dim-value-of-vector-with-empty-dim
+    (b* ((dims1 (check-dim-value val)))
+      (implies (member-equal 0 dims)
+               (and (not (reserrp dims1))
+                    (equal dims1 (nat-list-fix dims)))))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable vector-with-empty-dim
+                                check-dim-value
+                                check-dim-value-list-of-repeat
+                                acl2::not-reserrp-when-nat-listp
+                                acl2::not-reserrp-when-nat-list-listp
+                                car-of-repeat
+                                nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines eval-exprs/atoms/binds
   :short "Evaluate expressions, atoms, and bindings."
 
@@ -452,7 +505,11 @@
       "A variable is looked up in the dynamic environment;
        it must be present, and its associated value is returned.")
      (xdoc::p
-      "An atom expression evaluates to the value of its atom."))
+      "An atom expression evaluates to the value of its atom.")
+     (xdoc::p
+      "An empty array must have at least one 0 dimension,
+       and its element type must be an atom type.
+       We build the result via a separate function (see its documentation)."))
     (expr-case
      expr
      :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
@@ -460,7 +517,9 @@
             (cdr var+val))
      :atom (eval-atom expr.atom denv)
      :array (reserr :todo)
-     :array-empty (reserr :todo)
+     :array-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
+                       ((unless (type-atomp expr.type)) (reserr nil)))
+                    (vector-with-empty-dim expr.dims expr.type))
      :frame (reserr :todo)
      :frame-empty (reserr :todo)
      :string (reserr :todo)
