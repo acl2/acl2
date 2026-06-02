@@ -208,3 +208,8 @@
   (true-listp (ustring=>utf8 x))
   :rule-classes (:rewrite :type-prescription)
   :hints(("Goal" :induct (len x))))
+
+(defthm ustring=>utf8-of-append-when-ustrings
+  (equal (ustring=>utf8 (append x y))
+         (append (ustring=>utf8 x)
+                 (ustring=>utf8 y))))
