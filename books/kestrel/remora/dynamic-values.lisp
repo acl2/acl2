@@ -466,7 +466,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define value-dims ((val valuep))
+(define dims-of-value ((val valuep))
   :guard (value-wfp val)
   :returns (dims nat-listp :hints (("Goal" :in-theory (enable value-wfp))))
   :short "Dimensions of a well-formed value."
@@ -476,10 +476,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define value-list-dims ((vals value-listp))
+(define dims-of-value-list ((vals value-listp))
   :guard (value-list-wfp vals)
   :returns (dimss nat-list-listp)
-  :short "Lift @(tsee value-dims) to lists."
+  :short "Lift @(tsee dims-of-value) to lists."
   (cond ((endp vals) nil)
-        (t (cons (value-dims (car vals))
-                 (value-list-dims (cdr vals))))))
+        (t (cons (dims-of-value (car vals))
+                 (dims-of-value-list (cdr vals))))))
