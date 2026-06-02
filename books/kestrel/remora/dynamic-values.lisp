@@ -245,7 +245,7 @@
       "In Remora, every value, which an expression may evaluate to, is an array.
        Scalar values are zero-rank arrays, consisting of single atom values,
        but we do not define a distinct notion of atom value,
-       folding them into the initial summands of this fixtype of values
+       folding them into the first five summands of this fixtype of values
        (described in more detail below).
        Non-scalar values are positive-rank arrays,
        consisting of zero or more values of rank immediately lower
@@ -418,7 +418,17 @@
 
   ///
 
-  (fty::deffixequiv-mutual check-dim-values))
+  (fty::deffixequiv-mutual check-dim-values)
+
+  (defruled check-dim-value-list-of-repeat
+    (b* ((dims (check-dim-value val))
+         (dimss (check-dim-value-list (repeat n val))))
+      (implies (not (reserrp dims))
+               (and (not (reserrp dimss))
+                    (equal dimss (repeat n dims)))))
+    :induct (repeat n dims)
+    :enable (repeat
+             acl2::not-reserrp-when-nat-list-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
