@@ -10,16 +10,11 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains a grammar rule for floating constants
-; in the C17 dialect with GCC extensions
-; [C17:6.4.4.2/1].
+; This file contains grammar rules for expressions in the C17 dialects.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; GCC adds floating suffixes for
-; the additional floating types of size 16, 32, 64, and 128
-; (https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html).
+; Compound literals in C17 [C17:6.5.2/1] are different from C23.
 
-floating-suffix = %i"f"
-                / %i"l"
-                / %i"f" ( "16" / "32" / "64" / "128" ) [ %s"x" ]
+postfix-expression-c17 = "(" type-name ")" "{" initializer-list "}"
+                       / "(" type-name ")" "{" initializer-list "," "}"

@@ -83,8 +83,13 @@
 ; (depends-on "grammar/tokens.abnf")
 ; (depends-on "grammar/lexemes.abnf")
 ; (depends-on "grammar/expressions.abnf")
-; (depends-on "grammar/expressions-std.abnf")
+; (depends-on "grammar/expressions-c17.abnf")
+; (depends-on "grammar/expressions-c23.abnf")
 ; (depends-on "grammar/expressions-ext.abnf")
+; (depends-on "grammar/expressions-c17-noext.abnf")
+; (depends-on "grammar/expressions-c23-noext.abnf")
+; (depends-on "grammar/expressions-c17-ext.abnf")
+; (depends-on "grammar/expressions-c23-ext.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -381,14 +386,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar standard-pragmas
-  "standard pragmas in all the C dialects")
+(defgrammar standard-pragmas "standard pragmas in all the C dialects")
 
-(defgrammar standard-pragmas-c17
-  "standard pragmas in the C17 dialects")
+(defgrammar standard-pragmas-c17 "standard pragmas in the C17 dialects")
 
-(defgrammar standard-pragmas-c23
-  "standard pragmas in the C23 dialects")
+(defgrammar standard-pragmas-c23 "standard pragmas in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -401,13 +403,28 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgrammar expressions
-  "standard pragmas in all the C dialects")
+  "expressions in all the C dialects")
 
-(defgrammar expressions-std
-  "standard pragmas in the standard C dialects (i.e. without extensions)")
+(defgrammar expressions-c17
+  "expressions in the C17 dialects")
+
+(defgrammar expressions-c23
+  "expressions in the C23 dialects")
 
 (defgrammar expressions-ext
-  "standard pragmas in the non-standard C dialects (i.e. with extensions)")
+  "expressions in the non-standard C dialects (i.e. with extensions)")
+
+(defgrammar expressions-c17-noext
+  "expressions in the C17 dialect without extensions")
+
+(defgrammar expressions-c23-noext
+  "expressions in the C23 dialect without extensions")
+
+(defgrammar expressions-c17-ext
+  "expressions in the C17 dialects with extensions")
+
+(defgrammar expressions-c23-ext
+  "expressions in the C23 dialects with extensions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -550,9 +567,20 @@
      *grammar-lexemes*
      ;; expressions:
      *grammar-expressions*
-     (if (or dialect.gcc dialect.clang)
-         *grammar-expressions-ext*
-       *grammar-expressions-std*)
+     (c::standard-case
+      dialect.std
+      :c17 (append *grammar-expressions-c17*
+                   (if (or dialect.gcc
+                           dialect.clang)
+                       (append *grammar-expressions-ext*
+                               *grammar-expressions-c17-ext*)
+                     *grammar-expressions-c17-noext*))
+      :c23 (append *grammar-expressions-c23*
+                   (if (or dialect.gcc
+                           dialect.clang)
+                       (append *grammar-expressions-ext*
+                               *grammar-expressions-c23-ext*)
+                     *grammar-expressions-c23-noext*)))
      ;; rest (TODO: modularize):
      *grammar-rest*))
 

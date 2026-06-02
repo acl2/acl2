@@ -19,11 +19,9 @@
 ; except for elif groups and control lines,
 ; which have additional alternatives in [C23],
 ; and except that [C23] adds rules involving preprocessing parameters.
-; In this file we define elif groups and control lines specific to C17 and C23,
+; In this file we define elif groups and control lines specific to C17,
 ; which the files preprocessing-directives-*.abnf use
 ; to define elif groups and control lines.
-; The rules involving preprocessing parameters are
-; in preprocessing-directives-c23.abnf only.
 
 ; We use 'pp-expression' instead of 'constant-expression'
 ; for the expressions in the #if and #elif directives.
@@ -50,10 +48,6 @@ elif-groups = elif-group
 
 elif-group-c17 = "#" %s"elif" pp-expression new-line [ group ]
 
-elif-group-c23 = elif-group-c17
-               / "#" %s"elifdef" identifier new-line [ group ]
-               / "#" %s"elifndef" identifier new-line [ group ]
-
 else-group = "#" %s"else" new-line [ group ]
 
 endif-line = "#" %s"endif" new-line
@@ -72,10 +66,6 @@ control-line-c17 =
   / "#" %s"error" [ pp-tokens ] new-line
   / "#" %s"pragma" [ pp-tokens ] new-line
   / "#" new-line
-
-control-line-c23 = control-line-c17
-                 / "#" %s"embed" pp-tokens new-line
-                 / "#" %s"warning" pp-tokens new-line
 
 text-line = [ pp-tokens ] new-line
 

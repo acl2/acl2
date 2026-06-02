@@ -19,10 +19,8 @@
 ; The 32 graphic characters in [C23:5.3.1], part of the basic character set.
 
 graphic-character = %x21-2f ; ! " # $ % & ' ( ) * + , - . /
-                  / %x3a-3f ; : ; < = > ?
-                  / %x40    ; @
-                  / %x5b-5f ; [ \ ] ^ _
-                  / %x60    ; `
+                  / %x3a-40 ; : ; < = > ? @
+                  / %x5b-60 ; [ \ ] ^ _ `
                   / %x7b-7e ; { | } ~
 
 ; The extended characters [C23:5.3.1]; see characters.abnf.
@@ -39,39 +37,39 @@ extended-character-not-new-line = safe-nonascii
 
 graphic-character-not-star = %x21-29 ; ! " # $ % & ' ( )
                            / %x2b-2f ; + , - . /
-                           / %x3a-3f ; : ; < = > ?
-                           / %x5b-5f ; [ \ ] ^ _
+                           / %x3a-40 ; : ; < = > ? @
+                           / %x5b-60 ; [ \ ] ^ _ `
                            / %x7b-7e ; { | } ~
 
 graphic-character-not-greater-than = %x21-2f ; ! " # $ % & ' ( ) * + , - . /
                                    / %x3a-3d ; : ; < =
-                                   / %x3f ; ?
-                                   / %x5b-5f ; [ \ ] ^ _
+                                   / %x3f-40 ; ? @
+                                   / %x5b-60 ; [ \ ] ^ _ `
                                    / %x7b-7e ; { | } ~
 
 graphic-character-not-double-quote = %x21 ; !
                                    / %x23-2f ; # $ % & ' ( ) * + , - . /
-                                   / %x3a-3f ; : ; < = > ?
-                                   / %x5b-5f ; [ \ ] ^ _
+                                   / %x3a-40 ; : ; < = > ? @
+                                   / %x5b-60 ; [ \ ] ^ _ `
                                    / %x7b-7e ; { | } ~
 
 graphic-character-not-star-or-slash = %x21-29 ; ! " # $ % & ' ( )
                                     / %x2b-2e ; + , - .
-                                    / %x3a-3f ; : ; < = > ?
-                                    / %x5b-5f ; [ \ ] ^ _
+                                    / %x3a-40 ; : ; < = > ? @
+                                    / %x5b-60 ; [ \ ] ^ _ `
                                     / %x7b-7e ; { | } ~
 
 graphic-character-not-single-quote-or-backslash = %x21-26 ; ! " # $ % &
                                                 / %x28-2f ; ( ) * + , - . /
-                                                / %x3a-3f ; : ; < = > ?
+                                                / %x3a-40 ; : ; < = > ? @
                                                 / %x5b    ; [
-                                                / %x5d-5f ; ] ^ _
+                                                / %x5d-60 ; ] ^ _ `
                                                 / %x7b-7e ; { | } ~
 
 graphic-character-not-double-quote-or-backslash =
       %x21    ; !
-    / %x24-2f ; # $ % & ' ( ) * + , - . /
-    / %x3a-3f ; : ; < = > ?
+    / %x23-2f ; # $ % & ' ( ) * + , - . /
+    / %x3a-40 ; : ; < = > ? @
     / %x5b    ; [
-    / %x5d-5f ; ] ^ _
+    / %x5d-60 ; ] ^ _ `
     / %x7b-7e ; { | } ~

@@ -11,7 +11,7 @@
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
 ; This file contains a grammar rule for preprocessing numbers
-; in the C23 dialects [C17:6.4.9].
+; in the C23 dialects [C23:6.4.9].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
