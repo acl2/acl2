@@ -278,7 +278,7 @@
        (not the dimensions of the whole vector,
        which is obtained by adding a 0 dimension
        in front of the elements' dimensions;
-       see @(tsee check-dim-value))
+       see @(tsee check-dims-of-value))
        and (ii) an (atom) type value;
        together, (i) and (ii) determine the array type of the value.")
      (xdoc::p
@@ -345,7 +345,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines check-dim-values
+(defines check-dims-of-values
   :short "Check dimension constraints on values and lists of values."
   :long
   (xdoc::topstring
@@ -364,9 +364,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define check-dim-value ((val valuep))
+  (define check-dims-of-value ((val valuep))
     :returns (dims nat-list-resultp)
-    :parents (values check-dim-values)
+    :parents (values check-dims-of-values)
     :short "Check dimension constraints on values."
     :long
     (xdoc::topstring
@@ -401,7 +401,7 @@
      :tlambda nil
      :ilambda nil
      :box nil
-     :vector (b* (((ok dimss) (check-dim-value-list val.elems))
+     :vector (b* (((ok dimss) (check-dims-of-value-list val.elems))
                   ((unless (consp dimss)) (reserr nil))
                   (dims (car dimss))
                   ((unless (all-equalp dims dimss)) (reserr nil)))
@@ -411,9 +411,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define check-dim-value-list ((vals value-listp))
+  (define check-dims-of-value-list ((vals value-listp))
     :returns (dimss nat-list-list-resultp)
-    :parents (values check-dim-values)
+    :parents (values check-dims-of-values)
     :short "Check dimension constraints on lists of values."
     :long
     (xdoc::topstring
@@ -422,8 +422,8 @@
        If they all check successfully,
        we return the dimensions of each, in the same order as the list."))
     (b* (((when (endp vals)) nil)
-         ((ok dims) (check-dim-value (car vals)))
-         ((ok dimss) (check-dim-value-list (cdr vals))))
+         ((ok dims) (check-dims-of-value (car vals)))
+         ((ok dimss) (check-dims-of-value-list (cdr vals))))
       (cons dims dimss))
     :measure (value-list-count vals))
 
@@ -435,11 +435,11 @@
 
   ///
 
-  (fty::deffixequiv-mutual check-dim-values)
+  (fty::deffixequiv-mutual check-dims-of-values)
 
-  (defruled check-dim-value-list-of-repeat
-    (b* ((dims (check-dim-value val))
-         (dimss (check-dim-value-list (repeat n val))))
+  (defruled check-dims-of-value-list-of-repeat
+    (b* ((dims (check-dims-of-value val))
+         (dimss (check-dims-of-value-list (repeat n val))))
       (implies (not (reserrp dims))
                (and (not (reserrp dimss))
                     (equal dimss (repeat n dims)))))
@@ -456,7 +456,7 @@
   (xdoc::topstring
    (xdoc::p
     "That is, whether it satisfies the dimension constraints."))
-  (not (reserrp (check-dim-value val))))
+  (not (reserrp (check-dims-of-value val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -472,7 +472,7 @@
   :returns (dims nat-listp :hints (("Goal" :in-theory (enable value-dim-wfp))))
   :short "Dimensions of a well-formed value."
   (if (mbt (value-dim-wfp val))
-      (check-dim-value val)
+      (check-dims-of-value val)
     nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -474,16 +474,16 @@
 
   ///
 
-  (defret check-dim-value-of-vector-with-empty-dim
-    (b* ((dims1 (check-dim-value val)))
+  (defret check-dims-of-value-of-vector-with-empty-dim
+    (b* ((dims1 (check-dims-of-value val)))
       (implies (member-equal 0 dims)
                (and (not (reserrp dims1))
                     (equal dims1 (nat-list-fix dims)))))
     :hints (("Goal"
              :induct t
              :in-theory (enable vector-with-empty-dim
-                                check-dim-value
-                                check-dim-value-list-of-repeat
+                                check-dims-of-value
+                                check-dims-of-value-list-of-repeat
                                 acl2::not-reserrp-when-nat-listp
                                 acl2::not-reserrp-when-nat-list-listp
                                 car-of-repeat
