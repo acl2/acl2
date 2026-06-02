@@ -17,6 +17,8 @@
 (include-book "kestrel/json-parser/parse-json" :dir :system)
 (include-book "kestrel/json-parser/parse-json-file" :dir :system)
 (include-book "kestrel/utilities/trans-eval-error-triple" :dir :system)
+(include-book "kestrel/utilities/nat-to-string" :dir :system)
+(include-book "kestrel/file-io-light/write-strings-to-file" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,7 +130,7 @@
 
 ; takes in a JSON value and tries to parse it into a request+error
 (define parse-rpc-request ((val json::valuep))
-  :returns (mv (id idp) (req-err request+errorp))
+  :returns (mv (id idp) (req+err request+errorp))
   (b* (((unless (json::value-case val :object))
         (mv (id-null)
             (request+error-error
@@ -139,31 +141,37 @@
                      (equal (json::value-string->get jsonrpc-val?) "2.0")))
         (mv (id-null)
             (request+error-error
-             (make-invalid-request-error "Missing or invalid \"jsonrpc\" field; must be \"2.0\""))))
+             (make-invalid-request-error 
+              "Missing or invalid \"jsonrpc\" field; must be \"2.0\""))))
        (method-val? (json::object-member-value? "method" val))
        ((unless (and method-val?
                      (json::value-case method-val? :string)))
         (mv (id-null)
             (request+error-error
-             (make-invalid-request-error "Missing or invalid \"method\" field; must be a string"))))
+             (make-invalid-request-error 
+              "Missing or invalid \"method\" field; must be a string"))))
        (method (json::value-string->get method-val?))
        (params-presentp (json::object-has-member-p "params" val))
-       (params-val? (and params-presentp (json::object-member-value? "params" val)))
+       (params-val? (and params-presentp 
+                         (json::object-member-value? "params" val)))
        ((when (and params-val?
                    (not (json::value-case params-val? :array))
                    (not (json::value-case params-val? :object))))
         (mv (id-null)
             (request+error-error
-             (make-invalid-request-error "\"params\" must be an array or object"))))
+             (make-invalid-request-error 
+              "\"params\" must be an array or object"))))
        (params-is-arr (and params-val? (json::value-case params-val? :array)))
-       (params-arr (if params-is-arr params-val? (json::value-null)))
-       (params-obj (if params-is-arr (json::value-null) params-val?))
+       (params-arr (and params-val? params-is-arr 
+                        (json::value-array->elements params-val?)))
+       (params-obj (and params-val? (not params-is-arr) 
+                        (json::value-object->members params-val?)))
        ((mv has-id is-valid id-val) (parse-rpc-id val))
        ((unless is-valid)
         (mv (id-null)
             (request+error-error
              (make-invalid-request-error 
-              "Invalid \"id\" field; must either be a number, string, or null"))))
+              "\"id\" must either be a number, string, or null"))))
        (notificationp (not has-id)))
     (mv id-val
         (request+error-request
@@ -173,16 +181,19 @@
                        :params-arr params-arr
                        :params-obj params-obj
                        :notificationp notificationp
-                       :id id-val))))
-  :verify-guards :after-returns)
+                       :id id-val)))))
 
-(define parse-rpc-elements ((elems json::value-listp))
-  (if (endp elems)
-      nil
-    (cons (parse-rpc-element (car elems))
-          (parse-rpc-elements (cdr elems)))))
+; takes in a JSON array and tries to parse it into an id-request+error-alist
+(define parse-rpc-requests ((vals json::value-listp))
+  :returns (id-req+err-alist id-request+error-alistp)
+  (b* (((when (endp vals)) nil)
+       ((mv id req+err) (parse-rpc-request (car vals))))
+    (cons (cons id req+err)
+          (parse-rpc-requests (cdr vals)))))
 
+; takes in a string and tries to parse it into an id-request-error-alist
 (define parse-json-rpc ((msg stringp))
+  :returns (id-req+err-alist id-request+error-alistp)
   (b* (((mv erp parsed) (parse-string-as-json msg))
        ((when erp)
         (list (cons (id-null)
@@ -198,15 +209,20 @@
              ((when (endp elems))
               (list (cons (id-null)
                           (request+error-error
-                           (make-invalid-request-error "Batch request array must not be empty"))))))
-          (parse-rpc-elements elems)))
+                           (make-invalid-request-error 
+                            "Batch request array must not be empty"))))))
+          (parse-rpc-requests elems)))
        ((when (json::value-case value :object))
-        (list (parse-rpc-element value))))
+        (b* (((mv id req+err) (parse-rpc-request value)))
+          (list (cons id req+err)))))
     (list (cons (id-null)
                 (request+error-error
-                 (make-invalid-request-error "Top-level JSON value must be an object or array"))))))
+                 (make-invalid-request-error 
+                  "Top-level JSON value must be an object or array"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This section deals with converting an ACL2 JSON value to a JSON string
 
 (define json-escape-char ((ch characterp))
   :returns (s stringp)
@@ -222,8 +238,9 @@
   :returns (s stringp)
   (if (endp chars)
       ""
-    (string-append (json-escape-char (car chars))
-                   (json-escape-string-chars (cdr chars)))))
+    (concatenate 'string 
+                 (json-escape-char (car chars))
+                 (json-escape-string-chars (cdr chars)))))
 
 (define json-escape-string ((s stringp))
   :returns (escaped stringp)
@@ -232,53 +249,76 @@
 (define rational-to-json-string ((r rationalp))
   :returns (s stringp)
   (if (integerp r)
-      (coerce (explode-atom r 10) 'string)
-    (string-append (coerce (explode-atom (numerator r) 10) 'string)
-                   (string-append "e-"
-                                  (coerce (explode-atom (denominator r) 10) 'string)))))
+      (if (< r 0)
+          (string-append "-" (nat-to-string (- r)))
+        (nat-to-string r))
+    (concatenate 'string 
+                 (if (< (numerator r) 0) "-" "")
+                 (nat-to-string (abs (numerator r)))
+                 "/" 
+                 (nat-to-string (denominator r)))))
 
 (defines value-to-json-string
 
   (define value-to-json-string ((val json::valuep))
     :returns (s stringp)
-    :measure (two-nats-measure (acl2-count val) 0)
+    :measure (json::value-count val)
     (json::value-case val
-      :null    "null"
-      :true    "true"
-      :false   "false"
-      :number  (rational-to-json-string val.get)
-      :string  (string-append "\"" (string-append (json-escape-string val.get) "\""))
-      :array   (string-append "[" (string-append (value-list-to-json-string val.elements) "]"))
-      :object  (string-append "{" (string-append (member-list-to-json-string val.members) "}"))))
+      :null "null"
+      :true "true"
+      :false "false"
+      :number (rational-to-json-string val.get)
+      :string (concatenate 'string 
+                           "\"" 
+                           (json-escape-string val.get) 
+                           "\"")
+      :array (concatenate 'string 
+                          "[" 
+                          (value-list-to-json-string val.elements)
+                          "]")
+      :object (concatenate 'string 
+                           "{" 
+                           (member-list-to-json-string val.members)
+                           "}")))
 
   (define value-list-to-json-string ((vals json::value-listp))
     :returns (s stringp)
-    :measure (two-nats-measure (acl2-count vals) 0)
+    :measure (json::value-list-count vals)
     (cond ((endp vals) "")
           ((endp (cdr vals)) (value-to-json-string (car vals)))
-          (t (string-append (value-to-json-string (car vals))
-                            (string-append "," (value-list-to-json-string (cdr vals)))))))
+          (t 
+           (concatenate 'string
+                        (value-to-json-string (car vals))
+                        "," 
+                        (value-list-to-json-string (cdr vals))))))
 
   (define member-list-to-json-string ((members json::member-listp))
     :returns (s stringp)
-    :measure (two-nats-measure (acl2-count members) 0)
+    :measure (json::member-list-count members)
     (if (endp members)
         ""
       (b* ((m (car members))
-           (entry (string-append
-                   (string-append "\"" (string-append (json-escape-string (json::member->name m)) "\""))
-                   (string-append ":" (value-to-json-string (json::member->value m))))))
+           (entry (concatenate 'string
+                               "\""
+                               (json-escape-string (json::member->name m))
+                               "\":"
+                               (value-to-json-string (json::member->value m)))))
         (if (endp (cdr members))
             entry
-          (string-append entry (string-append "," (member-list-to-json-string (cdr members)))))))))
+          (concatenate 'string 
+                       entry 
+                       "," 
+                       (member-list-to-json-string (cdr members))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This section deals with building responses
 
 (define id-to-json-value ((id idp))
   :returns (val json::valuep)
   (id-case id
     :string  (json::value-string id.get)
-    :integer (json::value-number id.get)
+    :number (json::value-number id.get)
     :null    (json::value-null)))
 
 (define make-success-response ((id idp) (result json::valuep))
@@ -288,16 +328,16 @@
          (json::make-member :name "result"  :value result)
          (json::make-member :name "id"      :value (id-to-json-value id)))))
 
-(define make-error-response ((id idp) (err errorp))
+(define make-error-response ((id idp) (err error2p))
   :returns (val json::valuep)
   (b* ((error-obj-members
         (append (list (json::make-member :name "code"
-                                        :value (json::value-number (error->code err)))
+                                        :value (json::value-number (error2->code err)))
                       (json::make-member :name "message"
-                                        :value (json::value-string (error->message err))))
-                (if (error->data err)
+                                        :value (json::value-string (error2->message err))))
+                (if (error2->data err)
                     (list (json::make-member :name "data"
-                                            :value (error->data err)))
+                                            :value (error2->data err)))
                   nil))))
     (json::value-object
      (list (json::make-member :name "jsonrpc" :value (json::value-string "2.0"))
@@ -306,60 +346,116 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defines json-value-to-lisp-value
+
+  (define json-value-to-lisp-value ((val json::valuep))
+    :measure (json::value-count val)
+    (json::value-case val
+      :null   nil
+      :true   t
+      :false  nil
+      :number val.get
+      :string val.get
+      :array  (json-value-list-to-lisp-values val.elements)
+      :object (json-member-list-to-lisp-values val.members)))
+
+  (define json-value-list-to-lisp-values ((vals json::value-listp))
+    :returns (lisp-vals true-listp)
+    :measure (json::value-list-count vals)
+    (if (endp vals)
+        nil
+      (cons (json-value-to-lisp-value (car vals))
+            (json-value-list-to-lisp-values (cdr vals)))))
+
+  (define json-member-list-to-lisp-values ((members json::member-listp))
+    :returns (lisp-vals alistp)
+    :measure (json::member-list-count members)
+    (if (endp members)
+        nil
+      (b* ((m (car members))
+           (key (json::member->name m))
+           (val (json-value-to-lisp-value (json::member->value m)))
+           (rest (json-member-list-to-lisp-values (cdr members))))
+        (cons (cons key val) rest)))))
+
+(define json-value-list-to-lisp-params ((vals json::value-listp))
+  :returns (params true-listp)
+  (json-value-list-to-lisp-values vals))
+
+(define json-member-list-to-lisp-params ((members json::member-listp))
+  :returns (params true-listp)
+  (if (endp members)
+      nil
+    (b* ((m (car members))
+         (key (intern (string-upcase (json::member->name m)) "KEYWORD"))
+         (val (json-value-to-lisp-value (json::member->value m)))
+         (rest (json-member-list-to-lisp-params (cdr members))))
+      (cons key (cons val rest)))))
+
+;; NOTE: right now, dispatch is sending the raw result from the method function
+;; to make-success-response, which requires a JSON value. There are a few
+;; issues with this. If we want to convert lisp value to JSON value, there's a
+;; lot of subtleties, one of which is settling what nil is (null, false, empty
+;; list). Another way is to limit requests to functions defined inside the
+;; jsonrpc package; we can then enforce that any function has to return a JSON
+;; value. Will circle back
+
 (define dispatch-request ((req requestp) ctx state)
   :mode :program
   :stobjs state
-  (b* ((method-sym (intern (string-upcase (request->method req)) "JSONRPC"))
-       (form `(,method-sym
-               ',(request->params-presentp req)
-               ',(request->params req)
-               ',(request->notificationp req)
-               ',(request->id req)
-               state)))
-    (trans-eval-error-triple form ctx state)))
+  (b* (;; NOTE: not sure what the convention is here. This would probably be a
+       ;; local function so don't know if type checking is necessary
+;       ((unless (requestp req)) (raise "The REQ input must be a request"))
+       (method-sym (intern (string-upcase (request->method req)) "ACL2"))
+       (form (cond
+              ((not (request->params-presentp req))
+               `(,method-sym))
+              ((request->params-is-arr req)
+               `(,method-sym ,@(kwote-lst (json-value-list-to-lisp-params
+                                           (request->params-arr req)))))
+              (t
+               `(,method-sym ,@(kwote-lst (json-member-list-to-lisp-params
+                                           (request->params-obj req))))))))
+    (trans-eval form ctx state t)))
 
-(define process-one (pair ctx state)
+
+;; NOTE: shoulde process-one and process-all attach the state to its outputs
+(define process-one ((id idp) (val request+errorp) ctx state)
   :mode :program
   :stobjs state
-  (b* ((id  (car pair))
-       (val (cdr pair)))
-    (request+error-case val
-      :error
-      (mv (make-error-response id val.get) state)
-      :request
-      (b* ((req val.get)
-           ((when (request->notificationp req))
-            (mv nil state))
-           ((mv erp result state)
-            (dispatch-request req ctx state))
-           ((when erp)
-            (mv (make-error-response
-                 id
-                 (make-error :code -32603
-                             :message "Internal error"
-                             :data (json::value-string (fmt-to-string "~@0" (list (cons #\0 erp))))))
-                state)))
-        (mv (make-success-response id result) state)))))
+  (request+error-case val
+    :error (mv (make-error-response id val.get) state)
+    :request (b* (;; NOTE: same comments as the previous function
+;                  ((unless (idp id)) (raise "The ID input must be an id"))
+;                  ((unless (request+errorp req+err))
+;                   (raise "The REQ+ERR input must be a request+error"))
+                  (req val.get)
+                  ((when (request->notificationp req)) 
+                   (mv nil state))
+                  ;; NOTE: trans-eval returns an error triple where the value
+                  ;; component is (stobjs . value), so we need to extract the
+                  ;; result by using (cdr result)
+                  ((mv erp result state)
+                   (dispatch-request req ctx state))
+                  ((when erp)
+                   (mv (make-error-response
+                        id
+                        (make-error2 :code -32603
+                                :message "Internal error"
+                                :data nil)) ; TODO: return better error messages
+                       state)))
+               (mv (make-success-response id (cdr result)) state))))
 
-(define process-all (pairs ctx state)
+(define process-all ((pairs id-request+error-alistp) ctx state)
   :mode :program
   :stobjs state
   (if (endp pairs)
       (mv nil state)
-    (b* (((mv resp state) (process-one (car pairs) ctx state))
+    (b* (((mv resp state) (process-one (caar pairs) (cdar pairs) ctx state))
          ((mv rest state) (process-all (cdr pairs) ctx state)))
-      (mv (if resp (cons resp rest) rest) state))))
-
-(define write-string-to-file ((filename stringp) (str stringp) state)
-  :mode :program
-  :stobjs state
-  (mv-let (chan state)
-    (open-output-channel filename :character state)
-    (if (null chan)
-        (progn$ (er hard? 'write-string-to-file "Could not open output file: ~x0" filename)
-                state)
-      (let ((state (princ$ str chan state)))
-        (close-output-channel chan state)))))
+      (if resp 
+          (mv (cons resp rest) state) 
+        (mv rest state)))))
 
 (define process-json-rpc-file ((input-file stringp) (output-file stringp) state)
   :mode :program
@@ -373,9 +469,13 @@
         (cond ((endp responses) nil)
               (batchp (json::value-array responses))
               (t (car responses))))
-       (state
+       ;; NOTE: very ugly here, need to fix the below case
+       ((mv & state)
         (if response-val
-            (write-string-to-file output-file (value-to-json-string response-val) state)
-          state)))
+            (write-strings-to-file (list (value-to-json-string response-val)) 
+                                   output-file
+                                   'process-json-rpc-file
+                                   state)
+          (mv nil state))))
     (mv nil state)))
 
