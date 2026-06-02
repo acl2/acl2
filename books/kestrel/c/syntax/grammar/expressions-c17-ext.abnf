@@ -11,11 +11,19 @@
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
 ; This file contains grammar rules for expressions
-; in the standard C dialects (i.e. without extensions)
-; [C17:6.5] [C23:6.5].
+; in the C17 dialects with extensions.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; GCC and Clang allow empty compound literals in C17
+; [GCCM:6.2.10](https://gcc.gnu.org/onlinedocs/gcc/Compound-Literals.html).
+; [CLE] does not seem to mention them, but Clang implementations accept them.
+
 primary-expression = primary-expression-std
+                   / primary-expression-ext
+
+postfix-expression = postfix-expression-std
+                   / postfix-expression-c17
+                   / "(" type-name ")" "{" "}"
 
 ; TODO: add other kinds of expressions

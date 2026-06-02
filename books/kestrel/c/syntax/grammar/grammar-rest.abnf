@@ -20,12 +20,6 @@
 
 ; Expressions [C17:A.2.1]
 
-; As a GCC extension, we allow empty compound literals.
-; GCC extensions for compound literals are described in
-; https://gcc.gnu.org/onlinedocs/gcc/Compound-Literals.html,
-; which does not actually mention empty compound literals,
-; but we have encountered them in practical code.
-
 ; As a GCC extensions, we allow conditionals with omitted operands,
 ; documented at https://gcc.gnu.org/onlinedocs/gcc/Conditionals.html.
 
@@ -45,20 +39,6 @@
 ; As a GCC extension, we include the unary '&&' operator applied to labels
 ; (https://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html),
 ; which syntactically are identifiers (cf. the rule for labeled statements).
-
-postfix-expression = primary-expression
-                   / postfix-expression "[" expression "]"
-                   / postfix-expression "(" [ argument-expression-list ] ")"
-                   / postfix-expression "." identifier
-                   / postfix-expression "->" identifier
-                   / postfix-expression "++"
-                   / postfix-expression "--"
-                   / "(" type-name ")" "{" initializer-list "}"
-                   / "(" type-name ")" "{" initializer-list "," "}"
-                   / "(" type-name ")" "{" "}" ; GCC extension
-
-argument-expression-list = assignment-expression
-                         / argument-expression-list "," assignment-expression
 
 unary-expression = postfix-expression
                  / "++" unary-expression
