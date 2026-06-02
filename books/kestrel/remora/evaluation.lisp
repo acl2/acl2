@@ -441,16 +441,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define vector-with-empty-dim ((dims nat-listp) (elem-type typep))
+(define vector-with-empty-dim ((dims nat-listp) (elem type-valuep))
   :guard (and (member-equal 0 dims)
-              (type-atomp elem-type))
+              (type-value-atomp elem))
   :returns (val valuep)
   :short "Build a vector value with an empty dimension."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is used to evaluate empty array expressions,
-     which must have at least one zero dimension and an atom type for elements,
+     which must have at least one zero dimension
+     and an atom type (value) for elements,
      as expressed by the guard.")
    (xdoc::p
     "We look at the first dimension,
@@ -463,12 +464,12 @@
      and the element type,
      and we replicate the value as many times as the first dimension,
      to obtain the final vector value."))
-  (b* (((when (not (mbt (consp dims)))) (value-vector-empty nil elem-type))
+  (b* (((when (not (mbt (consp dims)))) (value-vector-empty nil elem))
        (dim (lnfix (car dims))))
     (if (= dim 0)
-        (make-value-vector-empty :dims (cdr dims) :atom elem-type)
+        (make-value-vector-empty :dims (cdr dims) :elem elem)
       (value-vector
-       (repeat dim (vector-with-empty-dim (cdr dims) elem-type)))))
+       (repeat dim (vector-with-empty-dim (cdr dims) elem)))))
   :verify-guards :after-returns
 
   ///
@@ -508,7 +509,7 @@
       "An atom expression evaluates to the value of its atom.")
      (xdoc::p
       "An empty array must have at least one 0 dimension,
-       and its element type must be an atom type.
+       and its element type must evaluate to an atom type value.
        We build the result via a separate function (see its documentation)."))
     (expr-case
      expr
@@ -518,8 +519,9 @@
      :atom (eval-atom expr.atom denv)
      :array (reserr :todo)
      :array-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-                       ((unless (type-atomp expr.type)) (reserr nil)))
-                    (vector-with-empty-dim expr.dims expr.type))
+                       ((ok elem) (eval-type expr.type denv))
+                       ((unless (type-value-atomp elem)) (reserr nil)))
+                    (vector-with-empty-dim expr.dims elem))
      :frame (reserr :todo)
      :frame-empty (reserr :todo)
      :string (reserr :todo)

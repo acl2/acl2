@@ -165,6 +165,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-value-atomp ((tval type-valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a type value has the atom kind."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee type-atomp)."))
+  (type-value-case tval
+                   :base t
+                   :array nil
+                   :fun t
+                   :forall t
+                   :pi t
+                   :sigma t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod int-value
   :short "Fixtype of integer values."
   :long
@@ -262,7 +279,7 @@
        which is obtained by adding a 0 dimension
        in front of the elements' dimensions;
        see @(tsee check-dim-value))
-       and (ii) an atom type;
+       and (ii) an (atom) type value;
        together, (i) and (ii) determine the array type of the value.")
      (xdoc::p
       "The atoms that form scalar values are
@@ -299,7 +316,7 @@
            (type type)))
     (:vector ((elems value-list)))
     (:vector-empty ((dims nat-list)
-                    (atom type)))
+                    (elem type-value)))
     :pred valuep)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
