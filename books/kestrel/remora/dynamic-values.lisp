@@ -447,36 +447,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define value-dim-wfp ((val valuep))
+(define value-wfp ((val valuep))
   :returns (yes/no booleanp)
-  :short "Check the dimension well-formedness of a value."
+  :short "Check if a value is well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
-    "That is, whether it satisfies the dimension constraints."))
+    "The value must satisfy the dimension constraints.
+     We will extend this to also add the satisfaction of type constraints."))
   (not (reserrp (check-dims-of-value val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist value-list-dim-wfp (x)
+(std::deflist value-list-wfp (x)
   :guard (value-listp x)
   :short "Check the dimension well-formedness of a list of values."
-  (value-dim-wfp x))
+  (value-wfp x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define value-dims ((val valuep))
-  :guard (value-dim-wfp val)
-  :returns (dims nat-listp :hints (("Goal" :in-theory (enable value-dim-wfp))))
+  :guard (value-wfp val)
+  :returns (dims nat-listp :hints (("Goal" :in-theory (enable value-wfp))))
   :short "Dimensions of a well-formed value."
-  (if (mbt (value-dim-wfp val))
+  (if (mbt (value-wfp val))
       (check-dims-of-value val)
     nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define value-list-dims ((vals value-listp))
-  :guard (value-list-dim-wfp vals)
+  :guard (value-list-wfp vals)
   :returns (dimss nat-list-listp)
   :short "Lift @(tsee value-dims) to lists."
   (cond ((endp vals) nil)
