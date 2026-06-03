@@ -245,9 +245,7 @@
                                      parsize-of-parse-cpp-exception-handler-header-uncond
                                      parsize-of-parse-cpp-exception-handler-header-cond
                                      parsize-of-parse-cpp-param-list-uncond
-                                     parsize-of-parse-cpp-param-list-cond
-                                     parsize-of-parse-cpp-capture-list-uncond
-                                     parsize-of-parse-cpp-capture-list-cond)))
+                                     parsize-of-parse-cpp-param-list-cond)))
 
   :ruler-extenders :all
 
@@ -2388,14 +2386,12 @@
       :rule-classes :linear
       :flag parse-cpp-capture-list-full)
     :hints (("Goal"
-             :in-theory (enable c$::parsize-of-read-token-cond
-                                c$::parsize-of-read-token-uncond
+             :in-theory (enable c$::parsize-of-read-token-uncond
                                 c$::parsize-of-unread-token
                                 parsize-of-parse-cpp-type-spec-uncond
                                 parsize-of-parse-cpp-type-spec-suffix-uncond
                                 parsize-of-parse-cpp-exception-handler-header-uncond
-                                parsize-of-parse-cpp-param-list-uncond
-                                parsize-of-parse-cpp-capture-list-uncond)
+                                parsize-of-parse-cpp-param-list-uncond)
              :expand ((parse-cpp-primary parstate)
                       (parse-cpp-arg-list-rest acc parstate)
                       (parse-cpp-postfix-rest lhs lhs-span parstate)
@@ -2534,9 +2530,7 @@
                                 parsize-of-parse-cpp-exception-handler-header-uncond
                                 parsize-of-parse-cpp-exception-handler-header-cond
                                 parsize-of-parse-cpp-param-list-uncond
-                                parsize-of-parse-cpp-param-list-cond
-                                parsize-of-parse-cpp-capture-list-uncond
-                                parsize-of-parse-cpp-capture-list-cond)
+                                parsize-of-parse-cpp-param-list-cond)
              :expand ((parse-cpp-primary parstate)
                       (parse-cpp-arg-list-rest acc parstate)
                       (parse-cpp-postfix-rest lhs lhs-span parstate)
@@ -2567,8 +2561,6 @@
                                        parsize-of-parse-cpp-type-spec-suffix-uncond
                                        parsize-of-parse-cpp-param-list-uncond
                                        parsize-of-parse-cpp-param-list-cond
-                                       parsize-of-parse-cpp-capture-list-full-uncond
-                                       parsize-of-parse-cpp-capture-list-full-cond
                                        parsize-of-parse-cpp-exception-handler-header-uncond
                                        parsize-of-parse-cpp-exception-handler-header-cond
                                        parsize-of-parse-cpp-assign-or-cond-uncond

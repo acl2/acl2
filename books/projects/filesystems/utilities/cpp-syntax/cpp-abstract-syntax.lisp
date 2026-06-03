@@ -27,7 +27,7 @@
 
 (local (include-book "std/lists/len" :dir :system))
 
-(in-theory (disable mv-nth))
+(in-theory (disable mv-nth member-equal))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ cpp-abstract-syntax
