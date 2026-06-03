@@ -206,8 +206,13 @@
         which is always acceptable.")
       (xdoc::li
        "An ``unknown scalar'' type that restricts
-        the previously described unknown type to be at least scalar.
-        This is useful to improve the precision of our validation."))
+        the previously described unknown type to be at least scalar.")
+      (xdoc::li
+       "An ``unknown arithmetic'' type that restricts
+        the previously described unknown type to be at least arithmetic."))
+     (xdoc::p
+      "The unknown scalar and arithmetic types
+       are useful to improve the precision of our validation.")
      (xdoc::p
       "Besides the approximations noted above,
        currently we do not capture atomic types [C17:6.2.5/20],
@@ -247,6 +252,7 @@
     (:function ((ret type) (params type-params)))
     (:unknown ())
     (:unknown-scalar ())
+    (:unknown-arithmetic ())
     :pred typep
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
@@ -685,6 +691,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-some-unknownp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is one of the unknown types."
+  (or (type-case type :unknown)
+      (type-case type :unknown-scalar)
+      (type-case type :unknown-arithmetic)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-standard-signed-integerp ((type typep))
   :returns (yes/no booleanp)
   :short "Check if a type is a standard signed integer type [C17:6.2.5/4]."
@@ -912,7 +927,8 @@
   :returns (yes/no booleanp)
   :short "Check if a type is an arithmetic type [C17:6.2.5/18]."
   (or (type-integerp type)
-      (type-floatingp type))
+      (type-floatingp type)
+      (type-case type :unknown-arithmetic))
 
   ///
 
@@ -921,7 +937,8 @@
                   (syntaxp (quotep kind)))
              (equal (type-arithmeticp type)
                     (or (type-integerp type)
-                        (type-floatingp type)))))
+                        (type-floatingp type)
+                        (type-case type :unknown-arithmetic)))))
 
   (defrule type-arithmeticp-when-type-integerp
     (implies (type-integerp type)
@@ -1085,7 +1102,7 @@
    :ushort (if (<= (ienv->ushort-max ienv) (ienv->sint-max ienv))
                (type-sint)
              (type-uint))
-   :enum (type-unknown-scalar)
+   :enum (type-unknown-arithmetic)
    :otherwise (type-fix type))
 
   ///
@@ -1233,8 +1250,8 @@
      which is normally also the type of
      the result of the arithmetic operation.")
    (xdoc::p
-    "If either type is unknown, the result is the unknown scalar type;
-     we know that it must be at least scalar.
+    "If either type is unknown, the result is the unknown arithmetic type;
+     we know that it must be at least arithmetic.
      This case will eventually go away,
      once we have a full type system in our validator.")
    (xdoc::p
@@ -1254,8 +1271,13 @@
     "Otherwise, none of the types is floating,
      and we apply the integer promotions to both types.
      Then we apply the remaining rules, for integer types, in [C17:6.3.1.8],
-     via separate functions (see their documentation)."))
+     via separate functions (see their documentation).
+     Note that currently enum types are promoted to the unknown arithmetic type,
+     so we need to handle that case after the integer promotions."))
   (cond
+   ((or (type-some-unknownp type1)
+        (type-some-unknownp type2))
+    (type-unknown-arithmetic))
    ((or (type-case type1 :ldoublec)
         (type-case type2 :ldoublec))
     (type-ldoublec))
@@ -1277,13 +1299,11 @@
    (t (b* ((type1 (type-integer-promote type1 ienv))
            (type2 (type-integer-promote type2 ienv)))
         (cond
-         ((or (type-case type1 :unknown)
-              (type-case type1 :unknown-scalar)
-              (type-case type2 :unknown)
-              (type-case type2 :unknown-scalar))
-          (type-unknown-scalar))
          ((equal type1 type2)
           type1)
+         ((or (type-case type1 :unknown-arithmetic)
+              (type-case type2 :unknown-arithmetic))
+          (type-unknown-arithmetic))
          ((and (type-signed-integerp type1)
                (type-signed-integerp type2))
           (type-uaconvert-signed type1 type2))
@@ -1299,7 +1319,8 @@
          (t (prog2$ (impossible) (irr-type)))))))
   :guard-hints (("Goal"
                  :do-not '(preprocess)
-                 :in-theory (e/d (type-arithmeticp
+                 :in-theory (e/d (type-some-unknownp
+                                  type-arithmeticp
                                   type-integerp
                                   type-unsigned-integerp
                                   type-signed-integerp
@@ -1387,6 +1408,10 @@
              (type-scalarp y))
         (and (type-case y :unknown-scalar)
              (type-scalarp x))
+        (and (type-case x :unknown-arithmetic)
+             (type-arithmeticp y))
+        (and (type-case y :unknown-arithmetic)
+             (type-arithmeticp x))
         ;; The case of X and Y both unknown scalar
         ;; is covered by (EQUAL (TYPE-FIX X) (TYPE-FIX Y)) at the end.
         (type-case
@@ -1810,7 +1835,12 @@
      "If neither type is unknown,
       and one of the types is unknown scalar,
       then the types are compatible iff
-      the other type is scalar or unknown scalar.")
+      the other type is scalar.")
+    (xdoc::li
+     "If neither type is unknown,
+      and one of the types is unknown arithmetic,
+      then the types are compatible iff
+      the other type is arithmetic.")
     (xdoc::li
      "Structure type compatibility depends on
       whether they are declared in the same translation unit.
@@ -2135,6 +2165,9 @@
         :unknown-scalar (mv (type-fix y)
                             (type-completions-fix completions)
                             (uid-fix next-uid))
+        :unknown-arithmetic (mv (type-fix y)
+                                (type-completions-fix completions)
+                                (uid-fix next-uid))
         :otherwise (mv (type-fix x)
                        (type-completions-fix completions)
                        (uid-fix next-uid))))
@@ -2376,7 +2409,8 @@
       :pointer ienv.pointer-bytes
       :function nil
       :unknown nil
-      :unknown-scalar nil))
+      :unknown-scalar nil
+      :unknown-arithmetic nil))
   :measure (type-count type))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2579,7 +2613,9 @@
                 (retok (c::make-type-pointer :to refd-type)))
      :function (reterr (msg "Type ~x0 not supported." (type-fix type)))
      :unknown (reterr (msg "Type ~x0 not supported." (type-fix type)))
-     :unknown-scalar (reterr (msg "Type ~x0 not supported." (type-fix type)))))
+     :unknown-scalar (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :unknown-arithmetic (reterr (msg "Type ~x0 not supported."
+                                      (type-fix type)))))
   :measure (type-count type)
   :verify-guards :after-returns
 
