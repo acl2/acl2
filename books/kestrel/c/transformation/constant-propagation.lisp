@@ -21,7 +21,7 @@
 (include-book "../language/dynamic-semantics")
 (include-book "../language/values")
 (include-book "../syntax/abstract-syntax-operations")
-(include-book "../syntax/langdef-mapping")
+(include-book "../syntax/abstract-syntax-formal-mapping-direct")
 (include-book "../syntax/code-ensembles")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -1433,7 +1433,8 @@
       (mv (make-param-declon
             :specs spec
             :declor decl
-            :attribs paramdecl.attribs)
+            :attribs paramdecl.attribs
+            :info paramdecl.info)
           env))
     :measure (param-declon-count paramdecl))
 

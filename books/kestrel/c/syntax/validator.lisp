@@ -18,7 +18,10 @@
 (include-book "unambiguity")
 (include-book "type-specifier-lists")
 (include-book "storage-specifier-lists")
-(include-book "validation-information")
+(include-book "initializer-validation")
+(include-book "validation-tables")
+(include-book "validation-annotations")
+(include-book "null-pointer-constants")
 (include-book "translation-unit-comparison")
 
 (include-book "kestrel/utilities/messages" :dir :system)
@@ -93,222 +96,6 @@
      The approach should be the same as in the disambiguator."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define empty-valid-scope ()
-  :returns (scope valid-scopep)
-  :short "Empty validator scope."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Scopes always start empty, i.e. with no identifiers.
-     This function returns the empty scope."))
-  (make-valid-scope :ord nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define init-valid-table ((filepath filepathp)
-                          (dialect c::dialectp))
-  :returns (table valid-tablep)
-  :short "Initial validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This contains one empty scope (the initial file scope),
-     and the initial macro table for the given dialect."))
-  (make-valid-table :filepath filepath
-                    :scopes (list (empty-valid-scope))
-                    :macros (macro-init dialect)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-table-num-scopes ((table valid-tablep))
-  :returns (num natp)
-  :short "Number of scopes in a validation table."
-  (len (valid-table->scopes table)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-push-scope ((table valid-tablep))
-  :returns (new-table valid-tablep)
-  :short "Push a scope onto the validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The newly pushed scope is always empty."))
-  (b* ((scopes (valid-table->scopes table))
-       (new-scopes (cons (empty-valid-scope) scopes)))
-    (change-valid-table table :scopes new-scopes))
-  ///
-
-  (defret valid-table-num-scopes-of-valid-push-scope
-    (equal (valid-table-num-scopes new-table)
-           (1+ (valid-table-num-scopes table)))
-    :hints (("Goal" :in-theory (enable valid-table-num-scopes len)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-pop-scope ((table valid-tablep))
-  :returns (new-table valid-tablep)
-  :short "Pop a scope from the validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The popped scope is discarded."))
-  (b* (((valid-table table) table)
-       ((unless (> (valid-table-num-scopes table) 0))
-        (raise "Internal error: no scopes in validation table.")
-        (valid-table-fix table))
-       (new-scopes (cdr table.scopes)))
-    (change-valid-table table :scopes new-scopes))
-  :no-function nil
-  ///
-
-  (defret valid-table-num-scopes-of-valid-pop-scope
-    (equal (valid-table-num-scopes new-table)
-           (1- (valid-table-num-scopes table)))
-    :hyp (> (valid-table-num-scopes table) 0)
-    :hints (("Goal" :in-theory (enable valid-table-num-scopes len max fix)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-lookup-ord ((ident identp) (table valid-tablep))
-  :returns (mv (info? valid-ord-info-optionp) (currentp booleanp))
-  :short "Look up an ordinary identifier in a validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "According to the visibility and hiding rules [C17:6.2.1/2],
-     we look up the identifier starting from the innermost scope.
-     We stop as soon as we find a match.
-     We return @('nil') if we reach the outermost scope
-     without finding a match.")
-   (xdoc::p
-    "We also return a flag saying whether the identifier was found
-     in the current (i.e. innermost) scope or in some other scope.
-     We initialize this flag to @('t'),
-     and we set to @('nil') when we perform the recursive call.
-     The flag is irrelevant if the first result is @('nil'),
-     but in this case the returned flag is @('nil') too."))
-  (valid-lookup-ord-loop ident (valid-table->scopes table) t)
-
-  :prepwork
-  ((define valid-lookup-ord-loop ((ident identp)
-                                  (scopes valid-scope-listp)
-                                  (currentp booleanp))
-     :returns (mv (info? valid-ord-info-optionp) (updated-currentp booleanp))
-     :parents nil
-     (b* (((when (endp scopes)) (mv nil nil))
-          (scope (car scopes))
-          (ord-scope (valid-scope->ord scope))
-          (ident+info (assoc-equal (ident-fix ident) ord-scope))
-          ((when ident+info) (mv (cdr ident+info) (bool-fix currentp))))
-       (valid-lookup-ord-loop ident (cdr scopes) nil)))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define valid-lookup-ord-file-scope ((ident identp) (table valid-tablep))
-  :returns (info? valid-ord-info-optionp)
-  :short "Look up an ordinary identifier
-          in the file scope of a validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Unlike @(tsee valid-lookup-ord), this skips any block scopes,
-     and directly looks up the identifier in the file scope.
-     It is used in some situations."))
-  (b* ((scopes (valid-table->scopes table))
-       ((when (endp scopes)) (raise "Internal error: no scopes."))
-       (scope (car (last scopes)))
-       (ident+info (assoc-equal (ident-fix ident)
-                                (valid-scope->ord scope)))
-       ((when ident+info) (cdr ident+info)))
-    nil)
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-lookup-tag ((ident identp) (table valid-tablep))
-  :returns (mv (info? valid-tag-info-optionp) (currentp booleanp))
-  :short "Look up a tag in a validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This functions behaves just as @('valid-lookup-ord'),
-     but for tags instead of ordinary identifiers."))
-  (valid-lookup-tag-loop ident (valid-table->scopes table) t)
-
-  :prepwork
-  ((define valid-lookup-tag-loop ((ident identp)
-                                  (scopes valid-scope-listp)
-                                  (currentp booleanp))
-     :returns (mv (info? valid-tag-info-optionp) (updated-currentp booleanp))
-     :parents nil
-     (b* (((when (endp scopes)) (mv nil nil))
-          (scope (car scopes))
-          (tag-scope (valid-scope->tag scope))
-          (ident+info (assoc-equal (ident-fix ident) tag-scope))
-          ((when ident+info) (mv (cdr ident+info) (bool-fix currentp))))
-       (valid-lookup-tag-loop ident (cdr scopes) nil)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-add-tag ((ident identp)
-                       (info valid-tag-infop)
-                       (table valid-tablep))
-  :returns (new-table valid-tablep)
-  :short "Add a tag to the validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Just as in @(tsee vstate-add-ord),
-     the tag is added to the first (i.e. innermost) scope.
-     If the tag is already present in the current scope,
-     its information is overwritten."))
-  (b* (((valid-table table) table)
-       ((unless (> (valid-table-num-scopes table) 0))
-        (raise "Internal error: no scopes in validation table.")
-        (valid-table-fix table))
-       (scope (car table.scopes))
-       (tag-scope (valid-scope->tag scope))
-       (new-tag-scope (acons (ident-fix ident)
-                             (valid-tag-info-fix info)
-                             tag-scope))
-       (new-scope (change-valid-scope scope :tag new-tag-scope))
-       (new-scopes (cons new-scope (cdr table.scopes)))
-       (table (change-valid-table table :scopes new-scopes)))
-    table)
-  :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-has-internalp ((ident identp) (table valid-tablep))
-  :returns (has-internalp booleanp :rule-classes :type-prescription)
-  :short "Check whether an identifier has been declared with internal linkage
-          in the validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This checks whether the identifier has been declared with internal linkage
-     anywhere in the translation unit, not just the visible declaration
-     (if it exists).")
-   (xdoc::p
-    "We perform this check by looking through declarations in the file scope.
-     We are able to avoid looking through block scopes because
-     an identifier may only be declared with internal linkage in a block scope
-     if it has been previously declared with internal linkage in the file scope
-     [C17:6.2.2/4] [C17:6.2.2/6]."))
-  (b* ((info? (valid-lookup-ord-file-scope ident table)))
-    (and info?
-         (valid-ord-info-case
-          info?
-          :objfun (linkage-case
-                   info?.linkage
-                   :internal t
-                   :otherwise nil)
-          :otherwise nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -837,7 +624,10 @@
      suggesting that it should be only a warning, not an error.")
    (xdoc::p
     "The type is determined solely by the suffix, including its absence
-     [C17:6.4.4.2/4]."))
+     [C17:6.4.4.2/4].")
+   (xdoc::p
+    "Our model of types does not cover the GCC suffixes.
+     But we can safely return the unknown scalar type for those."))
   (b* ((suffix? (fconst-case fconst
                              :dec fconst.suffix?
                              :hex fconst.suffix?)))
@@ -848,7 +638,7 @@
           ((or (fsuffix-case suffix? :locase-l)
                (fsuffix-case suffix? :upcase-l))
            (type-ldouble))
-          (t (type-unknown)))))
+          (t (type-unknown-scalar)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1095,7 +885,7 @@
      a character constant with a prefix has type
      @('wchar_t'), @('char16_t'), or @('char32_t');
      since for now we do not model these,
-     we return an unknown type in this case.")
+     we return an unknown scalar type in this case.")
    (xdoc::p
     "The types @('wchar_t'), @('char16_t'), and @('char32_t')
      may vary across implementations.
@@ -1108,7 +898,7 @@
        ((cconst cconst) cconst)
        ((erp &) (valid-c-char-list cconst.cchars cconst.prefix? ienv)))
     (if cconst.prefix?
-        (retok (type-unknown))
+        (retok (type-unknown-scalar))
       (retok (type-sint)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1233,9 +1023,11 @@
      (i.e. it has the @('u8') prefix),
      it has an array type with element type @('char').
      If an encoding prefix is present,
-     the literal may have type @('wchar_t') or @('char16_t') or @('char32_t').
+     the array may have element type
+     @('wchar_t') or @('char16_t') or @('char32_t').
      Since we do not yet model the values of these type definitions,
-     we return an array type with an unknown element type in these cases."))
+     we return an array type with
+     an unknown scalar element type in these cases."))
   (b* (((reterr) (make-type-array :of (irr-type) :size nil))
        ((stringlit strlit) strlit)
        ((erp &) (valid-s-char-list strlit.schars strlit.prefix? ienv)))
@@ -1243,7 +1035,7 @@
             :of (if (or (not strlit.prefix?)
                         (eprefix-case strlit.prefix? :locase-u8))
                     (type-char)
-                  (type-unknown))
+                  (type-unknown-scalar))
             :size nil))) ; TODO: size
 
   ///
@@ -1288,7 +1080,7 @@
     "If all literals in the concatenation are character string literals
      or UTF-8 string literals,
      the result is an array type with the element type @('char').
-     Otherwise, it is an array type with an unknown element type.
+     Otherwise, it is an array type with an unknown scalar element type.
      This covers both the case of well-defined wide string literals
      (whose types we do not yet model),
      and the implementation-defined mixed string encoding."))
@@ -1306,7 +1098,7 @@
     (retok (make-type-array
             :of (if (or conflictp
                         (and prefix? (not (eprefix-case prefix? :locase-u8))))
-                    (type-unknown)
+                    (type-unknown-scalar)
                   (type-char))
             :size nil))) ; TODO: size
   :prepwork
@@ -1410,14 +1202,25 @@
        (type2 (type-apconvert type-arg2))
        ((when (and (type-case type1 :pointer)
                    (or (type-integerp type2)
-                       (type-case type2 :unknown))))
+                       (type-case type2 :unknown)
+                       (type-case type2 :unknown-scalar))))
         (retok (type-pointer->to type1)))
        ((when (and (type-case type2 :pointer)
                    (or (type-integerp type1)
-                       (type-case type1 :unknown))))
+                       (type-case type1 :unknown)
+                       (type-case type1 :unknown-scalar))))
         (retok (type-pointer->to type2)))
-       ((when (or (type-case type-arg1 :unknown)
-                  (type-case type-arg2 :unknown)))
+       ((when (and (or (type-case type1 :unknown-scalar)
+                       (type-case type1 :unknown))
+                   (or (type-integerp type2)
+                       (type-case type2 :unknown)
+                       (type-case type2 :unknown-scalar))))
+        (retok (type-unknown)))
+       ((when (and (or (type-case type2 :unknown-scalar)
+                       (type-case type2 :unknown))
+                   (or (type-integerp type1)
+                       (type-case type1 :unknown)
+                       (type-case type1 :unknown-scalar))))
         (retok (type-unknown))))
     (retmsg$ "In the array subscripting expression ~x0, ~
               the first sub-expression has type ~x1, ~
@@ -1501,6 +1304,10 @@
     (if (or (type-case type-param :unknown)
             (and gcc/clang (type-case type-param :union))
             (type-case type-arg :unknown)
+            (and (type-case type-param :unknown-scalar)
+                 (type-scalarp type-arg))
+            (and (type-case type-arg :unknown-scalar)
+                 (type-scalarp type-param))
             (and (type-arithmeticp type-param)
                  (type-arithmeticp type-arg))
             (and (or (type-case type-param :struct)
@@ -1573,6 +1380,8 @@
      We return the function return type."))
   (b* (((reterr) (irr-type))
        ((when (type-case type-fun :unknown))
+        (retok (type-unknown)))
+       ((when (type-case type-fun :unknown-scalar))
         (retok (type-unknown)))
        (type (type-fpconvert type-fun))
        ((unless (type-case type :pointer))
@@ -1692,6 +1501,8 @@
   (b* (((reterr) (irr-type))
        ((when (type-case type-arg :unknown))
         (retok (type-unknown)))
+       ((when (type-case type-arg :unknown-scalar)) ; could be a pointer
+        (retok (type-unknown)))
        (type (type-apconvert type-arg))
        ((unless (type-case type :pointer))
         (retmsg$ "In the member pointer expression ~x0, ~
@@ -1801,53 +1612,60 @@
                   (expr-fix expr) (type-fix type-arg))))
     (case (unop-kind op)
       (:address (retok (make-type-pointer :to type-arg)))
-      (:indir (b* (((when (type-case type-arg :unknown))
+      (:indir (b* (((when (or (type-case type-arg :unknown)
+                              (type-case type-arg :unknown-scalar)))
                     (retok (type-unknown)))
                    (type (type-fpconvert (type-apconvert type-arg))))
                 (type-case
                  type
                  :pointer (retok type.to)
                  :otherwise (reterr msg))))
-      ((:plus :minus) (b* (((when (type-case type-arg :unknown))
-                            (retok (type-unknown)))
+      ((:plus :minus) (b* (((when (or (type-case type-arg :unknown)
+                                      (type-case type-arg :unknown-scalar)))
+                            (retok (type-unknown-scalar)))
                            ((unless (type-arithmeticp type-arg))
                             (reterr msg)))
                         (retok (type-integer-promote type-arg ienv))))
-      (:bitnot (b* (((when (type-case type-arg :unknown))
-                     (retok (type-unknown)))
+      (:bitnot (b* (((when (or (type-case type-arg :unknown)
+                               (type-case type-arg :unknown-scalar)))
+                     (retok (type-unknown-scalar)))
                     ((unless (type-integerp type-arg))
                      (reterr msg)))
                  (retok (type-integer-promote type-arg ienv))))
-      (:lognot (b* (((when (type-case type-arg :unknown))
-                     (retok (type-unknown)))
+      (:lognot (b* (((when (or (type-case type-arg :unknown)
+                               (type-case type-arg :unknown-scalar)))
+                     (retok (type-unknown-scalar)))
                     (type (type-fpconvert (type-apconvert type-arg)))
                     ((unless (type-scalarp type))
                      (reterr msg)))
                  (retok (type-sint))))
       ((:preinc :predec :postinc :postdec)
-       (b* (((when (type-case type-arg :unknown))
-             (retok (type-unknown)))
+       (b* (((when (or (type-case type-arg :unknown)
+                       (type-case type-arg :unknown-scalar)))
+             (retok (type-unknown-scalar)))
             ((unless (or (type-realp type-arg)
                          (type-case type-arg :pointer)))
              (reterr msg)))
          (retok (type-fix type-arg))))
       (:sizeof (b* (((when (type-case type-arg :function))
                      (reterr msg)))
-                 (retok (type-unknown))))
+                 (retok (type-unknown-scalar))))
       (:alignof (b* (((when (type-case type-arg :function))
                       (reterr msg)))
-                  (retok (type-unknown))))
+                  (retok (type-unknown-scalar))))
       (:real (type-case type-arg
                         :floatc (retok (type-float))
                         :doublec (retok (type-double))
                         :ldoublec (retok (type-ldouble))
-                        :unknown (retok (type-unknown))
+                        :unknown (retok (type-unknown-scalar))
+                        :unknown-scalar (retok (type-unknown-scalar))
                         :otherwise (reterr msg)))
       (:imag (type-case type-arg
                         :floatc (retok (type-float))
                         :doublec (retok (type-double))
                         :ldoublec (retok (type-ldouble))
-                        :unknown (retok (type-unknown))
+                        :unknown (retok (type-unknown-scalar))
+                        :unknown-scalar (retok (type-unknown-scalar))
                         :otherwise (reterr msg)))
       (t (prog2$ (impossible) (retmsg$ ""))))))
 
@@ -1906,13 +1724,17 @@
         (retok))
        (type1 type-arg1)
        (type2 (type-fpconvert (type-apconvert type-arg2))))
-    (if (or (and (type-arithmeticp type1)
-                 (type-arithmeticp type2))
+    (if (or (and (type-case type1 :unknown-scalar)
+                 (type-scalarp type2))
+            (and (type-arithmeticp type1)
+                 (or (type-case type2 :unknown-scalar)
+                     (type-arithmeticp type2)))
             (and (or (type-case type1 :struct)
                      (type-case type1 :union))
                  (type-compatible-p type1 type2 completions ienv))
             (and (type-case type1 :pointer)
-                 (or (and (type-case type2 :pointer)
+                 (or (type-case type2 :unknown-scalar)
+                     (and (type-case type2 :pointer)
                           (let ((type-to1 (type-pointer->to type1))
                                 (type-to2 (type-pointer->to type2)))
                             (or (type-compatible-p
@@ -1927,7 +1749,8 @@
                                                          :function)))))))
                      (expr-null-pointer-constp expr-arg2 type2 ienv)))
             (and (type-case type1 :bool)
-                 (type-case type2 :pointer)))
+                 (or (type-case type2 :unknown-scalar)
+                     (type-case type2 :pointer))))
         (retok)
       (reterr t))))
 
@@ -1980,7 +1803,7 @@
      [C17:6.5.6/4].
      In the second case, the result has type @('ptrdiff_t') [C17:6.5.6/9],
      which has an implementation-specific definition,
-     and so we return the unknown type in this case.
+     and so we return the unknown scalar type in this case.
      In the third case,
      the result has the type of the pointer operand [C17:6.5.6/8].
      Because of the second and third cases, which involve pointers,
@@ -2072,8 +1895,10 @@
      No array-to-pointer or function-to-pointer conversions are needed."))
   (b* (((reterr) (irr-type))
        ((when (or (type-case type-arg1 :unknown)
-                  (type-case type-arg2 :unknown)))
-        (retok (type-unknown)))
+                  (type-case type-arg1 :unknown-scalar)
+                  (type-case type-arg2 :unknown)
+                  (type-case type-arg2 :unknown-scalar)))
+        (retok (type-unknown-scalar)))
        (msg (msg$ "In the binary expression ~x0, ~
                    the sub-expressions have types ~x1 and ~x2."
                   (expr-fix expr) (type-fix type-arg1) (type-fix type-arg2))))
@@ -2110,7 +1935,7 @@
                 (retok type1))
                ((and (type-case type1 :pointer)
                      (type-case type2 :pointer))
-                (retok (type-unknown)))
+                (retok (type-unknown-scalar)))
                (t (reterr msg)))))
       ((:shl :shr) (b* (((unless (and (type-integerp type-arg1)
                                       (type-integerp type-arg2)))
@@ -2221,7 +2046,7 @@
      but we do not have a notion of complete types yet.
      The result has type @('size_t') [C17:6.5.3.4/5],
      whose definition is implementation-defined,
-     so for now we just return the unknown type;
+     so for now we just return the unknown scalar type;
      we will need to extend implementation environments
      with information about the definition of @('size_t')."))
   (b* (((reterr) (irr-type))
@@ -2234,7 +2059,7 @@
                    (t (impossible)))
                  (expr-fix expr)
                  (type-fix type))))
-    (retok (type-unknown))))
+    (retok (type-unknown-scalar))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2254,9 +2079,13 @@
      we perform array-to-pointer and function-to-pointer conversions.
      The result is the type denoted by the type name."))
   (b* (((reterr) (irr-type))
-       ((when (or (type-case type-cast :unknown)
-                  (type-case type-arg :unknown)))
+       ((when (type-case type-cast :unknown))
         (retok (type-unknown)))
+       ((when (type-case type-cast :unknown-scalar))
+        (retok (type-unknown-scalar)))
+       ((when (or (type-case type-arg :unknown)
+                  (type-case type-arg :unknown-scalar)))
+        (retok (type-fix type-cast)))
        (type1-arg (type-fpconvert (type-apconvert type-arg)))
        ((unless (or (type-case type-cast :void)
                     (type-scalarp type-cast)))
@@ -2316,6 +2145,9 @@
         (retmsg$ "In the conditional expression ~x0, ~
                   the first operand has type ~x1."
                  (expr-fix expr) (type-fix type-test)))
+       ((when (or (type-case type2 :unknown-scalar)
+                  (type-case type3 :unknown-scalar)))
+        (retok (type-unknown-scalar) (vstate-fix vstate)))
        ((when (and (type-arithmeticp type2)
                    (type-arithmeticp type3)))
         (retok (type-uaconvert type2 type3 ienv) (vstate-fix vstate)))
@@ -2423,7 +2255,7 @@
      in practical code,
      which seems indeed consistent with other types like @('signed int');
      so we accept all three variants.
-     But for now we map all of them to the unknown type."))
+     But for now we map all of them to the unknown scalar type."))
   (b* (((reterr) (irr-type)))
     (cond
      ((type-spec-list-char-p tyspecs)
@@ -2476,50 +2308,50 @@
      ((type-spec-list-long-double-complex-p tyspecs)
       (retok (type-ldoublec)))
      ((type-spec-list-locase-float80-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-locase-float128-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-locase-float80-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-locase-float128-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-float16-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-float16x-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-float32-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-float32x-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-float64-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-float64x-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-float128-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-float128x-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-float16-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-float16x-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-float32-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-float32x-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-float64-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-float64x-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-float128-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-float128x-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((or (type-spec-list-int128-p tyspecs)
           (type-spec-list-signed-int128-p tyspecs))
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      ((type-spec-list-unsigned-int128-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-scalar)))
      (t (retmsg$ "The type specifier sequence ~x0 is invalid."
                  (type-spec-list-fix tyspecs))))))
 
@@ -2962,7 +2794,7 @@
        for that, we need a more refined type system.
        The result has type @('size_t') [C17:7.19],
        whose definition is implementation-dependent,
-       and thus for now we return the unknown type."))
+       and thus for now we return the unknown scalar type."))
     (b* (((reterr) (irr-expr) (irr-type) nil (irr-vstate))
          (ienv (vstate->ienv vstate)))
       (expr-case
@@ -3057,7 +2889,8 @@
                                    (lifetime-auto)
                                  (lifetime-static))))
                   (cond
-                   ((type-case target-type :unknown)
+                   ((or (type-case target-type :unknown)
+                        (type-case target-type :unknown-scalar))
                     (b* (((erp new-elems types-desiniters vstate)
                           (valid-desiniter-list
                            expr.elems
@@ -3300,7 +3133,7 @@
                        (valid-member-designor expr.member vstate)))
                    (retok (make-expr-offsetof :type new-type
                                               :member new-member)
-                          (type-unknown)
+                          (type-unknown-scalar)
                           (set::union types more-types)
                           vstate))
        :va-arg (b* (((erp new-list & list-types vstate)
@@ -4255,7 +4088,8 @@
        (b* (((erp new-expr type types vstate)
              (valid-const-expr align.expr vstate))
             ((unless (or (type-integerp type)
-                         (type-case type :unknown)))
+                         (type-case type :unknown)
+                         (type-case type :unknown-scalar)))
              (retmsg$ "In the alignment specifier ~x0, ~
                        the argument has type ~x1."
                       (align-spec-fix align) type)))
@@ -4554,7 +4388,8 @@
           (retmsg$ "Too many initializers. Unexpected initializer: ~x0"
                    (irr-initer)))
          (target-type (initer-context->type ctx))
-         ((when (type-case target-type :unknown))
+         ((when (or (type-case target-type :unknown)
+                    (type-case target-type :unknown-scalar)))
           (initer-case
            initer
            :single (b* (((erp new-expr & types vstate)
@@ -4639,7 +4474,9 @@
                                  (or (type-characterp
                                       (type-array->of target-type))
                                      (type-case (type-array->of target-type)
-                                                :unknown))
+                                                :unknown)
+                                     (type-case (type-array->of target-type)
+                                                :unknown-scalar))
                                (type-compatible-p
                                 (type-array->of target-type)
                                 (type-array->of str-type)
@@ -4678,7 +4515,10 @@
                          (valid-stringlit-list
                           (expr-string->strings str-expr) ienv))
                         (new-ctx
-                         (if (type-case (type-array->of target-type) :unknown)
+                         (if (or (type-case (type-array->of target-type)
+                                            :unknown)
+                                 (type-case (type-array->of target-type)
+                                            :unknown-scalar))
                              ;; When element type of the target array is
                              ;; unknown, we can't know whether the true type
                              ;; is a character type (in which case this case
@@ -4991,19 +4831,25 @@
             ((erp new-range? range?-type? range?-types vstate)
              (valid-const-expr-option designor.range? vstate))
             ((unless (or (type-integerp index-type)
-                         (type-case index-type :unknown)))
+                         (type-case index-type :unknown)
+                         (type-case index-type :unknown-scalar)))
              (retmsg$ "The first or only index of the designator ~x0 ~
                        has type ~x1."
                       (designor-fix designor)
                       index-type))
             ((unless (or (not range?-type?)
                          (type-integerp range?-type?)
-                         (type-case range?-type? :unknown)))
+                         (type-case range?-type? :unknown)
+                         (type-case range?-type? :unknown-scalar)))
              (retmsg$ "The second index of the designator ~x0 ~
                        has type ~x1."
                       (designor-fix designor)
                       range?-type?))
-            ((when (type-case target-type :unknown))
+            ((when (or (type-case target-type :unknown)
+                       (type-case target-type :unknown-scalar)
+                       (not range?-type?)
+                       (type-case range?-type? :unknown)
+                       (type-case range?-type? :unknown-scalar)))
              (retok (make-designor-sub :index new-index :range? new-range?)
                     (initer-subobjects-stack-unknown)
                     (set::union index-types range?-types)
@@ -5416,7 +5262,8 @@
              (valid-expr-option dirdeclor.size? vstate))
             ((when (and index-type?
                         (not (type-integerp index-type?))
-                        (not (type-case index-type? :unknown))))
+                        (not (type-case index-type? :unknown))
+                        (not (type-case index-type? :unknown-scalar))))
              (retmsg$ "The index expression ~
                        of the direct declarator ~x0 ~
                        has type ~x1."
@@ -5436,7 +5283,8 @@
             ((erp new-expr index-type more-types vstate)
              (valid-expr dirdeclor.size vstate))
             ((unless (or (type-integerp index-type)
-                         (type-case index-type :unknown)))
+                         (type-case index-type :unknown)
+                         (type-case index-type :unknown-scalar)))
              (retmsg$ "The index expression ~
                        of the direct declarator ~x0 ~
                        has type ~x1."
@@ -5456,7 +5304,8 @@
             ((erp new-expr index-type more-types vstate)
              (valid-expr dirdeclor.size vstate))
             ((unless (or (type-integerp index-type)
-                         (type-case index-type :unknown)))
+                         (type-case index-type :unknown)
+                         (type-case index-type :unknown-scalar)))
              (retmsg$ "The index expression ~
                        of the direct declarator ~x0 ~
                        has type ~x1."
@@ -5492,13 +5341,19 @@
             (vstate (vstate-push-scope vstate))
             ((erp new-params type-params return-types0 vstate)
              (b* (((reterr) nil (irr-type-params) nil vstate)
-                  ((when (equal dirdeclor.params
-                                (list (make-param-declon
-                                       :specs (list (decl-spec-typespec
-                                                     (type-spec-void)))
-                                       :declor (param-declor-none)
-                                       :attribs nil))))
-                   (retok dirdeclor.params
+                  ((when (and (not (endp dirdeclor.params))
+                              (endp (rest dirdeclor.params))
+                              (equal (param-declon->specs
+                                       (first dirdeclor.params))
+                                     (list (decl-spec-typespec
+                                             (type-spec-void))))
+                              (equal (param-declon->declor
+                                       (first dirdeclor.params))
+                                     (param-declor-none))
+                              (not (param-declon->attribs
+                                     (first dirdeclor.params)))))
+                   (retok (list (change-param-declon (first dirdeclor.params)
+                                                    :info (make-param-declon-info :type nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -5674,7 +5529,8 @@
              (valid-expr-option dirabsdeclor.size? vstate))
             ((when (and index-type?
                         (not (type-integerp index-type?))
-                        (not (type-case index-type? :unknown))))
+                        (not (type-case index-type? :unknown))
+                        (not (type-case index-type? :unknown-scalar))))
              (retmsg$ "The index expression ~
                        of the direct abstract declarator ~x0 ~
                        has type ~x1."
@@ -5694,7 +5550,8 @@
             ((erp new-size index-type more-types vstate)
              (valid-expr dirabsdeclor.size vstate))
             ((unless (or (type-integerp index-type)
-                         (type-case index-type :unknown)))
+                         (type-case index-type :unknown)
+                         (type-case index-type :unknown-scalar)))
              (retmsg$ "The index expression ~
                        of the direct abstract declarator ~x0 ~
                        has type ~x1."
@@ -5714,7 +5571,8 @@
             ((erp new-size index-type more-types vstate)
              (valid-expr dirabsdeclor.size vstate))
             ((unless (or (type-integerp index-type)
-                         (type-case index-type :unknown)))
+                         (type-case index-type :unknown)
+                         (type-case index-type :unknown-scalar)))
              (retmsg$ "The index expression ~
                        of the direct abstract declarator ~x0 ~
                        has type ~x1."
@@ -5745,13 +5603,19 @@
             (vstate (vstate-push-scope vstate))
             ((erp new-params type-params return-types0 vstate)
              (b* (((reterr) nil (irr-type-params) nil vstate)
-                  ((when (equal dirabsdeclor.params
-                                (list (make-param-declon
-                                       :specs (list (decl-spec-typespec
-                                                     (type-spec-void)))
-                                       :declor (param-declor-none)
-                                       :attribs nil))))
-                   (retok dirabsdeclor.params
+                  ((when (and (not (endp dirabsdeclor.params))
+                              (endp (rest dirabsdeclor.params))
+                              (equal (param-declon->specs
+                                       (first dirabsdeclor.params))
+                                     (list (decl-spec-typespec
+                                             (type-spec-void))))
+                              (equal (param-declon->declor
+                                       (first dirabsdeclor.params))
+                                     (param-declor-none))
+                              (not (param-declon->attribs
+                                     (first dirabsdeclor.params)))))
+                   (retok (list (change-param-declon (first dirabsdeclor.params)
+                                                    :info (make-param-declon-info :type nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -5869,10 +5733,12 @@
                 :array (make-type-pointer :to type.of)
                 :function (make-type-pointer :to type)
                 :otherwise type))
+         (info (param-declon-info type))
          ((when (not ident?))
           (retok (make-param-declon :specs new-specs
                                     :declor new-decl
-                                    :attribs paramdecl.attribs)
+                                    :attribs paramdecl.attribs
+                                    :info info)
                  type
                  (set::union types more-types)
                  vstate))
@@ -5890,7 +5756,8 @@
          (vstate (vstate-add-ord ident? ord-info vstate)))
       (retok (make-param-declon :specs new-specs
                                 :declor new-decl
-                                :attribs paramdecl.attribs)
+                                :attribs paramdecl.attribs
+                                :info info)
              type
              (set::union types more-types)
              vstate))
@@ -6302,7 +6169,8 @@
           (valid-const-expr-option structdeclor.expr? vstate))
          ((when (and width-type?
                      (not (type-integerp width-type?))
-                     (not (type-case width-type? :unknown))))
+                     (not (type-case width-type? :unknown))
+                     (not (type-case width-type? :unknown-scalar))))
           (retmsg$ "The structure declarator ~x0 ~
                     has a width of type ~x1."
                    (struct-declor-fix structdeclor)
@@ -6437,7 +6305,8 @@
           (valid-const-expr-option enumer.value? vstate))
          ((when (and type?
                      (not (type-integerp type?))
-                     (not (type-case type? :unknown))))
+                     (not (type-case type? :unknown))
+                     (not (type-case type? :unknown-scalar))))
           (retmsg$ "The value of the numerator ~x0 has type ~x1."
                    (enumer-fix enumer) type?)))
       (retok (make-enumer :name enumer.name :value? new-value?) types vstate))
@@ -6490,7 +6359,8 @@
          ((erp new-test type types vstate)
           (valid-const-expr statassert.test vstate))
          ((unless (or (type-integerp type)
-                      (type-case type :unknown)))
+                      (type-case type :unknown)
+                      (type-case type :unknown-scalar)))
           (retmsg$ "The expression in the static assertion declaration ~x0 ~
                     has type ~x1."
                    (statassert-fix statassert)
@@ -6758,7 +6628,9 @@
                    vstate)))
          ((unless (or (equal type info.type)
                       (equal type (type-unknown))
-                      (equal info.type (type-unknown))))
+                      (equal type (type-unknown-scalar))
+                      (equal info.type (type-unknown))
+                      (equal info.type (type-unknown-scalar))))
           (retmsg$ "The identifier ~x0 ~
                     is declared with type ~x1 ~
                     after being declared with type ~x2."
@@ -6919,7 +6791,8 @@
        (b* (((erp new-expr type types vstate)
              (valid-const-expr label.expr vstate))
             ((unless (or (type-integerp type)
-                         (type-case type :unknown)))
+                         (type-case type :unknown)
+                         (type-case type :unknown-scalar)))
              (retmsg$ "The first or only 'case' expression ~
                        in the label ~x0 has type ~x1."
                       (label-fix label) type))
@@ -6927,7 +6800,8 @@
              (valid-const-expr-option label.range? vstate))
             ((when (and type?
                         (not (type-integerp type?))
-                        (not (type-case type? :unknown))))
+                        (not (type-case type? :unknown))
+                        (not (type-case type? :unknown-scalar))))
              (retmsg$ "The second 'case' expression~
                        in the label ~x0 has type ~x1."
                       (label-fix label) type?)))
@@ -7095,7 +6969,8 @@
             ((erp new-target target-type target-types vstate)
              (valid-expr stmt.target vstate))
             ((unless (or (type-integerp target-type)
-                         (type-case target-type :unknown)))
+                         (type-case target-type :unknown)
+                         (type-case target-type :unknown-scalar)))
              (retmsg$ "The target of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) target-type))
             (vstate (vstate-push-scope vstate))
@@ -7365,12 +7240,26 @@
   :prepwork
   ((local (in-theory (enable acons)))
 
-   ;; Necessary for termination proof.
+   ;; The following theorems are (for some reason)
+   ;; necessary for the termination proof.
+
    (defrulel expr-count-min-when-complit-linear
      (implies (expr-case expr :complit)
               (<= 4 (expr-count expr)))
      :rule-classes :linear
-     :expand ((expr-count expr))))
+     :expand (expr-count expr))
+
+   (defrulel dirdeclor-count-when-function-linear
+     (implies (equal (dirdeclor-kind dirdeclor) :function-params)
+              (<= 4 (dirdeclor-count dirdeclor)))
+     :rule-classes :linear
+     :expand (dirdeclor-count dirdeclor))
+
+   (defrulel dirabsdeclor-count-when-function-linear
+     (implies (equal (dirabsdeclor-kind dirabsdeclor) :function)
+              (<= 4 (dirabsdeclor-count dirabsdeclor)))
+     :rule-classes :linear
+     :expand (dirabsdeclor-count dirabsdeclor)))
 
   ///
 
@@ -7645,6 +7534,12 @@
             '(:in-theory (enable valid-decl-spec-list)))
            ((acl2::occur-lst '(acl2::flag-is 'valid-initer) clause)
             '(:expand ((valid-initer initer ctx lifetime vstate steps))))
+           ((acl2::occur-lst '(acl2::flag-is 'valid-dirdeclor) clause)
+            '(:expand ((valid-dirdeclor dirdeclor fundef-params-p type vstate)
+                       (valid-dirdeclor dirdeclor nil type vstate)
+                       (valid-dirdeclor dirdeclor t type vstate))))
+           ((acl2::occur-lst '(acl2::flag-is 'valid-dirabsdeclor) clause)
+            '(:expand ((valid-dirabsdeclor dirabsdeclor type vstate))))
            (t nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -8096,18 +7991,18 @@
        (dialect (ienv->dialect vstate.ienv))
        (vstate (change-vstate vstate :table (init-valid-table filepath dialect)))
        (vstate (vstate-add-ord-objfuns-file-scope
-               (built-in-functions-for dialect)
-               (make-type-function :ret (type-unknown)
-                                   :params (type-params-unspecified))
-               (linkage-external)
-               (valid-defstatus-defined)
-               vstate))
+                (built-in-functions-for dialect)
+                (make-type-function :ret (type-unknown)
+                                    :params (type-params-unspecified))
+                (linkage-external)
+                (valid-defstatus-defined)
+                vstate))
        (vstate (vstate-add-ord-objfuns-file-scope
-               (built-in-vars-for dialect)
-               (type-unknown)
-               (linkage-external)
-               (valid-defstatus-defined)
-               vstate))
+                (built-in-vars-for dialect)
+                (type-unknown)
+                (linkage-external)
+                (valid-defstatus-defined)
+                vstate))
        ((erp new-items vstate)
         (valid-trans-item-list (trans-unit->items tunit) vstate))
        (info (make-trans-unit-info :table-end (vstate->table vstate))))

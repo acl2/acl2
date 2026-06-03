@@ -71,7 +71,11 @@
       (implies (identityp x)
                (equal (assoc k (compose x y))
                       (assoc k (restrict-values (keys x) y))))
-    :enable (assoc assoc-of-restrict in-of-keys-to-assoc))
+    :enable (assoc
+             assoc-of-restrict
+             in-of-keys-to-assoc
+             assoc-when-identityp
+             assoc-of-compose))
 
   (defruled compose-is-restrict-values-when-X-identityp
       (implies (identityp x)
@@ -79,3 +83,5 @@
                       (restrict-values (keys x) y)))
     :enable (extensionality
              compose-is-restrict-values-when-X-identityp-helper)))
+
+(in-theory (disable assoc-of-restrict-values))

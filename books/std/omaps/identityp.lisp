@@ -85,7 +85,7 @@
       (implies (identityp y)
                (equal (assoc k (compose x y))
                       (assoc k (restrict (keys y) x))))
-    :enable (assoc assoc-of-restrict in-of-keys-to-assoc))
+    :enable (assoc assoc-of-restrict in-of-keys-to-assoc assoc-of-compose))
 
   (defruled compose-is-restrict-when-Y-identityp
       (implies (identityp y)
@@ -94,11 +94,12 @@
     :enable (compose-is-restrict-when-Y-identityp-helper
              extensionality))
 
-  (defrule self-compose-is-self-when-identityp
-      (implies (and (identityp x)
-                    (mapp x))
-               (equal (compose x x) x))
-    :enable extensionality))
+  (defruled self-compose-is-self-when-identityp
+      (implies (identityp x)
+               (equal (compose x x)
+                      (mfix x)))
+    :enable (extensionality
+             assoc-of-compose)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -130,8 +131,7 @@
   :enable identityp-sk)
 
 (defruled identityp-when-identityp-sk
-    (implies (and (identityp-sk x)
-                  (mapp x))
+    (implies (identityp-sk x)
              (identityp x))
   :hints ('(:use (:instance identityp-sk-necc
                             (k (mv-nth 0 (head x))))))
@@ -155,6 +155,22 @@
     :use (identityp-sk-when-identityp
           identityp-when-identityp-sk))
 
+  (defruled identityp-sk-to-identityp
+      (implies (mapp x)
+               (equal (identityp-sk x)
+                      (identityp x)))
+   :use (identityp-sk-when-identityp
+         identityp-when-identityp-sk))
+
+  (theory-invariant (incompatible (:rewrite identityp-to-identityp-sk)
+                                  (:rewrite identityp-sk-to-identityp)))
+
   (defthy pick-a-point-identityp
     '(identityp-to-identityp-sk
       identityp-sk)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable values-is-keys-when-identityp
+                    assoc-when-identityp))
+

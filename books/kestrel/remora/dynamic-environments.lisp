@@ -101,3 +101,10 @@
    (type-vars type-var-type-value-map)
    (expr-vars string-value-map))
   :pred denvp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult denv-result
+  :short "Fixtype of dynamic environments and errors."
+  :ok denv
+  :pred denv-resultp)

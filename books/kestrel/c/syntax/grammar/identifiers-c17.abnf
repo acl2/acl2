@@ -10,10 +10,8 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains grammar rules for identifiers
-; that are specific to the C17 standard [C17:6.4.2.1].
-; Together with the generic rules in identifiers.abnf,
-; they form the rules for identifiers for the C17 dialects.
+; This file contains grammar rules for identifiers in the C17 dialects
+; [C17:6.4.2.1].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

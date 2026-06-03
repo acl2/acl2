@@ -10,10 +10,8 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains the grammar rules for preprocessing expressions
-; that are specific to the C17 standard.
-; Together with the generic rules in preprocessing-expressions.abnf,
-; they form the rules for preprocessing expressions for the C17 dialects.
+; This file contains a grammar rule for preprocessing expressions
+; in the C17 dialects.
 ; See preprocessing-expressions.abnf for
 ; the rationale of preprocessing expressions.
 

@@ -10,13 +10,11 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains the grammar rules for standard pragmas
-; that are specific to the C17 standard [C17:6.10.6/2].
+; This file contains a grammar rule for standard pragmas in the C17 dialects
+; [C17:6.10.6/2].
 ; Although [C17] does not have an explicit grammar rule for standard pragmas,
 ; but instead just lists the alternatives,
 ; [C23] has an explicit rule, so we do the same for C17.
-; Together with the generic rules in standard-pragmas.abnf,
-; they form the rules for standard pragmas for the C17 dialects.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -17,6 +17,10 @@
 (include-book "kestrel/fty/integer-result" :dir :system)
 (include-book "kestrel/fty/integer-list-result" :dir :system)
 
+(local (include-book "list-theorems"))
+
+(local (include-book "std/basic/nfix" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -28,7 +32,9 @@
                           ispace-valuep-when-result-not-error
                           ispace-value-listp-when-result-not-error
                           type-valuep-when-result-not-error
-                          type-value-listp-when-result-not-error)))
+                          type-value-listp-when-result-not-error
+                          valuep-when-result-not-error
+                          value-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -435,4 +441,205 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: eval-expr & eval-atom
+(define vector-with-empty-dim ((dims nat-listp) (elem type-valuep))
+  :guard (and (member-equal 0 dims)
+              (not (type-value-case elem :array)))
+  :returns (val valuep)
+  :short "Build a vector value with an empty dimension."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to evaluate empty array expressions,
+     which must have at least one zero dimension
+     and an atom (i.e. non-array) type (value) for elements,
+     as expressed by the guard.")
+   (xdoc::p
+    "We look at the first dimension,
+     which must be present because otherwise 0 could not be in the list.
+     If that dimension is 0, we return the empty vector
+     with the remaining dimensions and the element type.
+     If that dimension is not 0,
+     we recursively build a vector value
+     for the remaining dimensions (which must still include a 0)
+     and the element type,
+     and we replicate the value as many times as the first dimension,
+     to obtain the final vector value."))
+  (b* (((when (not (mbt (consp dims)))) (value-vector-empty nil elem))
+       (dim (lnfix (car dims))))
+    (if (= dim 0)
+        (make-value-vector-empty :dims (cdr dims) :elem elem)
+      (value-vector
+       (repeat dim (vector-with-empty-dim (cdr dims) elem)))))
+  :verify-guards :after-returns
+
+  ///
+
+  (defret check-dims-of-value-of-vector-with-empty-dim
+    (b* ((dims1 (check-dims-of-value val)))
+      (implies (member-equal 0 dims)
+               (and (not (reserrp dims1))
+                    (equal dims1 (nat-list-fix dims)))))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable vector-with-empty-dim
+                                check-dims-of-value
+                                check-dims-of-value-list-of-repeat
+                                acl2::not-reserrp-when-nat-listp
+                                acl2::not-reserrp-when-nat-list-listp
+                                car-of-repeat
+                                nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines eval-exprs/atoms/binds
+  :short "Evaluate expressions, atoms, and bindings."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-expr ((expr exprp) (denv denvp))
+    :returns (val value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate an expression to a value."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A variable is looked up in the dynamic environment;
+       it must be present, and its associated value is returned.")
+     (xdoc::p
+      "An atom expression evaluates to the value of its atom.")
+     (xdoc::p
+      "An empty array must have at least one 0 dimension,
+       and its element type must evaluate to an atom type value.
+       We build the result via a separate function (see its documentation)."))
+    (expr-case
+     expr
+     :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
+               ((unless var+val) (reserr nil)))
+            (cdr var+val))
+     :atom (eval-atom expr.atom denv)
+     :array (reserr :todo)
+     :array-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
+                       ((ok elem) (eval-type expr.type denv))
+                       ((when (type-value-case elem :array)) (reserr nil)))
+                    (vector-with-empty-dim expr.dims elem))
+     :frame (reserr :todo)
+     :frame-empty (reserr :todo)
+     :string (reserr :todo)
+     :app (reserr :todo)
+     :tapp (reserr :todo)
+     :iapp (reserr :todo)
+     :capp (reserr :todo)
+     :unbox (reserr :todo)
+     :bracket (reserr :todo)
+     :let (reserr :todo))
+    :measure (expr-count expr))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-expr-list ((exprs expr-listp) (denv denvp))
+    :returns (vals value-list-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate a list of expressions to a list of values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We evaluate each expression in turn
+       and return the list of results in the same order."))
+    (b* (((when (endp exprs)) nil)
+         ((ok val) (eval-expr (car exprs) denv))
+         ((ok vals) (eval-expr-list (cdr exprs) denv)))
+      (cons val vals))
+    :measure (expr-list-count exprs))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-atom ((atom atomp) (denv denvp))
+    :returns (val value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate an atom to a value."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A base literal is evaluated to a base value,
+       which is embedded into a value.")
+     (xdoc::p
+      "A lambda abstraction,
+       a type lambda abstraction,
+       or an ispace lambda abstraction
+       evaluates to
+       a lambda value, a type lambda value, or an ispace lambda value,
+       respectively,
+       with the same parameters and body,
+       which are not evaluated here but only when the abstraction is applied."))
+    (declare (ignore denv))
+    (atom-case
+     atom
+     :base (value-base (eval-base-lit atom.lit))
+     :lambda (make-value-lambda :params atom.params :body atom.body)
+     :tlambda (make-value-tlambda :params atom.params :body atom.body)
+     :ilambda (make-value-ilambda :params atom.params :body atom.body)
+     :box (reserr :todo))
+    :measure (atom-count atom))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-atom-list ((atoms atom-listp) (denv denvp))
+    :returns (vals value-list-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate a list of atoms to a list of values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We evaluate each atom in turn
+       and return the list of results in the same order."))
+    (b* (((when (endp atoms)) nil)
+         ((ok val) (eval-atom (car atoms) denv))
+         ((ok vals) (eval-atom-list (cdr atoms) denv)))
+      (cons val vals))
+    :measure (atom-list-count atoms))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-bind ((bind bindp) (denv denvp))
+    :returns (new-denv denv-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate a binding, extending the dynamic environment."
+    (declare (ignore denv))
+    (bind-case
+     bind
+     :ispace (reserr :todo)
+     :type (reserr :todo)
+     :val (reserr :todo)
+     :fun (reserr :todo)
+     :tfun (reserr :todo)
+     :ifun (reserr :todo)
+     :cfun (reserr :todo))
+    :measure (bind-count bind))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-bind-list ((binds bind-listp) (denv denvp))
+    :returns (new-denv denv-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate a list of bindings,
+            threading the dynamic environment through them."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We evaluate each binding in turn,
+       extending the dynamic environment as we go,
+       and we return the final environment."))
+    (b* (((when (endp binds)) (denv-fix denv))
+         ((ok denv) (eval-bind (car binds) denv)))
+      (eval-bind-list (cdr binds) denv))
+    :measure (bind-list-count binds))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove eventually
+
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv-mutual eval-exprs/atoms/binds))

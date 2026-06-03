@@ -50,16 +50,15 @@
   (defcong mequiv equal (injectivep x) 1)
 
   (defrule injectivep-implies-injectivep-tail
-      (implies (and (injectivep x)
-                    (not (emptyp x)))
+      (implies (injectivep x)
                (injectivep (tail x))))
 
-  (defrule injectivep-implies-unique-head-value
+  (defruled injectivep-implies-unique-head-value
       (implies (injectivep x)
                (not (set::in (mv-nth 1 (head x))
                              (values (tail x))))))
 
-  (defrule head-val-is-not-assoc-tail-when-injectivep
+  (defruled head-val-is-not-assoc-tail-when-injectivep
       (implies (and (injectivep x)
                     (assoc k (tail x)))
                (not (equal (mv-nth 1 (head x))
@@ -106,14 +105,14 @@
       :hints (("Goal" :in-theory
                       (enable cardinality-of-keys-and-values-to-injectivep))))
 
-  (defrule identityp-implies-injectivep
+  (defruled identityp-implies-injectivep
       (implies (identityp x)
                (injectivep x))
     :enable injectivep-to-cardinality-of-keys-and-values
     :use values-is-keys-when-identityp
     :rule-classes :forward-chaining)
 
-  (defrule rlookup-of-cdr-assoc-when-injectivep
+  (defruled rlookup-of-cdr-assoc-when-injectivep
       (implies (and (injectivep x)
                     (assoc k x))
                (equal (rlookup (cdr (assoc k x)) x)

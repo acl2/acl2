@@ -187,14 +187,10 @@ colon-type      = ":" ws type-exp
 ; Types (source-level type expressions)
 ; -------------------------------------------------------------------------
 
-type-exp        = atom-type-var      ; &name
-                / array-type-var     ; *name
+type-exp        = type-var           ; &name (atom) or *name (array)
                 / base-type          ; Int, Bool, Float
                 / bracket-type       ; [T d1 d2 ...] sugar
                 / "(" ws type-exp-paren ws ")"
-
-atom-type-var   = "&" identifier
-array-type-var  = "*" identifier
 
 base-type       = %s"Bool" / %s"Int" / %s"Float"
 
@@ -225,8 +221,11 @@ sigma-type      = ( %s"Sigma" / %x03A3 ) ws     ; Sigma or <sigma>
 ; Type parameters
 ; -------------------------------------------------------------------------
 
-type-var        = "&" identifier     ; atom type parameter
-                / "*" identifier     ; array type parameter
+type-var        = atom-type-var / array-type-var
+
+atom-type-var   = "&" identifier
+
+array-type-var  = "*" identifier
 
 ; -------------------------------------------------------------------------
 ; Dimensions, Shapes, Index Spaces
@@ -254,8 +253,11 @@ shape-lit       = "[" *( ws decimal ) ws "]"
 ispace          = dim                ; a dimension
                 / shape              ; a shape that is not a dimension [SC5]
 
-ispace-var      = "$" identifier     ; dimension parameter
-                / "@" identifier     ; shape parameter
+ispace-var      = dim-ispace-var / shape-ispace-var
+
+dim-ispace-var    = "$" identifier
+
+shape-ispace-var  = "@" identifier
 
 ; -------------------------------------------------------------------------
 ; Base values (literals)

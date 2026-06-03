@@ -64,6 +64,7 @@
                 nat
                 nat-list
                 nat-list-fix
+                nat-option
                 nat-optionp
                 nat-option-fix
                 nat-list-measure

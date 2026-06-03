@@ -28,8 +28,9 @@
 
   (defcong mequiv equal (closedp x) 1)
 
-  (defrule identityp-implies-closedp
+  (defruled identityp-implies-closedp
       (implies (identityp x)
                (closedp x))
     :enable values-is-keys-when-identityp
     :rule-classes :forward-chaining))
+

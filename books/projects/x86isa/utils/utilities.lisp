@@ -97,7 +97,7 @@
   :short "Definitions of commonly used constants and some functions to
   convert between @('natp') and @('integerp'), etc."
 
-  :long "<p>Definitions of constants (of the form @('2^W'), where @('W') is the
+  :long "<p>Definitions of constants (of the form @('*2^W*'), where @('W') is the
 plain decimal natural number) and functions/macros grouped in @('ruleset')s of
 the following form are defined (where in the function/macro names @('W') is
 zero-padded to at least two digits, so @('8') is represented as @('08')):</p>
@@ -126,7 +126,8 @@ zero-padded to at least two digits, so @('8') is represented as @('08')):</p>
 <li>@('iW') belongs to @('iw-defs') ruleset.
 @({
     (define iW ((x integerp))
-      (logext W x))
+      (mbe :logic (logext W x)
+           :exec (fast-logext W x)))
 })</li>
 
 <li>@('nW-to-iW') belongs to @('nw-to-iw-defs') ruleset.
@@ -146,7 +147,7 @@ zero-padded to at least two digits, so @('8') is represented as @('08')):</p>
 </ul>
 
 <p>The function @('np-def-n') is used to automatically create these
-constants and functions; it also proves some associated lemmas.</p>")
+constants and functions.</p>")
 
 ;; Lemmas to help in the MBE proof obligations
 ;; of the generated NTOI and ITON functions below:
