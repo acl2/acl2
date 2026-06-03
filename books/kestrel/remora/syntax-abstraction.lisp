@@ -1807,7 +1807,9 @@
          ((okf rulename?) (abnf::check-tree-nonleaf? inner)))
       (cond ((equal rulename? "atom")
              (b* (((okf a) (abs-atom inner)))
-               (make-expr-atom :atom a)))
+               ;; A bare atom is auto-lifted to a scalar, i.e. a rank-0
+               ;; array containing the single atom: (array [] a).
+               (make-expr-array :dims nil :atoms (list a))))
             ((equal rulename? "bracket-frame")
              (abs-bracket-frame inner))
             ((equal rulename? "identifier")
