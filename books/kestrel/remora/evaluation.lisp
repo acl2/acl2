@@ -20,6 +20,7 @@
 (local (include-book "list-theorems"))
 
 (local (include-book "std/basic/nfix" :dir :system))
+(local (include-book "std/typed-lists/nat-listp" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -449,10 +450,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used to evaluate empty array expressions,
+    "This is used to evaluate empty array or frame expressions,
      which must have at least one zero dimension
      and an atom (i.e. non-array) type (value) for elements,
-     as expressed by the guard.")
+     as expressed by the guard.
+     In the case of empty frame expressions,
+     the type value passed to this function is not
+     the result of evaluating the type in the frame expression,
+     which may be an array type:
+     it is the atom type (value) of that array type,
+     whose dimensions are added to the ones in frame expression
+     before calling this function (see callers).")
    (xdoc::p
     "We look at the first dimension,
      which must be present because otherwise 0 could not be in the list.
@@ -510,7 +518,14 @@
      (xdoc::p
       "An empty array must have at least one 0 dimension,
        and its element type must evaluate to an atom type value.
-       We build the result via a separate function (see its documentation)."))
+       We build the result via a separate function (see its documentation).")
+     (xdoc::p
+      "An empty frame is treated similarly to an empty array,
+       but its type is the cell type, which may be an array type;
+       we evaluate it,
+       decompose it into the atom type value and the cell dimensions,
+       append the cell dimensions to the frame dimensions,
+       and build the result via the same function used for arrays."))
     (expr-case
      expr
      :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
@@ -523,7 +538,16 @@
                        ((when (type-value-case elem :array)) (reserr nil)))
                     (vector-with-empty-dim expr.dims elem))
      :frame (reserr :todo)
-     :frame-empty (reserr :todo)
+     :frame-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
+                       ((ok tval) (eval-type expr.type denv))
+                       ((mv elem cell-dims)
+                        (type-value-case
+                         tval
+                         :array (mv tval.elem tval.shape)
+                         :otherwise (mv tval nil)))
+                       ((when (type-value-case elem :array)) (reserr nil))
+                       (dims (append expr.dims cell-dims)))
+                    (vector-with-empty-dim dims elem))
      :string (reserr :todo)
      :app (reserr :todo)
      :tapp (reserr :todo)
