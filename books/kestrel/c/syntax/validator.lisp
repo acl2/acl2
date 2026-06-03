@@ -1212,7 +1212,7 @@
                        ;; type1 could be integer:
                        (type-case type1 :unknown)
                        (type-case type1 :unknown-scalar)
-                       (type-case type2 :unknown-arithmetic))))
+                       (type-case type1 :unknown-arithmetic))))
         (retok (type-pointer->to type2)))
        ((when (and (or (type-case type1 :unknown-scalar) ; type1 could be
                        (type-case type1 :unknown))       ; pointer
@@ -1228,7 +1228,7 @@
                        ;; type1 could be integer:
                        (type-case type1 :unknown)
                        (type-case type1 :unknown-scalar)
-                       (type-case type2 :unknown-arithmetic))))
+                       (type-case type1 :unknown-arithmetic))))
         (retok (type-unknown))))
     (retmsg$ "In the array subscripting expression ~x0, ~
               the first sub-expression has type ~x1, ~
