@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "portcullis")
 (include-book "centaur/fty/top" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
@@ -346,6 +347,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+#|
+
 (defines json-value-to-lisp-value
 
   (define json-value-to-lisp-value ((val json::valuep))
@@ -378,27 +381,18 @@
            (rest (json-member-list-to-lisp-values (cdr members))))
         (cons (cons key val) rest)))))
 
-(define json-value-list-to-lisp-params ((vals json::value-listp))
-  :returns (params true-listp)
-  (json-value-list-to-lisp-values vals))
+|#
 
+; converts a member list into a keyword-argument list
 (define json-member-list-to-lisp-params ((members json::member-listp))
   :returns (params true-listp)
   (if (endp members)
       nil
     (b* ((m (car members))
          (key (intern (string-upcase (json::member->name m)) "KEYWORD"))
-         (val (json-value-to-lisp-value (json::member->value m)))
+         (val (json::member->value m))
          (rest (json-member-list-to-lisp-params (cdr members))))
       (cons key (cons val rest)))))
-
-;; NOTE: right now, dispatch is sending the raw result from the method function
-;; to make-success-response, which requires a JSON value. There are a few
-;; issues with this. If we want to convert lisp value to JSON value, there's a
-;; lot of subtleties, one of which is settling what nil is (null, false, empty
-;; list). Another way is to limit requests to functions defined inside the
-;; jsonrpc package; we can then enforce that any function has to return a JSON
-;; value. Will circle back
 
 (define dispatch-request ((req requestp) ctx state)
   :mode :program
@@ -406,17 +400,24 @@
   (b* (;; NOTE: not sure what the convention is here. This would probably be a
        ;; local function so don't know if type checking is necessary
 ;       ((unless (requestp req)) (raise "The REQ input must be a request"))
-       (method-sym (intern (string-upcase (request->method req)) "ACL2"))
+       (method-sym (intern-in-package-of-symbol (string-upcase (request->method req))
+                                               (pkg-witness "JSONRPC")))
        (form (cond
               ((not (request->params-presentp req))
                `(,method-sym))
               ((request->params-is-arr req)
-               `(,method-sym ,@(kwote-lst (json-value-list-to-lisp-params
-                                           (request->params-arr req)))))
+               `(,method-sym ,@(kwote-lst (request->params-arr req))))
               (t
                `(,method-sym ,@(kwote-lst (json-member-list-to-lisp-params
-                                           (request->params-obj req))))))))
-    (trans-eval form ctx state t)))
+                                           (request->params-obj req)))))))
+       ((mv erp result state) (trans-eval form ctx state t))
+       ;; NOTE: trans-eval returns an error triple where the value
+       ;; component is (stobjs . value), so we need to extract the
+       ;; result by using (cdr result). We also make the assumption
+       ;; that the method function returns a json::value, or else
+       ;; the make-success-response in process-one will error
+       (output (cdr result)))
+    (mv erp output state)))
 
 
 ;; NOTE: shoulde process-one and process-all attach the state to its outputs
@@ -432,10 +433,7 @@
                   (req val.get)
                   ((when (request->notificationp req)) 
                    (mv nil state))
-                  ;; NOTE: trans-eval returns an error triple where the value
-                  ;; component is (stobjs . value), so we need to extract the
-                  ;; result by using (cdr result)
-                  ((mv erp result state)
+                  ((mv erp output state)
                    (dispatch-request req ctx state))
                   ((when erp)
                    (mv (make-error-response
@@ -444,7 +442,7 @@
                                 :message "Internal error"
                                 :data nil)) ; TODO: return better error messages
                        state)))
-               (mv (make-success-response id (cdr result)) state))))
+               (mv (make-success-response id output) state))))
 
 (define process-all ((pairs id-request+error-alistp) ctx state)
   :mode :program
