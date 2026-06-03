@@ -36,21 +36,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum structured
+  (:arrray ((elements json::value-list)))
+  (:object ((members json::member-list)))
+  :pred structuredp)
+
+(defirrelevant irr-structured
+  :type structuredp
+  :body (structured-null))  
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; request:
 ;  - method: the name of the method to be invoked
 ;  - params-presentp: whether the params are present
-;  - params: MUST either be a JSON array or object, MAY be ommitted
-;    + params-arr?: true if params is a JSON array
-;    + params-arr: used when params-arr? is true
-;    + params-obj: used when params-arr? is false
+;  - params: a structured JSON value (array or object)
 ;  - notificationp: true if no id provided
 ;  - id: the request id 
 (fty::defprod request
   ((method string)
    (params-presentp bool)
-   (params-is-arr bool)
-   (params-arr json::value-list)
-   (params-obj json::member-list)
+   (params structured)
    (notificationp bool)
    (id id))
   :pred requestp)
@@ -79,18 +85,16 @@
 
 ; id-request+error-alist: mapping ids to request-errors
 (fty::defalist id-request+error-alist
-    :key-type id
-    :val-type request+error
-    :true-listp t
-    :pred id-request+error-alistp)
+  :key-type id
+  :val-type request+error
+  :true-listp t
+  :pred id-request+error-alistp)
 
 (defirrelevant irr-request
   :type requestp
   :body (make-request :method ""
                       :params-presentp nil
-                      :params-is-arr t
-                      :params-arr nil
-                      :params-obj nil
+                      :params (structured-null)
                       :notificationp nil
                       :id (irr-id)))
 
@@ -155,18 +159,20 @@
        (params-presentp (json::object-has-member-p "params" val))
        (params-val? (and params-presentp 
                          (json::object-member-value? "params" val)))
-       ((when (and params-val?
+       ((when (and params-presentp
                    (not (json::value-case params-val? :array))
                    (not (json::value-case params-val? :object))))
         (mv (id-null)
             (request+error-error
              (make-invalid-request-error 
               "\"params\" must be an array or object"))))
-       (params-is-arr (and params-val? (json::value-case params-val? :array)))
-       (params-arr (and params-val? params-is-arr 
-                        (json::value-array->elements params-val?)))
-       (params-obj (and params-val? (not params-is-arr) 
-                        (json::value-object->members params-val?)))
+       (params (and params-presentp
+                    (if (equal (json::value-kind params-val?)
+                               :array)
+                        (make-structured-array
+                         (json::value-array->elements params-val?))
+                      (make-structured-object
+                       (json::value-object->members param-val?)))))
        ((mv has-id is-valid id-val) (parse-rpc-id val))
        ((unless is-valid)
         (mv (id-null)
@@ -178,9 +184,7 @@
         (request+error-request
          (make-request :method method
                        :params-presentp params-presentp
-                       :params-is-arr params-is-arr
-                       :params-arr params-arr
-                       :params-obj params-obj
+                       :params params
                        :notificationp notificationp
                        :id id-val)))))
 
@@ -333,17 +337,22 @@
   :returns (val json::valuep)
   (b* ((error-obj-members
         (append (list (json::make-member :name "code"
-                                        :value (json::value-number (error2->code err)))
+                                         :value (json::value-number
+                                                 (error2->code err)))
                       (json::make-member :name "message"
-                                        :value (json::value-string (error2->message err))))
+                                         :value (json::value-string
+                                                 (error2->message err))))
                 (if (error2->data err)
                     (list (json::make-member :name "data"
-                                            :value (error2->data err)))
+                                             :value (error2->data err)))
                   nil))))
     (json::value-object
-     (list (json::make-member :name "jsonrpc" :value (json::value-string "2.0"))
-           (json::make-member :name "error"   :value (json::value-object error-obj-members))
-           (json::make-member :name "id"      :value (id-to-json-value id))))))
+     (list (json::make-member :name "jsonrpc"
+                              :value (json::value-string "2.0"))
+           (json::make-member :name "error"
+                              :value (json::value-object error-obj-members))
+           (json::make-member :name "id"
+                              :value (id-to-json-value id))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -394,22 +403,26 @@
          (rest (json-member-list-to-lisp-params (cdr members))))
       (cons key (cons val rest)))))
 
+; converts the json params to an appropriate params list
+(define json-params-to-lisp-params ((params structuredp))
+  :returns (lisp-params true-listp)
+  (if (equal (structured-kind params) :array)
+      (structured-array->elements params)
+    (json-member-list-to-lisp-params (structured-object->members params))))
+
 (define dispatch-request ((req requestp) ctx state)
   :mode :program
   :stobjs state
   (b* (;; NOTE: not sure what the convention is here. This would probably be a
        ;; local function so don't know if type checking is necessary
 ;       ((unless (requestp req)) (raise "The REQ input must be a request"))
-       (method-sym (intern-in-package-of-symbol (string-upcase (request->method req))
-                                               (pkg-witness "JSONRPC")))
-       (form (cond
-              ((not (request->params-presentp req))
-               `(,method-sym))
-              ((request->params-is-arr req)
-               `(,method-sym ,@(kwote-lst (request->params-arr req))))
-              (t
-               `(,method-sym ,@(kwote-lst (json-member-list-to-lisp-params
-                                           (request->params-obj req)))))))
+       (method-sym
+        (intern-in-package-of-symbol (string-upcase (request->method req))
+                                     (pkg-witness "JSONRPC")))
+       (form (if (not (request->params-presentp req))
+                 `(,method-sym)
+               `(,method-sym ,@(kwote-lst (json-params-to-lisp-params
+                                           (request->params req))))))
        ((mv erp result state) (trans-eval form ctx state t))
        ;; NOTE: trans-eval returns an error triple where the value
        ;; component is (stobjs . value), so we need to extract the
