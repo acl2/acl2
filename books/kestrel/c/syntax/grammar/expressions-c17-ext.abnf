@@ -26,4 +26,7 @@ postfix-expression = postfix-expression-std
                    / postfix-expression-c17
                    / "(" type-name ")" "{" "}"
 
+unary-expression = unary-expression-std
+                 / unary-expression-ext
+
 ; TODO: add other kinds of expressions
