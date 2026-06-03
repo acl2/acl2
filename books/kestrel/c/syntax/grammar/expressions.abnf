@@ -49,4 +49,22 @@ postfix-expression-std = primary-expression
 argument-expression-list = assignment-expression
                          / argument-expression-list "," assignment-expression
 
+; The standard unary expressions are the same in the C17 and C23 standards
+; [C17:6.5.3/1] [C23:6.5.4.1].
+
+unary-expression-std = postfix-expression
+                     / "++" unary-expression
+                     / "--" unary-expression
+                     / unary-operator cast-expression
+                     / %s"sizeof" unary-expression
+                     / %s"sizeof" "(" type-name ")"
+                     / alignof-keyword "(" type-name ")"
+
+unary-operator = "&"
+               / "*"
+               / "+"
+               / "-"
+               / "~"
+               / "!"
+
 ; TODO: add other kinds of expressions
