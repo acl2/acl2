@@ -316,6 +316,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deflist value-list-list
+  :short "Fixtype of lists of lists of values."
+  :elt-type value-list
+  :true-listp t
+  :elementp-of-nil t
+  :pred value-list-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult value-result
   :short "Fixtype of values and errors."
   :ok value
