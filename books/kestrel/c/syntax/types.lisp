@@ -691,6 +691,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-some-unknownp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is one of the unknown types."
+  (or (type-case type :unknown)
+      (type-case type :unknown-scalar)
+      (type-case type :unknown-arithmetic)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-standard-signed-integerp ((type typep))
   :returns (yes/no booleanp)
   :short "Check if a type is a standard signed integer type [C17:6.2.5/4]."
@@ -1093,7 +1102,7 @@
    :ushort (if (<= (ienv->ushort-max ienv) (ienv->sint-max ienv))
                (type-sint)
              (type-uint))
-   :enum (type-unknown-scalar)
+   :enum (type-unknown-arithmetic)
    :otherwise (type-fix type))
 
   ///
