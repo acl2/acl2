@@ -67,4 +67,59 @@ unary-operator = "&"
                / "~"
                / "!"
 
+; Cast expressions are the same in all the C dialects [C17:6.5.4/1] [C23:6.5.5].
+
+cast-expression = unary-expression
+                / "(" type-name ")" cast-expression
+
+; Binary expressions are the same in all the C dialects
+; [C17:6.5.5/1] [C23:6.5.6]
+; [C17:6.5.6/1] [C23:6.5.7]
+; [C17:6.5.7/1] [C23:6.5.8]
+; [C17:6.5.8/1] [C23:6.5.9]
+; [C17:6.5.9/1] [C23:6.5.10]
+; [C17:6.5.10/1] [C23:6.5.11]
+; [C17:6.5.11/1] [C23:6.5.12]
+; [C17:6.5.12/1] [C23:6.5.13]
+; [C17:6.5.13/1] [C23:6.5.14]
+; [C17:6.5.14/1] [C23:6.5.15].
+
+multiplicative-expression = cast-expression
+                          / multiplicative-expression "*" cast-expression
+                          / multiplicative-expression "/" cast-expression
+                          / multiplicative-expression "%" cast-expression
+
+additive-expression = multiplicative-expression
+                    / additive-expression "+" multiplicative-expression
+                    / additive-expression "-" multiplicative-expression
+
+shift-expression = additive-expression
+                 / shift-expression "<<" additive-expression
+                 / shift-expression ">>" additive-expression
+
+relational-expression = shift-expression
+                      / relational-expression "<" shift-expression
+                      / relational-expression ">" shift-expression
+                      / relational-expression "<=" shift-expression
+                      / relational-expression ">=" shift-expression
+
+equality-expression = relational-expression
+                    / equality-expression "==" relational-expression
+                    / equality-expression "!=" relational-expression
+
+and-expression = equality-expression
+               / and-expression "&" equality-expression
+
+exclusive-or-expression = and-expression
+                        / exclusive-or-expression "^" and-expression
+
+inclusive-or-expression = exclusive-or-expression
+                        / inclusive-or-expression "|" exclusive-or-expression
+
+logical-and-expression = inclusive-or-expression
+                       / logical-and-expression "&&" inclusive-or-expression
+
+logical-or-expression = logical-and-expression
+                      / logical-or-expression "||" logical-and-expression
+
 ; TODO: add other kinds of expressions
