@@ -561,12 +561,17 @@
     (xdoc::topstring
      (xdoc::p
       "A base literal is evaluated to a base value,
-       which is embedded into a value."))
+       which is embedded into a value.")
+     (xdoc::p
+      "A lambda abstraction evaluates to a lambda value
+       with the same parameters and body;
+       these are not evaluated here,
+       but only when the lambda is applied."))
     (declare (ignore denv))
     (atom-case
      atom
      :base (value-base (eval-base-lit atom.lit))
-     :lambda (reserr :todo)
+     :lambda (make-value-lambda :params atom.params :body atom.body)
      :tlambda (reserr :todo)
      :ilambda (reserr :todo)
      :box (reserr :todo))
