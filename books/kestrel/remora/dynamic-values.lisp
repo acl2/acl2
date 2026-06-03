@@ -325,7 +325,7 @@
 
   (fty::deflist value-list
     :parents (values)
-    :short "Fixtype of lists of (array) values."
+    :short "Fixtype of lists of values."
     :elt-type value
     :true-listp t
     :elementp-of-nil nil
