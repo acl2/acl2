@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "tailrec")
+(include-book "../tailrec")
 
 (include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/testing/assert-equal" :dir :system)

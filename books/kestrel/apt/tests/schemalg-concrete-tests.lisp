@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "schemalg")
+(include-book "../schemalg")
 
 (include-book "std/testing/must-be-redundant" :dir :system)
 

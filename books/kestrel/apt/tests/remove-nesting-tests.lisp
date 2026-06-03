@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/apt/remove-nesting" :dir :system)
+(include-book "../remove-nesting")
 
 (include-book "std/testing/assert-equal" :dir :system)
 (include-book "kestrel/utilities/deftest" :dir :system)
