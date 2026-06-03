@@ -1908,11 +1908,6 @@
      The result has the type of the first operand [C17:6.5.13/3].
      No array-to-pointer or function-to-pointer conversions are needed."))
   (b* (((reterr) (irr-type))
-       ;; ((when (or (type-case type-arg1 :unknown)
-       ;;            (type-case type-arg1 :unknown-scalar)
-       ;;            (type-case type-arg2 :unknown)
-       ;;            (type-case type-arg2 :unknown-scalar)))
-       ;;  (retok (type-unknown-scalar)))
        (msg (msg$ "In the binary expression ~x0, ~
                    the sub-expressions have types ~x1 and ~x2."
                   (expr-fix expr) (type-fix type-arg1) (type-fix type-arg2))))
