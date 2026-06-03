@@ -23,6 +23,8 @@
 
 (acl2::controlled-configuration)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (local (in-theory (enable acl2::nat-listp-when-result-not-error
                           acl2::nat-list-listp-when-result-not-error)))
 
