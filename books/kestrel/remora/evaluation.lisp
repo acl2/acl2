@@ -443,7 +443,7 @@
 
 (define vector-with-empty-dim ((dims nat-listp) (elem type-valuep))
   :guard (and (member-equal 0 dims)
-              (type-value-atomp elem))
+              (not (type-value-case elem :array)))
   :returns (val valuep)
   :short "Build a vector value with an empty dimension."
   :long
@@ -451,7 +451,7 @@
    (xdoc::p
     "This is used to evaluate empty array expressions,
      which must have at least one zero dimension
-     and an atom type (value) for elements,
+     and an atom (i.e. non-array) type (value) for elements,
      as expressed by the guard.")
    (xdoc::p
     "We look at the first dimension,
@@ -520,7 +520,7 @@
      :array (reserr :todo)
      :array-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
                        ((ok elem) (eval-type expr.type denv))
-                       ((unless (type-value-atomp elem)) (reserr nil)))
+                       ((when (type-value-case elem :array)) (reserr nil)))
                     (vector-with-empty-dim expr.dims elem))
      :frame (reserr :todo)
      :frame-empty (reserr :todo)
