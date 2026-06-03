@@ -1235,6 +1235,7 @@
     (:import-decl    ((decl cpp-import-decl)))
     (:namespace-alias        ((decl cpp-namespace-alias)))
     (:template-specialization ((decl cpp-top-level-decl)))
+    (:template-decl ((params cpp-template-param-list) (decl cpp-top-level-decl)))
     :pred cpp-top-level-decl-p
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
