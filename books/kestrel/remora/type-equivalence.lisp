@@ -372,5 +372,4 @@
   (or (endp types)
       (endp (cdr types))
       (and (type-equivp (car types) (cadr types))
-           (type-list-all-equivp (cdr types))))
-  :prepwork ((local (in-theory (enable type-list-fix)))))
+           (type-list-all-equivp (cdr types)))))

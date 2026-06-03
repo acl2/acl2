@@ -20,4 +20,6 @@ primary-expression = primary-expression-std
 postfix-expression = postfix-expression-std
                    / postfix-expression-c17
 
+unary-expression = unary-expression-std
+
 ; TODO: add other kinds of expressions
