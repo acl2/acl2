@@ -1271,8 +1271,13 @@
     "Otherwise, none of the types is floating,
      and we apply the integer promotions to both types.
      Then we apply the remaining rules, for integer types, in [C17:6.3.1.8],
-     via separate functions (see their documentation)."))
+     via separate functions (see their documentation).
+     Note that currently enum types are promoted to the unknown arithmetic type,
+     so we need to handle that case after the integer promotions."))
   (cond
+   ((or (type-some-unknownp type1)
+        (type-some-unknownp type2))
+    (type-unknown-arithmetic))
    ((or (type-case type1 :ldoublec)
         (type-case type2 :ldoublec))
     (type-ldoublec))
@@ -1294,15 +1299,11 @@
    (t (b* ((type1 (type-integer-promote type1 ienv))
            (type2 (type-integer-promote type2 ienv)))
         (cond
-         ((or (type-case type1 :unknown)
-              (type-case type1 :unknown-scalar)
-              (type-case type1 :unknown-arithmetic)
-              (type-case type2 :unknown)
-              (type-case type2 :unknown-scalar)
-              (type-case type2 :unknown-arithmetic))
-          (type-unknown-arithmetic))
          ((equal type1 type2)
           type1)
+         ((or (type-case type1 :unknown-arithmetic)
+              (type-case type2 :unknown-arithmetic))
+          (type-unknown-arithmetic))
          ((and (type-signed-integerp type1)
                (type-signed-integerp type2))
           (type-uaconvert-signed type1 type2))
@@ -1318,7 +1319,8 @@
          (t (prog2$ (impossible) (irr-type)))))))
   :guard-hints (("Goal"
                  :do-not '(preprocess)
-                 :in-theory (e/d (type-arithmeticp
+                 :in-theory (e/d (type-some-unknownp
+                                  type-arithmeticp
                                   type-integerp
                                   type-unsigned-integerp
                                   type-signed-integerp
