@@ -2703,7 +2703,8 @@
      the hard error signals an implementation error."))
   (if (type-formalp type)
       (type-kind type)
-    (prog2$ (raise "Internal error: type ~x0 has no corresponding value kind.")
+    (prog2$ (raise "Internal error: type ~x0 has no corresponding value kind."
+                   (type-fix type))
             :irrelevant))
   :no-function nil)
 
