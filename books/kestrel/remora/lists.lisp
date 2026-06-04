@@ -92,6 +92,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::deflist all-of-len-p (x len)
+  :guard (and (true-list-listp x)
+              (natp len))
+  :short "Check if all the lists in a list of lists have a given length."
+  (equal (len x) (nfix len)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define list-split ((list true-listp) (chunk posp))
   :guard (integerp (/ (len list) chunk))
   :returns (lists true-list-listp)
@@ -126,6 +134,12 @@
                      (integerp (/ x y)))
                 (equal (< x y)
                        (equal x 0))))))
+
+  (defrule all-of-len-p-of-list-split
+    (implies (posp chunk)
+             (all-of-len-p (list-split list chunk) chunk))
+    :induct t
+    :enable (all-of-len-p))
 
   (defrule list-list-repeat-of-list-split
     (implies (and (list-repeatp list)
