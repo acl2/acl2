@@ -1412,8 +1412,6 @@
              (type-arithmeticp y))
         (and (type-case y :unknown-arithmetic)
              (type-arithmeticp x))
-        ;; The case of X and Y both unknown scalar
-        ;; is covered by (EQUAL (TYPE-FIX X) (TYPE-FIX Y)) at the end.
         (type-case
           x
           :struct
