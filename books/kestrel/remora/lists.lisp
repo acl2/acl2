@@ -42,6 +42,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled car-of-repeat
+  :short "Theorem about @(tsee car) applied to @(tsee repeat)."
   (equal (car (repeat n x))
          (if (zp n) nil x))
   :induct t

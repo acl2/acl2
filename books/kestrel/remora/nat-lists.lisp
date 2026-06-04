@@ -85,6 +85,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule nat-listp-of-append-all
+  :short "Type of @(tsee append-all) applied to lists of lists of naturals."
   (implies (nat-list-listp lists)
            (nat-listp (append-all lists)))
   :induct t
