@@ -11,7 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-trees")
-(include-book "abstract-syntax-structural-operations")
+(include-book "abstract-syntax-structurals")
 
 (include-book "kestrel/fty/nat-list-result" :dir :system)
 (include-book "kestrel/fty/nat-list-list-result" :dir :system)

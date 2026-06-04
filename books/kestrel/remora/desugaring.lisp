@@ -11,7 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-core")
-(include-book "abstract-syntax-structural-operations")
+(include-book "abstract-syntax-structurals")
 (include-book "character-literal-codes")
 
 (include-book "kestrel/fty/deffold-map" :dir :system)

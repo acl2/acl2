@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "abstract-syntax-structural-operations")
+(include-book "abstract-syntax-structurals")
 
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 

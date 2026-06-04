@@ -25,13 +25,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ abstract-syntax-structural-operations
+(defxdoc+ abstract-syntax-structurals
   :parents (abstract-syntax)
-  :short "Structural operations on ASTs."
+  :short "Structural operations and theorems on ASTs."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are purely structural operations,
+    "These are purely structural operations and theorems,
      e.g. lifting from elements to lists.
      At least some of these could be generated from the fixtype definitions."))
   :order-subtopics t

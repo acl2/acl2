@@ -12,7 +12,7 @@
 
 (include-book "abstract-syntax-trees")
 (include-book "abstract-syntax-constructors")
-(include-book "abstract-syntax-structural-operations")
+(include-book "abstract-syntax-structurals")
 (include-book "abstract-syntax-matching-operations")
 (include-book "abstract-syntax-variable-operations")
 (include-book "type-equivalence")
