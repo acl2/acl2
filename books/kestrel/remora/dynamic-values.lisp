@@ -470,10 +470,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dims-of-value-list ((vals value-listp))
-  :guard (value-list-wfp vals)
+(std::defprojection dims-of-value-list ((x value-listp))
+  :guard (value-list-wfp x)
   :returns (dimss nat-list-listp)
   :short "Lift @(tsee dims-of-value) to lists."
-  (cond ((endp vals) nil)
-        (t (cons (dims-of-value (car vals))
-                 (dims-of-value-list (cdr vals))))))
+  (dims-of-value x))
