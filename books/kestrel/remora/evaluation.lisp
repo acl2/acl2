@@ -189,9 +189,9 @@
                 ((unless (nat-listp ints)) (reserr nil)))
              ints)
      :append (b* (((ok natss) (eval-shape-list shape.shapes denv)))
-               (nat-append-all natss))
+               (append-all natss))
      :splice (b* (((ok natss) (eval-shape-list shape.shapes denv)))
-               (nat-append-all natss)))
+               (append-all natss)))
     :measure (shape-count shape))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -214,6 +214,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :verify-guards :after-returns
+
+  :guard-hints
+  (("Goal" :in-theory (enable acl2::true-list-listp-when-nat-list-listp)))
 
   ///
 
@@ -291,7 +294,7 @@
               (make-type-value-array :elem elem-tval :shape nats))
      :bracket (b* (((ok elem-tval) (eval-type type.elem denv))
                    ((ok natss) (eval-shape-list type.shapes denv))
-                   (nats (nat-append-all natss)))
+                   (nats (append-all natss)))
                 (make-type-value-array :elem elem-tval :shape nats))
      :fun (b* (((ok in-tvals) (eval-type-list type.in denv))
                ((ok out-tval) (eval-type type.out denv)))
@@ -321,6 +324,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :verify-guards :after-returns
+
+  :guard-hints
+  (("Goal" :in-theory (enable acl2::true-list-listp-when-nat-list-listp)))
 
   ///
 
