@@ -12,7 +12,7 @@
 
 (include-book "dynamic-environments")
 (include-book "nat-lists")
-(include-book "integer-list-operations")
+(include-book "integer-lists")
 
 (include-book "kestrel/fty/integer-result" :dir :system)
 (include-book "kestrel/fty/integer-list-result" :dir :system)

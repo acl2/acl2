@@ -12,7 +12,7 @@
 
 (include-book "lists")
 (include-book "nat-lists")
-(include-book "integer-list-operations")
+(include-book "integer-lists")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,4 +26,4 @@
      and should be moved to more general libraries eventually."))
   :order-subtopics (lists
                     nat-lists
-                    integer-list-operations))
+                    integer-lists))
