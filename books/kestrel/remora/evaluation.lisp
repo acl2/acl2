@@ -514,8 +514,6 @@
       "A variable is looked up in the dynamic environment;
        it must be present, and its associated value is returned.")
      (xdoc::p
-      "An atom expression evaluates to the value of its atom.")
-     (xdoc::p
       "An empty array must have at least one 0 dimension,
        and its element type must evaluate to an atom type value.
        We build the result via a separate function (see its documentation).")
@@ -531,7 +529,6 @@
      :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
                ((unless var+val) (reserr nil)))
             (cdr var+val))
-     :atom (eval-atom expr.atom denv)
      :array (reserr :todo)
      :array-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
                        ((ok elem) (eval-type expr.type denv))

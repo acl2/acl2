@@ -1028,7 +1028,6 @@
     :returns (out pdocp)
     (expr-case e
       :var (pdoc-text e.name)
-      :atom (atom-to-pdoc e.atom)
       :array (pdoc-prefix-form
               "array"
               (pdoc-concat (pdoc-bracket (nat-list-to-pdoc e.dims))
