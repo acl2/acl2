@@ -450,7 +450,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define vector-with-empty-dim ((dims nat-listp) (elem type-valuep))
+(define value-with-empty-dim ((dims nat-listp) (elem type-valuep))
   :guard (and (member-equal 0 dims)
               (not (type-value-case elem :array)))
   :returns (val valuep)
@@ -485,19 +485,19 @@
     (if (= dim 0)
         (make-value-vector-empty :dims (cdr dims) :elem elem)
       (value-vector
-       (repeat dim (vector-with-empty-dim (cdr dims) elem)))))
+       (repeat dim (value-with-empty-dim (cdr dims) elem)))))
   :verify-guards :after-returns
 
   ///
 
-  (defret check-dims-of-value-of-vector-with-empty-dim
+  (defret check-dims-of-value-of-value-with-empty-dim
     (b* ((dims1 (check-dims-of-value val)))
       (implies (member-equal 0 dims)
                (and (not (reserrp dims1))
                     (equal dims1 (nat-list-fix dims)))))
     :hints (("Goal"
              :induct t
-             :in-theory (enable vector-with-empty-dim
+             :in-theory (enable value-with-empty-dim
                                 check-dims-of-value
                                 check-dims-of-value-list-of-repeat
                                 acl2::not-reserrp-when-nat-listp
@@ -630,7 +630,7 @@
      :array-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
                        ((ok elem) (eval-type expr.type denv))
                        ((when (type-value-case elem :array)) (reserr nil)))
-                    (vector-with-empty-dim expr.dims elem))
+                    (value-with-empty-dim expr.dims elem))
      :frame (reserr :todo)
      :frame-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
                        ((ok tval) (eval-type expr.type denv))
@@ -641,7 +641,7 @@
                          :otherwise (mv tval nil)))
                        ((when (type-value-case elem :array)) (reserr nil))
                        (dims (append expr.dims cell-dims)))
-                    (vector-with-empty-dim dims elem))
+                    (value-with-empty-dim dims elem))
      :string (reserr :todo)
      :app (reserr :todo)
      :tapp (reserr :todo)
