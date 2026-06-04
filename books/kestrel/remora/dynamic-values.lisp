@@ -17,6 +17,7 @@
 (include-book "kestrel/fty/nat-list-result" :dir :system)
 (include-book "kestrel/fty/nat-list-list-result" :dir :system)
 
+(local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 (local (include-book "std/basic/ifix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
@@ -483,7 +484,15 @@
   :returns (dimss nat-list-listp)
   :short "Lift @(tsee dims-of-value) to lists."
   (dims-of-value x)
-  :nil-preservingp t)
+  :nil-preservingp t
+
+  ///
+
+  (defrule dims-of-value-list-of-repeat
+    (equal (dims-of-value-list (repeat n val))
+           (repeat n (dims-of-value val)))
+    :induct t
+    :enable repeat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -492,4 +501,13 @@
   :returns (dimss nat-list-list-listp)
   :short "Lift @(tsee dims-of-value-list) to lists."
   (dims-of-value-list x)
-  :nil-preservingp t)
+  :nil-preservingp t
+
+  ///
+
+  (defrule dims-of-value-list-list-of-list-split
+    (equal (dims-of-value-list-list (list-split vals n))
+           (list-split (dims-of-value-list vals) n))
+    :induct t
+    :enable (list-split
+             dims-of-value-list-list)))
