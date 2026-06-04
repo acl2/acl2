@@ -10,7 +10,9 @@
 
 (in-package "REMORA")
 
+(include-book "std/lists/repeat" :dir :system)
 (include-book "std/util/define" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "kestrel/utilities/true-list-listp-theorems" :dir :system))
@@ -20,9 +22,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ list-operations
+(defxdoc+ lists
   :parents (library-extensions)
-  :short "Operations on lists."
+  :short "Library extensions for lists."
   :order-subtopics t
   :default-parent t)
 
@@ -36,3 +38,11 @@
                         :exec (car lists))
                    (append-all (cdr lists)))))
   :hooks nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled car-of-repeat
+  (equal (car (repeat n x))
+         (if (zp n) nil x))
+  :induct t
+  :enable repeat)

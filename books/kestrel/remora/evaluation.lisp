@@ -17,7 +17,7 @@
 (include-book "kestrel/fty/integer-result" :dir :system)
 (include-book "kestrel/fty/integer-list-result" :dir :system)
 
-(local (include-book "list-theorems"))
+(local (include-book "lists"))
 
 (local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
