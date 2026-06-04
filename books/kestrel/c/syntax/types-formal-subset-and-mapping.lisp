@@ -24,8 +24,7 @@
 (defxdoc+ types-formal-subset-and-mapping
   :parents (types)
   :short "Subset of the types that have a formal semantics,
-          and mappings between those types
-          and the ones in the language formalization."
+          and mappings with the types in the language formalization."
   :order-subtopics t
   :default-parent t)
 
