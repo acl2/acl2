@@ -529,7 +529,7 @@
        which have all non-zero dimensions as required by the guard.
        The number of values must match the product of the dimensions,
        as required by the guard,
-       so that the values can be arranged according to the dimensions
+       so that the values can be arranged according to the dimensions.
        Furthermore, as also required by the guard,
        all values must be well-formed and have the same dimensions.")
      (xdoc::p
@@ -540,7 +540,7 @@
        Otherwise, we take out the first dimension,
        and we split the list of values into as many chunks as that dimension
        (which is not 0 as enforced by the guard),
-       where each chunk has as size the (integer) ratio of
+       where each chunk has as its size the (integer) ratio of
        the total number of values and the first dimension.
        We construct values for each chunk
        via the companion recursive function.
@@ -569,7 +569,7 @@
     (xdoc::topstring
      (xdoc::p
       "This lifts @(tsee value-with-nonempty-dims) to lists of lists of values.
-       See the documenttion of that function."))
+       See the documentation of that function."))
     (cond ((endp valss) nil)
           (t (cons (value-with-nonempty-dims dims (car valss))
                    (value-list-with-nonempty-dims dims (cdr valss)))))
