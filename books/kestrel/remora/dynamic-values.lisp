@@ -17,6 +17,8 @@
 (include-book "kestrel/fty/nat-list-result" :dir :system)
 (include-book "kestrel/fty/nat-list-list-result" :dir :system)
 
+(local (include-book "arithmetic"))
+
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 (local (include-book "std/basic/ifix" :dir :system))
@@ -323,7 +325,22 @@
   :elt-type value-list
   :true-listp t
   :elementp-of-nil t
-  :pred value-list-listp)
+  :pred value-list-listp
+
+  ///
+
+  (defrule value-list-listp-of-list-split
+    (implies (and (value-listp vals)
+                  (posp n)
+                  (integerp (/ (len vals) n)))
+             (value-list-listp (list-split vals n)))
+    :induct t
+    :enable (list-split
+             value-list-listp
+             lt-to-zero-when-divided-by-pos
+             nfix
+             posp)
+    :prep-books ((include-book "arithmetic-3/top" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
