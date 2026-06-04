@@ -13,6 +13,7 @@
 (include-book "abstract-syntax-trees")
 (include-book "abstract-syntax-structurals")
 
+(include-book "kestrel/fty/nat-list-list-list" :dir :system)
 (include-book "kestrel/fty/nat-list-result" :dir :system)
 (include-book "kestrel/fty/nat-list-list-result" :dir :system)
 
@@ -458,6 +459,13 @@
   :short "Lift @(tsee value-wfp) to lists."
   (value-wfp x))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist value-list-list-wfp (x)
+  :guard (value-list-listp x)
+  :short "Lift @(tsee value-list-wfp) to lists."
+  (value-list-wfp x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dims-of-value ((val valuep))
@@ -475,3 +483,11 @@
   :returns (dimss nat-list-listp)
   :short "Lift @(tsee dims-of-value) to lists."
   (dims-of-value x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection dims-of-value-list-list ((x value-list-listp))
+  :guard (value-list-list-wfp x)
+  :returns (dimss nat-list-list-listp)
+  :short "Lift @(tsee dims-of-value-list) to lists."
+  (dims-of-value-list x))
