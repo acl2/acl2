@@ -329,6 +329,12 @@
 
   ///
 
+  (defruled true-list-listp-when-value-list-listp
+    (implies (value-list-listp x)
+             (true-list-listp x))
+    :induct t
+    :enable true-list-listp)
+
   (defrule value-list-listp-of-list-split
     (implies (and (value-listp vals)
                   (posp n)
