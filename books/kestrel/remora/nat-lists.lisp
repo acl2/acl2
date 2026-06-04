@@ -15,6 +15,7 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/fty/nat-list-list" :dir :system)
 
+(local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 
 (include-book "std/basic/controlled-configuration" :dir :system)
@@ -62,7 +63,21 @@
   (defret nat-list-product-0-iff-member-0
     (iff (equal product 0)
          (member-equal 0 (nat-list-fix nats)))
-    :hints (("Goal" :induct t))))
+    :hints (("Goal" :induct t)))
+
+  (local (include-book "arithmetic-3/top" :dir :system))
+
+  (defruled nat-list-product-of-cdr-to-ratio
+    (implies (and (nat-listp dims)
+                  (not (member-equal 0 dims))
+                  (consp dims))
+             (equal (nat-list-product (cdr dims))
+                    (/ (nat-list-product dims) (car dims)))))
+
+  (defruled nat-list-product-divided-by-car
+    (implies (and (nat-listp dims)
+                  (consp dims))
+             (integerp (/ (nat-list-product dims) (car dims))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
