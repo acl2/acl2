@@ -2,17 +2,32 @@
 
 (include-book "temp")
 
-(defun subtract (x y)
+(defun subtract (x y state)
   (declare (xargs :guard (and (json::valuep x)
-                              (json::valuep y))))
-  (b* (((unless (equal (json::value-kind x) 'number))
-        (mv t (json::value-null)))
-       (x-val (json::value-number->get x))
-       (y-val (json::value-number->get y))
+                              (json::valuep y))
+                  :mode :program
+                  :stobjs state))
+  (b* (((unless (equal (value-kind x) :number))
+        (mv (make-invalid-params-error
+             "Invalid first argument")
+            (value-null)
+            state))
+       ((unless (equal (value-kind y) :number))
+        (mv (make-invalid-params-error
+             "Invalid second argument")
+            (value-null)
+            state))
+       (x-val (value-number->get x))
+       (y-val (value-number->get y))
        (res-val (- x-val y-val))
-       (res (json::make-value-number res-val)))
-    (mv nil res)))
+       (res (make-value-number :get res-val)))
+    ;; put error in erp
+    (mv nil res state)))
+
+#|
 
 (process-json-rpc-file "json-request.txt"
                        "json-response.txt"
-                       (w state))
+                       state)
+
+|#
