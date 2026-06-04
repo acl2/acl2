@@ -482,7 +482,8 @@
   :guard (value-list-wfp x)
   :returns (dimss nat-list-listp)
   :short "Lift @(tsee dims-of-value) to lists."
-  (dims-of-value x))
+  (dims-of-value x)
+  :nil-preservingp t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -490,4 +491,5 @@
   :guard (value-list-list-wfp x)
   :returns (dimss nat-list-list-listp)
   :short "Lift @(tsee dims-of-value-list) to lists."
-  (dims-of-value-list x))
+  (dims-of-value-list x)
+  :nil-preservingp t)
