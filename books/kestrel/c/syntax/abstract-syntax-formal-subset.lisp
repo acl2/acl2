@@ -23,27 +23,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-formal-subset
-  :parents (syntax-for-tools)
+  :parents (abstract-syntax-formal-subset-and-mapping)
   :short "Subset of the abstract syntax that has a formal semantics."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The "
-    (xdoc::seetopic "c$::syntax-for-tools" "C syntax for tools")
-    " is designed to cover all of C,
-     but the "
-    (xdoc::seetopic "c::language" "formal language definition")
-    " only covers a subset of C.
-     More precisely:
-     the abstract syntax of the formal language definition
-     is a subset of the abstract syntax for tools;
-     the static semantics of C is defined for
-     a subset of the latter abstract syntax;
-     and the dynamic semantics of C is defined for
-     a subset of the subset for which the static semantics is defined.
-     Note how these subsets are linearly ordered.")
+    "See @(see abstract-syntax-formal-subset-and-mapping) for background.")
    (xdoc::p
-    "It is useful to characterize which subset of the abstract syntax for tools
+    "We characterize which subset of the abstract syntax for tools
      corresponds to the subset of C that has both static and dynamic semantics.
      This is the subset for which we can state and prove formal properties,
      e.g. of a "

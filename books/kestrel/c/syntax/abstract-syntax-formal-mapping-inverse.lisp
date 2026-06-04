@@ -27,7 +27,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-formal-mapping-inverse
-  :parents (syntax-for-tools)
+  :parents (abstract-syntax-formal-subset-and-mapping)
   :short "Mapping from the language definition to the tool-oriented syntax."
   :long
   (xdoc::topstring
