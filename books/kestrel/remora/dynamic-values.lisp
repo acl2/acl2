@@ -482,7 +482,15 @@
 (std::deflist value-list-list-wfp (x)
   :guard (value-list-listp x)
   :short "Lift @(tsee value-list-wfp) to lists."
-  (value-list-wfp x))
+  (value-list-wfp x)
+
+  ///
+
+  (defrule value-list-list-wfp-of-list-split
+    (implies (value-list-wfp vals)
+             (value-list-list-wfp (list-split vals n)))
+    :induct t
+    :enable list-split))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
