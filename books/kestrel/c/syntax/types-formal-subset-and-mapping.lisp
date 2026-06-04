@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ types-formal-subset-and-mapping
-  :parents (types)
+  :parents (validation)
   :short "Subset of the types that have a formal semantics,
           and mappings with the types in the language formalization."
   :order-subtopics t
