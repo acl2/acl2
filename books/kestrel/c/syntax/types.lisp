@@ -1412,8 +1412,6 @@
              (type-arithmeticp y))
         (and (type-case y :unknown-arithmetic)
              (type-arithmeticp x))
-        ;; The case of X and Y both unknown scalar
-        ;; is covered by (EQUAL (TYPE-FIX X) (TYPE-FIX Y)) at the end.
         (type-case
           x
           :struct
@@ -1934,10 +1932,10 @@
       outlined above.")
    (xdoc::ul
     (xdoc::li
-     "Two struct types are compared as if
+     "Two tagged struct types are compared as if
       they were declared in separate translation units [C23:6.2.7/1].")
     (xdoc::li
-     "Two union types are compared as if
+     "Two tagged union types are compared as if
       they were declared in separate translation units [C23:6.2.7/1]."))))
   (type-compatible-p-aux x y completions nil ienv))
 
