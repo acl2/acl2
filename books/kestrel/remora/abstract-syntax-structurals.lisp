@@ -229,38 +229,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-append-all ((exprss expr-list-listp))
-  :returns (exprs expr-listp)
-  :short "Append all the lists of expressions in a list, in that order."
-  (cond ((endp exprss) nil)
-        (t (append (expr-list-fix (car exprss))
-                   (expr-append-all (cdr exprss)))))
-
-  ///
-
-  (defrule expr-list-corep-of-expr-append-all
-    (equal (expr-list-corep (expr-append-all exprss))
-           (expr-list-list-corep exprss))
-    :induct t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atom-append-all ((atomss atom-list-listp))
-  :returns (atoms atom-listp)
-  :short "Append all the lists of atoms in a list, in that order."
-  (cond ((endp atomss) nil)
-        (t (append (atom-list-fix (car atomss))
-                   (atom-append-all (cdr atomss)))))
-
-  ///
-
-  (defrule atom-list-corep-of-atom-append-all
-    (equal (atom-list-corep (atom-append-all atomss))
-           (atom-list-list-corep atomss))
-    :induct t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defrule expr-listp-of-append-all
   :short "Type of @(tsee append-all) applied to lists of lists of expressions."
   (implies (expr-list-listp lists)
