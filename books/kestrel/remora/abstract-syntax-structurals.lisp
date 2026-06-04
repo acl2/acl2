@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax-core")
 (include-book "abstract-syntax-derived-fixtypes")
+(include-book "lists")
 
 (include-book "defsort/duplicated-members" :dir :system)
 (include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
@@ -257,3 +258,21 @@
     (equal (atom-list-corep (atom-append-all atomss))
            (atom-list-list-corep atomss))
     :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule expr-listp-of-append-all
+  :short "Type of @(tsee append-all) applied to lists of lists of expressions."
+  (implies (expr-list-listp lists)
+           (expr-listp (append-all lists)))
+  :induct t
+  :enable append-all)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule atom-listp-of-append-all
+  :short "Type of @(tsee append-all) applied to lists of lists of atoms."
+  (implies (atom-list-listp lists)
+           (atom-listp (append-all lists)))
+  :induct t
+  :enable append-all)
