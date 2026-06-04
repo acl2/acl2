@@ -16,10 +16,12 @@
 
 (include-book "kestrel/fty/integer-result" :dir :system)
 (include-book "kestrel/fty/integer-list-result" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 
 (local (include-book "lists"))
 
 (local (include-book "std/basic/nfix" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 
 (acl2::controlled-configuration)
@@ -502,6 +504,95 @@
                                 acl2::not-reserrp-when-nat-list-listp
                                 car-of-repeat
                                 nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines values-with-nonempty-dims
+  :short "Build values with non-empty dimensions and with given elements."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define value-with-nonempty-dims ((dims nat-listp) (vals value-listp))
+    :guard (and (not (member-equal 0 dims))
+                (equal (len vals) (nat-list-product dims))
+                (value-list-wfp vals)
+                (list-repeatp (dims-of-value-list vals)))
+    :returns (val valuep)
+    :parents (evaluation values-with-nonempty-dims)
+    :short "Build a value
+            from its dimensions and
+            from the values of its elements."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is used to evaluate non-empty array or frame expressions,
+       which have all non-zero dimensions as required by the guard.
+       The number of values must match the product of the dimensions,
+       as required by the guard,
+       so that the values can be arranged according to the dimensions
+       Furthermore, as also required by the guard,
+       all values must be well-formed and have the same dimensions.")
+     (xdoc::p
+      "When there are no dimensions left in the list,
+       the list of values must be a singleton
+       because its length must match the product of dimensions,
+       which is 1 for the empty list of dimensions.
+       Otherwise, we take out the first dimension,
+       and we split the list of values into as many chunks as that dimension
+       (which is not 0 as enforced by the guard),
+       where each chunk has as size the (integer) ratio of
+       the total number of values and the first dimension.
+       We construct values for each chunk
+       via the companion recursive function.
+       We put these values together into a vector value,
+       which is the final result."))
+    (b* (((when (endp dims)) (value-fix (car vals)))
+         (dim (lnfix (car dims)))
+         (valss (list-split (value-list-fix vals) (/ (len vals) dim)))
+         (vals (value-list-with-nonempty-dims (cdr dims) valss)))
+      (value-vector vals))
+    :measure (acl2::nat-list-measure (list (len dims) 0 0)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define value-list-with-nonempty-dims ((dims nat-listp)
+                                         (valss value-list-listp))
+    :guard (and (not (member-equal 0 dims))
+                (all-of-len-p valss (nat-list-product dims))
+                (value-list-list-wfp valss)
+                (list-list-repeatp (dims-of-value-list-list valss)))
+    :returns (vals value-listp)
+    :parents (evaluation values-with-nonempty-dims)
+    :short "Build a list of values from a common list of dimensions
+            and a list of lists of component values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This lifts @(tsee value-with-nonempty-dims) to lists of lists of values.
+       See the documenttion of that function."))
+    (cond ((endp valss) nil)
+          (t (cons (value-with-nonempty-dims dims (car valss))
+                   (value-list-with-nonempty-dims dims (cdr valss)))))
+    :measure (acl2::nat-list-measure (list (len dims) 1 (len valss))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :verify-guards :after-returns
+
+  :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
+
+  :guard-hints (("Goal"
+                 :in-theory (enable
+                             true-list-listp-when-value-list-listp
+                             acl2::true-list-listp-when-nat-list-listp
+                             acl2::true-list-listp-when-nat-list-list-listp
+                             nat-list-product-of-cdr-to-ratio
+                             posp)
+                 :use nat-list-product-divided-by-car))
+
+  ///
+
+  (fty::deffixequiv-mutual values-with-nonempty-dims))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
