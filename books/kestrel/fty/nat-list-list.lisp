@@ -29,4 +29,9 @@
     (equal (nat-list-listp (repeat n x))
            (or (zp n) (nat-listp x)))
     :induct t
-    :enable repeat))
+    :enable repeat)
+
+  (defruled true-list-listp-when-nat-list-listp
+    (implies (nat-list-listp x)
+             (true-list-listp x))
+    :induct t))
