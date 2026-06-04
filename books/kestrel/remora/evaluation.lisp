@@ -11,7 +11,7 @@
 (in-package "REMORA")
 
 (include-book "dynamic-environments")
-(include-book "nat-list-operations")
+(include-book "nat-lists")
 (include-book "integer-list-operations")
 
 (include-book "kestrel/fty/integer-result" :dir :system)

@@ -11,7 +11,7 @@
 (in-package "REMORA")
 
 (include-book "lists")
-(include-book "nat-list-operations")
+(include-book "nat-lists")
 (include-book "integer-list-operations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -25,5 +25,5 @@
     "These are used in the Remora library but are more general,
      and should be moved to more general libraries eventually."))
   :order-subtopics (lists
-                    nat-list-operations
+                    nat-lists
                     integer-list-operations))

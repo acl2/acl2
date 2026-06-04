@@ -20,9 +20,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ nat-list-operations
+(defxdoc+ nat-lists
   :parents (library-extensions)
-  :short "Operations on lists of natural numbers."
+  :short "Library extensions for lists of natural numbers."
   :order-subtopics t
   :default-parent t)
 
