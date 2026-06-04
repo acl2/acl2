@@ -10,6 +10,7 @@
 
 (in-package "REMORA")
 
+(include-book "list-operations")
 (include-book "list-theorems")
 (include-book "nat-list-operations")
 (include-book "integer-list-operations")
@@ -24,6 +25,7 @@
    (xdoc::p
     "These are used in the Remora library but are more general,
      and should be moved to more general libraries eventually."))
-  :order-subtopics (list-theorems
+  :order-subtopics (list-operations
+                    list-theorems
                     nat-list-operations
                     integer-list-operations))
