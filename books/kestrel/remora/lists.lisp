@@ -17,6 +17,8 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "arithmetic"))
+
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/utilities/true-list-listp-theorems" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
@@ -126,14 +128,7 @@
              (equal (len (list-split list chunk))
                     (/ (len list) chunk)))
     :induct t
-    :enable (fix nfix)
-    :prep-lemmas
-    ((defrule lemma
-       (implies (and (natp x)
-                     (posp y)
-                     (integerp (/ x y)))
-                (equal (< x y)
-                       (equal x 0))))))
+    :enable (fix nfix lt-to-zero-when-divided-by-pos))
 
   (defrule all-of-len-p-of-list-split
     (implies (posp chunk)
@@ -147,14 +142,7 @@
                   (integerp (/ (len list) n)))
              (list-list-repeatp (list-split list n)))
     :induct t
-    :enable (list-list-repeatp nfix)
-    :prep-lemmas
-    ((defrule lemma
-       (implies (and (natp x)
-                     (posp y)
-                     (not (equal x 0))
-                     (integerp (/ x y)))
-                (<= y x))))))
+    :enable (list-list-repeatp nfix posp pos-gte-pos-divisor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
