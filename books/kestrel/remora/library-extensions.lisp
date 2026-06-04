@@ -10,6 +10,7 @@
 
 (in-package "REMORA")
 
+(include-book "arithmetic")
 (include-book "lists")
 (include-book "nat-lists")
 (include-book "integer-lists")
@@ -24,6 +25,7 @@
    (xdoc::p
     "These are used in the Remora library but are more general,
      and should be moved to more general libraries eventually."))
-  :order-subtopics (lists
+  :order-subtopics (arithmetic
+                    lists
                     nat-lists
                     integer-lists))
