@@ -89,12 +89,3 @@
            (nat-listp (append-all lists)))
   :induct t
   :enable append-all)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define nat-append-all ((natss nat-list-listp))
-  :returns (nats nat-listp)
-  :short "Append all the lists of naturals in a list, in that order."
-  (cond ((endp natss) nil)
-        (t (append (nat-list-fix (car natss))
-                   (nat-append-all (cdr natss))))))
