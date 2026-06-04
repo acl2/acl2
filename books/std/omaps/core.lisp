@@ -809,6 +809,10 @@
                      (map (tail map)))
           (:instance head-tail-order (x map))))
 
+  (defruled not-head-key-when-assoc-of-tail
+    (implies (assoc k (tail x))
+             (not (equal k (mv-nth 0 (head x))))))
+
   (defruled assoc-of-tail-when-assoc-of-tail
     (implies (assoc key (tail map))
              (equal (assoc key (tail map))
@@ -1423,7 +1427,29 @@
     (implies (not (consp (assoc key map)))
              (equal (values (update key val map))
                     (set::insert val (values map))))
-    :induct t))
+    :induct t)
+
+  (defrule cardinality-of-values-<=-cardinality-of-keys
+    (<= (cardinality (values x))
+        (cardinality (keys x)))
+    :induct t
+    :enable (keys values set::expensive-rules)
+    :rule-classes :linear)
+
+  (defruled rlookup-to-in-of-values
+    (equal (set::emptyp (rlookup v x))
+           (not (set::in v (values x))))
+    :induct t
+    :enable (rlookup set::expensive-rules))
+
+  (defruled in-of-values-to-rlookup
+    (equal (set::in v (values x))
+           (not (set::emptyp (rlookup v x))))
+    :induct t
+    :enable rlookup)
+
+  (theory-invariant (incompatible (:rewrite rlookup-to-in-of-values)
+                                  (:rewrite in-of-values-to-rlookup))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
