@@ -10,6 +10,8 @@
 
 (in-package "REMORA")
 
+(include-book "lists")
+
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/fty/nat-list-list" :dir :system)
 
@@ -79,6 +81,14 @@
   (cond ((endp nats) (prog2$ (impossible) 0))
         ((endp (cdr nats)) (- (lnfix (car nats))))
         (t (- (lnfix (car nats)) (nat-list-sum (cdr nats))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule nat-listp-of-append-all
+  (implies (nat-list-listp lists)
+           (nat-listp (append-all lists)))
+  :induct t
+  :enable append-all)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
