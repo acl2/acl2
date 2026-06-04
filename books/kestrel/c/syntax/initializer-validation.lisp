@@ -442,7 +442,7 @@
                                   Therefore, we cannot ~
                                   get the subobjects-stack."
                                  type))
-                   (filtered (members-filter-contributers members)))
+                   (filtered (members-filter-contributors members)))
                 (retok nil
                        (if (endp filtered)
                            nil
@@ -454,7 +454,7 @@
                                   Therefore, we cannot ~
                                   get the subobjects-stack."
                                  type))
-                  (filtered (members-filter-contributers members)))
+                  (filtered (members-filter-contributors members)))
                (if (endp filtered)
                    (retmsg$ "Complete union type ~x0 has no named members."
                             type)
@@ -558,7 +558,7 @@
             (retok (if is-struct-p
                        (list (initer-subobjects-struct
                                (cons (first members)
-                                     (members-filter-contributers (rest members)))))
+                                     (members-filter-contributors (rest members)))))
                      (list (initer-subobjects-union (first members)))))
           (subobjects-from-members-lookup ident is-struct-p (rest members))))
        ((mv erp list)
@@ -585,7 +585,7 @@
                      (if is-struct-p
                          (list (initer-subobjects-struct
                                  (cons (first members)
-                                       (members-filter-contributers
+                                       (members-filter-contributors
                                          (rest members)))))
                        (list (initer-subobjects-union (first members))))))))
   :measure (type-struni-member-list-count members)
