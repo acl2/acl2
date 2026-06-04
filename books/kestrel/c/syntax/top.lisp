@@ -218,4 +218,5 @@
                     output-files
                     abstract-syntax-formal-mapping-direct
                     abstract-syntax-formal-mapping-inverse
-                    abstract-syntax-formal-subset))
+                    abstract-syntax-formal-subset
+                    types-formal-subet-and-mapping))
