@@ -584,14 +584,24 @@
                (id (c$::make-ident :unwrap kw-str))
                (base (make-cpp-type-spec-name :id id))
                ;; Check for '::' after the full (possibly multi-keyword) type
-               ((erp sep? & parstate) (read-token parstate))
-               ((when (token-punctuatorp sep? "::"))
-                (b* (((erp inner inner-span parstate) (parse-cpp-type-spec-one parstate))
-                     (span (make-span :start (span->start tok-span)
-                                      :end   (span->end inner-span))))
-                  (retok (make-cpp-type-spec-qualified :scope id :inner inner)
-                         span parstate)))
-               (parstate (if sep? (unread-token parstate) parstate))
+               ;; The C$ lexer produces ':' as a single-char token, so '::' is two ':' tokens
+               ((erp colon1? & parstate) (read-token parstate))
+               ((when (token-punctuatorp colon1? ":"))
+                (b* (((erp colon2? & parstate) (read-token parstate)))
+                  (if (token-punctuatorp colon2? ":")
+                      ;; Have '::' — qualified type
+                      (b* (((erp inner inner-span parstate) (parse-cpp-type-spec-one parstate))
+                           (span (make-span :start (span->start tok-span)
+                                            :end   (span->end inner-span))))
+                        (retok (make-cpp-type-spec-qualified :scope id :inner inner)
+                               span parstate))
+                    ;; Only one ':': unread colon2 and colon1, fall through
+                    (b* ((parstate (if colon2? (unread-token parstate) parstate))
+                         (parstate (unread-token parstate))
+                         (span (make-span :start (span->start tok-span)
+                                          :end   (span->end kw-end-span))))
+                      (retok base span parstate)))))
+               (parstate (if colon1? (unread-token parstate) parstate))
                (span (make-span :start (span->start tok-span)
                                 :end   (span->end kw-end-span))))
             (retok base span parstate)))
@@ -629,16 +639,47 @@
                    span parstate)))
          (base (make-cpp-type-spec-name :id id))
          ;; Check for '::' (qualified name)
-         ((erp sep-token? & parstate) (read-token parstate))
-         ((when (token-punctuatorp sep-token? "::"))
-          ;; Qualified: parse the inner part recursively
-          (b* (((erp inner inner-span parstate) (parse-cpp-type-spec-one parstate))
-               (span (make-span :start (span->start tok-span)
-                                :end   (span->end inner-span))))
-            (retok (make-cpp-type-spec-qualified :scope id :inner inner)
-                   span parstate)))
-         ;; Put back the non-'::' token
-         (parstate (if sep-token? (unread-token parstate) parstate))
+         ;; The C$ lexer produces ':' as a single-char token, so '::' is two ':' tokens
+         ((erp colon1? & parstate) (read-token parstate))
+         ((when (token-punctuatorp colon1? ":"))
+          (b* (((erp colon2? & parstate) (read-token parstate)))
+            (if (token-punctuatorp colon2? ":")
+                ;; Have '::' — qualified type
+                (b* (((erp inner inner-span parstate) (parse-cpp-type-spec-one parstate))
+                     (span (make-span :start (span->start tok-span)
+                                      :end   (span->end inner-span))))
+                  (retok (make-cpp-type-spec-qualified :scope id :inner inner)
+                         span parstate))
+              ;; Only one ':': unread colon2 and colon1, then check for '<'
+              (b* ((parstate (if colon2? (unread-token parstate) parstate))
+                   (parstate (unread-token parstate))
+                   ;; Check for '<' (template instantiation)
+                   ((erp angle-token? & parstate) (read-token parstate))
+                   ((when (token-punctuatorp angle-token? "<"))
+                    ;; Template instantiation: parse args until '>'
+                    (b* (((erp empty-check? empty-span parstate) (read-token parstate))
+                         ((when (token-punctuatorp empty-check? ">"))
+                          (b* ((span (make-span :start (span->start tok-span)
+                                                :end   (span->end empty-span))))
+                            (retok (make-cpp-type-spec-template-inst :template base
+                                                                      :args nil)
+                                   span parstate)))
+                         (parstate (if empty-check? (unread-token parstate) parstate))
+                         (psize (parsize parstate))
+                         ((erp first-arg & parstate) (parse-cpp-type-spec-one parstate))
+                         ((unless (mbt (<= (parsize parstate) psize)))
+                          (reterr :impossible))
+                         ((erp args close-span parstate)
+                          (parse-cpp-type-spec-arg-list-rest (list first-arg) parstate))
+                         (span (make-span :start (span->start tok-span)
+                                          :end   (span->end close-span))))
+                      (retok (make-cpp-type-spec-template-inst :template base
+                                                                :args args)
+                             span parstate)))
+                   (parstate (if angle-token? (unread-token parstate) parstate)))
+                (retok base tok-span parstate)))))
+         ;; No ':' — put back colon1 if non-nil
+         (parstate (if colon1? (unread-token parstate) parstate))
          ;; Check for '<' (template instantiation)
          ((erp angle-token? & parstate) (read-token parstate))
          ((when (token-punctuatorp angle-token? "<"))
@@ -1152,7 +1193,9 @@
                    first-span parstate)))
          ;; Non-type parameter: parse type specifier + name
          ;; Put back the first token so parse-cpp-type-spec can read it
-         ((unless (and first-token? (token-case first-token? :ident)))
+         ;; The first token can be an identifier (like MyType) or keyword (like int)
+         ((unless (and first-token? (or (token-case first-token? :ident)
+                                        (token-case first-token? :keyword))))
           (reterr-msg :where (span->start first-span)
                       :expected "template parameter (typename/class T, type name N, or template<...>)"
                       :found first-token?
@@ -1340,22 +1383,34 @@
                     :found next-token?
                     :extra nil))
        (first-name (token-ident->ident next-token?))
-       ;; Check for nested namespace using '::'
-       ((erp sep-token? & parstate) (read-token parstate))
-       ((when (token-punctuatorp sep-token? "::"))
-        ;; Nested namespace: collect remaining names
-        (b* (((erp rest-names last-span parstate)
-              (parse-cpp-nested-namespace-names parstate))
-             (span (make-span :start (span->start ns-span)
-                              :end   (span->end last-span))))
-          (retok (make-cpp-namespace-def
-                  :kind    (make-cpp-namespace-kind-nested
-                            :names (cons first-name rest-names))
-                  :inlinep nil
-                  :body    nil)
-                 span parstate)))
-       ;; Single named namespace — put back sep-token?
-       (parstate (if sep-token? (unread-token parstate) parstate))
+       ;; Check for nested namespace using '::' (lexed as two ':' tokens)
+       ((erp colon1? & parstate) (read-token parstate))
+       ((when (token-punctuatorp colon1? ":"))
+        (b* (((erp colon2? & parstate) (read-token parstate)))
+          (if (token-punctuatorp colon2? ":")
+              ;; Have '::' → nested namespace
+              (b* (((erp rest-names last-span parstate)
+                    (parse-cpp-nested-namespace-names parstate))
+                   (span (make-span :start (span->start ns-span)
+                                    :end   (span->end last-span))))
+                (retok (make-cpp-namespace-def
+                        :kind    (make-cpp-namespace-kind-nested
+                                  :names (cons first-name rest-names))
+                        :inlinep nil
+                        :body    nil)
+                       span parstate))
+            ;; Only one ':': unread colon2 and colon1, fall to single namespace
+            (b* ((parstate (if colon2? (unread-token parstate) parstate))
+                 (parstate (unread-token parstate))
+                 (span (make-span :start (span->start ns-span)
+                                  :end   (span->end next-span))))
+              (retok (make-cpp-namespace-def
+                      :kind    (make-cpp-namespace-kind-named :name first-name)
+                      :inlinep nil
+                      :body    nil)
+                     span parstate)))))
+       ;; No ':' at all: single named namespace — put back colon1 if non-nil
+       (parstate (if colon1? (unread-token parstate) parstate))
        (span (make-span :start (span->start ns-span)
                         :end   (span->end next-span))))
     (retok (make-cpp-namespace-def
@@ -1382,15 +1437,21 @@
                        :found name-token?
                        :extra nil))
           (name (token-ident->ident name-token?))
-          ;; Check for another '::'
-          ((erp sep-token? & parstate) (read-token parstate))
-          ((when (token-punctuatorp sep-token? "::"))
-           ;; More segments
-           (b* (((erp rest-names last-span parstate)
-                 (parse-cpp-nested-namespace-names parstate)))
-             (retok (cons name rest-names) last-span parstate)))
-          ;; End of the nested name — put back whatever we peeked
-          (parstate (if sep-token? (unread-token parstate) parstate)))
+          ;; Check for '::' (lexed as two ':' tokens by the C$ lexer)
+          ((erp colon1? & parstate) (read-token parstate))
+          ((when (token-punctuatorp colon1? ":"))
+           (b* (((erp colon2? & parstate) (read-token parstate)))
+             (if (token-punctuatorp colon2? ":")
+                 ;; Have '::' — recurse for more segments
+                 (b* (((erp rest-names last-span parstate)
+                       (parse-cpp-nested-namespace-names parstate)))
+                   (retok (cons name rest-names) last-span parstate))
+               ;; Only one ':': unread colon2 and colon1, return current name
+               (b* ((parstate (if colon2? (unread-token parstate) parstate))
+                    (parstate (unread-token parstate)))
+                 (retok (list name) name-span parstate)))))
+          ;; No ':' at all — put back colon1 if non-nil
+          (parstate (if colon1? (unread-token parstate) parstate)))
        (retok (list name) name-span parstate))
 
      ///

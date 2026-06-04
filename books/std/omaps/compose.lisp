@@ -52,3 +52,5 @@
       (equal (compose (compose x y) z)
              (compose x (compose y z)))
     :enable extensionality))
+
+(in-theory (disable assoc-of-compose))

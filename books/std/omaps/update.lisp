@@ -52,6 +52,16 @@
          (set::insert key (rlookup val map)))
   :enable set::expensive-rules)
 
+(defrule rlookup-of-update-when-not-assoc
+    (implies (not (assoc k x))
+             (equal (rlookup v2 (update k v1 x))
+                    (if (equal v2 v1)
+                        (insert k (rlookup v2 x))
+                      (rlookup v2 x))))
+  :enable rlookup
+  :induct t
+  :expand (rlookup v2 (update k v1 x)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled size-of-update

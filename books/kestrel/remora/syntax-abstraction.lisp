@@ -873,32 +873,77 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define abs-atom-type-var ((tree abnf::treep))
+  :returns (ty type-var-resultp)
+  :short "Abstract an @('atom-type-var') to a @(tsee type-var) @(':atom')."
+  (b* (((okf (abnf::tree-list-tuple2 sub))
+        (abnf::check-tree-nonleaf-2 tree "atom-type-var"))
+       ((okf sigil-tree) (abnf::check-tree-list-1 sub.1st))
+       ((okf id-tree) (abnf::check-tree-list-1 sub.2nd))
+       (sigil-pass (abnf::check-tree-ichars sigil-tree "&"))
+       ((when (reserrp sigil-pass))
+        (reserrf (list :atom-type-var-sigil
+                       (abnf::tree-info-for-error sigil-tree))))
+       ((okf name) (abs-identifier id-tree)))
+    (make-type-var-atom :name name)))
+
+(define abs-array-type-var ((tree abnf::treep))
+  :returns (ty type-var-resultp)
+  :short "Abstract an @('array-type-var') to a @(tsee type-var) @(':array')."
+  (b* (((okf (abnf::tree-list-tuple2 sub))
+        (abnf::check-tree-nonleaf-2 tree "array-type-var"))
+       ((okf sigil-tree) (abnf::check-tree-list-1 sub.1st))
+       ((okf id-tree) (abnf::check-tree-list-1 sub.2nd))
+       (sigil-pass (abnf::check-tree-ichars sigil-tree "*"))
+       ((when (reserrp sigil-pass))
+        (reserrf (list :array-type-var-sigil
+                       (abnf::tree-info-for-error sigil-tree))))
+       ((okf name) (abs-identifier id-tree)))
+    (make-type-var-array :name name)))
+
 (define abs-type-var ((tree abnf::treep))
   :returns (tv type-var-resultp)
   :short "Abstract a @('type-var') to a @(tsee type-var)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The grammar is @('type-var = \"&\" identifier / \"*\" identifier').
-     The CST has two tree-lists: the sigil and the identifier.
-     The sigil distinguishes the alternatives:
-     @('&') for the atom-kinded variant, @('*') for the array-kinded variant."))
-  (b* (((okf (abnf::tree-list-tuple2 sub))
-        (abnf::check-tree-nonleaf-2 tree "type-var"))
-       ((okf sigil-tree) (abnf::check-tree-list-1 sub.1st))
-       ((okf id-tree) (abnf::check-tree-list-1 sub.2nd))
-       (atom-pass (abnf::check-tree-ichars sigil-tree "&"))
-       ((unless (reserrp atom-pass))
-        (b* (((okf name) (abs-identifier id-tree)))
-          (make-type-var-atom :name name)))
-       (array-pass (abnf::check-tree-ichars sigil-tree "*"))
-       ((unless (reserrp array-pass))
-        (b* (((okf name) (abs-identifier id-tree)))
-          (make-type-var-array :name name))))
-    (reserrf (list :type-var-sigil
-                   (abnf::tree-info-for-error sigil-tree)))))
+    "The grammar is @('type-var = atom-type-var / array-type-var')."))
+  (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "type-var"))
+       ((okf rulename?) (abnf::check-tree-nonleaf? inner))
+       ((when (equal rulename? "atom-type-var")) (abs-atom-type-var inner))
+       ((when (equal rulename? "array-type-var")) (abs-array-type-var inner)))
+    (reserrf (list :unexpected-type-var-body
+                   (abnf::tree-info-for-error inner)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define abs-dim-ispace-var ((tree abnf::treep))
+  :returns (ty ispace-var-resultp)
+  :short "Abstract a @('dim-ispace-var') to an @(tsee ispace-var) @(':dim')."
+  (b* (((okf (abnf::tree-list-tuple2 sub))
+        (abnf::check-tree-nonleaf-2 tree "dim-ispace-var"))
+       ((okf sigil-tree) (abnf::check-tree-list-1 sub.1st))
+       ((okf id-tree) (abnf::check-tree-list-1 sub.2nd))
+       (sigil-pass (abnf::check-tree-ichars sigil-tree "$"))
+       ((when (reserrp sigil-pass))
+        (reserrf (list :dim-ispace-var-sigil
+                       (abnf::tree-info-for-error sigil-tree))))
+       ((okf name) (abs-identifier id-tree)))
+    (make-ispace-var-dim :name name)))
+
+(define abs-shape-ispace-var ((tree abnf::treep))
+  :returns (ty ispace-var-resultp)
+  :short "Abstract a @('shape-ispace-var') to a @(tsee ispace-var) @(':array')."
+  (b* (((okf (abnf::tree-list-tuple2 sub))
+        (abnf::check-tree-nonleaf-2 tree "shape-ispace-var"))
+       ((okf sigil-tree) (abnf::check-tree-list-1 sub.1st))
+       ((okf id-tree) (abnf::check-tree-list-1 sub.2nd))
+       (sigil-pass (abnf::check-tree-ichars sigil-tree "@"))
+       ((when (reserrp sigil-pass))
+        (reserrf (list :shape-ispace-var-sigil
+                       (abnf::tree-info-for-error sigil-tree))))
+       ((okf name) (abs-identifier id-tree)))
+    (make-ispace-var-shape :name name)))
 
 (define abs-ispace-var ((tree abnf::treep))
   :returns (iv ispace-var-resultp)
@@ -907,23 +952,13 @@
   (xdoc::topstring
    (xdoc::p
     "The grammar is
-     @('ispace-var = \"$\" identifier / \"@\" identifier').
-     @('$') introduces a dimension variable;
-     @('@') introduces a shape variable."))
-  (b* (((okf (abnf::tree-list-tuple2 sub))
-        (abnf::check-tree-nonleaf-2 tree "ispace-var"))
-       ((okf sigil-tree) (abnf::check-tree-list-1 sub.1st))
-       ((okf id-tree) (abnf::check-tree-list-1 sub.2nd))
-       (dim-pass (abnf::check-tree-ichars sigil-tree "$"))
-       ((unless (reserrp dim-pass))
-        (b* (((okf name) (abs-identifier id-tree)))
-          (make-ispace-var-dim :name name)))
-       (shape-pass (abnf::check-tree-ichars sigil-tree "@"))
-       ((unless (reserrp shape-pass))
-        (b* (((okf name) (abs-identifier id-tree)))
-          (make-ispace-var-shape :name name))))
-    (reserrf (list :ispace-var-sigil
-                   (abnf::tree-info-for-error sigil-tree)))))
+     @('ispace-var = dim-ispace-var / shape-ispace-var.')"))
+  (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "ispace-var"))
+       ((okf rulename?) (abnf::check-tree-nonleaf? inner))
+       ((when (equal rulename? "dim-ispace-var")) (abs-dim-ispace-var inner))
+       ((when (equal rulename? "shape-ispace-var")) (abs-shape-ispace-var inner)))
+    (reserrf (list :unexpected-ispace-var-body
+                   (abnf::tree-info-for-error inner)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1194,44 +1229,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; non-recursive type-variable rules
-;;
-;; The grammar has separate rules atom-type-var and array-type-var that
-;; occur as alternatives of type-exp.  These are abstracted directly to
-;; a type :var containing a type-var of the matching kind.
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define abs-atom-type-var ((tree abnf::treep))
-  :returns (ty type-resultp)
-  :short "Abstract an @('atom-type-var') to a @(tsee type) @(':var')."
-  (b* (((okf (abnf::tree-list-tuple2 sub))
-        (abnf::check-tree-nonleaf-2 tree "atom-type-var"))
-       ((okf sigil-tree) (abnf::check-tree-list-1 sub.1st))
-       ((okf id-tree) (abnf::check-tree-list-1 sub.2nd))
-       (sigil-pass (abnf::check-tree-ichars sigil-tree "&"))
-       ((when (reserrp sigil-pass))
-        (reserrf (list :atom-type-var-sigil
-                       (abnf::tree-info-for-error sigil-tree))))
-       ((okf name) (abs-identifier id-tree)))
-    (make-type-var :var (make-type-var-atom :name name))))
-
-(define abs-array-type-var ((tree abnf::treep))
-  :returns (ty type-resultp)
-  :short "Abstract an @('array-type-var') to a @(tsee type) @(':var')."
-  (b* (((okf (abnf::tree-list-tuple2 sub))
-        (abnf::check-tree-nonleaf-2 tree "array-type-var"))
-       ((okf sigil-tree) (abnf::check-tree-list-1 sub.1st))
-       ((okf id-tree) (abnf::check-tree-list-1 sub.2nd))
-       (sigil-pass (abnf::check-tree-ichars sigil-tree "*"))
-       ((when (reserrp sigil-pass))
-        (reserrf (list :array-type-var-sigil
-                       (abnf::tree-info-for-error sigil-tree))))
-       ((okf name) (abs-identifier id-tree)))
-    (make-type-var :var (make-type-var-array :name name))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 ;; types cluster
 ;;
 ;; Following the standard ABNF-parser convention used in PFCS, Aleo Leo,
@@ -1249,7 +1246,7 @@
     (xdoc::topstring
      (xdoc::p
       "@('type-exp') has either 1 tree-list (for the non-paren
-       alternatives @('atom-type-var')/@('array-type-var')/@('base-type')/
+       alternatives @('type-var')/@('base-type')/
        @('bracket-type'), with the inner subtree giving the specific
        alternative) or 5 tree-lists (for the @('( ws type-exp-paren ws )')
        alternative)."))
@@ -1257,10 +1254,9 @@
       (case (len treess)
         (1 (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "type-exp"))
                 ((okf rulename?) (abnf::check-tree-nonleaf? inner)))
-             (cond ((equal rulename? "atom-type-var")
-                    (abs-atom-type-var inner))
-                   ((equal rulename? "array-type-var")
-                    (abs-array-type-var inner))
+             (cond ((equal rulename? "type-var")
+                    (b* (((okf tv) (abs-type-var inner)))
+                      (make-type-var :var tv)))
                    ((equal rulename? "base-type")
                     (b* (((okf bt) (abs-base-type inner)))
                       (make-type-base :type bt)))
@@ -1811,7 +1807,9 @@
          ((okf rulename?) (abnf::check-tree-nonleaf? inner)))
       (cond ((equal rulename? "atom")
              (b* (((okf a) (abs-atom inner)))
-               (make-expr-atom :atom a)))
+               ;; A bare atom is auto-lifted to a scalar, i.e. a rank-0
+               ;; array containing the single atom: (array [] a).
+               (make-expr-array :dims nil :atoms (list a))))
             ((equal rulename? "bracket-frame")
              (abs-bracket-frame inner))
             ((equal rulename? "identifier")

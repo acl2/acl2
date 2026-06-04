@@ -87,7 +87,8 @@
   :short "Mutually recursive top-level declaration parsers."
   :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
                                      c$::parsize-of-unread-token
-                                     parsize-of-parse-cpp-namespace-def-header-uncond)))
+                                     parsize-of-parse-cpp-namespace-def-header-uncond
+                                     parsize-of-parse-cpp-template-param-list-uncond)))
   :ruler-extenders :all
 
   (define parse-cpp-top-level-decl ((parstate parstatep))
@@ -127,13 +128,22 @@
                                         :extra nil))
                            (first-id (token-ident->ident first-id?))
                            ;; Parse optional :: rest of qualified name
-                           ((erp sep? & parstate) (read-token parstate))
+                           ;; The C$ lexer produces ':' as single-char, so '::' is two ':' tokens
+                           ((erp colon1? & parstate) (read-token parstate))
                            ((mv rest-names parstate)
-                            (if (token-punctuatorp sep? "::")
-                                (b* (((mv erp2 rest & parstate)
-                                      (parse-cpp-nested-namespace-names parstate)))
-                                  (if erp2 (mv nil parstate) (mv rest parstate)))
-                              (b* ((parstate (if sep? (unread-token parstate) parstate)))
+                            (if (token-punctuatorp colon1? ":")
+                                (b* (((mv & colon2? & parstate) (read-token parstate)))
+                                  (if (token-punctuatorp colon2? ":")
+                                      ;; Have '::': parse rest of qualified name
+                                      (b* (((mv erp3 rest & parstate)
+                                            (parse-cpp-nested-namespace-names parstate)))
+                                        (if erp3 (mv nil parstate) (mv rest parstate)))
+                                    ;; Only one ':': unread colon2 and colon1
+                                    (b* ((parstate (if colon2? (unread-token parstate) parstate))
+                                         (parstate (unread-token parstate)))
+                                      (mv nil parstate))))
+                              ;; Not ':' at all: unread colon1 if non-nil
+                              (b* ((parstate (if colon1? (unread-token parstate) parstate)))
                                 (mv nil parstate))))
                            ((erp semi? semi-span parstate) (read-token parstate))
                            ((unless (token-punctuatorp semi? ";"))
@@ -332,21 +342,11 @@
                         :expected "'module' or 'import' after 'export'"
                         :found next?
                         :extra nil)))
-         ;; 'template' → explicit template specialization: template<> DECL
+         ;; 'template' → template specialization (template<>) or template decl (template<params>)
          ((when (token-cpp-kw-p tok? "template"))
           (b* ((psize (parsize parstate)) ; captured after consuming 'template'
-               ((erp lt? lt-span parstate) (read-token parstate))
-               ((unless (token-punctuatorp lt? "<"))
-                (reterr-msg :where (span->start lt-span)
-                            :expected "'<' after 'template' (only template<> explicit specialization supported)"
-                            :found lt?
-                            :extra nil))
-               ((erp gt? gt-span parstate) (read-token parstate))
-               ((unless (token-punctuatorp gt? ">"))
-                (reterr-msg :where (span->start gt-span)
-                            :expected "'>' after 'template <' (empty template argument list)"
-                            :found gt?
-                            :extra nil))
+               ;; Parse the full '<' params '>' parameter list
+               ((erp params & parstate) (parse-cpp-template-param-list parstate))
                ;; MBT: '<' and '>' consumed; parsize strictly decreased from psize
                ((unless (mbt (< (parsize parstate) psize)))
                 (reterr :impossible))
@@ -354,8 +354,12 @@
                 (parse-cpp-top-level-decl parstate))
                (span (make-span :start (span->start tok-span)
                                 :end   (span->end inner-span))))
-            (retok (make-cpp-top-level-decl-template-specialization :decl inner-decl)
-                   span parstate)))
+            ;; Empty param list → explicit specialization; non-empty → template-decl
+            (if (endp params)
+                (retok (make-cpp-top-level-decl-template-specialization :decl inner-decl)
+                       span parstate)
+                (retok (make-cpp-top-level-decl-template-decl :params params :decl inner-decl)
+                       span parstate))))
          ;; ';' → empty declaration
          ((when (token-punctuatorp tok? ";"))
           (retok (cpp-top-level-decl-empty) tok-span parstate))
@@ -656,10 +660,23 @@
                                 parsize-of-parse-cpp-nested-namespace-names-uncond
                                 parsize-of-parse-cpp-nested-namespace-names-cond))))
 
+  ;; Helper lemma for guard verification: parse-cpp-template-param-list returns
+  ;; either NIL or a CONSP (follows from the type theorem)
+  (local
+   (defthm parse-cpp-template-param-list-nil-or-consp
+     (let ((params (mv-nth 1 (parse-cpp-template-param-list parstate))))
+       (or (not params) (consp params)))
+     :hints (("Goal" :use cpp-template-param-listp-of-parse-cpp-template-param-list.params
+              :in-theory (e/d (cpp-template-param-listp)
+                              (cpp-template-param-listp-of-parse-cpp-template-param-list.params))))
+     :rule-classes :type-prescription))
+
   (verify-guards parse-cpp-top-level-decl
     :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
                                        c$::parsize-of-unread-token
-                                       parsize-of-parse-cpp-member-field-or-method-uncond)))))
+                                       parsize-of-parse-cpp-member-field-or-method-uncond
+                                       parsize-of-parse-cpp-template-param-list-uncond
+                                       parsize-of-parse-cpp-template-param-list-cond)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Translation Unit Parser

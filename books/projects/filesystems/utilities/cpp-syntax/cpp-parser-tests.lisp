@@ -73,15 +73,15 @@
 
 ; Test 6a: co_return statement with expression.
 
-;; (test-parse-cpp
-;;  parse-cpp-stmt
-;;  "co_return 42 ;")
+(test-parse-cpp
+ parse-cpp-stmt
+ "co_return 42 ;")
 
 ; Test 6b: co_yield statement.
 
-;; (test-parse-cpp
-;;  parse-cpp-stmt
-;;  "co_yield x ;")
+(test-parse-cpp
+ parse-cpp-stmt
+ "co_yield x ;")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -286,6 +286,10 @@
 
 ; Test 23: Namespace alias.
 
+(test-parse-cpp
+ parse-cpp-top-level-decl
+ "namespace fs = std :: filesystem ;")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test 24: Module declarations — import, export module.
@@ -336,7 +340,15 @@
 
 ; Test 28: Lambda expression — empty capture list and empty parameter list.
 
+(test-parse-cpp
+ parse-cpp-expr
+ "[ ] ( ) { }")
+
 ; Test 28b: Lambda with captures and a return statement in the body.
+
+(test-parse-cpp
+ parse-cpp-expr
+ "[ x , y ] ( int a ) { return a ; }")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -408,6 +420,10 @@
 
 ; 34a: if constexpr with simple then-branch.
 
+(test-parse-cpp
+ parse-cpp-stmt
+ "if constexpr ( sizeof ( T ) == 4 ) { }")
+
 ; 34b: if constexpr with else-branch.
 
 (test-parse-cpp
@@ -432,15 +448,39 @@
 
 ; 35a: single by-value init-capture.
 
+(test-parse-cpp
+ parse-cpp-expr
+ "[ x = expr ] ( ) { return x ; }")
+
 ; 35b: single by-ref init-capture.
+
+(test-parse-cpp
+ parse-cpp-expr
+ "[ & y = src ] ( ) { }")
 
 ; 35c: init-capture with a more complex init expression.
 
+(test-parse-cpp
+ parse-cpp-expr
+ "[ z = a + b ] ( ) { return z ; }")
+
 ; 35d: mixed captures — default by-value, then init-capture.
+
+(test-parse-cpp
+ parse-cpp-expr
+ "[ = , x = val ] ( ) { }")
 
 ; 35e: by-ref default followed by ref init-capture.
 
+(test-parse-cpp
+ parse-cpp-expr
+ "[ & , & n = count ] ( ) { }")
+
 ; 35f: multiple init-captures.
+
+(test-parse-cpp
+ parse-cpp-expr
+ "[ a = 1 , b = 2 ] ( ) { return a + b ; }")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -473,6 +513,10 @@
 (test-parse-cpp
  parse-cpp-stmt
  "try { foo ( ) ; } catch ( int e ) { }")
+
+(test-parse-cpp
+ parse-cpp-stmt
+ "try { bar ( ) ; } catch ( std :: exception & e ) { } catch ( int x ) { }")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -530,9 +574,21 @@
 
 ; Test 45: Nested namespace definition (C++17).
 
+(test-parse-cpp
+ parse-cpp-top-level-decl
+ "namespace A :: B :: C { }")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test 46: Template parameter list — type, non-type, template-template.
+
+(test-parse-cpp
+ parse-cpp-top-level-decl
+ "template < typename T > struct Box { T val ; } ;")
+
+(test-parse-cpp
+ parse-cpp-top-level-decl
+ "template < int N > struct Array { int data [ N ] ; } ;")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -558,6 +614,18 @@
 
 ; Test 49: using declaration at top level.
 
+(test-parse-cpp
+ parse-cpp-top-level-decl
+ "using std :: vector ;")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test 50: Lambda with capture-this and star-this variants.
+
+(test-parse-cpp
+ parse-cpp-expr
+ "[ this ] ( ) { return x ; }")
+
+(test-parse-cpp
+ parse-cpp-expr
+ "[ * this ] ( ) { return x ; }")

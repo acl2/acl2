@@ -1,0 +1,32 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains grammar rules for expressions
+; in the C17 dialects with extensions.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; GCC and Clang allow empty compound literals in C17
+; [GCCM:6.2.10](https://gcc.gnu.org/onlinedocs/gcc/Compound-Literals.html).
+; [CLE] does not seem to mention them, but Clang implementations accept them.
+
+primary-expression = primary-expression-std
+                   / primary-expression-ext
+
+postfix-expression = postfix-expression-std
+                   / postfix-expression-c17
+                   / "(" type-name ")" "{" "}"
+
+unary-expression = unary-expression-std
+                 / unary-expression-ext
+
+; TODO: add other kinds of expressions

@@ -10,16 +10,15 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains the grammar rules for expressions [C17:6.5] [C23:6.5]
-; that are specific to standard C without extensions.
-; Together with the generic rules in expressions.abnf,
-; they form the rules for identifiers for the GCC/Clang-extended dialects.
+; This file contains grammar rules for expressions
+; in the non-standard C dialects (i.e. with extensions).
+; Although [GCCM] and [CLE] do not provide explicit grammar rules,
+; we classify the extensions into different kinds of expressions
+; based on judgement and experimentation.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; As GCC and Clang extensions, we allow the following expressions.
-; Although [GCCM] and [CLE] do not provide explicit grammar rules,
-; we regard them as primary expressions, for the reasons explained below.
+; As GCC and Clang extensions, we allow the following primary expressions:
 ;
 ; - Statement expressions (i.e. parenthesized compound statements)
 ;   [GCCM:6.12.1](https://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html).
@@ -61,12 +60,11 @@
 ;   if there are parentheses, they belong to the expression,
 ;   which is therefore a parenthesized primary expression.
 
-primary-expression = primary-expression-std
-                   / "(" compound-statement ")"
-                   / types-compatible-call
-                   / offsetof-call
-                   / va-arg-call
-                   / %s"__extension__" primary-expression
+primary-expression-ext = "(" compound-statement ")"
+                       / types-compatible-call
+                       / offsetof-call
+                       / va-arg-call
+                       / %s"__extension__" primary-expression
 
 types-compatible-call =
     %s"__builtin_types_compatible_p" "(" type-name "," type-name ")"
@@ -79,5 +77,34 @@ offsetof-member-designator = identifier
                            / offsetof-member-designator "[" expression "]"
 
 va-arg-call = %s"__builtin_va_arg" "(" assignment-expression "," type-name ")"
+
+; As GCC and Clang extensions, we allow the following unary expressions:
+;
+; - '__alignof' and variant keywords as a unary operator
+;   [GCCM:6.12.9](https://gcc.gnu.org/onlinedocs/gcc/Alignment.html).
+;   [CLE] just mentions the keywords,
+;   but Clang implementations accept these expressions.
+;   The ones in the C17 and C23 standards operate only on type names.
+;   This extension makes '__alignof' more like 'sizeof',
+;   i.e. applicable to parenthesized type names
+;   or to not-necessarily-parenthesized expressions;
+;   our grammar rule requires the operand to be a unary expression
+;   in analogy with the standard grammar rule for 'sizeof'.
+;
+; - '__real__' and '__imag__' as unary operators
+;   [GCC:6.1.3](https://gcc.gnu.org/onlinedocs/gcc/Complex.html)
+;   [CLE](https://clang.llvm.org/docs/LanguageExtensions.html#implementation-defined-keywords).
+;   Like the other numeric unary operators,
+;   for which the standard grammar rules require cast expression operands,
+;   we require the operands of these extensions to be cast expressions.
+;
+; - '&&' applied to a label to obtain its address
+;   [GCC:6.12.3](https://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html).
+;   [CLE] does not seem to mention this, but Clang implementations accept it.
+
+unary-expression-ext = alignof-keyword unary-expression
+                     / %s"__real__" cast-expression
+                     / %s"__imag__" cast-expression
+                     / "&&" identifier
 
 ; TODO: add other kinds of expressions

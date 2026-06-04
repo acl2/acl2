@@ -1,0 +1,56 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains grammar rules for keywords
+; in the C23 dialect without extensions.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+keyword = keyword-c23
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+alignas-keyword = %s"alignas" / %s"_Alignas"
+
+alignof-keyword = %s"alignof" / %s"_Alignof"
+
+bool-keyword = %s"bool" / %s"_Bool"
+
+complex-keyword = %s"_Complex"
+
+const-keyword = %s"const"
+
+inline-keyword = %s"inline"
+
+nullptr-keyword = %s"nullptr"
+
+restrict-keyword = %s"restrict"
+
+signed-keyword = %s"signed"
+
+static-assert-keyword = %s"static_assert" / %s"_Static_assert"
+
+thread-local-keyword = %s"thread_local" / %s"_Thread_local"
+
+typeof-keyword = %s"typeof"
+
+typeof-unqual-keyword = %s"typeof_unqual"
+
+volatile-keyword = %s"volatile"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; remove when the rest of the grammar is modularized:
+
+asm-keyword = %s"asm" / %s"__asm" / %s"__asm__"
+
+attribute-keyword = %s"__attribute" / %s"__attribute__"

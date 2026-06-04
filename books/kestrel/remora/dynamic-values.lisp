@@ -23,6 +23,8 @@
 
 (acl2::controlled-configuration)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (local (in-theory (enable acl2::nat-listp-when-result-not-error
                           acl2::nat-list-listp-when-result-not-error)))
 
@@ -245,7 +247,7 @@
       "In Remora, every value, which an expression may evaluate to, is an array.
        Scalar values are zero-rank arrays, consisting of single atom values,
        but we do not define a distinct notion of atom value,
-       folding them into the initial summands of this fixtype of values
+       folding them into the first five summands of this fixtype of values
        (described in more detail below).
        Non-scalar values are positive-rank arrays,
        consisting of zero or more values of rank immediately lower
@@ -261,8 +263,8 @@
        (not the dimensions of the whole vector,
        which is obtained by adding a 0 dimension
        in front of the elements' dimensions;
-       see @(tsee check-dim-value))
-       and (ii) an atom type;
+       see @(tsee check-dims-of-value))
+       and (ii) an (atom) type value;
        together, (i) and (ii) determine the array type of the value.")
      (xdoc::p
       "The atoms that form scalar values are
@@ -299,22 +301,36 @@
            (type type)))
     (:vector ((elems value-list)))
     (:vector-empty ((dims nat-list)
-                    (atom type)))
+                    (elem type-value)))
     :pred valuep)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist value-list
     :parents (values)
-    :short "Fixtype of lists of (array) values."
+    :short "Fixtype of lists of values."
     :elt-type value
     :true-listp t
     :elementp-of-nil nil
     :pred value-listp))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult value-result
+  :short "Fixtype of values and errors."
+  :ok value
+  :pred value-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult value-list-result
+  :short "Fixtype of (i) lists of values and (ii) errors."
+  :ok value-list
+  :pred value-list-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines check-dim-values
+(defines check-dims-of-values
   :short "Check dimension constraints on values and lists of values."
   :long
   (xdoc::topstring
@@ -327,15 +343,13 @@
      the dimensions are needed to check the containing values.
      So these functions define, simultaneously,
      predicates on values saying whether the values are well-formed,
-     and functions returning dimensions of well-formed values.")
-   (xdoc::p
-    "These functions do not check type constraints on values."))
+     and functions returning dimensions of well-formed values."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define check-dim-value ((val valuep))
+  (define check-dims-of-value ((val valuep))
     :returns (dims nat-list-resultp)
-    :parents (values check-dim-values)
+    :parents (values check-dims-of-values)
     :short "Check dimension constraints on values."
     :long
     (xdoc::topstring
@@ -370,7 +384,7 @@
      :tlambda nil
      :ilambda nil
      :box nil
-     :vector (b* (((ok dimss) (check-dim-value-list val.elems))
+     :vector (b* (((ok dimss) (check-dims-of-value-list val.elems))
                   ((unless (consp dimss)) (reserr nil))
                   (dims (car dimss))
                   ((unless (all-equalp dims dimss)) (reserr nil)))
@@ -380,9 +394,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define check-dim-value-list ((vals value-listp))
+  (define check-dims-of-value-list ((vals value-listp))
     :returns (dimss nat-list-list-resultp)
-    :parents (values check-dim-values)
+    :parents (values check-dims-of-values)
     :short "Check dimension constraints on lists of values."
     :long
     (xdoc::topstring
@@ -391,8 +405,8 @@
        If they all check successfully,
        we return the dimensions of each, in the same order as the list."))
     (b* (((when (endp vals)) nil)
-         ((ok dims) (check-dim-value (car vals)))
-         ((ok dimss) (check-dim-value-list (cdr vals))))
+         ((ok dims) (check-dims-of-value (car vals)))
+         ((ok dimss) (check-dims-of-value-list (cdr vals))))
       (cons dims dimss))
     :measure (value-list-count vals))
 
@@ -404,42 +418,53 @@
 
   ///
 
-  (fty::deffixequiv-mutual check-dim-values))
+  (fty::deffixequiv-mutual check-dims-of-values)
+
+  (defruled check-dims-of-value-list-of-repeat
+    (b* ((dims (check-dims-of-value val))
+         (dimss (check-dims-of-value-list (repeat n val))))
+      (implies (not (reserrp dims))
+               (and (not (reserrp dimss))
+                    (equal dimss (repeat n dims)))))
+    :induct (repeat n dims)
+    :enable (repeat
+             acl2::not-reserrp-when-nat-list-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define value-dim-wfp ((val valuep))
+(define value-wfp ((val valuep))
   :returns (yes/no booleanp)
-  :short "Check the dimension well-formedness of a value."
+  :short "Check if a value is well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
-    "That is, whether it satisfies the dimension constraints."))
-  (not (reserrp (check-dim-value val))))
+    "The value must satisfy the dimension constraints.
+     We will extend this to also add the satisfaction of type constraints."))
+  (not (reserrp (check-dims-of-value val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist value-list-dim-wfp (x)
+(std::deflist value-list-wfp (x)
   :guard (value-listp x)
-  :short "Check the dimension well-formedness of a list of values."
-  (value-dim-wfp x))
+  :short "Lift @(tsee value-wfp) to lists."
+  (value-wfp x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define value-dims ((val valuep))
-  :guard (value-dim-wfp val)
-  :returns (dims nat-listp :hints (("Goal" :in-theory (enable value-dim-wfp))))
+(define dims-of-value ((val valuep))
+  :guard (value-wfp val)
+  :returns (dims nat-listp :hints (("Goal" :in-theory (enable value-wfp))))
   :short "Dimensions of a well-formed value."
-  (if (mbt (value-dim-wfp val))
-      (check-dim-value val)
+  (if (mbt (value-wfp val))
+      (check-dims-of-value val)
     nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define value-list-dims ((vals value-listp))
-  :guard (value-list-dim-wfp vals)
+(define dims-of-value-list ((vals value-listp))
+  :guard (value-list-wfp vals)
   :returns (dimss nat-list-listp)
-  :short "Lift @(tsee value-dims) to lists."
+  :short "Lift @(tsee dims-of-value) to lists."
   (cond ((endp vals) nil)
-        (t (cons (value-dims (car vals))
-                 (value-list-dims (cdr vals))))))
+        (t (cons (dims-of-value (car vals))
+                 (dims-of-value-list (cdr vals))))))

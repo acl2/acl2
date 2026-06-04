@@ -739,7 +739,6 @@
      (xdoc::p
       "There are
        named variables,
-       atoms (auto-lifted to scalars, i.e. arrays of rank 0),
        non-empty arrays with at least one atom,
        empty arrays with the type of the elements,
        non-empty frames with at least one expression,
@@ -768,7 +767,6 @@
        @($\\mathfrak{a}\\ \\mathfrak{a}\\ldots$) and @($e\\ e\\ldots$),
        while [arxiv] paper does not."))
     (:var ((name string)))
-    (:atom ((atom atom)))
     (:array ((dims nat-list)
              (atoms atom-list)))
     (:array-empty ((dims nat-list)

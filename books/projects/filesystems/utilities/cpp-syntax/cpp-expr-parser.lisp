@@ -276,20 +276,29 @@
                      (not (token-cpp-kw-p tok? "reinterpret_cast"))
                      (not (token-cpp-kw-p tok? "const_cast"))
                      (not (token-cpp-kw-p tok? "typeid"))))
-          (b* (((erp scope-tok? & parstate) (read-token parstate))
-               ((when (token-punctuatorp scope-tok? "::"))
-                (b* ((psize (parsize parstate))
-                     ((erp inner inner-span parstate)
-                      (parse-cpp-primary parstate))
-                     ((unless (mbt (<= (parsize parstate) psize)))
-                      (reterr :impossible))
-                     (span (make-span :start (span->start tok-span)
-                                      :end   (span->end inner-span))))
-                  (retok (make-cpp-expr-scoped :scope (token-ident->ident tok?)
-                                              :inner inner)
-                         span parstate)))
-               ;; Not '::' — put back
-               (parstate (if scope-tok? (unread-token parstate) parstate)))
+          (b* (;; Check for '::'  (C$ lexer produces single ':', so '::' is two tokens)
+               ((erp colon1? & parstate) (read-token parstate))
+               ((when (token-punctuatorp colon1? ":"))
+                (b* (((erp colon2? & parstate) (read-token parstate))
+                     ((when (token-punctuatorp colon2? ":"))
+                      ;; Have '::' — scoped expression
+                      (b* ((psize (parsize parstate))
+                           ((erp inner inner-span parstate)
+                            (parse-cpp-primary parstate))
+                           ((unless (mbt (<= (parsize parstate) psize)))
+                            (reterr :impossible))
+                           (span (make-span :start (span->start tok-span)
+                                            :end   (span->end inner-span))))
+                        (retok (make-cpp-expr-scoped :scope (token-ident->ident tok?)
+                                                    :inner inner)
+                               span parstate)))
+                     ;; Only one ':': unread colon2 and colon1
+                     (parstate (if colon2? (unread-token parstate) parstate))
+                     (parstate (unread-token parstate)))
+                  (retok (make-cpp-expr-ident :name (token-ident->ident tok?))
+                         tok-span parstate)))
+               ;; No ':' — put back colon1 if non-nil
+               (parstate (if colon1? (unread-token parstate) parstate)))
             (retok (make-cpp-expr-ident :name (token-ident->ident tok?))
                    tok-span parstate)))
          ;; constant
@@ -324,7 +333,13 @@
                ;; Ruler: capture-list-full doesn't increase parsize, so after
                ;; consuming '[' + captures we are still below entry parsize.
                ((unless (< (parsize parstate) psize-entry)) (reterr :impossible))
-               ;; Parse parameter list '(' params ')'
+               ;; Parse parameter list '(' params ')' — need to consume '(' first
+               ((erp lparen? lparen-span parstate) (read-token parstate))
+               ((unless (token-punctuatorp lparen? "("))
+                (reterr-msg :where (span->start lparen-span)
+                            :expected "'(' to begin lambda parameter list"
+                            :found lparen?
+                            :extra nil))
                ((erp params & parstate) (parse-cpp-param-list parstate))
                ;; Record parsize before consuming '{'
                (psize-lambda (parsize parstate))
@@ -831,13 +846,19 @@
                         (retok (make-cpp-expr-sizeof-type :type type)
                                span parstate)))
                      ;; sizeof(expr): peek? = '(' already consumed;
-                     ;; parsize is strictly less than entry.
+                     ;; Parse a full expression and consume the matching ')'.
                      (psize (parsize parstate))
-                     ((erp sub sub-span parstate) (parse-cpp-unary parstate))
+                     ((erp sub & parstate) (parse-cpp-expr parstate))
                      ((unless (mbt (<= (parsize parstate) psize)))
                       (reterr :impossible))
+                     ((erp rp? rp-span parstate) (read-token parstate))
+                     ((unless (token-punctuatorp rp? ")"))
+                      (reterr-msg :where (span->start rp-span)
+                                  :expected "')' to close sizeof(...)"
+                                  :found rp?
+                                  :extra nil))
                      (span (make-span :start (span->start tok-span)
-                                      :end   (span->end sub-span))))
+                                      :end   (span->end rp-span))))
                   (retok (make-cpp-expr-sizeof-expr :arg sub) span parstate)))
                ;; sizeof expr (no parens): put peek? back and parse unary
                (parstate (if peek? (unread-token parstate) parstate))

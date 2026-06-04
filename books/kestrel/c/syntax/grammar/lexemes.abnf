@@ -10,8 +10,7 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains the grammar rules for lexemes,
-; which are common to all the C dialects.
+; This file contains grammar rules for lexemes.
 ; This does not correspond to any grammar rule in [C17] and [C23],
 ; but it defines the lexical units after preprocessing:
 ; tokens, comments, and white-space characters.

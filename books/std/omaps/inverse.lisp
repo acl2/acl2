@@ -52,7 +52,8 @@
       (implies (injectivep x)
                (equal (values (inverse x))
                       (keys x)))
-    :enable assoc-to-in-of-keys)
+    :enable (assoc-to-in-of-keys
+             injectivep-implies-unique-head-value))
 
   (defrule inverse-implies-injectivep
       (implies (injectivep x)
@@ -72,14 +73,16 @@
                     (equal (cdr (assoc v x)) k))
                (equal (assoc k (inverse x))
                       (cons k v)))
-    :enable values
+    :enable (values
+             injectivep-implies-unique-head-value)
     :use equal-val-implies-equal-key-when-injectivep)
 
   (defrule injectivep-implies-not-rlookup-head-val-tail
       (implies (injectivep x)
                (set::emptyp (rlookup (mv-nth 1 (head x))
                                      (tail x))))
-    :enable rlookup-to-in-of-values)
+    :enable (rlookup-to-in-of-values
+             injectivep-implies-unique-head-value))
 
   (defrule assoc-of-inverse
       (implies (injectivep x)
@@ -87,16 +90,7 @@
                       (and (set::in k (values x))
                            (cons k (set::head (rlookup k x))))))
     :enable (rlookup values set::expensive-rules))
-
-  (defrule rlookup-of-update-when-not-assoc
-      (implies (not (assoc k x))
-               (equal (rlookup v2 (update k v1 x))
-                      (if (equal v2 v1)
-                          (insert k (rlookup v2 x))
-                        (rlookup v2 x))))
-    :enable rlookup
-    :expand (rlookup v2 (update k v1 x)))
-
+  
   (defruledl assoc-of-inverse-inverse
       (implies (injectivep x)
                (equal (assoc k (inverse (inverse x)))
@@ -117,10 +111,15 @@
       (implies (and (injectivep x)
                     (assoc k (compose (inverse x) x)))
                (equal (assoc k (compose (inverse x) x))
-                      (cons k k))))
+                      (cons k k)))
+    :enable (rlookup-of-cdr-assoc-when-injectivep
+             assoc-of-compose))
 
   (defrule identityp-compose-with-inverse
       (implies (injectivep x)
                (identityp (compose (inverse x) x)))
     :enable (assoc-of-compose-inverse
              pick-a-point-identityp)))
+
+
+(in-theory (disable injectivep-implies-not-rlookup-head-val-tail))

@@ -10,12 +10,8 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains rules for integer constants
-; that are common to all the C dialects
+; This file contains grammar rules for integer constants in all the C dialects
 ; [C17:6.4.4.1/1] [C23:6.4.5.2].
-; Together with the rules
-; in the dialect-specific files integer-constants-*.abnf,
-; they define the integer constants of each C dialect.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
