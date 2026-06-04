@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-trees")
+(include-book "lists")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 (include-book "kestrel/utilities/ordinals" :dir :system)
@@ -208,6 +209,24 @@
              (not (bind-corep bind)))
     :enable bind-corep)
 
+  (defrule expr-list-corep-of-append-all
+    (equal (expr-list-corep (append-all exprss))
+           (expr-list-list-corep exprss))
+    :induct t
+    :enable (append-all
+             expr-list-corep-of-append
+             expr-list-list-corep-of-cons
+             expr-list-list-corep-when-atom))
+
+  (defrule atom-list-corep-of-append-all
+    (equal (atom-list-corep (append-all atomss))
+           (atom-list-list-corep atomss))
+    :induct t
+    :enable (append-all
+             atom-list-corep-of-append
+             atom-list-list-corep-of-cons
+             atom-list-list-corep-when-atom))
+
   (add-to-ruleset ast-corep-rules
                   '(shape-corep-when-var
                     shape-corep-when-dim
@@ -219,4 +238,6 @@
                     not-bind-corep-when-fun
                     not-bind-corep-when-tfun
                     not-bind-corep-when-ifun
-                    not-bind-corep-when-cfun)))
+                    not-bind-corep-when-cfun
+                    expr-list-corep-of-append-all
+                    atom-list-corep-of-append-all)))
