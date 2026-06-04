@@ -22,4 +22,6 @@ postfix-expression = postfix-expression-std
 
 unary-expression = unary-expression-std
 
+conditional-expression = conditional-expression-std
+
 ; TODO: add other kinds of expressions
