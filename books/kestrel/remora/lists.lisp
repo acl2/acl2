@@ -17,6 +17,8 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "kestrel/utilities/true-list-listp-theorems" :dir :system))
+(local (include-book "std/basic/nfix" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration :hooks nil)
@@ -52,7 +54,22 @@
   (or (endp x)
       (endp (cdr x))
       (and (equal (car x) (cadr x))
-           (list-repeatp (cdr x)))))
+           (list-repeatp (cdr x))))
+
+  ///
+
+  (defrule list-repeatp-of-take
+    (implies (and (list-repeatp list)
+                  (<= (nfix n) (len list)))
+             (list-repeatp (take n list)))
+    :induct t
+    :enable take)
+
+  (defrule list-repeatp-of-nthcdr
+    (implies (list-repeatp list)
+             (list-repeatp (nthcdr n list)))
+    :induct t
+    :enable nthcdr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
