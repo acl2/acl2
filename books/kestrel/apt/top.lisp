@@ -28,6 +28,8 @@
 
 (include-book "copy-function")
 
+(include-book "add-return-values")
+
 (include-book "annotate-c-locals")
 
 (include-book "casesplit")
