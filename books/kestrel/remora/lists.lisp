@@ -162,3 +162,49 @@
              (list-list-repeatp (list-split list n)))
     :induct t
     :enable (list-list-repeatp nfix posp pos-gte-pos-divisor)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define append-list-to-lists ((list true-listp) (lists true-list-listp))
+  :returns (lists1 true-list-listp)
+  :short "Append a list to each list in a list of lists."
+  (cond ((endp lists) nil)
+        (t (cons (append list (true-list-fix (car lists)))
+                 (append-list-to-lists list (cdr lists)))))
+
+  ///
+
+  (defret len-of-append-list-to-lists
+    (equal (len lists1)
+           (len lists))
+    :hints (("Goal" :induct t)))
+
+  (defret consp-of-append-list-to-lists
+    (equal (consp lists1)
+           (consp lists))
+    :hints (("Goal" :induct t)))
+
+  (defret append-list-to-lists-iff
+    (iff lists1 (true-list-fix lists))
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define car-list ((lists true-list-listp))
+  :returns (cars true-listp)
+  :short "Take the first element of each list in a list of lists,
+          returning the list of first elements in the same order."
+  (cond ((endp lists) nil)
+        (t (cons (car (car lists)) (car-list (cdr lists)))))
+
+  ///
+
+  (defret len-of-car-list
+    (equal (len cars)
+           (len lists))
+    :hints (("Goal" :induct t)))
+
+  (defret consp-of-car-list
+    (equal (consp cars)
+           (consp lists))
+    :hints (("Goal" :induct t))))
