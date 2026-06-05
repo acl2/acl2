@@ -700,6 +700,17 @@
       "A variable is looked up in the dynamic environment;
        it must be present, and its associated value is returned.")
      (xdoc::p
+      "A non-empty array must have no zero dimensions,
+       and a number of atoms equal to the product of the dimensions.
+       We evaluate the atoms to values,
+       which must be well-formed and all have the same dimensions,
+       and we arrange them according to the dimensions
+       via a separate function (see its documentation).
+       The well-formedness check could be omitted
+       once we prove that evaluation always returns well-formed values,
+       but we do not have that proof yet,
+       so we must perform an explicit check for now.")
+     (xdoc::p
       "An empty array must have at least one 0 dimension,
        and its element type must evaluate to an atom type value.
        We build the result via a separate function (see its documentation).")
@@ -715,7 +726,15 @@
      :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
                ((unless var+val) (reserr nil)))
             (cdr var+val))
-     :array (reserr :todo)
+     :array (b* (((when (member-equal 0 expr.dims)) (reserr nil))
+                 ((ok vals) (eval-atom-list expr.atoms denv))
+                 ((unless (equal (len vals) (nat-list-product expr.dims)))
+                  (reserr nil))
+                 ((unless (value-list-wfp vals)) ; TODO: eliminate via proof
+                  (reserr nil))
+                 ((unless (list-repeatp (dims-of-value-list vals)))
+                  (reserr nil)))
+              (value-with-nonempty-dims expr.dims vals))
      :array-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
                        ((ok elem) (eval-type expr.type denv))
                        ((when (type-value-case elem :array)) (reserr nil)))
