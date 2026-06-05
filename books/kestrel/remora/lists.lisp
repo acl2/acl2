@@ -72,6 +72,11 @@
 
   ///
 
+  (defrule list-repeatp-of-repeat
+    (list-repeatp (repeat n x))
+    :induct t
+    :enable (repeat car-of-repeat))
+
   (defrule list-repeatp-of-take
     (implies (and (list-repeatp list)
                   (<= (nfix n) (len list)))
