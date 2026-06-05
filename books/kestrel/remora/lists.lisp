@@ -130,6 +130,11 @@
     :induct t
     :enable (fix nfix lt-to-zero-when-divided-by-pos))
 
+  (defrule consp-of-list-split
+    (equal (consp (list-split list chunk))
+           (consp list))
+    :induct t)
+
   (defrule all-of-len-p-of-list-split
     (implies (posp chunk)
              (all-of-len-p (list-split list chunk) chunk))
