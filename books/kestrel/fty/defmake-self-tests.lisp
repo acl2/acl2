@@ -1,10 +1,11 @@
 ; FTY Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Grant Jurgensen (grant@kestrel.edu)
+; Contributions by: Eric McCarthy (bendyarm at GitHub)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -301,6 +302,41 @@
     :pred aexprp)
 
   (acl2::must-fail (defmake-self aexpr :ctor-style :bogus))
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Test that :ctor-style :maker is rejected when a type omits its keyword
+;; constructor macro (:no-ctor-macros), since :maker would emit a call to a
+;; macro that does not exist.  :positional, which uses the by-position
+;; constructor, still works.
+
+(acl2::must-succeed*
+  (defprod noctor ((f1 acl2::int) (f2 string))
+    :pred noctorp
+    :no-ctor-macros t)
+
+  (acl2::must-fail (defmake-self noctor :ctor-style :maker))
+
+  (defmake-self noctor :ctor-style :positional)
+  (test-make-self noctor-make-self (noctor 5 "hi"))
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The :maker check also fires when the :no-ctor-macros type is reached only as
+;; a dependency of the requested type.
+
+(acl2::must-succeed*
+  (defprod noctor ((g acl2::int))
+    :pred noctorp
+    :no-ctor-macros t)
+  (defprod outer ((inner noctor) (tag string))
+    :pred outerp)
+
+  (acl2::must-fail (defmake-self outer :ctor-style :maker))
 
   :with-output-off nil)
 

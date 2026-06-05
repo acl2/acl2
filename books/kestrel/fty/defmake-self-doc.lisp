@@ -73,7 +73,13 @@
        On @(':positional') (the default), the form uses the by-position
        constructor function, e.g. @('(foo arg1 arg2)').  On @(':maker'), it uses
        the keyword constructor macro, e.g. @('(make-foo :field1 arg1 :field2
-       arg2)'), which is more legible when inspecting values interactively.")
+       arg2)'), which some may find more legible when inspecting values interactively.")
+     (xdoc::p
+      "@(':maker') requires the keyword constructor macros to exist.  A type
+       defined with @(':no-ctor-macros') has no such macro (only the by-position
+       constructor), so @(tsee defmake-self) raises an error if @(':maker') is
+       requested for it or for any type in its dependencies; use @(':positional')
+       for such types.")
      (xdoc::p
       "Style is recorded per type, when the ``make-self'' function is
        generated.  There is a potential pitfall when a type is reached by one
