@@ -50,7 +50,6 @@
 (defvar *hcomp-fn-alist* nil)
 (defvar *hcomp-const-alist* nil)
 (defvar *hcomp-macro-alist* nil)
-(defconstant *hcomp-fake-value* 'acl2_invisible::hcomp-fake-value)
 (defvar *hcomp-book-ht*
 ; Note that the keys of this hash table are full-book-names.
   nil)
@@ -109,25 +108,6 @@
    (const-ht . macro-ht)
    cert-obj . cert-filename)
   t)
-
-#-acl2-loop-only
-(defvar *debug-on* nil)
-
-(defmacro with-debug (form string &rest args)
-
-; String is a format string and args is a corresponding list of format
-; arguments.  We evaluate form, but if *debug-eval-on* is non-nil then we first
-; print.
-
-  #-acl2-loop-only
-  `(progn (when *debug-on*
-            (format t "; DEBUG: ")
-            (format t ,string ,@args))
-          ,form)
-  #+acl2-loop-only
-  (declare (ignore string args))
-  #+acl2-loop-only
-  form)
 
 #-acl2-loop-only
 (defun defconst-val-raw (name)
@@ -267,6 +247,26 @@
   (eql (the #.*fixnat-type* (cons-count-bounded x))
        (the #.*fixnat-type* (fn-count-evg-max-val))))
 
+(defun stop-redundant-defconst (name ctx state)
+  #-acl2-loop-only
+  (when (and (not (f-get-global 'in-local-flg state))
+             (eq (hcomp-build-p) 'encapsulate-pass-1))
+    (let ((hcomp-const-ht *hcomp-const-ht*))
+      (assert hcomp-const-ht)
+
+; The next test is an optimization, since redefinition is not allowed here, as
+; the test (null (ld-redefinition-action state)) guards the call of
+; with-hcomp-bindings-encapsulate in encapsulate-fn.
+
+      (when (not (gethash name hcomp-const-ht))
+        (with-debug (setf (gethash name hcomp-const-ht)
+                          (symbol-value name))
+                    "[~s] Set (symbol-value ~s).~%"
+                    'redundant-defconst
+                    name))))
+  (stop-redundant-event ctx state
+                        :name name))
+
 (defun defconst-fn (name form state event-form)
 
 ; Important Note:  Don't change the formals of this function without
@@ -304,15 +304,14 @@
 ; optimization if redefinition is on, in case we have redefined a constant or
 ; macro used in the body of this defconst form.
 
-          (stop-redundant-event ctx state
-                                :name name))
+          (stop-redundant-defconst name ctx state))
          (t
           (er-let*
            ((val (with-debug (incf-pass2-def-time?
                               (defconst-val name form ctx wrld1 state)
                               t)
                              "[~s] Eval defconst-val for ~s.~%"
-                             'defconst-val name)))
+                             'defconst-fn name)))
            (cond
             ((and (consp const-prop)
                   (equal (cadr const-prop) val))
@@ -321,8 +320,7 @@
 ; Thus, if there is no 'const property, we will getprop the nil and
 ; the consp will fail.
 
-             (stop-redundant-event ctx state
-                                   :name name))
+             (stop-redundant-defconst name ctx state))
             (t
              (enforce-redundancy
               event-form ctx wrld1
@@ -422,22 +420,40 @@
                 (chk-macro-ancestors name tguard tbody ctx wrld state)
                 (cond
                  ((redundant-defmacrop name args tguard tbody wrld)
-                  (cond ((and (not (f-get-global 'in-local-flg state))
-                              (not (f-get-global 'boot-strap-flg state))
-                              (not (f-get-global 'redundant-with-raw-code-okp
-                                                 state))
-                              (member-eq name
-                                         (f-get-global 'macros-with-raw-code
-                                                       state)))
+                  (let ((localp (f-get-global 'in-local-flg state)))
+                    (cond ((and (not localp)
+                                (not (f-get-global 'boot-strap-flg state))
+                                (not (f-get-global 'redundant-with-raw-code-okp
+                                                   state))
+                                (member-eq name
+                                           (f-get-global 'macros-with-raw-code
+                                                         state)))
 
 ; See the comment in chk-acceptable-defuns-redundancy related to this error in
 ; the defuns case.
 
-                         (er soft ctx
-                             "~@0"
-                             (redundant-predefined-error-msg name wrld)))
-                        (t (stop-redundant-event ctx state
-                                                 :name name))))
+                           (er soft ctx
+                               "~@0"
+                               (redundant-predefined-error-msg name wrld)))
+                          (t
+                           #-acl2-loop-only
+                           (when (and (not localp)
+                                      (eq (hcomp-build-p) 'encapsulate-pass-1))
+                             (let ((hcomp-macro-ht *hcomp-macro-ht*))
+                               (assert hcomp-macro-ht)
+
+; The next test is an optimization, since redefinition is not allowed here, as
+; the test (null (ld-redefinition-action state)) guards the call of
+; with-hcomp-bindings-encapsulate in encapsulate-fn.
+
+                               (when (not (gethash name hcomp-macro-ht))
+                                 (with-debug (setf (gethash name hcomp-macro-ht)
+                                                   (macro-function name))
+                                             "[~s] Set (macro-function ~s).~%"
+                                             'redundant-macro
+                                             name))))
+                           (stop-redundant-event ctx state
+                                                 :name name)))))
                  (t
                   (enforce-redundancy
                    event-form ctx wrld
@@ -8647,11 +8663,7 @@
                      (kwd-value-list-lst (cadr trip))
                      (wrld1 (cddr trip))
                      (do-hcomp-build-p
-                      (and (null signatures)
-                           (not (in-encapsulatep
-                                 (global-val 'embedded-event-lst (w state))
-                                 t))
-                           (null (ld-redefinition-action state)))))
+                      (null (ld-redefinition-action state))))
                 (declare (ignorable do-hcomp-build-p)) ; for #-acl2-loop-only
                 (with-hcomp-bindings-encapsulate
                  do-hcomp-build-p
