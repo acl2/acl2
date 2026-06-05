@@ -1,10 +1,11 @@
 ; FTY Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Grant Jurgensen (grant@kestrel.edu)
+; Contributions by: Eric McCarthy (bendyarm at GitHub)
 
 ; Based on deffold-reduce.lisp
 
@@ -29,6 +30,7 @@
 
 (include-book "database")
 (include-book "dependencies")
+(include-book "defresult")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -106,6 +108,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Provenance for :universal dispatchers: a dispatcher name maps to the root
+;; clique it was generated for.  This distinguishes a redundant re-submission
+;; (same name, same root) from a conflicting one (same name, different root).
+(table make-self-universal)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (xdoc::evmac-topic-input-processing defmake-self)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -113,6 +122,7 @@
 (defval *defmake-self-allowed-options*
   :short "Keyword options accepted by @(tsee defmake-self)."
   '(:ctor-style
+    :universal
     :parents
     :short
     :long
@@ -125,6 +135,7 @@
   :returns (mv (er? acl2::maybe-msgp)
                (type symbolp)
                (ctor-style symbolp)
+               (universal symbolp)
                (parents-presentp booleanp)
                parents
                (short-presentp booleanp)
@@ -133,7 +144,7 @@
                long
                (print acl2::evmac-input-print-p))
   :short "Process all the inputs."
-  (b* (((reterr) nil nil nil nil nil nil nil nil nil)
+  (b* (((reterr) nil nil nil nil nil nil nil nil nil nil)
        ((mv erp type options)
         (partition-rest-and-keyword-args args *defmake-self-allowed-options*))
        ((when (or erp
@@ -144,7 +155,7 @@
                  *defmake-self-allowed-options*))
        (type (car type))
        ((unless (and (symbolp type) type))
-        (retmsg$ "The TYPE input must be a non-nil symbol,
+        (retmsg$ "The TYPE input must be a symbol other than NIL,
                   but it is ~x0 instead."
                  type))
        (ctor-style-option (assoc-eq :ctor-style options))
@@ -156,6 +167,14 @@
                   :POSITIONAL (the default) or :MAKER, ~
                   but it is ~x0 instead."
                  ctor-style))
+       (universal-option (assoc-eq :universal options))
+       (universal (cdr universal-option))
+       ((when (and (consp universal-option)
+                   (not (and (symbolp universal) universal))))
+        (retmsg$ "The :UNIVERSAL input, if specified, must be a symbol other ~
+                  than NIL naming the dispatcher function to generate, ~
+                  but it is ~x0 instead."
+                 universal))
        (parents-option (assoc-eq :parents options))
        (parents-presentp (consp parents-option))
        (parents (cdr parents-option))
@@ -176,6 +195,7 @@
                 :result)))
     (retok type
            ctor-style
+           universal
            parents-presentp
            parents
            short-presentp
@@ -763,6 +783,263 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defmake-self-universal-node-p (flex)
+  :returns (yes booleanp)
+  :short "Recognize an AST ``node'' type that the @(':universal') dispatcher
+          can serialize directly."
+  (and (flexsum-p flex)
+       (let ((typemacro (flexsum->typemacro flex)))
+         (if (or (eq typemacro 'defprod)
+                 (eq typemacro 'deftagsum))
+             t
+           nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defmake-self-collect-clique-nodes ((members true-listp))
+  :returns (nodes true-listp)
+  :short "Collect the node types among the members of a clique."
+  (cond ((endp members) nil)
+        ((defmake-self-universal-node-p (car members))
+         (cons (car members)
+               (defmake-self-collect-clique-nodes (cdr members))))
+        (t (defmake-self-collect-clique-nodes (cdr members)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defmake-self-collect-nodes
+  ((clique-names symbol-listp)
+   (fty-table alistp))
+  :returns (mv (er? acl2::maybe-msgp)
+               (nodes true-listp))
+  :short "Collect all the node types in the given closure of cliques."
+  (b* (((reterr) nil)
+       ((when (endp clique-names))
+        (retok nil))
+       (clique (flextypes-with-name (car clique-names) fty-table))
+       ((unless (flextypes-p clique))
+        (retmsg$ "Internal error: no type clique with name ~x0."
+                 (car clique-names)))
+       (members (flextypes->types clique))
+       ((unless (true-listp members))
+        (retmsg$ "Internal error: malformed members ~x0 of clique ~x1."
+                 members (car clique-names)))
+       (nodes1 (defmake-self-collect-clique-nodes members))
+       ((erp nodes2)
+        (defmake-self-collect-nodes (cdr clique-names) fty-table)))
+    (retok (append nodes1 nodes2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defmake-self-gen-universal-cand-bindings ((nodes true-listp))
+  :returns (bindings true-listp)
+  :short "Accumulate candidate binding forms, one per node type."
+  (b* (((when (endp nodes)) nil)
+       (flex (car nodes))
+       ((unless (flexsum-p flex))
+        (raise "Internal error: malformed node ~x0." flex))
+       (name (flexsum->name flex))
+       (pred (flexsum->pred flex)))
+    ;; We cons here rather than appending, to avoid case-split blow-up
+    ;; in guard proof.
+    (cons `(cands (if (,pred x) (cons ',name cands) cands))
+          (defmake-self-gen-universal-cand-bindings (cdr nodes)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defmake-self-gen-universal-case-clauses
+  ((nodes true-listp)
+   (make-self-table alistp))
+  :returns (mv (er? acl2::maybe-msgp)
+               (clauses true-listp))
+  :short "Generate the @('node-make-self') case clauses, one per node type."
+  (b* (((reterr) nil)
+       ((when (endp nodes)) (retok nil))
+       (flex (car nodes))
+       ((unless (flexsum-p flex))
+        (retmsg$ "Internal error: malformed node ~x0." flex))
+       (name (flexsum->name flex))
+       ((unless (symbolp name))
+        (retmsg$ "Internal error: malformed type name ~x0." name))
+       (pred (flexsum->pred flex))
+       ((erp fn) (defmake-self-get-make-self-fn name make-self-table))
+       (clause `(,name (and (,pred x) (,fn x))))
+       ((erp rest)
+        (defmake-self-gen-universal-case-clauses (cdr nodes) make-self-table)))
+    (retok (cons clause rest))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defmake-self-gen-universal-doc-items ((nodes true-listp))
+  :returns (items true-listp)
+  :short "Generate XDOC list items linking the node types the dispatcher
+          covers, one per node type."
+  (b* (((when (endp nodes)) nil)
+       (flex (car nodes))
+       ((unless (flexsum-p flex))
+        (raise "Internal error: malformed node ~x0." flex))
+       (name (flexsum->name flex))
+       ((unless (symbolp name))
+        (raise "Internal error: malformed type name ~x0." name)))
+    ;; Qualify with the package so the @(tsee ...) link resolves regardless of
+    ;; the dispatcher topic's base package (the concatenate runs when xdoc
+    ;; evaluates the :long, keeping this generator free of string-guard proofs).
+    (cons `(xdoc::li (xdoc::@tsee (concatenate 'string
+                                              ,(symbol-package-name name)
+                                              "::"
+                                              ,(symbol-name name))))
+          (defmake-self-gen-universal-doc-items (cdr nodes)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defmake-self-universal-first-taken-name
+  ((names symbol-listp)
+   (wrld plist-worldp))
+  :returns taken
+  :short "The first dispatcher name already in use, or @('nil') if all are
+          available."
+  ;; This is only consulted on a fresh generation; a redundant re-submission is
+  ;; detected earlier (the dispatcher is already in the make-self table), so
+  ;; this check never breaks re-submission of an identical call.
+  (cond ((endp names) nil)
+        ((not (acl2::new-namep (car names) wrld)) (car names))
+        (t (defmake-self-universal-first-taken-name (cdr names) wrld))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defmake-self-gen-universal
+  ((name symbolp)
+   (topic-name symbolp)
+   (clique-name symbolp)
+   (clique-names symbol-listp)
+   (fty-table alistp)
+   (make-self-table alistp)
+   (wrld plist-worldp))
+  :returns (mv (er? acl2::maybe-msgp)
+               (events acl2::pseudo-event-form-listp))
+  :short "Generate the events for the @(':universal') dispatcher and its
+          helpers."
+  (b* (((reterr) nil)
+       (prev (assoc-eq name (acl2::table-alist+ 'make-self-universal wrld)))
+       ;; Redundant re-submission: same name and root clique; do nothing.
+       ((when (and (consp prev) (eq (cdr prev) clique-name)))
+        (retok nil))
+       ;; Same name, different root: would conflict.
+       ((when (consp prev))
+        (retmsg$ "The :UNIVERSAL name ~x0 was already used to generate a ~
+                  dispatcher for the type (clique) ~x1, but this call is for ~
+                  ~x2.  Use a different :UNIVERSAL name."
+                 name (cdr prev) clique-name))
+       ((erp nodes) (defmake-self-collect-nodes clique-names fty-table))
+       ((unless (consp nodes))
+        (retmsg$ "Cannot generate the :UNIVERSAL dispatcher ~x0 because there ~
+                  are no product or tagged-sum types in the closure of ~x1."
+                 name clique-name))
+       (node-cands (acl2::packn-pos (list name '-node-cands) name))
+       (node-make-self (acl2::packn-pos (list name '-node-make-self) name))
+       (elts-common (acl2::packn-pos (list name '-elts-common) name))
+       (list-elts (acl2::packn-pos (list name '-list-elts-make-self) name))
+       ;; Check that the dispatcher name and all the helper names it derives are
+       ;; available, so a conflict is reported early and names the offender.
+       (taken-name
+        (defmake-self-universal-first-taken-name
+          (list name node-cands node-make-self elts-common list-elts)
+          wrld))
+       ((when taken-name)
+        (retmsg$ "The :UNIVERSAL dispatcher ~x0 would introduce the function ~
+                  ~x1, which is already in use.  (Helper names are derived from ~
+                  the :UNIVERSAL name; choose a different name.)"
+                 name taken-name))
+       (cand-bindings (defmake-self-gen-universal-cand-bindings nodes))
+       ((erp case-clauses)
+        (defmake-self-gen-universal-case-clauses nodes make-self-table))
+       (doc-items (defmake-self-gen-universal-doc-items nodes))
+       (events
+        (list
+         `(define ,node-cands (x)
+            :parents (,name)
+            :returns (cands true-listp)
+            (b* ((cands nil)
+                 ,@cand-bindings)
+              cands))
+         `(define ,node-make-self (ty x)
+            :parents (,name)
+            (case ty ,@case-clauses (otherwise nil)))
+         `(define ,elts-common ((elts true-listp) (acc true-listp) firstp)
+            :parents (,name)
+            :returns (common true-listp :hyp (true-listp acc))
+            :measure (acl2-count elts)
+            (if (endp elts)
+                acc
+              (let ((c (,node-cands (car elts))))
+                (and c (,elts-common (cdr elts)
+                                     (if firstp
+                                         c
+                                       (acl2::intersection-equal acc c))
+                                     nil)))))
+         `(define ,list-elts (ty (elts true-listp))
+            :parents (,name)
+            :measure (acl2-count elts)
+            (if (endp elts)
+                nil
+              (cons (,node-make-self ty (car elts))
+                    (,list-elts ty (cdr elts)))))
+         `(define ,name (x)
+            :parents (,topic-name)
+            :short (xdoc::topstring
+                    "Universal ``make-self'' dispatcher for the "
+                    (xdoc::@tsee (concatenate 'string
+                                              ,(symbol-package-name clique-name)
+                                              "::"
+                                              ,(symbol-name clique-name)))
+                    " type clique.")
+            :long (xdoc::topstring
+                   (xdoc::p
+                    "Serializes any value of the AST node types in the "
+                    (xdoc::@tsee (concatenate 'string
+                                              ,(symbol-package-name clique-name)
+                                              "::"
+                                              ,(symbol-name clique-name)))
+                    " clique to a constructor form: for a single node, the form
+                     produced by that type's @('<type>-make-self'); for a "
+                    (xdoc::@tsee "true-listp")
+                    " of nodes all of one type, the corresponding @('(list
+                     ...)') form (@('nil') for the empty list).  Returns a "
+                    (xdoc::@tsee "fty::reserrp")
+                    " when the value is ambiguous (recognized by more than one
+                     node type), heterogeneous (a list with no single common
+                     element type), or not a recognized node or node list.")
+                   (xdoc::p
+                    "It covers the following node types:")
+                   (xdoc::ul ,@doc-items))
+            (b* ((c (,node-cands x)))
+              (cond ((and (consp c) (not (consp (cdr c))))
+                     (,node-make-self (car c) x))
+                    ((consp c)
+                     (reserrf (list "value matches more than one AST node type"
+                                    :value x :candidates c)))
+                    ((null x) nil)
+                    ((true-listp x)
+                     (b* ((common (,elts-common x nil t)))
+                       (cond ((null common)
+                              (reserrf (list "not a homogeneous list of AST nodes"
+                                             :value x)))
+                             ((not (consp (cdr common)))
+                              (cons 'list (,list-elts (car common) x)))
+                             (t
+                              (reserrf (list "list element type is ambiguous"
+                                             :value x :candidates common))))))
+                    (t
+                     (reserrf (list "not a recognized AST node or node list"
+                                    :value x))))))
+         `(table make-self-universal ',name ',clique-name))))
+    (retok events))
+  ///
+  (more-returns
+   (events true-listp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defmake-self-gen-everything
   ((type/clique-name symbolp)
    (parents-presentp booleanp)
@@ -773,8 +1050,10 @@
    long
    (print acl2::evmac-input-print-p)
    (ctor-style symbolp)
+   (universal symbolp)
    (fty-table alistp)
-   (make-self-table alistp))
+   (make-self-table alistp)
+   (wrld plist-worldp))
   :returns (mv (er? acl2::maybe-msgp)
                (event acl2::pseudo-event-formp))
   :short "Generate all the events."
@@ -794,6 +1073,12 @@
        ((erp make-self-events)
         (defmake-self-gen-cliques
           clique-names xdoc-name ctor-style fty-table make-self-table))
+       ((erp universal-events)
+        (if universal
+            (defmake-self-gen-universal
+              universal xdoc-name clique-name clique-names
+              fty-table make-self-table wrld)
+          (retok nil)))
        (xdoc-event
         `(acl2::defxdoc+ ,xdoc-name
            ,@(and parents-presentp `(:parents ,parents))
@@ -804,7 +1089,8 @@
         `(encapsulate
            ()
            ,xdoc-event
-           ,@make-self-events))
+           ,@make-self-events
+           ,@universal-events))
        (encapsulate (acl2::restore-output? (eq print :all) encapsulate))
        (print-result (if (member-eq print '(:result :info))
                          `((acl2::cw-event "~x0~|" ',encapsulate))
@@ -828,6 +1114,7 @@
        (make-self-table (acl2::table-alist+ 'make-self wrld))
        ((erp type
              ctor-style
+             universal
              parents-presentp
              parents
              short-presentp
@@ -846,8 +1133,10 @@
       long
       print
       ctor-style
+      universal
       fty-table
-      make-self-table)))
+      make-self-table
+      wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
