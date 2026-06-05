@@ -1040,6 +1040,76 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defmake-self-prods-first-no-ctor-macro ((prods true-listp))
+  :returns macro
+  :short "The constructor macro for the first product type with
+          @(':no-ctor-macros')."
+  ;; Such a product has no keyword constructor macro, so :ctor-style :maker
+  ;; cannot serialize it.
+  (b* (((when (endp prods)) nil)
+       (prod (car prods))
+       ((unless (flexprod-p prod))
+        (defmake-self-prods-first-no-ctor-macro (cdr prods)))
+       ((when (flexprod->no-ctor-macros prod))
+        (flexprod->ctor-macro prod)))
+    (defmake-self-prods-first-no-ctor-macro (cdr prods))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defmake-self-members-first-no-ctor-macro ((members true-listp))
+  :returns macro
+  :short "The constructor macro for the first member type
+          declared with @(':no-ctor-macros')."
+  (b* (((when (endp members)) nil)
+       (flex (car members))
+       ;; Only products and tagged sums have constructor macros (the same
+       ;; types for which :maker emits them).
+       ((unless (defmake-self-universal-node-p flex))
+        (defmake-self-members-first-no-ctor-macro (cdr members)))
+       ((unless (flexsum-p flex))
+        (defmake-self-members-first-no-ctor-macro (cdr members)))
+       (prods (flexsum->prods flex))
+       ((unless (true-listp prods))
+        (defmake-self-members-first-no-ctor-macro (cdr members)))
+       (macro (defmake-self-prods-first-no-ctor-macro prods))
+       ((when macro) macro))
+    (defmake-self-members-first-no-ctor-macro (cdr members))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defmake-self-cliques-first-no-ctor-macro
+  ((clique-names symbol-listp)
+   (fty-table alistp)
+   (make-self-table alistp))
+  :returns macro
+  :short "The constructor macro for the first clique type
+          declared with @(':no-ctor-macros')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "Cliques already in the @('make-self') table are skipped: their
+      ``make-self'' functions are not regenerated, so this call would not emit
+      a maker for them."))
+  (b* (((when (endp clique-names)) nil)
+       (clique-name (car clique-names))
+       ((when (assoc-eq clique-name make-self-table))
+        (defmake-self-cliques-first-no-ctor-macro
+          (cdr clique-names) fty-table make-self-table))
+       (clique (flextypes-with-name clique-name fty-table))
+       ((unless (flextypes-p clique))
+        (defmake-self-cliques-first-no-ctor-macro
+          (cdr clique-names) fty-table make-self-table))
+       (members (flextypes->types clique))
+       ((unless (true-listp members))
+        (defmake-self-cliques-first-no-ctor-macro
+          (cdr clique-names) fty-table make-self-table))
+       (macro (defmake-self-members-first-no-ctor-macro members))
+       ((when macro) macro))
+    (defmake-self-cliques-first-no-ctor-macro
+      (cdr clique-names) fty-table make-self-table)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defmake-self-gen-everything
   ((type/clique-name symbolp)
    (parents-presentp booleanp)
@@ -1069,6 +1139,19 @@
        ((unless (symbolp clique-name))
         (retmsg$ "Internal error: malformed clique name ~x0." clique-name))
        (clique-names (topo-dependencies clique-name fty-table))
+       ;; :maker needs the keyword constructor macros, which are absent for
+       ;; types defined with :no-ctor-macros; reject such a request clearly.
+       (missing-maker
+        (and (eq ctor-style :maker)
+             (defmake-self-cliques-first-no-ctor-macro
+               clique-names fty-table make-self-table)))
+       ((when missing-maker)
+        (retmsg$ "Cannot use :CTOR-STYLE :MAKER because the keyword ~
+                  constructor macro ~x0 is not generated: its type was defined ~
+                  with :NO-CTOR-MACROS, so only the by-position constructor ~
+                  exists.  Use :CTOR-STYLE :POSITIONAL, or define the type ~
+                  without :NO-CTOR-MACROS."
+                 missing-maker))
        (xdoc-name (defmake-self-gen-topic-name clique-name))
        ((erp make-self-events)
         (defmake-self-gen-cliques
