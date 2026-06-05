@@ -420,9 +420,8 @@
      :box nil
      :vector (b* (((ok dimss) (check-dims-of-value-list val.elems))
                   ((unless (consp dimss)) (reserr nil))
-                  (dims (car dimss))
-                  ((unless (all-equalp dims dimss)) (reserr nil)))
-               (cons (len val.elems) dims))
+                  ((unless (list-repeatp dimss)) (reserr nil)))
+               (cons (len val.elems) (car dimss)))
      :vector-empty (cons 0 val.dims))
     :measure (value-count val))
 
@@ -449,6 +448,8 @@
   :prepwork
   ((local (in-theory (enable acl2::true-listp-when-nat-list-listp
                              acl2::nat-listp-of-car-when-nat-list-listp))))
+
+  :verify-guards :after-returns
 
   ///
 
