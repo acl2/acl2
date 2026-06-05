@@ -1,6 +1,6 @@
 (in-package "JSONRPC")
 
-(include-book "temp")
+(include-book "process-rpc")
 
 (defun subtract (x y state)
   (declare (xargs :guard (and (json::valuep x)

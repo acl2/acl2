@@ -40,7 +40,6 @@
                             json::value-count
                             json::value-list-count
                             json::value-option
-                            json::valuep
                             json::member-listp
                             json::member-list
                             json::member-list-count
