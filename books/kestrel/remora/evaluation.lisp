@@ -715,6 +715,19 @@
        and its element type must evaluate to an atom type value.
        We build the result via a separate function (see its documentation).")
      (xdoc::p
+      "A non-empty frame is like a non-empty array,
+       but its elements are cell expressions instead of atoms.
+       We evaluate the cells to values,
+       which must be well-formed and all have the same dimensions,
+       and we arrange them according to the dimensions
+       via the same function used for arrays;
+       the dimensions of the cells become
+       the inner dimensions of the result.
+       The well-formedness check could be omitted
+       once we prove that evaluation always returns well-formed values,
+       but we do not have that proof yet,
+       so we must perform an explicit check for now.")
+     (xdoc::p
       "An empty frame is treated similarly to an empty array,
        but its type is the cell type, which may be an array type;
        we evaluate it,
@@ -739,7 +752,15 @@
                        ((ok elem) (eval-type expr.type denv))
                        ((when (type-value-case elem :array)) (reserr nil)))
                     (value-with-empty-dim expr.dims elem))
-     :frame (reserr :todo)
+     :frame (b* (((when (member-equal 0 expr.dims)) (reserr nil))
+                 ((ok vals) (eval-expr-list expr.exprs denv))
+                 ((unless (equal (len vals) (nat-list-product expr.dims)))
+                  (reserr nil))
+                 ((unless (value-list-wfp vals)) ; TODO: eliminate via proof
+                  (reserr nil))
+                 ((unless (list-repeatp (dims-of-value-list vals)))
+                  (reserr nil)))
+              (value-with-nonempty-dims expr.dims vals))
      :frame-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
                        ((ok tval) (eval-type expr.type denv))
                        ((mv elem cell-dims)
