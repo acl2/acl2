@@ -559,6 +559,7 @@
     :guard (and (not (member-equal 0 dims))
                 (all-of-len-p valss (nat-list-product dims))
                 (value-list-list-wfp valss)
+                (list-repeatp (dims-of-value-list-list valss))
                 (list-list-repeatp (dims-of-value-list-list valss)))
     :returns (vals value-listp)
     :parents (evaluation values-with-nonempty-dims)
@@ -590,12 +591,14 @@
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
 
   :guard-hints (("Goal"
-                 :in-theory (enable
-                             true-list-listp-when-value-list-listp
-                             acl2::true-list-listp-when-nat-list-listp
-                             acl2::true-list-listp-when-nat-list-list-listp
-                             nat-list-product-of-cdr-to-ratio
-                             posp)
+                 :in-theory (e/d
+                             (true-list-listp-when-value-list-listp
+                              acl2::true-list-listp-when-nat-list-listp
+                              acl2::true-list-listp-when-nat-list-list-listp
+                              nat-list-product-of-cdr-to-ratio
+                              posp
+                              dims-of-value-list-list-of-cdr)
+                             (cdr-of-dims-of-value-list-list))
                  :use nat-list-product-divided-by-car))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
