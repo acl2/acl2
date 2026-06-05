@@ -12,6 +12,7 @@
 
 (include-book "uid")
 (include-book "types")
+(include-book "types-formal-subset-and-mapping")
 (include-book "initializer-validation")
 (include-book "validation-tables")
 (include-book "validation-annotations")
@@ -38,6 +39,7 @@
      and also annotates the ASTs with information (e.g. calculated types)."))
   :order-subtopics (uid
                     types
+                    types-formal-subset-and-mapping
                     initializer-validation
                     validation-tables
                     validation-annotations
