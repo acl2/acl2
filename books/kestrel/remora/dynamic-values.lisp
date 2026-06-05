@@ -189,6 +189,15 @@
   ((int int))
   :pred int-valuep)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist int-value-list
+  :short "Fixtype of lists of integer values."
+  :elt-type int-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred int-value-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum float-value
@@ -234,6 +243,22 @@
   (:int ((val int-value)))
   (:float ((val float-value)))
   :pred base-valuep)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist base-value-list
+  :short "Fixtype of lists of base values."
+  :elt-type base-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred base-value-listp)
+
+;;;;;;;;;;
+
+(std::defprojection base-value-int-list ((x int-value-listp))
+  :returns (vals base-value-listp)
+  :short "Lift @(tsee base-value-int) to lists."
+  (base-value-int x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -317,6 +342,13 @@
     :true-listp t
     :elementp-of-nil nil
     :pred value-listp))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection value-base-list ((x base-value-listp))
+  :returns (vals value-listp)
+  :short "Lift @(tsee value-base) to lists."
+  (value-base x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
