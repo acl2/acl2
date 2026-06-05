@@ -1219,7 +1219,7 @@
        ``potentially designates an object'' [C17:6.3.2.1/1].
        Whether an expression is an lvalue is determined by a combination
        of syntactic and semantic conditions.
-       This predicates is an overapproximate recognizer for lvalues,
+       This predicate is an overapproximate recognizer for lvalues,
        checking only the syntactic conditions.")
      (xdoc::p
       "To determine whether an expression may be an lvalue,
@@ -1289,7 +1289,7 @@
          It is therefore an lvalue iff the subexpression is an lvalue."))
      (xdoc::p
       "Finally, we note the expression cases not covered above,
-       and justify why they cannot be values.")
+       and justify why they cannot be lvalues.")
       (xdoc::ul
        (xdoc::li
         "It is explicitly stated that cast expressions are not lvalues
@@ -1304,7 +1304,7 @@
         "A conditional expression is explicitly said
          to not be an lvalue [C17:6.5.15/4, footnote 114].")
        (xdoc::li
-        "A comma expression is explicitly state
+        "A comma expression is explicitly stated
          to not be an lvalue [C17:6.5.17/2, footnote 117].")
        (xdoc::li
         "@('__builtin_types_compatible_p'),
