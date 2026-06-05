@@ -77,6 +77,10 @@
     :induct t
     :enable (repeat car-of-repeat))
 
+  (defrule list-repeatp-of-cdr
+    (implies (list-repeatp x)
+             (list-repeatp (cdr x))))
+
   (defrule list-repeatp-of-take
     (implies (and (list-repeatp list)
                   (<= (nfix n) (len list)))
