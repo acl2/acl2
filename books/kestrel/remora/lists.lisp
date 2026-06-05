@@ -38,6 +38,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled car-of-repeat
+  :short "Theorem about @(tsee car) applied to @(tsee repeat)."
+  (equal (car (repeat n x))
+         (if (zp n) nil x))
+  :induct t
+  :enable repeat)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define append-all ((lists true-list-listp))
   :returns (list true-listp)
   :short "Append all the lists in a list, in that order."
@@ -148,12 +157,3 @@
              (list-list-repeatp (list-split list n)))
     :induct t
     :enable (list-list-repeatp nfix posp pos-gte-pos-divisor)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled car-of-repeat
-  :short "Theorem about @(tsee car) applied to @(tsee repeat)."
-  (equal (car (repeat n x))
-         (if (zp n) nil x))
-  :induct t
-  :enable repeat)
