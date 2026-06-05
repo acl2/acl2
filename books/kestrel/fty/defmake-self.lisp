@@ -112,7 +112,8 @@
 
 (defval *defmake-self-allowed-options*
   :short "Keyword options accepted by @(tsee defmake-self)."
-  '(:parents
+  '(:ctor-style
+    :parents
     :short
     :long
     :print))
@@ -123,6 +124,7 @@
   ((args true-listp))
   :returns (mv (er? acl2::maybe-msgp)
                (type symbolp)
+               (ctor-style symbolp)
                (parents-presentp booleanp)
                parents
                (short-presentp booleanp)
@@ -131,7 +133,7 @@
                long
                (print acl2::evmac-input-print-p))
   :short "Process all the inputs."
-  (b* (((reterr) nil nil nil nil nil nil nil nil)
+  (b* (((reterr) nil nil nil nil nil nil nil nil nil)
        ((mv erp type options)
         (partition-rest-and-keyword-args args *defmake-self-allowed-options*))
        ((when (or erp
@@ -145,6 +147,15 @@
         (retmsg$ "The TYPE input must be a non-nil symbol,
                   but it is ~x0 instead."
                  type))
+       (ctor-style-option (assoc-eq :ctor-style options))
+       (ctor-style (if (consp ctor-style-option)
+                       (cdr ctor-style-option)
+                     :positional))
+       ((unless (member-eq ctor-style '(:positional :maker)))
+        (retmsg$ "The :CTOR-STYLE input, if specified, must be ~
+                  :POSITIONAL (the default) or :MAKER, ~
+                  but it is ~x0 instead."
+                 ctor-style))
        (parents-option (assoc-eq :parents options))
        (parents-presentp (consp parents-option))
        (parents (cdr parents-option))
@@ -164,6 +175,7 @@
                   (cdr print-option)
                 :result)))
     (retok type
+           ctor-style
            parents-presentp
            parents
            short-presentp
@@ -222,23 +234,34 @@
   ((type symbolp)
    (prod flexprod-p)
    (member-names symbol-listp)
+   (ctor-style symbolp)
    (fty-table alistp)
    (make-self-table alistp))
   :returns term
   :short "Generate the ``make-self'' calls for the fields of a product type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "When @('ctor-style') is @(':maker'), the generated form uses the keyword
+      constructor macro (e.g. @('make-foo')) with @(':field') keywords;
+      otherwise it uses the by-position constructor function (e.g. @('foo'))."))
   (b* ((fields (flexprod->fields prod))
        ((unless (flexprod-field-listp fields))
         (raise "Internal error: malformed fields ~x0." fields))
+       (ctor (if (eq ctor-style :maker)
+                 (flexprod->ctor-macro prod)
+               (flexprod->ctor-name prod)))
        (make-selfs
          (defmake-self-gen-sum-case-loop
-           type fields member-names fty-table make-self-table)))
-    (list* 'list (list 'quote (flexprod->ctor-name prod)) make-selfs))
+           type fields member-names ctor-style fty-table make-self-table)))
+    (list* 'list (list 'quote ctor) make-selfs))
 
   :prepwork
   ((define defmake-self-gen-sum-case-loop
      ((type symbolp)
       (fields flexprod-field-listp)
       (member-names symbol-listp)
+      (ctor-style symbolp)
       (fty-table alistp)
       (make-self-table alistp))
      :returns (make-selfs true-listp)
@@ -248,24 +271,29 @@
           (recog (flexprod-field->type field))
           ((unless (symbolp recog))
            (raise "Internal error: malformed field recognizer ~x0." recog))
+          (field-name (flexprod-field->name field))
+          ((unless (symbolp field-name))
+           (raise "Internal error: malformed field name ~x0." field-name))
+          (kwd (intern-in-package-of-symbol (symbol-name field-name) :keyword))
           (info (flextype-with-recognizer recog fty-table))
           (field-type (and info
                            (flextype->name info)))
           (accessor (flexprod-field->acc-name field))
-          ((unless field-type)
-           (b* ((make-selfs
-                 (defmake-self-gen-sum-case-loop
-                   type (cdr fields) member-names fty-table make-self-table)))
-             (cons `(,accessor ,type) make-selfs)))
           ((mv erp field-type-make-self)
-           (defmake-self-get-make-self-fn field-type make-self-table))
+           (if field-type
+               (defmake-self-get-make-self-fn field-type make-self-table)
+             (mv nil nil)))
           ((when erp)
            (raise "~@0~%" erp))
-          (make-self `(,field-type-make-self (,accessor ,type)))
+          (make-self (if field-type
+                         `(,field-type-make-self (,accessor ,type))
+                       `(,accessor ,type)))
           (make-selfs
            (defmake-self-gen-sum-case-loop
-             type (cdr fields) member-names fty-table make-self-table)))
-       (cons make-self make-selfs)))))
+             type (cdr fields) member-names ctor-style fty-table make-self-table)))
+       (if (eq ctor-style :maker)
+           (list* kwd make-self make-selfs)
+         (cons make-self make-selfs))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -273,6 +301,7 @@
   ((type symbolp)
    (prods flexprod-listp)
    (member-names symbol-listp)
+   (ctor-style symbolp)
    (fty-table alistp)
    (make-self-table alistp))
   :returns (keyword+term-list true-listp)
@@ -284,9 +313,9 @@
         (raise "Internal error: kind ~x0 is not a keyword." kind)))
     (list* kind
            (defmake-self-gen-sum-case
-             type prod member-names fty-table make-self-table)
+             type prod member-names ctor-style fty-table make-self-table)
            (defmake-self-gen-sum-cases
-             type (cdr prods) member-names fty-table make-self-table))))
+             type (cdr prods) member-names ctor-style fty-table make-self-table))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -295,6 +324,7 @@
    (mutrecp booleanp)
    (topic-name symbolp)
    (member-names symbol-listp)
+   (ctor-style symbolp)
    (fty-table alistp)
    (make-self-table alistp))
   :guard (eq (flexsum->typemacro sum) 'defprod)
@@ -317,7 +347,7 @@
               (raise "Internal error: non-singleton product ~x0." prods))
              (prod (car prods)))
           (defmake-self-gen-sum-case
-            type prod member-names fty-table make-self-table))))
+            type prod member-names ctor-style fty-table make-self-table))))
     `(define ,type-make-self ((,type ,recog))
        :parents (,topic-name)
        ,body
@@ -336,6 +366,7 @@
    (mutrecp booleanp)
    (topic-name symbolp)
    (member-names symbol-listp)
+   (ctor-style symbolp)
    (fty-table alistp)
    (make-self-table alistp))
   :guard (eq (flexsum->typemacro sum) 'deftagsum)
@@ -357,7 +388,7 @@
                      prods))
              (cases
                (defmake-self-gen-sum-cases
-                 type prods member-names fty-table make-self-table)))
+                 type prods member-names ctor-style fty-table make-self-table)))
           `(,type-case ,type ,@cases))))
     `(define ,type-make-self ((,type ,recog))
        :parents (,topic-name)
@@ -417,6 +448,7 @@
    (mutrecp booleanp)
    (topic-name symbolp)
    (member-names symbol-listp)
+   (ctor-style symbolp)
    (fty-table alistp)
    (make-self-table alistp))
   :returns (event acl2::pseudo-event-formp)
@@ -426,10 +458,10 @@
     (cond
      ((eq typemacro 'defprod)
       (defmake-self-gen-prod
-        sum mutrecp topic-name  member-names fty-table make-self-table))
+        sum mutrecp topic-name member-names ctor-style fty-table make-self-table))
      ((eq typemacro 'deftagsum)
       (defmake-self-gen-sum
-        sum mutrecp topic-name member-names fty-table make-self-table))
+        sum mutrecp topic-name member-names ctor-style fty-table make-self-table))
      ((eq typemacro 'defoption)
       (defmake-self-gen-option
         sum mutrecp topic-name fty-table))
@@ -574,6 +606,7 @@
    (mutrecp booleanp)
    (topic-name symbolp)
    (member-names symbol-listp)
+   (ctor-style symbolp)
    (fty-table alistp)
    (make-self-table alistp))
   :returns (events acl2::pseudo-event-form-listp)
@@ -581,7 +614,7 @@
   (cond ((flexsum-p flex)
          (list
            (defmake-self-gen-prod/sum/option
-             flex mutrecp topic-name member-names fty-table make-self-table)))
+             flex mutrecp topic-name member-names ctor-style fty-table make-self-table)))
         ((flexlist-p flex)
          (defmake-self-gen-list
            flex mutrecp topic-name fty-table make-self-table))
@@ -598,6 +631,7 @@
    (mutrecp booleanp)
    (topic-name symbolp)
    (member-names symbol-listp)
+   (ctor-style symbolp)
    (fty-table alistp)
    (make-self-table alistp))
   :returns (events acl2::pseudo-event-form-listp)
@@ -605,15 +639,15 @@
   (b* (((when (endp flexs)) nil)
        (events1
         (defmake-self-gen-type
-          (car flexs) mutrecp topic-name member-names fty-table make-self-table))
+          (car flexs) mutrecp topic-name member-names ctor-style fty-table make-self-table))
        (events2
         (defmake-self-gen-types
-          (cdr flexs) mutrecp topic-name member-names fty-table make-self-table)))
+          (cdr flexs) mutrecp topic-name member-names ctor-style fty-table make-self-table)))
     (append events1 events2)))
 
 (defrulel defmake-self-gen-types-under-iff
   (iff (defmake-self-gen-types
-         flexs mutrecp topic-name member-names fty-table make-self-table)
+         flexs mutrecp topic-name member-names ctor-style fty-table make-self-table)
        (consp flexs))
   :induct t
   :enable defmake-self-gen-types)
@@ -654,6 +688,7 @@
 (define defmake-self-gen-clique
   ((clique-name symbolp)
    (topic-name symbolp)
+   (ctor-style symbolp)
    (fty-table alistp)
    (make-self-table alistp))
   :returns (mv (er? acl2::maybe-msgp)
@@ -681,7 +716,7 @@
        (mutrecp (< 1 (len members)))
        (definition-events
          (defmake-self-gen-types
-           members mutrecp topic-name member-names fty-table make-self-table))
+           members mutrecp topic-name member-names ctor-style fty-table make-self-table))
        (table-events
          (defmake-self-gen-table-events clique-name member-names))
        ((unless mutrecp)
@@ -706,6 +741,7 @@
 (define defmake-self-gen-cliques
   ((clique-names symbol-listp)
    (topic-name symbolp)
+   (ctor-style symbolp)
    (fty-table alistp)
    (make-self-table alistp))
   :returns (mv (er? acl2::maybe-msgp)
@@ -716,10 +752,10 @@
         (retok nil))
        ((erp events1)
         (defmake-self-gen-clique
-          (first clique-names) topic-name fty-table make-self-table))
+          (first clique-names) topic-name ctor-style fty-table make-self-table))
        ((erp events2)
         (defmake-self-gen-cliques
-          (rest clique-names) topic-name fty-table make-self-table)))
+          (rest clique-names) topic-name ctor-style fty-table make-self-table)))
     (retok (append events1 events2)))
   ///
   (more-returns
@@ -736,6 +772,7 @@
    (long-presentp booleanp)
    long
    (print acl2::evmac-input-print-p)
+   (ctor-style symbolp)
    (fty-table alistp)
    (make-self-table alistp))
   :returns (mv (er? acl2::maybe-msgp)
@@ -756,7 +793,7 @@
        (xdoc-name (defmake-self-gen-topic-name clique-name))
        ((erp make-self-events)
         (defmake-self-gen-cliques
-          clique-names xdoc-name fty-table make-self-table))
+          clique-names xdoc-name ctor-style fty-table make-self-table))
        (xdoc-event
         `(acl2::defxdoc+ ,xdoc-name
            ,@(and parents-presentp `(:parents ,parents))
@@ -790,6 +827,7 @@
        (fty-table (acl2::table-alist+ 'flextypes-table wrld))
        (make-self-table (acl2::table-alist+ 'make-self wrld))
        ((erp type
+             ctor-style
              parents-presentp
              parents
              short-presentp
@@ -807,6 +845,7 @@
       long-presentp
       long
       print
+      ctor-style
       fty-table
       make-self-table)))
 
