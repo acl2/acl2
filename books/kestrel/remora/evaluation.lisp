@@ -497,8 +497,7 @@
                     (equal dims1 (nat-list-fix dims)))))
     :hints (("Goal"
              :induct t
-             :in-theory (enable value-with-empty-dim
-                                check-dims-of-value
+             :in-theory (enable check-dims-of-value
                                 check-dims-of-value-list-of-repeat
                                 acl2::not-reserrp-when-nat-listp
                                 acl2::not-reserrp-when-nat-list-listp
@@ -573,7 +572,16 @@
     (cond ((endp valss) nil)
           (t (cons (value-with-nonempty-dims dims (car valss))
                    (value-list-with-nonempty-dims dims (cdr valss)))))
-    :measure (acl2::nat-list-measure (list (len dims) 1 (len valss))))
+    :measure (acl2::nat-list-measure (list (len dims) 1 (len valss)))
+
+    ///
+
+    (defret len-of-value-list-with-nonempty-dims
+      (equal (len vals)
+             (len valss))
+      :hints (("Goal"
+               :induct (len valss)
+               :in-theory (enable len)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -590,7 +598,15 @@
                              posp)
                  :use nat-list-product-divided-by-car))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :flag-local nil ; TODO: remove?
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   ///
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deffixequiv-mutual values-with-nonempty-dims))
 
