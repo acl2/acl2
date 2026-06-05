@@ -105,3 +105,10 @@
            (nat-listp (append-all lists)))
   :induct t
   :enable append-all)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled true-listp-when-nat-listp
+  :short "A list of naturals is a true list."
+  (implies (nat-listp x)
+           (true-listp x)))
