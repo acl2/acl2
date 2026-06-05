@@ -6229,7 +6229,8 @@ e2-e1+1.
                    (ld-skip-proofsp state) lst wrld))) ;ccg rewrite - CHECK - harshrc
           (cond
            ((eq rc 'redundant)
-            (chk-acceptable-defuns-redundancy names defun-mode ctx wrld state))
+            (chk-acceptable-defuns-redundancy names defun-mode symbol-class ctx
+                                              wrld state))
            ((eq rc 'verify-guards)
 
 ; We avoid needless complication by simply causing a polite error in this
