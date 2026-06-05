@@ -1,10 +1,11 @@
 ; FTY Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Grant Jurgensen (grant@kestrel.edu)
+; Contributions by: Eric McCarthy (bendyarm at GitHub)
 
 ; Based on deffold-reduce-doc.lisp
 
@@ -95,20 +96,20 @@
        recognizers on its argument and returns a @(see defresult):")
      (xdoc::ul
       (xdoc::li
-       "if the value is recognized by exactly one node type, the constructor
-        form that type's @('<type>-make-self') produces;")
+       "if the value is recognized by exactly one node type, returns the
+        constructor form that @('<type>-make-self') produces;")
       (xdoc::li
-       "if the value is a @(tsee true-listp) of nodes all of one type, the
-        corresponding @('(list ...)') form (@('nil') for the empty list);")
+       "if the value is a @(tsee true-listp) of nodes all of one type, returns
+        the corresponding @('(list ...)') form (@('nil') for the empty list);")
       (xdoc::li
-       "otherwise a @(tsee reserrp): when the value is recognized by more than
-        one node type (ambiguous), when a list has no single common element
-        type (heterogeneous or all-ambiguous), or when the value is not a
-        recognized node or node list."))
+       "otherwise returns a @(tsee reserrp): when the value is recognized by
+        more than one node type (ambiguous), when a list has no single common
+        element type (heterogeneous or all-ambiguous), or when the value is not
+        a recognized node or node list."))
      (xdoc::p
       "``Node types'' are the products and tagged sums in the closure of
        @('type').  @(tsee deflist) types are handled separately, by the
-       dispatcher's homogeneous-list branch.  @(tsee defoption) types are
+       dispatcher's homogeneous-list code.  @(tsee defoption) types are
        subsumed by their base type: a @(':some') value dispatches to the base
        node and a @(':none') value is @('nil').  @(tsee defalist), @(tsee
        defomap), and @(tsee defset) types are not yet handled by the dispatcher
