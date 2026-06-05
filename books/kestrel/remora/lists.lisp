@@ -92,7 +92,34 @@
     (implies (list-repeatp list)
              (list-repeatp (nthcdr n list)))
     :induct t
-    :enable nthcdr))
+    :enable nthcdr)
+
+  (defruled take-when-list-repeatp
+    (implies (and (list-repeatp list)
+                  (<= (nfix n) (len list)))
+             (equal (take n list)
+                    (repeat n (car list))))
+    :induct t
+    :enable (take repeat))
+
+  (defruled nth-when-list-repeatp
+    (implies (and (list-repeatp list)
+                  (< (nfix n) (len list)))
+             (equal (nth n list)
+                    (car list)))
+    :induct t
+    :enable nth)
+
+  (defruled take-of-nthcdr-when-list-repeatp
+    (implies (and (list-repeatp list)
+                  (posp n)
+                  (<= (* 2 n) (len list)))
+             (equal (take n (nthcdr n list))
+                    (take n list)))
+    :use ((:instance take-when-list-repeatp)
+          (:instance take-when-list-repeatp (list (nthcdr n list))))
+    :enable (nth-when-list-repeatp nfix)
+    :disable list-repeatp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -159,13 +186,32 @@
     :induct t
     :enable (all-of-len-p))
 
+  (defruled car-of-list-split
+    (implies (consp list)
+             (equal (car (list-split list chunk))
+                    (take (pos-fix chunk) list)))
+    :expand ((list-split list chunk)))
+
   (defrule list-list-repeat-of-list-split
     (implies (and (list-repeatp list)
                   (posp n)
                   (integerp (/ (len list) n)))
              (list-list-repeatp (list-split list n)))
     :induct t
-    :enable (list-list-repeatp nfix posp pos-gte-pos-divisor)))
+    :enable (list-list-repeatp nfix posp pos-gte-pos-divisor))
+
+  (defrule list-repeatp-of-list-split
+    (implies (and (list-repeatp list)
+                  (posp n)
+                  (integerp (/ (len list) n)))
+             (list-repeatp (list-split list n)))
+    :induct t
+    :enable (list-repeatp
+             car-of-list-split
+             take-of-nthcdr-when-list-repeatp
+             nfix)
+    :hints ('(:use (:instance pos-gte-twice-divisor (x (len list)) (y n))))
+    :prep-books ((include-book "arithmetic-3/top" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
