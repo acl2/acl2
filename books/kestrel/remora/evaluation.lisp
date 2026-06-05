@@ -523,7 +523,13 @@
                                 acl2::not-reserrp-when-nat-listp
                                 acl2::not-reserrp-when-nat-list-listp
                                 car-of-repeat
-                                nfix)))))
+                                nfix))))
+
+  (defret value-wfp-of-value-with-empty-dim
+    (value-wfp val)
+    :hyp (member-equal 0 dims)
+    :hints (("Goal" :in-theory (enable value-wfp
+                                       acl2::not-reserrp-when-nat-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
