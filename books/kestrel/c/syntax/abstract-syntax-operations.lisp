@@ -1324,7 +1324,9 @@
      :const nil
      :string t
      :paren (expr-syntactic-lvalue-p expr.inner)
-     :gensel (genassoc-list-syntactic-lvalue-p expr.assocs)
+     :gensel (if (endp expr.assocs)
+                 nil
+               (genassoc-list-syntactic-lvalue-p expr.assocs))
      :arrsub t
      :funcall nil
      :member (expr-syntactic-lvalue-p expr.arg)
@@ -1355,13 +1357,15 @@
 
   (define comp-stmt-syntactic-lvalue-p ((cstmt comp-stmtp))
     :returns (yes/no booleanp)
-    (b* (((comp-stmt cstmt) cstmt))
+    (b* (((comp-stmt cstmt) cstmt)
+         ((when (endp cstmt.items)) nil))
       (block-item-list-syntactic-lvalue-p cstmt.items))
     :measure (comp-stmt-count cstmt))
 
   (define block-item-list-syntactic-lvalue-p ((items block-item-listp))
+    :guard (not (endp items))
     :returns (yes/no booleanp)
-    (b* (((when (endp items)) nil)
+    (b* (((unless (mbt (not (endp items)))) nil)
          ((when (endp (cdr items))) (block-item-syntactic-lvalue-p (car items))))
       (block-item-list-syntactic-lvalue-p (cdr items)))
     :measure (block-item-list-count items))
@@ -1376,9 +1380,11 @@
     :measure (block-item-count item))
 
   (define genassoc-list-syntactic-lvalue-p ((assocs genassoc-listp))
+    :guard (not (endp assocs))
     :returns (yes/no booleanp)
-    (b* (((when (endp assocs)) nil)
-         ((when (genassoc-syntactic-lvalue-p (car assocs))) t))
+    (b* (((unless (mbt (not (endp assocs)))) nil)
+         ((when (genassoc-syntactic-lvalue-p (car assocs))) t)
+         ((when (endp (cdr assocs))) nil))
       (genassoc-list-syntactic-lvalue-p (cdr assocs)))
     :measure (genassoc-list-count assocs))
 
