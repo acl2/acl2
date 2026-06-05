@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax-core")
 (include-book "abstract-syntax-derived-fixtypes")
+(include-book "lists")
 
 (include-book "defsort/duplicated-members" :dir :system)
 (include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
@@ -25,13 +26,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ abstract-syntax-structural-operations
+(defxdoc+ abstract-syntax-structurals
   :parents (abstract-syntax)
-  :short "Structural operations on ASTs."
+  :short "Structural operations and theorems on ASTs."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are purely structural operations,
+    "These are purely structural operations and theorems,
      e.g. lifting from elements to lists.
      At least some of these could be generated from the fixtype definitions."))
   :order-subtopics t
@@ -228,32 +229,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-append-all ((exprss expr-list-listp))
-  :returns (exprs expr-listp)
-  :short "Append all the lists of expressions in a list, in that order."
-  (cond ((endp exprss) nil)
-        (t (append (expr-list-fix (car exprss))
-                   (expr-append-all (cdr exprss)))))
-
-  ///
-
-  (defrule expr-list-corep-of-expr-append-all
-    (equal (expr-list-corep (expr-append-all exprss))
-           (expr-list-list-corep exprss))
-    :induct t))
+(defrule expr-listp-of-append-all
+  :short "Type of @(tsee append-all) applied to lists of lists of expressions."
+  (implies (expr-list-listp lists)
+           (expr-listp (append-all lists)))
+  :induct t
+  :enable append-all)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atom-append-all ((atomss atom-list-listp))
-  :returns (atoms atom-listp)
-  :short "Append all the lists of atoms in a list, in that order."
-  (cond ((endp atomss) nil)
-        (t (append (atom-list-fix (car atomss))
-                   (atom-append-all (cdr atomss)))))
-
-  ///
-
-  (defrule atom-list-corep-of-atom-append-all
-    (equal (atom-list-corep (atom-append-all atomss))
-           (atom-list-list-corep atomss))
-    :induct t))
+(defrule atom-listp-of-append-all
+  :short "Type of @(tsee append-all) applied to lists of lists of atoms."
+  (implies (atom-list-listp lists)
+           (atom-listp (append-all lists)))
+  :induct t
+  :enable append-all)

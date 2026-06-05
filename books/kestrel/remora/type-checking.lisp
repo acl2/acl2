@@ -12,12 +12,12 @@
 
 (include-book "abstract-syntax-trees")
 (include-book "abstract-syntax-constructors")
-(include-book "abstract-syntax-structural-operations")
+(include-book "abstract-syntax-structurals")
 (include-book "abstract-syntax-matching-operations")
 (include-book "abstract-syntax-variable-operations")
 (include-book "type-equivalence")
 (include-book "static-environments")
-(include-book "nat-list-operations")
+(include-book "nat-lists")
 
 (include-book "kestrel/fty/string-string-map-pair-result" :dir :system)
 

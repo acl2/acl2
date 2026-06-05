@@ -10,9 +10,12 @@
 
 (in-package "REMORA")
 
+(include-book "lists")
+
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/fty/nat-list-list" :dir :system)
 
+(local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 
 (include-book "std/basic/controlled-configuration" :dir :system)
@@ -20,9 +23,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ nat-list-operations
+(defxdoc+ nat-lists
   :parents (library-extensions)
-  :short "Operations on lists of natural numbers."
+  :short "Library extensions for lists of natural numbers."
   :order-subtopics t
   :default-parent t)
 
@@ -60,7 +63,21 @@
   (defret nat-list-product-0-iff-member-0
     (iff (equal product 0)
          (member-equal 0 (nat-list-fix nats)))
-    :hints (("Goal" :induct t))))
+    :hints (("Goal" :induct t)))
+
+  (local (include-book "arithmetic-3/top" :dir :system))
+
+  (defruled nat-list-product-of-cdr-to-ratio
+    (implies (and (nat-listp dims)
+                  (not (member-equal 0 dims))
+                  (consp dims))
+             (equal (nat-list-product (cdr dims))
+                    (/ (nat-list-product dims) (car dims)))))
+
+  (defruled nat-list-product-divided-by-car
+    (implies (and (nat-listp dims)
+                  (consp dims))
+             (integerp (/ (nat-list-product dims) (car dims))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -82,9 +99,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define nat-append-all ((natss nat-list-listp))
-  :returns (nats nat-listp)
-  :short "Append all the lists of naturals in a list, in that order."
-  (cond ((endp natss) nil)
-        (t (append (nat-list-fix (car natss))
-                   (nat-append-all (cdr natss))))))
+(defrule nat-listp-of-append-all
+  :short "Type of @(tsee append-all) applied to lists of lists of naturals."
+  (implies (nat-list-listp lists)
+           (nat-listp (append-all lists)))
+  :induct t
+  :enable append-all)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled true-listp-when-nat-listp
+  :short "A list of naturals is a true list."
+  (implies (nat-listp x)
+           (true-listp x)))

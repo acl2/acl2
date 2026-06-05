@@ -50,7 +50,9 @@
                     nat-list-resultp
                     nat-list-listp
                     nat-list-list-resultp
+                    nat-list-list-listp
                     nats=>string
+                    pos-fix
                     prefixp
                     str-fix
                     string=>nats

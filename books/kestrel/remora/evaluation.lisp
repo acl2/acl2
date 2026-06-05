@@ -11,15 +11,18 @@
 (in-package "REMORA")
 
 (include-book "dynamic-environments")
-(include-book "nat-list-operations")
-(include-book "integer-list-operations")
+(include-book "nat-lists")
+(include-book "integer-lists")
 
 (include-book "kestrel/fty/integer-result" :dir :system)
 (include-book "kestrel/fty/integer-list-result" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 
-(local (include-book "list-theorems"))
+(local (include-book "lists"))
 
 (local (include-book "std/basic/nfix" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/typed-lists/nat-listp" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -188,9 +191,9 @@
                 ((unless (nat-listp ints)) (reserr nil)))
              ints)
      :append (b* (((ok natss) (eval-shape-list shape.shapes denv)))
-               (nat-append-all natss))
+               (append-all natss))
      :splice (b* (((ok natss) (eval-shape-list shape.shapes denv)))
-               (nat-append-all natss)))
+               (append-all natss)))
     :measure (shape-count shape))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -213,6 +216,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :verify-guards :after-returns
+
+  :guard-hints
+  (("Goal" :in-theory (enable acl2::true-list-listp-when-nat-list-listp)))
 
   ///
 
@@ -290,7 +296,7 @@
               (make-type-value-array :elem elem-tval :shape nats))
      :bracket (b* (((ok elem-tval) (eval-type type.elem denv))
                    ((ok natss) (eval-shape-list type.shapes denv))
-                   (nats (nat-append-all natss)))
+                   (nats (append-all natss)))
                 (make-type-value-array :elem elem-tval :shape nats))
      :fun (b* (((ok in-tvals) (eval-type-list type.in denv))
                ((ok out-tval) (eval-type type.out denv)))
@@ -320,6 +326,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :verify-guards :after-returns
+
+  :guard-hints
+  (("Goal" :in-theory (enable acl2::true-list-listp-when-nat-list-listp)))
 
   ///
 
@@ -441,7 +450,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define vector-with-empty-dim ((dims nat-listp) (elem type-valuep))
+(define value-with-empty-dim ((dims nat-listp) (elem type-valuep))
   :guard (and (member-equal 0 dims)
               (not (type-value-case elem :array)))
   :returns (val valuep)
@@ -449,10 +458,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used to evaluate empty array expressions,
+    "This is used to evaluate empty array or frame expressions,
      which must have at least one zero dimension
      and an atom (i.e. non-array) type (value) for elements,
-     as expressed by the guard.")
+     as expressed by the guard.
+     In the case of empty frame expressions,
+     the type value passed to this function is not
+     the result of evaluating the type in the frame expression,
+     which may be an array type:
+     it is the atom type (value) of that array type,
+     whose dimensions are added to the ones in frame expression
+     before calling this function (see callers).")
    (xdoc::p
     "We look at the first dimension,
      which must be present because otherwise 0 could not be in the list.
@@ -469,25 +485,130 @@
     (if (= dim 0)
         (make-value-vector-empty :dims (cdr dims) :elem elem)
       (value-vector
-       (repeat dim (vector-with-empty-dim (cdr dims) elem)))))
+       (repeat dim (value-with-empty-dim (cdr dims) elem)))))
   :verify-guards :after-returns
 
   ///
 
-  (defret check-dims-of-value-of-vector-with-empty-dim
+  (defret check-dims-of-value-of-value-with-empty-dim
     (b* ((dims1 (check-dims-of-value val)))
       (implies (member-equal 0 dims)
                (and (not (reserrp dims1))
                     (equal dims1 (nat-list-fix dims)))))
     :hints (("Goal"
              :induct t
-             :in-theory (enable vector-with-empty-dim
-                                check-dims-of-value
+             :in-theory (enable check-dims-of-value
                                 check-dims-of-value-list-of-repeat
                                 acl2::not-reserrp-when-nat-listp
                                 acl2::not-reserrp-when-nat-list-listp
                                 car-of-repeat
                                 nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines values-with-nonempty-dims
+  :short "Build values with non-empty dimensions and with given elements."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define value-with-nonempty-dims ((dims nat-listp) (vals value-listp))
+    :guard (and (not (member-equal 0 dims))
+                (equal (len vals) (nat-list-product dims))
+                (value-list-wfp vals)
+                (list-repeatp (dims-of-value-list vals)))
+    :returns (val valuep)
+    :parents (evaluation values-with-nonempty-dims)
+    :short "Build a value
+            from its dimensions and
+            from the values of its elements."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is used to evaluate non-empty array or frame expressions,
+       which have all non-zero dimensions as required by the guard.
+       The number of values must match the product of the dimensions,
+       as required by the guard,
+       so that the values can be arranged according to the dimensions.
+       Furthermore, as also required by the guard,
+       all values must be well-formed and have the same dimensions.")
+     (xdoc::p
+      "When there are no dimensions left in the list,
+       the list of values must be a singleton
+       because its length must match the product of dimensions,
+       which is 1 for the empty list of dimensions.
+       Otherwise, we take out the first dimension,
+       and we split the list of values into as many chunks as that dimension
+       (which is not 0 as enforced by the guard),
+       where each chunk has as its size the (integer) ratio of
+       the total number of values and the first dimension.
+       We construct values for each chunk
+       via the companion recursive function.
+       We put these values together into a vector value,
+       which is the final result."))
+    (b* (((when (endp dims)) (value-fix (car vals)))
+         (dim (lnfix (car dims)))
+         (valss (list-split (value-list-fix vals) (/ (len vals) dim)))
+         (vals (value-list-with-nonempty-dims (cdr dims) valss)))
+      (value-vector vals))
+    :measure (acl2::nat-list-measure (list (len dims) 0 0)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define value-list-with-nonempty-dims ((dims nat-listp)
+                                         (valss value-list-listp))
+    :guard (and (not (member-equal 0 dims))
+                (all-of-len-p valss (nat-list-product dims))
+                (value-list-list-wfp valss)
+                (list-list-repeatp (dims-of-value-list-list valss)))
+    :returns (vals value-listp)
+    :parents (evaluation values-with-nonempty-dims)
+    :short "Build a list of values from a common list of dimensions
+            and a list of lists of component values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This lifts @(tsee value-with-nonempty-dims) to lists of lists of values.
+       See the documentation of that function."))
+    (cond ((endp valss) nil)
+          (t (cons (value-with-nonempty-dims dims (car valss))
+                   (value-list-with-nonempty-dims dims (cdr valss)))))
+    :measure (acl2::nat-list-measure (list (len dims) 1 (len valss)))
+
+    ///
+
+    (defret len-of-value-list-with-nonempty-dims
+      (equal (len vals)
+             (len valss))
+      :hints (("Goal"
+               :induct (len valss)
+               :in-theory (enable len)))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :verify-guards :after-returns
+
+  :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
+
+  :guard-hints (("Goal"
+                 :in-theory (enable
+                             true-list-listp-when-value-list-listp
+                             acl2::true-list-listp-when-nat-list-listp
+                             acl2::true-list-listp-when-nat-list-list-listp
+                             nat-list-product-of-cdr-to-ratio
+                             posp)
+                 :use nat-list-product-divided-by-car))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :flag-local nil ; TODO: remove?
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ///
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deffixequiv-mutual values-with-nonempty-dims))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -508,7 +629,14 @@
      (xdoc::p
       "An empty array must have at least one 0 dimension,
        and its element type must evaluate to an atom type value.
-       We build the result via a separate function (see its documentation)."))
+       We build the result via a separate function (see its documentation).")
+     (xdoc::p
+      "An empty frame is treated similarly to an empty array,
+       but its type is the cell type, which may be an array type;
+       we evaluate it,
+       decompose it into the atom type value and the cell dimensions,
+       append the cell dimensions to the frame dimensions,
+       and build the result via the same function used for arrays."))
     (expr-case
      expr
      :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
@@ -518,9 +646,18 @@
      :array-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
                        ((ok elem) (eval-type expr.type denv))
                        ((when (type-value-case elem :array)) (reserr nil)))
-                    (vector-with-empty-dim expr.dims elem))
+                    (value-with-empty-dim expr.dims elem))
      :frame (reserr :todo)
-     :frame-empty (reserr :todo)
+     :frame-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
+                       ((ok tval) (eval-type expr.type denv))
+                       ((mv elem cell-dims)
+                        (type-value-case
+                         tval
+                         :array (mv tval.elem tval.shape)
+                         :otherwise (mv tval nil)))
+                       ((when (type-value-case elem :array)) (reserr nil))
+                       (dims (append expr.dims cell-dims)))
+                    (value-with-empty-dim dims elem))
      :string (reserr :todo)
      :app (reserr :todo)
      :tapp (reserr :todo)

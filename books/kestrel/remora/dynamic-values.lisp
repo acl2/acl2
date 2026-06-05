@@ -11,11 +11,15 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-trees")
-(include-book "abstract-syntax-structural-operations")
+(include-book "abstract-syntax-structurals")
 
+(include-book "kestrel/fty/nat-list-list-list" :dir :system)
 (include-book "kestrel/fty/nat-list-result" :dir :system)
 (include-book "kestrel/fty/nat-list-list-result" :dir :system)
 
+(local (include-book "arithmetic"))
+
+(local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 (local (include-book "std/basic/ifix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
@@ -316,6 +320,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deflist value-list-list
+  :short "Fixtype of lists of lists of values."
+  :elt-type value-list
+  :true-listp t
+  :elementp-of-nil t
+  :pred value-list-listp
+
+  ///
+
+  (defruled true-list-listp-when-value-list-listp
+    (implies (value-list-listp x)
+             (true-list-listp x))
+    :induct t
+    :enable true-list-listp)
+
+  (defrule value-list-listp-of-list-split
+    (implies (and (value-listp vals)
+                  (posp n)
+                  (integerp (/ (len vals) n)))
+             (value-list-listp (list-split vals n)))
+    :induct t
+    :enable (list-split
+             value-list-listp
+             lt-to-zero-when-divided-by-pos
+             nfix
+             posp)
+    :prep-books ((include-book "arithmetic-3/top" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult value-result
   :short "Fixtype of values and errors."
   :ok value
@@ -386,9 +420,8 @@
      :box nil
      :vector (b* (((ok dimss) (check-dims-of-value-list val.elems))
                   ((unless (consp dimss)) (reserr nil))
-                  (dims (car dimss))
-                  ((unless (all-equalp dims dimss)) (reserr nil)))
-               (cons (len val.elems) dims))
+                  ((unless (list-repeatp dimss)) (reserr nil)))
+               (cons (len val.elems) (car dimss)))
      :vector-empty (cons 0 val.dims))
     :measure (value-count val))
 
@@ -415,6 +448,8 @@
   :prepwork
   ((local (in-theory (enable acl2::true-listp-when-nat-list-listp
                              acl2::nat-listp-of-car-when-nat-list-listp))))
+
+  :verify-guards :after-returns
 
   ///
 
@@ -449,6 +484,21 @@
   :short "Lift @(tsee value-wfp) to lists."
   (value-wfp x))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist value-list-list-wfp (x)
+  :guard (value-list-listp x)
+  :short "Lift @(tsee value-list-wfp) to lists."
+  (value-list-wfp x)
+
+  ///
+
+  (defrule value-list-list-wfp-of-list-split
+    (implies (value-list-wfp vals)
+             (value-list-list-wfp (list-split vals n)))
+    :induct t
+    :enable list-split))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dims-of-value ((val valuep))
@@ -461,10 +511,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dims-of-value-list ((vals value-listp))
-  :guard (value-list-wfp vals)
+(std::defprojection dims-of-value-list ((x value-listp))
+  :guard (value-list-wfp x)
   :returns (dimss nat-list-listp)
   :short "Lift @(tsee dims-of-value) to lists."
-  (cond ((endp vals) nil)
-        (t (cons (dims-of-value (car vals))
-                 (dims-of-value-list (cdr vals))))))
+  (dims-of-value x)
+  :nil-preservingp t
+
+  ///
+
+  (defrule dims-of-value-list-of-repeat
+    (equal (dims-of-value-list (repeat n val))
+           (repeat n (dims-of-value val)))
+    :induct t
+    :enable repeat))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection dims-of-value-list-list ((x value-list-listp))
+  :guard (value-list-list-wfp x)
+  :returns (dimss nat-list-list-listp)
+  :short "Lift @(tsee dims-of-value-list) to lists."
+  (dims-of-value-list x)
+  :nil-preservingp t
+
+  ///
+
+  (defruled dims-of-value-list-list-of-cdr
+    (equal (dims-of-value-list-list (cdr valss))
+           (cdr (dims-of-value-list-list valss))))
+
+  (theory-invariant (incompatible (:rewrite dims-of-value-list-list-of-cdr)
+                                  (:rewrite cdr-of-dims-of-value-list-list)))
+
+  (defrule dims-of-value-list-list-of-list-split
+    (equal (dims-of-value-list-list (list-split vals n))
+           (list-split (dims-of-value-list vals) n))
+    :induct t
+    :enable (list-split
+             dims-of-value-list-list)))
