@@ -192,6 +192,13 @@
                     (take (pos-fix chunk) list)))
     :expand ((list-split list chunk)))
 
+  (defruled car-of-car-of-list-split
+    (implies (and (consp list)
+                  (posp chunk))
+             (equal (car (car (list-split list chunk)))
+                    (car list)))
+    :enable (car-of-list-split take))
+
   (defrule list-list-repeat-of-list-split
     (implies (and (list-repeatp list)
                   (posp n)
