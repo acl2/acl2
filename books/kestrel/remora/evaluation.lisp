@@ -13,6 +13,7 @@
 (include-book "dynamic-environments")
 (include-book "nat-lists")
 (include-book "integer-lists")
+(include-book "character-literal-codes")
 
 (include-book "kestrel/fty/integer-result" :dir :system)
 (include-book "kestrel/fty/integer-list-result" :dir :system)
@@ -448,6 +449,26 @@
    :int (base-value-int (eval-int-lit lit.lit))
    :float (base-value-float (eval-float-lit lit.lit))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-char-lit ((clit char-litp))
+  :returns (val int-valuep)
+  :short "Evaluate a character literal to an integer value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A character is represented as the integer value of its code.
+     This is used to evaluate strings,
+     which are sugar for arrays of such integers."))
+  (int-value (char-lit-code clit)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection eval-char-lit-list ((x char-lit-listp))
+  :returns (vals int-value-listp)
+  :short "Lift @(tsee eval-char-lit) to lists."
+  (eval-char-lit x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define value-with-empty-dim ((dims nat-listp) (elem type-valuep))
@@ -733,7 +754,13 @@
        we evaluate it,
        decompose it into the atom type value and the cell dimensions,
        append the cell dimensions to the frame dimensions,
-       and build the result via the same function used for arrays."))
+       and build the result via the same function used for arrays.")
+     (xdoc::p
+      "A string is syntactic sugar for an array of integers,
+       namely the codes of its characters;
+       we evaluate it directly to the corresponding value.
+       A non-empty string yields a vector of the integer code values;
+       an empty string yields an empty integer array."))
     (expr-case
      expr
      :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
@@ -771,7 +798,14 @@
                        ((when (type-value-case elem :array)) (reserr nil))
                        (dims (append expr.dims cell-dims)))
                     (value-with-empty-dim dims elem))
-     :string (reserr :todo)
+     :string (if (consp expr.chars)
+                 (value-vector
+                  (value-base-list
+                   (base-value-int-list
+                    (eval-char-lit-list expr.chars))))
+               (make-value-vector-empty
+                :dims nil
+                :elem (type-value-base (base-type-int))))
      :app (reserr :todo)
      :tapp (reserr :todo)
      :iapp (reserr :todo)
