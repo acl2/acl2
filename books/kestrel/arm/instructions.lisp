@@ -46,7 +46,7 @@
 (local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system))
 
-(in-theory (disable mv-nth))
+(in-theory (disable mv-nth)) ; since some theorems in this book use mv-nth
 
 (local
   (defthm integerp-when-unsigned-byte-p-32
@@ -119,7 +119,7 @@
          (setflags (== s #b1))
          (imm32 (ARMExpandImm imm12 arm))
          ;; end EncodingSpecificOperations
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) imm32 (apsr.c arm))))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) imm32 (apsr.c arm))))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -145,8 +145,8 @@
          (setflags (== s #b1))
          ((mv shift_t shift_n) (decodeImmShift type imm5))
          ;; end EncodingSpecificOperations
-         (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) shifted (apsr.c arm))))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) shifted (apsr.c arm))))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -174,9 +174,9 @@
                     (== sval 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg sval arm))))
-         (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) shifted (apsr.c arm)))
+         (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) shifted (apsr.c arm)))
          (arm (set-reg d result arm))
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
@@ -280,7 +280,7 @@
          (setflags (== s #b1))
          (imm32 (ARMExpandImm imm12 arm))
          ;; end EncodingSpecificOperations
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) imm32 0)))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) imm32 0)))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -307,8 +307,8 @@
          (setflags (== s #b1))
          ((mv shift_t shift_n) (decodeImmShift type imm5))
          ;; end EncodingSpecificOperations
-         (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) shifted 0))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) shifted 0))
          (arm (if (== d 15)
                   (ALUWritePC result arm)
                 (let* ((arm (set-reg d result arm))
@@ -337,9 +337,9 @@
                     (== sval 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg sval arm))))
-         (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) shifted 0))
+         (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) shifted 0))
          (arm (set-reg d result arm))
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
@@ -363,7 +363,7 @@
          (setflags (== s #b1))
          ((mv imm32 carry) (ARMExpandImm_C imm12 (apsr.c arm)))
          ;; end EncodingSpecificOperations
-         (result (bvand 32 (reg n arm) imm32)))
+         (result (bvand 32 (reg* n arm) imm32)))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -389,8 +389,8 @@
          (setflags (== s #b1))
          ((mv shift_t shift_n) (decodeImmShift type imm5))
          ;; end EncodingSpecificOperations
-         ((mv shifted carry) (shift_c 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (result (bvand 32 (reg n arm) shifted)))
+         ((mv shifted carry) (shift_c 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (result (bvand 32 (reg* n arm) shifted)))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -419,9 +419,9 @@
                     (== sval 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg sval arm))))
-         ((mv shifted carry) (shift_c 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (result (bvand 32 (reg n arm) shifted))
+         (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+         ((mv shifted carry) (shift_c 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (result (bvand 32 (reg* n arm) shifted))
          (arm (set-reg d result arm))
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
@@ -447,7 +447,7 @@
          (setflags (== s #b1))
          ((mv & shift_n) (decodeImmShift #b10 imm5))
          ;; end EncodingSpecificOperations
-         ((mv result carry) (shift_c 32 (reg m arm) *SRType_ASR* shift_n (apsr.c arm))))
+         ((mv result carry) (shift_c 32 (reg* m arm) *SRType_ASR* shift_n (apsr.c arm))))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -478,8 +478,8 @@
                     (== m 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg m arm))))
-         ((mv result carry) (shift_c 32 (reg n arm) *SRType_ASR* shift_n (apsr.c arm)))
+         (shift_n (uint 8 (slice 7 0 (reg* m arm))))
+         ((mv result carry) (shift_c 32 (reg* n arm) *SRType_ASR* shift_n (apsr.c arm)))
          (arm (set-reg d result arm))
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
@@ -517,7 +517,7 @@
        ;; end EncodingSpecificOperations
        )
     (if (>= msbit lsbit)
-        (let* ((arm (set-reg d (putbits 32 msbit lsbit (replicate 0 (+ (- msbit lsbit) 1)) (reg d arm)) arm))
+        (let* ((arm (set-reg d (putbits 32 msbit lsbit (replicate 0 (+ (- msbit lsbit) 1)) (reg* d arm)) arm))
                (arm (advance-pc arm)))
           arm)
       (update-error *unpredictable* arm))))
@@ -540,7 +540,7 @@
          ;; end EncodingSpecificOperations
          )
       (if (>= msbit lsbit)
-          (let* ((arm (set-reg d (putbits 32 msbit lsbit (slice (- msbit lsbit) 0 (reg n arm)) (reg d arm)) arm))
+          (let* ((arm (set-reg d (putbits 32 msbit lsbit (slice (- msbit lsbit) 0 (reg* n arm)) (reg* d arm)) arm))
                  (arm (advance-pc arm)))
             arm)
         (update-error *unpredictable* arm))))
@@ -557,7 +557,7 @@
          (setflags (== s #b1))
          ((mv imm32 carry) (ARMExpandImm_C imm12 (apsr.c arm)))
          ;; end EncodingSpecificOperations
-         (result (bvand 32 (reg n arm) (bvnot 32 imm32))))
+         (result (bvand 32 (reg* n arm) (bvnot 32 imm32))))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -583,8 +583,8 @@
          (setflags (== s #b1))
          ((mv shift_t shift_n) (decodeImmShift type imm5))
          ;; end EncodingSpecificOperations
-         ((mv shifted carry) (shift_c 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (result (bvand 32 (reg n arm) (bvnot 32 shifted))))
+         ((mv shifted carry) (shift_c 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (result (bvand 32 (reg* n arm) (bvnot 32 shifted))))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -613,9 +613,9 @@
                     (== sval 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg sval arm))))
-         ((mv shifted carry) (shift_c 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (result (bvand 32 (reg n arm) (bvnot 32 shifted)))
+         (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+         ((mv shifted carry) (shift_c 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (result (bvand 32 (reg* n arm) (bvnot 32 shifted)))
          (arm (set-reg d result arm))
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
@@ -646,7 +646,7 @@
          (m (uint 4 rm))
          ((when (== m 15))
           (update-error *unpredictable* arm))
-         (target (reg m arm))
+         (target (reg* m arm))
          (arm (if (== (CurrentInstrSet arm) *InstrSet_ARM*)
                   (b* ((next_instr_addr (bvminus 32 (pcvalue inst-address) 4))
                        (arm (set-reg *lr* next_instr_addr arm)))
@@ -663,7 +663,7 @@
          (m (uint 4 rm))
          ;; end EncodingSpecificOperations
          )
-      (BXWritePC (reg m arm) arm)))
+      (BXWritePC (reg* m arm) arm)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -675,7 +675,7 @@
                     (== m 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (result (CountLeadingZeroBits 32 (reg m arm)))
+         (result (CountLeadingZeroBits 32 (reg* m arm)))
          (arm (set-reg d (slice 31 0 result) arm))
          (arm (advance-pc arm)))
       arm))
@@ -734,7 +734,7 @@
          (n (uint 4 rn))
          (imm32 (ARMExpandImm imm12 arm))
          ;; end EncodingSpecificOperations
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) imm32 0))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) imm32 0))
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
@@ -746,11 +746,11 @@
        (n (uint 4 rn))
        (imm32 (ARMExpandImm imm12 arm))
        ;; end EncodingSpecificOperations
-;;       ((mv & & &) (AddWithCarry 32 (reg n arm) imm32 0))
-       (arm (set-apsr.n (cmn-sign (reg n arm) imm32) arm))
-       (arm (set-apsr.z (cmn-zero (reg n arm) imm32) arm))
-       (arm (set-apsr.c (cmn-carry (reg n arm) imm32) arm))
-       (arm (set-apsr.v (cmn-overflow (reg n arm) imm32) arm))
+;;       ((mv & & &) (AddWithCarry 32 (reg* n arm) imm32 0))
+       (arm (set-apsr.n (cmn-sign (reg* n arm) imm32) arm))
+       (arm (set-apsr.z (cmn-zero (reg* n arm) imm32) arm))
+       (arm (set-apsr.c (cmn-carry (reg* n arm) imm32) arm))
+       (arm (set-apsr.v (cmn-overflow (reg* n arm) imm32) arm))
        (arm (advance-pc arm)))
     arm)
   :alt-body-hints (("Goal" :in-theory (e/d (cmn-sign
@@ -776,8 +776,8 @@
          (m (uint 4 rm))
          ((mv shift_t shift_n) (decodeImmShift type imm5))
          ;; end EncodingSpecificOperations
-         (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) shifted 0))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) shifted 0))
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
@@ -790,12 +790,12 @@
        (m (uint 4 rm))
        ((mv shift_t shift_n) (decodeImmShift type imm5))
        ;; end EncodingSpecificOperations
-       (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-       ;; ((mv & &  &) (AddWithCarry 32 (reg n arm) shifted 0))
-       (arm (set-apsr.n (cmn-sign (reg n arm) shifted) arm))
-       (arm (set-apsr.z (cmn-zero (reg n arm) shifted) arm))
-       (arm (set-apsr.c (cmn-carry (reg n arm) shifted) arm))
-       (arm (set-apsr.v (cmn-overflow (reg n arm) shifted) arm))
+       (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+       ;; ((mv & &  &) (AddWithCarry 32 (reg* n arm) shifted 0))
+       (arm (set-apsr.n (cmn-sign (reg* n arm) shifted) arm))
+       (arm (set-apsr.z (cmn-zero (reg* n arm) shifted) arm))
+       (arm (set-apsr.c (cmn-carry (reg* n arm) shifted) arm))
+       (arm (set-apsr.v (cmn-overflow (reg* n arm) shifted) arm))
        (arm (advance-pc arm)))
     arm)
   :alt-body-hints (("Goal" :in-theory (e/d (cmn-sign
@@ -823,9 +823,9 @@
                     (== sval 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg sval arm))))
-         (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) shifted 0))
+         (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) shifted 0))
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
@@ -843,13 +843,13 @@
                   (== sval 15)))
         (update-error *unpredictable* arm))
        ;; end EncodingSpecificOperations
-       (shift_n (uint 8 (slice 7 0 (reg sval arm))))
-       (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-       ;; ((mv & & &) (AddWithCarry 32 (reg n arm) shifted 0))
-       (arm (set-apsr.n (cmn-sign (reg n arm) shifted) arm))
-       (arm (set-apsr.z (cmn-zero (reg n arm) shifted) arm))
-       (arm (set-apsr.c (cmn-carry (reg n arm) shifted) arm))
-       (arm (set-apsr.v (cmn-overflow (reg n arm) shifted) arm))
+       (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+       (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+       ;; ((mv & & &) (AddWithCarry 32 (reg* n arm) shifted 0))
+       (arm (set-apsr.n (cmn-sign (reg* n arm) shifted) arm))
+       (arm (set-apsr.z (cmn-zero (reg* n arm) shifted) arm))
+       (arm (set-apsr.c (cmn-carry (reg* n arm) shifted) arm))
+       (arm (set-apsr.v (cmn-overflow (reg* n arm) shifted) arm))
        (arm (advance-pc arm)))
     arm)
   :alt-body-hints (("Goal" :in-theory (e/d (cmn-sign
@@ -919,7 +919,7 @@
          (n (uint 4 rn))
          (imm32 (ARMExpandImm imm12 arm))
          ;; end EncodingSpecificOperations
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) (bvnot 32 imm32) 1))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) (bvnot 32 imm32) 1))
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
@@ -931,11 +931,11 @@
        (n (uint 4 rn))
        (imm32 (ARMExpandImm imm12 arm))
        ;; end EncodingSpecificOperations
-       ;; ((mv & & &) (AddWithCarry 32 (reg n arm) (bvnot 32 imm32) 1))
-       (arm (set-apsr.n (cmp-sign (reg n arm) imm32) arm)) ; note the call of cmp-sign
-       (arm (set-apsr.z (cmp-zero (reg n arm) imm32) arm))
-       (arm (set-apsr.c (cmp-carry (reg n arm) imm32) arm))
-       (arm (set-apsr.v (cmp-overflow (reg n arm) imm32) arm)) ; note the call of cmp-overflow
+       ;; ((mv & & &) (AddWithCarry 32 (reg* n arm) (bvnot 32 imm32) 1))
+       (arm (set-apsr.n (cmp-sign (reg* n arm) imm32) arm)) ; note the call of cmp-sign
+       (arm (set-apsr.z (cmp-zero (reg* n arm) imm32) arm))
+       (arm (set-apsr.c (cmp-carry (reg* n arm) imm32) arm))
+       (arm (set-apsr.v (cmp-overflow (reg* n arm) imm32) arm)) ; note the call of cmp-overflow
        (arm (advance-pc arm)))
     arm)
   :alt-body-hints (("Goal" :in-theory (e/d (cmp-sign
@@ -959,8 +959,8 @@
          (m (uint 4 rm))
          ((mv shift_t shift_n) (decodeImmShift type imm5))
          ;; end EncodingSpecificOperations
-         (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) (bvnot 32 shifted) 1))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) (bvnot 32 shifted) 1))
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
@@ -973,12 +973,12 @@
        (m (uint 4 rm))
        ((mv shift_t shift_n) (decodeImmShift type imm5))
        ;; end EncodingSpecificOperations
-       (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-       ;; ((mv & & &) (AddWithCarry 32 (reg n arm) (bvnot 32 shifted) 1))
-       (arm (set-apsr.n (cmp-sign (reg n arm) shifted) arm))
-       (arm (set-apsr.z (cmp-zero (reg n arm) shifted) arm))
-       (arm (set-apsr.c (cmp-carry (reg n arm) shifted) arm))
-       (arm (set-apsr.v (cmp-overflow (reg n arm) shifted) arm))
+       (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+       ;; ((mv & & &) (AddWithCarry 32 (reg* n arm) (bvnot 32 shifted) 1))
+       (arm (set-apsr.n (cmp-sign (reg* n arm) shifted) arm))
+       (arm (set-apsr.z (cmp-zero (reg* n arm) shifted) arm))
+       (arm (set-apsr.c (cmp-carry (reg* n arm) shifted) arm))
+       (arm (set-apsr.v (cmp-overflow (reg* n arm) shifted) arm))
        (arm (advance-pc arm)))
     arm)
   :alt-body-hints (("Goal" :in-theory (e/d (cmp-sign
@@ -1007,9 +1007,9 @@
                     (== sval 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg sval arm))))
-         (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) (bvnot 32 shifted) 1))
+         (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) (bvnot 32 shifted) 1))
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
@@ -1027,13 +1027,13 @@
                     (== sval 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg sval arm))))
-         (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ;; ((mv & & &) (AddWithCarry 32 (reg n arm) (bvnot 32 shifted) 1))
-         (arm (set-apsr.n (cmp-sign (reg n arm) shifted) arm))
-         (arm (set-apsr.z (cmp-zero (reg n arm) shifted) arm))
-         (arm (set-apsr.c (cmp-carry (reg n arm) shifted) arm))
-         (arm (set-apsr.v (cmp-overflow (reg n arm) shifted) arm))
+         (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         ;; ((mv & & &) (AddWithCarry 32 (reg* n arm) (bvnot 32 shifted) 1))
+         (arm (set-apsr.n (cmp-sign (reg* n arm) shifted) arm))
+         (arm (set-apsr.z (cmp-zero (reg* n arm) shifted) arm))
+         (arm (set-apsr.c (cmp-carry (reg* n arm) shifted) arm))
+         (arm (set-apsr.v (cmp-overflow (reg* n arm) shifted) arm))
          (arm (advance-pc arm)))
         arm)
         :alt-body-hints (("Goal" :in-theory (e/d (cmp-sign
@@ -1063,7 +1063,7 @@
          (setflags (== s #b1))
          ((mv imm32 carry) (ARMExpandImm_C imm12 (apsr.c arm)))
          ;; end EncodingSpecificOperations
-         (result (eor32 (reg n arm) imm32)))
+         (result (eor32 (reg* n arm) imm32)))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -1089,8 +1089,8 @@
          (setflags (== s #b1))
          ((mv shift_t shift_n) (decodeImmShift type imm5))
          ;; end EncodingSpecificOperations
-         ((mv shifted carry) (shift_c 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (result (eor32 (reg n arm) shifted)))
+         ((mv shifted carry) (shift_c 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (result (eor32 (reg* n arm) shifted)))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -1119,9 +1119,9 @@
                     (== sval 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg sval arm))))
-         ((mv shifted carry) (shift_c 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (result (eor32 (reg n arm) shifted))
+         (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+         ((mv shifted carry) (shift_c 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (result (eor32 (reg* n arm) shifted))
          (arm (set-reg d result arm))
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
@@ -1178,13 +1178,13 @@
         (update-error *unpredictable* arm))
        ;; end EncodingSpecificOperations
        (arm (NullCheckIfThumbEE n arm))
-       (address (reg n arm))
+       (address (reg* n arm))
        ((mv address arm) (ldm-loop 0 registers address arm))
        (arm (if (== (getbit 15 registers) #b1)
                 (LoadWritePC (MemA address 4 arm) arm)
               (advance-pc arm)))
        (arm (if (and wback (== (getbit n registers) #b0))
-                (set-reg n (bvplus 32 (reg n arm) (* 4 (bitcount 16 registers))) arm)
+                (set-reg n (bvplus 32 (reg* n arm) (* 4 (bitcount 16 registers))) arm)
               arm))
        (arm (if (and wback (== (getbit n registers) #b1))
                 ;; todo: distinguish unknown vals when this is called by POP?
@@ -1223,7 +1223,7 @@
                   :guard-hints (("Goal" :in-theory (disable addressp)))
                   :stobjs arm))
   (b* ((arm (NullCheckIfThumbEE 13 arm))
-       (address (reg *sp* arm)) ; todo: any offset to SP like for PC?
+       (address (reg* *sp* arm)) ; todo: any offset to SP like for PC?
        ((mv address arm) (pop-loop 0 registers address UnalignedAllowed arm))
        (arm (if (== (getbit 15 registers) #b1)
                 (if UnalignedAllowed
@@ -1233,7 +1233,7 @@
                   (LoadWritePC (MemA address 4 arm) arm))
               (advance-pc arm)))
        (arm (if (== (getbit 13 registers) #b0)
-                (set-reg *sp* (bvplus 32 (reg *sp* arm) (* 4 (bitcount 16 registers))) arm)
+                (set-reg *sp* (bvplus 32 (reg* *sp* arm) (* 4 (bitcount 16 registers))) arm)
               arm))
        (arm (if (== (getbit 13 registers) #b1)
                 (set-reg *sp* (unknown-bits 32 :pop-common arm) arm)
@@ -1276,13 +1276,13 @@
                      (>= (ArchVersion arm) 7)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (address (bvplus 32 (reg n arm) (bvplus 32 (bvuminus 32 (* 4 (bitcount 16 registers))) 4)))
+         (address (bvplus 32 (reg* n arm) (bvplus 32 (bvuminus 32 (* 4 (bitcount 16 registers))) 4)))
          ((mv address arm) (ldm-loop 0 registers address arm))
          (arm (if (== (getbit 15 registers) #b1)
                   (LoadWritePC (MemA address 4 arm) arm)
                 (advance-pc arm)))
          (arm (if (and wback (== (getbit n registers) #b0))
-                  (set-reg n (bvminus 32 (reg n arm) (* 4 (BitCount 16 registers))) arm)
+                  (set-reg n (bvminus 32 (reg* n arm) (* 4 (BitCount 16 registers))) arm)
                 arm))
          (arm (if (and wback (== (getbit n registers) #b1))
                   (set-reg n (unknown-bits 32 :ldmda/ldmfa arm) arm)
@@ -1305,13 +1305,13 @@
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
          (arm (NullCheckIfThumbEE n arm))
-         (address (bvminus 32 (reg n arm) (* 4 (bitcount 16 registers))))
+         (address (bvminus 32 (reg* n arm) (* 4 (bitcount 16 registers))))
          ((mv address arm) (ldm-loop 0 registers address arm))
          (arm (if (== (getbit 15 registers) #b1)
                   (LoadWritePC (MemA address 4 arm) arm)
                 (advance-pc arm)))
          (arm (if (and wback (== (getbit n registers) #b0))
-                  (set-reg n (bvminus 32 (reg n arm) (* 4 (BitCount 16 registers))) arm)
+                  (set-reg n (bvminus 32 (reg* n arm) (* 4 (BitCount 16 registers))) arm)
                 arm))
          (arm (if (and wback (== (getbit n registers) #b1))
                   (set-reg n (unknown-bits 32 :ldmdb/ldmea arm) arm)
@@ -1333,13 +1333,13 @@
                      (>= (ArchVersion arm) 7)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations ;; todo: check for missing nullchecks everywhere
-         (address (bvplus 32 (reg n arm) 4))
+         (address (bvplus 32 (reg* n arm) 4))
          ((mv address arm) (ldm-loop 0 registers address arm))
          (arm (if (== (getbit 15 registers) #b1)
                   (LoadWritePC (MemA address 4 arm) arm)
                 (advance-pc arm)))
          (arm (if (and wback (== (getbit n registers) #b0))
-                  (set-reg n (bvplus 32 (reg n arm) (* 4 (bitcount 16 registers))) arm)
+                  (set-reg n (bvplus 32 (reg* n arm) (* 4 (bitcount 16 registers))) arm)
                 arm))
          (arm (if (and wback (== (getbit n registers) #b1))
                   (set-reg n (unknown-bits 32 :ldmib/ldmed arm) arm)
@@ -1368,9 +1368,9 @@
                               (natp shift_n))
                   :stobjs arm))
   (b* ((arm (NullCheckIfThumbEE n arm))
-       (offset (if register_form (Shift 32 (reg m arm) shift_t shift_n (apsr.c arm)) imm32))
-       (offset_addr (if add (bvplus 32 (reg n arm) offset) (bvminus 32 (reg n arm) offset)))
-       (address (if postindex (reg n arm) offset_addr))
+       (offset (if register_form (Shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)) imm32))
+       (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
+       (address (if postindex (reg* n arm) offset_addr))
        (data (MemU_unpriv address 4 arm))
        (arm (if postindex
                 (set-reg n offset_addr arm)
@@ -1523,8 +1523,8 @@
                      (== n tval)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (offset_addr (if add (bvplus 32 (reg n arm) imm32) (bvminus 32 (reg n arm) imm32)))
-         (address (if index offset_addr (reg n arm)))
+         (offset_addr (if add (bvplus 32 (reg* n arm) imm32) (bvminus 32 (reg* n arm) imm32)))
+         (address (if index offset_addr (reg* n arm)))
          (data (MemU address 4 arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
@@ -1568,9 +1568,9 @@
                      (== m n)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (offset (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (offset_addr (if add (bvplus 32 (reg n arm) offset) (bvminus 32 (reg n arm) offset)))
-         (address (if index offset_addr (reg n arm)))
+         (offset (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
+         (address (if index offset_addr (reg* n arm)))
          (data (MemU address 4 arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
@@ -1607,9 +1607,9 @@
                               (natp shift_n))
                   :stobjs arm))
   (b* ((arm (NullCheckIfThumbEE n arm))
-       (offset (if register_form (Shift 32 (reg m arm) shift_t shift_n (apsr.c arm)) imm32))
-       (offset_addr (if add (bvplus 32 (reg n arm) offset) (bvminus 32 (reg n arm) offset)))
-       (address (if postindex (reg n arm) offset_addr))
+       (offset (if register_form (Shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)) imm32))
+       (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
+       (address (if postindex (reg* n arm) offset_addr))
        (arm (set-reg tval (ZeroExtend (MemU_unpriv address 1 arm) 32) arm))
        (arm (if postindex
                 (set-reg n offset_addr arm)
@@ -1732,8 +1732,8 @@
                          (== n tval))))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (offset_addr (if add (bvplus 32 (reg n arm) imm32) (bvminus 32 (reg n arm) imm32)))
-         (address (if index offset_addr (reg n arm)))
+         (offset_addr (if add (bvplus 32 (reg* n arm) imm32) (bvminus 32 (reg* n arm) imm32)))
+         (address (if index offset_addr (reg* n arm)))
          (arm (set-reg tval (ZeroExtend (MemU address 1 arm) 32) arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
@@ -1767,9 +1767,9 @@
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
          (arm (NullCheckIfThumbEE n arm))
-         (offset (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (offset_addr (if add (bvplus 32 (reg n arm) offset) (bvminus 32 (reg n arm) offset)))
-         (address (if index offset_addr (reg n arm)))
+         (offset (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
+         (address (if index offset_addr (reg* n arm)))
          (arm (set-reg tval (ZeroExtend (MemU address 1 arm) 32) arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
@@ -1846,9 +1846,9 @@
          ;; end EncodingSpecificOperations
          (arm (NullCheckIfThumbEE n arm))
          (offset_addr (if add
-                          (bvplus 32 (reg n arm) imm32)
-                        (bvminus 32 (reg n arm) imm32)))
-         (address (if index offset_addr (reg n arm)))
+                          (bvplus 32 (reg* n arm) imm32)
+                        (bvminus 32 (reg* n arm) imm32)))
+         (address (if index offset_addr (reg* n arm)))
          (arm (if (and (HaveLPAE)
                        (== (slice 2 0 address) #b000))
                   (let ((data (MemA address 8 arm)))
@@ -1903,9 +1903,9 @@
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
          (offset_addr (if add
-                          (bvplus 32 (reg n arm) (reg m arm))
-                        (bvminus 32 (reg n arm) (reg m arm))))
-         (address (if index offset_addr (reg n arm)))
+                          (bvplus 32 (reg* n arm) (reg* m arm))
+                        (bvminus 32 (reg* n arm) (reg* m arm))))
+         (address (if index offset_addr (reg* n arm)))
          (arm (if (and (HaveLPAE)
                        (== (slice 2 0 address) #b000))
                   (let ((data (MemA address 8 arm)))
@@ -1943,9 +1943,9 @@
                               (unsigned-byte-p 32 imm32))
                   :stobjs arm))
   (b* ((arm (NullCheckIfThumbEE n arm))
-       (offset (if register_form (reg m arm) imm32))
-       (offset_addr (if add (bvplus 32 (reg n arm) offset) (bvminus 32 (reg n arm) offset)))
-       (address (if postindex (reg n arm) offset_addr))
+       (offset (if register_form (reg* m arm) imm32))
+       (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
+       (address (if postindex (reg* n arm) offset_addr))
        (data (MemU_unpriv address 2 arm))
        (arm (if postindex
                 (set-reg n offset_addr arm)
@@ -2072,8 +2072,8 @@
                          (== n tval))))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (offset_addr (if add (bvplus 32 (reg n arm) imm32) (bvminus 32 (reg n arm) imm32)))
-         (address (if index offset_addr (reg n arm)))
+         (offset_addr (if add (bvplus 32 (reg* n arm) imm32) (bvminus 32 (reg* n arm) imm32)))
+         (address (if index offset_addr (reg* n arm)))
          (data (MemU address 2 arm))
          (arm (if wback (set-reg n offset_addr arm) arm))
          (arm (if (or (UnalignedSupport)
@@ -2109,9 +2109,9 @@
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
          (arm (NullCheckIfThumbEE n arm))
-         (offset (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (offset_addr (if add (bvplus 32 (reg n arm) offset) (bvminus 32 (reg n arm) offset)))
-         (address (if index offset_addr (reg n arm)))
+         (offset (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
+         (address (if index offset_addr (reg* n arm)))
          (data (MemU address 2 arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
@@ -2139,7 +2139,7 @@
        (m (uint 4 rm))
        (setflags (== s #b1))
        ;; end EncodingSpecificOperations
-       (result (reg m arm)))
+       (result (reg* m arm)))
     (if (== d 15)
         (ALUWritePC result arm)
       (b* ((arm (set-reg d result arm))
@@ -2167,7 +2167,7 @@
          (setflags (== s #b1))
          ((mv & shift_n) (decodeImmShift #b00 imm5))
          ;; end EncodingSpecificOperations
-         ((mv result carry) (shift_c 32 (reg m arm) *SRType_LSL* shift_n (apsr.c arm))))
+         ((mv result carry) (shift_c 32 (reg* m arm) *SRType_LSL* shift_n (apsr.c arm))))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -2193,8 +2193,8 @@
                     (== m 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg m arm))))
-         ((mv result carry) (shift_c 32 (reg n arm) *SRType_LSL* shift_n (apsr.c arm)))
+         (shift_n (uint 8 (slice 7 0 (reg* m arm))))
+         ((mv result carry) (shift_c 32 (reg* n arm) *SRType_LSL* shift_n (apsr.c arm)))
          (arm (set-reg d result arm))
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
@@ -2220,7 +2220,7 @@
          (setflags (== s #b1))
          ((mv & shift_n) (decodeImmShift #b01 imm5))
          ;; end EncodingSpecificOperations
-         ((mv result carry) (shift_c 32 (reg m arm) *SRType_LSR* shift_n (apsr.c arm))))
+         ((mv result carry) (shift_c 32 (reg* m arm) *SRType_LSR* shift_n (apsr.c arm))))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -2246,8 +2246,8 @@
                     (== m 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg m arm))))
-         ((mv result carry) (shift_c 32 (reg n arm) *SRType_LSR* shift_n (apsr.c arm)))
+         (shift_n (uint 8 (slice 7 0 (reg* m arm))))
+         ((mv result carry) (shift_c 32 (reg* n arm) *SRType_LSR* shift_n (apsr.c arm)))
          (arm (set-reg d result arm))
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
@@ -2278,9 +2278,9 @@
                      (== d n)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (operand1 (sint 32 (reg n arm)))
-         (operand2 (sint 32 (reg m arm)))
-         (addend (sint 32 (reg a arm)))
+         (operand1 (sint 32 (reg* n arm)))
+         (operand2 (sint 32 (reg* m arm)))
+         (addend (sint 32 (reg* a arm)))
          (result (+ (* operand1 operand2) addend))
          (arm (set-reg d (slice 31 0 result) arm))
          (arm (if setflags
@@ -2311,9 +2311,9 @@
                     (== a 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (operand1 (sint 32 (reg n arm)))
-         (operand2 (sint 32 (reg m arm)))
-         (addend (sint 32 (reg a arm)))
+         (operand1 (sint 32 (reg* n arm)))
+         (operand2 (sint 32 (reg* m arm)))
+         (addend (sint 32 (reg* a arm)))
          (result (- addend (* operand1 operand2)))
          (arm (set-reg d (slice 31 0 result) arm))
          (arm (advance-pc arm)))
@@ -2363,7 +2363,7 @@
          ((when (== d 15))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (arm (set-reg d (putbits 32 31 16 imm16 (reg d arm)) arm))
+         (arm (set-reg d (putbits 32 31 16 imm16 (reg* d arm)) arm))
          (arm (advance-pc arm)))
       arm))
 
@@ -2372,8 +2372,8 @@
 ;; (thm
 ;;  (implies (and (register-numberp d)
 ;;                (not (== d 15)))
-;;           (equal (slice 15 0 (reg d (execute-movt args inst-address arm)))
-;;                  (slice 15 0 (reg d arm))))
+;;           (equal (slice 15 0 (reg* d (execute-movt args inst-address arm)))
+;;                  (slice 15 0 (reg* d arm))))
 ;;  :hints (("Goal" :in-theory (enable execute-movt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2451,15 +2451,15 @@
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
          (arm (if write_nzcqv
-                  (let* ((arm (set-apsr.n (getbit 31 (reg n arm)) arm))
-                         (arm (set-apsr.z (getbit 30 (reg n arm)) arm))
-                         (arm (set-apsr.c (getbit 29 (reg n arm)) arm))
-                         (arm (set-apsr.v (getbit 28 (reg n arm)) arm))
-                         (arm (set-apsr.q (getbit 27 (reg n arm)) arm)))
+                  (let* ((arm (set-apsr.n (getbit 31 (reg* n arm)) arm))
+                         (arm (set-apsr.z (getbit 30 (reg* n arm)) arm))
+                         (arm (set-apsr.c (getbit 29 (reg* n arm)) arm))
+                         (arm (set-apsr.v (getbit 28 (reg* n arm)) arm))
+                         (arm (set-apsr.q (getbit 27 (reg* n arm)) arm)))
                     arm)
                 arm))
          (arm (if write_g
-                  (let* ((arm (set-apsr.ge (slice 19 16 (reg n arm)) arm)))
+                  (let* ((arm (set-apsr.ge (slice 19 16 (reg* n arm)) arm)))
                     arm)
                 arm))
          (arm (advance-pc arm)))
@@ -2481,8 +2481,8 @@
                      (== d n)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (operand1 (sint 32 (reg n arm)))
-         (operand2 (sint 32 (reg m arm)))
+         (operand1 (sint 32 (reg* n arm)))
+         (operand2 (sint 32 (reg* m arm)))
          (result (* operand1 operand2))
          (arm (set-reg d (slice 31 0 result) arm))
          (arm (if setflags
@@ -2512,7 +2512,7 @@
                    (== d n)))
         (update-error *unpredictable* arm))
        ;; end EncodingSpecificOperations
-       (my-result (bvmult 32 (reg n arm) (reg m arm)))
+       (my-result (bvmult 32 (reg* n arm) (reg* m arm)))
        (arm (set-reg d my-result arm))
        (arm (if setflags
                 (let* ((arm (set-apsr.n (getbit 31 my-result) arm))
@@ -2570,7 +2570,7 @@
          (setflags (== s #b1))
          ((mv shift_t shift_n) (decodeImmShift type imm5))
          ;; end EncodingSpecificOperations
-         ((mv shifted carry) (shift_c 32 (reg m arm) shift_t shift_n (apsr.c arm)))
+         ((mv shifted carry) (shift_c 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
          (result (bvnot 32 shifted)))
       (if (== d 15)
           (ALUWritePC result arm)
@@ -2598,8 +2598,8 @@
                     (== sval 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg sval arm))))
-         ((mv shifted carry) (shift_c 32 (reg m arm) shift_t shift_n (apsr.c arm)))
+         (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+         ((mv shifted carry) (shift_c 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
          (result (bvnot 32 shifted))
          (arm (set-reg d result arm))
          (arm (if setflags
@@ -2630,7 +2630,7 @@
          (setflags (== s #b1))
          ((mv imm32 carry) (ARMExpandImm_C imm12 (apsr.c arm)))
          ;; end EncodingSpecificOperations
-         (result (or32 (reg n arm) imm32)))
+         (result (or32 (reg* n arm) imm32)))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -2656,8 +2656,8 @@
          (setflags (== s #b1))
          ((mv shift_t shift_n) (decodeImmShift type imm5))
          ;; end EncodingSpecificOperations
-         ((mv shifted carry) (shift_c 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (result (or32 (reg n arm) shifted)))
+         ((mv shifted carry) (shift_c 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (result (or32 (reg* n arm) shifted)))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -2686,9 +2686,9 @@
                     (== sval 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg sval arm))))
-         ((mv shifted carry) (shift_c 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (result (or32 (reg n arm) shifted))
+         (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+         ((mv shifted carry) (shift_c 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (result (or32 (reg* n arm) shifted))
          (arm (set-reg d result arm))
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
@@ -2721,10 +2721,10 @@
                     (== m 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (result (acl2::bvcat2 8 (slice 7 0 (reg m arm))
-                               8 (slice 15 8 (reg m arm))
-                               8 (slice 23 16 (reg m arm))
-                               8 (slice 31 24 (reg m arm))))
+         (result (acl2::bvcat2 8 (slice 7 0 (reg* m arm))
+                               8 (slice 15 8 (reg* m arm))
+                               8 (slice 23 16 (reg* m arm))
+                               8 (slice 31 24 (reg* m arm))))
          (arm (set-reg d result arm))
          (arm (advance-pc arm)))
       arm))
@@ -2739,10 +2739,10 @@
                     (== m 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (result (acl2::bvcat2 8 (slice 23 16 (reg m arm))
-                         8 (slice 31 24 (reg m arm))
-                         8 (slice 7 0 (reg m arm))
-                         8 (slice 15 8 (reg m arm))))
+         (result (acl2::bvcat2 8 (slice 23 16 (reg* m arm))
+                         8 (slice 31 24 (reg* m arm))
+                         8 (slice 7 0 (reg* m arm))
+                         8 (slice 15 8 (reg* m arm))))
          (arm (set-reg d result arm))
          (arm (advance-pc arm)))
       arm))
@@ -2757,8 +2757,8 @@
                     (== m 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (result (bvcat 24 (SignExtend (slice 7 0 (reg m arm)) 8 24)
-                        8 (slice 15 8 (reg m arm))))
+         (result (bvcat 24 (SignExtend (slice 7 0 (reg* m arm)) 8 24)
+                        8 (slice 15 8 (reg* m arm))))
          (arm (set-reg d result arm))
          (arm (advance-pc arm)))
       arm))
@@ -2778,7 +2778,7 @@
        (m (uint 4 rm))
        (setflags (== s #b1))
        ;; end EncodingSpecificOperations
-       ((mv result carry) (shift_c 32 (reg m arm) *SRType_RRX* 1 (apsr.c arm))))
+       ((mv result carry) (shift_c 32 (reg* m arm) *SRType_RRX* 1 (apsr.c arm))))
     (if (== d 15)
         (ALUWritePC result arm)
       (b* ((arm (set-reg d result arm))
@@ -2810,7 +2810,7 @@
          (setflags (== s #b1))
          ((mv & shift_n) (decodeImmShift #b11 imm5))
          ;; end EncodingSpecificOperations
-         ((mv result carry) (shift_c 32 (reg m arm) *SRType_ROR* shift_n (apsr.c arm))))
+         ((mv result carry) (shift_c 32 (reg* m arm) *SRType_ROR* shift_n (apsr.c arm))))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -2838,8 +2838,8 @@
                     (== m 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 32 (slice 7 0 (reg m arm))))
-         ((mv result carry) (shift_c 32 (reg n arm) *SRType_ROR* shift_n (apsr.c arm)))
+         (shift_n (uint 32 (slice 7 0 (reg* m arm))))
+         ((mv result carry) (shift_c 32 (reg* n arm) *SRType_ROR* shift_n (apsr.c arm)))
          (arm (set-reg d result arm))
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
@@ -2865,7 +2865,7 @@
          (setflags (== s #b1))
          (imm32 (ARMExpandImm imm12 arm))
          ;; end EncodingSpecificOperations
-         ((mv result carry overflow) (AddWithCarry 32 (bvnot 32 (reg n arm)) imm32 1)))
+         ((mv result carry overflow) (AddWithCarry 32 (bvnot 32 (reg* n arm)) imm32 1)))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -2892,8 +2892,8 @@
          (setflags (== s #b1))
          ((mv shift_t shift_n) (decodeImmShift type imm5))
          ;; end EncodingSpecificOperations
-         (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ((mv result carry overflow) (AddWithCarry 32 (bvnot 32 (reg n arm)) shifted 1)))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         ((mv result carry overflow) (AddWithCarry 32 (bvnot 32 (reg* n arm)) shifted 1)))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -2921,9 +2921,9 @@
                     (== sval 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg sval arm))))
-         (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ((mv result carry overflow) (AddWithCarry 32 (bvnot 32 (reg n arm)) shifted 1))
+         (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         ((mv result carry overflow) (AddWithCarry 32 (bvnot 32 (reg* n arm)) shifted 1))
          (arm (set-reg d result arm))
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
@@ -2948,7 +2948,7 @@
          (setflags (== s #b1))
          (imm32 (ARMExpandImm imm12 arm))
          ;; end EncodingSpecificOperations
-         ((mv result carry overflow) (AddWithCarry 32 (bvnot 32 (reg n arm)) imm32 (apsr.c arm))))
+         ((mv result carry overflow) (AddWithCarry 32 (bvnot 32 (reg* n arm)) imm32 (apsr.c arm))))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -2975,8 +2975,8 @@
          (setflags (== s #b1))
          ((mv shift_t shift_n) (decodeImmShift type imm5))
          ;; end EncodingSpecificOperations
-         (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ((mv result carry overflow) (AddWithCarry 32 (bvnot 32 (reg n arm)) shifted  (apsr.c arm))))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         ((mv result carry overflow) (AddWithCarry 32 (bvnot 32 (reg* n arm)) shifted  (apsr.c arm))))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -3004,9 +3004,9 @@
                     (== sval 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg sval arm))))
-         (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ((mv result carry overflow) (AddWithCarry 32 (bvnot 32 (reg n arm)) shifted (apsr.c arm)))
+         (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         ((mv result carry overflow) (AddWithCarry 32 (bvnot 32 (reg* n arm)) shifted (apsr.c arm)))
          (arm (set-reg d result arm))
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
@@ -3031,7 +3031,7 @@
          (setflags (== s #b1))
          (imm32 (ARMExpandImm imm12 arm))
          ;; end EncodingSpecificOperations
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) (bvnot 32 imm32) (apsr.c arm))))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) (bvnot 32 imm32) (apsr.c arm))))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -3058,8 +3058,8 @@
          (setflags (== s #b1))
          ((mv shift_t shift_n) (decodeImmShift type imm5))
          ;; end EncodingSpecificOperations
-         (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) (bvnot 32 shifted) (apsr.c arm))))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) (bvnot 32 shifted) (apsr.c arm))))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -3087,9 +3087,9 @@
                     (== sval 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg sval arm))))
-         (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) (bvnot 32 shifted) (apsr.c arm)))
+         (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) (bvnot 32 shifted) (apsr.c arm)))
          (arm (set-reg d result arm))
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
@@ -3122,9 +3122,9 @@
                          (== dLo n))))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (result (+ (* (sint 32 (reg n arm))
-                       (sint 32 (reg m arm)))
-                    (sint 64 (bvcat 32 (reg dHi arm) 32 (reg dLo arm)))))
+         (result (+ (* (sint 32 (reg* n arm))
+                       (sint 32 (reg* m arm)))
+                    (sint 64 (bvcat 32 (reg* dHi arm) 32 (reg* dLo arm)))))
          (arm (set-reg dHi (slice 63 32 result) arm))
          (arm (set-reg dLo (slice 31 0 result) arm))
          (arm (if setflags
@@ -3164,8 +3164,8 @@
                          (== dLo n))))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (result (* (sint 32 (reg n arm))
-                    (sint 32 (reg m arm))))
+         (result (* (sint 32 (reg* n arm))
+                    (sint 32 (reg* m arm))))
          (arm (set-reg dHi (slice 63 32 result) arm))
          (arm (set-reg dLo (slice 31 0 result) arm))
          (arm (if setflags
@@ -3248,7 +3248,7 @@
          (setflags (== s #b1))
          (imm32 (ARMExpandImm imm12 arm))
          ;; end EncodingSpecificOperations
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) (bvnot 32 imm32) 1)))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) (bvnot 32 imm32) 1)))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -3277,7 +3277,7 @@
        (setflags (== s #b1))
        (imm32 (ARMExpandImm imm12 arm))
        ;; end EncodingSpecificOperations
-       (regn (reg n arm))
+       (regn (reg* n arm))
        ((mv result & &) (AddWithCarry 32 regn (bvnot 32 imm32) 1)))
     (if (== d 15)
         (ALUWritePC result arm)
@@ -3310,8 +3310,8 @@
          (setflags (== s #b1))
          ((mv shift_t shift_n) (decodeImmShift type imm5))
          ;; end EncodingSpecificOperations
-         (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) (bvnot 32 shifted) 1)))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) (bvnot 32 shifted) 1)))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -3339,9 +3339,9 @@
                     (== sval 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg sval arm))))
-         (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ((mv result carry overflow) (AddWithCarry 32 (reg n arm) (bvnot 32 shifted) 1))
+         (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         ((mv result carry overflow) (AddWithCarry 32 (reg* n arm) (bvnot 32 shifted) 1))
          (arm (set-reg d result arm))
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
@@ -3377,11 +3377,11 @@
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
          ((when (CurrentModeIsHyp)) (update-error *undefined* arm))
-         (data (ZeroExtend (memA (reg n arm) size arm) 32))
-         (arm (write_MemA (reg n arm) size (slice (* 8 (- size 1)) 0 (reg t2val arm)) arm))
+         (data (ZeroExtend (memA (reg* n arm) size arm) 32))
+         (arm (write_MemA (reg* n arm) size (slice (* 8 (- size 1)) 0 (reg* t2val arm)) arm))
          (arm (if (== size #b1)
                   (set-reg tval data arm)
-                (set-reg tval (ROR 32 data (* 8 (uint 2 (slice 1 0 (reg n arm))))) arm)))
+                (set-reg tval (ROR 32 data (* 8 (uint 2 (slice 1 0 (reg* n arm))))) arm)))
          (arm (advance-pc arm)))
       arm))
 
@@ -3392,7 +3392,7 @@
          (n (uint 4 rn))
          ((mv imm32 carry) (ARMExpandImm_C imm12 (apsr.c arm)))
          ;; end EncodingSpecificOperations
-         (result (eor32 (reg n arm) imm32))
+         (result (eor32 (reg* n arm) imm32))
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
@@ -3406,8 +3406,8 @@
          (m (uint 4 rm))
          ((mv shift_t shift_n) (decodeImmShift type imm5))
          ;; end EncodingSpecificOperations
-         ((mv shifted carry) (shift_c 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (result (eor32 (reg n arm) shifted))
+         ((mv shifted carry) (shift_c 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (result (eor32 (reg* n arm) shifted))
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
@@ -3426,9 +3426,9 @@
                     (== sval 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg sval arm))))
-         ((mv shifted carry) (shift_c 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (result (eor32 (reg n arm) shifted))
+         (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+         ((mv shifted carry) (shift_c 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (result (eor32 (reg* n arm) shifted))
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
@@ -3446,7 +3446,7 @@
        (n (uint 4 rn))
        ((mv imm32 carry) (ARMExpandImm_C imm12 (apsr.c arm)))
        ;; end EncodingSpecificOperations
-       (result (and32 (reg n arm) imm32))
+       (result (and32 (reg* n arm) imm32))
        (arm (set-apsr.n (getbit 31 result) arm))
        (arm (set-apsr.z (IsZeroBit 32 result) arm))
        (arm (set-apsr.c carry arm))
@@ -3463,8 +3463,8 @@
          (m (uint 4 rm))
          ((mv shift_t shift_n) (decodeImmShift type imm5))
          ;; end EncodingSpecificOperations
-         ((mv shifted carry) (shift_c 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (result (and32 (reg n arm) shifted))
+         ((mv shifted carry) (shift_c 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (result (and32 (reg* n arm) shifted))
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
@@ -3483,9 +3483,9 @@
                     (== sval 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (shift_n (uint 8 (slice 7 0 (reg sval arm))))
-         ((mv shifted carry) (shift_c 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (result (and32 (reg n arm) shifted))
+         (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+         ((mv shifted carry) (shift_c 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (result (and32 (reg* n arm) shifted))
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
@@ -3514,9 +3514,9 @@
                          (== dLo n))))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (result (+ (* (uint 32 (reg n arm))
-                       (uint 32 (reg m arm)))
-                    (uint 64 (bvcat 32 (reg dHi arm) 32 (reg dLo arm)))))
+         (result (+ (* (uint 32 (reg* n arm))
+                       (uint 32 (reg* m arm)))
+                    (uint 64 (bvcat 32 (reg* dHi arm) 32 (reg* dLo arm)))))
          (arm (set-reg dHi (slice 63 32 result) arm))
          (arm (set-reg dLo (slice 31 0 result) arm))
          (arm (if setflags
@@ -3554,8 +3554,8 @@
                          (== dLo n))))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (result (* (uint 32 (reg n arm))
-                    (uint 32 (reg m arm))))
+         (result (* (uint 32 (reg* n arm))
+                    (uint 32 (reg* m arm))))
          (arm (set-reg dHi (slice 63 32 result) arm))
          (arm (set-reg dLo (slice 31 0 result) arm))
          (arm (if setflags
@@ -3592,9 +3592,9 @@
                               (unsigned-byte-p 32 imm32))
                   :stobjs arm))
   (b* ((arm (NullCheckIfThumbEE n arm))
-       (offset (if register_form (reg m arm) imm32))
-       (offset_addr (if add (bvplus 32 (reg n arm) offset) (bvminus 32 (reg n arm) offset)))
-       (address (if postindex (reg n arm) offset_addr))
+       (offset (if register_form (reg* m arm) imm32))
+       (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
+       (address (if postindex (reg* n arm) offset_addr))
        (arm (set-reg tval (SignExtend (MemU_unpriv address 1 arm) 8 32) arm))
        (arm (if postindex
                 (set-reg n offset_addr arm)
@@ -3713,8 +3713,8 @@
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
          (arm (NullCheckIfThumbEE n arm))
-         (offset_addr (if add (bvplus 32 (reg n arm) imm32) (bvminus 32 (reg n arm) imm32)))
-         (address (if index offset_addr (reg n arm)))
+         (offset_addr (if add (bvplus 32 (reg* n arm) imm32) (bvminus 32 (reg* n arm) imm32)))
+         (address (if index offset_addr (reg* n arm)))
          (arm (set-reg tval (SignExtend (MemU address 1 arm) 8 32) arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
@@ -3748,9 +3748,9 @@
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
          (arm (NullCheckIfThumbEE n arm))
-         (offset (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (offset_addr (if add (bvplus 32 (reg n arm) offset) (bvminus 32 (reg n arm) offset)))
-         (address (if index offset_addr (reg n arm)))
+         (offset (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
+         (address (if index offset_addr (reg* n arm)))
          (arm (set-reg tval (SignExtend (MemU address 1 arm) 8 32) arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
@@ -3775,9 +3775,9 @@
                               (unsigned-byte-p 32 imm32))
                   :stobjs arm))
   (b* ((arm (NullCheckIfThumbEE n arm))
-       (offset (if register_form (reg m arm) imm32))
-       (offset_addr (if add (bvplus 32 (reg n arm) offset) (bvminus 32 (reg n arm) offset)))
-       (address (if postindex (reg n arm) offset_addr))
+       (offset (if register_form (reg* m arm) imm32))
+       (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
+       (address (if postindex (reg* n arm) offset_addr))
        (data (MemU_unpriv address 2 arm))
        (arm (if postindex
                 (set-reg n offset_addr arm)
@@ -3904,8 +3904,8 @@
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
          (arm (NullCheckIfThumbEE n arm))
-         (offset_addr (if add (bvplus 32 (reg n arm) imm32) (bvminus 32 (reg n arm) imm32)))
-         (address (if index offset_addr (reg n arm)))
+         (offset_addr (if add (bvplus 32 (reg* n arm) imm32) (bvminus 32 (reg* n arm) imm32)))
+         (address (if index offset_addr (reg* n arm)))
          (data (MemU address 2 arm))
          (arm (if wback (set-reg n offset_addr arm) arm))
          (arm (if (or (UnalignedSupport)
@@ -3941,9 +3941,9 @@
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
          (arm (NullCheckIfThumbEE n arm))
-         (offset (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (offset_addr (if add (bvplus 32 (reg n arm) offset) (bvminus 32 (reg n arm) offset)))
-         (address (if index offset_addr (reg n arm)))
+         (offset (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
+         (address (if index offset_addr (reg* n arm)))
          (data (MemU address 2 arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
@@ -3973,12 +3973,12 @@
                               (addressp inst-address))
                   :stobjs arm))
   (b* ((arm (NullCheckIfThumbEE n arm))
-       (offset (if register_form (Shift 32 (reg m arm) shift_t shift_n (apsr.c arm)) imm32))
-       (offset_addr (if add (bvplus 32 (reg n arm) offset) (bvminus 32 (reg n arm) offset)))
-       (address (if postindex (reg n arm) offset_addr))
+       (offset (if register_form (Shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)) imm32))
+       (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
+       (address (if postindex (reg* n arm) offset_addr))
        (data (if (== tval 15)
                  (PCStoreValue inst-address)
-               (reg tval arm)))
+               (reg* tval arm)))
        (arm (if (or (UnalignedSupport)
                     (== (slice 1 0 address) #b00)
                     (== (CurrentInstrSet arm) *InstrSet_ARM*))
@@ -4071,8 +4071,8 @@
                                    (!= i (LowestSetBit 16 registers)))
                               (write_MemA address 4 (unknown-bits 32 :push-loop arm) arm)
                             (if UnalignedAllowed
-                                (write_MemU address 4 (reg i arm) arm)
-                              (write_MemA address 4 (reg i arm) arm))))
+                                (write_MemU address 4 (reg* i arm) arm)
+                              (write_MemA address 4 (reg* i arm) arm))))
                      (address (bvplus 32 address 4)) ; call a + address function?
                      )
                 (mv address arm))
@@ -4091,7 +4091,7 @@
                   :guard-hints (("Goal" :in-theory (disable addressp)))
                   :stobjs arm))
   (b* ((arm (NullCheckIfThumbEE 13 arm))
-       (address (bvminus 32 (reg *sp* arm) ; todo: any offset to SP like for PC?
+       (address (bvminus 32 (reg* *sp* arm) ; todo: any offset to SP like for PC?
                          (* 4 (BitCount 16 registers))))
        ((mv address arm)
         (push-loop 0 registers address UnalignedAllowed arm))
@@ -4101,7 +4101,7 @@
                   (write_MemA address 4 (PCStoreValue inst-address) arm))
               arm))
        (arm (set-reg *sp*
-                     (bvminus 32 (reg *sp* arm) ; todo: any offset to SP like for PC?
+                     (bvminus 32 (reg* *sp* arm) ; todo: any offset to SP like for PC?
                               (* 4 (BitCount 16 registers)))
                      arm))
        (arm (advance-pc arm)))
@@ -4156,7 +4156,7 @@
                                    wback
                                    (!= i (LowestSetBit 16 registers)))
                               (write_MemA address 4 (unknown-bits 32 :stm-loop arm) arm) ; distinguish each case?
-                            (write_MemA address 4 (reg i arm) arm)))
+                            (write_MemA address 4 (reg* i arm) arm)))
                      (address (bvplus 32 address 4)))
                 (mv address arm))
             (mv address arm))))
@@ -4181,13 +4181,13 @@
         (update-error *unpredictable* arm))
        ;; end EncodingSpecificOperations
        (arm (NullCheckIfThumbEE n arm))
-       (address (bvminus 32 (reg n arm) (* 4 (bitcount 16 registers))))
+       (address (bvminus 32 (reg* n arm) (* 4 (bitcount 16 registers))))
        ((mv address arm) (stm-loop 0 registers address wback n arm))
        (arm (if (== (getbit 15 registers) #b1)
                 (write_MemA address 4 (PCStoreValue inst-address) arm)
               arm))
        (arm (if wback
-                (set-reg n (bvminus 32 (reg n arm) (* 4 (bitcount 16 registers))) arm)
+                (set-reg n (bvminus 32 (reg* n arm) (* 4 (bitcount 16 registers))) arm)
               arm))
        (arm (advance-pc arm)))
     arm))
@@ -4224,9 +4224,9 @@
                          (== n tval))))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (offset_addr (if add (bvplus 32 (reg n arm) imm32) (bvminus 32 (reg n arm) imm32)))
-         (address (if index offset_addr (reg n arm)))
-         (arm (write_MemU address 4 (if (== tval 15) (PCStoreValue inst-address) (reg tval arm)) arm))
+         (offset_addr (if add (bvplus 32 (reg* n arm) imm32) (bvminus 32 (reg* n arm) imm32)))
+         (address (if index offset_addr (reg* n arm)))
+         (arm (write_MemU address 4 (if (== tval 15) (PCStoreValue inst-address) (reg* tval arm)) arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
                 arm))
@@ -4258,12 +4258,12 @@
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
          (arm (NullCheckIfThumbEE n arm))
-         (offset (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (offset_addr (if add (bvplus 32 (reg n arm) offset) (bvminus 32 (reg n arm) offset)))
-         (address (if index offset_addr (reg n arm)))
+         (offset (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
+         (address (if index offset_addr (reg* n arm)))
          (data (if (== tval 15)
                    (PCStoreValue inst-address)
-                 (reg tval arm)))
+                 (reg* tval arm)))
          (arm (if (or (UnalignedSupport)
                       (== (slice 1 0 address) #b00)
                       (== (CurrentInstrSet arm) *InstrSet_ARM*))
@@ -4292,10 +4292,10 @@
                               (natp shift_n))
                   :stobjs arm))
   (b* ((arm (NullCheckIfThumbEE n arm))
-       (offset (if register_form (Shift 32 (reg m arm) shift_t shift_n (apsr.c arm)) imm32))
-       (offset_addr (if add (bvplus 32 (reg n arm) offset) (bvminus 32 (reg n arm) offset)))
-       (address (if postindex (reg n arm) offset_addr))
-       (arm (write_MemU_unpriv address 1 (slice 7 0 (reg tval arm)) arm))
+       (offset (if register_form (Shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)) imm32))
+       (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
+       (address (if postindex (reg* n arm) offset_addr))
+       (arm (write_MemU_unpriv address 1 (slice 7 0 (reg* tval arm)) arm))
        (arm (if postindex
                 (set-reg n offset_addr arm)
               arm))
@@ -4383,9 +4383,9 @@
                          (== n tval))))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (offset_addr (if add (bvplus 32 (reg n arm) imm32) (bvminus 32 (reg n arm) imm32)))
-         (address (if index offset_addr (reg n arm)))
-         (arm (write_MemU address 1 (slice 7 0 (reg tval arm)) arm))
+         (offset_addr (if add (bvplus 32 (reg* n arm) imm32) (bvminus 32 (reg* n arm) imm32)))
+         (address (if index offset_addr (reg* n arm)))
+         (arm (write_MemU address 1 (slice 7 0 (reg* tval arm)) arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
                 arm))
@@ -4418,10 +4418,10 @@
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
          (arm (NullCheckIfThumbEE n arm))
-         (offset (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (offset_addr (if add (bvplus 32 (reg n arm) offset) (bvminus 32 (reg n arm) offset)))
-         (address (if index offset_addr (reg n arm)))
-         (arm (write_MemU address 1 (slice 7 0 (reg tval arm)) arm))
+         (offset (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
+         (address (if index offset_addr (reg* n arm)))
+         (arm (write_MemU address 1 (slice 7 0 (reg* tval arm)) arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
                 arm))
@@ -4441,12 +4441,12 @@
                               (unsigned-byte-p 32 imm32))
                   :stobjs arm))
   (b* ((arm (NullCheckIfThumbEE n arm))
-       (offset (if register_form (reg m arm) imm32))
-       (offset_addr (if add (bvplus 32 (reg n arm) offset) (bvminus 32 (reg n arm) offset)))
-       (address (if postindex (reg n arm) offset_addr))
+       (offset (if register_form (reg* m arm) imm32))
+       (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
+       (address (if postindex (reg* n arm) offset_addr))
        (arm (if (or (UnalignedSupport)
                     (== (getbit 0 address) #b0))
-                (write_MemU_unpriv address 2 (slice 15 0 (reg tval arm)) arm)
+                (write_MemU_unpriv address 2 (slice 15 0 (reg* tval arm)) arm)
               (write_MemU_unpriv address 2 (unknown-bits 16 :strht-common arm) arm)))
        (arm (if postindex
                 (set-reg n offset_addr arm)
@@ -4529,11 +4529,11 @@
                          (== n tval))))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (offset_addr (if add (bvplus 32 (reg n arm) imm32) (bvminus 32 (reg n arm) imm32)))
-         (address (if index offset_addr (reg n arm)))
+         (offset_addr (if add (bvplus 32 (reg* n arm) imm32) (bvminus 32 (reg* n arm) imm32)))
+         (address (if index offset_addr (reg* n arm)))
          (arm (if (or (UnalignedSupport)
                       (== (getbit 0 address) #b0))
-                  (write_MemU address 2 (slice 15 0 (reg tval arm)) arm)
+                  (write_MemU address 2 (slice 15 0 (reg* tval arm)) arm)
                 (write_MemU address 2 (unknown-bits 16 :strh-immediate arm) arm)))
          (arm (if wback
                   (set-reg n offset_addr arm)
@@ -4567,12 +4567,12 @@
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
          (arm (NullCheckIfThumbEE n arm))
-         (offset (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         (offset_addr (if add (bvplus 32 (reg n arm) offset) (bvminus 32 (reg n arm) offset)))
-         (address (if index offset_addr (reg n arm)))
+         (offset (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
+         (address (if index offset_addr (reg* n arm)))
          (arm (if (or (UnalignedSupport)
                       (== (getbit 0 address) #b0))
-                  (write_MemU address 2 (slice 15 0 (reg tval arm)) arm)
+                  (write_MemU address 2 (slice 15 0 (reg* tval arm)) arm)
                 (write_MemU address 2 (unknown-bits 16 :strh-register arm) arm)))
          (arm (if wback
                   (set-reg n offset_addr arm)
@@ -4607,18 +4607,18 @@
          ;; end EncodingSpecificOperations
          (arm (NullCheckIfThumbEE n arm))
          (offset_addr (if add
-                          (bvplus 32 (reg n arm) imm32)
-                        (bvminus 32 (reg n arm) imm32)))
-         (address (if index offset_addr (reg n arm)))
+                          (bvplus 32 (reg* n arm) imm32)
+                        (bvminus 32 (reg* n arm) imm32)))
+         (address (if index offset_addr (reg* n arm)))
          (arm (if (and (HaveLPAE)
                        (== (slice 2 0 address) #b000))
                   (let* ((data (if (BigEndian)
-                                  (bvcat 32 (reg tval arm) 32 (reg t2 arm))
-                                 (bvcat 32 (reg t2 arm) 32 (reg tval arm))))
+                                  (bvcat 32 (reg* tval arm) 32 (reg* t2 arm))
+                                 (bvcat 32 (reg* t2 arm) 32 (reg* tval arm))))
                          (arm (write_MemA address 8 data arm)))
                     arm)
-                (let* ((arm (write_MemA address 4 (reg tval arm) arm))
-                       (arm (write_MemA (bvplus 32 address 4) 4 (reg t2 arm) arm)))
+                (let* ((arm (write_MemA address 4 (reg* tval arm) arm))
+                       (arm (write_MemA (bvplus 32 address 4) 4 (reg* t2 arm) arm)))
                   arm)))
          (arm (if wback
                   (set-reg n offset_addr arm)
@@ -4656,18 +4656,18 @@
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
          (offset_addr (if add
-                          (bvplus 32 (reg n arm) (reg m arm))
-                        (bvminus 32 (reg n arm) (reg m arm))))
-         (address (if index offset_addr (reg n arm)))
+                          (bvplus 32 (reg* n arm) (reg* m arm))
+                        (bvminus 32 (reg* n arm) (reg* m arm))))
+         (address (if index offset_addr (reg* n arm)))
          (arm (if (and (HaveLPAE)
                        (== (slice 2 0 address) #b000))
                   (let* ((data (if (BigEndian)
-                                  (bvcat 32 (reg tval arm) 32 (reg t2 arm))
-                                 (bvcat 32 (reg t2 arm) 32 (reg tval arm))))
+                                  (bvcat 32 (reg* tval arm) 32 (reg* t2 arm))
+                                 (bvcat 32 (reg* t2 arm) 32 (reg* tval arm))))
                          (arm (write_MemA address 8 data arm)))
                     arm)
-                (let* ((arm (write_MemA address 4 (reg tval arm) arm))
-                       (arm (write_MemA (bvplus 32 address 4) 4 (reg t2 arm) arm)))
+                (let* ((arm (write_MemA address 4 (reg* tval arm) arm))
+                       (arm (write_MemA (bvplus 32 address 4) 4 (reg* t2 arm) arm)))
                   arm)))
          (arm (if wback
                   (set-reg n offset_addr arm)
@@ -4688,13 +4688,13 @@
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
          (arm (NullCheckIfThumbEE n arm))
-         (address (reg n arm))
+         (address (reg* n arm))
          ((mv address arm) (stm-loop 0 registers address wback n arm))
          (arm (if (== (getbit 15 registers) #b1)
                   (write_MemA address 4 (PCStoreValue inst-address) arm)
                 arm))
          (arm (if wback
-                  (set-reg n (bvplus 32 (reg n arm) (* 4 (bitcount 16 registers))) arm)
+                  (set-reg n (bvplus 32 (reg* n arm) (* 4 (bitcount 16 registers))) arm)
                 arm))
          (arm (advance-pc arm)))
       arm))
@@ -4710,13 +4710,13 @@
                     (< (BitCount 16 registers) 1)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (address (bvplus 32 (reg n arm) (bvplus 32 (bvuminus 32 (* 4 (bitcount 16 registers))) 4)))
+         (address (bvplus 32 (reg* n arm) (bvplus 32 (bvuminus 32 (* 4 (bitcount 16 registers))) 4)))
          ((mv address arm) (stm-loop 0 registers address wback n arm))
          (arm (if (== (getbit 15 registers) #b1)
                   (write_MemA address 4 (PCStoreValue inst-address) arm)
                 arm))
          (arm (if wback
-                  (set-reg n (bvminus 32 (reg n arm) (* 4 (bitcount 16 registers))) arm)
+                  (set-reg n (bvminus 32 (reg* n arm) (* 4 (bitcount 16 registers))) arm)
                 arm))
          (arm (advance-pc arm)))
       arm))
@@ -4741,14 +4741,14 @@
                     (< (BitCount 16 registers) 1)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (address (bvplus 32 (reg n arm) 4))
+         (address (bvplus 32 (reg* n arm) 4))
          ((mv address arm) (stm-loop 0 registers address wback n arm))
 
          (arm (if (== (getbit 15 registers) #b1)
                   (write_MemA address 4 (PCStoreValue inst-address) arm)
                 arm))
          (arm (if wback
-                  (set-reg n (bvplus 32 (reg n arm) (* 4 (bitcount 16 registers))) arm)
+                  (set-reg n (bvplus 32 (reg* n arm) (* 4 (bitcount 16 registers))) arm)
                 arm))
          (arm (advance-pc arm)))
       arm))
@@ -4764,7 +4764,7 @@
                     (== m 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (rotated (ROR 32 (reg m arm) rotation))
+         (rotated (ROR 32 (reg* m arm) rotation))
          (arm (set-reg d (ZeroExtend (slice 7 0 rotated) 32) arm))
          (arm (advance-pc arm)))
       arm))
@@ -4780,7 +4780,7 @@
                     (== m 15)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
-         (rotated (ROR 32 (reg m arm) rotation))
+         (rotated (ROR 32 (reg* m arm) rotation))
          (arm (set-reg d (ZeroExtend (slice 15 0 rotated) 32) arm))
          (arm (advance-pc arm)))
       arm))

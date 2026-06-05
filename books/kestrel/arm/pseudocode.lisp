@@ -1190,3 +1190,31 @@
   (declare (xargs :guard (and (unsigned-byte-p 32 x)
                               (unsigned-byte-p 32 y))))
   (bvxor 32 x y))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; In the instruction semantic functions, access to register N must check
+;; whether N is *pc* and adjust by adding 8 (usually) if so.
+;todo: disable but need rules
+;; TODO: In some cases, this may be overkill because the register can't be the PC.
+;; In those cases, we could just use REG instead of REG*.
+(defun reg* (n arm)
+  (declare (xargs :guard (register-numberp n)
+                  :stobjs arm))
+  (let ((val (reg n arm)))
+    (if (equal *pc* n)
+        (let ((offset (if (equal (isetstate arm) *InstrSet_ARM*)
+                          8 ; todo: should this ever be 12?
+                        4 ; for Thumb (and ThumbEE)
+                        )))
+          (bvplus 32 offset val))
+      val)))
+
+(defthm unsigned-byte-p-of-reg*
+  (implies (and (<= 32 size)
+                (integerp size)
+                (< reg 16)
+                (natp reg)
+                (armp arm))
+           (unsigned-byte-p size (reg* reg arm)))
+  :hints (("Goal" :in-theory (enable reg*))))
