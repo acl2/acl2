@@ -1412,8 +1412,6 @@
              (type-arithmeticp y))
         (and (type-case y :unknown-arithmetic)
              (type-arithmeticp x))
-        ;; The case of X and Y both unknown scalar
-        ;; is covered by (EQUAL (TYPE-FIX X) (TYPE-FIX Y)) at the end.
         (type-case
           x
           :struct
@@ -1428,7 +1426,10 @@
                       (type-struni-tag/members-case
                         y.tag/members
                         :tagged
-                        (b* ((completions (type-completions-fix completions))
+                        (b* (((unless (equal x.tag/members.tag
+                                             y.tag/members.tag))
+                              nil)
+                             (completions (type-completions-fix completions))
                              (incomplete (uid-set-fix incomplete))
                              ((when (or (in x.uid incomplete)
                                         (in y.uid incomplete)))
@@ -1458,7 +1459,9 @@
                 (type-struni-tag/members-case
                   y.tag/members
                   :tagged
-                  (b* ((completions (type-completions-fix completions))
+                  (b* (((unless (equal x.tag/members.tag y.tag/members.tag))
+                        nil)
+                       (completions (type-completions-fix completions))
                        (incomplete (uid-set-fix incomplete))
                        ((when (or (in x.uid incomplete)
                                   (in y.uid incomplete)))
@@ -1497,7 +1500,8 @@
                       x.tag/members
                       :tagged (type-struni-tag/members-case
                                 y.tag/members
-                                :tagged t
+                                :tagged (equal x.tag/members.tag
+                                               y.tag/members.tag)
                                 :untagged nil)
                       :untagged (type-struni-tag/members-case
                                   y.tag/members
@@ -1508,7 +1512,7 @@
                 x.tag/members
                 :tagged (type-struni-tag/members-case
                           y.tag/members
-                          :tagged t
+                          :tagged (equal x.tag/members.tag y.tag/members.tag)
                           :untagged nil)
                 :untagged (type-struni-tag/members-case
                             y.tag/members
@@ -1934,10 +1938,10 @@
       outlined above.")
    (xdoc::ul
     (xdoc::li
-     "Two struct types are compared as if
+     "Two tagged struct types are compared as if
       they were declared in separate translation units [C23:6.2.7/1].")
     (xdoc::li
-     "Two union types are compared as if
+     "Two tagged union types are compared as if
       they were declared in separate translation units [C23:6.2.7/1]."))))
   (type-compatible-p-aux x y completions nil ienv))
 
@@ -2449,7 +2453,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define members-filter-contributers ((members type-struni-member-listp))
+(define members-filter-contributors ((members type-struni-member-listp))
   :returns (new-members type-struni-member-listp)
   :parents (contributes-named-members-p)
   :short "Filter out members which do not contribute any named members to the
@@ -2458,8 +2462,8 @@
          nil)
         ((contributes-named-members-p (first members))
          (cons (type-struni-member-fix (first members))
-               (members-filter-contributers (rest members))))
-        (t (members-filter-contributers (rest members)))))
+               (members-filter-contributors (rest members))))
+        (t (members-filter-contributors (rest members)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
