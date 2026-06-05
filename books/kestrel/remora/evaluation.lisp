@@ -603,15 +603,85 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :flag-local nil ; TODO: remove?
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   ///
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deffixequiv-mutual values-with-nonempty-dims))
+  (fty::deffixequiv-mutual values-with-nonempty-dims)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defruledl lemma1
+    (implies (and (nat-listp dims)
+                  (not (member-equal 0 dims))
+                  (consp dims)
+                  (equal (len vals) (nat-list-product dims)))
+             (posp (* (/ (car dims)) (len vals))))
+    :enable posp
+    :use nat-list-product-divided-by-car)
+
+  (defruledl lemma2
+    (implies (and (value-listp vals)
+                  (nat-listp dims)
+                  (not (member-equal 0 dims))
+                  (consp dims)
+                  (equal (len vals) (nat-list-product dims)))
+             (value-list-listp
+              (list-split vals (* (/ (car dims)) (len vals)))))
+    :enable posp
+    :disable value-list-listp-of-list-split
+    :use (nat-list-product-divided-by-car
+          (:instance value-list-listp-of-list-split
+                     (n (/ (len vals) (car dims))))))
+
+  (defret-mutual check-dims-of-values-with-nonempty-dims
+    (defret check-dims-of-value-with-nonempty-dims
+      (b* ((dims1 (check-dims-of-value val)))
+        (implies (and (nat-listp dims)
+                      (value-listp vals)
+                      (not (member-equal 0 dims))
+                      (equal (len vals) (nat-list-product dims))
+                      (value-list-wfp vals)
+                      (list-repeatp (dims-of-value-list vals)))
+                 (and (not (reserrp dims1))
+                      (equal dims1
+                             (append (nat-list-fix dims)
+                                     (car (dims-of-value-list vals)))))))
+      :fn value-with-nonempty-dims)
+    (defret check-dims-of-value-list-with-nonempty-dims
+      (b* ((dimss (check-dims-of-value-list vals)))
+        (implies (and (nat-listp dims)
+                      (value-list-listp valss)
+                      (not (member-equal 0 dims))
+                      (all-of-len-p valss (nat-list-product dims))
+                      (value-list-list-wfp valss)
+                      (list-repeatp (dims-of-value-list-list valss))
+                      (list-list-repeatp (dims-of-value-list-list valss)))
+                 (and (not (reserrp dimss))
+                      (equal dimss
+                             (repeat (len valss)
+                                     (append (nat-list-fix dims)
+                                             (car (car (dims-of-value-list-list
+                                                        valss)))))))))
+      :fn value-list-with-nonempty-dims)
+    :mutual-recursion values-with-nonempty-dims
+    :hints (("Goal"
+             :in-theory (enable value-with-nonempty-dims
+                                value-list-with-nonempty-dims
+                                check-dims-of-value
+                                check-dims-of-value-list
+                                acl2::not-reserrp-when-nat-listp
+                                acl2::not-reserrp-when-nat-list-listp
+                                value-wfp
+                                dims-of-value
+                                dims-of-value-list-list
+                                nat-list-product-of-cdr-to-ratio
+                                list-repeatp
+                                repeat
+                                car-of-repeat
+                                car-of-car-of-list-split
+                                lemma1
+                                lemma2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
