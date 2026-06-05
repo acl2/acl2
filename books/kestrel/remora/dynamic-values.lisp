@@ -537,6 +537,13 @@
 
   ///
 
+  (defruled dims-of-value-list-list-of-cdr
+    (equal (dims-of-value-list-list (cdr valss))
+           (cdr (dims-of-value-list-list valss))))
+
+  (theory-invariant (incompatible (:rewrite dims-of-value-list-list-of-cdr)
+                                  (:rewrite cdr-of-dims-of-value-list-list)))
+
   (defrule dims-of-value-list-list-of-list-split
     (equal (dims-of-value-list-list (list-split vals n))
            (list-split (dims-of-value-list vals) n))
