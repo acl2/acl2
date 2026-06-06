@@ -522,8 +522,7 @@
     (equal (value-list-wfp x)
            (not (reserrp (check-dims-of-value-list x))))
     :induct t
-    :enable (value-list-wfp
-             check-dims-of-value-list
+    :enable (check-dims-of-value-list
              value-wfp
              acl2::not-reserrp-when-nat-list-listp)))
 
