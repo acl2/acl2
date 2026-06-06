@@ -673,32 +673,32 @@
   (defret-mutual check-dims-of-values-with-nonempty-dims
     (defret check-dims-of-value-with-nonempty-dims
       (b* ((dims1 (check-dims-of-value val)))
-        (implies (and (nat-listp dims)
-                      (value-listp vals)
-                      (not (member-equal 0 dims))
-                      (equal (len vals) (nat-list-product dims))
-                      (value-list-wfp vals)
-                      (list-repeatp (dims-of-value-list vals)))
-                 (and (not (reserrp dims1))
-                      (equal dims1
-                             (append (nat-list-fix dims)
-                                     (car (dims-of-value-list vals)))))))
+        (and (not (reserrp dims1))
+             (equal dims1
+                    (append (nat-list-fix dims)
+                            (car (dims-of-value-list vals))))))
+      :hyp (and (nat-listp dims)
+                (value-listp vals)
+                (not (member-equal 0 dims))
+                (equal (len vals) (nat-list-product dims))
+                (value-list-wfp vals)
+                (list-repeatp (dims-of-value-list vals)))
       :fn value-with-nonempty-dims)
     (defret check-dims-of-value-list-with-nonempty-dims
       (b* ((dimss (check-dims-of-value-list vals)))
-        (implies (and (nat-listp dims)
-                      (value-list-listp valss)
-                      (not (member-equal 0 dims))
-                      (all-of-len-p valss (nat-list-product dims))
-                      (value-list-list-wfp valss)
-                      (list-repeatp (dims-of-value-list-list valss))
-                      (list-list-repeatp (dims-of-value-list-list valss)))
-                 (and (not (reserrp dimss))
-                      (equal dimss
-                             (repeat (len valss)
-                                     (append (nat-list-fix dims)
-                                             (car (car (dims-of-value-list-list
-                                                        valss)))))))))
+        (and (not (reserrp dimss))
+             (equal dimss
+                    (repeat (len valss)
+                            (append (nat-list-fix dims)
+                                    (car (car (dims-of-value-list-list
+                                               valss))))))))
+      :hyp (and (nat-listp dims)
+                (value-list-listp valss)
+                (not (member-equal 0 dims))
+                (all-of-len-p valss (nat-list-product dims))
+                (value-list-list-wfp valss)
+                (list-repeatp (dims-of-value-list-list valss))
+                (list-list-repeatp (dims-of-value-list-list valss)))
       :fn value-list-with-nonempty-dims)
     :mutual-recursion values-with-nonempty-dims
     :hints (("Goal"
