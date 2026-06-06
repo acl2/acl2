@@ -784,7 +784,27 @@
               (value-list-wfp vals)
               (list-repeatp (dims-of-value-list vals)))
     :fn value-with-nonempty-dims
-    :hints (("Goal" :in-theory (enable dims-of-value)))))
+    :hints (("Goal" :in-theory (enable dims-of-value))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret dims-of-value-list-of-value-list-with-nonempty-dims
+    (equal (dims-of-value-list vals)
+           (repeat (len valss)
+                   (append (nat-list-fix dims)
+                           (car (car (dims-of-value-list-list valss))))))
+    :hyp (and (nat-listp dims)
+              (value-list-listp valss)
+              (not (member-equal 0 dims))
+              (all-of-len-p valss (nat-list-product dims))
+              (value-list-list-wfp valss)
+              (list-repeatp (dims-of-value-list-list valss))
+              (list-list-repeatp (dims-of-value-list-list valss)))
+    :fn value-list-with-nonempty-dims
+    :hints (("Goal"
+             :use (:instance
+                   dims-of-value-list-when-value-list-wfp
+                   (vals (value-list-with-nonempty-dims dims valss)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
