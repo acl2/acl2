@@ -19,6 +19,7 @@
 
 (local (include-book "arithmetic"))
 
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 (local (include-book "std/basic/ifix" :dir :system))
@@ -495,7 +496,19 @@
                     (equal dimss (repeat n dims)))))
     :induct (repeat n dims)
     :enable (repeat
-             acl2::not-reserrp-when-nat-list-listp)))
+             acl2::not-reserrp-when-nat-list-listp))
+
+  (defruled check-dims-of-value-list-of-value-base-list
+    (equal (check-dims-of-value-list (value-base-list bvs))
+           (repeat (len bvs) nil))
+    :induct (value-base-list bvs)
+    :enable (value-base-list
+             check-dims-of-value-list
+             check-dims-of-value
+             repeat
+             len
+             acl2::not-reserrp-when-nat-list-listp)
+    :prep-books ((local (include-book "arithmetic-3/top" :dir :system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -507,7 +520,43 @@
    (xdoc::p
     "The value must satisfy the dimension constraints.
      We will extend this to also add the satisfaction of type constraints."))
-  (not (reserrp (check-dims-of-value val))))
+  (not (reserrp (check-dims-of-value val)))
+
+  ///
+
+  (defrule value-wfp-of-value-base
+    (value-wfp (value-base base))
+    :enable (value-wfp check-dims-of-value))
+
+  (defrule value-wfp-of-value-lambda
+    (value-wfp (value-lambda params body))
+    :enable (value-wfp check-dims-of-value))
+
+  (defrule value-wfp-of-value-tlambda
+    (value-wfp (value-tlambda params body))
+    :enable (value-wfp check-dims-of-value))
+
+  (defrule value-wfp-of-value-ilambda
+    (value-wfp (value-ilambda params body))
+    :enable (value-wfp check-dims-of-value))
+
+  (defrule value-wfp-of-value-vector-empty
+    (value-wfp (value-vector-empty dims elem))
+    :enable (value-wfp
+             check-dims-of-value
+             acl2::not-reserrp-when-nat-listp))
+
+  (defrule value-wfp-of-value-vector-of-value-base-list
+    (implies (consp bvs)
+             (value-wfp (value-vector (value-base-list bvs))))
+    :enable (value-wfp
+             check-dims-of-value
+             check-dims-of-value-list-of-value-base-list
+             acl2::consp-of-repeat
+             car-of-repeat
+             list-repeatp-of-repeat
+             acl2::not-reserrp-when-nat-listp
+             acl2::not-reserrp-when-nat-list-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

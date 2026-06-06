@@ -1025,4 +1025,41 @@
 
   ///
 
-  (fty::deffixequiv-mutual eval-exprs/atoms/binds))
+  (fty::deffixequiv-mutual eval-exprs/atoms/binds)
+
+  (defret-mutual value-wfp-of-eval-exprs/atoms/binds
+    (defret value-wfp-of-eval-expr
+      (implies (and (denv-wfp denv)
+                    (not (reserrp val)))
+               (value-wfp val))
+      :fn eval-expr)
+    (defret value-list-wfp-of-eval-expr-list
+      (implies (and (denv-wfp denv)
+                    (not (reserrp vals)))
+               (value-list-wfp vals))
+      :fn eval-expr-list)
+    (defret value-wfp-of-eval-atom
+      (implies (and (denv-wfp denv)
+                    (not (reserrp val)))
+               (value-wfp val))
+      :fn eval-atom)
+    (defret value-list-wfp-of-eval-atom-list
+      (implies (and (denv-wfp denv)
+                    (not (reserrp vals)))
+               (value-list-wfp vals))
+      :fn eval-atom-list)
+    (defret denv-wfp-of-eval-bind
+      (implies (and (denv-wfp denv)
+                    (not (reserrp new-denv)))
+               (denv-wfp new-denv))
+      :fn eval-bind)
+    (defret denv-wfp-of-eval-bind-list
+      (implies (and (denv-wfp denv)
+                    (not (reserrp new-denv)))
+               (denv-wfp new-denv))
+      :fn eval-bind-list)
+    :mutual-recursion eval-exprs/atoms/binds
+    :hints
+    (("Goal"
+      :in-theory (enable value-wfp-of-cdr-of-assoc-when-denv-wfp)
+      :expand ((eval-bind-list binds denv))))))
