@@ -108,3 +108,48 @@
   :short "Fixtype of dynamic environments and errors."
   :ok denv
   :pred denv-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define string-value-map-wfp ((map string-value-mapp))
+  :returns (yes/no booleanp)
+  :short "Check that all the values in a string-to-value map
+          are well-formed."
+  (or (omap::emptyp (string-value-map-fix map))
+      (and (value-wfp (omap::head-val map))
+           (string-value-map-wfp (omap::tail map))))
+
+  ///
+
+  (defruled value-wfp-of-cdr-of-assoc-when-string-value-map-wfp
+    (implies (and (string-value-mapp map)
+                  (string-value-map-wfp map)
+                  (omap::assoc key map))
+             (value-wfp (cdr (omap::assoc key map))))
+    :induct t
+    :enable omap::assoc))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define denv-wfp ((denv denvp))
+  :returns (yes/no booleanp)
+  :short "Check that the (expression) values in a dynamic environment
+          are well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a minimal notion of well-formedness,
+     concerning just the values bound to expression variables.
+     We may extend it, or fold it into a broader notion,
+     when we introduce well-formedness conditions
+     on the ispace and type variables as well."))
+  (string-value-map-wfp (denv->expr-vars denv))
+
+  ///
+
+  (defruled value-wfp-of-cdr-of-assoc-when-denv-wfp
+    (implies (and (denv-wfp denv)
+                  (omap::assoc key (denv->expr-vars denv)))
+             (value-wfp (cdr (omap::assoc key (denv->expr-vars denv)))))
+    :enable (denv-wfp
+             value-wfp-of-cdr-of-assoc-when-string-value-map-wfp)))
