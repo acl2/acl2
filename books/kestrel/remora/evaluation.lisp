@@ -500,7 +500,10 @@
      for the remaining dimensions (which must still include a 0)
      and the element type,
      and we replicate the value as many times as the first dimension,
-     to obtain the final vector value."))
+     to obtain the final vector value.")
+   (xdoc::p
+    "A key property is that the resulting value is well-formed
+     and has exactly the dimensions passed as input."))
   (b* (((when (not (mbt (consp dims)))) (value-vector-empty nil elem))
        (dim (lnfix (car dims))))
     (if (= dim 0)
@@ -529,7 +532,13 @@
     (value-wfp val)
     :hyp (member-equal 0 dims)
     :hints (("Goal" :in-theory (enable value-wfp
-                                       acl2::not-reserrp-when-nat-listp)))))
+                                       acl2::not-reserrp-when-nat-listp))))
+
+  (defret dims-of-value-of-value-with-empty-dim
+    (equal (dims-of-value val)
+           (nat-list-fix dims))
+    :hyp (member-equal 0 dims)
+    :hints (("Goal" :in-theory (enable dims-of-value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
