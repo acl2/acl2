@@ -758,6 +758,21 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (defret value-list-wfp-of-value-list-with-nonempty-dims
+    (value-list-wfp vals)
+    :hyp (and (nat-listp dims)
+              (value-list-listp valss)
+              (not (member-equal 0 dims))
+              (all-of-len-p valss (nat-list-product dims))
+              (value-list-list-wfp valss)
+              (list-repeatp (dims-of-value-list-list valss))
+              (list-list-repeatp (dims-of-value-list-list valss)))
+    :fn value-list-with-nonempty-dims
+    :hints (("Goal" :in-theory (enable value-list-wfp-alt-def
+                                       acl2::not-reserrp-when-nat-list-listp))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (defret dims-of-value-of-value-with-nonempty-dims
     (equal (dims-of-value val)
            (append (nat-list-fix dims)
