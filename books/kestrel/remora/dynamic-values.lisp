@@ -19,6 +19,7 @@
 
 (local (include-book "arithmetic"))
 
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 (local (include-book "std/basic/ifix" :dir :system))
@@ -189,6 +190,15 @@
   ((int int))
   :pred int-valuep)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist int-value-list
+  :short "Fixtype of lists of integer values."
+  :elt-type int-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred int-value-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum float-value
@@ -234,6 +244,22 @@
   (:int ((val int-value)))
   (:float ((val float-value)))
   :pred base-valuep)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist base-value-list
+  :short "Fixtype of lists of base values."
+  :elt-type base-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred base-value-listp)
+
+;;;;;;;;;;
+
+(std::defprojection base-value-int-list ((x int-value-listp))
+  :returns (vals base-value-listp)
+  :short "Lift @(tsee base-value-int) to lists."
+  (base-value-int x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -317,6 +343,13 @@
     :true-listp t
     :elementp-of-nil nil
     :pred value-listp))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection value-base-list ((x base-value-listp))
+  :returns (vals value-listp)
+  :short "Lift @(tsee value-base) to lists."
+  (value-base x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -463,7 +496,19 @@
                     (equal dimss (repeat n dims)))))
     :induct (repeat n dims)
     :enable (repeat
-             acl2::not-reserrp-when-nat-list-listp)))
+             acl2::not-reserrp-when-nat-list-listp))
+
+  (defruled check-dims-of-value-list-of-value-base-list
+    (equal (check-dims-of-value-list (value-base-list bvs))
+           (repeat (len bvs) nil))
+    :induct (value-base-list bvs)
+    :enable (value-base-list
+             check-dims-of-value-list
+             check-dims-of-value
+             repeat
+             len
+             acl2::not-reserrp-when-nat-list-listp)
+    :prep-books ((local (include-book "arithmetic-3/top" :dir :system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -475,14 +520,60 @@
    (xdoc::p
     "The value must satisfy the dimension constraints.
      We will extend this to also add the satisfaction of type constraints."))
-  (not (reserrp (check-dims-of-value val))))
+  (not (reserrp (check-dims-of-value val)))
+
+  ///
+
+  (defrule value-wfp-of-value-base
+    (value-wfp (value-base base))
+    :enable (value-wfp check-dims-of-value))
+
+  (defrule value-wfp-of-value-lambda
+    (value-wfp (value-lambda params body))
+    :enable (value-wfp check-dims-of-value))
+
+  (defrule value-wfp-of-value-tlambda
+    (value-wfp (value-tlambda params body))
+    :enable (value-wfp check-dims-of-value))
+
+  (defrule value-wfp-of-value-ilambda
+    (value-wfp (value-ilambda params body))
+    :enable (value-wfp check-dims-of-value))
+
+  (defrule value-wfp-of-value-vector-empty
+    (value-wfp (value-vector-empty dims elem))
+    :enable (value-wfp
+             check-dims-of-value
+             acl2::not-reserrp-when-nat-listp))
+
+  (defrule value-wfp-of-value-vector-of-value-base-list
+    (implies (consp bvs)
+             (value-wfp (value-vector (value-base-list bvs))))
+    :enable (value-wfp
+             check-dims-of-value
+             check-dims-of-value-list-of-value-base-list
+             acl2::consp-of-repeat
+             car-of-repeat
+             list-repeatp-of-repeat
+             acl2::not-reserrp-when-nat-listp
+             acl2::not-reserrp-when-nat-list-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist value-list-wfp (x)
   :guard (value-listp x)
   :short "Lift @(tsee value-wfp) to lists."
-  (value-wfp x))
+  (value-wfp x)
+
+  ///
+
+  (defruled value-list-wfp-alt-def
+    (equal (value-list-wfp x)
+           (not (reserrp (check-dims-of-value-list x))))
+    :induct t
+    :enable (check-dims-of-value-list
+             value-wfp
+             acl2::not-reserrp-when-nat-list-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -524,7 +615,19 @@
     (equal (dims-of-value-list (repeat n val))
            (repeat n (dims-of-value val)))
     :induct t
-    :enable repeat))
+    :enable repeat)
+
+  (defruled dims-of-value-list-when-value-list-wfp
+    (implies (value-list-wfp vals)
+             (equal (dims-of-value-list vals)
+                    (check-dims-of-value-list vals)))
+    :induct t
+    :enable (dims-of-value-list
+             check-dims-of-value-list
+             value-list-wfp
+             dims-of-value
+             value-wfp
+             acl2::not-reserrp-when-nat-list-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

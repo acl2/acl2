@@ -61,8 +61,10 @@ paren-exp-body  = array-exp
                 / app-exp            ; [SC3] must be last
 
 array-exp       = %s"array" ws shape-lit *( ws atom )
+                / %s"array" ws shape-lit ws type-exp
 
 frame-exp       = %s"frame" ws shape-lit *( ws exp )
+                / %s"frame" ws shape-lit ws type-exp
 
 app-exp         = exp *( ws exp )      ; [SC1]
                   ; (f e1 ... en): first exp is the function

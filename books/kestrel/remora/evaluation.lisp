@@ -13,6 +13,7 @@
 (include-book "dynamic-environments")
 (include-book "nat-lists")
 (include-book "integer-lists")
+(include-book "character-literal-codes")
 
 (include-book "kestrel/fty/integer-result" :dir :system)
 (include-book "kestrel/fty/integer-list-result" :dir :system)
@@ -448,6 +449,26 @@
    :int (base-value-int (eval-int-lit lit.lit))
    :float (base-value-float (eval-float-lit lit.lit))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-char-lit ((clit char-litp))
+  :returns (val int-valuep)
+  :short "Evaluate a character literal to an integer value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A character is represented as the integer value of its code.
+     This is used to evaluate strings,
+     which are sugar for arrays of such integers."))
+  (int-value (char-lit-code clit)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection eval-char-lit-list ((x char-lit-listp))
+  :returns (vals int-value-listp)
+  :short "Lift @(tsee eval-char-lit) to lists."
+  (eval-char-lit x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define value-with-empty-dim ((dims nat-listp) (elem type-valuep))
@@ -479,7 +500,10 @@
      for the remaining dimensions (which must still include a 0)
      and the element type,
      and we replicate the value as many times as the first dimension,
-     to obtain the final vector value."))
+     to obtain the final vector value.")
+   (xdoc::p
+    "A key property is that the resulting value is well-formed
+     and has exactly the dimensions passed as input."))
   (b* (((when (not (mbt (consp dims)))) (value-vector-empty nil elem))
        (dim (lnfix (car dims))))
     (if (= dim 0)
@@ -492,9 +516,9 @@
 
   (defret check-dims-of-value-of-value-with-empty-dim
     (b* ((dims1 (check-dims-of-value val)))
-      (implies (member-equal 0 dims)
-               (and (not (reserrp dims1))
-                    (equal dims1 (nat-list-fix dims)))))
+      (and (not (reserrp dims1))
+           (equal dims1 (nat-list-fix dims))))
+    :hyp (member-equal 0 dims)
     :hints (("Goal"
              :induct t
              :in-theory (enable check-dims-of-value
@@ -502,7 +526,19 @@
                                 acl2::not-reserrp-when-nat-listp
                                 acl2::not-reserrp-when-nat-list-listp
                                 car-of-repeat
-                                nfix)))))
+                                nfix))))
+
+  (defret value-wfp-of-value-with-empty-dim
+    (value-wfp val)
+    :hyp (member-equal 0 dims)
+    :hints (("Goal" :in-theory (enable value-wfp
+                                       acl2::not-reserrp-when-nat-listp))))
+
+  (defret dims-of-value-of-value-with-empty-dim
+    (equal (dims-of-value val)
+           (nat-list-fix dims))
+    :hyp (member-equal 0 dims)
+    :hints (("Goal" :in-theory (enable dims-of-value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -544,7 +580,12 @@
        We construct values for each chunk
        via the companion recursive function.
        We put these values together into a vector value,
-       which is the final result."))
+       which is the final result.")
+     (xdoc::p
+      "A key property is that the resulting value is well-formed
+       and has exactly the concatenation of
+       the dimensions passed as input
+       and the common dimensions of the component values."))
     (b* (((when (endp dims)) (value-fix (car vals)))
          (dim (lnfix (car dims)))
          (valss (list-split (value-list-fix vals) (/ (len vals) dim)))
@@ -559,6 +600,7 @@
     :guard (and (not (member-equal 0 dims))
                 (all-of-len-p valss (nat-list-product dims))
                 (value-list-list-wfp valss)
+                (list-repeatp (dims-of-value-list-list valss))
                 (list-list-repeatp (dims-of-value-list-list valss)))
     :returns (vals value-listp)
     :parents (evaluation values-with-nonempty-dims)
@@ -568,7 +610,25 @@
     (xdoc::topstring
      (xdoc::p
       "This lifts @(tsee value-with-nonempty-dims) to lists of lists of values.
-       See the documentation of that function."))
+       See the documentation of that function.")
+     (xdoc::p
+      "The guard requires the same dimensions of
+       all the values in the list of lists of values:
+       this is expressed via @(tsee list-list-repeatp),
+       which says that each list of values has the same dimensions,
+       and via @(tsee list-repeatp),
+       which additionally requires the equality of
+       the lists of lists of dimensions corresponding to the lists of values.")
+     (xdoc::p
+      "The key property mentioned in @(tsee value-with-nonempty-dims)
+       is proved by induction simultaneously with
+       a corresponding property for this function.
+       This corresponding property is lifted to lists:
+       the list of lists of dimensions of the resulting list of values
+       is a repetition of the same list of dimensions,
+       which consists of the dimensions passed as input
+       concatenated with the common dimensions of all the values
+       (we extract the latter via @(tsee car) of @(tsee car)."))
     (cond ((endp valss) nil)
           (t (cons (value-with-nonempty-dims dims (car valss))
                    (value-list-with-nonempty-dims dims (cdr valss)))))
@@ -590,17 +650,15 @@
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
 
   :guard-hints (("Goal"
-                 :in-theory (enable
-                             true-list-listp-when-value-list-listp
-                             acl2::true-list-listp-when-nat-list-listp
-                             acl2::true-list-listp-when-nat-list-list-listp
-                             nat-list-product-of-cdr-to-ratio
-                             posp)
+                 :in-theory (e/d
+                             (true-list-listp-when-value-list-listp
+                              acl2::true-list-listp-when-nat-list-listp
+                              acl2::true-list-listp-when-nat-list-list-listp
+                              nat-list-product-of-cdr-to-ratio
+                              posp
+                              dims-of-value-list-list-of-cdr)
+                             (cdr-of-dims-of-value-list-list))
                  :use nat-list-product-divided-by-car))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  :flag-local nil ; TODO: remove?
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -608,7 +666,145 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deffixequiv-mutual values-with-nonempty-dims))
+  (fty::deffixequiv-mutual values-with-nonempty-dims)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defruledl lemma1
+    (implies (and (nat-listp dims)
+                  (not (member-equal 0 dims))
+                  (consp dims)
+                  (equal (len vals) (nat-list-product dims)))
+             (posp (* (/ (car dims)) (len vals))))
+    :enable posp
+    :use nat-list-product-divided-by-car)
+
+  (defruledl lemma2
+    (implies (and (value-listp vals)
+                  (nat-listp dims)
+                  (not (member-equal 0 dims))
+                  (consp dims)
+                  (equal (len vals) (nat-list-product dims)))
+             (value-list-listp
+              (list-split vals (* (/ (car dims)) (len vals)))))
+    :enable posp
+    :disable value-list-listp-of-list-split
+    :use (nat-list-product-divided-by-car
+          (:instance value-list-listp-of-list-split
+                     (n (/ (len vals) (car dims))))))
+
+  (defret-mutual check-dims-of-values-with-nonempty-dims
+    (defret check-dims-of-value-with-nonempty-dims
+      (b* ((dims1 (check-dims-of-value val)))
+        (and (not (reserrp dims1))
+             (equal dims1
+                    (append (nat-list-fix dims)
+                            (car (dims-of-value-list vals))))))
+      :hyp (and (nat-listp dims)
+                (value-listp vals)
+                (not (member-equal 0 dims))
+                (equal (len vals) (nat-list-product dims))
+                (value-list-wfp vals)
+                (list-repeatp (dims-of-value-list vals)))
+      :fn value-with-nonempty-dims)
+    (defret check-dims-of-value-list-with-nonempty-dims
+      (b* ((dimss (check-dims-of-value-list vals)))
+        (and (not (reserrp dimss))
+             (equal dimss
+                    (repeat (len valss)
+                            (append (nat-list-fix dims)
+                                    (car (car (dims-of-value-list-list
+                                               valss))))))))
+      :hyp (and (nat-listp dims)
+                (value-list-listp valss)
+                (not (member-equal 0 dims))
+                (all-of-len-p valss (nat-list-product dims))
+                (value-list-list-wfp valss)
+                (list-repeatp (dims-of-value-list-list valss))
+                (list-list-repeatp (dims-of-value-list-list valss)))
+      :fn value-list-with-nonempty-dims)
+    :mutual-recursion values-with-nonempty-dims
+    :hints (("Goal"
+             :in-theory (enable value-with-nonempty-dims
+                                value-list-with-nonempty-dims
+                                check-dims-of-value
+                                check-dims-of-value-list
+                                acl2::not-reserrp-when-nat-listp
+                                acl2::not-reserrp-when-nat-list-listp
+                                value-wfp
+                                dims-of-value
+                                dims-of-value-list-list
+                                nat-list-product-of-cdr-to-ratio
+                                list-repeatp
+                                repeat
+                                car-of-repeat
+                                car-of-car-of-list-split
+                                lemma1
+                                lemma2))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret value-wfp-of-value-with-nonempty-dims
+    (value-wfp val)
+    :hyp (and (nat-listp dims)
+              (value-listp vals)
+              (not (member-equal 0 dims))
+              (equal (len vals) (nat-list-product dims))
+              (value-list-wfp vals)
+              (list-repeatp (dims-of-value-list vals)))
+    :fn value-with-nonempty-dims
+    :hints (("Goal" :in-theory (enable value-wfp
+                                       acl2::not-reserrp-when-nat-listp))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret value-list-wfp-of-value-list-with-nonempty-dims
+    (value-list-wfp vals)
+    :hyp (and (nat-listp dims)
+              (value-list-listp valss)
+              (not (member-equal 0 dims))
+              (all-of-len-p valss (nat-list-product dims))
+              (value-list-list-wfp valss)
+              (list-repeatp (dims-of-value-list-list valss))
+              (list-list-repeatp (dims-of-value-list-list valss)))
+    :fn value-list-with-nonempty-dims
+    :hints (("Goal" :in-theory (enable value-list-wfp-alt-def
+                                       acl2::not-reserrp-when-nat-list-listp))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret dims-of-value-of-value-with-nonempty-dims
+    (equal (dims-of-value val)
+           (append (nat-list-fix dims)
+                   (car (dims-of-value-list vals))))
+    :hyp (and (nat-listp dims)
+              (value-listp vals)
+              (not (member-equal 0 dims))
+              (equal (len vals) (nat-list-product dims))
+              (value-list-wfp vals)
+              (list-repeatp (dims-of-value-list vals)))
+    :fn value-with-nonempty-dims
+    :hints (("Goal" :in-theory (enable dims-of-value))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret dims-of-value-list-of-value-list-with-nonempty-dims
+    (equal (dims-of-value-list vals)
+           (repeat (len valss)
+                   (append (nat-list-fix dims)
+                           (car (car (dims-of-value-list-list valss))))))
+    :hyp (and (nat-listp dims)
+              (value-list-listp valss)
+              (not (member-equal 0 dims))
+              (all-of-len-p valss (nat-list-product dims))
+              (value-list-list-wfp valss)
+              (list-repeatp (dims-of-value-list-list valss))
+              (list-list-repeatp (dims-of-value-list-list valss)))
+    :fn value-list-with-nonempty-dims
+    :hints (("Goal"
+             :use (:instance
+                   dims-of-value-list-when-value-list-wfp
+                   (vals (value-list-with-nonempty-dims dims valss)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -627,27 +823,73 @@
       "A variable is looked up in the dynamic environment;
        it must be present, and its associated value is returned.")
      (xdoc::p
+      "A non-empty array must have no zero dimensions,
+       and a number of atoms equal to the product of the dimensions.
+       We evaluate the atoms to values,
+       which must be well-formed and all have the same dimensions,
+       and we arrange them according to the dimensions
+       via a separate function (see its documentation).
+       The well-formedness check could be omitted
+       once we prove that evaluation always returns well-formed values,
+       but we do not have that proof yet,
+       so we must perform an explicit check for now.")
+     (xdoc::p
       "An empty array must have at least one 0 dimension,
        and its element type must evaluate to an atom type value.
        We build the result via a separate function (see its documentation).")
+     (xdoc::p
+      "A non-empty frame is like a non-empty array,
+       but its elements are cell expressions instead of atoms.
+       We evaluate the cells to values,
+       which must be well-formed and all have the same dimensions,
+       and we arrange them according to the dimensions
+       via the same function used for arrays;
+       the dimensions of the cells become
+       the inner dimensions of the result.
+       The well-formedness check could be omitted
+       once we prove that evaluation always returns well-formed values,
+       but we do not have that proof yet,
+       so we must perform an explicit check for now.")
      (xdoc::p
       "An empty frame is treated similarly to an empty array,
        but its type is the cell type, which may be an array type;
        we evaluate it,
        decompose it into the atom type value and the cell dimensions,
        append the cell dimensions to the frame dimensions,
-       and build the result via the same function used for arrays."))
+       and build the result via the same function used for arrays.")
+     (xdoc::p
+      "A string is syntactic sugar for an array of integers,
+       namely the codes of its characters;
+       we evaluate it directly to the corresponding value.
+       A non-empty string yields a vector of the integer code values;
+       an empty string yields an empty integer array."))
     (expr-case
      expr
      :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
                ((unless var+val) (reserr nil)))
             (cdr var+val))
-     :array (reserr :todo)
+     :array (b* (((when (member-equal 0 expr.dims)) (reserr nil))
+                 ((ok vals) (eval-atom-list expr.atoms denv))
+                 ((unless (equal (len vals) (nat-list-product expr.dims)))
+                  (reserr nil))
+                 ((unless (value-list-wfp vals)) ; TODO: eliminate via proof
+                  (reserr nil))
+                 ((unless (list-repeatp (dims-of-value-list vals)))
+                  (reserr nil)))
+              (value-with-nonempty-dims expr.dims vals))
      :array-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
                        ((ok elem) (eval-type expr.type denv))
                        ((when (type-value-case elem :array)) (reserr nil)))
                     (value-with-empty-dim expr.dims elem))
-     :frame (reserr :todo)
+     :frame (b* (((when (member-equal 0 expr.dims)) (reserr nil))
+                 ((ok vals) (eval-expr-list expr.exprs denv))
+                 ((unless (equal (len vals) (nat-list-product expr.dims)))
+                  (reserr nil))
+                 ((unless (value-list-wfp vals)) ; TODO: eliminate via proof
+                  (reserr nil))
+                 ((unless (list-repeatp (dims-of-value-list vals)))
+                  (reserr nil)))
+              (value-with-nonempty-dims expr.dims vals))
      :frame-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
                        ((ok tval) (eval-type expr.type denv))
                        ((mv elem cell-dims)
@@ -658,7 +900,14 @@
                        ((when (type-value-case elem :array)) (reserr nil))
                        (dims (append expr.dims cell-dims)))
                     (value-with-empty-dim dims elem))
-     :string (reserr :todo)
+     :string (if (consp expr.chars)
+                 (value-vector
+                  (value-base-list
+                   (base-value-int-list
+                    (eval-char-lit-list expr.chars))))
+               (make-value-vector-empty
+                :dims nil
+                :elem (type-value-base (base-type-int))))
      :app (reserr :todo)
      :tapp (reserr :todo)
      :iapp (reserr :todo)
@@ -776,4 +1025,41 @@
 
   ///
 
-  (fty::deffixequiv-mutual eval-exprs/atoms/binds))
+  (fty::deffixequiv-mutual eval-exprs/atoms/binds)
+
+  (defret-mutual value-wfp-of-eval-exprs/atoms/binds
+    (defret value-wfp-of-eval-expr
+      (implies (and (denv-wfp denv)
+                    (not (reserrp val)))
+               (value-wfp val))
+      :fn eval-expr)
+    (defret value-list-wfp-of-eval-expr-list
+      (implies (and (denv-wfp denv)
+                    (not (reserrp vals)))
+               (value-list-wfp vals))
+      :fn eval-expr-list)
+    (defret value-wfp-of-eval-atom
+      (implies (and (denv-wfp denv)
+                    (not (reserrp val)))
+               (value-wfp val))
+      :fn eval-atom)
+    (defret value-list-wfp-of-eval-atom-list
+      (implies (and (denv-wfp denv)
+                    (not (reserrp vals)))
+               (value-list-wfp vals))
+      :fn eval-atom-list)
+    (defret denv-wfp-of-eval-bind
+      (implies (and (denv-wfp denv)
+                    (not (reserrp new-denv)))
+               (denv-wfp new-denv))
+      :fn eval-bind)
+    (defret denv-wfp-of-eval-bind-list
+      (implies (and (denv-wfp denv)
+                    (not (reserrp new-denv)))
+               (denv-wfp new-denv))
+      :fn eval-bind-list)
+    :mutual-recursion eval-exprs/atoms/binds
+    :hints
+    (("Goal"
+      :in-theory (enable value-wfp-of-cdr-of-assoc-when-denv-wfp)
+      :expand ((eval-bind-list binds denv))))))

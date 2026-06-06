@@ -12,6 +12,7 @@
 (in-package "C$")
 
 (include-book "types")
+(include-book "abstract-syntax-operations")
 
 (include-book "kestrel/fty/nat-option" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)

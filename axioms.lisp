@@ -14465,6 +14465,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     translate-stobj-type-to-guard
     chk-acceptable-defuns-redundancy
     #+acl2-rewrite-meter initialize-summary-accumulators
+    defmacro-fn
+    stop-redundant-defconst
     ))
 
 (defconst *initial-logic-fns-with-raw-code*

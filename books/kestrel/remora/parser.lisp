@@ -1583,11 +1583,37 @@
   (define parse-array-exp ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp) (rest-input nat-listp))
     :short "Parse an @('array-exp')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "There are two alternatives that share the @('array ws shape-lit')
+       prefix.  We first try the empty-array alternative @('ws type-exp'),
+       which gives the element type explicitly (since there are no atoms
+       to carry it); if the @('type-exp') does not parse, we fall back to
+       the @('*( ws atom )') alternative.  The two produce CSTs with
+       distinct branch counts (5 vs. 4), which the abstractor dispatches
+       on."))
     (b* (((pok< tree-kw) (abnf::parse-schars "array" input))
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-sl) (parse-shape-lit input))
-         ;; *( ws atom )
-         ((pok trees-more) (parse-*-ws-atom input)))
+         ;; remember the input just after the shared prefix, for the
+         ;; fallback to alternative 1 (which begins its own `ws`)
+         (input-after-prefix input)
+         ;; Alternative 2 (empty array): ws type-exp
+         ;; parse-ws never errors, so `pok` here is always taken
+         ((pok tree-ws2) (parse-ws input))
+         ((mv tree-te input-b) (parse-type-exp input))
+         ((unless (reserrp tree-te))
+          (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "array-exp")
+               :branches (list (list tree-kw)
+                               (list tree-ws1)
+                               (list tree-sl)
+                               (list tree-ws2)
+                               (list tree-te)))
+              input-b))
+         ;; Alternative 1 (non-empty): *( ws atom )
+         ;; (pok shadows `input` with the remaining input after the atoms)
+         ((pok trees-more) (parse-*-ws-atom input-after-prefix)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "array-exp")
            :branches (list (list tree-kw)
                            (list tree-ws1)
@@ -1599,11 +1625,35 @@
   (define parse-frame-exp ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp) (rest-input nat-listp))
     :short "Parse a @('frame-exp')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Like @(tsee parse-array-exp), there are two alternatives sharing the
+       @('frame ws shape-lit') prefix.  We first try the empty-frame
+       alternative @('ws type-exp'); if @('type-exp') does not parse, we
+       fall back to @('*( ws exp )').  The CSTs have distinct branch counts
+       (5 vs. 4)."))
     (b* (((pok< tree-kw) (abnf::parse-schars "frame" input))
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-sl) (parse-shape-lit input))
-         ;; *( ws exp )
-         ((pok trees-more) (parse-*-ws-exp input)))
+         ;; remember the input just after the shared prefix, for the
+         ;; fallback to alternative 1 (which begins its own `ws`)
+         (input-after-prefix input)
+         ;; Alternative 2 (empty frame): ws type-exp
+         ;; parse-ws never errors, so `pok` here is always taken
+         ((pok tree-ws2) (parse-ws input))
+         ((mv tree-te input-b) (parse-type-exp input))
+         ((unless (reserrp tree-te))
+          (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "frame-exp")
+               :branches (list (list tree-kw)
+                               (list tree-ws1)
+                               (list tree-sl)
+                               (list tree-ws2)
+                               (list tree-te)))
+              input-b))
+         ;; Alternative 1 (non-empty): *( ws exp )
+         ;; (pok shadows `input` with the remaining input after the exprs)
+         ((pok trees-more) (parse-*-ws-exp input-after-prefix)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "frame-exp")
            :branches (list (list tree-kw)
                            (list tree-ws1)

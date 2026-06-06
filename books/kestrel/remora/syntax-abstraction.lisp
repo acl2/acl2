@@ -1876,27 +1876,70 @@
     :measure (abnf::tree-count tree))
 
   ;; array-exp = "array" ws shape-lit *( ws atom )
+  ;;           / "array" ws shape-lit ws type-exp
   (define abs-array-exp ((tree abnf::treep))
     :returns (e expr-resultp)
-    :short "Abstract an @('array-exp') to an @(tsee expr) @(':array')."
-    (b* (((okf (abnf::tree-list-tuple4 sub))
-          (abnf::check-tree-nonleaf-4 tree "array-exp"))
-         ((okf sl-tree) (abnf::check-tree-list-1 sub.3rd))
-         ((okf dims) (abs-shape-lit sl-tree))
-         ((okf atoms) (abs-*-ws-atom sub.4th)))
-      (make-expr-array :dims dims :atoms atoms))
+    :short "Abstract an @('array-exp') to an @(tsee expr)
+            @(':array') or @(':array-empty')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The non-empty alternative has 4 branches
+       (@('array'), @('ws'), @('shape-lit'), @('*( ws atom )')) and
+       abstracts to @(':array').
+       The empty alternative has 5 branches
+       (@('array'), @('ws'), @('shape-lit'), @('ws'), @('type-exp')) and
+       abstracts to @(':array-empty'), with the element type taken from the
+       @('type-exp')."))
+    (b* (((okf treess) (abnf::check-tree-nonleaf tree "array-exp")))
+      (case (len treess)
+        (4 (b* (((okf (abnf::tree-list-tuple4 sub))
+                 (abnf::check-tree-nonleaf-4 tree "array-exp"))
+                ((okf sl-tree) (abnf::check-tree-list-1 sub.3rd))
+                ((okf dims) (abs-shape-lit sl-tree))
+                ((okf atoms) (abs-*-ws-atom sub.4th)))
+             (make-expr-array :dims dims :atoms atoms)))
+        (5 (b* (((okf (abnf::tree-list-tuple5 sub))
+                 (abnf::check-tree-nonleaf-5 tree "array-exp"))
+                ((okf sl-tree) (abnf::check-tree-list-1 sub.3rd))
+                ((okf dims) (abs-shape-lit sl-tree))
+                ((okf te-tree) (abnf::check-tree-list-1 sub.5th))
+                ((okf type) (abs-type-exp te-tree)))
+             (make-expr-array-empty :dims dims :type type)))
+        (otherwise
+         (reserrf (list :array-exp-shape (len treess))))))
     :measure (abnf::tree-count tree))
 
   ;; frame-exp = "frame" ws shape-lit *( ws exp )
+  ;;           / "frame" ws shape-lit ws type-exp
   (define abs-frame-exp ((tree abnf::treep))
     :returns (e expr-resultp)
-    :short "Abstract a @('frame-exp') to an @(tsee expr) @(':frame')."
-    (b* (((okf (abnf::tree-list-tuple4 sub))
-          (abnf::check-tree-nonleaf-4 tree "frame-exp"))
-         ((okf sl-tree) (abnf::check-tree-list-1 sub.3rd))
-         ((okf dims) (abs-shape-lit sl-tree))
-         ((okf exprs) (abs-*-ws-exp sub.4th)))
-      (make-expr-frame :dims dims :exprs exprs))
+    :short "Abstract a @('frame-exp') to an @(tsee expr)
+            @(':frame') or @(':frame-empty')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The non-empty alternative has 4 branches and abstracts to
+       @(':frame'); the empty alternative has 5 branches and abstracts to
+       @(':frame-empty'), with the element type taken from the
+       @('type-exp').  See @(tsee abs-array-exp)."))
+    (b* (((okf treess) (abnf::check-tree-nonleaf tree "frame-exp")))
+      (case (len treess)
+        (4 (b* (((okf (abnf::tree-list-tuple4 sub))
+                 (abnf::check-tree-nonleaf-4 tree "frame-exp"))
+                ((okf sl-tree) (abnf::check-tree-list-1 sub.3rd))
+                ((okf dims) (abs-shape-lit sl-tree))
+                ((okf exprs) (abs-*-ws-exp sub.4th)))
+             (make-expr-frame :dims dims :exprs exprs)))
+        (5 (b* (((okf (abnf::tree-list-tuple5 sub))
+                 (abnf::check-tree-nonleaf-5 tree "frame-exp"))
+                ((okf sl-tree) (abnf::check-tree-list-1 sub.3rd))
+                ((okf dims) (abs-shape-lit sl-tree))
+                ((okf te-tree) (abnf::check-tree-list-1 sub.5th))
+                ((okf type) (abs-type-exp te-tree)))
+             (make-expr-frame-empty :dims dims :type type)))
+        (otherwise
+         (reserrf (list :frame-exp-shape (len treess))))))
     :measure (abnf::tree-count tree))
 
   ;; tapp-exp = "t-app" ws exp *( ws type-exp )
