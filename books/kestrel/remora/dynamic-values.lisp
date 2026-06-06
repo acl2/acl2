@@ -566,7 +566,19 @@
     (equal (dims-of-value-list (repeat n val))
            (repeat n (dims-of-value val)))
     :induct t
-    :enable repeat))
+    :enable repeat)
+
+  (defruled dims-of-value-list-when-value-list-wfp
+    (implies (value-list-wfp vals)
+             (equal (dims-of-value-list vals)
+                    (check-dims-of-value-list vals)))
+    :induct t
+    :enable (dims-of-value-list
+             check-dims-of-value-list
+             value-list-wfp
+             dims-of-value
+             value-wfp
+             acl2::not-reserrp-when-nat-list-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
