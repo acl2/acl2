@@ -113,8 +113,7 @@
 
 (define string-value-map-wfp ((map string-value-mapp))
   :returns (yes/no booleanp)
-  :short "Check that all the values in a string-to-value map
-          are well-formed."
+  :short "Check that all the values in a string-to-value map are well-formed."
   (or (omap::emptyp (string-value-map-fix map))
       (and (value-wfp (omap::head-val map))
            (string-value-map-wfp (omap::tail map))))
@@ -138,7 +137,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a minimal notion of well-formedness,
+    "This is an initial notion of well-formedness,
      concerning just the values bound to expression variables.
      We may extend it, or fold it into a broader notion,
      when we introduce well-formedness conditions
