@@ -514,7 +514,18 @@
 (std::deflist value-list-wfp (x)
   :guard (value-listp x)
   :short "Lift @(tsee value-wfp) to lists."
-  (value-wfp x))
+  (value-wfp x)
+
+  ///
+
+  (defruled value-list-wfp-alt-def
+    (equal (value-list-wfp x)
+           (not (reserrp (check-dims-of-value-list x))))
+    :induct t
+    :enable (value-list-wfp
+             check-dims-of-value-list
+             value-wfp
+             acl2::not-reserrp-when-nat-list-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
