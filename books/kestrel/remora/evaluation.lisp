@@ -513,9 +513,9 @@
 
   (defret check-dims-of-value-of-value-with-empty-dim
     (b* ((dims1 (check-dims-of-value val)))
-      (implies (member-equal 0 dims)
-               (and (not (reserrp dims1))
-                    (equal dims1 (nat-list-fix dims)))))
+      (and (not (reserrp dims1))
+           (equal dims1 (nat-list-fix dims))))
+    :hyp (member-equal 0 dims)
     :hints (("Goal"
              :induct t
              :in-theory (enable check-dims-of-value
