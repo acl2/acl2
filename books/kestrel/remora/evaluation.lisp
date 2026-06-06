@@ -580,7 +580,12 @@
        We construct values for each chunk
        via the companion recursive function.
        We put these values together into a vector value,
-       which is the final result."))
+       which is the final result.")
+     (xdoc::p
+      "A key property is that the resulting value is well-formed
+       and has exactly the concatenation of
+       the dimensions passed as input
+       and the common dimensions of the component values."))
     (b* (((when (endp dims)) (value-fix (car vals)))
          (dim (lnfix (car dims)))
          (valss (list-split (value-list-fix vals) (/ (len vals) dim)))
@@ -605,7 +610,25 @@
     (xdoc::topstring
      (xdoc::p
       "This lifts @(tsee value-with-nonempty-dims) to lists of lists of values.
-       See the documentation of that function."))
+       See the documentation of that function.")
+     (xdoc::p
+      "The guard requires the same dimensions of
+       all the values in the list of lists of values:
+       this is expressed via @(tsee list-list-repeatp),
+       which says that each list of values has the same dimensions,
+       and via @(tsee list-repeatp),
+       which additionally requires the equality of
+       the lists of lists of dimensions corresponding to the lists of values.")
+     (xdoc::p
+      "The key property mentioned in @(tsee value-with-nonempty-dims)
+       is proved by induction simultaneously with
+       a corresponding property for this function.
+       This corresponding property is lifted to lists:
+       the list of lists of dimensions of the resulting list of values
+       is a repetition of the same list of dimensions,
+       which consists of the dimensions passed as input
+       concatenated with the common dimensions of all the values
+       (we extract the latter via @(tsee car) of @(tsee car)."))
     (cond ((endp valss) nil)
           (t (cons (value-with-nonempty-dims dims (car valss))
                    (value-list-with-nonempty-dims dims (cdr valss)))))
@@ -717,7 +740,36 @@
                                 car-of-repeat
                                 car-of-car-of-list-split
                                 lemma1
-                                lemma2)))))
+                                lemma2))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret value-wfp-of-value-with-nonempty-dims
+    (value-wfp val)
+    :hyp (and (nat-listp dims)
+              (value-listp vals)
+              (not (member-equal 0 dims))
+              (equal (len vals) (nat-list-product dims))
+              (value-list-wfp vals)
+              (list-repeatp (dims-of-value-list vals)))
+    :fn value-with-nonempty-dims
+    :hints (("Goal" :in-theory (enable value-wfp
+                                       acl2::not-reserrp-when-nat-listp))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret dims-of-value-of-value-with-nonempty-dims
+    (equal (dims-of-value val)
+           (append (nat-list-fix dims)
+                   (car (dims-of-value-list vals))))
+    :hyp (and (nat-listp dims)
+              (value-listp vals)
+              (not (member-equal 0 dims))
+              (equal (len vals) (nat-list-product dims))
+              (value-list-wfp vals)
+              (list-repeatp (dims-of-value-list vals)))
+    :fn value-with-nonempty-dims
+    :hints (("Goal" :in-theory (enable dims-of-value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
