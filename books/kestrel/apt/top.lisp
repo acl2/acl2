@@ -32,6 +32,8 @@
 
 (include-book "annotate-c-locals")
 
+(include-book "arrange-ifs-and-mbts")
+
 (include-book "casesplit")
 
 (include-book "expdata")
