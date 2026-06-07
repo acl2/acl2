@@ -2,7 +2,7 @@
 ;
 ; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ; Author: Eric McCarthy (bendyarm at GitHub)
-; Original version of ld-read-command:
+; Redefines ld-read-command, originally:
 ; Copyright (C) 2026, Regents of the University of Texas
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -11,7 +11,7 @@
 ;
 ; ------------------------------------------------------------------------------
 ;
-; Make the Common-Lisp REPL history variables usable at the *normal* ACL2
+; Make the Common Lisp REPL history variables usable at the *normal* ACL2
 ; top-level loop (no raw mode needed when typing):
 ;
 ;   *  **  ***   -> the value(s) returned by the previous, 2nd-previous, and
