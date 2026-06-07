@@ -1,7 +1,7 @@
 ; ACL2 hack: acl2-repl-star-history.lsp
 ;
 ; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
-; Author: Eric McCarthy (bendyarm at GitHub)
+; Author: Eric McCarthy (bendyarm on GitHub)
 ; Redefines ld-read-command, originally:
 ; Copyright (C) 2026, Regents of the University of Texas
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
