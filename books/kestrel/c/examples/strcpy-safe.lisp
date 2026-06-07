@@ -12,7 +12,8 @@
 
 (include-book "strcpy-safe-support")
 
-(include-book "kestrel/c/syntax/input-files" :dir :system)
+(include-book "../syntax/input-files")
+(include-book "../syntax/abstract-syntax-formal-mapping-direct")
 
 (local (include-book "std/lists/top" :dir :system))
 

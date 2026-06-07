@@ -122,4 +122,11 @@ logical-and-expression = inclusive-or-expression
 logical-or-expression = logical-and-expression
                       / logical-or-expression "||" logical-and-expression
 
+; The standard conditional expressions are the same in the C17 and C23 standards
+; [C17:6.5.15/1] [C23:6.5.16].
+
+conditional-expression-std =
+      logical-or-expression
+    / logical-or-expression "?" expression ":" conditional-expression
+
 ; TODO: add other kinds of expressions
