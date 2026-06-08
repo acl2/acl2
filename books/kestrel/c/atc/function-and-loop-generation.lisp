@@ -1692,7 +1692,8 @@
                                return-type-of-stmt-value-none
                                expr-value-optionp-when-expr-valuep
                                (:e c::expr-value-optionp)
-                               expr-valuep-of-expr-value))
+                               expr-valuep-of-expr-value
+                               max))
                  :use (:instance (:guard-theorem ,fn)
                                  :extra-bindings-ok
                                  ,@(alist-to-doublets instantiation))
@@ -1728,7 +1729,8 @@
                           return-type-of-stmt-value-none
                           expr-value-optionp-when-expr-valuep
                           (:e c::expr-value-optionp)
-                          expr-valuep-of-expr-value))))))
+                          expr-valuep-of-expr-value
+                          max))))))
        ((mv local-event exported-event)
         (evmac-generate-defthm name
                                :formula formula
