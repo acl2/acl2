@@ -1688,6 +1688,7 @@
                                ,@correct-thms
                                ,@measure-thms
                                ,fn-fun-env-thm
+                               return-type-of-stmt-value-return
                                return-type-of-stmt-value-none
                                expr-value-optionp-when-expr-valuep
                                (:e c::expr-value-optionp)
