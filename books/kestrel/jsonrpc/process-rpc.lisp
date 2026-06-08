@@ -33,33 +33,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; converts a member list into a keyword-argument list
-(define json-member-list-to-lisp-params ((members member-listp))
-  :short "Convert a JSON Object's member list to a keyword-argument list."
-  :long "<p>Each member @('\"name\": value') becomes @(':NAME value') in the
-  output list, suitable for splicing into a function call form for by-name
-  parameter passing.</p>"
-  :returns (params true-listp)
-  (if (endp members)
-      nil
-    (b* ((m (car members))
-         (key (intern (string-upcase (member->name m)) "KEYWORD"))
-         (val (member->value m))
-         (rest (json-member-list-to-lisp-params (cdr members))))
-      (cons key (cons val rest)))))
-
-; converts the json params to an appropriate params list
-(define json-params-to-lisp-params ((params structuredp))
-  :short "Convert JSON-RPC params to a list suitable for splicing into a call form."
-  :long "<p>For Array params, returns the list of @(see valuep) elements
-  directly (by-position). For Object params, delegates to @(see
-  json-member-list-to-lisp-params) to produce a keyword-argument list
-  (by-name).</p>"
-  :returns (lisp-params true-listp)
-  (if (equal (structured-kind params) :array)
-      (structured-array->elements params)
-    (json-member-list-to-lisp-params (structured-object->members params))))
-
 (define dispatch-request ((req requestp) ctx state)
   :short "Dispatch a parsed request to the appropriate @('JSONRPC') method function."
   :long "<p>Interns the method name (upcased) into the @('JSONRPC') package to
@@ -73,17 +46,20 @@
   (b* ((method-sym
         (intern-in-package-of-symbol (string-upcase (request->method req))
                                      (pkg-witness "JSONRPC")))
+       ((unless (function-symbolp method-sym (w state)))
+        (mv (make-method-not-found-error
+             (concatenate 'string "Method not found: " (request->method req)))
+            (value-null)
+            state))
        (form (if (not (request->params-presentp req))
                  `(,method-sym state)
-               `(,method-sym ,@(kwote-lst (json-params-to-lisp-params
-                                           (request->params req)))
+               `(,method-sym (request->params req)
                              state)))
        ((mv erp result state)
         (trans-eval-error-triple form ctx state)))
     (mv erp result state)))
 
 
-;; NOTE: should process-one and process-all attach the state to its outputs?
 (define process-one ((id idp) (val request+errorp) ctx state)
   :short "Process a single @(see request+error) entry and produce a response."
   :long "<p>If @('val') is an @(see error) (from parse time), produces an
@@ -140,8 +116,7 @@
   :stobjs state
   (b* (((mv chars state) (read-file-into-character-list-safe input-file state))
        (msg (coerce chars 'string))
-       (alist (parse-json-rpc msg))
-       (batchp (> (len alist) 1))
+       ((mv batchp alist) (parse-json-rpc msg))
        ((mv responses state) (process-all alist 'process-json-rpc-file state))
        (response-val
         (cond ((endp responses) nil)
@@ -156,5 +131,10 @@
                                      state))
              ((when erp)
               (mv t "[ERROR] error when writing response to file" state)))
-          (mv erp "[SUCCESS] response written to output file" state))))
-    (mv nil "[NOTICE] no responses were generated" state)))
+          (mv erp "[SUCCESS] response written to output file" state)))
+       ((mv erp1 state)
+        (write-strings-to-file nil
+                               output-file
+                               'process-json-rpc-file
+                               state)))
+    (mv erp1 "[NOTICE] no responses were generated" state)))

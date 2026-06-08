@@ -1,1 +1,1 @@
-{"jsonrpc":"2.0","error":{"code":-32700,"message":"Failed to parse JSON"},"id":null}
+[{"jsonrpc":"2.0","error":{"code":-32600,"message":"Request must be a JSON object"},"id":null}]

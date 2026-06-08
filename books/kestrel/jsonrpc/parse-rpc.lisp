@@ -121,34 +121,36 @@
 (define parse-json-rpc ((msg stringp))
   :short "Parse a JSON string as a JSON-RPC 2.0 message."
   :long "<p>Accepts both single requests (JSON Object) and batch requests
-  (JSON Array). Returns an @(see id-request+error-alist) with one entry per
+  (JSON Array). Returns @('(mv batchp alist)') where @('batchp') is @('t')
+  when the top-level JSON was an Array (even if it contains only one request),
+  and @('alist') is an @(see id-request+error-alist) with one entry per
   request. If the top-level JSON is not an Object or Array, or if the Array
   is empty, a single error entry with code @('-32600') is returned. If the
   string is not valid JSON, a single error entry with code @('-32700') is
   returned.</p>"
-  :returns (alist id-request+error-alistp)
+  :returns (mv (batchp booleanp) (alist id-request+error-alistp))
   (b* (((mv erp parsed) (parse-string-as-json msg))
        ((when erp)
-        (list (cons (id-null)
-                    (request+error-error
-                     (make-parse-error "Failed to parse JSON")))))
+        (mv nil (list (cons (id-null)
+                            (request+error-error
+                             (make-parse-error "Failed to parse JSON"))))))
        ((mv erp value) (parsed-to-value parsed))
        ((when erp)
-        (list (cons (id-null)
-                    (request+error-error
-                     (make-parse-error "Failed to convert parsed JSON")))))
+        (mv nil (list (cons (id-null)
+                            (request+error-error
+                             (make-parse-error "Failed to convert parsed JSON"))))))
        ((when (equal (value-kind value) :array))
         (b* ((elems (value-array->elements value))
              ((when (endp elems))
-              (list (cons (id-null)
-                          (request+error-error
-                           (make-invalid-request-error 
-                            "Batch request array must not be empty"))))))
-          (parse-rpc-requests elems)))
+              (mv t (list (cons (id-null)
+                                (request+error-error
+                                 (make-invalid-request-error
+                                  "Batch request array must not be empty")))))))
+          (mv t (parse-rpc-requests elems))))
        ((when (equal (value-kind value) :object))
         (b* (((mv id req+err) (parse-rpc-request value)))
-          (list (cons id req+err)))))
-    (list (cons (id-null)
-                (request+error-error
+          (mv nil (list (cons id req+err))))))
+    (mv nil (list (cons (id-null)
+                        (request+error-error
                  (make-invalid-request-error 
-                  "Top-level JSON value must be an object or array"))))))
+                  "Top-level JSON value must be an object or array")))))))
