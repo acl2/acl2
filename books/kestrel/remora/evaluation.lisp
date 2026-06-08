@@ -810,10 +810,33 @@
 
 (defines eval-exprs/atoms/binds
   :short "Evaluate expressions, atoms, and bindings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These functions are mutually recursive,
+     mirroring the mutually recursive structure of
+     expressions, atoms, and bindings.
+     Unlike the evaluation of ispaces and types,
+     which is structurally recursive,
+     the evaluation of expressions is not structurally recursive in general:
+     evaluating the application of an abstraction
+     involves evaluating the body of the abstraction,
+     which is not a sub-structure of the application expression,
+     but is obtained from a run-time value.
+     Thus, to ensure termination, as required by ACL2,
+     these functions take a limit argument
+     that is decremented at each recursive call,
+     and whose exhaustion causes an error.
+     This is an artificial limit,
+     with no counterpart in the run-time data
+     of an executing Remora program.
+     Formal proofs need to deal with this limit,
+     e.g. the termination of a Remora program would be proved
+     by exhibiting a suitable limit that does not run out."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-expr ((expr exprp) (denv denvp))
+  (define eval-expr ((expr exprp) (denv denvp) (limit natp))
     :returns (val value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate an expression to a value."
@@ -863,63 +886,64 @@
        we evaluate it directly to the corresponding value.
        A non-empty string yields a vector of the integer code values;
        an empty string yields an empty integer array."))
-    (expr-case
-     expr
-     :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
-               ((unless var+val) (reserr nil)))
-            (cdr var+val))
-     :array (b* (((when (member-equal 0 expr.dims)) (reserr nil))
-                 ((ok vals) (eval-atom-list expr.atoms denv))
-                 ((unless (equal (len vals) (nat-list-product expr.dims)))
-                  (reserr nil))
-                 ((unless (value-list-wfp vals)) ; TODO: eliminate via proof
-                  (reserr nil))
-                 ((unless (list-repeatp (dims-of-value-list vals)))
-                  (reserr nil)))
-              (value-with-nonempty-dims expr.dims vals))
-     :array-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-                       ((ok elem) (eval-type expr.type denv))
-                       ((when (type-value-case elem :array)) (reserr nil)))
-                    (value-with-empty-dim expr.dims elem))
-     :frame (b* (((when (member-equal 0 expr.dims)) (reserr nil))
-                 ((ok vals) (eval-expr-list expr.exprs denv))
-                 ((unless (equal (len vals) (nat-list-product expr.dims)))
-                  (reserr nil))
-                 ((unless (value-list-wfp vals)) ; TODO: eliminate via proof
-                  (reserr nil))
-                 ((unless (list-repeatp (dims-of-value-list vals)))
-                  (reserr nil)))
-              (value-with-nonempty-dims expr.dims vals))
-     :frame-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-                       ((ok tval) (eval-type expr.type denv))
-                       ((mv elem cell-dims)
-                        (type-value-case
-                         tval
-                         :array (mv tval.elem tval.shape)
-                         :otherwise (mv tval nil)))
-                       ((when (type-value-case elem :array)) (reserr nil))
-                       (dims (append expr.dims cell-dims)))
-                    (value-with-empty-dim dims elem))
-     :string (if (consp expr.chars)
-                 (value-vector
-                  (value-base-list
-                   (base-value-int-list
-                    (eval-char-lit-list expr.chars))))
-               (make-value-vector-empty
-                :dims nil
-                :elem (type-value-base (base-type-int))))
-     :app (reserr :todo)
-     :tapp (reserr :todo)
-     :iapp (reserr :todo)
-     :capp (reserr :todo)
-     :unbox (reserr :todo)
-     :bracket (reserr :todo)
-     :let (reserr :todo))
-    :measure (expr-count expr))
+    (b* (((when (zp limit)) (reserr :limit)))
+      (expr-case
+       expr
+       :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
+                 ((unless var+val) (reserr nil)))
+              (cdr var+val))
+       :array (b* (((when (member-equal 0 expr.dims)) (reserr nil))
+                   ((ok vals) (eval-atom-list expr.atoms denv (1- limit)))
+                   ((unless (equal (len vals) (nat-list-product expr.dims)))
+                    (reserr nil))
+                   ((unless (value-list-wfp vals)) ; TODO: eliminate via proof
+                    (reserr nil))
+                   ((unless (list-repeatp (dims-of-value-list vals)))
+                    (reserr nil)))
+                (value-with-nonempty-dims expr.dims vals))
+       :array-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
+                         ((ok elem) (eval-type expr.type denv))
+                         ((when (type-value-case elem :array)) (reserr nil)))
+                      (value-with-empty-dim expr.dims elem))
+       :frame (b* (((when (member-equal 0 expr.dims)) (reserr nil))
+                   ((ok vals) (eval-expr-list expr.exprs denv (1- limit)))
+                   ((unless (equal (len vals) (nat-list-product expr.dims)))
+                    (reserr nil))
+                   ((unless (value-list-wfp vals)) ; TODO: eliminate via proof
+                    (reserr nil))
+                   ((unless (list-repeatp (dims-of-value-list vals)))
+                    (reserr nil)))
+                (value-with-nonempty-dims expr.dims vals))
+       :frame-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
+                         ((ok tval) (eval-type expr.type denv))
+                         ((mv elem cell-dims)
+                          (type-value-case
+                           tval
+                           :array (mv tval.elem tval.shape)
+                           :otherwise (mv tval nil)))
+                         ((when (type-value-case elem :array)) (reserr nil))
+                         (dims (append expr.dims cell-dims)))
+                      (value-with-empty-dim dims elem))
+       :string (if (consp expr.chars)
+                   (value-vector
+                    (value-base-list
+                     (base-value-int-list
+                      (eval-char-lit-list expr.chars))))
+                 (make-value-vector-empty
+                  :dims nil
+                  :elem (type-value-base (base-type-int))))
+       :app (reserr :todo)
+       :tapp (reserr :todo)
+       :iapp (reserr :todo)
+       :capp (reserr :todo)
+       :unbox (reserr :todo)
+       :bracket (reserr :todo)
+       :let (reserr :todo)))
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-expr-list ((exprs expr-listp) (denv denvp))
+  (define eval-expr-list ((exprs expr-listp) (denv denvp) (limit natp))
     :returns (vals value-list-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate a list of expressions to a list of values."
@@ -928,15 +952,16 @@
      (xdoc::p
       "We evaluate each expression in turn
        and return the list of results in the same order."))
-    (b* (((when (endp exprs)) nil)
-         ((ok val) (eval-expr (car exprs) denv))
-         ((ok vals) (eval-expr-list (cdr exprs) denv)))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (endp exprs)) nil)
+         ((ok val) (eval-expr (car exprs) denv (1- limit)))
+         ((ok vals) (eval-expr-list (cdr exprs) denv (1- limit))))
       (cons val vals))
-    :measure (expr-list-count exprs))
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-atom ((atom atomp) (denv denvp))
+  (define eval-atom ((atom atomp) (denv denvp) (limit natp))
     :returns (val value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate an atom to a value."
@@ -955,18 +980,19 @@
        with the same parameters and body,
        which are not evaluated here but only when the abstraction is applied."))
     (declare (ignore denv))
-    (atom-case
-     atom
-     :base (value-base (eval-base-lit atom.lit))
-     :lambda (make-value-lambda :params atom.params :body atom.body)
-     :tlambda (make-value-tlambda :params atom.params :body atom.body)
-     :ilambda (make-value-ilambda :params atom.params :body atom.body)
-     :box (reserr :todo))
-    :measure (atom-count atom))
+    (b* (((when (zp limit)) (reserr :limit)))
+      (atom-case
+       atom
+       :base (value-base (eval-base-lit atom.lit))
+       :lambda (make-value-lambda :params atom.params :body atom.body)
+       :tlambda (make-value-tlambda :params atom.params :body atom.body)
+       :ilambda (make-value-ilambda :params atom.params :body atom.body)
+       :box (reserr :todo)))
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-atom-list ((atoms atom-listp) (denv denvp))
+  (define eval-atom-list ((atoms atom-listp) (denv denvp) (limit natp))
     :returns (vals value-list-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate a list of atoms to a list of values."
@@ -975,33 +1001,35 @@
      (xdoc::p
       "We evaluate each atom in turn
        and return the list of results in the same order."))
-    (b* (((when (endp atoms)) nil)
-         ((ok val) (eval-atom (car atoms) denv))
-         ((ok vals) (eval-atom-list (cdr atoms) denv)))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (endp atoms)) nil)
+         ((ok val) (eval-atom (car atoms) denv (1- limit)))
+         ((ok vals) (eval-atom-list (cdr atoms) denv (1- limit))))
       (cons val vals))
-    :measure (atom-list-count atoms))
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-bind ((bind bindp) (denv denvp))
+  (define eval-bind ((bind bindp) (denv denvp) (limit natp))
     :returns (new-denv denv-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate a binding, extending the dynamic environment."
     (declare (ignore denv))
-    (bind-case
-     bind
-     :ispace (reserr :todo)
-     :type (reserr :todo)
-     :val (reserr :todo)
-     :fun (reserr :todo)
-     :tfun (reserr :todo)
-     :ifun (reserr :todo)
-     :cfun (reserr :todo))
-    :measure (bind-count bind))
+    (b* (((when (zp limit)) (reserr :limit)))
+      (bind-case
+       bind
+       :ispace (reserr :todo)
+       :type (reserr :todo)
+       :val (reserr :todo)
+       :fun (reserr :todo)
+       :tfun (reserr :todo)
+       :ifun (reserr :todo)
+       :cfun (reserr :todo)))
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-bind-list ((binds bind-listp) (denv denvp))
+  (define eval-bind-list ((binds bind-listp) (denv denvp) (limit natp))
     :returns (new-denv denv-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate a list of bindings,
@@ -1012,10 +1040,11 @@
       "We evaluate each binding in turn,
        extending the dynamic environment as we go,
        and we return the final environment."))
-    (b* (((when (endp binds)) (denv-fix denv))
-         ((ok denv) (eval-bind (car binds) denv)))
-      (eval-bind-list (cdr binds) denv))
-    :measure (bind-list-count binds))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (endp binds)) (denv-fix denv))
+         ((ok denv) (eval-bind (car binds) denv (1- limit))))
+      (eval-bind-list (cdr binds) denv (1- limit)))
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1025,7 +1054,27 @@
 
   ///
 
-  (fty::deffixequiv-mutual eval-exprs/atoms/binds)
+  (fty::deffixequiv-mutual eval-exprs/atoms/binds
+    :hints (("Goal"
+             :expand ((eval-expr expr denv limit)
+                      (eval-expr (expr-fix expr) denv limit)
+                      (eval-expr expr (denv-fix denv) limit)
+                      (eval-expr-list exprs denv limit)
+                      (eval-expr-list (expr-list-fix exprs) denv limit)
+                      (eval-expr-list exprs (denv-fix denv) limit)
+                      (eval-atom atom denv limit)
+                      (eval-atom (atom-fix atom) denv limit)
+                      (eval-atom atom (denv-fix denv) limit)
+                      (eval-atom-list atoms denv limit)
+                      (eval-atom-list (atom-list-fix atoms) denv limit)
+                      (eval-atom-list atoms (denv-fix denv) limit)
+                      (eval-bind bind denv limit)
+                      (eval-bind (bind-fix bind) denv limit)
+                      (eval-bind bind (denv-fix denv) limit)
+                      (eval-bind-list binds denv limit)
+                      (eval-bind-list (bind-list-fix binds) denv limit)
+                      (eval-bind-list binds (denv-fix denv) limit))
+             :in-theory (enable nfix zp))))
 
   (defret-mutual value-wfp-of-eval-exprs/atoms/binds
     (defret value-wfp-of-eval-expr
@@ -1061,5 +1110,12 @@
     :mutual-recursion eval-exprs/atoms/binds
     :hints
     (("Goal"
-      :in-theory (enable value-wfp-of-cdr-of-assoc-when-denv-wfp)
-      :expand ((eval-bind-list binds denv))))))
+      :in-theory (enable value-wfp-of-cdr-of-assoc-when-denv-wfp
+                         nfix
+                         zp)
+      :expand ((eval-expr expr denv limit)
+               (eval-expr-list exprs denv limit)
+               (eval-atom atom denv limit)
+               (eval-atom-list atoms denv limit)
+               (eval-bind bind denv limit)
+               (eval-bind-list binds denv limit))))))
