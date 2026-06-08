@@ -789,10 +789,8 @@
           can serialize directly."
   (and (flexsum-p flex)
        (let ((typemacro (flexsum->typemacro flex)))
-         (if (or (eq typemacro 'defprod)
-                 (eq typemacro 'deftagsum))
-             t
-           nil))))
+         (or (eq typemacro 'defprod)
+             (eq typemacro 'deftagsum)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1060,13 +1058,12 @@
   :returns macro
   :short "The constructor macro for the first member type
           declared with @(':no-ctor-macros')."
+  :guard-hints (("Goal" :in-theory (enable fty::defmake-self-universal-node-p)))
   (b* (((when (endp members)) nil)
        (flex (car members))
        ;; Only products and tagged sums have constructor macros (the same
        ;; types for which :maker emits them).
        ((unless (defmake-self-universal-node-p flex))
-        (defmake-self-members-first-no-ctor-macro (cdr members)))
-       ((unless (flexsum-p flex))
         (defmake-self-members-first-no-ctor-macro (cdr members)))
        (prods (flexsum->prods flex))
        ((unless (true-listp prods))
