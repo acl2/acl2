@@ -1707,7 +1707,6 @@
                           ,@value-kind-thms
                           not
                           return-type-of-stmt-value-return
-                          return-type-of-stmt-value-none
                           stmt-value-return->value?-of-stmt-value-return
                           value-option-fix-when-value-optionp
                           ,@result-thms
