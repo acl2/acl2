@@ -8487,13 +8487,32 @@
                        (t `(include-book ,(remove-lisp-suffix book-name
                                                               t))))))))))))
 #-acl2-loop-only
-(defun update-hcomp-fn-ht-redundant-in-encapsulate (names localp)
+(defvar *debug-on* nil)
 
-; Warning: Keep this in sync with the binding of the variable, skip-reason in
-; install-defs-for-add-trip.  Except, we don't do anything here when localp is
-; true, since the point here is to store symbol-functions in *hcomp-fn-ht* for
-; defuns that will be processed in pass 2, and if we encounter such a defun in
-; pass 2 then we will encounter it non-locally in pass 1.
+(defmacro with-debug (form string &rest args)
+
+; String is a format string and args is a corresponding list of format
+; arguments.  We evaluate form, but if *debug-on* is non-nil then we first
+; print.
+
+  #-acl2-loop-only
+  `(progn (when *debug-on*
+            (let ((str (get-output-stream-from-channel
+                        (standard-co *the-live-state*))))
+              (format str "; DEBUG: ")
+              (format str ,string ,@args)))
+          ,form)
+  #+acl2-loop-only
+  (declare (ignore string args))
+  #+acl2-loop-only
+  form)
+
+#-acl2-loop-only
+(defconstant *hcomp-fake-value*
+  'acl2_invisible::hcomp-fake-value)
+
+#-acl2-loop-only
+(defun update-hcomp-fn-ht-redundant-in-encapsulate (names localp symbol-class)
 
 ; This function is an analogue of install-defs-for-add-trip for the case of
 ; redundant defuns during pass 1 of encapsulate.  Since these defuns are
@@ -8504,19 +8523,85 @@
 
   (declare (special *hcomp-fn-ht*))
   (when (and (not localp)
-             (eq *hcomp-status* 'encapsulate-pass-1))
-    (let ((hcomp-fn-ht *hcomp-fn-ht*))
+             (eq (hcomp-build-p) 'encapsulate-pass-1))
+    (let* ((hcomp-fn-ht *hcomp-fn-ht*)
+           (wrld (w *the-live-state*))
+           (old-symbol-class (symbol-class (car names) wrld)))
       (assert hcomp-fn-ht)
+      (assert names)
       (loop for name in names
             as *1*name = (*1*-symbol name)
             do
             (progn (assert (and (fboundp name) (fboundp *1*name)))
-                   (setf (gethash name hcomp-fn-ht)
-                         (symbol-function name))
-                   (setf (gethash *1*name hcomp-fn-ht)
-                         (symbol-function *1*name)))))))
+                   (cond ((and (not (gethash name hcomp-fn-ht))
+                               (not (memoizedp-world name wrld)))
+                          (with-debug (setf (gethash name hcomp-fn-ht)
+                                            (symbol-function name))
+                                      "[~s] Set (symbol-function ~s).~%"
+                                      'redundant-fn
+                                      name)))
+                   (cond ((gethash *1*name hcomp-fn-ht)
+                          (with-debug (setf (gethash *1*name hcomp-fn-ht)
+                                            *hcomp-fake-value*)
+                                      "[~s] Storing *hcomp-fake-value* for ~
+                                       ~s.~%"
+                                      'redundant-*1*fn-fake-value *1*name))
+                         ((eq symbol-class old-symbol-class)
 
-(defun chk-acceptable-defuns-redundancy (names defun-mode ctx wrld state)
+; If symbol-class is :common-lisp-compliant and old-symbol-class is :ideal, we
+; could set the hash table as below; but that would result in get less
+; efficient code for the *1* function.
+
+; If symbol-class is :ideal and old-symbol-class is :common-lisp-compliant,
+; then setting the hash table here is probably justifiable by conservativity,
+; as guard verification would be logically sound.  But the expected behavior is
+; for an :ideal mode function, and this is presumably a rare case not worthy of
+; careful consideration, so we don't consider it.
+
+                          (with-debug (setf (gethash *1*name hcomp-fn-ht)
+                                            (symbol-function *1*name))
+                                      "[~s] Set (symbol-function ~s).~%"
+                                      'redundant-*1*fn
+                                      *1*name))
+                         (t
+
+; The following example shows why we save the fake value when the modes don't
+; match.  At the point the make-event is encountered in pass 2, foo is a
+; program-mode function and g is not defined, so the call (foo 3) is evaluated
+; and should cause a raw Lisp error.  But without this case, the logic-mode
+; defun of foo was saved in the hash table on pass 1 and is errouneously
+; installed for the first non-local defun of foo on pass 2, so we get a guard
+; violation instead of a raw Lisp error.  With some effort we might restrict
+; this extra case (but so that it handles, at least, the example below), but we
+; guess that the extra effort isn't justified given the likely rarity that it
+; makes a noticeable performance difference and given the possibility of making
+; an error by making this case too restrictive.
+
+;   (encapsulate
+;     ()
+;     (local (defun g (x) x))
+;     (local (defun foo (x)
+;              (declare (xargs :mode :logic))
+;              (car x)))
+;     (defun foo (x)
+;       (declare (xargs :mode :program))
+;       (car x))
+;     (make-event (prog2$ (or (function-symbolp 'g (w state))
+;                             (foo 3))
+;                         (value '(defun h (x) x)))
+;   	      :check-expansion t)
+;     (defun foo (x)
+;       (declare (xargs :mode :logic))
+;       (car x)))
+
+                          (with-debug (setf (gethash *1*name hcomp-fn-ht)
+                                            *hcomp-fake-value*)
+                                      "[~s] Set hash table to ~
+                                       *hcomp-fake-value* for ~s.~%"
+                                      'redundant-*1*fn-fake *1*name))))))))
+
+(defun chk-acceptable-defuns-redundancy (names defun-mode symbol-class ctx wrld
+                                               state)
 
 ; The following comment is referenced in :doc redundant-events and in a comment
 ; in defmacro-fn.  If it is removed or altered, consider modifying that
@@ -8582,6 +8667,7 @@
 ; Note that we can avoid the restriction for local definitions, since those
 ; will be ignored in the compiled file.
 
+  #+acl2-loop-only (declare (ignore symbol-class))
   (let ((localp (f-get-global 'in-local-flg state)))
     (cond ((and (not localp)
                 (not (global-val 'boot-strap-flg (w state)))
@@ -8610,7 +8696,8 @@
                "~@0"
                (redundant-predefined-error-msg (car names) wrld)))
           (t (progn$ #-acl2-loop-only
-                     (update-hcomp-fn-ht-redundant-in-encapsulate names localp)
+                     (update-hcomp-fn-ht-redundant-in-encapsulate names localp
+                                                                  symbol-class)
                      (value (cons 'redundant defun-mode)))))))
 
 (defun chk-acceptable-defuns-verify-guards-er (names ctx wrld state)
@@ -11116,7 +11203,8 @@
                  (default-state-vars t))))
        (cond
         ((eq rc 'redundant)
-         (chk-acceptable-defuns-redundancy names defun-mode ctx wrld state))
+         (chk-acceptable-defuns-redundancy names defun-mode symbol-class ctx
+                                           wrld state))
         ((eq rc 'verify-guards)
 
 ; We avoid needless complication by simply causing a polite error in this

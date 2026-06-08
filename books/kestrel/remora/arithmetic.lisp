@@ -46,3 +46,14 @@
                 (integerp (/ x y)))
            (<= y x))
   :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled pos-gte-twice-divisor
+  (implies (and (natp x)
+                (posp y)
+                (integerp (/ x y))
+                (< y x))
+           (<= (* 2 y) x))
+  :use (:instance pos-gte-pos-divisor (x (- x y)))
+  :prep-books ((include-book "arithmetic-5/top" :dir :system)))

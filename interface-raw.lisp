@@ -4404,8 +4404,7 @@
 ; be evaluated when loading the compiled file, to store values in hash tables
 ; for later use, when add-trip deals with 'cltl-command properties.  Those
 ; extra forms are based on information deduced during the include-book phase of
-; book certification, at which time Lisp global *inside-include-book-fn* has
-; value 'hcomp-build.  During subsequent include-books, that information
+; book certification.  During subsequent include-books, that information
 ; directs which definitions from the expansion file are to be stored in our
 ; hash tables.  Additional forms are evaluated after completion of the load of
 ; the compiled file, to transfer the compiled definitions to hash tables and
@@ -5031,11 +5030,21 @@
 ; of course it is reasonable to take advantage of work already completed
 ; (mostly in 2009!) that addressed those issues.
 
+; Our initial design has evolved considerably.  The description below applies
+; to the current design, which was incorporated in early June 2026.
+
+; There are numerous tests of this use of hash tables in the run-tests book,
+; books/system/tests/encap-defs-ht-book.lisp.  Thus, in that directory see
+; encap-defs-ht-input.lsp for test input and see encap-defs-ht-log.txt for
+; corresponding output, which includes "; DEBUG:" annotations produced by
+; setting *debug-on* to t (as noted below).
+
 ; We break this Appendix into three parts as follows.
 
 ; Appendix 2 Part 1: Basic design considerations
 ; Appendix 2 Part 2: Key aspects of the implementation
-; Appendix 2 Part 3: Some tricky issues
+; Appendix 2 Part 3: Local events and redundancy
+; Appendix 2 Part 4: Other design issues
 
 ; Let's begin.
 
@@ -5051,9 +5060,10 @@
 ;   involved with reclassifying, inlining, and extended generics ("ext-gen")
 ;   considerations.
 
-; * The use of hash tables with encapsulate is only for when two passes are
-;   made for the encapsulate.  Thus, hash tables are not used when the
-;   encapsulate is entered with ld-skip-proofsp not t or nil.
+; * The special handling of hash tables for encapsulate is only for when two
+;   passes are made for the encapsulate.  Thus, there is no such special
+;   handling when encapsulate is entered with ld-skip-proofsp not t or nil
+;   (though the normal include-book handling will apply when including a book).
 
 ; * Aborts are cleaned up automatically, as they were before, because the
 ;   relevant variables (hash tables etc.) are let-bound to fresh hash tables at
@@ -5070,11 +5080,8 @@
 ;   encapsulate -- especially if that incompleteness supports a comprehensible
 ;   and maintainable implementation.
 
-; * Although we have tried to support a "comprehensible and maintainable
-;   implementation" (as suggested above), it's a bit tricky, with some issues
-;   discussed further below.  We therefore added a debugging capability that
-;   also applies to the use of hash tables with books.  To use it, evaluate the
-;   form
+; * We added a debugging capability that also applies to the use of hash tables
+;   with books.  To use it, evaluate the form
 
 ;   (setq *debug-on* t)
 
@@ -5136,7 +5143,96 @@
 ;   *hcomp-status* remains 'include-book from the preceding step and the
 ;   hash-tables remain in place.  Get the ht entry for f.
 
-; Appendix 2 Part 3: Some tricky issues
+; Appendix 2 Part 3: Local events and redundancy
+
+; - Unlike earlier approaches, we never store into hash tables for local events
+;   encountered in pass 1 of an encapsulate.  This makes intuitive sense since
+;   pass 2 will ignore those local events.  But consider the following simple
+;   example.
+
+;     (encapsulate
+;       ()
+;       (local (defun foo (x) (cons x x)))
+;       ;; redundant:
+;       (defun foo (x) (cons x x)))
+
+;   Just below is the relevant output after evaluating (setq *debug-on* t) in
+;   raw Lisp.  It shows that we save to the hash table at the redundant defun
+;   during pass 1, and this is retrieved for that (no longer redundant) defun
+;   in pass 2.  The code for this is in the defun of
+;   update-hcomp-fn-ht-redundant-in-encapsulate.
+
+;     ACL2 !>>(LOCAL (DEFUN FOO (X) (CONS X X)))
+;     
+;     Since FOO is non-recursive, its admission is trivial.  We observe that
+;     the type of FOO is described by the theorem (CONSP (FOO X)).  We used
+;     primitive type reasoning.
+;     ; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+;     ; DEBUG: [IFATHB-1] Eval def for FOO.
+;     ; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::FOO.
+;     
+;     Summary
+;     Form:  ( DEFUN FOO ...)
+;     Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+;     Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+;     FOO
+;     
+;     
+;     ACL2 !>>(DEFUN FOO (X) (CONS X X))
+;     ; DEBUG: [REDUNDANT-FN] Set (symbol-function FOO).
+;     ; DEBUG: [REDUNDANT-*1*FN] Set (symbol-function ACL2_*1*_ACL2::FOO).
+;     
+;     The event ( DEFUN FOO ...) is redundant.  See :DOC redundant-events.
+;     
+;     Summary
+;     Form:  ( DEFUN FOO ...)
+;     Rules: NIL
+;     Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+;     :REDUNDANT
+;     
+;     End of Encapsulated Events.
+;     ; DEBUG: [IFATIB-5] Set (symbol-function FOO), symbol-class :IDEAL.
+;     ; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::FOO), symbol-class :IDEAL.
+;     
+;     Having verified that the encapsulated events validate the signatures
+;     of the ENCAPSULATE event, we discard the ephemeral theory and extend
+;     the original theory as directed by the signatures and the non-LOCAL
+;     events.
+;     
+;     We export FOO.
+
+;   Analogous redundancy handling for macros and constants may be found in
+;   the defuns for defmacro-fn, stop-redundant-defconst, and defconst-fn.
+
+;   This approach for handling local events and redundancy works well in
+;   general, but here are some restrictions and detais regarding the use of
+;   hash tables, especially for *1* functions.  Others may be found in the
+;   code; to find them, search for "(with-debug" applied to a form involving
+;   gethash.
+
+;   - Avoid saving memoized symbol-function for the fn (only; not *1*fn).
+
+;   - We populate a hash table with *hcomp-fake-value* when necessary (see the
+;     code for cases and explanations).
+
+;   - By ignoring local definitions but saving into hash tables at redundant
+;     definitions (rather than the other way around, as in the original, buggy
+;     approach), we get some nice benefits.
+
+;     + We can retrieve from a hash table even when the earlier definition
+;       comes from a locally included book.
+
+;     + Local definitions that do not provide code for later definitions do not
+;       clutter a hash table.
+
+;   - We do not redo the proclaiming done in install-defs-for-add-trip when
+;     storing a redundant definition, since there is no need.
+
+;   - We don't bother with hash tables for defstobj and
+;     defabsstobj since there's little gain and we don't want to
+;     complicate the code needlessly
+
+; Appendix 2 Part 4: Other design issues
 
 ; There are some rather tricky issues in the design of the use of hash tables
 ; for encapsulate.  Here is a summary of many of them.
@@ -5170,12 +5266,9 @@
 ;   - [a] pass 1, [b] pass 2, [c] single pass; and
 ;   - [a] pass 2, [b] single pass, [c] single pass.
 
-; - Memoization is never applied to a function symbol that has just been
-;   defined, so symbol-functions that are saved to, and restored from, hash
-;   tables are not memoized.  The only concern we might have about memoization
-;   is for *1* functions when reclassifying from program mode to logic mode.
-;   But memoization is not applied to *1* functions, so that is not a concern
-;   after all.
+; - The symbol-function for a memoized function, fn, is not saved to a hash
+;   table.  However, since *1* functions are not memoized, the *1* function for
+;   fn can be saved to a hash table even when fn is memoized.
 
 ; - Could there be a problem with inlining?  The following suggests that there
 ;   could be.  Note that ACL2 inlines calls of f$inline and, indeed, of any
@@ -5347,221 +5440,6 @@
 ;   initiated this discussion.  If complaints arise then this issue can then be
 ;   considered.
 
-; - We deal suitably with local events in encapsulates, as follows.
-
-;   + Associate the *1* function for any local defun in logic mode with
-;     *hcomp-fake-value*, as suggested by the following example, since the *1*
-;     function for the logic-mode version isn't suitable for the program-mode
-;     version.  This special treatment is only for the *1* function, since the
-;     CL defun is the same regardless of the mode.
-
-;     (encapsulate
-;       ()
-;       (local (defun foo (x)
-;                (declare (xargs :mode :logic))
-;                (cons x x)))
-;       ;; redundant on first pass:
-;       (defun foo (x)
-;         (declare (xargs :mode :program))
-;         (cons x x)))
-
-;     If this approach causes unpleasant inefficiency for users, we could
-;     consider storing the mode of the function with the *1* function.  But
-;     that is necessary only for encapsulates, not books, and we prefer not to
-;     re-think how we handle books and to minimize discrepancies between our
-;     handling of books and encapsulates with respect to hash tables.  So for
-;     now at least, we avoid storing *1* symbol-functions into hash tables for
-;     local logic-mode defuns.
-
-;     From the example above, it might seem sufficient to avoid storing *1*
-;     symbol-functions for any local logic-mode defun, rather than associating
-;     the *1* symbol with *hcomp-fake-value*.  But consider the following
-;     example.
-
-;     (encapsulate
-;       ()
-;       (local (defun foo (x)
-;                (declare (xargs :mode :program))
-;                (cons x x)))
-;       (local (defun foo (x)
-;                (declare (xargs :mode :logic))
-;                (cons x x)))
-;       ;; redundant on first pass:
-;       (defun foo (x)
-;         (declare (xargs :mode :logic))
-;         (cons x x)))
-
-;     As noted in an item below, we do store *1* functions for local
-;     program-mode defuns.  With that in mind, note that on pass 1 in the
-;     encapsulate event displayed just above, only the *1* symbol-function from
-;     the local program-mode defun is stored: the *1* symbol-function from the
-;     local logic-mode defun is not stored, and the final (and non-local) defun
-;     is redundant.  If we were simply to skip storing the *1* symbol-function
-;     for the local logic-mode defun, then on pass 2, we would retrieve the
-;     program-mode *1* symbol-function and store it for the (non-local)
-;     logic-mode defun, which would be a mistake.  But by storing
-;     *hcomp-fake-value* upon encountering the local program-mode defun in pass
-;     1, we avoid making that mistake.
-
-;     Here is one more example of why we don't store in the hash table for
-;     local logic-mode defuns.  Suppose we stored the *1* symbol-function for
-;     foo for the first (i.e., local) defun below.  Its code would assume that
-;     foo is guard-verified.  But in the second pass foo is not guard-verified.
-;     That's not unsound, because foo *could* be considered to be
-;     guard-verified.  But the behavior might be surprising.
-
-;     (encapsulate
-;       ()
-;       (local (defun foo (x)
-;                (declare (xargs :guard (consp x)))
-;                (cons x x)))
-;       (defun foo (x)
-;         (declare (xargs :guard (consp x) :verify-guards nil))
-;         (cons x x)))
-
-;   + Do not store in hash table for local events in inner encapsulates, as
-;     illustrated by the following example.
-
-;     (encapsulate ()
-;       (encapsulate ()
-;         (local (defun g (x)
-;                  (declare (xargs :mode :program))
-;                  x)))
-;       ;; This is a different definition for g than the one above:
-;       (defun g (x)
-;         (declare (xargs :mode :program))
-;         (cons x x)))
-
-;     Alternatively we could store *hcomp-fake-value* for one of the defuns of
-;     g and its *1* function.  But by instead storing symbol-functions in pass
-;     1 only for the non-local defun, we get a hash table hit in pass 2 for
-;     that non-local defun.
-
-;     This decision (to skip storing for local events in the hash tables within
-;     inner encapsulates) has a downside, though.  Consider instead the
-;     following encapsulate.
-
-;     (encapsulate ()
-;       (local (encapsulate ()
-;                (local (defun g (x)
-;                         (declare (xargs :mode :program))
-;                         (cons x x)))
-;                ;; redundant on pass 1 of inner encapsulate
-;                (defun g (x)
-;                  (declare (xargs :mode :program))
-;                  (cons x x))))
-      ;; redundant on pass 1 of inner encapsulate
-;       (defun g (x)
-;         (declare (xargs :mode :program))
-;         (cons x x)))
-
-;     We don't store into a hash table during pass 1 of the inner encapsulate,
-;     because we don't store for the first defun as noted above and we skip the
-;     other defuns on pass 1 because they are redundant.  But then we don't get
-;     a hit during pass 2 of the inner encapsulate nor do we get a hit for the
-;     defun in pass 2 of the outer encapsulate.
-
-;     We could perhaps address this downside, of missing opportunities to
-;     retrieve from hash tables.  But that would likely complicate the
-;     algorithm, compared to the simple rule of ignoring local events in inner
-;     encapsulates when storing into hash tables.  Since this extra storage
-;     would only make a difference when we have redundancy with local events,
-;     the benefit does not seem justified by the extra complexity.
-
-;     Another possibility is to use a fresh hash table for the inner
-;     encapsulate and transfer only what's around after pass 2 to the outer
-;     encapsulate's hash table.  But again, this extra complexity doesn't seem
-;     justifiable.  Of course, if users point out natural conditions that seem
-;     to justify reconsideration of this decision, it can be reconsidered.
-
-;   + Although we skip storing *1* symbol-functions for local logic-mode defuns
-;     as well as all local events in inner encapsulates (see above), we don't
-;     skip storing *1* symbol-functions for local program-mode defuns in an
-;     outermost encapsulate.  (Similarly, in an outermost encapsulate we don't
-;     skip storing Common Lisp (CL) symbol-functions for local program-mode
-;     defuns or definitions for local defconst or defmacro events.)  Here's a
-;     relevant example.
-
-;     (encapsulate
-;       ()
-;       (local (defun foo (x)
-;                (declare (xargs :mode :program))
-;                (cons x x)))
-;       ;; redundant:
-;       (defun foo (x)
-;         (declare (xargs :mode :program))
-;         (cons x x)))
-
-;     If we skip storing a *1* (or CL) symbol-function for the local defun,
-;     then we don't get the benefit of hash-table retrieval when considering
-;     the non-local defun pass 2.
-
-;     (Well, unless we store upon encountering the redundant defun in pass 1.
-;     But then we would need to be careful about memoization for the CL defun,
-;     since the function symbol isn't new.  In general, it's best to avoid
-;     storing more than necessary for a redundant defun, as doing so can be
-;     error-prone.)
-
-;     But consider the following example.
-
-;     (encapsulate
-;       ()
-;       (local (defun foo (x)
-;                (declare (xargs :mode :program))
-;                (cons x x)))
-;       (local (defun foo (x)
-;                (declare (xargs :mode :logic))
-;                (cons x x)))
-;       (defun foo (x)
-;         (declare (xargs :mode :logic))
-;         (cons x x)))
-
-;   The first pass will treat foo as semi-qualified.  Then the second pass will
-;   see foo as semi-qualified and therefore skip the lookup for the *1*
-;   symbol-function of the non-local defun.  This is unfortunate, but it is
-;   probably not a common situation.  So it seems reasonable to live with this
-;   minor inefficiency, rather than to redesign how we deal with handling
-;   program-mode and logic-mode functions using the notion of semi-qualified.
-
-; - We exclude the use of hash tables inside non-trivial encapsulates, i.e.,
-;   encapsulates with non-empty signatures, when making two passes of the
-;   encapsulate -- that is, when (ld-skip-proofsp state) is t or nil (rather
-;   than include-book or related values).  This exclusion doesn't interfere
-;   with the use of hash tables by include-book or certify-book because
-;   ld-skip-proofsp is 'include-book when dealing with hash tables in those
-;   cases, so we are in the branch of encapsulate-fn that doesn't use
-;   with-hcomp-bindings-encapsulate.
-
-;   But if we are within a superior encapsulate that has empty signature list,
-;   will this throw things off regarding potentially semi-qualified symbols?
-;   Consider the following example.
-
-;   (encapsulate
-;     ()
-;     (encapsulate
-;       ((h (x) t))
-;       (local (defun h (x) x))
-;       (defun foo (x) (declare (xargs :mode :program)) x))
-;     (defun foo (x) x))
-
-;   There are two cases to consider when evaluating the outer encapsulate.
-
-;   Case 1: Ld-skip-proofsp is t or nil, i.e., not 'include-book (or the other
-;   two values that are similar to it) when entering the outer encapsulate.  So
-;   we are not inside include-book (whether or not on behalf of certify-book).
-;   Then foo is considered to be qualified at the end of pass 1 of the outer
-;   encapsulate, by virtue of not storing into a hash table for the first defun
-;   of foo (because it's under a non-trivial encapsulate) and storing the
-;   second defun of foo.  And in pass 2 of that outer encapsulate, the first
-;   defun of foo doesn't get its value from the hash table, but the second
-;   defun of foo does, since install-for-add-trip-include-book uses a qualified
-;   value without worrying about whether or not the defun is reclassifying.
-
-;   Case 2: Ld-skip-proofsp is not t or nil, i.e., it is 'include-book when
-;   entering the outer encapsulate.  Then neither encapsulate hits the
-;   with-hcomp-bindings-encapsulate call in encapsulate-fn, so this issue
-;   disappears.
-
 ; - For storing and retrieving to *hcomp-fn-ht* on behalf of encapsulate, it is
 ;   tempting to restrict to the case that the host Lisp compiles on the fly,
 ;   hence is either CCL or SBCL.  However, we do not make that restriction,
@@ -5577,7 +5455,7 @@
 ;     ;; Redundant only on pass 1.
 ;     (defun foo (x) (declare (xargs :mode :program)) <body>))
 
-;   Then in Lisps other than CCL and SBCL, foo would get a non-compiled
+;   Then in Lisps other than CCL and SBCL, foo will get a non-compiled
 ;   symbol-function on pass 2.  However, the situation described by that
 ;   example seems rather pathological, so we opt for simplicity, treating all
 ;   Lisps the same here.  That can be reconsidered if it causes problems in
@@ -5588,64 +5466,28 @@
 
 ; - We considered, when entering include-book even when not using hash tables
 ;   (presumably because no compiled file is used), setting *hcomp-status* to
-;   nil so that encapsulate-based hash tables aren't even considered.  But this
-;   isn't necessary: if we're in a local include-book, then there cannot be any
-;   enclosing encapsulate in pass 2, since otherwise ld-skip-proofsp would be
-;   'include-book and hence local events would be skipped.  So there cannot be
-;   any retrieval from the hash tables.
+;   nil so that even when the include-book is inside an encapsulate, no
+;   encapsulate-based hash tables are considered.  But this isn't necessary:
+;   such an include-book is necessarily local, hence not encountered in pass 2
+;   of encapsulate since local events are skipped then.  So there cannot be any
+;   retrieval from the hash tables.
 
-; - We disallow the use of hash tables (both populating them and looking up in
-;   them) when redefinition is on.  That was not an issue when dealing with
-;   certified books, since redefinition is off during certification (see the
-;   state global bindings of 'ld-redefinition-action in certify-book-step-2 and
-;   certify-book-step-3+).  Note that make-event expansion reverts the state
-;   global, 'ld-redefinition-action.  As with certify-book and include-book,
-;   this guarantees that redefinition won't be turned on during processing an
-;   encapsulate.
+; - When redefinition is on, we disallow the use of hash tables for encapsulate
+;   events -- both populating the hash tables and looking up in them.  (See the
+;   binding of do-hcomp-build-p in encapsulate-fn.)  That was not an issue when
+;   dealing with certified books, since redefinition is off during
+;   certification (see the state global bindings of 'ld-redefinition-action in
+;   certify-book-step-2 and certify-book-step-3+).  Note that make-event
+;   expansion reverts the state global, 'ld-redefinition-action.  As with
+;   certify-book and include-book, this guarantees that redefinition won't be
+;   turned on during processing an encapsulate.
 
 ; - We claim that the hash tables used by encapsulate never provide an
-;   incorrect value.  A bit of argument is required for *1* functions, but for
-;   the other cases it's clear since if it were false, the events that store
-;   and retrieve would be in conflict, but neither is local to an inner
-;   encapsulate (since we don't store or retrieve in those cases), so the
-;   conflict would also be present in pass 1, which would have caused an error.
-
-;   For *1* functions the error would be if we store a logic-mode version but
-;   retrieve a program-mode version, or vice-versa.  Let's consider those in
-;   turn.
-
-;   + Suppose we store the *1* function into *hcomp-fn-ht* for a logic-mode
-;     defun of f.  That defun must be non-local, since we don't store for local
-;     logic-mode *1* functions.  It can't be before retrieving a *1*
-;     symbol-function from *hcomp-fn-ht* for a program-mode defun of f, because
-;     then the program-mode defun would be redundant so there would be no
-;     retrieval.  So that logic-mode defun is after the program-mode defun,
-;     hence is reclassifying.  So the logic-mode function is semi-qualified,
-;     and a reclassifying value is stored into *hcomp-fn-ht* for the *1* symbol
-;     for f (let's call it *1*f).  Then the program-mode defun will not receive
-;     a stored value for *1*f, since no program-mode defun gets a value from
-;     *hcomp-fn-ht* when it is associated there with a reclassifying value.
-
-;   + Assume that we store the *1* symbol-function for a program-mode defun D_P
-;     of f, and then erroneously retrieve that in pass 2 as the *1* function
-;     for a logic-mode defun D_L of f.  So D_L is non-local (since we're in
-;     pass 2 of some superior encapsulate when retrieving from *hcomp-fn-ht*
-;     for encapsulate).  So D_L was encountered in pass 1 after D_P, else D_P
-;     would have been redundant.  But then *1*f was associated with a
-;     reclassifying value in *hcomp-fn-ht* upon evaluating D_L, so
-;     *hcomp-fn-ht* does not contain the program-mode *1* symbol-function when
-;     D_L is encountered in pass 2, a contradiction of our assumption.
-
-; - In late January 2026, we improved efficiency in two ways.  For one, we
-;   changed the structure so as to take advantage of the new encapsulate
-;   feature, that symbol-functions are saved in pass 1 so that they need not be
-;   recompiled in pass 2.  It probably would be easy to do the same thing for
-;   macros and constants, but we didn't (this could be future work).  The other
-;   change was to add function update-hcomp-fn-ht-redundant-in-encapsulate, to
-;   store in hash tables for non-local redundant defuns in pass 1 of
-;   encapsulate, which can make a significant difference when a defun is
-;   redundant with one that came from a local include-book (which thus wasn't
-;   stored).
+;   incorrect value.  A bit of argument is required for *1* functions, below;
+;   but for the other cases it's clear since a conflict would require storing
+;   values for local events in inner encapsulates, which we do not do.
+;   For *1* functions we are careful to retrieve from a hash table only when
+;   the symbol-classes match up for the old and (redundant) new defun.
 
 ; End of Essay on Hash Table Support for Compilation
 
@@ -6451,25 +6293,30 @@
           ((eq s 'encapsulate-pass-1) 'encapsulate-pass-1)
           (t nil))))
 
-(defun install-for-add-trip-hcomp-build (def reclassifyingp evalp)
+(defun install-for-add-trip-hcomp-build (def reclassifyingp evalp
+                                             &aux (state *the-live-state*))
 
 ; See the Essay on Hash Table Support for Compilation.
 
 ; Def is a definition starting with defun, defconst, defmacro, or defabbrev.
 
-  (let* ((type (car def))
-         (name (cadr def))
-         (ht (hcomp-ht-from-type type 'install-for-add-trip-hcomp-build)))
-    (when evalp
+  (when evalp
+    (let ((name (cadr def)))
       (with-debug (incf-pass2-def-time? (eval def))
                   "[~s] Eval def for ~s.~%"
-                  'idfathb-1 name)
+                  'ifathb-1 name)
       #-(or ccl sbcl)
       (when (and (eq (car def) 'defun)
-                 (default-compile-fns (w *the-live-state*)))
+                 (default-compile-fns (w state)))
         (with-debug (incf-pass2-def-time? (compile name))
                     "[~s] Compile def for ~s.~%"
-                    'idfathb-2 name)))
+                    'ifathb-2 name))))
+  (when (and (f-get-global 'in-local-flg state)
+             (eq (hcomp-build-p) 'encapsulate-pass-1))
+    (return-from install-for-add-trip-hcomp-build nil))
+  (let* ((name (cadr def))
+         (type (car def))
+         (ht (hcomp-ht-from-type type 'install-for-add-trip-hcomp-build)))
     (assert ht)
     (multiple-value-bind
      (old present-p)
@@ -6496,7 +6343,7 @@
             (with-debug (setf (gethash name ht)
                               *hcomp-fake-value*)
                         "[~s] Set hash table to *hcomp-fake-value* for ~s.~%"
-                        'idfathb-3 name))
+                        'ifathb-3 name))
            (present-p (cond ((and reclassifyingp
                                   (not (reclassifying-value-p old)))
                              (with-debug
@@ -6511,7 +6358,7 @@
                                               (symbol-function name))))
                               "[~s] Set hash table to reclassifying value for ~
                                ~s.~%"
-                              'idfathb-4 name))
+                              'ifathb-4 name))
                             (t
 
 ; This case is presumably impossible unless raw mode is used somehow to allow
@@ -6519,9 +6366,10 @@
 
                              (with-debug (setf (gethash name ht)
                                                *hcomp-fake-value*)
-                                         "[~s] Set hash table to ~
-                                          *hcomp-fake-value* for ~s.~%"
-                                         'idfathb-5 name))))
+                                         "[~s] Surprising case: Set hash ~
+                                          table to *hcomp-fake-value* for ~
+                                          ~s.~%"
+                                         'ifathb-5 name))))
            (t
             (with-debug (setf (gethash name ht)
                               (case type
@@ -6529,7 +6377,7 @@
                                 (defparameter (symbol-value name))
                                 (otherwise    (macro-function name))))
                         "[~s] Set hash table for ~s.~%"
-                        'idfathb-6 name))))))
+                        'ifathb-6 name))))))
 
 (defun install-for-add-trip-include-book (type name name0 def reclassifyingp
                                                wrld)
@@ -6627,7 +6475,9 @@
           (assert$
            (eq type 'defun) ; presumably a *1* symbol
            (let ((fixed-val (unmake-reclassifying-value val)))
-             (setf (gethash name ht) fixed-val) ; see comment below
+             (with-debug (setf (gethash name ht) fixed-val) ; see comment below
+                         "[~s] Update hash table entry for ~s with fixed-val.~%"
+                         'ifatib-2 name)
              (cond (reclassifyingp
 
 ; We do not see how this situation can occur in the second pass of an
@@ -6653,34 +6503,34 @@
                     (with-debug
                      (setf (symbol-function name) fixed-val)
                      "[~s] Set (symbol-function ~s) with fixed-val.~%"
-                     'ifatib-2 name))
+                     'ifatib-3 name))
                    (t (cond (def (with-debug (incf-pass2-def-time?
                                               (eval def))
                                              "[~s] Eval def for ~s.~%"
-                                             'ifatib-3 name))
+                                             'ifatib-4 name))
                             (t (setq return-val nil))))))))
          (t (case type
               (defun
                   (with-debug (setf (symbol-function name) val)
-                              "[~s] Set (symbol-function ~s), mode ~s.~%"
-                              'ifatib-4
+                              "[~s] Set (symbol-function ~s), symbol-class ~s.~%"
+                              'ifatib-5
                               name
-                              (fdefun-mode name0 wrld)))
+                              (symbol-class name0 wrld)))
               (defparameter
                 (with-debug (setf (symbol-value name) val)
                             "[~s] Set (symbol-value ~s).~%"
-                            'ifatib-5 name))
+                            'ifatib-6 name))
               (otherwise
                (assert$ (member-eq type '(defabbrev defmacro))
                         (with-debug (setf (macro-function name) val)
                                     "[~s] Set (macro-function ~s).~%"
-                                    'ifatib-6 name))))
+                                    'ifatib-7 name))))
             t))))
       (t ; Hash-table lookup either fails or is not used.
        (when def
          (with-debug (incf-pass2-def-time? (eval def))
                      "[~s] Eval def for ~s.~%"
-                     'ifatib-7 def))))
+                     'ifatib-8 def))))
      return-val)))
 
 (defun install-for-add-trip (def reclassifyingp evalp)
@@ -6916,46 +6766,14 @@
 
                        (with-debug (incf-pass2-def-time? (eval form))
                                    "[~s] (eval ~s)~%"
-                                   'idfat-5 form))
-                     (let ((skip-reason
-; Warning: Keep this in sync with update-hcomp-fn-ht-redundant-in-encapsulate.
-                            (and (eq hcomp-build-p 'encapsulate-pass-1)
-                                 (let ((state *the-live-state*))
-                                   (and (f-get-global 'in-local-flg state)
-                                        (cond ((and oneify-p
-                                                    (eq (cadr def) :logic))
-                                               'logic)
-                                              ((in-nested-encapsulatep state)
-                                               'nested-encapsulate)
-                                              (t nil)))))))
-                       (when skip-reason
-                         (cond
-                          ((eq skip-reason 'logic)
-                           (assert *hcomp-fn-ht*) ; as hcomp-build-p is non-nil
-                           (when evalp
-                             (with-debug (incf-pass2-def-time?
-                                          (eval (car tail)))
-                                         "[~s] Eval def for ~s.~%"
-                                         'idfat-6 (cadr (car tail))))
-                           (with-debug (setf (gethash (*1*-symbol name)
-                                                      *hcomp-fn-ht*)
-                                             *hcomp-fake-value*)
-                                       "[~s] Storing *hcomp-fake-value* for ~
-                                        ~s.~%"
-                                       'idfat-7 (*1*-symbol name)))
-                          (evalp
-                           (with-debug (incf-pass2-def-time?
-                                        (eval (car tail)))
-                                       "[~s] Eval def for ~s.~%"
-                                       'idfat-8 (cadr (car tail)))))
-                         (setf (car tail) nil))))))))
+                                   'idfat-5 form)))))))
   (cond ((eq *hcomp-status* 'include-book)
          (assert evalp)
          (loop for def in defs
                when def
                do (with-debug (incf-pass2-def-time? (eval def))
                               "[~s] Eval def for ~s.~%"
-                              'idfat-8 (cadr def))))
+                              'idfat-9 (cadr def))))
         (hcomp-build-p
          (loop for def in defs
                when def
@@ -6966,7 +6784,7 @@
          (loop for def in defs
                do (with-debug (incf-pass2-def-time? (eval def))
                               "[~s] Eval def for ~s.~%"
-                              'idfat-9 (cadr def))))))
+                              'idfat-10 (cadr def))))))
 
 (defun ifat-defparameter (name val form)
 

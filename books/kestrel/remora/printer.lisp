@@ -1033,13 +1033,21 @@
               (pdoc-concat (pdoc-bracket (nat-list-to-pdoc e.dims))
                            (pdoc-concat (pdoc-line)
                                         (atom-list-to-pdoc e.atoms))))
-      :array-empty (pdoc-text "<array-empty>")
+      :array-empty (pdoc-prefix-form
+                    "array"
+                    (pdoc-concat (pdoc-bracket (nat-list-to-pdoc e.dims))
+                                 (pdoc-concat (pdoc-line)
+                                              (type-to-pdoc e.type))))
       :frame (pdoc-prefix-form
               "frame"
               (pdoc-concat (pdoc-bracket (nat-list-to-pdoc e.dims))
                            (pdoc-concat (pdoc-line)
                                         (expr-list-to-pdoc e.exprs))))
-      :frame-empty (pdoc-text "<frame-empty>")
+      :frame-empty (pdoc-prefix-form
+                    "frame"
+                    (pdoc-concat (pdoc-bracket (nat-list-to-pdoc e.dims))
+                                 (pdoc-concat (pdoc-line)
+                                              (type-to-pdoc e.type))))
       :string (pdoc-text (string-lit-to-string e.chars))
       :app (if (consp e.args)
                (pdoc-call-form (expr-to-pdoc e.fun)
