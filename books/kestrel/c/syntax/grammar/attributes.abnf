@@ -62,7 +62,8 @@ attribute = attribute-name [ attribute-parameters ]
 ; as consisting of two separate tokens,
 ; so that we do not have to define a new kind of token.
 ; This means that our grammar allows white space and comments
-; between the two open or closed parenthesis.
+; between the two open or closed parenthesis;
+; Clang implementations allow that.
 
 attribute-list = attribute *( "," attribute )
 
