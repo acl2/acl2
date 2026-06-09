@@ -67,11 +67,12 @@
   (make-atom-base :lit (make-base-lit-int :lit (make-int-lit :digits digits))))
 
 ;; A bare integer literal in *expression* position.  Per the grammar, an atom
-;; used as an expression denotes a rank-0 (scalar) array: (array [] <atom>),
-;; i.e. an `expr-array' with no dimensions and a single atom.
+;; used as an expression is abstracted to an `expr-atom', preserving the
+;; information that it was written as an atom; a later desugaring pass turns it
+;; into the rank-0 (scalar) array (array [] <atom>).
 (define int-expr ((digits str::dec-digit-char-listp))
   :guard (consp digits)
-  (make-expr-array :dims nil :atoms (list (int-atom digits))))
+  (make-expr-atom :atom (int-atom digits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -196,20 +197,18 @@
             (MAKE-PROG
              :EXPR (MAKE-EXPR-BRACKET
                     :EXPRS (LIST
-                            (MAKE-EXPR-ARRAY
-                             :DIMS NIL
-                             :ATOMS (LIST (MAKE-ATOM-BASE
-                                           :LIT (MAKE-BASE-LIT-INT
-                                                 :LIT (MAKE-INT-LIT
-                                                       :SIGN? NIL
-                                                       :DIGITS (LIST #\0))))))
-                            (MAKE-EXPR-ARRAY
-                             :DIMS NIL
-                             :ATOMS (LIST (MAKE-ATOM-BASE
-                                           :LIT (MAKE-BASE-LIT-INT
-                                                 :LIT (MAKE-INT-LIT
-                                                       :SIGN? NIL
-                                                       :DIGITS (LIST #\3))))))))))
+                            (MAKE-EXPR-ATOM
+                             :ATOM (MAKE-ATOM-BASE
+                                    :LIT (MAKE-BASE-LIT-INT
+                                          :LIT (MAKE-INT-LIT
+                                                :SIGN? NIL
+                                                :DIGITS (LIST #\0)))))
+                            (MAKE-EXPR-ATOM
+                             :ATOM (MAKE-ATOM-BASE
+                                    :LIT (MAKE-BASE-LIT-INT
+                                          :LIT (MAKE-INT-LIT
+                                                :SIGN? NIL
+                                                :DIGITS (LIST #\3)))))))))
 (test-roundtrip "[1 2 3]")
 
 ;; Note, currently the only place "[]" can occur is in shape and shape-lit.
