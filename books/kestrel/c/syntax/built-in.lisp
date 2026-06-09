@@ -12,7 +12,6 @@
 (in-package "C$")
 
 (include-book "std/util/defval" :dir :system)
-(include-book "xdoc/defxdoc-plus" :dir :system)
 
 (include-book "../language/implementation-environments/dialects")
 
