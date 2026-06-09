@@ -3664,25 +3664,28 @@
                           ((mv info? -)
                            (vstate-lookup-tag tyspec.spec.name? vstate))
                           ((when info?)
-                           (if (equal (valid-tag-info->kind info?)
-                                      (tag-kind-struct))
-                               (retok (type-spec-struct new-spec)
-                                      (make-type-struct
-                                       :uid (valid-tag-info->uid info?)
-                                       :tunit? (vstate->filepath vstate)
-                                       :tag/members
-                                       (type-struni-tag/members-tagged
-                                        tyspec.spec.name?))
-                                      nil
-                                      types
-                                      vstate)
-                             (retmsg$ "The tag is expected ~
-                                       to be of kind 'union', ~
-                                       but it is of kind 'struct'. ~
-                                       This occurred ~
-                                       in the type specifier ~x1."
-                                      tyspec.spec.name?
-                                      (type-spec-fix tyspec))))
+                           (b* (((unless (equal (valid-tag-info->kind info?)
+                                                (tag-kind-struct)))
+                                 (retmsg$ "The tag is expected ~
+                                           to be of kind 'union', ~
+                                           but it is of kind 'struct'. ~
+                                           This occurred ~
+                                           in the type specifier ~x1."
+                                          tyspec.spec.name?
+                                          (type-spec-fix tyspec)))
+                                (type (make-type-struct
+                                        :uid (valid-tag-info->uid info?)
+                                        :tunit? (vstate->filepath vstate)
+                                        :tag/members
+                                        (type-struni-tag/members-tagged
+                                          tyspec.spec.name?)))
+                                (info (type-spec-struct-info type)))
+                             (retok (make-type-spec-struct :spec new-spec
+                                                           :info info)
+                                    type
+                                    nil
+                                    types
+                                    vstate)))
                           (uid (vstate->next-uid vstate))
                           (vstate (change-vstate
                                     vstate
@@ -3691,13 +3694,16 @@
                                                   (make-valid-tag-info
                                                    :kind (tag-kind-struct)
                                                    :uid uid)
-                                                  vstate)))
-                       (retok (type-spec-struct new-spec)
-                              (make-type-struct
-                               :uid uid
-                               :tunit? (vstate->filepath vstate)
-                               :tag/members (type-struni-tag/members-tagged
-                                             tyspec.spec.name?))
+                                                  vstate))
+                          (type (make-type-struct
+                                  :uid uid
+                                  :tunit? (vstate->filepath vstate)
+                                  :tag/members (type-struni-tag/members-tagged
+                                                 tyspec.spec.name?)))
+                          (info (type-spec-struct-info type)))
+                       (retok (make-type-spec-struct :spec new-spec
+                                                     :info info)
+                              type
                               nil
                               types
                               vstate)))
@@ -3748,8 +3754,10 @@
                               :completions (hons-acons
                                              uid
                                              type-struni-members
-                                             (vstate->completions vstate)))))
-                 (retok (type-spec-struct new-spec)
+                                             (vstate->completions vstate))))
+                    (info (type-spec-struct-info type)))
+                 (retok (make-type-spec-struct :spec new-spec
+                                               :info info)
                         type
                         nil
                         types
@@ -3949,10 +3957,12 @@
                               :completions (hons-acons
                                              uid
                                              nil
-                                             (vstate->completions vstate)))))
+                                             (vstate->completions vstate))))
+                          (info (type-spec-struct-info type)))
                        (retok (make-type-spec-struct-empty
                                :attribs tyspec.attribs
-                               :name? tyspec.name?)
+                               :name? tyspec.name?
+                               :info info)
                               type
                               nil
                               nil
