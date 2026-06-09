@@ -111,7 +111,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *gcc/clang-built-in-functions*
-  :parents (*gcc/clang-built-in*)
   :short "A partial list of functions built-in to GCC and Clang."
   :long
   (xdoc::topstring
@@ -494,7 +493,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *gcc/clang-built-in-vars*
-  :parents (*gcc/clang-built-in*)
   :short "A partial list of variables built-in to GCC and Clang."
   :long
   (xdoc::topstring
