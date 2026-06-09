@@ -91,6 +91,7 @@
 ; (depends-on "grammar/expressions-c17-ext.abnf")
 ; (depends-on "grammar/expressions-c23-ext.abnf")
 ; (depends-on "grammar/attributes.abnf")
+; (depends-on "grammar/assembly.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -433,6 +434,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar assembly "assembly")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
   :file "grammar/grammar-rest.abnf"
@@ -588,6 +593,8 @@
                      *grammar-expressions-c23-noext*)))
      ;; attributes:
      *grammar-attributes*
+     ;; assembly:
+     *grammar-assembly*
      ;; rest (TODO: modularize):
      *grammar-rest*))
 
