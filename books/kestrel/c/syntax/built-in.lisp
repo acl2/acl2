@@ -29,13 +29,13 @@
    (xdoc::p
      "Compilers implementing an extended dialect of C often provide
       a variety of ``built-in'' functions and objects.
-      Such function and objects may be used despite never being declared.
+      Such functions and objects may be used despite never being declared.
       Therefore, some information about built-ins must be hard-coded
       in order to "
      (xdoc::seetopic "disambiguation" "disambiguate")
      " and "
      (xdoc::seetopic "validation" "validate")
-     " non-standard C programs.")
+     " C programs written in those dialects.")
    (xdoc::p
      "Currently, the only information we track about built-ins
       is the identifier and whether it is a function or an object.
@@ -46,9 +46,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *gcc-built-in-functions*
-  :parents (*gcc-built-in*)
-  :short "A partial list of functions built-in to GCC."
+(defval *gcc/clang-built-in-functions*
+  :parents (*gcc/clang-built-in*)
+  :short "A partial list of functions built-in to GCC and Clang."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -59,11 +59,15 @@
      "Many built-in functions are documented in the GCC manual "
      (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Built-in-Functions.html"
                   "[GCCM:7]")
-     "Some built-ins do not seem to be documented,
+     ". Some built-ins do not seem to be documented,
       but are nonetheless added after having been observed
       in real-world code accepted by GCC.
       In particular, the built-ins ending in @('\"_chk\"')
-      were all observed in glibc."))
+      were all observed in glibc.")
+    (xdoc::p
+     "Some of these built-ins are also documented in [CLE],
+      but in any case Clang generally follows GCC.
+      We have not yet observed cases in which they differ."))
   (list (ident "__atomic_compare_exchange_n")
         (ident "__atomic_exchange_n")
         (ident "__atomic_fetch_add")
@@ -183,14 +187,14 @@
         (ident "__sync_val_compare_and_swap")
         (ident "__sync_xor_and_fetch"))
   ///
-  (assert-event (ident-listp *gcc-built-in-functions*))
-  (assert-event (no-duplicatesp-equal *gcc-built-in-functions*)))
+  (assert-event (ident-listp *gcc/clang-built-in-functions*))
+  (assert-event (no-duplicatesp-equal *gcc/clang-built-in-functions*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *gcc-built-in-vars*
-  :parents (*gcc-built-in*)
-  :short "A partial list of variables built-in to GCC."
+(defval *gcc/clang-built-in-vars*
+  :parents (*gcc/clang-built-in*)
+  :short "A partial list of variables built-in to GCC and Clang."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -199,7 +203,7 @@
      as they are encountered in real programs.")
    (xdoc::p
     "This list contains variables corresponding to certain x86 registers.
-     We could not find mention of these variables in the GCC manual,
+     We could not find mention of these variables in [GCCM],
      but they have been observed in practical code.
      Experiments suggest that these variables are somewhat restricted in usage.
      The normal pattern seems to be something like")
@@ -224,7 +228,11 @@
     "We also include @('latent_entropy').
      This variable was observed in the preprocessed output
      of a kernel module
-     This is presumably introduced by the ``latent entropy'' GCC plugin."))
+     This is presumably introduced by the ``latent entropy'' GCC plugin.")
+   (xdoc::p
+    "Similarly to built-in functions,
+     we regard this list as also being built-in to Clang.
+     This may need revision at some point."))
   (list (ident "__eax")
         (ident "__ebp")
         (ident "__ebx")
@@ -235,18 +243,18 @@
         (ident "__esp")
         (ident "latent_entropy"))
   ///
-  (assert-event (ident-listp *gcc-built-in-vars*))
-  (assert-event (no-duplicatesp-equal *gcc-built-in-vars*)))
+  (assert-event (ident-listp *gcc/clang-built-in-vars*))
+  (assert-event (no-duplicatesp-equal *gcc/clang-built-in-vars*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *gcc-built-in*
-  :short "A list of functions and variables built-in to GCC."
-  (append *gcc-built-in-functions*
-          *gcc-built-in-vars*)
+(defval *gcc/clang-built-in*
+  :short "A list of functions and variables built-in to GCC and Clang."
+  (append *gcc/clang-built-in-functions*
+          *gcc/clang-built-in-vars*)
   ///
-  (assert-event (ident-listp *gcc-built-in*))
-  (assert-event (no-duplicatesp-equal *gcc-built-in*)))
+  (assert-event (ident-listp *gcc/clang-built-in*))
+  (assert-event (no-duplicatesp-equal *gcc/clang-built-in*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -292,7 +300,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *cheri-built-in*
-  :short "A list of functions and variables built-in to GCC."
+  :short "A list of functions and variables built-in to CHERI."
   *cheri-built-in-functions*
   ///
   (assert-event (ident-listp *cheri-built-in*))
@@ -303,13 +311,9 @@
 (define built-in-functions-for ((dialect c::dialectp))
   :returns (built-ins ident-listp)
   :short "List of built-ins functions according to the C dialect."
-  :long
-  (xdoc::topstring-p
-   "Currently, we use the GCC built-ins for Clang as well.
-    We have not yet observed any case where they differ.")
   (b* (((c::dialect dialect) dialect)
        (gcc/clang-built-ins (if (or dialect.gcc dialect.clang)
-                                *gcc-built-in-functions*
+                                *gcc/clang-built-in-functions*
                               nil)))
     (if dialect.cheri
         (append *cheri-built-in-functions* gcc/clang-built-ins)
@@ -325,12 +329,8 @@
 (define built-in-vars-for ((dialect c::dialectp))
   :returns (built-ins ident-listp)
   :short "List of built-ins variables according to the C dialect."
-  :long
-  (xdoc::topstring-p
-   "Currently, we use the GCC built-ins for Clang as well.
-    We have not yet observed any case where they differ.")
   (if (c::dialect-gcc/clangp dialect)
-      *gcc-built-in-vars*
+      *gcc/clang-built-in-vars*
     nil)
 
   ///
@@ -343,10 +343,6 @@
 (define built-ins-for ((dialect c::dialectp))
   :returns (built-ins ident-listp)
   :short "List of built-ins according to the C dialect."
-  :long
-  (xdoc::topstring-p
-   "Currently, we use the GCC built-ins for Clang as well.
-    We have not yet observed any case where they differ.")
   (append (built-in-vars-for dialect)
           (built-in-functions-for dialect))
 
