@@ -15,6 +15,7 @@
 (include-book "json-to-string")
 (include-book "response")
 (include-book "process-rpc")
+(include-book "socket")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,19 +27,35 @@
   <p>This library implements a
   <a href=\"https://www.jsonrpc.org/specification\">JSON-RPC 2.0</a>
   interface for ACL2. JSON-RPC is a stateless, light-weight remote procedure
-  call protocol that uses JSON as its data format. It is transport agnostic;
-  this library implements a file-based transport where requests are read from
-  an input file and responses are written to an output file.</p>
+  call protocol that uses JSON as its data format. Two transports are
+  provided:</p>
+
+  <ul>
+    <li><b>File-based</b>: requests are read from an input file and responses
+    written to an output file.</li>
+    <li><b>TCP socket</b>: a server listens on a port and exchanges JSON-RPC
+    messages over persistent connections.</li>
+  </ul>
 
   <h3>Basic Usage</h3>
 
-  <p>The main entry point is @(see process-json-rpc-file). Given an input file
-  containing a JSON-RPC request (or batch of requests) and an output file path,
-  it parses the request, dispatches to the appropriate method function, and
-  writes the JSON-RPC response to the output file.</p>
+  <p><b>File transport.</b> The entry point is @(see process-json-rpc-file).
+  Given an input file containing a JSON-RPC request (or batch of requests) and
+  an output file path, it parses the request, dispatches to the appropriate
+  method function, and writes the JSON-RPC response to the output file.</p>
 
   @({
     (process-json-rpc-file \"request.json\" \"response.json\" state)
+  })
+
+  <p><b>Socket transport.</b> The entry point is @(see run-jsonrpc-server).
+  It opens a TCP server socket on the given port and loops accepting
+  connections.  Each connection may carry multiple request/response exchanges
+  (keep-alive) and is closed when the client disconnects.  Messages are
+  framed by JSON structure — pretty-printed multi-line JSON is accepted.</p>
+
+  @({
+    (run-jsonrpc-server 7070 state)
   })
 
   <p>The input file must contain a valid JSON-RPC 2.0 request object, or an

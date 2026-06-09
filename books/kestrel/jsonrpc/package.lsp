@@ -57,5 +57,7 @@
                             acl2::string-upcase
                             acl2::trans-eval-error-triple
                             acl2::read-file-into-character-list-safe
-                            acl2::write-strings-to-file)))
+                            acl2::write-strings-to-file
+                            acl2::defttag
+                            acl2::include-raw)))
 
