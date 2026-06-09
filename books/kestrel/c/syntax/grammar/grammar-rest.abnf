@@ -18,31 +18,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Expressions [C17:A.2.1]
-
-assignment-expression =
-      conditional-expression
-    / unary-expression assignment-operator assignment-expression
-
-assignment-operator = "="
-                    / "*="
-                    / "/="
-                    / "%="
-                    / "+="
-                    / "-="
-                    / "<<="
-                    / ">>="
-                    / "&="
-                    / "^="
-                    / "|="
-
-expression = assignment-expression
-           / expression "," assignment-expression
-
-constant-expression = conditional-expression
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Attributes (https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html)
 
 ; These are a GCC extension (see motivation in :doc syntax-for-tools).
