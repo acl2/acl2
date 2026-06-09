@@ -55,7 +55,7 @@ attribute-parameters =
 attribute = attribute-name [ attribute-parameters ]
 
 ; An attribute specifiers consists of
-; the keyword '__attribute__' or '__attribute',
+; the '__attribute__' or variant keyword,
 ; followed by zero or more comma-separated attributes
 ; enclosed in double parentheses.
 ; We regard each double (open or closed) parenthesis
