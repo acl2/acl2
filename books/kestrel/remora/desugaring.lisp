@@ -74,6 +74,8 @@
     "A bracket type is turned into an array type
      whose shape is the concatenation of the shapes.")
    (xdoc::p
+    "An atom expression is turned into a 0-rank array expression.")
+   (xdoc::p
     "A non-empty string is turned into an array expression
      with the length of the string as its single dimension
      and with the characters, converted to integers, as atoms.
@@ -118,6 +120,8 @@
    (type :bracket (make-type-array :elem (type-desugar type.elem)
                                    :shape (shape-append
                                            (shape-list-desugar type.shapes))))
+   (expr :atom (make-expr-array :dims nil
+                                :atoms (list (atom-desugar expr.atom))))
    (expr :string (if (consp expr.chars)
                      (make-expr-array
                       :dims (list (len expr.chars))

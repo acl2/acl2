@@ -823,6 +823,12 @@
       "A variable is looked up in the dynamic environment;
        it must be present, and its associated value is returned.")
      (xdoc::p
+      "An atom expression is an atom auto-lifted to a rank-0 (scalar) array.
+       We evaluate the atom to a value,
+       which is also the value of the rank-0 array,
+       because a rank-0 array is represented as its single atom
+       (see @(tsee value-with-nonempty-dims) on the empty list of dimensions).")
+     (xdoc::p
       "A non-empty array must have no zero dimensions,
        and a number of atoms equal to the product of the dimensions.
        We evaluate the atoms to values,
@@ -868,6 +874,7 @@
      :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
                ((unless var+val) (reserr nil)))
             (cdr var+val))
+     :atom (eval-atom expr.atom denv)
      :array (b* (((when (member-equal 0 expr.dims)) (reserr nil))
                  ((ok vals) (eval-atom-list expr.atoms denv))
                  ((unless (equal (len vals) (nat-list-product expr.dims)))
