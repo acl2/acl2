@@ -116,21 +116,21 @@
   (xdoc::topstring
    (xdoc::p
     "This list is likely incomplete.
-      New built-ins are generally added on demand
-      as they are encountered in real programs.")
+     New built-ins are generally added on demand
+     as they are encountered in real programs.")
    (xdoc::p
     "Many built-in functions are documented in the GCC manual "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Built-in-Functions.html"
                  "[GCCM:7]")
     ". Some built-ins do not seem to be documented,
-      but are nonetheless added after having been observed
-      in real-world code accepted by GCC.
-      In particular, the built-ins ending in @('\"_chk\"')
-      were all observed in glibc.")
+     but are nonetheless added after having been observed
+     in real-world code accepted by GCC.
+     In particular, the built-ins ending in @('\"_chk\"')
+     were all observed in glibc.")
    (xdoc::p
     "Some of these built-ins are also documented in [CLE],
-      but in any case Clang generally follows GCC.
-      We have not yet observed cases in which they differ."))
+     but in any case Clang generally follows GCC.
+     We have not yet observed cases in which they differ."))
   (list (built-in-fun "__atomic_compare_exchange_n"
                       (type-unknown)
                       (type-params-unspecified))
