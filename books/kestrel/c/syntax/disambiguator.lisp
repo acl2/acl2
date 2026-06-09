@@ -513,7 +513,8 @@
                             :macros macros
                             :file file
                             :ienv ienv)))
-    (dimb-add-idents-objfun (built-ins-for dialect) dstate)))
+    (dimb-add-idents-objfun (ident-list-of (built-in-fun/var-names-for dialect))
+                            dstate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
