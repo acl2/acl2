@@ -53,6 +53,9 @@
      "Bracket types,
       because they are expressible as array types.")
     (xdoc::li
+     "Atom expressions,
+      because they are expressible as 0-rank array expressions.")
+    (xdoc::li
      "String literals,
       because they are expressible as array expressions.")
     (xdoc::li
@@ -140,6 +143,7 @@
   ((shape :dims nil)
    (shape :splice nil)
    (type :bracket nil)
+   (expr :atom nil)
    (expr :string nil)
    (expr :capp nil)
    (expr :bracket nil)
