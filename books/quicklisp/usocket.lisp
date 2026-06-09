@@ -1,3 +1,5 @@
+; ACL2 Quicklisp Interface
+
 ; License: (An MIT/X11-style license)
 ;
 ;   Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,6 +24,6 @@
 (in-package "ACL2")
 (include-book "base")
 
-(defttag :quicklisp.dexador)
-; (depends-on "dexador-raw.lsp")
-(include-raw "dexador-raw.lsp" :host-readtable t)
+(defttag :quicklisp)
+
+(include-raw "usocket-raw.lsp" :host-readtable t)
