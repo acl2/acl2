@@ -262,10 +262,12 @@
                       (type-spec-complex))
               (list (type-spec-long)
                     (type-spec-double)))
-   :struct (list (type-spec-struct
-                  (make-struni-spec :attribs nil
-                                    :name? (ildm-ident tyspecs.tag)
-                                    :members nil)))
+   :struct (list (make-type-spec-struct
+                   :spec
+                   (make-struni-spec :attribs nil
+                                     :name? (ildm-ident tyspecs.tag)
+                                     :members nil)
+                   :info nil))
    :union (list (type-spec-union
                  (make-struni-spec :attribs nil
                                    :name? (ildm-ident tyspecs.tag)
@@ -575,7 +577,8 @@
                         :attribs nil
                         :name? (ildm-ident declon.tag)
                         :members (ildm-struct-declon-list declon.members))))
-                   (type-spec-struct strunispec))
+                   (make-type-spec-struct :spec strunispec
+                                          :info nil))
          :union (b* ((strunispec
                       (make-struni-spec
                        :attribs nil

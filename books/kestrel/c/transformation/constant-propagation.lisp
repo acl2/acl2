@@ -983,7 +983,9 @@
                   (mv (type-spec-atomic type) env))
         :struct (b* (((mv spec env)
                       (const-prop-struni-spec tyspec.spec env)))
-                  (mv (type-spec-struct spec) env))
+                  (mv (c$::make-type-spec-struct :spec spec
+                                                 :info nil)
+                      env))
         :union (b* (((mv spec env)
                      (const-prop-struni-spec tyspec.spec env)))
                  (mv (type-spec-union spec) env))
