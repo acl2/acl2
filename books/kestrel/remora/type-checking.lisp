@@ -398,6 +398,10 @@
      (xdoc::p
       "A variable is looked up in the static environment.")
      (xdoc::p
+      "An atom expression is an atom auto-lifted to a rank-0 (scalar) array.
+       We check the atom, and return the array type
+       whose element type is the atom type and whose shape is empty.")
+     (xdoc::p
       "For a (non-empty) array, there must be no zero dimension,
        and the number of atoms must match the product of the dimensions.
        We type-check all the atoms,
@@ -543,6 +547,10 @@
      (b* ((name+type (omap::assoc expr.name (senv->expr-vars senv)))
           ((unless name+type) (reserr nil)))
        (cdr name+type))
+     :atom
+     (b* (((ok type) (check-atom expr.atom senv)))
+       (make-type-array :elem type
+                        :shape (shape-dims nil)))
      :array
      (b* (((when (member-equal 0 expr.dims)) (reserr nil))
           ((unless (= (len expr.atoms)
