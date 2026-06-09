@@ -131,360 +131,412 @@
     "Some of these built-ins are also documented in [CLE],
      but in any case Clang generally follows GCC.
      We have not yet observed cases in which they differ."))
-  (list (built-in-fun "__atomic_compare_exchange_n"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__atomic_exchange_n"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__atomic_fetch_add"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__atomic_fetch_and"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__atomic_fetch_or"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__atomic_fetch_xor"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__atomic_load_n"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__atomic_signal_fence"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__atomic_store_n"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__atomic_thread_fence"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin___memcpy_chk"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin___memmove_chk"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin___mempcpy_chk"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin___memset_chk"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin___snprintf_chk"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin___sprintf_chk"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin___stpcpy_chk"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin___stpncpy_chk"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin___strcat_chk"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin___strcpy_chk"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin___strncat_chk"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin___strncpy_chk"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin___vsnprintf_chk"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin___vsprintf_chk"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_add_overflow"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_add_overflow_p"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_alloca"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_apply"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_apply_args"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_bswap16"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_bswap32"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_bswap64"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_choose_expr"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_clz"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_clzl"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_clzll"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_constant_p"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_copysign"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_copysignf"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_copysignf128"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_copysignl"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_ctz"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_ctzl"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_ctzll"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_dynamic_object_size"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_expect"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_extract_return_addr"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_fabs"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_fabsf"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_fabsf128"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_fabsl"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_fma"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_fpclassify"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_huge_val"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_huge_valf"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_huge_valf128"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_huge_vall"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_ia32_cvtpd2ps"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_ia32_rdtsc"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_inff"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_isfinite"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_isgreater"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_isgreaterequal"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_isinf_sign"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_isless"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_islessequal"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_isnan"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_memchr"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_memcmp"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_memcpy"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_mempcpy"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_memset"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_mul_overflow"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_nan"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_nanf"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_nanf128"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_nanl"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_object_size"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_popcount"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_popcountll"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_return_address"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_signbit"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_signbitl"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_sqrt"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_sqrtf"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_sqrtl"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_stpcpy"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_strcpy"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_strlen"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_strncat"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_strncpy"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_sub_overflow"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_thread_pointer"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_trap"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_unreachable"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_va_arg_pack"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_va_arg_pack_len"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_va_copy"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_va_end"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_va_start"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__builtin_vacopy"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__sync_add_and_fetch"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__sync_and_and_fetch"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__sync_bool_compare_and_swap"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__sync_fetch_and_add"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__sync_fetch_and_and"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__sync_fetch_and_nand"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__sync_fetch_and_or"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__sync_fetch_and_sub"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__sync_fetch_and_xor"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__sync_lock_release"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__sync_lock_test_and_set"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__sync_nand_and_fetch"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__sync_or_and_fetch"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__sync_sub_and_fetch"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__sync_synchronize"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__sync_val_compare_and_swap"
-                      (type-unknown)
-                      (type-params-unspecified))
-        (built-in-fun "__sync_xor_and_fetch"
-                      (type-unknown)
-                      (type-params-unspecified)))
+  (list
+   ; [GCCM:7.9.1]
+   ; (https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html):
+   (built-in-fun "__atomic_load"
+                 (type-void)
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_load_n"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_store"
+                 (type-void)
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_store_n"
+                 (type-void)
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_exchange"
+                 (type-void)
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_exchange_n"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_compare_exchange"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_compare_exchange_n"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_add_fetch"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_sub_fetch"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_and_fetch"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_or_fetch"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_xor_fetch"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_nand_fetch"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_fetch_add"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_fetch_sub"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_fetch_and"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_fetch_nand"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_fetch_or"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_fetch_xor"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_test_and_set"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_clear"
+                 (type-void)
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_thread_fence"
+                 (type-void)
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_signal_fence"
+                 (type-void)
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_always_lock_free"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__atomic_is_lock_free"
+                 (type-bool)
+                 (type-params-unspecified))
+   ;; others:
+   (built-in-fun "__builtin___memcpy_chk"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___memmove_chk"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___mempcpy_chk"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___memset_chk"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___snprintf_chk"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___sprintf_chk"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___stpcpy_chk"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___stpncpy_chk"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___strcat_chk"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___strcpy_chk"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___strncat_chk"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___strncpy_chk"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___vsnprintf_chk"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___vsprintf_chk"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_add_overflow"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_add_overflow_p"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_alloca"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_apply"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_apply_args"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_bswap16"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_bswap32"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_bswap64"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_choose_expr"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_clz"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_clzl"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_clzll"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_constant_p"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_copysign"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_copysignf"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_copysignf128"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_copysignl"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_ctz"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_ctzl"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_ctzll"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_dynamic_object_size"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_expect"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_extract_return_addr"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_fabs"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_fabsf"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_fabsf128"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_fabsl"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_fma"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_fpclassify"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_huge_val"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_huge_valf"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_huge_valf128"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_huge_vall"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_ia32_cvtpd2ps"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_ia32_rdtsc"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_inff"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_isfinite"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_isgreater"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_isgreaterequal"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_isinf_sign"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_isless"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_islessequal"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_isnan"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_memchr"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_memcmp"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_memcpy"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_mempcpy"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_memset"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_mul_overflow"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_nan"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_nanf"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_nanf128"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_nanl"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_object_size"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_popcount"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_popcountll"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_return_address"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_signbit"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_signbitl"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_sqrt"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_sqrtf"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_sqrtl"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_stpcpy"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_strcpy"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_strlen"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_strncat"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_strncpy"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_sub_overflow"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_thread_pointer"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_trap"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_unreachable"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_va_arg_pack"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_va_arg_pack_len"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_va_copy"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_va_end"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_va_start"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_vacopy"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_add_and_fetch"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_and_and_fetch"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_bool_compare_and_swap"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_fetch_and_add"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_fetch_and_and"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_fetch_and_nand"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_fetch_and_or"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_fetch_and_sub"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_fetch_and_xor"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_lock_release"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_lock_test_and_set"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_nand_and_fetch"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_or_and_fetch"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_sub_and_fetch"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_synchronize"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_val_compare_and_swap"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_xor_and_fetch"
+                 (type-unknown)
+                 (type-params-unspecified)))
   ///
   (assert-event (built-in-fun-listp *gcc/clang-built-in-functions*))
   (assert-event (no-duplicatesp-equal
