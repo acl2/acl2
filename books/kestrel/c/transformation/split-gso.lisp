@@ -345,18 +345,22 @@
                (list (declon-fix declon)
                      (c$::make-declon-declon
                        :specs (list (c$::decl-spec-typespec
-                                      (c$::type-spec-struct
+                                      (c$::make-type-spec-struct
+                                        :spec
                                         (c$::make-struni-spec
                                           :attribs nil
                                           :name? new1
-                                          :members remanining-struct-decls)))))
+                                          :members remanining-struct-decls)
+                                        :info nil))))
                      (c$::make-declon-declon
                        :specs (list (c$::decl-spec-typespec
-                                      (c$::type-spec-struct
+                                      (c$::make-type-spec-struct
+                                        :spec
                                         (c$::make-struni-spec
                                           :attribs nil
                                           :name? new2
-                                          :members split-struct-decls))))))))
+                                          :members split-struct-decls)
+                                        :info nil)))))))
       :statassert (retok nil nil (list (declon-fix declon)))))
   ///
 
@@ -829,18 +833,22 @@
            (explicit-extern (has-extern-p declon.specs))
            (decl-new1-type
              (c$::decl-spec-typespec
-               (c$::type-spec-struct
+               (c$::make-type-spec-struct
+                 :spec
                  (c$::make-struni-spec
                     :attribs nil
                     :name? new1-type
-                    :members nil))))
+                    :members nil)
+                 :info nil)))
            (decl-new2-type
              (c$::decl-spec-typespec
-               (c$::type-spec-struct
+               (c$::make-type-spec-struct
+                 :spec
                  (c$::make-struni-spec
                    :attribs nil
                    :name? new2-type
-                   :members nil)))))
+                   :members nil)
+                 :info nil))))
         (retok
           t
           (list (c$::make-declon-declon
