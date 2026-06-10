@@ -14,70 +14,59 @@
 ; usocket is available here because socket.lisp includes
 ; quicklisp/hunchentoot, which loads usocket transitively.
 ;
-; Each connection carries exactly one request (or one batch).  The client
-; sends the JSON, closes its writing side, and the server reads until EOF,
-; processes the message, sends the response, and closes the connection.
+; Messages are newline-delimited: the client sends a compact JSON value
+; followed by a newline character.  The server reads until the newline,
+; processes the message, and writes the response followed by a newline.
+; Multiple requests may be sent over a single connection.
 
 (in-package "JSONRPC")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun read-stream-to-string (stream)
-  "Read all characters from STREAM until EOF and return them as a string.
-   Returns NIL if the stream is immediately at EOF (client connected but
-   sent nothing)."
-  (let ((acc (make-array 256
-                         :element-type 'character
-                         :adjustable t
-                         :fill-pointer 0)))
-    (loop
-      (let ((ch (read-char stream nil nil)))
-        (when (null ch)
-          (return (if (zerop (fill-pointer acc))
-                      nil
-                    (coerce acc 'string))))
-        (vector-push-extend ch acc)))))
+(defun read-json-line (stream)
+  "Read one newline-delimited JSON message from STREAM.
+   Returns the message as a string (without the newline), or NIL on EOF."
+  (let ((line (read-line stream nil nil)))
+    (if (or (null line) (zerop (length (string-trim '(#\Space #\Tab #\Return) line))))
+        nil
+      line)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun handle-connection (stream acl2-state)
-  "Handle a single connection: read the full request until EOF, process it
-   through the ACL2 JSON-RPC pipeline, and write the response back."
-  (let ((json-string (read-stream-to-string stream)))
-    ;; NIL means the client connected and immediately closed with no content.
-    (when (null json-string)
-      (return-from handle-connection acl2-state))
+  "Handle a connection: loop reading newline-delimited JSON messages,
+   processing each through the ACL2 JSON-RPC pipeline, and writing
+   responses back.  Returns when the client disconnects (EOF)."
+  (loop
+    (let ((json-string (read-json-line stream)))
+      (when (null json-string)
+        (return acl2-state))
 
-    ;; Run the JSON-RPC pipeline.
-    (multiple-value-bind (batchp alist)
-        (parse-json-rpc json-string)
-      (multiple-value-bind (responses new-state)
-          (process-all alist 'run-jsonrpc-server acl2-state)
+      (multiple-value-bind (batchp alist)
+          (parse-json-rpc json-string)
+        (multiple-value-bind (responses new-state)
+            (process-all alist 'run-jsonrpc-server acl2-state)
+          (setf acl2-state new-state)
 
-        ;; Build and send the response.
-        (let* ((response-val
-                (cond ((endp responses) nil)
-                      (batchp (value-array responses))
-                      (t (car responses))))
-               (response-str
-                (if response-val
-                    (value-to-json-string response-val)
-                  nil)))
-          (when response-str
-            (write-string response-str stream)
-            (write-char #\Newline stream)
-            (force-output stream)))
-
-        new-state))))
+          (let* ((response-val
+                  (cond ((endp responses) nil)
+                        (batchp (value-array responses))
+                        (t (car responses))))
+                 (response-str
+                  (if response-val
+                      (value-to-json-string response-val)
+                    nil)))
+            (when response-str
+              (write-string response-str stream)
+              (write-char #\Newline stream)
+              (force-output stream))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun run-jsonrpc-server (port acl2-state)
   "Start a TCP JSON-RPC 2.0 server listening on PORT.
-   Each connection carries exactly one request or batch: the client sends
-   JSON, closes its writing side (EOF), the server processes and responds,
-   then closes the connection.  Single-threaded; does not return under
-   normal operation."
+   Messages are newline-delimited.  Single-threaded; does not return
+   under normal operation."
   (let ((server-socket
          (usocket:socket-listen "0.0.0.0" port
                                 :reuse-address t
