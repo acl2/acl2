@@ -690,7 +690,8 @@
        :struct (b* (((mv new-spec (gout gout-spec))
                      (simpadd0-struni-spec tyspec.spec gin))
                     (gin (gin-update gin gout-spec)))
-                 (mv (type-spec-struct new-spec)
+                 (mv (c$::make-type-spec-struct :spec new-spec
+                                                :info tyspec.info)
                      (gout-no-thm gin)))
        :union (b* (((mv new-spec (gout gout-spec))
                     (simpadd0-struni-spec tyspec.spec gin))
