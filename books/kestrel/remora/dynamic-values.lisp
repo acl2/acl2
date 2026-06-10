@@ -666,4 +666,16 @@
              car-of-repeat
              list-repeatp-of-repeat
              acl2::not-reserrp-when-nat-listp
-             acl2::not-reserrp-when-nat-list-listp)))
+             acl2::not-reserrp-when-nat-list-listp))
+
+  (defrule value-wfp-of-value-vector
+    (implies (and (consp vals)
+                  (value-list-wfp vals)
+                  (list-repeatp (dims-of-value-list vals)))
+             (value-wfp (value-vector vals)))
+    :enable (value-wfp
+             check-dims-of-value-list-when-value-list-wfp
+             consp-of-dims-of-value-list
+             acl2::not-reserrp-when-nat-listp
+             acl2::not-reserrp-when-nat-list-listp)
+    :expand (check-dims-of-value (value-vector vals))))
