@@ -842,8 +842,7 @@
     (implies (type-vars-match-type-values-p vars tvals)
              (equal (len vars) (len tvals)))
     :rule-classes :forward-chaining
-    :induct t
-    :enable type-vars-match-type-values-p))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -879,8 +878,7 @@
     (implies (ispace-vars-match-ispace-values-p vars ivals)
              (equal (len vars) (len ivals)))
     :rule-classes :forward-chaining
-    :induct t
-    :enable ispace-vars-match-ispace-values-p))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
