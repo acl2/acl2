@@ -847,6 +847,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ispace-vars-match-ispace-values-p ((vars ispace-var-listp)
+                                           (ivals ispace-value-listp))
+  :returns (yes/no booleanp)
+  :short "Check that ispace variables and ispace values
+          match in number and sort."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two lists must have the same length,
+     and, element-wise, each ispace variable's sort must match
+     the corresponding ispace value:
+     a @(':dim') ispace variable must be matched by a @(':dim') ispace value,
+     and a @(':shape') ispace variable by a @(':shape') ispace value.")
+   (xdoc::p
+    "This is used to evaluate ispace applications,
+     where the ispace values that an ispace lambda is applied to
+     must match the ispace parameters of the ispace lambda."))
+  (b* (((when (endp vars)) (endp ivals))
+       ((when (endp ivals)) nil)
+       (var (car vars))
+       (ival (car ivals)))
+    (and (ispace-var-case var
+                          :dim (ispace-value-case ival :dim)
+                          :shape (ispace-value-case ival :shape))
+         (ispace-vars-match-ispace-values-p (cdr vars) (cdr ivals))))
+
+  ///
+
+  (defrule len-equal-when-ispace-vars-match-ispace-values-p
+    (implies (ispace-vars-match-ispace-values-p vars ivals)
+             (equal (len vars) (len ivals)))
+    :rule-classes :forward-chaining
+    :induct (ispace-vars-match-ispace-values-p vars ivals)
+    :enable ispace-vars-match-ispace-values-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines eval-exprs/atoms/binds
   :short "Evaluate expressions, atoms, and bindings."
   :long
@@ -945,6 +982,21 @@
        associations between the lambda parameters and the type values,
        which may override existing associations,
        which is intended hiding behavior.
+       We evaluate the lambda body in the new environment.")
+     (xdoc::p
+      "For an ispace application,
+       we evaluate the function sub-expression,
+       which must be a scalar value consisting of
+       an ispace lambda abstraction.
+       For now we only support the scalar case,
+       but we must generalize this to any array of lambda abstractions,
+       which are all applied to the ispace arguments.
+       We evaluate the ispaces to ispace values,
+       which must match the lambda parameters in number and sort.
+       We extend the dynamic environment with
+       associations between the lambda parameters and the ispace values,
+       which may override existing associations,
+       which is intended hiding behavior.
        We evaluate the lambda body in the new environment."))
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-case
@@ -1003,7 +1055,16 @@
                    (reserr nil))
                   (denv (denv-add-type-vars funval.params tvals denv)))
                (eval-expr funval.body denv (1- limit)))
-       :iapp (reserr :todo)
+       :iapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
+                  ;; TODO: generalize to no-scalar arrays of :ILAMBDAs:
+                  ((unless (value-case funval :ilambda)) (reserr nil))
+                  ((value-ilambda funval) funval)
+                  ((ok ivals) (eval-ispace-list expr.args denv))
+                  ((unless (ispace-vars-match-ispace-values-p funval.params
+                                                              ivals))
+                   (reserr nil))
+                  (denv (denv-add-ispace-vars funval.params ivals denv)))
+               (eval-expr funval.body denv (1- limit)))
        :capp (reserr :todo)
        :unbox (reserr :todo)
        :bracket (reserr :todo)
@@ -1181,6 +1242,7 @@
     (("Goal"
       :in-theory (enable value-wfp-of-cdr-of-assoc-when-denv-wfp
                          denv-wfp-of-denv-add-type-vars
+                         denv-wfp-of-denv-add-ispace-vars
                          nfix
                          zp)
       :expand ((eval-expr expr denv limit)
