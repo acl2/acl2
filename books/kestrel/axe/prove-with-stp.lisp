@@ -1573,8 +1573,7 @@
 
 ;; sanity check
 (thm
- (subsetp-equal (pseudo-term-listp (keep-smt-assumptions terms))
-                (pseudo-term-listp terms))
+ (subsetp-equal (keep-smt-assumptions terms) terms)
  :hints (("Goal" :in-theory (enable keep-smt-assumptions))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

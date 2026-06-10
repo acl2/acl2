@@ -808,12 +808,110 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-vars-match-type-values-p ((vars type-var-listp)
+                                       (tvals type-value-listp))
+  :returns (yes/no booleanp)
+  :short "Check that type variables and type values
+          match in number and kind."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two lists must have the same length,
+     and, element-wise, each type variable's kind must match
+     the corresponding type value:
+     an @(':atom') type variable must be matched by an atom type value,
+     and an @(':array') type variable by an array type value.
+     A type value has the array kind when it is an @(':array');
+     every other type value has the atom kind.")
+   (xdoc::p
+    "This is used to evaluate type applications,
+     where the type values that a type lambda is applied to
+     must match the type parameters of the type lambda."))
+  (b* (((when (endp vars)) (endp tvals))
+       ((when (endp tvals)) nil)
+       (var (car vars))
+       (tval (car tvals)))
+    (and (type-var-case var
+                        :atom (not (type-value-case tval :array))
+                        :array (type-value-case tval :array))
+         (type-vars-match-type-values-p (cdr vars) (cdr tvals))))
+
+  ///
+
+  (defrule len-equal-when-type-vars-match-type-values-p
+    (implies (type-vars-match-type-values-p vars tvals)
+             (equal (len vars) (len tvals)))
+    :rule-classes :forward-chaining
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ispace-vars-match-ispace-values-p ((vars ispace-var-listp)
+                                           (ivals ispace-value-listp))
+  :returns (yes/no booleanp)
+  :short "Check that ispace variables and ispace values
+          match in number and sort."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two lists must have the same length,
+     and, element-wise, each ispace variable's sort must match
+     the corresponding ispace value:
+     a @(':dim') ispace variable must be matched by a @(':dim') ispace value,
+     and a @(':shape') ispace variable by a @(':shape') ispace value.")
+   (xdoc::p
+    "This is used to evaluate ispace applications,
+     where the ispace values that an ispace lambda is applied to
+     must match the ispace parameters of the ispace lambda."))
+  (b* (((when (endp vars)) (endp ivals))
+       ((when (endp ivals)) nil)
+       (var (car vars))
+       (ival (car ivals)))
+    (and (ispace-var-case var
+                          :dim (ispace-value-case ival :dim)
+                          :shape (ispace-value-case ival :shape))
+         (ispace-vars-match-ispace-values-p (cdr vars) (cdr ivals))))
+
+  ///
+
+  (defrule len-equal-when-ispace-vars-match-ispace-values-p
+    (implies (ispace-vars-match-ispace-values-p vars ivals)
+             (equal (len vars) (len ivals)))
+    :rule-classes :forward-chaining
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines eval-exprs/atoms/binds
   :short "Evaluate expressions, atoms, and bindings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These functions are mutually recursive,
+     mirroring the mutually recursive structure of
+     expressions, atoms, and bindings.
+     Unlike the evaluation of ispaces and types,
+     which is structurally recursive,
+     the evaluation of expressions is not structurally recursive in general:
+     evaluating the application of an abstraction
+     involves evaluating the body of the abstraction,
+     which is not a sub-structure of the application expression,
+     but is obtained from a run-time value.
+     Thus, to ensure termination, as required by ACL2,
+     these functions take a limit argument
+     that is decremented at each recursive call,
+     and whose exhaustion causes an error.
+     This is an artificial limit,
+     with no counterpart in the run-time data
+     of an executing Remora program.
+     Formal proofs need to deal with this limit,
+     e.g. the termination of a Remora program would be proved
+     by exhibiting a suitable limit that does not run out."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-expr ((expr exprp) (denv denvp))
+  (define eval-expr ((expr exprp) (denv denvp) (limit natp))
+    :guard (denv-wfp denv)
     :returns (val value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate an expression to a value."
@@ -823,16 +921,21 @@
       "A variable is looked up in the dynamic environment;
        it must be present, and its associated value is returned.")
      (xdoc::p
+      "An atom expression is an atom auto-lifted to a rank-0 (scalar) array.
+       We evaluate the atom to a value,
+       which is also the value of the rank-0 array,
+       because a rank-0 array is represented as its single atom
+       (see @(tsee value-with-nonempty-dims) on the empty list of dimensions).")
+     (xdoc::p
       "A non-empty array must have no zero dimensions,
        and a number of atoms equal to the product of the dimensions.
-       We evaluate the atoms to values,
-       which must be well-formed and all have the same dimensions,
-       and we arrange them according to the dimensions
-       via a separate function (see its documentation).
-       The well-formedness check could be omitted
-       once we prove that evaluation always returns well-formed values,
-       but we do not have that proof yet,
-       so we must perform an explicit check for now.")
+       We evaluate the atoms to values.
+       These are well-formed,
+       because, given the well-formed dynamic environment required by the guard,
+       evaluation returns well-formed values.
+       They must also all have the same dimensions;
+       we arrange them according to the dimensions
+       via a separate function (see its documentation).")
      (xdoc::p
       "An empty array must have at least one 0 dimension,
        and its element type must evaluate to an atom type value.
@@ -840,16 +943,15 @@
      (xdoc::p
       "A non-empty frame is like a non-empty array,
        but its elements are cell expressions instead of atoms.
-       We evaluate the cells to values,
-       which must be well-formed and all have the same dimensions,
-       and we arrange them according to the dimensions
+       We evaluate the cells to values.
+       These are well-formed,
+       because, given the well-formed dynamic environment required by the guard,
+       evaluation returns well-formed values.
+       They must also all have the same dimensions;
+       we arrange them according to the dimensions
        via the same function used for arrays;
        the dimensions of the cells become
-       the inner dimensions of the result.
-       The well-formedness check could be omitted
-       once we prove that evaluation always returns well-formed values,
-       but we do not have that proof yet,
-       so we must perform an explicit check for now.")
+       the inner dimensions of the result.")
      (xdoc::p
       "An empty frame is treated similarly to an empty array,
        but its type is the cell type, which may be an array type;
@@ -862,64 +964,77 @@
        namely the codes of its characters;
        we evaluate it directly to the corresponding value.
        A non-empty string yields a vector of the integer code values;
-       an empty string yields an empty integer array."))
-    (expr-case
-     expr
-     :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
-               ((unless var+val) (reserr nil)))
-            (cdr var+val))
-     :array (b* (((when (member-equal 0 expr.dims)) (reserr nil))
-                 ((ok vals) (eval-atom-list expr.atoms denv))
-                 ((unless (equal (len vals) (nat-list-product expr.dims)))
-                  (reserr nil))
-                 ((unless (value-list-wfp vals)) ; TODO: eliminate via proof
-                  (reserr nil))
-                 ((unless (list-repeatp (dims-of-value-list vals)))
-                  (reserr nil)))
-              (value-with-nonempty-dims expr.dims vals))
-     :array-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-                       ((ok elem) (eval-type expr.type denv))
-                       ((when (type-value-case elem :array)) (reserr nil)))
-                    (value-with-empty-dim expr.dims elem))
-     :frame (b* (((when (member-equal 0 expr.dims)) (reserr nil))
-                 ((ok vals) (eval-expr-list expr.exprs denv))
-                 ((unless (equal (len vals) (nat-list-product expr.dims)))
-                  (reserr nil))
-                 ((unless (value-list-wfp vals)) ; TODO: eliminate via proof
-                  (reserr nil))
-                 ((unless (list-repeatp (dims-of-value-list vals)))
-                  (reserr nil)))
-              (value-with-nonempty-dims expr.dims vals))
-     :frame-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-                       ((ok tval) (eval-type expr.type denv))
-                       ((mv elem cell-dims)
-                        (type-value-case
-                         tval
-                         :array (mv tval.elem tval.shape)
-                         :otherwise (mv tval nil)))
-                       ((when (type-value-case elem :array)) (reserr nil))
-                       (dims (append expr.dims cell-dims)))
-                    (value-with-empty-dim dims elem))
-     :string (if (consp expr.chars)
-                 (value-vector
-                  (value-base-list
-                   (base-value-int-list
-                    (eval-char-lit-list expr.chars))))
-               (make-value-vector-empty
-                :dims nil
-                :elem (type-value-base (base-type-int))))
-     :app (reserr :todo)
-     :tapp (reserr :todo)
-     :iapp (reserr :todo)
-     :capp (reserr :todo)
-     :unbox (reserr :todo)
-     :bracket (reserr :todo)
-     :let (reserr :todo))
-    :measure (expr-count expr))
+       an empty string yields an empty integer array.")
+     (xdoc::p
+      "For a type application,
+       we evaluate the function sub-expression and the type arguments,
+       and we use a separate ACL2 function to apply
+       the function value to the argument type values.")
+     (xdoc::p
+      "For an ispace application,
+       we evaluate the function sub-expression and the ispace arguments,
+       and we use a separate ACL2 function to apply
+       the function value to the argument ispace values."))
+    (b* (((when (zp limit)) (reserr :limit)))
+      (expr-case
+       expr
+       :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
+                 ((unless var+val) (reserr nil)))
+              (cdr var+val))
+       :atom (eval-atom expr.atom denv (1- limit))
+       :array (b* (((when (member-equal 0 expr.dims)) (reserr nil))
+                   ((ok vals) (eval-atom-list expr.atoms denv (1- limit)))
+                   ((unless (equal (len vals) (nat-list-product expr.dims)))
+                    (reserr nil))
+                   ((unless (list-repeatp (dims-of-value-list vals)))
+                    (reserr nil)))
+                (value-with-nonempty-dims expr.dims vals))
+       :array-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
+                         ((ok elem) (eval-type expr.type denv))
+                         ((when (type-value-case elem :array)) (reserr nil)))
+                      (value-with-empty-dim expr.dims elem))
+       :frame (b* (((when (member-equal 0 expr.dims)) (reserr nil))
+                   ((ok vals) (eval-expr-list expr.exprs denv (1- limit)))
+                   ((unless (equal (len vals) (nat-list-product expr.dims)))
+                    (reserr nil))
+                   ((unless (list-repeatp (dims-of-value-list vals)))
+                    (reserr nil)))
+                (value-with-nonempty-dims expr.dims vals))
+       :frame-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
+                         ((ok tval) (eval-type expr.type denv))
+                         ((mv elem cell-dims)
+                          (type-value-case
+                           tval
+                           :array (mv tval.elem tval.shape)
+                           :otherwise (mv tval nil)))
+                         ((when (type-value-case elem :array)) (reserr nil))
+                         (dims (append expr.dims cell-dims)))
+                      (value-with-empty-dim dims elem))
+       :string (if (consp expr.chars)
+                   (value-vector
+                    (value-base-list
+                     (base-value-int-list
+                      (eval-char-lit-list expr.chars))))
+                 (make-value-vector-empty
+                  :dims nil
+                  :elem (type-value-base (base-type-int))))
+       :app (reserr :todo)
+       :tapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
+                  ((ok tvals) (eval-type-list expr.args denv)))
+               (eval-tapp funval tvals denv (1- limit)))
+       :iapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
+                  ((ok ivals) (eval-ispace-list expr.args denv)))
+               (eval-iapp funval ivals denv (1- limit)))
+       :capp (reserr :todo)
+       :unbox (reserr :todo)
+       :bracket (reserr :todo)
+       :let (reserr :todo)))
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-expr-list ((exprs expr-listp) (denv denvp))
+  (define eval-expr-list ((exprs expr-listp) (denv denvp) (limit natp))
+    :guard (denv-wfp denv)
     :returns (vals value-list-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate a list of expressions to a list of values."
@@ -928,15 +1043,16 @@
      (xdoc::p
       "We evaluate each expression in turn
        and return the list of results in the same order."))
-    (b* (((when (endp exprs)) nil)
-         ((ok val) (eval-expr (car exprs) denv))
-         ((ok vals) (eval-expr-list (cdr exprs) denv)))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (endp exprs)) nil)
+         ((ok val) (eval-expr (car exprs) denv (1- limit)))
+         ((ok vals) (eval-expr-list (cdr exprs) denv (1- limit))))
       (cons val vals))
-    :measure (expr-list-count exprs))
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-atom ((atom atomp) (denv denvp))
+  (define eval-atom ((atom atomp) (denv denvp) (limit natp))
     :returns (val value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate an atom to a value."
@@ -955,18 +1071,19 @@
        with the same parameters and body,
        which are not evaluated here but only when the abstraction is applied."))
     (declare (ignore denv))
-    (atom-case
-     atom
-     :base (value-base (eval-base-lit atom.lit))
-     :lambda (make-value-lambda :params atom.params :body atom.body)
-     :tlambda (make-value-tlambda :params atom.params :body atom.body)
-     :ilambda (make-value-ilambda :params atom.params :body atom.body)
-     :box (reserr :todo))
-    :measure (atom-count atom))
+    (b* (((when (zp limit)) (reserr :limit)))
+      (atom-case
+       atom
+       :base (value-base (eval-base-lit atom.lit))
+       :lambda (make-value-lambda :params atom.params :body atom.body)
+       :tlambda (make-value-tlambda :params atom.params :body atom.body)
+       :ilambda (make-value-ilambda :params atom.params :body atom.body)
+       :box (reserr :todo)))
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-atom-list ((atoms atom-listp) (denv denvp))
+  (define eval-atom-list ((atoms atom-listp) (denv denvp) (limit natp))
     :returns (vals value-list-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate a list of atoms to a list of values."
@@ -975,33 +1092,35 @@
      (xdoc::p
       "We evaluate each atom in turn
        and return the list of results in the same order."))
-    (b* (((when (endp atoms)) nil)
-         ((ok val) (eval-atom (car atoms) denv))
-         ((ok vals) (eval-atom-list (cdr atoms) denv)))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (endp atoms)) nil)
+         ((ok val) (eval-atom (car atoms) denv (1- limit)))
+         ((ok vals) (eval-atom-list (cdr atoms) denv (1- limit))))
       (cons val vals))
-    :measure (atom-list-count atoms))
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-bind ((bind bindp) (denv denvp))
+  (define eval-bind ((bind bindp) (denv denvp) (limit natp))
     :returns (new-denv denv-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate a binding, extending the dynamic environment."
     (declare (ignore denv))
-    (bind-case
-     bind
-     :ispace (reserr :todo)
-     :type (reserr :todo)
-     :val (reserr :todo)
-     :fun (reserr :todo)
-     :tfun (reserr :todo)
-     :ifun (reserr :todo)
-     :cfun (reserr :todo))
-    :measure (bind-count bind))
+    (b* (((when (zp limit)) (reserr :limit)))
+      (bind-case
+       bind
+       :ispace (reserr :todo)
+       :type (reserr :todo)
+       :val (reserr :todo)
+       :fun (reserr :todo)
+       :tfun (reserr :todo)
+       :ifun (reserr :todo)
+       :cfun (reserr :todo)))
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-bind-list ((binds bind-listp) (denv denvp))
+  (define eval-bind-list ((binds bind-listp) (denv denvp) (limit natp))
     :returns (new-denv denv-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate a list of bindings,
@@ -1012,20 +1131,230 @@
       "We evaluate each binding in turn,
        extending the dynamic environment as we go,
        and we return the final environment."))
-    (b* (((when (endp binds)) (denv-fix denv))
-         ((ok denv) (eval-bind (car binds) denv)))
-      (eval-bind-list (cdr binds) denv))
-    :measure (bind-list-count binds))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (endp binds)) (denv-fix denv))
+         ((ok denv) (eval-bind (car binds) denv (1- limit))))
+      (eval-bind-list (cdr binds) denv (1- limit)))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-tapp ((funval valuep)
+                     (tvals type-value-listp)
+                     (denv denvp)
+                     (limit natp))
+    :guard (denv-wfp denv)
+    :returns (val value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Apply a value to type values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called by @(tsee eval-expr) for a type application,
+       after the function and the type arguments have been evaluated:
+       @('funval') is the value of the function,
+       and @('tvals') are the values of the type arguments.")
+     (xdoc::p
+      "The function value must be an array, of any rank,
+       whose elements are type lambda abstractions
+       whose parameters match the type argument values in number and kinds.
+       Each such lambda abstraction is applied to the type argument values.")
+     (xdoc::p
+      "This ACL2 function performs that element-wise application.
+       The base case is that of a scalar (i.e. 0-rank array) function value:
+       we check that parameters and arguments match,
+       we extend the dynamic environment
+       to associate the arguments with the parameters
+       (which may override existing associations,
+       which is intended hiding behavior),
+       and we evaluate the body of the type lambda abstraction.")
+     (xdoc::p
+      "A non-empty vector function value
+       is applied via a separate ACL2 function that goes through the list.
+       We check that the resulting list of values is not empty
+       and that its values all have the same dimensions,
+       but this should be eliminable via proofs,
+       as we plan to do.
+       We return the vector value consisting of the result values.")
+     (xdoc::p
+      "An empty vector function value is not yet supported.
+       We will add support soon."))
+    (b* (((when (zp limit)) (reserr :limit)))
+      (value-case
+       funval
+       :tlambda
+       (b* (((unless (type-vars-match-type-values-p funval.params tvals))
+             (reserr nil))
+            (denv (denv-add-type-vars funval.params tvals denv)))
+         (eval-expr funval.body denv (1- limit)))
+       :vector
+       (b* (((ok vals) (eval-tapp-list funval.elems tvals denv (1- limit)))
+            ;; TODO: eliminate the next two checks via proof
+            ((unless (consp vals)) (reserr nil))
+            ((unless (list-repeatp (dims-of-value-list vals))) (reserr nil)))
+         (value-vector vals))
+       :vector-empty (reserr :todo) ; TODO: lift over an empty array
+       :otherwise (reserr nil)))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-tapp-list ((funvals value-listp)
+                          (tvals type-value-listp)
+                          (denv denvp)
+                          (limit natp))
+    :guard (denv-wfp denv)
+    :returns (vals value-list-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Lift @(tsee eval-tapp) to a list of function values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This applies the type values to each element value in turn,
+       returning the list of results in the same order.
+       It is used to lift type application over
+       a vector of type lambda values (see @(tsee eval-tapp))."))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (endp funvals)) nil)
+         ((ok val) (eval-tapp (car funvals) tvals denv (1- limit)))
+         ((ok vals) (eval-tapp-list (cdr funvals) tvals denv (1- limit))))
+      (cons val vals))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-iapp ((funval valuep)
+                     (ivals ispace-value-listp)
+                     (denv denvp)
+                     (limit natp))
+    :guard (denv-wfp denv)
+    :returns (val value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Apply a value to ispace values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called by @(tsee eval-expr) for an ispace application,
+       after the function and the ispace arguments have been evaluated:
+       @('funval') is the value of the function,
+       and @('ivals') are the values of the ispace arguments.")
+     (xdoc::p
+      "The function value must be an array, of any rank,
+       whose elements are ispace lambda abstractions
+       whose parameters match the ispace argument values in number and sorts.
+       Each such lambda abstraction is applied to the ispace argument values.")
+     (xdoc::p
+      "This ACL2 function performs that element-wise application.
+       The base case is that of a scalar (i.e. 0-rank array) function value:
+       we check that parameters and arguments match,
+       we extend the dynamic environment
+       to associate the arguments with the parameters
+       (which may override existing associations,
+       which is intended hiding behavior),
+       and we evaluate the body of the ispace lambda abstraction.")
+     (xdoc::p
+      "A non-empty vector function value
+       is applied via a separate ACL2 function that goes through the list.
+       We check that the resulting list of values is not empty
+       and that its values all have the same dimensions,
+       but this should be eliminable via proofs,
+       as we plan to do.
+       We return the vector value consisting of the result values.")
+     (xdoc::p
+      "An empty vector function value is not yet supported.
+       We will add support soon."))
+    (b* (((when (zp limit)) (reserr :limit)))
+      (value-case
+       funval
+       :ilambda
+       (b* (((unless (ispace-vars-match-ispace-values-p funval.params ivals))
+             (reserr nil))
+            (denv (denv-add-ispace-vars funval.params ivals denv)))
+         (eval-expr funval.body denv (1- limit)))
+       :vector
+       (b* (((ok vals) (eval-iapp-list funval.elems ivals denv (1- limit)))
+            ;; TODO: eliminate the next two checks via proof
+            ((unless (consp vals)) (reserr nil))
+            ((unless (list-repeatp (dims-of-value-list vals))) (reserr nil)))
+         (value-vector vals))
+       :vector-empty (reserr :todo) ; TODO: lift over an empty array
+       :otherwise (reserr nil)))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-iapp-list ((funvals value-listp)
+                          (ivals ispace-value-listp)
+                          (denv denvp)
+                          (limit natp))
+    :guard (denv-wfp denv)
+    :returns (vals value-list-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Lift @(tsee eval-iapp) to a list of function values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This applies the ispace values to each element value in turn,
+       returning the list of results in the same order.
+       It is used to lift ispace application over
+       a vector of ispace lambda values (see @(tsee eval-iapp))."))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (endp funvals)) nil)
+         ((ok val) (eval-iapp (car funvals) ivals denv (1- limit)))
+         ((ok vals) (eval-iapp-list (cdr funvals) ivals denv (1- limit))))
+      (cons val vals))
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove eventually
 
-  :verify-guards :after-returns
+  :verify-guards nil ; done below
 
   ///
 
-  (fty::deffixequiv-mutual eval-exprs/atoms/binds)
+  (fty::deffixequiv-mutual eval-exprs/atoms/binds
+    :hints (("Goal"
+             :expand ((eval-expr expr denv limit)
+                      (eval-expr (expr-fix expr) denv limit)
+                      (eval-expr expr (denv-fix denv) limit)
+                      (eval-expr-list exprs denv limit)
+                      (eval-expr-list (expr-list-fix exprs) denv limit)
+                      (eval-expr-list exprs (denv-fix denv) limit)
+                      (eval-atom atom denv limit)
+                      (eval-atom (atom-fix atom) denv limit)
+                      (eval-atom atom (denv-fix denv) limit)
+                      (eval-atom-list atoms denv limit)
+                      (eval-atom-list (atom-list-fix atoms) denv limit)
+                      (eval-atom-list atoms (denv-fix denv) limit)
+                      (eval-bind bind denv limit)
+                      (eval-bind (bind-fix bind) denv limit)
+                      (eval-bind bind (denv-fix denv) limit)
+                      (eval-bind-list binds denv limit)
+                      (eval-bind-list (bind-list-fix binds) denv limit)
+                      (eval-bind-list binds (denv-fix denv) limit)
+                      (eval-tapp funval tvals denv limit)
+                      (eval-tapp (value-fix funval) tvals denv limit)
+                      (eval-tapp funval (type-value-list-fix tvals) denv limit)
+                      (eval-tapp funval tvals (denv-fix denv) limit)
+                      (eval-tapp-list funvals tvals denv limit)
+                      (eval-tapp-list (value-list-fix funvals)
+                                      tvals denv limit)
+                      (eval-tapp-list funvals
+                                      (type-value-list-fix tvals) denv limit)
+                      (eval-tapp-list funvals tvals (denv-fix denv) limit)
+                      (eval-iapp funval ivals denv limit)
+                      (eval-iapp (value-fix funval) ivals denv limit)
+                      (eval-iapp funval
+                                 (ispace-value-list-fix ivals) denv limit)
+                      (eval-iapp funval ivals (denv-fix denv) limit)
+                      (eval-iapp-list funvals ivals denv limit)
+                      (eval-iapp-list (value-list-fix funvals)
+                                      ivals denv limit)
+                      (eval-iapp-list funvals
+                                      (ispace-value-list-fix ivals) denv limit)
+                      (eval-iapp-list funvals ivals (denv-fix denv) limit))
+             :in-theory (enable nfix zp))))
 
   (defret-mutual value-wfp-of-eval-exprs/atoms/binds
     (defret value-wfp-of-eval-expr
@@ -1058,8 +1387,41 @@
                     (not (reserrp new-denv)))
                (denv-wfp new-denv))
       :fn eval-bind-list)
+    (defret value-wfp-of-eval-tapp
+      (implies (and (denv-wfp denv)
+                    (not (reserrp val)))
+               (value-wfp val))
+      :fn eval-tapp)
+    (defret value-list-wfp-of-eval-tapp-list
+      (implies (and (denv-wfp denv)
+                    (not (reserrp vals)))
+               (value-list-wfp vals))
+      :fn eval-tapp-list)
+    (defret value-wfp-of-eval-iapp
+      (implies (and (denv-wfp denv)
+                    (not (reserrp val)))
+               (value-wfp val))
+      :fn eval-iapp)
+    (defret value-list-wfp-of-eval-iapp-list
+      (implies (and (denv-wfp denv)
+                    (not (reserrp vals)))
+               (value-list-wfp vals))
+      :fn eval-iapp-list)
     :mutual-recursion eval-exprs/atoms/binds
     :hints
     (("Goal"
-      :in-theory (enable value-wfp-of-cdr-of-assoc-when-denv-wfp)
-      :expand ((eval-bind-list binds denv))))))
+      :in-theory (enable value-wfp-of-cdr-of-assoc-when-denv-wfp
+                         nfix
+                         zp)
+      :expand ((eval-expr expr denv limit)
+               (eval-expr-list exprs denv limit)
+               (eval-atom atom denv limit)
+               (eval-atom-list atoms denv limit)
+               (eval-bind bind denv limit)
+               (eval-bind-list binds denv limit)
+               (eval-tapp funval tvals denv limit)
+               (eval-tapp-list funvals tvals denv limit)
+               (eval-iapp funval ivals denv limit)
+               (eval-iapp-list funvals ivals denv limit)))))
+
+  (verify-guards eval-expr))

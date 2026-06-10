@@ -61,7 +61,6 @@
 ;; mentions of axe-rules, amazing-rules-spec-and-dag, etc. in this file):
 (include-book "kestrel/bv-lists/packbv-theorems" :dir :system)
 (include-book "kestrel/bv-lists/bvplus-list" :dir :system)
-(local (include-book "kestrel/bv/arith" :dir :system))
 (include-book "kestrel/bv-lists/packing" :dir :system) ;bring in some stuff in axe-runes
 (include-book "unify-term-and-dag-with-name")
 (include-book "kestrel/bv-arrays/bv-array-conversions" :dir :system)

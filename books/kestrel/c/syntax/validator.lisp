@@ -14,7 +14,7 @@
 
 (in-package "C$")
 
-(include-book "built-in")
+(include-book "built-ins")
 (include-book "unambiguity")
 (include-book "type-specifier-lists")
 (include-book "storage-specifier-lists")
@@ -442,34 +442,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define vstate-add-ord-objfuns-file-scope ((idents ident-listp)
-                                           (type typep)
-                                           (linkage linkagep)
-                                           (defstatus valid-defstatusp)
-                                           (vstate vstatep))
+(define vstate-add-built-in-funs ((funs built-in-fun-listp) (vstate vstatep))
   :returns (new-vstate vstatep)
-  :short "Add a list of ordinary identifiers
-          corresponding to objects or functions
-          to the file scope of a validation state."
+  :short "Add ordinary identifiers, that refer to the built-in functions,
+          to the file scope of a validation table."
   :long
   (xdoc::topstring
    (xdoc::p
-    "See @(tsee vstate-add-ord-file-scope)."))
-  (b* (((when (endp idents))
-        (vstate-fix vstate))
-       ((mv uid vstate) (vstate-get-fresh-uid (first idents) linkage vstate)))
-    (vstate-add-ord-objfuns-file-scope
-     (rest idents)
-     type
-     linkage
-     defstatus
-     (vstate-add-ord-file-scope (first idents)
-                                (make-valid-ord-info-objfun
-                                  :type type
-                                  :linkage linkage
-                                  :defstatus defstatus
-                                  :uid uid)
-                                vstate))))
+    "These are added to the file scope.")
+   (xdoc::p
+    "Built-in functions have external linkage and are fully defined."))
+  (b* (((when (endp funs)) (vstate-fix vstate))
+       ((built-in-fun fun) (car funs))
+       (ident (ident fun.name))
+       (linkage (linkage-external))
+       (defstatus (valid-defstatus-defined))
+       ((mv uid vstate) (vstate-get-fresh-uid ident linkage vstate))
+       (type (make-type-function :ret fun.ret :params fun.params))
+       (info (make-valid-ord-info-objfun
+              :type type
+              :linkage linkage
+              :defstatus defstatus
+              :uid uid))
+       (vstate (vstate-add-ord-file-scope ident info vstate)))
+    (vstate-add-built-in-funs (cdr funs) vstate)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-add-built-in-vars ((vars built-in-var-listp) (vstate vstatep))
+  :returns (new-vstate vstatep)
+  :short "Add ordinary identifiers, that refer to the built-in functions,
+          to the file scope of a validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are added to the file scope.")
+   (xdoc::p
+    "Built-in functions have external linkage and are fully defined."))
+  (b* (((when (endp vars)) (vstate-fix vstate))
+       ((built-in-var var) (car vars))
+       (ident (ident var.name))
+       (linkage (linkage-external))
+       (defstatus (valid-defstatus-defined))
+       ((mv uid vstate) (vstate-get-fresh-uid ident linkage vstate))
+       (info (make-valid-ord-info-objfun
+              :type var.type
+              :linkage linkage
+              :defstatus defstatus
+              :uid uid))
+       (vstate (vstate-add-ord-file-scope ident info vstate)))
+    (vstate-add-built-in-vars (cdr vars) vstate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3642,25 +3664,28 @@
                           ((mv info? -)
                            (vstate-lookup-tag tyspec.spec.name? vstate))
                           ((when info?)
-                           (if (equal (valid-tag-info->kind info?)
-                                      (tag-kind-struct))
-                               (retok (type-spec-struct new-spec)
-                                      (make-type-struct
-                                       :uid (valid-tag-info->uid info?)
-                                       :tunit? (vstate->filepath vstate)
-                                       :tag/members
-                                       (type-struni-tag/members-tagged
-                                        tyspec.spec.name?))
-                                      nil
-                                      types
-                                      vstate)
-                             (retmsg$ "The tag is expected ~
-                                       to be of kind 'union', ~
-                                       but it is of kind 'struct'. ~
-                                       This occurred ~
-                                       in the type specifier ~x1."
-                                      tyspec.spec.name?
-                                      (type-spec-fix tyspec))))
+                           (b* (((unless (equal (valid-tag-info->kind info?)
+                                                (tag-kind-struct)))
+                                 (retmsg$ "The tag is expected ~
+                                           to be of kind 'union', ~
+                                           but it is of kind 'struct'. ~
+                                           This occurred ~
+                                           in the type specifier ~x1."
+                                          tyspec.spec.name?
+                                          (type-spec-fix tyspec)))
+                                (type (make-type-struct
+                                        :uid (valid-tag-info->uid info?)
+                                        :tunit? (vstate->filepath vstate)
+                                        :tag/members
+                                        (type-struni-tag/members-tagged
+                                          tyspec.spec.name?)))
+                                (info (type-spec-struct-info type)))
+                             (retok (make-type-spec-struct :spec new-spec
+                                                           :info info)
+                                    type
+                                    nil
+                                    types
+                                    vstate)))
                           (uid (vstate->next-uid vstate))
                           (vstate (change-vstate
                                     vstate
@@ -3669,13 +3694,16 @@
                                                   (make-valid-tag-info
                                                    :kind (tag-kind-struct)
                                                    :uid uid)
-                                                  vstate)))
-                       (retok (type-spec-struct new-spec)
-                              (make-type-struct
-                               :uid uid
-                               :tunit? (vstate->filepath vstate)
-                               :tag/members (type-struni-tag/members-tagged
-                                             tyspec.spec.name?))
+                                                  vstate))
+                          (type (make-type-struct
+                                  :uid uid
+                                  :tunit? (vstate->filepath vstate)
+                                  :tag/members (type-struni-tag/members-tagged
+                                                 tyspec.spec.name?)))
+                          (info (type-spec-struct-info type)))
+                       (retok (make-type-spec-struct :spec new-spec
+                                                     :info info)
+                              type
                               nil
                               types
                               vstate)))
@@ -3726,8 +3754,10 @@
                               :completions (hons-acons
                                              uid
                                              type-struni-members
-                                             (vstate->completions vstate)))))
-                 (retok (type-spec-struct new-spec)
+                                             (vstate->completions vstate))))
+                    (info (type-spec-struct-info type)))
+                 (retok (make-type-spec-struct :spec new-spec
+                                               :info info)
                         type
                         nil
                         types
@@ -3927,10 +3957,12 @@
                               :completions (hons-acons
                                              uid
                                              nil
-                                             (vstate->completions vstate)))))
+                                             (vstate->completions vstate))))
+                          (info (type-spec-struct-info type)))
                        (retok (make-type-spec-struct-empty
                                :attribs tyspec.attribs
-                               :name? tyspec.name?)
+                               :name? tyspec.name?
+                               :info info)
                               type
                               nil
                               nil
@@ -8058,33 +8090,13 @@
     "If validation is successful,
      we add the final validation table to
      the information slot of the translation unit,
-     i.e. we annotate the translation unit with its final validation table.")
-   (xdoc::p
-    "For each built-in function, the associated information consists of
-     an unknown function type, external linkage, and defined status.
-     The latter two seem reasonable, given that these identifiers
-     are visible and have the same meaning in every translation unit,
-     and have their own (built-in) definitions.
-     For each built-in object, the associated information consists of
-     the unknown type, external linkage, and defined status;
-     the rationale for the latter two is the same as for functions."))
+     i.e. we annotate the translation unit with its final validation table."))
   (b* (((reterr) (irr-trans-unit) (irr-vstate))
        ((vstate vstate) vstate)
        (dialect (ienv->dialect vstate.ienv))
        (vstate (change-vstate vstate :table (init-valid-table filepath dialect)))
-       (vstate (vstate-add-ord-objfuns-file-scope
-                (built-in-functions-for dialect)
-                (make-type-function :ret (type-unknown)
-                                    :params (type-params-unspecified))
-                (linkage-external)
-                (valid-defstatus-defined)
-                vstate))
-       (vstate (vstate-add-ord-objfuns-file-scope
-                (built-in-vars-for dialect)
-                (type-unknown)
-                (linkage-external)
-                (valid-defstatus-defined)
-                vstate))
+       (vstate (vstate-add-built-in-funs (built-in-functions-for dialect) vstate))
+       (vstate (vstate-add-built-in-vars (built-in-vars-for dialect) vstate))
        ((erp new-items vstate)
         (valid-trans-item-list (trans-unit->items tunit) vstate))
        (info (make-trans-unit-info :table-end (vstate->table vstate))))

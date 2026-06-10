@@ -95,14 +95,19 @@
   (xdoc::topstring
    (xdoc::p
     "Parses the result as a Remora program, checks that all input is
-     consumed, and checks the extra-grammatical constraint [SC2]
-     (no identifier may match a reserved keyword).  Returns a
-     @(tsee abnf::tree-resultp): a parse tree on success, or an error
-     on failure."))
+     consumed, checks that the fringe of the output CST is equal to
+     the input list of codepoints, and checks the extra-grammatical
+     constraint [SC2] (no identifier may match a reserved keyword).
+     Returns a @(tsee abnf::tree-resultp): a parse tree on success,
+     or an error on failure."))
   (b* (((mv tree rest) (parse-program codepoints))
        ((when (reserrp tree)) (reserrf-push tree))
        ((unless (null rest))
         (reserrf (cons :remaining-input rest)))
+       ((unless (equal (abnf::tree->string tree)
+                       codepoints))
+        (reserrf (cons :fringe-mismatch
+                       "internal parser bug -- please report this with the source that triggered it")))
        (check (check-tree-no-keyword-identifiers tree))
        ((when (reserrp check)) (reserrf-push check)))
     tree))

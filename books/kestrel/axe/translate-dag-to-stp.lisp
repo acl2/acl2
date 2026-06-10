@@ -185,8 +185,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns a string-tree.
 ;just use repeat?
 ;optimize?
+;cons up a list of characters instead of strings?
 (defund n-close-parens (n acc)
   (declare (xargs :guard (natp n)))
   (if (zp n)
@@ -201,12 +203,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Returns a string-tree.
 (defund make-node-var (n)
   (declare (type (integer 0 *) n))
   ;; would it be cheaper to use a version of nat-to-string that returns a string-tree?
+  ;; TODO: Shorten "NODE" to just "V" or "x"?
   (cons "NODE" (nat-to-string n)))
 
 ;; can't be local
@@ -225,14 +226,14 @@
                                   t
                                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 darg)))
                               (nodenum-type-alistp cut-nodenum-type-alist))))
-  (if (consp darg) ;checks for quotep
+  (if (darg-is-quotep darg)
       (if (equal darg *nil*)
           "FALSE"
         (if (equal darg *t*)
             "TRUE"
           ;;i suppose any constant other than nil could be translated like t (but print a warning?!):
           (er hard? 'translate-boolean-arg "Bad constant (should be boolean): ~x0.~%" darg)))
-    ;; arg is a nodenum, so check the type:
+    ;; darg is a nodenum, so check the type:
     (let ((maybe-type (maybe-get-type-of-nodenum darg dag-array-name dag-array cut-nodenum-type-alist)))
       (if (boolean-typep maybe-type)
           (make-node-var darg)
@@ -387,33 +388,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Translates the arg, with padding (but not chopping) as needed to make it have size DESIRED-SIZE.
+;; Translates DARG, with padding (but not chopping) as needed to make it have size DESIRED-SIZE.
 ;; Returns a string-tree.
-;Looks up the size of the arg and pads as appropriate
+;Looks up the size of the darg and pads as appropriate
 ;ffffixme change this to chop and skip all the chops in the callers!
 ;ARG is either a quotep or a nodenum in the DAG-ARRAY
-;FIXME throw an error if the arg is too big for the size (or chop it down? i guess this already in effect chops down constants - is that always sound?)
-(defund translate-bv-arg (arg desired-size dag-array-name dag-array dag-len cut-nodenum-type-alist)
+;FIXME throw an error if the darg is too big for the size (or chop it down? i guess this already in effect chops down constants - is that always sound?)
+(defund translate-bv-arg (darg desired-size dag-array-name dag-array dag-len cut-nodenum-type-alist)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (dargp-less-than arg dag-len)
-                              (bv-arg-okp arg)
+                              (dargp-less-than darg dag-len)
+                              (bv-arg-okp darg)
                               (posp desired-size)
                               (nodenum-type-alistp cut-nodenum-type-alist))
                   :split-types t)
            (type (integer 1 *) desired-size)
            (ignore dag-len) ; only needed for the guard
            )
-  (if (consp arg) ;tests for quotep
-      (translate-bv-constant (unquote arg) desired-size)
-    ;;arg is a nodenum:
-    (let ((maybe-type (maybe-get-type-of-nodenum arg dag-array-name dag-array cut-nodenum-type-alist)))
-      (if (bv-typep maybe-type)
-          (translate-bv-nodenum-and-pad arg desired-size (bv-type-width maybe-type))
-        (er hard? 'translate-bv-arg "bad type, ~x0, for BV argument ~x1, with expression ~x2" maybe-type arg (aref1 dag-array-name dag-array arg))))))
+  (if (darg-is-quotep darg)
+      (translate-bv-constant (unquote darg) desired-size)
+    ;;darg is a nodenum:
+    (let ((maybe-type (maybe-get-type-of-nodenum darg dag-array-name dag-array cut-nodenum-type-alist)))
+      (if (bv-typep maybe-type) ; todo: what about a size of 0?
+          (translate-bv-nodenum-and-pad darg desired-size (bv-type-width maybe-type))
+        (er hard? 'translate-bv-arg "bad type, ~x0, for BV argument ~x1, with expression ~x2" maybe-type darg (aref1 dag-array-name dag-array darg))))))
 
 (local
   (defthm string-treep-of-translate-bv-arg
-    (string-treep (translate-bv-arg arg desired-size dag-array-name dag-array dag-len cut-nodenum-type-alist))
+    (string-treep (translate-bv-arg darg desired-size dag-array-name dag-array dag-len cut-nodenum-type-alist))
     :hints (("Goal" :in-theory (enable translate-bv-arg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -432,7 +433,7 @@
            (type (integer 1 *) desired-size)
            (ignore dag-len) ; only needed for the guard
            )
-  (if (consp darg)                                        ;tests for quotep
+  (if (darg-is-quotep darg)
       (translate-bv-constant (unquote darg) desired-size) ; puts in exactly DESIRED-SIZE bits of the constant
     ;; darg is a nodenum:
     (let ((maybe-type (maybe-get-type-of-nodenum darg dag-array-name dag-array cut-nodenum-type-alist)))
@@ -930,14 +931,14 @@
                              (er hard? 'translate-dag-expr "bad constant: ~x0" constant))))))
              constant-array-info))
         ;; boolean operators (we could perhaps support BOOLXOR (or just XOR) as well):
-        (not
+        (not ; (not x)
           (if (and (= 1 (len (dargs expr)))
                    (boolean-arg-okp (darg1 expr)))
               (mv (erp-nil)
                   (list* "(NOT(" (translate-boolean-arg (darg1 expr) dag-array-name dag-array cut-nodenum-type-alist) "))")
                   constant-array-info)
             (mv (erp-t) nil constant-array-info)))
-        (booland
+        (booland ; (booland x y)
          (if (and (= 2 (len (dargs expr)))
                   (boolean-arg-okp (darg1 expr))
                   (boolean-arg-okp (darg2 expr)))
@@ -949,7 +950,7 @@
                         ")")
                  constant-array-info)
            (mv (erp-t) nil constant-array-info)))
-        (boolor
+        (boolor ; (boolor x y)
          (if (and (= 2 (len (dargs expr)))
                   (boolean-arg-okp (darg1 expr))
                   (boolean-arg-okp (darg2 expr)))
@@ -961,7 +962,7 @@
                         ")")
                  constant-array-info)
            (mv (erp-t) nil constant-array-info)))
-        (boolif
+        (boolif ; (boolif test x y)
           (if (and (= 3 (len (dargs expr)))
                    (boolean-arg-okp (darg1 expr))
                    (boolean-arg-okp (darg2 expr))
@@ -977,7 +978,7 @@
                   constant-array-info)
             (mv (erp-t) nil constant-array-info)))
         ;; bit operators
-        (bitnot ;; (bitnot x)
+        (bitnot ; (bitnot x)
           (if (and (= 1 (len (dargs expr)))
                    (bv-arg-okp (darg1 expr)))
               (mv (erp-nil)
@@ -986,7 +987,7 @@
                          ")")
                   constant-array-info)
             (mv (erp-t) nil constant-array-info)))
-        (bitand ;; (bitand x y)
+        (bitand ; (bitand x y)
           (if (and (= 2 (len (dargs expr)))
                    (bv-arg-okp (darg1 expr))
                    (bv-arg-okp (darg2 expr)))
@@ -998,7 +999,7 @@
                          ")")
                   constant-array-info)
             (mv (erp-t) nil constant-array-info)))
-        (bitor ;; (bitor x y)
+        (bitor ; (bitor x y)
           (if (and (= 2 (len (dargs expr)))
                    (bv-arg-okp (darg1 expr))
                    (bv-arg-okp (darg2 expr)))
@@ -1010,7 +1011,7 @@
                          ")")
                   constant-array-info)
             (mv (erp-t) nil constant-array-info)))
-        (bitxor ;; (bitxor x y)
+        (bitxor ; (bitxor x y)
           (if (and (= 2 (len (dargs expr)))
                    (bv-arg-okp (darg1 expr))
                    (bv-arg-okp (darg2 expr)))
@@ -1022,8 +1023,8 @@
                          "))")
                   constant-array-info)
             (mv (erp-t) nil constant-array-info)))
-        ;; bv operators:
-        (bvchop ;; (bvchop size x)
+        ;; multi-bit operators:
+        (bvchop ; (bvchop size x)
           (if (and (= 2 (len (dargs expr)))
                    (darg-quoted-posp (darg1 expr))
                    (bv-arg-okp (darg2 expr)))
@@ -1559,9 +1560,9 @@
                          " ENDIF)")
                   constant-array-info))
             (mv (erp-t) nil constant-array-info)))
-        (unsigned-byte-p ;(UNSIGNED-BYTE-P WIDTH X), needed for things like (unsigned-byte-p 1 (bvplus 8 x y))
+        (unsigned-byte-p ; (unsigned-byte-p width x), needed for things like (unsigned-byte-p 1 (bvplus 8 x y))
          (if (and (= 2 (len (dargs expr)))
-                  (darg-quoted-natp (darg1 expr))
+                  (darg-quoted-natp (darg1 expr)) ; require posp? see below...
                   (bv-arg-okp (darg2 expr)))
              (b* ((claimed-width (unquote (darg1 expr)))
                   (bv-arg (darg2 expr))
@@ -1578,6 +1579,7 @@
                        "(TRUE)" ;the unsigned-byte-p doesn't tell us anything new
                      ;;the unsigned-byte-p-claim amounts to saying that the high bits are 0:
                      (list* "(("
+                            ;; todo: this recomputes the size of bv-arg -- optimize?
                             (translate-bv-arg bv-arg known-width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                             "["
                             (nat-to-string (+ -1 known-width))

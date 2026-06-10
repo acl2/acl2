@@ -12,6 +12,8 @@
 
 (include-book "dynamic-values")
 
+(local (include-book "std/lists/len" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -152,3 +154,83 @@
              (value-wfp (cdr (omap::assoc key (denv->expr-vars denv)))))
     :enable (denv-wfp
              value-wfp-of-cdr-of-assoc-when-string-value-map-wfp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define denv-add-ispace-vars ((vars ispace-var-listp)
+                              (ivals ispace-value-listp)
+                              (denv denvp))
+  :guard (equal (len vars) (len ivals))
+  :returns (new-denv denvp)
+  :short "Add zero or more ispace variables, with associated ispace values,
+          to a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This may override an existing variable,
+     which is intended hiding behavior."))
+  (b* (((when (endp vars)) (denv-fix denv))
+       ((unless (mbt (consp ivals))) (denv-fix denv))
+       (denv (change-denv
+              denv
+              :ispace-vars (omap::update (ispace-var-fix (car vars))
+                                         (ispace-value-fix (car ivals))
+                                         (denv->ispace-vars denv)))))
+    (denv-add-ispace-vars (cdr vars) (cdr ivals) denv))
+
+  ///
+
+  (defret denv->type-vars-of-denv-add-ispace-vars
+    (equal (denv->type-vars new-denv)
+           (denv->type-vars denv))
+    :hints (("Goal" :induct t)))
+
+  (defret denv->expr-vars-of-denv-add-ispace-vars
+    (equal (denv->expr-vars new-denv)
+           (denv->expr-vars denv))
+    :hints (("Goal" :induct t)))
+
+  (defret denv-wfp-of-denv-add-ispace-vars
+    (implies (denv-wfp denv)
+             (denv-wfp new-denv))
+    :hints (("Goal" :in-theory (enable denv-wfp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define denv-add-type-vars ((vars type-var-listp)
+                            (tvals type-value-listp)
+                            (denv denvp))
+  :guard (equal (len vars) (len tvals))
+  :returns (new-denv denvp)
+  :short "Add zero or more type variables, with associated type values,
+          to a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This may override an existing variable,
+     which is intended hiding behavior."))
+  (b* (((when (endp vars)) (denv-fix denv))
+       ((unless (mbt (consp tvals))) (denv-fix denv))
+       (denv (change-denv
+              denv
+              :type-vars (omap::update (type-var-fix (car vars))
+                                       (type-value-fix (car tvals))
+                                       (denv->type-vars denv)))))
+    (denv-add-type-vars (cdr vars) (cdr tvals) denv))
+
+  ///
+
+  (defret denv->ispace-vars-of-denv-add-type-vars
+    (equal (denv->ispace-vars new-denv)
+           (denv->ispace-vars denv))
+    :hints (("Goal" :induct t)))
+
+  (defret denv->expr-vars-of-denv-add-type-vars
+    (equal (denv->expr-vars new-denv)
+           (denv->expr-vars denv))
+    :hints (("Goal" :induct t)))
+
+  (defret denv-wfp-of-denv-add-type-vars
+    (implies (denv-wfp denv)
+             (denv-wfp new-denv))
+    :hints (("Goal" :in-theory (enable denv-wfp)))))
