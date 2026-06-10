@@ -289,7 +289,7 @@
        We treat empty vectors separately:
        they carry their own type,
        in the form of
-       (i) a non-empty list of the dimensions of its elements
+       (i) a list of the dimensions of its elements
        (not the dimensions of the whole vector,
        which is obtained by adding a 0 dimension
        in front of the elements' dimensions;
