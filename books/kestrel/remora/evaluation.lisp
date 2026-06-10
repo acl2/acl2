@@ -1322,9 +1322,6 @@
     :hints
     (("Goal"
       :in-theory (enable value-wfp-of-cdr-of-assoc-when-denv-wfp
-                         denv-wfp-of-denv-add-type-vars
-                         denv-wfp-of-denv-add-ispace-vars
-                         value-wfp-of-value-vector
                          nfix
                          zp)
       :expand ((eval-expr expr denv limit)
@@ -1336,9 +1333,4 @@
                (eval-tapp funval tvals denv limit)
                (eval-tapp-list funvals tvals denv limit)))))
 
-  (verify-guards eval-expr
-    :hints (("Goal" :in-theory (enable value-list-wfp-of-eval-atom-list
-                                       value-list-wfp-of-eval-expr-list
-                                       value-list-wfp-of-eval-tapp-list
-                                       denv-wfp-of-denv-add-type-vars
-                                       denv-wfp-of-denv-add-ispace-vars)))))
+  (verify-guards eval-expr))
