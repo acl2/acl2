@@ -499,9 +499,9 @@
              acl2::not-reserrp-when-nat-list-listp))
 
   (defruled check-dims-of-value-list-of-value-base-list
-    (equal (check-dims-of-value-list (value-base-list bvs))
-           (repeat (len bvs) nil))
-    :induct (value-base-list bvs)
+    (equal (check-dims-of-value-list (value-base-list bvals))
+           (repeat (len bvals) nil))
+    :induct (value-base-list bvals)
     :enable (value-base-list
              check-dims-of-value-list
              check-dims-of-value
