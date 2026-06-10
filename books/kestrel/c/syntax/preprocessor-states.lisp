@@ -144,7 +144,7 @@
 
   (make-event
    `(defstobj ppstate
-      (chars :type (array (satisfies ucharp) (0))
+      (chars :type (array (satisfies unicharp) (0))
              :initially 0
              :resizable t)
       (positions :type (array (satisfies positionp) (1))
@@ -226,9 +226,9 @@
 
   ;; normalize recognizers:
 
-  (defrule raw-ppstate->chars-p-to-uchar-listp
+  (defrule raw-ppstate->chars-p-to-unichar-listp
     (equal (raw-ppstate->chars-p x)
-           (uchar-listp x))
+           (unichar-listp x))
     :induct t)
 
   (defrule raw-ppstate->positions-p-to-position-listp
@@ -250,21 +250,21 @@
 
   (define ppstate->char ((i natp) (ppstate ppstatep))
     :guard (< i (ppstate->chars-length ppstate))
-    :returns (char ucharp)
+    :returns (char unicharp)
     (mbe :logic (non-exec
-                 (uchar-fix
+                 (unichar-fix
                   (raw-ppstate->char (nfix i) (ppstate-fix ppstate))))
          :exec (raw-ppstate->char i ppstate))
     :inline t
     :prepwork ((local (in-theory (enable ppstate->chars-length))))
     :guard-hints
-    (("Goal" :in-theory (enable raw-ppstate->chars-p-to-uchar-listp)))
+    (("Goal" :in-theory (enable raw-ppstate->chars-p-to-unichar-listp)))
 
     ///
 
     (more-returns
      (char natp :rule-classes :type-prescription
-           :hints (("Goal" :in-theory (enable natp-when-ucharp))))))
+           :hints (("Goal" :in-theory (enable natp-when-unicharp))))))
 
   (define ppstate->positions-length ((ppstate ppstatep))
     :returns (length natp)
@@ -336,20 +336,20 @@
     :returns (new-ppstate ppstatep
                           :hints
                           (("Goal"
-                            :in-theory (enable uchar-listp-of-resize-list))))
+                            :in-theory (enable unichar-listp-of-resize-list))))
     (mbe :logic (non-exec
                  (raw-update-ppstate->chars-length (nfix length)
                                                    (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->chars-length length ppstate))
     :inline t)
 
-  (define update-ppstate->char ((i natp) (char ucharp) (ppstate ppstatep))
+  (define update-ppstate->char ((i natp) (char unicharp) (ppstate ppstatep))
     :guard (< i (ppstate->chars-length ppstate))
     :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec
                  (if (< (nfix i) (ppstate->chars-length ppstate))
                      (raw-update-ppstate->char
-                      (nfix i) (uchar-fix char) (ppstate-fix ppstate))
+                      (nfix i) (unichar-fix char) (ppstate-fix ppstate))
                    (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->char i char ppstate))
     :inline t
@@ -438,7 +438,7 @@
            (nfix length))
     :enable (ppstate->chars-length
              update-ppstate->chars-length
-             uchar-listp-of-resize-list))
+             unichar-listp-of-resize-list))
 
   (defrule ppstate->chars-length-of-update-ppstate->char
     (equal (ppstate->chars-length (update-ppstate->char i char ppstate))
@@ -606,7 +606,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-ppstate ((chars uchar-listp)
+(define init-ppstate ((chars unichar-listp)
                       (poss position-listp)
                       (macros macro-tablep)
                       (options ppoptionsp)
@@ -647,7 +647,7 @@
 
   :prepwork
 
-  ((define init-ppstate-chars-loop ((chars uchar-listp)
+  ((define init-ppstate-chars-loop ((chars unichar-listp)
                                     (i natp)
                                     (ppstate ppstatep))
      :guard (<= (+ i (len chars))

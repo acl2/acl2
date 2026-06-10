@@ -49,7 +49,7 @@
      but we return a list for flexibility,
      so that future extensions may return more @(tsee s-char) values."))
   (list (s-char-char (char-code achar)))
-  :guard-hints (("Goal" :in-theory (enable ucharp-of-char-code))))
+  :guard-hints (("Goal" :in-theory (enable unicharp-of-char-code))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -228,7 +228,7 @@
                 (append (stringize-achars (list #\\ #\"))))
                (t (list (s-char-char cchar.code))))
    :escape (stringize-escape cchar.escape))
-  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-ucharp))))
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-unicharp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -269,7 +269,7 @@
                 (append (stringize-achars (list #\\ #\"))))
                (t (list (s-char-char schar.code))))
    :escape (stringize-escape schar.escape))
-  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-ucharp))))
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-unicharp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -338,7 +338,7 @@
    :horizontal-tab (raise "Internal error: horizontal tab.")
    :vertical-tab (raise "Internal error: vertical tab.")
    :form-feed (raise "Internal error: form feed."))
-  :guard-hints (("Goal" :in-theory (enable natp-when-ucharp)))
+  :guard-hints (("Goal" :in-theory (enable natp-when-unicharp)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

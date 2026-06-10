@@ -459,7 +459,7 @@
           (char (code-char code))
           ((erp chars) (h-char-list-to-char-list (cdr hchars))))
        (retok (cons char chars)))
-     :guard-hints (("Goal" :use (:instance natp-when-ucharp
+     :guard-hints (("Goal" :use (:instance natp-when-unicharp
                                            (x (h-char->code (car hchars)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -489,7 +489,7 @@
           (char (code-char code))
           ((erp chars) (q-char-list-to-char-list (cdr qchars))))
        (retok (cons char chars)))
-     :guard-hints (("Goal" :use (:instance natp-when-ucharp
+     :guard-hints (("Goal" :use (:instance natp-when-unicharp
                                            (x (q-char->code (car qchars)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

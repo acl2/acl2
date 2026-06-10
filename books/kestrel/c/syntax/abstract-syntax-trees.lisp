@@ -787,7 +787,7 @@
    (xdoc::p
     "We do not capture the restriction that the characters cannot be
      single quote, backslash, or new-line."))
-  (:char ((code uchar)))
+  (:char ((code unichar)))
   (:escape ((escape escape)))
   :pred c-char-p
   :layout :fulltree)
@@ -850,7 +850,7 @@
    (xdoc::p
     "We do not capture the restriction that the characters cannot be
      double quote, backslash, or new-line."))
-  (:char ((code uchar)))
+  (:char ((code unichar)))
   (:escape ((escape escape)))
   :pred s-char-p
   :layout :fulltree)
@@ -915,7 +915,7 @@
      and to facilitate the addition of restrictions on the character,
      namely that the character cannot be @('>') or a new-line,
      but for now we do not capture this restriction."))
-  ((code uchar))
+  ((code unichar))
   :pred h-char-p
   :layout :fulltree)
 
@@ -932,7 +932,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection h-char-list->code-list ((x h-char-listp))
-  :returns (chars uchar-listp)
+  :returns (chars unichar-listp)
   :short "Lift @(tsee h-char->code) to lists."
   (h-char->code x))
 
@@ -949,7 +949,7 @@
      and to facilitate the addition of restrictions on the character,
      namely that the character cannot be @('>') or a new-line,
      but for now we do not capture this restriction."))
-  ((code uchar))
+  ((code unichar))
   :pred q-char-p
   :layout :fulltree)
 
@@ -966,7 +966,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection q-char-list->code-list ((x q-char-listp))
-  :returns (chars uchar-listp)
+  :returns (chars unichar-listp)
   :short "Lift @(tsee q-char->code) to lists."
   (q-char->code x))
 
@@ -3666,7 +3666,7 @@
             (items trans-item-list)
             (elifs hash-elif-list)
             (else hash-else-option)))
-    (:line-comment ((content uchar-list)))
+    (:line-comment ((content unichar-list)))
     :pred trans-itemp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
