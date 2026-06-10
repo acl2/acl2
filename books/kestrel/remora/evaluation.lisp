@@ -808,6 +808,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-vars-match-type-values-p ((vars type-var-listp)
+                                       (tvals type-value-listp))
+  :returns (yes/no booleanp)
+  :short "Check that type variables and type values
+          match in number and kind."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two lists must have the same length,
+     and, element-wise, each type variable's kind must match
+     the corresponding type value:
+     an @(':atom') type variable must be matched by an atom type value,
+     and an @(':array') type variable by an array type value.
+     A type value has the array kind when it is an @(':array');
+     every other type value has the atom kind.")
+   (xdoc::p
+    "This is used to evaluate type applications,
+     where the type values that a type lambda is applied to
+     must match the type parameters of the type lambda."))
+  (b* (((when (endp vars)) (endp tvals))
+       ((when (endp tvals)) nil)
+       (var (car vars))
+       (tval (car tvals)))
+    (and (type-var-case var
+                        :atom (not (type-value-case tval :array))
+                        :array (type-value-case tval :array))
+         (type-vars-match-type-values-p (cdr vars) (cdr tvals))))
+
+  ///
+
+  (defrule len-equal-when-type-vars-match-type-values-p
+    (implies (type-vars-match-type-values-p vars tvals)
+             (equal (len vars) (len tvals)))
+    :rule-classes :forward-chaining
+    :induct (type-vars-match-type-values-p vars tvals)
+    :enable type-vars-match-type-values-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines eval-exprs/atoms/binds
   :short "Evaluate expressions, atoms, and bindings."
   :long
@@ -891,7 +930,22 @@
        namely the codes of its characters;
        we evaluate it directly to the corresponding value.
        A non-empty string yields a vector of the integer code values;
-       an empty string yields an empty integer array."))
+       an empty string yields an empty integer array.")
+     (xdoc::p
+      "For a type application,
+       we evaluate the function sub-expression,
+       which must be a scalar value consisting of
+       a type lambda abstraction.
+       For now we only support the scalar case,
+       but we must generalize this to any array of lambda abstractions,
+       which are all applied to the type arguments.
+       We evaluate the types to type values,
+       which must match the lambda parameters in number and kind.
+       We extend the dynamic environment with
+       associations between the lambda parameters and the type values,
+       which may override existing associations,
+       which is intended hiding behavior.
+       We evaluate the lambda body in the new environment."))
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-case
        expr
@@ -940,7 +994,15 @@
                   :dims nil
                   :elem (type-value-base (base-type-int))))
        :app (reserr :todo)
-       :tapp (reserr :todo)
+       :tapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
+                  ;; TODO: generalize to no-scalar arrays of :TLAMBDAs:
+                  ((unless (value-case funval :tlambda)) (reserr nil))
+                  ((value-tlambda funval) funval)
+                  ((ok tvals) (eval-type-list expr.args denv))
+                  ((unless (type-vars-match-type-values-p funval.params tvals))
+                   (reserr nil))
+                  (denv (denv-add-type-vars funval.params tvals denv)))
+               (eval-expr funval.body denv (1- limit)))
        :iapp (reserr :todo)
        :capp (reserr :todo)
        :unbox (reserr :todo)
@@ -1118,6 +1180,7 @@
     :hints
     (("Goal"
       :in-theory (enable value-wfp-of-cdr-of-assoc-when-denv-wfp
+                         denv-wfp-of-denv-add-type-vars
                          nfix
                          zp)
       :expand ((eval-expr expr denv limit)
