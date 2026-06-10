@@ -627,7 +627,18 @@
              value-list-wfp
              dims-of-value
              value-wfp
-             acl2::not-reserrp-when-nat-list-listp)))
+             acl2::not-reserrp-when-nat-list-listp))
+
+  (defruled check-dims-of-value-list-when-value-list-wfp
+    (implies (value-list-wfp vals)
+             (equal (check-dims-of-value-list vals)
+                    (dims-of-value-list vals)))
+    :enable dims-of-value-list-when-value-list-wfp)
+
+  (theory-invariant
+   (incompatible
+    (:rewrite dims-of-value-list-when-value-list-wfp)
+    (:rewrite check-dims-of-value-list-when-value-list-wfp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
