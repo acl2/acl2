@@ -520,43 +520,7 @@
    (xdoc::p
     "The value must satisfy the dimension constraints.
      We will extend this to also add the satisfaction of type constraints."))
-  (not (reserrp (check-dims-of-value val)))
-
-  ///
-
-  (defrule value-wfp-of-value-base
-    (value-wfp (value-base base))
-    :enable (value-wfp check-dims-of-value))
-
-  (defrule value-wfp-of-value-lambda
-    (value-wfp (value-lambda params body))
-    :enable (value-wfp check-dims-of-value))
-
-  (defrule value-wfp-of-value-tlambda
-    (value-wfp (value-tlambda params body))
-    :enable (value-wfp check-dims-of-value))
-
-  (defrule value-wfp-of-value-ilambda
-    (value-wfp (value-ilambda params body))
-    :enable (value-wfp check-dims-of-value))
-
-  (defrule value-wfp-of-value-vector-empty
-    (value-wfp (value-vector-empty dims elem))
-    :enable (value-wfp
-             check-dims-of-value
-             acl2::not-reserrp-when-nat-listp))
-
-  (defrule value-wfp-of-value-vector-of-value-base-list
-    (implies (consp bvs)
-             (value-wfp (value-vector (value-base-list bvs))))
-    :enable (value-wfp
-             check-dims-of-value
-             check-dims-of-value-list-of-value-base-list
-             acl2::consp-of-repeat
-             car-of-repeat
-             list-repeatp-of-repeat
-             acl2::not-reserrp-when-nat-listp
-             acl2::not-reserrp-when-nat-list-listp)))
+  (not (reserrp (check-dims-of-value val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -664,3 +628,42 @@
     :induct t
     :enable (list-split
              dims-of-value-list-list)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection value-wfp-theorems
+  :short "Theorems about the well-formedness of certain values."
+
+  (defrule value-wfp-of-value-base
+    (value-wfp (value-base base))
+    :enable (value-wfp check-dims-of-value))
+
+  (defrule value-wfp-of-value-lambda
+    (value-wfp (value-lambda params body))
+    :enable (value-wfp check-dims-of-value))
+
+  (defrule value-wfp-of-value-tlambda
+    (value-wfp (value-tlambda params body))
+    :enable (value-wfp check-dims-of-value))
+
+  (defrule value-wfp-of-value-ilambda
+    (value-wfp (value-ilambda params body))
+    :enable (value-wfp check-dims-of-value))
+
+  (defrule value-wfp-of-value-vector-empty
+    (value-wfp (value-vector-empty dims elem))
+    :enable (value-wfp
+             check-dims-of-value
+             acl2::not-reserrp-when-nat-listp))
+
+  (defrule value-wfp-of-value-vector-of-value-base-list
+    (implies (consp bvs)
+             (value-wfp (value-vector (value-base-list bvs))))
+    :enable (value-wfp
+             check-dims-of-value
+             check-dims-of-value-list-of-value-base-list
+             acl2::consp-of-repeat
+             car-of-repeat
+             list-repeatp-of-repeat
+             acl2::not-reserrp-when-nat-listp
+             acl2::not-reserrp-when-nat-list-listp)))
