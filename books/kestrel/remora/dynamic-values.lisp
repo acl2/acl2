@@ -657,8 +657,8 @@
              acl2::not-reserrp-when-nat-listp))
 
   (defrule value-wfp-of-value-vector-of-value-base-list
-    (implies (consp bvs)
-             (value-wfp (value-vector (value-base-list bvs))))
+    (implies (consp bvals)
+             (value-wfp (value-vector (value-base-list bvals))))
     :enable (value-wfp
              check-dims-of-value
              check-dims-of-value-list-of-value-base-list
