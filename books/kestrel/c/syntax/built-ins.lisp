@@ -115,7 +115,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This list is likely incomplete.
+    "This list is incomplete.
      New built-ins are generally added on demand
      as they are encountered in real programs.")
    (xdoc::p
@@ -132,8 +132,324 @@
      but in any case Clang generally follows GCC.
      We have not yet observed cases in which they differ."))
   (list
-   ; [GCCM:7.9.1]
-   ; (https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html):
+   ;; [GCCM:7.1]
+   ;; (https://gcc.gnu.org/onlinedocs/gcc/Library-Builtins.html):
+   (built-in-fun "__builtin_copysign"
+                 (type-double)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_copysignf"
+                 (type-float)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_copysignl"
+                 (type-ldouble)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_copysignf128"
+                 (type-unknown-arithmetic) ; _Float128
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_fabs"
+                 (type-double)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_fabsf"
+                 (type-float)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_fabsl"
+                 (type-ldouble)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_fabsf128"
+                 (type-unknown-arithmetic) ; _Float128
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_fma"
+                 (type-double)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_fmaf"
+                 (type-float)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_fmal"
+                 (type-ldouble)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_isfinite"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_isgreater"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_isgreaterequal"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_isless"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_islessequal"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_isnan"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_sqrt"
+                 (type-double)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_sqrtf"
+                 (type-float)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_sqrtl"
+                 (type-ldouble)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_signbit"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_signbitf"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_signbitl"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_memchr"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_memcmp"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_memcpy"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_mempcpy"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_memset"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_stpcpy"
+                 (type-pointer (type-char))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_strcpy"
+                 (type-pointer (type-char))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_strlen"
+                 (type-unknown-arithmetic) ; size_t
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_strncat"
+                 (type-pointer (type-char))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_strncpy"
+                 (type-pointer (type-char))
+                 (type-params-unspecified))
+   ;; [GCCM:7.2.1]
+   ;; (https://gcc.gnu.org/onlinedocs/gcc/Floating-Point-Format-Builtins.html):
+   (built-in-fun "__builtin_huge_val"
+                 (type-double)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_huge_valf"
+                 (type-float)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_huge_vall"
+                 (type-ldouble)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_huge_valf128"
+                 (type-unknown-arithmetic) ; _Float128
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_fpclassify"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_inf"
+                 (type-double)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_inff"
+                 (type-float)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_infl"
+                 (type-ldouble)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_isinf_sign"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_nan"
+                 (type-double)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_nanf"
+                 (type-float)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_nanl"
+                 (type-ldouble)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_nanf128"
+                 (type-unknown-arithmetic) ; _Float128
+                 (type-params-unspecified))
+   ;; [GCCM:7.2.2]
+   ;; (https://gcc.gnu.org/onlinedocs/gcc/Bit-Operation-Builtins.html):
+   (built-in-fun "__builtin_clz"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_clzl"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_clzll"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_ctz"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_ctzl"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_ctzll"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_popcount"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_popcountl"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_popcountll"
+                 (type-sint)
+                 (type-params-unspecified))
+   ;; [GCCM:7.2.3]
+   ;; (https://gcc.gnu.org/onlinedocs/gcc/Byte-Swapping-Builtins.html):
+   (built-in-fun "__builtin_bswap16"
+                 (type-unknown-arithmetic) ; uint16_t
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_bswap32"
+                 (type-unknown-arithmetic) ; uint32_t
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_bswap64"
+                 (type-unknown-arithmetic) ; uint64_t
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_bswap128"
+                 (type-unknown-arithmetic) ; uint128_t
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_bswapg"
+                 (type-unknown-arithmetic) ; polymorphic integer
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_bitreverse8"
+                 (type-unknown-arithmetic) ; uint8_t
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_bitreverse16"
+                 (type-unknown-arithmetic) ; uint16_t
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_bitreverse32"
+                 (type-unknown-arithmetic) ; uint32_t
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_bitreverse64"
+                 (type-unknown-arithmetic) ; uint64_t
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_bitreverse128"
+                 (type-unknown-arithmetic) ; uint128_t
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_bitreverseg"
+                 (type-unknown-arithmetic) ; polymorphic integer
+                 (type-params-unspecified))
+   ;; [GCCM:7.2.5]
+   ;; (https://gcc.gnu.org/onlinedocs/gcc/Integer-Overflow-Builtins.html):
+   (built-in-fun "__builtin_add_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_sadd_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_saddl_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_saddll_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_uadd_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_uaddl_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_uaddll_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_sub_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_ssub_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_ssubl_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_ssubll_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_usub_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_usubl_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_usubll_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_mul_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_smul_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_smull_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_smulll_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_umul_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_umull_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_umulll_overflow"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_add_overflow_p"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_sub_overflow_p"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_mul_overflow_p"
+                 (type-bool)
+                 (type-params-unspecified))
+   ;; [GCCM:7.3]
+   ;; (https://gcc.gnu.org/onlinedocs/gcc/Stack-Allocation.html):
+   (built-in-fun "__builtin_alloca"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_alloca_with_align"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_alloca_with_align_and_max"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
+   ;; [GCCM:7.5]
+   ;; (https://gcc.gnu.org/onlinedocs/gcc/Constructing-Calls.html):
+   (built-in-fun "__builtin_apply_args"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_apply"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_return"
+                 (type-void)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_va_arg_pack"
+                 (type-unknown)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_va_arg_pack_len"
+                 (type-sint)
+                 (type-params-unspecified))
+   ;; [GCCM:7.6]
+   ;; (https://gcc.gnu.org/onlinedocs/gcc/Return-Address.html):
+   (built-in-fun "__builtin_return_address"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_extract_return_addr"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
+   ;; [GCCM:7.9.1]
+   ;; (https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html):
    (built-in-fun "__atomic_load"
                  (type-void)
                  (type-params-unspecified))
@@ -212,330 +528,152 @@
    (built-in-fun "__atomic_is_lock_free"
                  (type-bool)
                  (type-params-unspecified))
-   ;; others:
-   (built-in-fun "__builtin___memcpy_chk"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin___memmove_chk"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin___mempcpy_chk"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin___memset_chk"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin___snprintf_chk"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin___sprintf_chk"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin___stpcpy_chk"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin___stpncpy_chk"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin___strcat_chk"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin___strcpy_chk"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin___strncat_chk"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin___strncpy_chk"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin___vsnprintf_chk"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin___vsprintf_chk"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_add_overflow"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_add_overflow_p"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_alloca"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_apply"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_apply_args"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_bswap16"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_bswap32"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_bswap64"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_choose_expr"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_clz"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_clzl"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_clzll"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_constant_p"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_copysign"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_copysignf"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_copysignf128"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_copysignl"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_ctz"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_ctzl"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_ctzll"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_dynamic_object_size"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_expect"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_extract_return_addr"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_fabs"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_fabsf"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_fabsf128"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_fabsl"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_fma"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_fpclassify"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_huge_val"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_huge_valf"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_huge_valf128"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_huge_vall"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_ia32_cvtpd2ps"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_ia32_rdtsc"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_inff"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_isfinite"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_isgreater"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_isgreaterequal"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_isinf_sign"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_isless"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_islessequal"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_isnan"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_memchr"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_memcmp"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_memcpy"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_mempcpy"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_memset"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_mul_overflow"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_nan"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_nanf"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_nanf128"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_nanl"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_object_size"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_popcount"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_popcountll"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_return_address"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_signbit"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_signbitl"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_sqrt"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_sqrtf"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_sqrtl"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_stpcpy"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_strcpy"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_strlen"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_strncat"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_strncpy"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_sub_overflow"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_thread_pointer"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_trap"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_unreachable"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_va_arg_pack"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_va_arg_pack_len"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_va_copy"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_va_end"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_va_start"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__builtin_vacopy"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__sync_add_and_fetch"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__sync_and_and_fetch"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__sync_bool_compare_and_swap"
-                 (type-unknown)
-                 (type-params-unspecified))
+   ;; [GCCM:7.9.2]
+   ;; (https://gcc.gnu.org/onlinedocs/gcc/_005f_005fsync-Builtins.html):
    (built-in-fun "__sync_fetch_and_add"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__sync_fetch_and_and"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__sync_fetch_and_nand"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__sync_fetch_and_or"
-                 (type-unknown)
+                 (type-unknown) ; polymorphic
                  (type-params-unspecified))
    (built-in-fun "__sync_fetch_and_sub"
-                 (type-unknown)
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__sync_fetch_and_and"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__sync_fetch_and_or"
+                 (type-unknown) ; polymorphic
                  (type-params-unspecified))
    (built-in-fun "__sync_fetch_and_xor"
-                 (type-unknown)
+                 (type-unknown) ; polymorphic
                  (type-params-unspecified))
-   (built-in-fun "__sync_lock_release"
-                 (type-unknown)
+   (built-in-fun "__sync_fetch_and_nand"
+                 (type-unknown) ; polymorphic
                  (type-params-unspecified))
-   (built-in-fun "__sync_lock_test_and_set"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__sync_nand_and_fetch"
-                 (type-unknown)
-                 (type-params-unspecified))
-   (built-in-fun "__sync_or_and_fetch"
-                 (type-unknown)
+   (built-in-fun "__sync_add_and_fetch"
+                 (type-unknown) ; polymorphic
                  (type-params-unspecified))
    (built-in-fun "__sync_sub_and_fetch"
-                 (type-unknown)
+                 (type-unknown) ; polymorphic
                  (type-params-unspecified))
-   (built-in-fun "__sync_synchronize"
-                 (type-unknown)
+   (built-in-fun "__sync_and_and_fetch"
+                 (type-unknown) ; polymorphic
                  (type-params-unspecified))
-   (built-in-fun "__sync_val_compare_and_swap"
-                 (type-unknown)
+   (built-in-fun "__sync_or_and_fetch"
+                 (type-unknown) ; polymorphic
                  (type-params-unspecified))
    (built-in-fun "__sync_xor_and_fetch"
-                 (type-unknown)
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__sync_nand_and_fetch"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__sync_bool_compare_and_swap"
+                 (type-bool)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_val_compare_and_swap"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__sync_synchronize"
+                 (type-void)
+                 (type-params-unspecified))
+   (built-in-fun "__sync_lock_test_and_set"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__sync_lock_release"
+                 (type-void)
+                 (type-params-unspecified))
+   ;; [GCCM:7.10]
+   ;; (https://gcc.gnu.org/onlinedocs/gcc/Object-Size-Checking.html):
+   (built-in-fun "__builtin_object_size"
+                 (type-unknown-arithmetic) ; size_t
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_dynamic_object_size"
+                 (type-unknown-arithmetic) ; size_t
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___memcpy_chk"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___mempcpy_chk"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___memmove_chk"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___memset_chk"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___strcpy_chk"
+                 (type-pointer (type-char))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___strncpy_chk"
+                 (type-pointer (type-char))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___stpcpy_chk"
+                 (type-pointer (type-char))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___stpncpy_chk"
+                 (type-pointer (type-char))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___strcat_chk"
+                 (type-pointer (type-char))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___strncat_chk"
+                 (type-pointer (type-char))
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___sprintf_chk"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___snprintf_chk"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___vsprintf_chk"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin___vsnprintf_chk"
+                 (type-sint)
+                 (type-params-unspecified))
+   ;; [GCCM:7.12]
+   ;; (https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html):
+   (built-in-fun "__builtin_choose_expr"
+                 (type-unknown) ; polymorphic
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_constant_p"
+                 (type-sint)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_expect"
+                 (type-slong)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_trap"
+                 (type-void)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_unreachable"
+                 (type-void)
+                 (type-params-unspecified))
+   ;; [GCCM:7.13.29]
+   ;; (https://gcc.gnu.org/onlinedocs/gcc/RISC-V-Built-in-Functions.html):
+   (built-in-fun "__builtin_thread_pointer"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
+   ;; [GCCM:7.13.37]
+   ;; (https://gcc.gnu.org/onlinedocs/gcc/x86-Built-in-Functions.html):
+   (built-in-fun "__builtin_ia32_cvtpd2ps"
+                 (type-unknown) ; vector type (v4sf)
+                 (type-params-unspecified))
+   ;; Not found in [GCCM], but based on
+   ;; https://gcc.gnu.org/legacy-ml/gcc-help/2017-04/msg00098.html,
+   ;; https://gcc.gnu.org/pipermail/gcc-help/2021-July/140564.html,
+   ;; https://gcc.gnu.org/pipermail/gcc-cvs/2021-March/343981.html:
+   (built-in-fun "__builtin_ia32_rdtsc"
+                 (type-ullong)
+                 (type-params-unspecified))
+   ;; Not found in [GCCM], but corresponding to [C23:7.16.1] [C23:7.16.2]:
+   (built-in-fun "__builtin_va_copy"
+                 (type-void)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_va_end"
+                 (type-void)
+                 (type-params-unspecified))
+   (built-in-fun "__builtin_va_start"
+                 (type-void)
                  (type-params-unspecified)))
   ///
   (assert-event (built-in-fun-listp *gcc/clang-built-in-functions*))
