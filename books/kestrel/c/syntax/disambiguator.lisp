@@ -11,7 +11,7 @@
 
 (in-package "C$")
 
-(include-book "built-in")
+(include-book "built-ins")
 (include-book "unambiguity")
 (include-book "translation-unit-comparison")
 
@@ -1833,7 +1833,8 @@
                  (retok (type-spec-atomic new-type) dstate))
        :struct (b* (((erp new-struni-spec dstate)
                      (dimb-struni-spec tyspec.spec dstate)))
-                 (retok (type-spec-struct new-struni-spec)
+                 (retok (make-type-spec-struct :spec new-struni-spec
+                                               :info nil)
                         dstate))
        :union (b* (((erp new-struni-spec dstate)
                     (dimb-struni-spec tyspec.spec dstate)))
