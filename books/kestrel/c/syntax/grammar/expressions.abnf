@@ -129,4 +129,32 @@ conditional-expression-std =
       logical-or-expression
     / logical-or-expression "?" expression ":" conditional-expression
 
-; TODO: add other kinds of expressions
+; Assignment expressions are the same in all C dialects
+; [C17:6.5.16/1] [C23:6.5.17].
+
+assignment-expression =
+      conditional-expression
+    / unary-expression assignment-operator assignment-expression
+
+assignment-operator = "="
+                    / "*="
+                    / "/="
+                    / "%="
+                    / "+="
+                    / "-="
+                    / "<<="
+                    / ">>="
+                    / "&="
+                    / "^="
+                    / "|="
+
+; Top-level expressions are the same in the C17 and C23 standards
+; [C17:6.5.17/1] [C23:6.5.18].
+
+expression = assignment-expression
+           / expression "," assignment-expression
+
+; Constant expressions are the same in the C17 and C23 standards
+; [C17:6.6/1] [C23:6.6].
+
+constant-expression = conditional-expression
