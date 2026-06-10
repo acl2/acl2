@@ -270,7 +270,7 @@
          :returns (array ,<type>-arrayp)
          :short ,(str::cat "Build an array of "
                            type-string
-                           "from a list of its elements.")
+                           " from a list of its elements.")
          (,<type>-array ,(type-to-maker type) elements)
          :hooks (:fix)
          ///
