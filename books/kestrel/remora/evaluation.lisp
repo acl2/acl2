@@ -1177,8 +1177,27 @@
        as we plan to do.
        We return the vector value consisting of the result values.")
      (xdoc::p
-      "An empty vector function value is not yet supported.
-       We will add support soon."))
+      "An empty vector function value has
+       no type lambda abstractions to apply,
+       but it carries the type of its would-be elements,
+       which must be a universal type value
+       whose parameters match the type argument values in number and kinds.
+       We extend the dynamic environment
+       to associate the arguments with the parameters,
+       and we evaluate the body of the universal type value,
+       which yields the type value of the would-be results
+       of the element-wise application.
+       Similarly to the evaluation of empty frame expressions
+       in @(tsee eval-expr),
+       we decompose that type value into
+       the atom type value and the dimensions.
+       We return the empty vector value
+       whose element type value is that atom type value,
+       and whose element dimensions are
+       the element dimensions of the function value
+       followed by the dimensions of the evaluated body of the universal type.
+       The implicit leading 0 dimension of the function value
+       is also the implicit leading 0 dimension of the result value."))
     (b* (((when (zp limit)) (reserr :limit)))
       (value-case
        funval
@@ -1193,7 +1212,23 @@
             ((unless (consp vals)) (reserr nil))
             ((unless (list-repeatp (dims-of-value-list vals))) (reserr nil)))
          (value-vector vals))
-       :vector-empty (reserr :todo) ; TODO: lift over an empty array
+       :vector-empty
+       (type-value-case
+        funval.elem
+        :forall
+        (b* (((unless (type-vars-match-type-values-p funval.elem.params tvals))
+              (reserr nil))
+             (denv (denv-add-type-vars funval.elem.params tvals denv))
+             ((ok tval) (eval-type funval.elem.body denv))
+             ((mv elem body-dims)
+              (type-value-case
+               tval
+               :array (mv tval.elem tval.shape)
+               :otherwise (mv tval nil)))
+             ((when (type-value-case elem :array)) (reserr nil)))
+          (make-value-vector-empty :dims (append funval.dims body-dims)
+                                   :elem elem))
+        :otherwise (reserr nil))
        :otherwise (reserr nil)))
     :measure (nfix limit))
 
