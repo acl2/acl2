@@ -1189,6 +1189,7 @@
          (eval-expr funval.body denv (1- limit)))
        :vector
        (b* (((ok vals) (eval-tapp-list funval.elems tvals denv (1- limit)))
+            ;; TODO: eliminate the next two checks via proof
             ((unless (consp vals)) (reserr nil))
             ((unless (list-repeatp (dims-of-value-list vals))) (reserr nil)))
          (value-vector vals))
@@ -1272,6 +1273,7 @@
          (eval-expr funval.body denv (1- limit)))
        :vector
        (b* (((ok vals) (eval-iapp-list funval.elems ivals denv (1- limit)))
+            ;; TODO: eliminate the next two checks via proof
             ((unless (consp vals)) (reserr nil))
             ((unless (list-repeatp (dims-of-value-list vals))) (reserr nil)))
          (value-vector vals))
