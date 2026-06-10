@@ -11,7 +11,7 @@
 
 (in-package "C$")
 
-(include-book "built-in")
+(include-book "built-ins")
 (include-book "unambiguity")
 (include-book "translation-unit-comparison")
 
@@ -513,7 +513,8 @@
                             :macros macros
                             :file file
                             :ienv ienv)))
-    (dimb-add-idents-objfun (built-ins-for dialect) dstate)))
+    (dimb-add-idents-objfun (ident-list-of (built-in-fun/var-names-for dialect))
+                            dstate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
