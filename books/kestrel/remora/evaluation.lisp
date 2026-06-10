@@ -972,19 +972,9 @@
        the function value to the argument type values.")
      (xdoc::p
       "For an ispace application,
-       we evaluate the function sub-expression,
-       which must be a scalar value consisting of
-       an ispace lambda abstraction.
-       For now we only support the scalar case,
-       but we must generalize this to any array of lambda abstractions,
-       which are all applied to the ispace arguments.
-       We evaluate the ispaces to ispace values,
-       which must match the lambda parameters in number and sort.
-       We extend the dynamic environment with
-       associations between the lambda parameters and the ispace values,
-       which may override existing associations,
-       which is intended hiding behavior.
-       We evaluate the lambda body in the new environment."))
+       we evaluate the function sub-expression and the ispace arguments,
+       and we use a separate ACL2 function to apply
+       the function value to the argument ispace values."))
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-case
        expr
@@ -1033,15 +1023,8 @@
                   ((ok tvals) (eval-type-list expr.args denv)))
                (eval-tapp funval tvals denv (1- limit)))
        :iapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
-                  ;; TODO: generalize to no-scalar arrays of :ILAMBDAs:
-                  ((unless (value-case funval :ilambda)) (reserr nil))
-                  ((value-ilambda funval) funval)
-                  ((ok ivals) (eval-ispace-list expr.args denv))
-                  ((unless (ispace-vars-match-ispace-values-p funval.params
-                                                              ivals))
-                   (reserr nil))
-                  (denv (denv-add-ispace-vars funval.params ivals denv)))
-               (eval-expr funval.body denv (1- limit)))
+                  ((ok ivals) (eval-ispace-list expr.args denv)))
+               (eval-iapp funval ivals denv (1- limit)))
        :capp (reserr :todo)
        :unbox (reserr :todo)
        :bracket (reserr :todo)
@@ -1239,6 +1222,89 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define eval-iapp ((funval valuep)
+                     (ivals ispace-value-listp)
+                     (denv denvp)
+                     (limit natp))
+    :guard (denv-wfp denv)
+    :returns (val value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Apply a value to ispace values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called by @(tsee eval-expr) for an ispace application,
+       after the function and the ispace arguments have been evaluated:
+       @('funval') is the value of the function,
+       and @('ivals') are the values of the ispace arguments.")
+     (xdoc::p
+      "The function value must be an array, of any rank,
+       whose elements are ispace lambda abstractions
+       whose parameters match the ispace argument values in number and sorts.
+       Each such lambda abstraction is applied to the ispace argument values.")
+     (xdoc::p
+      "This ACL2 function performs that element-wise application.
+       The base case is that of a scalar (i.e. 0-rank array) function value:
+       we check that parameters and arguments match,
+       we extend the dynamic environment
+       to associate the arguments with the parameters
+       (which may override existing associations,
+       which is intended hiding behavior),
+       and we evaluate the body of the ispace lambda abstraction.")
+     (xdoc::p
+      "A non-empty vector function value
+       is applied via a separate ACL2 function that goes through the list.
+       We check that the resulting list of values is not empty
+       and that its values all have the same dimensions,
+       but this should be eliminable via proofs,
+       as we plan to do.
+       We return the vector value consisting of the result values.")
+     (xdoc::p
+      "An empty vector function value is not yet supported.
+       We will add support soon."))
+    (b* (((when (zp limit)) (reserr :limit)))
+      (value-case
+       funval
+       :ilambda
+       (b* (((unless (ispace-vars-match-ispace-values-p funval.params ivals))
+             (reserr nil))
+            (denv (denv-add-ispace-vars funval.params ivals denv)))
+         (eval-expr funval.body denv (1- limit)))
+       :vector
+       (b* (((ok vals) (eval-iapp-list funval.elems ivals denv (1- limit)))
+            ((unless (consp vals)) (reserr nil))
+            ((unless (list-repeatp (dims-of-value-list vals))) (reserr nil)))
+         (value-vector vals))
+       :vector-empty (reserr :todo) ; TODO: lift over an empty array
+       :otherwise (reserr nil)))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-iapp-list ((funvals value-listp)
+                          (ivals ispace-value-listp)
+                          (denv denvp)
+                          (limit natp))
+    :guard (denv-wfp denv)
+    :returns (vals value-list-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Lift @(tsee eval-iapp) to a list of function values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This applies the ispace values to each element value in turn,
+       returning the list of results in the same order.
+       It is used to lift ispace application over
+       a vector of ispace lambda values (see @(tsee eval-iapp))."))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (endp funvals)) nil)
+         ((ok val) (eval-iapp (car funvals) ivals denv (1- limit)))
+         ((ok vals) (eval-iapp-list (cdr funvals) ivals denv (1- limit))))
+      (cons val vals))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove eventually
 
   :verify-guards nil ; done below
@@ -1274,7 +1340,18 @@
                                       tvals denv limit)
                       (eval-tapp-list funvals
                                       (type-value-list-fix tvals) denv limit)
-                      (eval-tapp-list funvals tvals (denv-fix denv) limit))
+                      (eval-tapp-list funvals tvals (denv-fix denv) limit)
+                      (eval-iapp funval ivals denv limit)
+                      (eval-iapp (value-fix funval) ivals denv limit)
+                      (eval-iapp funval
+                                 (ispace-value-list-fix ivals) denv limit)
+                      (eval-iapp funval ivals (denv-fix denv) limit)
+                      (eval-iapp-list funvals ivals denv limit)
+                      (eval-iapp-list (value-list-fix funvals)
+                                      ivals denv limit)
+                      (eval-iapp-list funvals
+                                      (ispace-value-list-fix ivals) denv limit)
+                      (eval-iapp-list funvals ivals (denv-fix denv) limit))
              :in-theory (enable nfix zp))))
 
   (defret-mutual value-wfp-of-eval-exprs/atoms/binds
@@ -1318,6 +1395,16 @@
                     (not (reserrp vals)))
                (value-list-wfp vals))
       :fn eval-tapp-list)
+    (defret value-wfp-of-eval-iapp
+      (implies (and (denv-wfp denv)
+                    (not (reserrp val)))
+               (value-wfp val))
+      :fn eval-iapp)
+    (defret value-list-wfp-of-eval-iapp-list
+      (implies (and (denv-wfp denv)
+                    (not (reserrp vals)))
+               (value-list-wfp vals))
+      :fn eval-iapp-list)
     :mutual-recursion eval-exprs/atoms/binds
     :hints
     (("Goal"
@@ -1331,6 +1418,8 @@
                (eval-bind bind denv limit)
                (eval-bind-list binds denv limit)
                (eval-tapp funval tvals denv limit)
-               (eval-tapp-list funvals tvals denv limit)))))
+               (eval-tapp-list funvals tvals denv limit)
+               (eval-iapp funval ivals denv limit)
+               (eval-iapp-list funvals ivals denv limit)))))
 
   (verify-guards eval-expr))
