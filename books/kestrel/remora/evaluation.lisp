@@ -1175,8 +1175,7 @@
       "The function value must be an array, of any rank,
        whose elements are type lambda abstractions
        whose parameters match the type argument values in number and kinds.
-       Each such lambda abstraction is applied to the type argument values,
-       and the resulting value has the same dimensions as the function value.")
+       Each such lambda abstraction is applied to the type argument values.")
      (xdoc::p
       "This ACL2 function performs that element-wise application.
        The base case is that of a scalar (i.e. 0-rank array) function value:
