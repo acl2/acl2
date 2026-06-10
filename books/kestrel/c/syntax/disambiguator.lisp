@@ -513,7 +513,8 @@
                             :macros macros
                             :file file
                             :ienv ienv)))
-    (dimb-add-idents-objfun (built-ins-for dialect) dstate)))
+    (dimb-add-idents-objfun (ident-list-of (built-in-fun/var-names-for dialect))
+                            dstate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1832,7 +1833,8 @@
                  (retok (type-spec-atomic new-type) dstate))
        :struct (b* (((erp new-struni-spec dstate)
                      (dimb-struni-spec tyspec.spec dstate)))
-                 (retok (type-spec-struct new-struni-spec)
+                 (retok (make-type-spec-struct :spec new-struni-spec
+                                               :info nil)
                         dstate))
        :union (b* (((erp new-struni-spec dstate)
                     (dimb-struni-spec tyspec.spec dstate)))
