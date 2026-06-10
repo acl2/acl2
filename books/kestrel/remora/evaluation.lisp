@@ -913,6 +913,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define eval-expr ((expr exprp) (denv denvp) (limit natp))
+    :guard (denv-wfp denv)
     :returns (val value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate an expression to a value."
@@ -930,14 +931,13 @@
      (xdoc::p
       "A non-empty array must have no zero dimensions,
        and a number of atoms equal to the product of the dimensions.
-       We evaluate the atoms to values,
-       which must be well-formed and all have the same dimensions,
-       and we arrange them according to the dimensions
-       via a separate function (see its documentation).
-       The well-formedness check could be omitted
-       once we prove that evaluation always returns well-formed values,
-       but we do not have that proof yet,
-       so we must perform an explicit check for now.")
+       We evaluate the atoms to values.
+       These are well-formed,
+       because, given the well-formed dynamic environment required by the guard,
+       evaluation returns well-formed values.
+       They must also all have the same dimensions;
+       we arrange them according to the dimensions
+       via a separate function (see its documentation).")
      (xdoc::p
       "An empty array must have at least one 0 dimension,
        and its element type must evaluate to an atom type value.
@@ -945,16 +945,15 @@
      (xdoc::p
       "A non-empty frame is like a non-empty array,
        but its elements are cell expressions instead of atoms.
-       We evaluate the cells to values,
-       which must be well-formed and all have the same dimensions,
-       and we arrange them according to the dimensions
+       We evaluate the cells to values.
+       These are well-formed,
+       because, given the well-formed dynamic environment required by the guard,
+       evaluation returns well-formed values.
+       They must also all have the same dimensions;
+       we arrange them according to the dimensions
        via the same function used for arrays;
        the dimensions of the cells become
-       the inner dimensions of the result.
-       The well-formedness check could be omitted
-       once we prove that evaluation always returns well-formed values,
-       but we do not have that proof yet,
-       so we must perform an explicit check for now.")
+       the inner dimensions of the result.")
      (xdoc::p
       "An empty frame is treated similarly to an empty array,
        but its type is the cell type, which may be an array type;
@@ -1009,8 +1008,6 @@
                    ((ok vals) (eval-atom-list expr.atoms denv (1- limit)))
                    ((unless (equal (len vals) (nat-list-product expr.dims)))
                     (reserr nil))
-                   ((unless (value-list-wfp vals)) ; TODO: eliminate via proof
-                    (reserr nil))
                    ((unless (list-repeatp (dims-of-value-list vals)))
                     (reserr nil)))
                 (value-with-nonempty-dims expr.dims vals))
@@ -1021,8 +1018,6 @@
        :frame (b* (((when (member-equal 0 expr.dims)) (reserr nil))
                    ((ok vals) (eval-expr-list expr.exprs denv (1- limit)))
                    ((unless (equal (len vals) (nat-list-product expr.dims)))
-                    (reserr nil))
-                   ((unless (value-list-wfp vals)) ; TODO: eliminate via proof
                     (reserr nil))
                    ((unless (list-repeatp (dims-of-value-list vals)))
                     (reserr nil)))
@@ -1074,6 +1069,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define eval-expr-list ((exprs expr-listp) (denv denvp) (limit natp))
+    :guard (denv-wfp denv)
     :returns (vals value-list-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate a list of expressions to a list of values."
@@ -1180,7 +1176,7 @@
 
   :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove eventually
 
-  :verify-guards :after-returns
+  :verify-guards nil ; done below, after the well-formedness theorem
 
   ///
 
@@ -1250,4 +1246,10 @@
                (eval-atom atom denv limit)
                (eval-atom-list atoms denv limit)
                (eval-bind bind denv limit)
-               (eval-bind-list binds denv limit))))))
+               (eval-bind-list binds denv limit)))))
+
+  (verify-guards eval-expr
+    :hints (("Goal" :in-theory (enable value-list-wfp-of-eval-atom-list
+                                       value-list-wfp-of-eval-expr-list
+                                       denv-wfp-of-denv-add-type-vars
+                                       denv-wfp-of-denv-add-ispace-vars)))))
