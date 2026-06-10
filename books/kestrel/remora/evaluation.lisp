@@ -967,19 +967,9 @@
        an empty string yields an empty integer array.")
      (xdoc::p
       "For a type application,
-       we evaluate the function sub-expression,
-       which must be a scalar value consisting of
-       a type lambda abstraction.
-       For now we only support the scalar case,
-       but we must generalize this to any array of lambda abstractions,
-       which are all applied to the type arguments.
-       We evaluate the types to type values,
-       which must match the lambda parameters in number and kind.
-       We extend the dynamic environment with
-       associations between the lambda parameters and the type values,
-       which may override existing associations,
-       which is intended hiding behavior.
-       We evaluate the lambda body in the new environment.")
+       we evaluate the function sub-expression and the type arguments,
+       and we use a separate ACL2 function to apply
+       the function value to the argument type values.")
      (xdoc::p
       "For an ispace application,
        we evaluate the function sub-expression,
@@ -1040,14 +1030,8 @@
                   :elem (type-value-base (base-type-int))))
        :app (reserr :todo)
        :tapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
-                  ;; TODO: generalize to no-scalar arrays of :TLAMBDAs:
-                  ((unless (value-case funval :tlambda)) (reserr nil))
-                  ((value-tlambda funval) funval)
-                  ((ok tvals) (eval-type-list expr.args denv))
-                  ((unless (type-vars-match-type-values-p funval.params tvals))
-                   (reserr nil))
-                  (denv (denv-add-type-vars funval.params tvals denv)))
-               (eval-expr funval.body denv (1- limit)))
+                  ((ok tvals) (eval-type-list expr.args denv)))
+               (eval-tapp funval tvals denv (1- limit)))
        :iapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                   ;; TODO: generalize to no-scalar arrays of :ILAMBDAs:
                   ((unless (value-case funval :ilambda)) (reserr nil))
@@ -1172,9 +1156,93 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define eval-tapp ((funval valuep)
+                     (tvals type-value-listp)
+                     (denv denvp)
+                     (limit natp))
+    :guard (denv-wfp denv)
+    :returns (val value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Apply a value to type values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called by @(tsee eval-expr) for a type application,
+       after the function and the type arguments have been evaluated:
+       @('funval') is the value of the function,
+       and @('tvals') are the values of the type arguments.")
+     (xdoc::p
+      "The function value must be an array, of any rank,
+       whose elements are type lambda abstractions
+       whose parameters match the type argument values in number and kinds.
+       Each such lambda abstraction is applied to the type argument values,
+       and the resulting value has the same dimensions as the function value.")
+     (xdoc::p
+      "This ACL2 function performs that element-wise application.
+       The base case is that of a scalar (i.e. 0-rank array) function value:
+       we check that parameters and arguments match,
+       we extend the dynamic environment
+       to associate the arguments with the parameters
+       (which may override existing associations,
+       which is intended hiding behavior),
+       and we evaluate the body of the type lambda abstraction.")
+     (xdoc::p
+      "A non-empty vector function value
+       is applied via a separate ACL2 function that goes through the list.
+       We check that the resulting list of values is not empty
+       and that its values all have the same dimensions,
+       but this should be eliminable via proofs,
+       as we plan to do.
+       We return the vector value consisting of the result values.")
+     (xdoc::p
+      "An empty vector function value is not yet supported.
+       We will add support soon."))
+    (b* (((when (zp limit)) (reserr :limit)))
+      (value-case
+       funval
+       :tlambda
+       (b* (((unless (type-vars-match-type-values-p funval.params tvals))
+             (reserr nil))
+            (denv (denv-add-type-vars funval.params tvals denv)))
+         (eval-expr funval.body denv (1- limit)))
+       :vector
+       (b* (((ok vals) (eval-tapp-list funval.elems tvals denv (1- limit)))
+            ((unless (consp vals)) (reserr nil))
+            ((unless (list-repeatp (dims-of-value-list vals))) (reserr nil)))
+         (value-vector vals))
+       :vector-empty (reserr :todo) ; TODO: lift over an empty array
+       :otherwise (reserr nil)))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-tapp-list ((funvals value-listp)
+                          (tvals type-value-listp)
+                          (denv denvp)
+                          (limit natp))
+    :guard (denv-wfp denv)
+    :returns (vals value-list-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Lift @(tsee eval-tapp) to a list of function values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This applies the type values to each element value in turn,
+       returning the list of results in the same order.
+       It is used to lift type application over
+       a vector of type lambda values (see @(tsee eval-tapp))."))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (endp funvals)) nil)
+         ((ok val) (eval-tapp (car funvals) tvals denv (1- limit)))
+         ((ok vals) (eval-tapp-list (cdr funvals) tvals denv (1- limit))))
+      (cons val vals))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove eventually
 
-  :verify-guards nil ; done below, after the well-formedness theorem
+  :verify-guards nil ; done below
 
   ///
 
@@ -1197,7 +1265,17 @@
                       (eval-bind bind (denv-fix denv) limit)
                       (eval-bind-list binds denv limit)
                       (eval-bind-list (bind-list-fix binds) denv limit)
-                      (eval-bind-list binds (denv-fix denv) limit))
+                      (eval-bind-list binds (denv-fix denv) limit)
+                      (eval-tapp funval tvals denv limit)
+                      (eval-tapp (value-fix funval) tvals denv limit)
+                      (eval-tapp funval (type-value-list-fix tvals) denv limit)
+                      (eval-tapp funval tvals (denv-fix denv) limit)
+                      (eval-tapp-list funvals tvals denv limit)
+                      (eval-tapp-list (value-list-fix funvals)
+                                      tvals denv limit)
+                      (eval-tapp-list funvals
+                                      (type-value-list-fix tvals) denv limit)
+                      (eval-tapp-list funvals tvals (denv-fix denv) limit))
              :in-theory (enable nfix zp))))
 
   (defret-mutual value-wfp-of-eval-exprs/atoms/binds
@@ -1231,12 +1309,23 @@
                     (not (reserrp new-denv)))
                (denv-wfp new-denv))
       :fn eval-bind-list)
+    (defret value-wfp-of-eval-tapp
+      (implies (and (denv-wfp denv)
+                    (not (reserrp val)))
+               (value-wfp val))
+      :fn eval-tapp)
+    (defret value-list-wfp-of-eval-tapp-list
+      (implies (and (denv-wfp denv)
+                    (not (reserrp vals)))
+               (value-list-wfp vals))
+      :fn eval-tapp-list)
     :mutual-recursion eval-exprs/atoms/binds
     :hints
     (("Goal"
       :in-theory (enable value-wfp-of-cdr-of-assoc-when-denv-wfp
                          denv-wfp-of-denv-add-type-vars
                          denv-wfp-of-denv-add-ispace-vars
+                         value-wfp-of-value-vector
                          nfix
                          zp)
       :expand ((eval-expr expr denv limit)
@@ -1244,10 +1333,13 @@
                (eval-atom atom denv limit)
                (eval-atom-list atoms denv limit)
                (eval-bind bind denv limit)
-               (eval-bind-list binds denv limit)))))
+               (eval-bind-list binds denv limit)
+               (eval-tapp funval tvals denv limit)
+               (eval-tapp-list funvals tvals denv limit)))))
 
   (verify-guards eval-expr
     :hints (("Goal" :in-theory (enable value-list-wfp-of-eval-atom-list
                                        value-list-wfp-of-eval-expr-list
+                                       value-list-wfp-of-eval-tapp-list
                                        denv-wfp-of-denv-add-type-vars
                                        denv-wfp-of-denv-add-ispace-vars)))))
