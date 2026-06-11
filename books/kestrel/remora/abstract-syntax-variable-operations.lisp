@@ -683,7 +683,13 @@
     "This is a conservative check:
      it does not depend on which keys of the substitution
      are actually free in the body of each binder."))
-  :types (types)
+  :types (types
+          type-option
+          type-list-option
+          var+type
+          var+type-list
+          exprs/atoms/binds
+          prog)
   :extra-args ((atom-subst string-type-mapp)
                (array-subst string-type-mapp))
   :result booleanp
@@ -700,7 +706,78 @@
                                                array-subst)
                 (type-subst-type-vars-no-capture-p type.body
                                                    atom-subst
-                                                   array-subst)))))
+                                                   array-subst))))
+   (expr :let
+         (and (bind-list-subst-type-vars-no-capture-p expr.binds
+                                                      atom-subst
+                                                      array-subst)
+              (b* ((bound-type-vars (bind-list-bound-type-vars expr.binds))
+                   ((mv atom-subst array-subst)
+                    (atom/array-subst-remove-bound bound-type-vars
+                                                   atom-subst
+                                                   array-subst)))
+                (and (atom/array-subst-no-capture-p bound-type-vars
+                                                    atom-subst
+                                                    array-subst)
+                     (expr-subst-type-vars-no-capture-p expr.body
+                                                        atom-subst
+                                                        array-subst)))))
+   (atom :tlambda
+         (b* (((mv atom-subst array-subst)
+               (atom/array-subst-remove-bound (set::mergesort atom.params)
+                                              atom-subst
+                                              array-subst)))
+           (and (atom/array-subst-no-capture-p (set::mergesort atom.params)
+                                               atom-subst
+                                               array-subst)
+                (expr-subst-type-vars-no-capture-p atom.body
+                                                   atom-subst
+                                                   array-subst))))
+   (bind :tfun
+         (b* (((mv atom-subst array-subst)
+               (atom/array-subst-remove-bound (set::mergesort bind.params)
+                                              atom-subst
+                                              array-subst)))
+           (and (atom/array-subst-no-capture-p (set::mergesort bind.params)
+                                               atom-subst
+                                               array-subst)
+                (type-option-subst-type-vars-no-capture-p bind.type?
+                                                          atom-subst
+                                                          array-subst)
+                (expr-subst-type-vars-no-capture-p bind.expr
+                                                   atom-subst
+                                                   array-subst))))
+   (bind :cfun
+         (type-var-list-option-case
+          bind.tparams?
+          :some (b* (((mv atom-subst array-subst)
+                      (atom/array-subst-remove-bound
+                       (set::mergesort bind.tparams?.val)
+                       atom-subst
+                       array-subst)))
+                  (and (atom/array-subst-no-capture-p
+                        (set::mergesort bind.tparams?.val)
+                        atom-subst
+                        array-subst)
+                       (var+type-list-subst-type-vars-no-capture-p
+                        bind.params
+                        atom-subst
+                        array-subst)
+                       (type-subst-type-vars-no-capture-p bind.type
+                                                          atom-subst
+                                                          array-subst)
+                       (expr-subst-type-vars-no-capture-p bind.expr
+                                                          atom-subst
+                                                          array-subst)))
+          :none (and (var+type-list-subst-type-vars-no-capture-p bind.params
+                                                                 atom-subst
+                                                                 array-subst)
+                     (type-subst-type-vars-no-capture-p bind.type
+                                                        atom-subst
+                                                        array-subst)
+                     (expr-subst-type-vars-no-capture-p bind.expr
+                                                        atom-subst
+                                                        array-subst)))))
   :name ast-subst-type-vars-no-capture-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
