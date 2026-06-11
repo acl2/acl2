@@ -814,7 +814,14 @@
   :types (shapes
           ispace
           ispace-list
-          types)
+          ispace-list-option
+          types
+          type-option
+          type-list-option
+          var+type
+          var+type-list
+          exprs/atoms/binds
+          prog)
   :extra-args ((dim-subst string-dim-mapp)
                (shape-subst string-shape-mapp))
   :override
@@ -827,25 +834,110 @@
    (shape :dims (shape-dims (dim-list-subst-dim-vars shape.dims dim-subst)))
    (ispace :dim (ispace-dim (dim-subst-dim-vars ispace.dim dim-subst)))
    (type :pi (b* (((mv dim-subst shape-subst)
-                   (dim/shape-subst-remove-bound
-                    (set::mergesort type.params)
-                    dim-subst
-                    shape-subst)))
+                   (dim/shape-subst-remove-bound (set::mergesort type.params)
+                                                 dim-subst
+                                                 shape-subst)))
                (make-type-pi
                 :params type.params
                 :body (type-subst-ispace-vars type.body
                                               dim-subst
                                               shape-subst))))
    (type :sigma (b* (((mv dim-subst shape-subst)
-                      (dim/shape-subst-remove-bound
-                       (set::mergesort type.params)
-                       dim-subst
-                       shape-subst)))
+                      (dim/shape-subst-remove-bound (set::mergesort type.params)
+                                                    dim-subst
+                                                    shape-subst)))
                   (make-type-sigma
                    :params type.params
                    :body (type-subst-ispace-vars type.body
                                                  dim-subst
-                                                 shape-subst)))))
+                                                 shape-subst))))
+   (expr :unbox
+         (b* ((target (expr-subst-ispace-vars expr.target
+                                              dim-subst
+                                              shape-subst))
+              ((mv dim-subst shape-subst)
+               (dim/shape-subst-remove-bound (set::mergesort expr.ispaces)
+                                             dim-subst
+                                             shape-subst)))
+           (make-expr-unbox
+            :ispaces expr.ispaces
+            :var expr.var
+            :target target
+            :body (expr-subst-ispace-vars expr.body
+                                          dim-subst
+                                          shape-subst))))
+   (expr :let
+         (b* ((binds (bind-list-subst-ispace-vars expr.binds
+                                                  dim-subst
+                                                  shape-subst))
+              (bound-ispace-vars (bind-list-bound-ispace-vars expr.binds))
+              ((mv dim-subst shape-subst)
+               (dim/shape-subst-remove-bound bound-ispace-vars
+                                             dim-subst
+                                             shape-subst)))
+           (make-expr-let
+            :binds binds
+            :body (expr-subst-ispace-vars expr.body
+                                          dim-subst
+                                          shape-subst))))
+   (atom :ilambda
+         (b* (((mv dim-subst shape-subst)
+               (dim/shape-subst-remove-bound (set::mergesort atom.params)
+                                             dim-subst
+                                             shape-subst)))
+           (make-atom-ilambda
+            :params atom.params
+            :body (expr-subst-ispace-vars atom.body
+                                          dim-subst
+                                          shape-subst))))
+   (bind :ifun
+         (b* (((mv dim-subst shape-subst)
+               (dim/shape-subst-remove-bound (set::mergesort bind.params)
+                                             dim-subst
+                                             shape-subst)))
+           (make-bind-ifun
+            :var bind.var
+            :params bind.params
+            :type? (type-option-subst-ispace-vars bind.type?
+                                                  dim-subst
+                                                  shape-subst)
+            :expr (expr-subst-ispace-vars bind.expr
+                                          dim-subst
+                                          shape-subst))))
+   (bind :cfun
+         (ispace-var-list-option-case
+          bind.iparams?
+          :some (b* (((mv dim-subst shape-subst)
+                      (dim/shape-subst-remove-bound
+                       (set::mergesort bind.iparams?.val)
+                       dim-subst
+                       shape-subst)))
+                  (make-bind-cfun
+                   :var bind.var
+                   :tparams? bind.tparams?
+                   :iparams? bind.iparams?
+                   :params (var+type-list-subst-ispace-vars bind.params
+                                                            dim-subst
+                                                            shape-subst)
+                   :type (type-subst-ispace-vars bind.type
+                                                 dim-subst
+                                                 shape-subst)
+                   :expr (expr-subst-ispace-vars bind.expr
+                                                 dim-subst
+                                                 shape-subst)))
+          :none (make-bind-cfun
+                 :var bind.var
+                 :tparams? bind.tparams?
+                 :iparams? bind.iparams?
+                 :params (var+type-list-subst-ispace-vars bind.params
+                                                          dim-subst
+                                                          shape-subst)
+                 :type (type-subst-ispace-vars bind.type
+                                               dim-subst
+                                               shape-subst)
+                 :expr (expr-subst-ispace-vars bind.expr
+                                               dim-subst
+                                               shape-subst)))))
   :name ast-subst-ispace-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
