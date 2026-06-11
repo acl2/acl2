@@ -1364,7 +1364,17 @@
          ((ok val) (eval-tapp (car funvals) tvals denv (1- limit)))
          ((ok vals) (eval-tapp-list (cdr funvals) tvals denv (1- limit))))
       (cons val vals))
-    :measure (nfix limit))
+    :measure (nfix limit)
+
+    ///
+
+    (defret len-of-eval-tapp-list
+      (implies (not (reserrp vals))
+               (equal (len vals)
+                      (len funvals)))
+      :hints (("Goal"
+               :induct (acl2::cdr-dec-induct funvals limit)
+               :in-theory (enable len)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1486,7 +1496,17 @@
          ((ok val) (eval-iapp (car funvals) ivals denv (1- limit)))
          ((ok vals) (eval-iapp-list (cdr funvals) ivals denv (1- limit))))
       (cons val vals))
-    :measure (nfix limit))
+    :measure (nfix limit)
+
+    ///
+
+    (defret len-of-eval-iapp-list
+      (implies (not (reserrp vals))
+               (equal (len vals)
+                      (len funvals)))
+      :hints (("Goal"
+               :induct (acl2::cdr-dec-induct funvals limit)
+               :in-theory (enable len)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
