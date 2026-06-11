@@ -474,7 +474,25 @@
          ((ok dims) (check-dims-of-value (car vals)))
          ((ok dimss) (check-dims-of-value-list (cdr vals))))
       (cons dims dimss))
-    :measure (value-list-count vals))
+    :measure (value-list-count vals)
+
+    ///
+
+    (defret consp-of-check-dims-of-value-list-when-not-error
+      (implies (not (reserrp dimss))
+               (equal (consp dimss)
+                      (consp vals)))
+      :hints (("Goal"
+               :induct (len vals)
+               :in-theory (enable len))))
+
+    (defret len-of-check-dims-of-value-list-when-not-error
+      (implies (not (reserrp dimss))
+               (equal (len dimss)
+                      (len vals)))
+      :hints (("Goal"
+               :induct (len vals)
+               :in-theory (enable len)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
