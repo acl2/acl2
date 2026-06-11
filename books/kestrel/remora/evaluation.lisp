@@ -322,7 +322,17 @@
          ((ok tval) (eval-type (car types) denv))
          ((ok tvals) (eval-type-list (cdr types) denv)))
       (cons tval tvals))
-    :measure (type-list-count types))
+    :measure (type-list-count types)
+
+    ///
+
+    (defret len-of-eval-type-list
+      (implies (not (reserrp tvals))
+               (equal (len tvals)
+                      (len types)))
+      :hints (("Goal"
+               :induct (len types)
+               :in-theory (enable len)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
