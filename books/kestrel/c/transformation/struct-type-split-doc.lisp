@@ -152,10 +152,15 @@
        "As noted above, the assumed restrictions on
         where the struct type may appear are not yet checked.")
      (xdoc::li
-       "Typedefs of the struct type are not properly supported:
-        the typedef is preserved for the left struct type,
-        but no corresponding typedef is introduced
-        for the right struct type.")
+       "Typedefs of the struct type are supported:
+        declarations via the typedef name
+        keep the typedef name for the left object
+        and reference the right struct type directly
+        for the right object.
+        However, typedefs denoting derived types
+        (e.g. pointers to the struct type) are not supported,
+        and are not yet detected;
+        violations may produce invalid code.")
      (xdoc::li
        "Assembler constructs are not transformed;
         a warning is printed when they are encountered.")

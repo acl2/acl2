@@ -349,3 +349,97 @@ int getz(void) {
                        :right-members ("z")))
 
   :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The struct type is defined via a typedef.
+;; The left declarations keep the typedef name,
+;; while the right declarations reference the right struct type directly.
+
+(acl2::must-succeed*
+  (c$::input-files :files '("typedef.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/typedef.c"
+    :content "typedef struct point {
+  int x;
+} point_t;
+
+struct point_right {
+  int z;
+};
+
+static point_t p;
+
+static struct point_right p_0;
+
+int main(void) {
+  p.x = 4;
+  return p.x + p_0.z;
+}
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A typedef denoting a derived type (here a pointer to the struct type)
+;; is not properly supported: the right declaration replaces the typedef
+;; name with the right struct type, losing the pointer contributed by the
+;; typedef, so the output below is invalid C (q_0 is declared as a struct
+;; but initialized with a pointer and accessed with ->).
+;; TODO: we need to consider how to better support typedefs.
+;; This test documents the current behavior; it should be revised
+;; when such typedefs are properly supported or rejected.
+
+(acl2::must-succeed*
+  (c$::input-files :files '("typedef-ptr.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/typedef-ptr.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+typedef struct point *pp_t;
+
+struct point_right;
+
+static struct point p;
+
+static struct point_right p_0;
+
+static pp_t q = &p;
+
+static struct point_right q_0 = &p_0;
+
+int main(void) {
+  return q_0->z;
+}
+")
+
+  :with-output-off nil)

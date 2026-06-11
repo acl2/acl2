@@ -206,6 +206,87 @@
             :items (list (c$::make-block-item-stmt :stmt left-stmt)
                          (c$::make-block-item-stmt :stmt right-stmt)))))
 
+(define sts-right-struct-type-spec
+  ((right-name identp))
+  :returns (type-spec type-specp)
+  :short "Construct a type specifier referencing the right struct type."
+  (c$::make-type-spec-struct
+    :spec (c$::make-struni-spec :attribs nil
+                                :name? (c$::ident-fix right-name)
+                                :members nil)))
+
+(define sts-retarget-decl-specs
+  ((decl-specs decl-spec-listp)
+   (right-name identp))
+  :returns (new-decl-specs decl-spec-listp)
+  :short "Replace a typedef name type specifier with
+          a reference to the right struct type."
+  :long
+  (xdoc::topstring-p
+   "When a split declaration denotes the struct type via a typedef name,
+    the left declaration keeps the typedef name,
+    but the right declaration must reference
+    the right struct type directly.
+    Note that this is only correct if the typedef name denotes
+    the struct type itself;
+    typedef names denoting derived types (e.g. pointers to the struct type)
+    are not supported.")
+  (b* (((when (endp decl-specs))
+        nil)
+       (decl-spec (first decl-specs))
+       (rest (sts-retarget-decl-specs (rest decl-specs) right-name))
+       ((unless (and (decl-spec-case decl-spec :typespec)
+                     (type-spec-case (c$::decl-spec-typespec->spec decl-spec)
+                                     :typedef)))
+        (cons (decl-spec-fix decl-spec) rest)))
+    (cons (c$::make-decl-spec-typespec
+            :spec (sts-right-struct-type-spec right-name))
+          rest)))
+
+(define sts-retarget-spec/quals
+  ((specquals spec/qual-listp)
+   (right-name identp))
+  :returns (new-specquals spec/qual-listp)
+  :short "Replace a typedef name type specifier with
+          a reference to the right struct type."
+  :long
+  (xdoc::topstring-p
+   "This is the @(tsee spec/qual) counterpart
+    of @(tsee sts-retarget-decl-specs).")
+  (b* (((when (endp specquals))
+        nil)
+       (specqual (first specquals))
+       (rest (sts-retarget-spec/quals (rest specquals) right-name))
+       ((unless (and (spec/qual-case specqual :typespec)
+                     (type-spec-case (c$::spec/qual-typespec->spec specqual)
+                                     :typedef)))
+        (cons (spec/qual-fix specqual) rest)))
+    (cons (c$::make-spec/qual-typespec
+            :spec (sts-right-struct-type-spec right-name))
+          rest)))
+
+(define sts-remove-typedef-stoclass
+  ((decl-specs decl-spec-listp))
+  :returns (new-decl-specs decl-spec-listp)
+  :short "Remove typedef storage class specifiers."
+  :long
+  (xdoc::topstring-p
+   "When a typedef declaration defines the struct type,
+    the right declaration consists of
+    just the definition of the right struct type,
+    without any declarators,
+    so the @('typedef') storage class specifier is dropped.")
+  (b* (((when (endp decl-specs))
+        nil)
+       (decl-spec (first decl-specs))
+       (rest (sts-remove-typedef-stoclass (rest decl-specs)))
+       ((when (and (decl-spec-case decl-spec :stoclass)
+                   (c$::stor-spec-case
+                     (c$::decl-spec-stoclass->spec decl-spec)
+                     :typedef)))
+        rest))
+    (cons (decl-spec-fix decl-spec) rest)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines sts-split
@@ -1769,6 +1850,13 @@
           (param-declor-sts-split param-declon.declor splitp st))
          ((erp attribs st)
           (attrib-spec-list-sts-split param-declon.attribs st))
+         ;; A typedef name type specifier (if any) is replaced by
+         ;; a reference to the right struct type.
+         (right-specs
+           (if splitp
+               (sts-retarget-decl-specs right-specs
+                                        (sts-split-state->right-name st))
+             right-specs))
          (left-param-declon
            (c$::make-param-declon :specs left-specs
                                   :declor left-declor
@@ -1895,7 +1983,14 @@
          ((erp left-specquals right-specquals st)
           (spec/qual-list-sts-split tyname.specquals st))
          ((erp left-declor? right-declor? st)
-          (absdeclor-option-sts-split tyname.declor? splitp st)))
+          (absdeclor-option-sts-split tyname.declor? splitp st))
+         ;; A typedef name type specifier (if any) is replaced by
+         ;; a reference to the right struct type.
+         (right-specquals
+           (if splitp
+               (sts-retarget-spec/quals right-specquals
+                                        (sts-split-state->right-name st))
+             right-specquals)))
       (retok splitp
              (c$::make-tyname :specquals left-specquals
                               :declor? left-declor?
@@ -2426,6 +2521,19 @@
              ((erp specs-splitp left-specs right-specs st)
               (decl-spec-list-sts-split declon.specs st))
              (splitp (or declors-splitp specs-splitp))
+             ;; If the right declaration has declarators,
+             ;; a typedef name type specifier (if any)
+             ;; is replaced by a reference to the right struct type.
+             ;; Otherwise, the right declaration is just
+             ;; a definition of the right struct type,
+             ;; and any typedef storage class specifier is dropped.
+             (right-specs
+               (cond ((not splitp) right-specs)
+                     (declors-splitp
+                      (sts-retarget-decl-specs
+                        right-specs
+                        (sts-split-state->right-name st)))
+                     (t (sts-remove-typedef-stoclass right-specs))))
              (left-declon
                (c$::make-declon-declon :extension declon.extension
                                        :specs left-specs
