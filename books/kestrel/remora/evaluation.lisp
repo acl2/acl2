@@ -892,6 +892,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-values-match-values-p ((tvals type-value-listp)
+                                    (vals value-listp))
+  :guard (value-list-wfp vals)
+  :returns (yes/no booleanp)
+  :short "Check that type values and values
+          match in number and shape."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two lists must have the same length,
+     and, element-wise, the dimensions of each value must equal
+     the shape of the corresponding type value:
+     the shape of an @(':array') type value is its shape component;
+     the shape of every other type value, which is an atom type value,
+     is the empty one.")
+   (xdoc::p
+    "This is used to evaluate term applications,
+     where the values that a lambda is applied to
+     must match the parameter types of the lambda.
+     Currently we only compare the dimensions of the values
+     with the shapes of the type values;
+     we plan to extend this to a complete check of
+     the values against the type values."))
+  (b* (((when (endp tvals)) (endp vals))
+       ((when (endp vals)) nil)
+       (tval (car tvals))
+       (val (car vals))
+       (shape (type-value-case tval
+                               :array tval.shape
+                               :otherwise nil)))
+    (and (equal (dims-of-value val) shape)
+         (type-values-match-values-p (cdr tvals) (cdr vals))))
+
+  ///
+
+  (defruled len-equal-when-type-values-match-values-p
+    (implies (type-values-match-values-p tvals vals)
+             (equal (len vals) (len tvals)))
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines eval-exprs/atoms/binds
   :short "Evaluate expressions, atoms, and bindings."
   :long
@@ -976,6 +1018,24 @@
        A non-empty string yields a vector of the integer code values;
        an empty string yields an empty integer array.")
      (xdoc::p
+      "For a term application,
+       we evaluate the function sub-expression
+       and the argument sub-expressions.
+       For now we require the function value to be
+       a scalar lambda abstraction value,
+       and the dimensions of each argument value to be exactly
+       the shape of the corresponding parameter type
+       of the lambda abstraction:
+       we do not support lifting yet, but we plan to add support for it.
+       We evaluate the parameter types of the lambda abstraction,
+       and we check that the resulting type values
+       match the argument values in number and shape.
+       We extend the dynamic environment
+       to associate the argument values with the parameters
+       (which may override existing associations,
+       which is intended hiding behavior),
+       and we evaluate the body of the lambda abstraction.")
+     (xdoc::p
       "For a type application,
        we evaluate the function sub-expression and the type arguments,
        and we use a separate ACL2 function to apply
@@ -1028,7 +1088,24 @@
                  (make-value-vector-empty
                   :dims nil
                   :elem (type-value-base (base-type-int))))
-       :app (reserr :todo)
+       :app (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
+                 ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
+              ;; TODO: extend to non-scalar functions
+              ;; and framed arguments (lifting)
+              (value-case
+               funval
+               :lambda
+               (b* (((ok in-tvals) (eval-type-list
+                                    (var+type-list->type funval.params)
+                                    denv))
+                    ((unless (type-values-match-values-p in-tvals argvals))
+                     (reserr nil))
+                    (denv (denv-add-expr-vars
+                           (var+type-list->var funval.params)
+                           argvals
+                           denv)))
+                 (eval-expr funval.body denv (1- limit)))
+               :otherwise (reserr nil)))
        :tapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                   ((ok tvals) (eval-type-list expr.args denv)))
                (eval-tapp funval tvals denv (1- limit)))
@@ -1509,4 +1586,6 @@
                (eval-iapp funval ivals denv limit)
                (eval-iapp-list funvals ivals denv limit)))))
 
-  (verify-guards eval-expr))
+  (verify-guards eval-expr
+    :hints
+    (("Goal" :in-theory (enable len-equal-when-type-values-match-values-p)))))
