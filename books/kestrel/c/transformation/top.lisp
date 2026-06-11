@@ -30,6 +30,8 @@
 (include-book "split-all-gso-doc")
 (include-book "split-gso")
 (include-book "split-gso-doc")
+(include-book "struct-type-split")
+(include-book "struct-type-split-doc")
 (include-book "utilities/top")
 (include-book "wrap-fn")
 (include-book "wrap-fn-doc")
