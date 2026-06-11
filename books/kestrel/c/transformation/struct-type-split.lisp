@@ -43,6 +43,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(xdoc::evmac-topic-implementation
+  struct-type-split
+  :additional
+  ((xdoc::h3
+    "Terminology"
+    (xdoc::p
+     "When we split something, we refer to the ``left'' and ``right'' splits.
+     The ``left struct type'' is the modification of the original type
+     with the right members removed.
+     The name is <emph>not</emph> changed.
+     The ``right struct type'' is a new struct type
+     with just the right members.
+     A ``left object'' is an object with the left struct type
+     (possibly with some level of pointers).
+     A ``right object'' is an object with the right struct type
+     (again, possible with some level of pointers)."))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; High-level TODOs:
+;; - Consider whether there is anywhere else that we need to check for a valid
+;;   lvalue.
+;; - Emit warning for attrib-sts-split :name-params case.
+;;   - Similar to stmt-sts-split :asm case
+;; - Instead of printing warnings immediately (with cw), add a warning field to
+;;   the sts-split-state. A list of messages. The top-level transformation
+;;   should emit warnings.
+;;   - Add a flag to the transformation indicating whether or not to print
+;;     warnings.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Library extensions
 
 (define unop-requires-lvalue-p ((op unopp))
@@ -65,12 +97,95 @@
                         :asg-ior))
        t))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define map-ident
+  ((strings string-listp))
+  :returns (idents ident-listp)
+  :short "Map the @(tsee c$::ident) constructor over a list."
+  (if (endp strings)
+      nil
+    (cons (c$::ident (first strings))
+          (map-ident (rest strings))))
+  :guard-hints (("Goal" :in-theory (enable string-listp))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrulel ident-setp-of-mergesort
+  (implies (ident-listp idents)
+           (ident-setp (mergesort idents)))
+  :induct t
+  :enable mergesort)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stmts-to-compound
+  ((left-stmt stmtp)
+   (right-stmt stmtp))
+  :returns (stmt stmtp)
+  :short "Join two statements into a compound statement."
+  :long
+  (xdoc::topstring-p
+   "This is used to absorb a statement split
+    in positions which admit only a single statement,
+    such as the branches of an @('if') statement.")
+  (c$::make-stmt-compound
+    :stmt (c$::make-comp-stmt
+            :labels nil
+            :items (list (c$::make-block-item-stmt :stmt left-stmt)
+                         (c$::make-block-item-stmt :stmt right-stmt)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap uid-ident-map
+  :key-type c$::uid
+  :val-type ident
+  :pred uid-ident-mapp)
+
+(fty::defprod sts-split-state
+  :short "Collection of data used by @(see sts-split)."
+  :long
+  (xdoc::topstring-p
+   "The @('right-set'), @('right-name'), and @('dialect') fields
+    are expected to remain constant.
+    The @('struct-uid') field is constant
+    within a single translation unit,
+    but is updated for each translation unit
+    (see @(tsee sts-split-trans-units)),
+    since compatible struct types in different translation units
+    have different unique identifiers.
+    The @('right-name') field is the tag of the right struct type,
+    which is assumed to be globally unique.
+    The @('blacklist') and @('ident-map') fields
+    accumulate.")
+  ((struct-uid c$::uid)
+   (right-set ident-set)
+   (right-name ident)
+   (dialect c::dialect)
+   (blacklist ident-set)
+   (ident-map uid-ident-map))
+  :pred sts-split-statep)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sts-splittablep
   ((type c$::typep)
    (struct-uid c$::uidp))
   :returns (splittable acl2::3p)
+  :short "Recognize a splittable type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A ``splittable'' type,
+     for the purpose of the @(see struct-type-split) transformation,
+     is a struct type with the expected UID,
+     or a pointer to a splittable type.")
+   (xdoc::p
+    "Since types may be partially or completely unknown,
+     we may not be able to precisely resolve whether a type is splittable.
+     Therefore, this function returns a @(see acl2::3vl) instead of a boolean.
+     In addition to the boolean values,
+     a @(see acl2::3vl) value may also be @(':unknown')."))
   (type-case
     type
     :unknown :unknown
@@ -86,63 +201,195 @@
   :rule-classes
   ((:type-prescription :typed-term (sts-splittablep type struct-uid))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap uid-ident-map
-  :key-type c$::uid
-  :val-type ident
-  :pred uid-ident-mapp)
+(defines type/type-list-involves-struct-p
+  (define type-involves-struct-p
+    ((type c$::typep)
+     (struct-uid c$::uidp))
+    :returns (involves acl2::3p)
+    :parents (type/type-list-involves-struct-p)
+    :short "Check whether a type involves the split struct type."
+    :long
+    (xdoc::topstring-p
+     "We check for occurrences of the split struct type at any depth.
+      The result is @(':unknown') when it cannot be determined,
+      due to unknown types.
+      Tagged struct and union types other than the split struct type itself
+      are not followed,
+      since their members are checked separately,
+      via the type completions
+      (see @(tsee sts-check-completions)).
+      Note that the unique identifier comparison
+      applies only to struct types;
+      union types cannot be the split struct type,
+      but their untagged members are still checked.")
+    (type-case
+      type
+      :unknown :unknown
+      :unknown-scalar :unknown
+      :unknown-arithmetic nil
+      :struct (if (c$::uid-equal struct-uid type.uid)
+                  t
+                (c$::type-struni-tag/members-case
+                  type.tag/members
+                  :tagged nil
+                  :untagged (type-member-list-involves-struct-p
+                              type.tag/members.members
+                              struct-uid)))
+      :union (c$::type-struni-tag/members-case
+               type.tag/members
+               :tagged nil
+               :untagged (type-member-list-involves-struct-p
+                           type.tag/members.members
+                           struct-uid))
+      :array (type-involves-struct-p type.of struct-uid)
+      :pointer (type-involves-struct-p type.to struct-uid)
+      :function (acl2::3or
+                  (type-involves-struct-p type.ret struct-uid)
+                  (type-params-involves-struct-p type.params struct-uid))
+      :otherwise nil)
+    :measure (c$::type-count type))
 
-(fty::defomap ident-ident-map
-  :key-type ident
-  :val-type ident
-  :pred ident-ident-mapp)
+  (define type-params-involves-struct-p
+    ((params c$::type-params-p)
+     (struct-uid c$::uidp))
+    :returns (involves acl2::3p)
+    :parents (type/type-list-involves-struct-p)
+    :short "Check whether function type parameters
+            involve the split struct type."
+    (c$::type-params-case
+      params
+      :prototype (type-param-list-involves-struct-p params.params
+                                                    struct-uid)
+      :old-style (type-param-list-involves-struct-p params.params
+                                                    struct-uid)
+      :unspecified :unknown)
+    :measure (c$::type-params-count params))
 
-(fty::defprod sts-split-state
-  :short "Collection of data used by @(see sts-split)."
-  :long
-  (xdoc::topstring-p
-    "The @('right-set'), @('right-name'), and @('dialect') fields
-     are expected to remain constant.
-     The @('struct-uid') field is constant
-     within a single translation unit,
-     but is updated for each translation unit
-     (see @(tsee sts-split-trans-units)),
-     since compatible struct types in different translation units
-     have different unique identifiers.
-     The @('right-name') field is the tag of the right struct type,
-     which is assumed to be globally unique.
-     The @('blacklist'), @('ident-map'), and @('name-map') fields
-     accumulate.
-     The @('ident-map') field maps the unique identifier of a left object
-     to the name of the corresponding right object.
-     The @('name-map') field maps the name of a left object
-     to the name of the corresponding right object;
-     it complements @('ident-map') across translation units,
-     since declarations of the same external object
-     in different translation units
-     carry different unique identifiers,
-     while sharing the same name.")
-  ((struct-uid c$::uid)
-   (right-set ident-set)
-   (right-name ident)
-   (dialect c::dialect)
-   (blacklist ident-set)
-   (ident-map uid-ident-map)
-   (name-map ident-ident-map))
-  :pred sts-split-statep)
+  (define type-param-list-involves-struct-p
+    ((types c$::type-listp)
+     (struct-uid c$::uidp))
+    :returns (involves acl2::3p)
+    :parents (type/type-list-involves-struct-p)
+    :short "Check whether any function parameter type
+            involves the split struct type,
+            beyond splittable parameters."
+    :long
+    (xdoc::topstring-p
+     "Parameters of splittable type
+      (i.e. the split struct type, possibly behind pointers)
+      are not considered to involve the split struct type,
+      because such parameters are supported:
+      they are split in place,
+      in function definitions, function declarations, and call sites.")
+    (if (endp types)
+        nil
+      (acl2::3or
+        (b* ((type (first types)))
+          (if (eq (sts-splittablep type struct-uid) t)
+              nil
+            (type-involves-struct-p type struct-uid)))
+        (type-param-list-involves-struct-p (rest types) struct-uid)))
+    :measure (c$::type-list-count types))
+
+  (define type-member-list-involves-struct-p
+    ((members c$::type-struni-member-listp)
+     (struct-uid c$::uidp))
+    :returns (involves acl2::3p)
+    :parents (type/type-list-involves-struct-p)
+    :short "Check whether any struct/union member type
+            involves the split struct type."
+    (if (endp members)
+        nil
+      (acl2::3or
+        (type-involves-struct-p
+          (c$::type-struni-member->type (first members))
+          struct-uid)
+        (type-member-list-involves-struct-p (rest members) struct-uid)))
+    :measure (c$::type-struni-member-list-count members))
+
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sts-split-st-splittablep
+(define sts-check-type
   ((type c$::typep)
    (st sts-split-statep))
-  (sts-splittablep type (sts-split-state->struct-uid st))
-  :enabled t
-  :inline t)
+  :returns (mv (er? maybe-msgp)
+               (splitp booleanp))
+  :short "Check that a type is consistent with the split,
+          and determine whether it is subject to the split."
+  :long
+  (xdoc::topstring-p
+   "The type must either be splittable
+    (see @(tsee sts-splittablep)),
+    in which case @('splitp') is @('t'),
+    or not involve the split struct type at all,
+    in which case @('splitp') is @('nil').
+    Any other type
+    (e.g. an array of the split struct type,
+    or a function type whose return type
+    involves the split struct type)
+    is rejected, since the transformation cannot split it.
+    Function parameters of splittable type are an exception:
+    they are supported, being split in place
+    (see @(tsee type-param-list-involves-struct-p)).
+    Unknown types are also rejected,
+    since we cannot determine whether
+    they involve the split struct type.")
+  (b* (((reterr) nil)
+       (struct-uid (sts-split-state->struct-uid st))
+       (splittablep (sts-splittablep type struct-uid))
+       ((when (eq splittablep :unknown))
+        (retmsg$ "The type ~x0 is unknown." (c$::type-fix type)))
+       ((when (eq splittablep t))
+        (retok t))
+       (involves (type-involves-struct-p type struct-uid))
+       ((when (eq involves :unknown))
+        (retmsg$ "It cannot be determined whether the type ~x0 ~
+                  involves the split struct type."
+                 (c$::type-fix type)))
+       ((when (eq involves t))
+        (retmsg$ "The split struct type may appear in a type ~
+                  only as the struct type itself, ~
+                  possibly behind pointers; ~
+                  it appears in the type ~x0."
+                 (c$::type-fix type))))
+    (retok nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define sts-check-completions
+  ((completions c$::type-completions-p)
+   (struct-uid c$::uidp))
+  :returns (er? maybe-msgp)
+  :short "Check that the split struct type does not appear in
+          the members of any struct or union type."
+  :long
+  (xdoc::topstring-p
+   "This includes the members of the split struct type itself,
+    so self-referential split struct types are rejected.")
+  (b* (((when (atom completions))
+        nil)
+       (entry (first completions))
+       ((unless (consp entry))
+        (sts-check-completions (rest completions) struct-uid))
+       (members (c$::type-struni-member-list-fix (cdr entry)))
+       (involves (type-member-list-involves-struct-p members struct-uid))
+       ((when (eq involves :unknown))
+        (msg$ "It cannot be determined whether the members of ~
+               all struct and union types ~
+               involve the split struct type."))
+       ((when (eq involves t))
+        (msg$ "The split struct type may not appear in the members ~
+               of any struct or union type ~
+               (including the split struct type itself).")))
+    (sts-check-completions (rest completions) struct-uid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO GJ: Aren't we assuming that initializers have been disambiguated?
 (define desiniter-sts-rightp
   ((desiniter desiniterp)
    (st sts-split-statep))
@@ -166,54 +413,31 @@
                      (designor-case (car designors) :dot)))
         (retmsg$ "Could not determine the member designated by an ~
                   initializer of a split structure type.~%~@0"
-                 (context-msg-desiniter desiniter (sts-split-state->dialect st))))
+                 (context-msg-desiniter desiniter
+                                        (sts-split-state->dialect st))))
        (name (c$::designor-dot->name (car designors))))
     (retok (and (in name (sts-split-state->right-set st)) t))))
 
 (define struct-declor-sts-rightp
   ((struct-declor struct-declorp)
    (st sts-split-statep))
-  :returns (mv (er? maybe-msgp)
-               (rightp booleanp))
+  :returns (rightp booleanp)
   :short "Determine whether a struct declarator
           is routed to the right structure type."
   :long
   (xdoc::topstring-p
    "The struct declarator is routed right
-    when the member it declares is in the right member set.")
-  (b* (((reterr) nil)
-       ((struct-declor struct-declor) struct-declor)
+    when the member it declares is in the right member set.
+    Unnamed members (e.g. anonymous bit-fields)
+    cannot be listed in the right member set,
+    so they always stay in the left struct type.")
+  (b* (((struct-declor struct-declor) struct-declor)
        ((unless struct-declor.declor?)
-        (retmsg$ "Could not determine the name of a member ~
-                  of a split structure type.~%~@0"
-                 (context-msg-struct-declor struct-declor (sts-split-state->dialect st))))
+        nil)
        (name (declor->ident struct-declor.declor?)))
-    (retok (and (in name (sts-split-state->right-set st)) t))))
+    (and (in name (sts-split-state->right-set st)) t)))
 
-(define stmts-to-compound
-  ((left-stmt stmtp)
-   (right-stmt stmtp))
-  :returns (stmt stmtp)
-  :short "Join two statements into a compound statement."
-  :long
-  (xdoc::topstring-p
-   "This is used to absorb a statement split
-    in positions which admit only a single statement,
-    such as the branches of an @('if') statement.")
-  (c$::make-stmt-compound
-    :stmt (c$::make-comp-stmt
-            :labels nil
-            :items (list (c$::make-block-item-stmt :stmt left-stmt)
-                         (c$::make-block-item-stmt :stmt right-stmt)))))
-
-(define sts-right-struct-type-spec
-  ((right-name identp))
-  :returns (type-spec type-specp)
-  :short "Construct a type specifier referencing the right struct type."
-  (c$::make-type-spec-struct
-    :spec (c$::make-struni-spec :attribs nil
-                                :name? (c$::ident-fix right-name)
-                                :members nil)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sts-retarget-decl-specs
   ((decl-specs decl-spec-listp)
@@ -238,9 +462,12 @@
        ((unless (and (decl-spec-case decl-spec :typespec)
                      (type-spec-case (c$::decl-spec-typespec->spec decl-spec)
                                      :typedef)))
-        (cons (decl-spec-fix decl-spec) rest)))
-    (cons (c$::make-decl-spec-typespec
-            :spec (sts-right-struct-type-spec right-name))
+        (cons (decl-spec-fix decl-spec) rest))
+       (spec (c$::make-type-spec-struct
+               :spec (c$::make-struni-spec :attribs nil
+                                           :name? (c$::ident-fix right-name)
+                                           :members nil))))
+    (cons (c$::make-decl-spec-typespec :spec spec)
           rest)))
 
 (define sts-retarget-spec/quals
@@ -260,9 +487,12 @@
        ((unless (and (spec/qual-case specqual :typespec)
                      (type-spec-case (c$::spec/qual-typespec->spec specqual)
                                      :typedef)))
-        (cons (spec/qual-fix specqual) rest)))
-    (cons (c$::make-spec/qual-typespec
-            :spec (sts-right-struct-type-spec right-name))
+        (cons (spec/qual-fix specqual) rest))
+       (spec (c$::make-type-spec-struct
+               :spec (c$::make-struni-spec :attribs nil
+                                           :name? (c$::ident-fix right-name)
+                                           :members nil))))
+    (cons (c$::make-spec/qual-typespec :spec spec)
           rest)))
 
 (define sts-remove-typedef-stoclass
@@ -289,6 +519,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define attrib-sts-split
+  ((attrib c$::attribp)
+   (st sts-split-statep))
+  :guard (c$::attrib-annop attrib)
+  :returns (mv (er? maybe-msgp)
+               (attrib$ c$::attribp)
+               (st$ sts-split-statep))
+  :parents (sts-split)
+  :short "Transform a GCC attribute."
+  (b* ((st (sts-split-state-fix st))
+       ((reterr) (c$::attrib-fix attrib) st))
+    (c$::attrib-case
+      attrib
+      :name-only (retok (c$::attrib-fix attrib) st)
+      :name-params
+      ;; (b* (((erp params st)
+      ;;       (expr-list-sts-split attrib.params st)))
+      ;;   (retok (c$::make-attrib-name-params :name attrib.name :params params)
+      ;;          st))
+      ;; TODO: Is it OK not to recurse? Maybe emit a warning?
+      (retok (c$::attrib-fix attrib) st)
+      )))
+
 (defines sts-split
   :short "The core splitting phase of STS."
 
@@ -303,9 +556,15 @@
     :parents (sts-split)
     :short "Transform an expression."
     :long
-    (xdoc::topstring-p
-     "If the expression is not split,
-      the transformed expression is returned as the @('left-expr').")
+    (xdoc::topstring
+     (xdoc::p
+      "An expression splits iff it has splittable type.")
+     (xdoc::p
+      "If the expression is split,
+       any effects of the two expressions are <emph>disjoint</emph>
+       (and may therefore be reordered).
+       If the expression is not split,
+       the transformed expression is returned as the @('left-expr')."))
     (b* ((st (sts-split-state-fix st))
          ((reterr) (expr-fix expr) nil st))
       (expr-case
@@ -834,9 +1093,10 @@
              ((erp left-index right-index? st)
               (expr-sts-split member-designor.index st))
              ((when right-index?)
-              ;; TODO: add context-msg
               (retmsg$ "Splits are not supported in member designators.~%~@0"
-                       (context-msg-member-designor member-designor (sts-split-state->dialect st)))))
+                       (context-msg-member-designor
+                         member-designor
+                         (sts-split-state->dialect st)))))
           (retok (make-member-designor-sub :member member
                                            :index left-index)
                  st))))
@@ -971,8 +1231,7 @@
         :typeof-ambig
         (retmsg$ "Ambiguous ASTs are unsupported.")
         :auto-type
-        (retmsg$ "The \"auto\" type specifier is not supported.~%~@0"
-                 (context-msg-type-spec type-spec (sts-split-state->dialect st)))))
+        (retmsg$ "The \"auto\" type specifier is not supported.")))
     :measure (type-spec-count type-spec))
 
   (define spec/qual-sts-split
@@ -1056,14 +1315,18 @@
               (tyname-sts-split align-spec.type st))
              ((when splitp)
               (retmsg$ "Splits are not supported in alignment specifiers.~%~@0"
-                       (context-msg-align-spec align-spec (sts-split-state->dialect st)))))
+                       (context-msg-align-spec
+                         align-spec
+                         (sts-split-state->dialect st)))))
           (retok (c$::make-align-spec-alignas-type :type left-type) st))
         :alignas-expr
         (b* (((erp left-expr right-expr? st)
               (const-expr-sts-split align-spec.expr st))
              ((when right-expr?)
               (retmsg$ "Splits are not supported in alignment specifiers.~%~@0"
-                       (context-msg-align-spec align-spec (sts-split-state->dialect st)))))
+                       (context-msg-align-spec
+                         align-spec
+                         (sts-split-state->dialect st)))))
           (retok (c$::make-align-spec-alignas-expr :expr left-expr) st))
         :alignas-ambig (retmsg$ "Ambiguous ASTs are unsupported.")))
     :measure (align-spec-count align-spec))
@@ -1278,7 +1541,8 @@
     :long
     (xdoc::topstring-p
      "When @('splitp') is @('t'),
-      the initializer is routed to either @('left-desiniter') or @('right-desiniter')
+      the initializer is routed to either
+      @('left-desiniter') or @('right-desiniter')
       based on the field it designates;
       @('rightp') in the return indicates which.
       When @('splitp') is @('nil'), @('left-desiniter') holds the result.")
@@ -1362,12 +1626,14 @@
               (const-expr-sts-split designor.index st))
              ((when right-index?)
               (retmsg$ "Splits are not supported in designators.~%~@0"
-                       (context-msg-designor designor (sts-split-state->dialect st))))
+                       (context-msg-designor designor
+                                             (sts-split-state->dialect st))))
              ((erp left-range? right-range? st)
               (const-expr-option-sts-split designor.range? st))
              ((when right-range?)
               (retmsg$ "Splits are not supported in designators.~%~@0"
-                       (context-msg-designor designor (sts-split-state->dialect st)))))
+                       (context-msg-designor designor
+                                             (sts-split-state->dialect st)))))
           (retok (make-designor-sub :index left-index :range? left-range?) st))
         :dot (retok (designor-fix designor) st)))
     :measure (designor-count designor))
@@ -1437,7 +1703,10 @@
       (declor-option-case
         declor?
         :none (retok nil nil st)
-        :some (declor-sts-split (c$::declor-option-some->val declor?) splitp uid? st)))
+        :some (declor-sts-split (c$::declor-option-some->val declor?)
+                                splitp
+                                uid?
+                                st)))
     :measure (declor-option-count declor?))
 
   (define dirdeclor-sts-split
@@ -1473,7 +1742,8 @@
               (retmsg$ "INTERNAL ERROR. ~
                         Attempted to split a declarator ~
                         without a unique identifier.~%~@0"
-                       (context-msg-dirdeclor dirdeclor (sts-split-state->dialect st))))
+                       (context-msg-dirdeclor dirdeclor
+                                              (sts-split-state->dialect st))))
              ((sts-split-state st) st)
              (lookup (omap::assoc uid? st.ident-map))
              ((when lookup)
@@ -1481,21 +1751,11 @@
                      (dirdeclor-fix dirdeclor)
                      (c$::make-dirdeclor-ident :ident (cdr lookup))
                      st))
-             ;; The name map provides the right names of objects
-             ;; split in other translation units,
-             ;; whose declarations there carry
-             ;; different unique identifiers.
-             (name-lookup (omap::assoc dirdeclor.ident st.name-map))
-             (right-ident (if name-lookup
-                              (c$::ident-fix (cdr name-lookup))
-                            (fresh-ident dirdeclor.ident st.blacklist)))
+             (right-ident (fresh-ident dirdeclor.ident st.blacklist))
              (st (change-sts-split-state
                    st
                    :blacklist (insert right-ident st.blacklist)
-                   :ident-map (omap::update uid? right-ident st.ident-map)
-                   :name-map (omap::update dirdeclor.ident
-                                           right-ident
-                                           st.name-map))))
+                   :ident-map (omap::update uid? right-ident st.ident-map))))
           (retok t
                  (dirdeclor-fix dirdeclor)
                  (c$::make-dirdeclor-ident :ident right-ident)
@@ -1519,7 +1779,8 @@
               (expr-option-sts-split dirdeclor.size? st))
              ((when right-size?)
               (retmsg$ "Splits are not supported in array sizes.~%~@0"
-                       (context-msg-dirdeclor dirdeclor (sts-split-state->dialect st))))
+                       (context-msg-dirdeclor dirdeclor
+                                              (sts-split-state->dialect st))))
              (left-dirdeclor
                (c$::make-dirdeclor-array :declor left-declor
                                          :qualspecs qualspecs
@@ -1541,7 +1802,8 @@
               (expr-sts-split dirdeclor.size st))
              ((when right-size?)
               (retmsg$ "Splits are not supported in array sizes.~%~@0"
-                       (context-msg-dirdeclor dirdeclor (sts-split-state->dialect st))))
+                       (context-msg-dirdeclor dirdeclor
+                                              (sts-split-state->dialect st))))
              (left-dirdeclor
                (c$::make-dirdeclor-array-static1 :declor left-declor
                                                  :qualspecs qualspecs
@@ -1563,7 +1825,8 @@
               (expr-sts-split dirdeclor.size st))
              ((when right-size?)
               (retmsg$ "Splits are not supported in array sizes.~%~@0"
-                       (context-msg-dirdeclor dirdeclor (sts-split-state->dialect st))))
+                       (context-msg-dirdeclor dirdeclor
+                                              (sts-split-state->dialect st))))
              (left-dirdeclor
                (c$::make-dirdeclor-array-static2 :declor left-declor
                                                  :qualspecs qualspecs
@@ -1597,9 +1860,10 @@
              ((erp params st)
               (param-declon-list-sts-split dirdeclor.params st))
              (left-dirdeclor
-               (c$::make-dirdeclor-function-params :declor left-declor
-                                                   :params params
-                                                   :ellipsis dirdeclor.ellipsis)))
+               (c$::make-dirdeclor-function-params
+                 :declor left-declor
+                 :params params
+                 :ellipsis dirdeclor.ellipsis)))
           (retok dsplitp
                  left-dirdeclor
                  (if dsplitp
@@ -1667,7 +1931,9 @@
       (absdeclor-option-case
         absdeclor?
         :none (retok nil nil st)
-        :some (absdeclor-sts-split (c$::absdeclor-option-some->val absdeclor?) splitp st)))
+        :some (absdeclor-sts-split (c$::absdeclor-option-some->val absdeclor?)
+                                   splitp
+                                   st)))
     :measure (absdeclor-option-count absdeclor?))
 
   (define dirabsdeclor-sts-split
@@ -1683,7 +1949,11 @@
     :parents (sts-split)
     :short "Transform a direct abstract declarator."
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil (dirabsdeclor-fix dirabsdeclor) (dirabsdeclor-fix dirabsdeclor) st))
+         ((reterr)
+          nil
+          (dirabsdeclor-fix dirabsdeclor)
+          (dirabsdeclor-fix dirabsdeclor)
+          st))
       (dirabsdeclor-case
         dirabsdeclor
         :dummy-base
@@ -1694,7 +1964,8 @@
         :paren
         (b* (((erp left-inner right-inner? st)
               (absdeclor-sts-split dirabsdeclor.inner splitp st))
-             (left-dirabsdeclor (c$::make-dirabsdeclor-paren :inner left-inner)))
+             (left-dirabsdeclor
+               (c$::make-dirabsdeclor-paren :inner left-inner)))
           (retok (if right-inner? t nil)
                  left-dirabsdeclor
                  (if right-inner?
@@ -1710,7 +1981,9 @@
               (expr-option-sts-split dirabsdeclor.size? st))
              ((when right-size?)
               (retmsg$ "Splits are not supported in array sizes.~%~@0"
-                       (context-msg-dirabsdeclor dirabsdeclor (sts-split-state->dialect st))))
+                       (context-msg-dirabsdeclor
+                         dirabsdeclor
+                         (sts-split-state->dialect st))))
              (left-dirabsdeclor
                (c$::make-dirabsdeclor-array :declor? left-declor?
                                             :qualspecs qualspecs
@@ -1732,7 +2005,9 @@
               (expr-sts-split dirabsdeclor.size st))
              ((when right-size?)
               (retmsg$ "Splits are not supported in array sizes.~%~@0"
-                       (context-msg-dirabsdeclor dirabsdeclor (sts-split-state->dialect st))))
+                       (context-msg-dirabsdeclor
+                         dirabsdeclor
+                         (sts-split-state->dialect st))))
              (left-dirabsdeclor
                (c$::make-dirabsdeclor-array-static1 :declor? left-declor?
                                                     :qualspecs qualspecs
@@ -1754,7 +2029,9 @@
               (expr-sts-split dirabsdeclor.size st))
              ((when right-size?)
               (retmsg$ "Splits are not supported in array sizes.~%~@0"
-                       (context-msg-dirabsdeclor dirabsdeclor (sts-split-state->dialect st))))
+                       (context-msg-dirabsdeclor
+                         dirabsdeclor
+                         (sts-split-state->dialect st))))
              (left-dirabsdeclor
                (c$::make-dirabsdeclor-array-static2 :declor? left-declor?
                                                     :qualspecs qualspecs
@@ -1762,9 +2039,10 @@
           (retok (if right-declor? t nil)
                  left-dirabsdeclor
                  (if right-declor?
-                     (c$::make-dirabsdeclor-array-static2 :declor? right-declor?
-                                                          :qualspecs qualspecs
-                                                          :size left-size)
+                     (c$::make-dirabsdeclor-array-static2
+                       :declor? right-declor?
+                       :qualspecs qualspecs
+                       :size left-size)
                    left-dirabsdeclor)
                  st))
         :array-star
@@ -1784,15 +2062,17 @@
              ((erp params st)
               (param-declon-list-sts-split dirabsdeclor.params st))
              (left-dirabsdeclor
-               (c$::make-dirabsdeclor-function :declor? left-declor?
-                                               :params params
-                                               :ellipsis dirabsdeclor.ellipsis)))
+               (c$::make-dirabsdeclor-function
+                 :declor? left-declor?
+                 :params params
+                 :ellipsis dirabsdeclor.ellipsis)))
           (retok (if right-declor? t nil)
                  left-dirabsdeclor
                  (if right-declor?
-                     (c$::make-dirabsdeclor-function :declor? right-declor?
-                                                     :params params
-                                                     :ellipsis dirabsdeclor.ellipsis)
+                     (c$::make-dirabsdeclor-function
+                       :declor? right-declor?
+                       :params params
+                       :ellipsis dirabsdeclor.ellipsis)
                    left-dirabsdeclor)
                  st))))
     :measure (dirabsdeclor-count dirabsdeclor))
@@ -1834,16 +2114,22 @@
     :parents (sts-split)
     :short "Transform a parameter declaration."
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil (param-declon-fix param-declon) (param-declon-fix param-declon) st)
+         ((reterr)
+          nil
+          (param-declon-fix param-declon)
+          (param-declon-fix param-declon)
+          st)
          ((param-declon param-declon) param-declon)
          ((c$::param-declon-info info) param-declon.info)
-         (splittablep (if info.type
-                          (sts-split-st-splittablep info.type st)
-                        nil))
-         ((when (eq splittablep :unknown))
-          (retmsg$ "The type of a parameter declaration is unknown.~%~@0"
-                   (context-msg-param-declon param-declon (sts-split-state->dialect st))))
-         (splitp (eq splittablep t))
+         ((mv erp splitp)
+          (if info.type
+              (sts-check-type info.type st)
+            (mv nil nil)))
+         ((when erp)
+          (retmsg$ "~@0~%~@1"
+                   erp
+                   (context-msg-param-declon param-declon
+                                             (sts-split-state->dialect st))))
          ((erp - left-specs right-specs st)
           (decl-spec-list-sts-split param-declon.specs st))
          ((erp - left-declor right-declor st)
@@ -1918,7 +2204,11 @@
       the right parameter declarator mirrors the left,
       so that the caller may use it for the right parameter declaration.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil (param-declor-fix param-declor) (param-declor-fix param-declor) st))
+         ((reterr)
+          nil
+          (param-declor-fix param-declor)
+          (param-declor-fix param-declor)
+          st))
       (param-declor-case
         param-declor
         :nonabstract
@@ -1932,15 +2222,18 @@
               (retmsg$ "INTERNAL ERROR. ~
                         A parameter declarator was split ~
                         contrary to its declared type, or vice versa.~%~@0"
-                       (context-msg-param-declor param-declor (sts-split-state->dialect st))))
+                       (context-msg-param-declor
+                         param-declor
+                         (sts-split-state->dialect st))))
              (left-param-declor
                (c$::make-param-declor-nonabstract :declor left-declor
                                                   :info param-declor.info)))
           (retok (if right-declor? t nil)
                  left-param-declor
                  (if right-declor?
-                     (c$::make-param-declor-nonabstract :declor right-declor?
-                                                        :info param-declor.info)
+                     (c$::make-param-declor-nonabstract
+                       :declor right-declor?
+                       :info param-declor.info)
                    left-param-declor)
                  st))
         :abstract
@@ -1975,11 +2268,12 @@
          ((reterr) nil (tyname-fix tyname) (tyname-fix tyname) st)
          ((tyname tyname) tyname)
          ((c$::tyname-info info) tyname.info)
-         (splittablep (sts-split-st-splittablep info.type st))
-         ((when (eq splittablep :unknown))
-          (retmsg$ "The type denoted by a type name is unknown.~%~@0"
+         ((mv erp splitp)
+          (sts-check-type info.type st))
+         ((when erp)
+          (retmsg$ "~@0~%~@1"
+                   erp
                    (context-msg-tyname tyname (sts-split-state->dialect st))))
-         (splitp (eq splittablep t))
          ((erp left-specquals right-specquals st)
           (spec/qual-list-sts-split tyname.specquals st))
          ((erp left-declor? right-declor? st)
@@ -2026,7 +2320,10 @@
       When @('splitp') is @('nil'),
       @('left-struni-spec') holds the result.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) (struni-spec-fix struni-spec) (struni-spec-fix struni-spec) st)
+         ((reterr)
+          (struni-spec-fix struni-spec)
+          (struni-spec-fix struni-spec)
+          st)
          ((struni-spec struni-spec) struni-spec)
          ((erp attribs st)
           (attrib-spec-list-sts-split struni-spec.attribs st))
@@ -2063,12 +2360,22 @@
     (xdoc::topstring-p
      "When @('splitp') is @('t') and the struct declaration is a member,
       its declarators are routed to the left and right struct declarations
-      based on the member names;
+      based on the member names
+      (unnamed members always go left;
+      see @(tsee struct-declor-sts-rightp));
       either side may end up with no declarators,
-      in which case it should be discarded by the caller.
+      in which case it should be discarded by the caller,
+      except that a member declaration
+      with no declarators in the first place
+      (i.e. an anonymous struct/union member)
+      is kept in the left struct declaration.
       The returned @('splitp') indicates whether such a split occurred.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil (struct-declon-fix struct-declon) (struct-declon-fix struct-declon) st))
+         ((reterr)
+          nil
+          (struct-declon-fix struct-declon)
+          (struct-declon-fix struct-declon)
+          st))
       (struct-declon-case
         struct-declon
         :member
@@ -2079,10 +2386,11 @@
              ((erp attribs st)
               (attrib-spec-list-sts-split struct-declon.attribs st))
              (left-struct-declon
-               (c$::make-struct-declon-member :extension struct-declon.extension
-                                              :specquals left-specquals
-                                              :declors left-declors
-                                              :attribs attribs)))
+               (c$::make-struct-declon-member
+                 :extension struct-declon.extension
+                 :specquals left-specquals
+                 :declors left-declors
+                 :attribs attribs)))
           (retok (and splitp t)
                  left-struct-declon
                  (if splitp
@@ -2097,7 +2405,9 @@
         (b* (((when splitp)
               (retmsg$ "Static assertions are not supported ~
                         within a split structure type.~%~@0"
-                       (context-msg-struct-declon struct-declon (sts-split-state->dialect st))))
+                       (context-msg-struct-declon
+                         struct-declon
+                         (sts-split-state->dialect st))))
              ((erp statassert st)
               (statassert-sts-split struct-declon.statassert st))
              (new-struct-declon
@@ -2138,8 +2448,20 @@
               (retok (cons left-struct-declon left-rest)
                      (cons right-struct-declon right-rest)
                      st))
+             ;; A member declaration with no declarators in the first place
+             ;; (i.e. an anonymous struct/union member)
+             ;; stays in the left struct type
+             ;; (it cannot be listed in the right member set);
+             ;; it is not dropped from the left struct type,
+             ;; unlike member declarations
+             ;; whose declarators were all routed to the right.
+             (orig-emptyp
+               (and (struct-declon-case (car struct-declons) :member)
+                    (atom (c$::struct-declon-member->declors
+                            (car struct-declons)))))
              (left-emptyp
-               (and (struct-declon-case left-struct-declon :member)
+               (and (not orig-emptyp)
+                    (struct-declon-case left-struct-declon :member)
                     (atom (c$::struct-declon-member->declors
                             left-struct-declon))))
              (right-emptyp
@@ -2175,24 +2497,30 @@
       @('rightp') in the return indicates which.
       When @('splitp') is @('nil'), @('left-struct-declor') holds the result.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil (struct-declor-fix struct-declor) (struct-declor-fix struct-declor) st)
+         ((reterr)
+          nil
+          (struct-declor-fix struct-declor)
+          (struct-declor-fix struct-declor)
+          st)
          ((struct-declor struct-declor) struct-declor)
          ((erp left-declor? right-declor? st)
           (declor-option-sts-split struct-declor.declor? nil nil st))
          ((when right-declor?)
           (retmsg$ "INTERNAL ERROR. ~
                     A structure declarator was unexpectedly split.~%~@0"
-                   (context-msg-struct-declor struct-declor (sts-split-state->dialect st))))
+                   (context-msg-struct-declor struct-declor
+                                              (sts-split-state->dialect st))))
          ((erp left-expr? right-expr? st)
           (const-expr-option-sts-split struct-declor.expr? st))
          ((when right-expr?)
           (retmsg$ "Splits are not supported in bit-field widths.~%~@0"
-                   (context-msg-struct-declor struct-declor (sts-split-state->dialect st))))
+                   (context-msg-struct-declor struct-declor
+                                              (sts-split-state->dialect st))))
          (new-struct-declor (c$::make-struct-declor :declor? left-declor?
                                                     :expr? left-expr?))
          ((unless splitp)
           (retok nil new-struct-declor new-struct-declor st))
-         ((erp rightp) (struct-declor-sts-rightp new-struct-declor st)))
+         (rightp (struct-declor-sts-rightp new-struct-declor st)))
       (retok rightp new-struct-declor new-struct-declor st))
     :measure (struct-declor-count struct-declor))
 
@@ -2215,25 +2543,25 @@
       When @('splitp') is @('nil'),
       both lists hold the same transformed struct declarators.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil nil st))
-      (if (atom struct-declors)
-          (retok nil nil st)
-        (b* (((erp rightp left-struct-declor right-struct-declor st)
-              (struct-declor-sts-split (car struct-declors) splitp st))
-             ((erp left-rest right-rest st)
-              (struct-declor-list-sts-split splitp (cdr struct-declors) st)))
-          (cond ((not splitp)
-                 (retok (cons left-struct-declor left-rest)
-                        (cons right-struct-declor right-rest)
-                        st))
-                (rightp
-                 (retok left-rest
-                        (cons right-struct-declor right-rest)
-                        st))
-                (t
-                 (retok (cons left-struct-declor left-rest)
-                        right-rest
-                        st))))))
+         ((reterr) nil nil st)
+         ((when (endp struct-declors))
+          (retok nil nil st))
+         ((erp rightp left-struct-declor right-struct-declor st)
+          (struct-declor-sts-split (car struct-declors) splitp st))
+         ((erp left-rest right-rest st)
+          (struct-declor-list-sts-split splitp (cdr struct-declors) st)))
+      (cond ((not splitp)
+             (retok (cons left-struct-declor left-rest)
+                    (cons right-struct-declor right-rest)
+                    st))
+            (rightp
+             (retok left-rest
+                    (cons right-struct-declor right-rest)
+                    st))
+            (t
+             (retok (cons left-struct-declor left-rest)
+                    right-rest
+                    st))))
     :measure (struct-declor-list-count struct-declors))
 
   (define enum-spec-sts-split
@@ -2309,33 +2637,10 @@
           (const-expr-sts-split statassert.test st))
          ((when right-test?)
           (retmsg$ "Splits are not supported in static assertions.~%~@0"
-                   (context-msg-statassert statassert (sts-split-state->dialect st)))))
+                   (context-msg-statassert statassert
+                                           (sts-split-state->dialect st)))))
       (retok (c$::change-statassert statassert :test left-test) st))
     :measure (statassert-count statassert))
-
-  (define attrib-sts-split
-    ((attrib c$::attribp)
-     (st sts-split-statep))
-    :guard (c$::attrib-annop attrib)
-    :returns (mv (er? maybe-msgp)
-                 (attrib$ c$::attribp)
-                 (st$ sts-split-statep))
-    :parents (sts-split)
-    :short "Transform a GCC attribute."
-    (b* ((st (sts-split-state-fix st))
-         ((reterr) (c$::attrib-fix attrib) st))
-      (c$::attrib-case
-        attrib
-        :name-only (retok (c$::attrib-fix attrib) st)
-        :name-params
-        ;; (b* (((erp params st)
-        ;;       (expr-list-sts-split attrib.params st)))
-        ;;   (retok (c$::make-attrib-name-params :name attrib.name :params params)
-        ;;          st))
-        ;; TODO: Is it OK not to recurse? Maybe emit a warning?
-        (retok (c$::attrib-fix attrib) st)
-        ))
-    :measure (c$::attrib-count attrib))
 
   (define attrib-list-sts-split
     ((attribs c$::attrib-listp)
@@ -2405,24 +2710,40 @@
     :parents (sts-split)
     :short "Transform an initializer declarator."
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil (init-declor-fix init-declor) (init-declor-fix init-declor) st)
+         ((reterr)
+          nil
+          (init-declor-fix init-declor)
+          (init-declor-fix init-declor)
+          st)
          ((init-declor init-declor) init-declor)
          ((c$::init-declor-info info) init-declor.info)
-         (splittablep (sts-split-st-splittablep info.type st))
-         ((when (eq splittablep :unknown))
-          (retmsg$ "The type of an initializer declarator is unknown.~%~@0"
-                   (context-msg-init-declor init-declor (sts-split-state->dialect st))))
-         (splitp (and (eq splittablep t)
+         ((mv erp type-splitp)
+          (sts-check-type info.type st))
+         ((when erp)
+          (retmsg$ "~@0~%~@1"
+                   erp
+                   (context-msg-init-declor init-declor
+                                            (sts-split-state->dialect st))))
+         ((when (and type-splitp
+                     info.typedefp
+                     (not (type-case info.type :struct))))
+          (retmsg$ "Typedefs denoting types derived from ~
+                    the split struct type are not supported.~%~@0"
+                   (context-msg-init-declor init-declor
+                                            (sts-split-state->dialect st))))
+         (splitp (and type-splitp
                       (not info.typedefp)))
          ((when (and splitp (not info.uid?)))
           (retmsg$ "INTERNAL ERROR. ~
                     An initializer declarator of splittable type ~
                     does not have a unique identifier.~%~@0"
-                   (context-msg-init-declor init-declor (sts-split-state->dialect st))))
+                   (context-msg-init-declor init-declor
+                                            (sts-split-state->dialect st))))
          ((when (and splitp init-declor.asm?))
           (retmsg$ "Splits are not supported alongside ~
                     assembler name specifiers.~%~@0"
-                   (context-msg-init-declor init-declor (sts-split-state->dialect st))))
+                   (context-msg-init-declor init-declor
+                                            (sts-split-state->dialect st))))
          ((erp left-declor right-declor? st)
           (declor-sts-split init-declor.declor
                             splitp
@@ -2432,7 +2753,8 @@
           (retmsg$ "INTERNAL ERROR. ~
                     An initializer declarator was split ~
                     contrary to its declared type, or vice versa.~%~@0"
-                   (context-msg-init-declor init-declor (sts-split-state->dialect st))))
+                   (context-msg-init-declor init-declor
+                                            (sts-split-state->dialect st))))
          ((erp attribs st)
           (attrib-spec-list-sts-split init-declor.attribs st))
          ((erp left-initer? right-initer? st)
@@ -2441,11 +2763,13 @@
           (retmsg$ "INTERNAL ERROR. ~
                     The initializer of an initializer declarator was split ~
                     contrary to its declared type.~%~@0"
-                   (context-msg-init-declor init-declor (sts-split-state->dialect st))))
+                   (context-msg-init-declor init-declor
+                                            (sts-split-state->dialect st))))
          ((when (and splitp left-initer? (not right-initer?)))
           (retmsg$ "Failed to split the initializer of ~
                     an initializer declarator of splittable type.~%~@0"
-                   (context-msg-init-declor init-declor (sts-split-state->dialect st))))
+                   (context-msg-init-declor init-declor
+                                            (sts-split-state->dialect st))))
          (left-init-declor
            (c$::make-init-declor :declor left-declor
                                  :asm? init-declor.asm?
@@ -2480,18 +2804,18 @@
       the right list holds the right counterparts
       of just those initializer declarators which split.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil nil st))
-      (if (atom init-declors)
-          (retok nil nil st)
-        (b* (((erp isplitp left-init-declor right-init-declor st)
-              (init-declor-sts-split (car init-declors) st))
-             ((erp left-rest right-rest st)
-              (init-declor-list-sts-split (cdr init-declors) st)))
-          (retok (cons left-init-declor left-rest)
-                 (if isplitp
-                     (cons right-init-declor right-rest)
-                   right-rest)
-                 st))))
+         ((reterr) nil nil st)
+         ((when (endp init-declors))
+          (retok nil nil st))
+         ((erp isplitp left-init-declor right-init-declor st)
+          (init-declor-sts-split (car init-declors) st))
+         ((erp left-rest right-rest st)
+          (init-declor-list-sts-split (cdr init-declors) st)))
+      (retok (cons left-init-declor left-rest)
+             (if isplitp
+                 (cons right-init-declor right-rest)
+               right-rest)
+             st))
     :measure (init-declor-list-count init-declors))
 
   (define declon-sts-split
@@ -2575,111 +2899,17 @@
               (const-expr-sts-split label.expr st))
              ((when right-expr?)
               (retmsg$ "Splits are not supported in case labels.~%~@0"
-                       (context-msg-label label (sts-split-state->dialect st))))
+                       (context-msg-label label
+                                          (sts-split-state->dialect st))))
              ((erp left-range? right-range? st)
               (const-expr-option-sts-split label.range? st))
              ((when right-range?)
               (retmsg$ "Splits are not supported in case labels.~%~@0"
-                       (context-msg-label label (sts-split-state->dialect st)))))
+                       (context-msg-label label
+                                          (sts-split-state->dialect st)))))
           (retok (make-label-casexpr :expr left-expr :range? left-range?) st))
         :default (retok (label-fix label) st)))
     :measure (label-count label))
-
-  ;; TODO: these asm nodes are not validated.
-
-  ;; (define asm-output-sts-split
-  ;;   ((asm-output c$::asm-outputp)
-  ;;    (st sts-split-statep))
-  ;;   :guard (c$::asm-output-annop asm-output)
-  ;;   :returns (mv (er? maybe-msgp)
-  ;;                (asm-output$ c$::asm-outputp)
-  ;;                (st$ sts-split-statep))
-  ;;   :parents (sts-split)
-  ;;   :short "Transform an assembler output operand."
-  ;;   (b* ((st (sts-split-state-fix st))
-  ;;        ((reterr) (c$::asm-output-fix asm-output) st)
-  ;;        ((erp left-lvalue right-lvalue? st)
-  ;;         (expr-sts-split (c$::asm-output->lvalue asm-output) st))
-  ;;        ((when right-lvalue?)
-  ;;         (retmsg$ "Splits are not supported in assembler output operands.")))
-  ;;     (retok (c$::change-asm-output asm-output :lvalue left-lvalue) st))
-  ;;   :measure (c$::asm-output-count asm-output))
-
-  ;; (define asm-output-list-sts-split
-  ;;   ((asm-outputs c$::asm-output-listp)
-  ;;    (st sts-split-statep))
-  ;;   :guard (c$::asm-output-list-annop asm-outputs)
-  ;;   :returns (mv (er? maybe-msgp)
-  ;;                (asm-outputs$ c$::asm-output-listp)
-  ;;                (st$ sts-split-statep))
-  ;;   :parents (sts-split)
-  ;;   :short "Transform an assembler output operand list."
-  ;;   (b* ((st (sts-split-state-fix st))
-  ;;        ((reterr) (c$::asm-output-list-fix asm-outputs) st))
-  ;;     (if (atom asm-outputs)
-  ;;         (retok nil st)
-  ;;       (b* (((erp head st)
-  ;;             (asm-output-sts-split (car asm-outputs) st))
-  ;;            ((erp rest st)
-  ;;             (asm-output-list-sts-split (cdr asm-outputs) st)))
-  ;;         (retok (cons head rest) st))))
-  ;;   :measure (c$::asm-output-list-count asm-outputs))
-
-  ;; (define asm-input-sts-split
-  ;;   ((asm-input c$::asm-inputp)
-  ;;    (st sts-split-statep))
-  ;;   :guard (c$::asm-input-annop asm-input)
-  ;;   :returns (mv (er? maybe-msgp)
-  ;;                (asm-input$ c$::asm-inputp)
-  ;;                (st$ sts-split-statep))
-  ;;   :parents (sts-split)
-  ;;   :short "Transform an assembler input operand."
-  ;;   (b* ((st (sts-split-state-fix st))
-  ;;        ((reterr) (c$::asm-input-fix asm-input) st)
-  ;;        ((erp left-rvalue right-rvalue? st)
-  ;;         (expr-sts-split (c$::asm-input->rvalue asm-input) st))
-  ;;        ((when right-rvalue?)
-  ;;         (retmsg$ "Splits are not supported in assembler input operands.")))
-  ;;     (retok (c$::change-asm-input asm-input :rvalue left-rvalue) st))
-  ;;   :measure (c$::asm-input-count asm-input))
-
-  ;; (define asm-input-list-sts-split
-  ;;   ((asm-inputs c$::asm-input-listp)
-  ;;    (st sts-split-statep))
-  ;;   :guard (c$::asm-input-list-annop asm-inputs)
-  ;;   :returns (mv (er? maybe-msgp)
-  ;;                (asm-inputs$ c$::asm-input-listp)
-  ;;                (st$ sts-split-statep))
-  ;;   :parents (sts-split)
-  ;;   :short "Transform an assembler input operand list."
-  ;;   (b* ((st (sts-split-state-fix st))
-  ;;        ((reterr) (c$::asm-input-list-fix asm-inputs) st))
-  ;;     (if (atom asm-inputs)
-  ;;         (retok nil st)
-  ;;       (b* (((erp head st)
-  ;;             (asm-input-sts-split (car asm-inputs) st))
-  ;;            ((erp rest st)
-  ;;             (asm-input-list-sts-split (cdr asm-inputs) st)))
-  ;;         (retok (cons head rest) st))))
-  ;;   :measure (c$::asm-input-list-count asm-inputs))
-
-  ;; (define asm-stmt-sts-split
-  ;;   ((asm-stmt c$::asm-stmtp)
-  ;;    (st sts-split-statep))
-  ;;   :guard (c$::asm-stmt-annop asm-stmt)
-  ;;   :returns (mv (er? maybe-msgp)
-  ;;                (asm-stmt$ c$::asm-stmtp)
-  ;;                (st$ sts-split-statep))
-  ;;   :parents (sts-split)
-  ;;   :short "Transform an assembler statement."
-  ;;   (b* ((st (sts-split-state-fix st))
-  ;;        ((reterr) (c$::asm-stmt-fix asm-stmt) st)
-  ;;        ((erp outputs st)
-  ;;         (asm-output-list-sts-split (c$::asm-stmt->outputs asm-stmt) st))
-  ;;        ((erp inputs st)
-  ;;         (asm-input-list-sts-split (c$::asm-stmt->inputs asm-stmt) st)))
-  ;;     (retok (c$::change-asm-stmt asm-stmt :outputs outputs :inputs inputs) st))
-  ;;   :measure (c$::asm-stmt-count asm-stmt))
 
   (define stmt-sts-split
     ((stmt stmtp)
@@ -2905,7 +3135,6 @@
                                                     :expr left-expr)))
           (retok nil new-stmt new-stmt st))
         :asm
-        ;; TODO: recurse into the asm statement once asm nodes are validated.
         (b* ((- (cw "WARNING: Not transforming assembler statement, ~
                      because assembler constructs are not yet validated.~%~@0~%"
                     (context-msg-stmt stmt (sts-split-state->dialect st)))))
@@ -3000,17 +3229,10 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :bogus-ok t
-  :measure-debug t
   :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable xor)))
-  :guard-debug t
-  ;; :verbosep t
-  )
+  :guard-hints (("Goal" :in-theory (enable xor))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Top-level constructs
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fundef-sts-split
   ((fundef fundefp)
@@ -3063,7 +3285,11 @@
                (st$ sts-split-statep))
   :short "Transform an external declaration."
   (b* ((st (sts-split-state-fix st))
-       ((reterr) nil (c$::ext-declon-fix ext-declon) (c$::ext-declon-fix ext-declon) st))
+       ((reterr)
+        nil
+        (c$::ext-declon-fix ext-declon)
+        (c$::ext-declon-fix ext-declon)
+        st))
     (ext-declon-case
       ext-declon
       :fundef
@@ -3087,7 +3313,6 @@
              (c$::ext-declon-fix ext-declon)
              st)
       :asm
-      ;; TODO: recurse into the asm statement once asm nodes are validated.
       (b* ((- (cw "WARNING: Not transforming assembler statement, ~
                    because assembler constructs are not yet validated.~%~@0~%"
                   (context-msg-asm-stmt ext-declon.stmt
@@ -3170,8 +3395,6 @@
     (retok (make-trans-unit :items items :info tunit.info) st)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Input processing
 
 (define sts-find-struct-uid-in-valid-table
   ((tag identp)
@@ -3269,40 +3492,7 @@
               c$::filepath-trans-unit-map-annop
               c$::trans-unit-annop))))
 
-(define sts-split-ident-list
-  ((strings string-listp))
-  :returns (idents ident-listp)
-  :short "Map a list of strings to a list of identifiers."
-  (if (endp strings)
-      nil
-    (cons (c$::ident (first strings))
-          (sts-split-ident-list (rest strings))))
-  :guard-hints (("Goal" :in-theory (enable string-listp))))
-
-(define ident-list-to-ident-set
-  ((idents ident-listp))
-  :returns (set ident-setp)
-  :short "Convert a list of identifiers to a set of identifiers."
-  (if (endp idents)
-      nil
-    (insert (c$::ident-fix (first idents))
-            (ident-list-to-ident-set (rest idents))))
-  :verify-guards :after-returns)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Top-level transformation
-
-(define sts-tagged-struct-type
-  ((uid c$::uidp)
-   (tunit filepathp)
-   (tag identp))
-  :returns (type c$::typep)
-  :short "Construct a tagged struct type."
-  (c$::make-type-struct
-    :uid uid
-    :tunit? (c$::filepath-fix tunit)
-    :tag/members (c$::make-type-struni-tag/members-tagged :tag tag)))
 
 (define sts-split-trans-units
   ((tag identp)
@@ -3327,9 +3517,11 @@
     with respect to that unique identifier;
     otherwise, the translation unit is left unchanged.
     The state is threaded through the passes:
-    in particular, its name map ensures that
-    corresponding objects in different translation units
-    receive the same right names.
+    in particular, its ident map ensures that
+    declarations of the same external object
+    in different translation units
+    (which share a unique identifier)
+    receive the same right name.
     Note that we assume that at most one struct type
     per translation unit is subject to the split,
     namely the one denoted by the tag at file scope.
@@ -3350,10 +3542,15 @@
         (sts-find-struct-uid-in-valid-table
           tag
           (c$::trans-unit-info->table-end (c$::trans-unit->info tunit))))
+       (current-type
+         (c$::make-type-struct
+           :uid uid
+           :tunit? (c$::filepath-fix filepath)
+           :tag/members (c$::make-type-struni-tag/members-tagged :tag tag)))
        ((when (or erp
                   (not (c$::type-compatible-p
                          primary-type
-                         (sts-tagged-struct-type uid filepath tag)
+                         current-type
                          completions
                          ienv))))
         ;; The tag does not denote a compatible struct type
@@ -3363,6 +3560,9 @@
                 tag primary-type completions ienv (omap::tail tunits) st)))
           (retok (omap::update filepath (c$::trans-unit-fix tunit) rest)
                  st)))
+       (msg? (sts-check-completions completions uid))
+       ((when msg?)
+        (reterr msg?))
        ((erp tunit st)
         (trans-unit-sts-split tunit
                               (change-sts-split-state st :struct-uid uid)))
@@ -3370,6 +3570,7 @@
         (sts-split-trans-units
           tag primary-type completions ienv (omap::tail tunits) st)))
     (retok (omap::update filepath tunit rest) st))
+  :guard-debug t
   :verify-guards :after-returns
   :guard-hints
   (("Goal" :in-theory (enable c$::filepath-trans-unit-map-annop
@@ -3425,18 +3626,20 @@
        (completions (make-fast-alist
                       (c$::trans-ensemble-info->completions info)))
        (primary-type
-         (sts-tagged-struct-type primary-uid primary-filepath tag))
+         (c$::make-type-struct
+           :uid primary-uid
+           :tunit? (c$::filepath-fix primary-filepath)
+           :tag/members (c$::make-type-struni-tag/members-tagged :tag tag)))
        (map (trans-ensemble->units code.trans-units))
        (blacklist (filepath-trans-unit-map-collect-idents map))
        (right-name (fresh-ident (or right-name? tag) blacklist))
        (st (make-sts-split-state
              :struct-uid primary-uid
-             :right-set (ident-list-to-ident-set right-members)
+             :right-set (mergesort right-members)
              :right-name right-name
              :dialect (c$::ienv->dialect code.ienv)
              :blacklist (insert right-name blacklist)
-             :ident-map nil
-             :name-map nil))
+             :ident-map nil))
        ((erp map -)
         (sts-split-trans-units tag primary-type completions code.ienv map st))
        (- (fast-alist-free completions)))
@@ -3447,7 +3650,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Event macro
+(xdoc::evmac-topic-input-processing struct-type-split)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sts-split-process-inputs (const-old
                                   const-new
@@ -3484,7 +3689,7 @@
         (retmsg$ "~x0 must be a list of strings." right-members))
        ((unless (consp right-members))
         (retmsg$ "At least one right member must be specified."))
-       (right-members (sts-split-ident-list right-members))
+       (right-members (map-ident right-members))
        ((unless (or (not new-tag)
                     (stringp new-tag)))
         (retmsg$ "~x0 must be nil or a string." new-tag))
@@ -3497,6 +3702,12 @@
   (defret code-ensemble-annop-of-sts-split-process-inputs.code
     (implies (not er?)
              (code-ensemble-annop code))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::evmac-topic-event-generation struct-split-type)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sts-split-gen-everything
   ((code code-ensemblep)
@@ -3516,6 +3727,8 @@
          `(defconst ,const-new
             ',code)))
     (retok defconst-event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define struct-type-split-fn (const-old
                               const-new
@@ -3549,6 +3762,8 @@
        ((when erp)
         (er-soft+ ctx t '(_) "STRUCT-TYPE-SPLIT ERROR: ~@0" erp)))
     (value event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection struct-type-split-macro-definition
   :short "Definition of the @('struct-type-split') macro."

@@ -204,18 +204,45 @@ int main(void) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The split struct type may not contain unnamed members
-;; (here an anonymous bit-field).
+;; Unnamed members (named and anonymous bit-fields, anonymous unions)
+;; always stay in the left struct type,
+;; since they cannot be listed in the right members.
 
 (acl2::must-succeed*
   (c$::input-files :files '("anon-member.c")
                    :const *old*)
 
-  (must-fail
-    (struct-type-split *old*
-                       *new*
-                       :struct-tag "point"
-                       :right-members ("z")))
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/anon-member.c"
+    :content "struct point {
+  int x;
+  int b : 4;
+  union { int c; int d; };
+  int : 8;
+};
+
+struct point_right {
+  int z;
+};
+
+static struct point p;
+
+static struct point_right p_0;
+
+int main(void) {
+  p.c = 3;
+  return p.x + p.b + p_0.z;
+}
+")
 
   :with-output-off nil)
 
@@ -394,16 +421,104 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A typedef denoting a derived type (here a pointer to the struct type)
-;; is not properly supported: the right declaration replaces the typedef
-;; name with the right struct type, losing the pointer contributed by the
-;; typedef, so the output below is invalid C (q_0 is declared as a struct
-;; but initialized with a pointer and accessed with ->).
+;; is not supported, and is detected and rejected.
 ;; TODO: we need to consider how to better support typedefs.
-;; This test documents the current behavior; it should be revised
-;; when such typedefs are properly supported or rejected.
 
 (acl2::must-succeed*
   (c$::input-files :files '("typedef-ptr.c")
+                   :const *old*)
+
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")
+                       :new-tag "point_right"))
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Safety checks: the split struct type may not appear in
+;; array types, function types, or the members of
+;; other struct or union types (including its own members).
+
+(acl2::must-succeed*
+  ;; An array of the split struct type.
+  (c$::input-files :files '("array.c")
+                   :const *old*)
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")))
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; A member of another struct type.
+  (c$::input-files :files '("member.c")
+                   :const *old*)
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")))
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; A pointer member of another struct type.
+  (c$::input-files :files '("ptr-member.c")
+                   :const *old*)
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")))
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; A member of a union type.
+  (c$::input-files :files '("union-member.c")
+                   :const *old*)
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")))
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; A self-referential struct type.
+  (c$::input-files :files '("self-ref.c")
+                   :const *old*)
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")))
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; A function prototype returning a pointer to the split struct type.
+  (c$::input-files :files '("fn-proto.c")
+                   :const *old*)
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")))
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Function parameters of splittable type are split in place,
+;; in prototypes, definitions, and call sites.
+;; (Note that the right parameters of the prototype and definition
+;; of setz receive different fresh names;
+;; this is valid, since prototype parameter names are immaterial.)
+
+(acl2::must-succeed*
+  (c$::input-files :files '("fn-param.c")
                    :const *old*)
 
   (struct-type-split *old*
@@ -416,7 +531,7 @@ int main(void) {
                     :base-dir "new")
 
   (assert-file-contents
-    :file "new/typedef-ptr.c"
+    :file "new/fn-param.c"
     :content "struct point {
   int x;
 };
@@ -425,20 +540,23 @@ struct point_right {
   int z;
 };
 
-typedef struct point *pp_t;
-
-struct point_right;
-
 static struct point p;
 
 static struct point_right p_0;
 
-static pp_t q = &p;
+void setz(struct point *q, struct point_right *q_0, int v);
 
-static struct point_right q_0 = &p_0;
+void setz(struct point *q, struct point_right *q_1, int v) {
+  q_1->z = v;
+}
+
+int getx(struct point pt, struct point_right pt_0) {
+  return pt.x;
+}
 
 int main(void) {
-  return q_0->z;
+  setz(&p, &p_0, 5);
+  return getx(p, p_0);
 }
 ")
 

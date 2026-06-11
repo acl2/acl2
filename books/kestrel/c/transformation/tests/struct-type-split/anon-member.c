@@ -1,5 +1,7 @@
 struct point {
   int x;
+  int b : 4;
+  union { int c; int d; };
   int : 8;
   int z;
 };
@@ -7,5 +9,6 @@ struct point {
 static struct point p;
 
 int main(void) {
-  return p.x;
+  p.c = 3;
+  return p.x + p.b + p.z;
 }
