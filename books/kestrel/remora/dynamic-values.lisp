@@ -696,4 +696,12 @@
              consp-of-dims-of-value-list
              acl2::not-reserrp-when-nat-listp
              acl2::not-reserrp-when-nat-list-listp)
-    :expand (check-dims-of-value (value-vector vals))))
+    :expand (check-dims-of-value (value-vector vals)))
+
+  (defrule value-list-wfp-of-value-vector->elems
+    (implies (and (value-wfp val)
+                  (value-case val :vector))
+             (value-list-wfp (value-vector->elems val)))
+    :enable (value-wfp
+             value-list-wfp-alt-def)
+    :expand (check-dims-of-value val)))
