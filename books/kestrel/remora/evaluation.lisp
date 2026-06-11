@@ -1143,7 +1143,8 @@
                      (tvals type-value-listp)
                      (denv denvp)
                      (limit natp))
-    :guard (denv-wfp denv)
+    :guard (and (value-wfp funval)
+                (denv-wfp denv))
     :returns (val value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Apply a value to type values."
@@ -1238,7 +1239,8 @@
                           (tvals type-value-listp)
                           (denv denvp)
                           (limit natp))
-    :guard (denv-wfp denv)
+    :guard (and (value-list-wfp funvals)
+                (denv-wfp denv))
     :returns (vals value-list-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Lift @(tsee eval-tapp) to a list of function values."
