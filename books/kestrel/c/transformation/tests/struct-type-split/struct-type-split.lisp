@@ -325,3 +325,27 @@ int getz(void) {
 ")
 
   :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The code ensemble must use the C17 standard.
+;; (The transformation assumes the C17 struct type compatibility rules.)
+
+(acl2::must-succeed*
+  (c$::input-files :files '("test1.c")
+                   :const *old*)
+
+  (defconst *old-c23*
+    (change-code-ensemble
+      *old*
+      :ienv (c$::change-ienv (c$::code-ensemble->ienv *old*)
+                             :dialect (c::make-dialect
+                                        :std (c::standard-c23)))))
+
+  (must-fail
+    (struct-type-split *old-c23*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")))
+
+  :with-output-off nil)

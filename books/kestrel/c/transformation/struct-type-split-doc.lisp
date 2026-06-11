@@ -131,7 +131,10 @@
           pure (i.e. side-effect-free) initializers,
           since splitting the initializer list reorders them.")
        (xdoc::li
-         "At most one struct type per translation unit may be split,
+         "The code ensemble must use the C17 standard;
+          this is checked by the transformation.
+          The transformation assumes that at most one struct type
+          per translation unit is subject to the split,
           namely the one denoted by the tag at file scope.
           This is consistent with C17,
           in which struct types declared in different scopes

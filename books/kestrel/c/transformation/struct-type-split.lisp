@@ -102,8 +102,14 @@
   :short "Collection of data used by @(see sts-split)."
   :long
   (xdoc::topstring-p
-    "The @('struct-uid'), @('right-set'), @('right-name'),
-     and @('dialect') fields are expected to remain constant.
+    "The @('right-set'), @('right-name'), and @('dialect') fields
+     are expected to remain constant.
+     The @('struct-uid') field is constant
+     within a single translation unit,
+     but is updated for each translation unit
+     (see @(tsee sts-split-trans-units)),
+     since compatible struct types in different translation units
+     have different unique identifiers.
      The @('right-name') field is the tag of the right struct type,
      which is assumed to be globally unique.
      The @('blacklist'), @('ident-map'), and @('name-map') fields
@@ -112,12 +118,11 @@
      to the name of the corresponding right object.
      The @('name-map') field maps the name of a left object
      to the name of the corresponding right object;
-     unlike @('ident-map'), whose unique identifiers
-     are invalidated by re-validation,
-     it persists across passes over multiple translation units,
-     so that corresponding objects in different translation units
-     (e.g. declarations of the same external object)
-     receive the same right name.")
+     it complements @('ident-map') across translation units,
+     since declarations of the same external object
+     in different translation units
+     carry different unique identifiers,
+     while sharing the same name.")
   ((struct-uid c$::uid)
    (right-set ident-set)
    (right-name ident)
@@ -758,8 +763,6 @@
 
   (define type-spec-sts-split
     ((type-spec type-specp)
-     ;; TODO GJ: I think this is unused?
-     (splitp booleanp)
      (st sts-split-statep))
     :guard (type-spec-annop type-spec)
     :returns (mv (er? maybe-msgp)
@@ -768,7 +771,6 @@
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a type specifier."
-    (declare (ignorable splitp))
     (b* ((st (sts-split-state-fix st))
          ((reterr) (type-spec-fix type-spec) nil st))
       (type-spec-case
@@ -894,7 +896,6 @@
 
   (define spec/qual-sts-split
     ((specqual spec/qual-p)
-     (splitp booleanp)
      (st sts-split-statep))
     :guard (spec/qual-annop specqual)
     :returns (mv (er? maybe-msgp)
@@ -910,7 +911,7 @@
         specqual
         :typespec
         (b* (((erp left-spec right-spec? st)
-              (type-spec-sts-split specqual.spec splitp st)))
+              (type-spec-sts-split specqual.spec st)))
           (retok (if right-spec? t nil)
                  (c$::make-spec/qual-typespec :spec left-spec)
                  (if right-spec?
@@ -934,8 +935,7 @@
     :measure (spec/qual-count specqual))
 
   (define spec/qual-list-sts-split
-    ((splitp booleanp)
-     (specquals spec/qual-listp)
+    ((specquals spec/qual-listp)
      (st sts-split-statep))
     :guard (spec/qual-list-annop specquals)
     :returns (mv (er? maybe-msgp)
@@ -949,9 +949,9 @@
       (if (atom specquals)
           (retok nil nil st)
         (b* (((erp - left-specqual right-specqual st)
-              (spec/qual-sts-split (car specquals) splitp st))
+              (spec/qual-sts-split (car specquals) st))
              ((erp left-rest right-rest st)
-              (spec/qual-list-sts-split splitp (cdr specquals) st)))
+              (spec/qual-list-sts-split (cdr specquals) st)))
           (retok (cons left-specqual left-rest)
                  (cons right-specqual right-rest)
                  st))))
@@ -989,7 +989,6 @@
 
   (define decl-spec-sts-split
     ((decl-spec decl-specp)
-     (splitp booleanp)
      (st sts-split-statep))
     :guard (decl-spec-annop decl-spec)
     :returns (mv (er? maybe-msgp)
@@ -1007,7 +1006,7 @@
         (retok nil (decl-spec-fix decl-spec) (decl-spec-fix decl-spec) st)
         :typespec
         (b* (((erp left-spec right-spec? st)
-              (type-spec-sts-split decl-spec.spec splitp st)))
+              (type-spec-sts-split decl-spec.spec st)))
           (retok (if right-spec? t nil)
                  (c$::make-decl-spec-typespec :spec left-spec)
                  (if right-spec?
@@ -1037,8 +1036,7 @@
     :measure (decl-spec-count decl-spec))
 
   (define decl-spec-list-sts-split
-    ((splitp booleanp)
-     (decl-specs decl-spec-listp)
+    ((decl-specs decl-spec-listp)
      (st sts-split-statep))
     :guard (decl-spec-list-annop decl-specs)
     :returns (mv (er? maybe-msgp)
@@ -1059,9 +1057,9 @@
       (if (atom decl-specs)
           (retok nil nil nil st)
         (b* (((erp first-splitp left-decl-spec right-decl-spec st)
-              (decl-spec-sts-split (car decl-specs) splitp st))
+              (decl-spec-sts-split (car decl-specs) st))
              ((erp rest-splitp left-rest right-rest st)
-              (decl-spec-list-sts-split splitp (cdr decl-specs) st)))
+              (decl-spec-list-sts-split (cdr decl-specs) st)))
           (retok (or first-splitp rest-splitp)
                  (cons left-decl-spec left-rest)
                  (cons right-decl-spec right-rest)
@@ -1403,9 +1401,9 @@
                      (c$::make-dirdeclor-ident :ident (cdr lookup))
                      st))
              ;; The name map provides the right names of objects
-             ;; split in previous passes (over other translation units),
-             ;; whose unique identifiers have since been invalidated
-             ;; by re-validation.
+             ;; split in other translation units,
+             ;; whose declarations there carry
+             ;; different unique identifiers.
              (name-lookup (omap::assoc dirdeclor.ident st.name-map))
              (right-ident (if name-lookup
                               (c$::ident-fix (cdr name-lookup))
@@ -1766,7 +1764,7 @@
                    (context-msg-param-declon param-declon (sts-split-state->dialect st))))
          (splitp (eq splittablep t))
          ((erp - left-specs right-specs st)
-          (decl-spec-list-sts-split splitp param-declon.specs st))
+          (decl-spec-list-sts-split param-declon.specs st))
          ((erp - left-declor right-declor st)
           (param-declor-sts-split param-declon.declor splitp st))
          ((erp attribs st)
@@ -1895,7 +1893,7 @@
                    (context-msg-tyname tyname (sts-split-state->dialect st))))
          (splitp (eq splittablep t))
          ((erp left-specquals right-specquals st)
-          (spec/qual-list-sts-split splitp tyname.specquals st))
+          (spec/qual-list-sts-split tyname.specquals st))
          ((erp left-declor? right-declor? st)
           (absdeclor-option-sts-split tyname.declor? splitp st)))
       (retok splitp
@@ -1980,7 +1978,7 @@
         struct-declon
         :member
         (b* (((erp left-specquals - st)
-              (spec/qual-list-sts-split nil struct-declon.specquals st))
+              (spec/qual-list-sts-split struct-declon.specquals st))
              ((erp left-declors right-declors st)
               (struct-declor-list-sts-split splitp struct-declon.declors st))
              ((erp attribs st)
@@ -2426,7 +2424,7 @@
               (init-declor-list-sts-split declon.declors st))
              (declors-splitp (and (consp right-declors) t))
              ((erp specs-splitp left-specs right-specs st)
-              (decl-spec-list-sts-split declors-splitp declon.specs st))
+              (decl-spec-list-sts-split declon.specs st))
              (splitp (or declors-splitp specs-splitp))
              (left-declon
                (c$::make-declon-declon :extension declon.extension
@@ -2921,7 +2919,7 @@
         (retmsg$ "K&R-style function definitions are not supported.~%~@0"
                  (context-msg-fundef fundef (sts-split-state->dialect st))))
        ((erp specs-splitp left-specs - st)
-        (decl-spec-list-sts-split nil fundef.specs st))
+        (decl-spec-list-sts-split fundef.specs st))
        ((when specs-splitp)
         (retmsg$ "The split struct type is not supported in ~
                   the return type of a function definition.~%~@0"
@@ -3232,7 +3230,9 @@
     It does not generally hold in C23,
     in which struct types in different scopes
     of the same translation unit may be compatible;
-    we do not support that yet.")
+    we do not support that yet,
+    and so @(tsee sts-split-code-ensemble) checks that
+    the C standard is C17.")
   (b* (((reterr) nil (sts-split-state-fix st))
        ((when (omap::emptyp tunits))
         (retok nil (sts-split-state-fix st)))
@@ -3293,12 +3293,22 @@
     whose tag is a fresh identifier
     based on @('right-name?') if provided,
     and on the original tag otherwise.
+    The code ensemble must use the C17 standard,
+    since the transformation assumes the C17 rules
+    for struct type compatibility.
     The validation information of the resulting ensemble
     is not updated by the transformation;
     the result should be re-validated
     before further use of its annotations.")
   (b* (((reterr) (c$::irr-code-ensemble))
        ((code-ensemble code) code)
+       ;; The transformation assumes the C17 rules
+       ;; for struct type compatibility;
+       ;; see sts-split-trans-units.
+       ((unless (c::standard-case (c$::ienv->std code.ienv) :c17))
+        (retmsg$ "Only the C17 standard is currently supported, ~
+                  but the code ensemble uses the standard ~x0."
+                 (c$::ienv->std code.ienv)))
        ((erp primary-uid primary-filepath)
         (sts-find-struct-uid filepath? tag code.trans-units))
        (info (c$::trans-ensemble->info code.trans-units))
