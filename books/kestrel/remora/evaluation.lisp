@@ -21,6 +21,7 @@
 
 (local (include-book "lists"))
 
+(local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
@@ -1135,7 +1136,17 @@
          ((ok val) (eval-expr (car exprs) denv (1- limit)))
          ((ok vals) (eval-expr-list (cdr exprs) denv (1- limit))))
       (cons val vals))
-    :measure (nfix limit))
+    :measure (nfix limit)
+
+    ///
+
+    (defret len-of-eval-expr-list
+      (implies (not (reserrp vals))
+               (equal (len vals)
+                      (len exprs)))
+      :hints (("Goal"
+               :induct (acl2::cdr-dec-induct exprs limit)
+               :in-theory (enable len)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1588,4 +1599,6 @@
 
   (verify-guards eval-expr
     :hints
-    (("Goal" :in-theory (enable len-equal-when-type-values-match-values-p)))))
+    (("Goal"
+      :in-theory (e/d (len-equal-when-type-values-match-values-p)
+                      (len-of-eval-expr-list))))))
