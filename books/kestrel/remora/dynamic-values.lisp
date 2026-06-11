@@ -371,12 +371,19 @@
        to @($\\mathit{Val}$) in [thesis],
        but with a different yet equivalent structure.")
      (xdoc::p
+      "The parameters of a lambda value associate
+       type values, not types, to the variables:
+       the parameter types are evaluated
+       when the lambda abstraction is evaluated,
+       while the body is evaluated
+       when the lambda abstraction is applied.")
+     (xdoc::p
       "This fixtype does not capture constraints like
        the non-emptiness of the value list in @(':vector'),
        and the dimension and type consistency of the elements of a @(':vector').
        These constraints are captured separately."))
     (:base ((val base-value)))
-    (:lambda ((params var+type-list)
+    (:lambda ((params var+typevalue-list)
               (body expr)))
     (:tlambda ((params type-var-list)
                (body expr)))

@@ -39,7 +39,9 @@
                           type-valuep-when-result-not-error
                           type-value-listp-when-result-not-error
                           valuep-when-result-not-error
-                          value-listp-when-result-not-error)))
+                          value-listp-when-result-not-error
+                          var+typevalue-p-when-result-not-error
+                          var+typevalue-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -345,6 +347,47 @@
   ///
 
   (fty::deffixequiv-mutual eval-types))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-var+type ((var+type var+type-p) (denv denvp))
+  :returns (var+tval var+typevalue-resultp)
+  :short "Evaluate a variable with a type
+          to a variable with a type value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variable is unchanged;
+     its associated type is evaluated to a type value."))
+  (b* (((var+type var+type) var+type)
+       ((ok tval) (eval-type var+type.type denv)))
+    (make-var+typevalue :var var+type.var :type tval)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-var+type-list ((var+types var+type-listp) (denv denvp))
+  :returns (var+tvals var+typevalue-list-resultp)
+  :short "Evaluate a list of variables with types
+          to a list of variables with type values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We evaluate each element in turn
+     and return the list of results in the same order."))
+  (b* (((when (endp var+types)) nil)
+       ((ok var+tval) (eval-var+type (car var+types) denv))
+       ((ok var+tvals) (eval-var+type-list (cdr var+types) denv)))
+    (cons var+tval var+tvals))
+
+  ///
+
+  (defret len-of-eval-var+type-list
+    (implies (not (reserrp var+tvals))
+             (equal (len var+tvals)
+                    (len var+types)))
+    :hints (("Goal"
+             :induct (len var+types)
+             :in-theory (enable len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -911,7 +954,7 @@
    (xdoc::p
     "This is used to evaluate term applications,
      where the values that a lambda is applied to
-     must match the parameter types of the lambda.
+     must match the parameter type values of the lambda.
      Currently we only compare the dimensions of the values
      with the shapes of the type values;
      we plan to extend this to a complete check of
@@ -1025,11 +1068,10 @@
        For now we require the function value to be
        a scalar lambda abstraction value,
        and the dimensions of each argument value to be exactly
-       the shape of the corresponding parameter type
+       the shape of the corresponding parameter type value
        of the lambda abstraction:
        we do not support lifting yet, but we plan to add support for it.
-       We evaluate the parameter types of the lambda abstraction,
-       and we check that the resulting type values
+       We check that the parameter type values of the lambda abstraction
        match the argument values in number and shape.
        We extend the dynamic environment
        to associate the argument values with the parameters
@@ -1096,13 +1138,12 @@
               (value-case
                funval
                :lambda
-               (b* (((ok in-tvals) (eval-type-list
-                                    (var+type-list->type funval.params)
-                                    denv))
-                    ((unless (type-values-match-values-p in-tvals argvals))
+               (b* (((unless (type-values-match-values-p
+                              (var+typevalue-list->type funval.params)
+                              argvals))
                      (reserr nil))
                     (denv (denv-add-expr-vars
-                           (var+type-list->var funval.params)
+                           (var+typevalue-list->var funval.params)
                            argvals
                            denv)))
                  (eval-expr funval.body denv (1- limit)))
@@ -1160,20 +1201,23 @@
       "A base literal is evaluated to a base value,
        which is embedded into a value.")
      (xdoc::p
-      "A lambda abstraction,
-       a type lambda abstraction,
-       or an ispace lambda abstraction
-       evaluates to
-       a lambda value, a type lambda value, or an ispace lambda value,
+      "A lambda abstraction evaluates to a lambda value
+       with the same parameter variables,
+       whose associated types are evaluated to type values;
+       the body is not evaluated here,
+       but only when the abstraction is applied.")
+     (xdoc::p
+      "A type lambda abstraction or an ispace lambda abstraction
+       evaluates to a type lambda value or an ispace lambda value,
        respectively,
        with the same parameters and body,
        which are not evaluated here but only when the abstraction is applied."))
-    (declare (ignore denv))
     (b* (((when (zp limit)) (reserr :limit)))
       (atom-case
        atom
        :base (value-base (eval-base-lit atom.lit))
-       :lambda (make-value-lambda :params atom.params :body atom.body)
+       :lambda (b* (((ok params) (eval-var+type-list atom.params denv)))
+                 (make-value-lambda :params params :body atom.body))
        :tlambda (make-value-tlambda :params atom.params :body atom.body)
        :ilambda (make-value-ilambda :params atom.params :body atom.body)
        :box (reserr :todo)))
