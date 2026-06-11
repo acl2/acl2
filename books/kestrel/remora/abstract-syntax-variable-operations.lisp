@@ -942,6 +942,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; The deffold-map below generates, for the type-option summand, an
+; "under-iff" theorem that requires (type-subst-type-vars ...) to be known
+; non-nil. Since the :var override returns a raw map value (cdr var+type)
+; rather than a constructor, the function's type-prescription does not
+; establish that on its own; we locally re-enable the tau-system (disabled
+; by controlled-configuration above) so that the typep return type yields
+; the needed non-nil signature. The tau-system is restored right after.
+(local (in-theory (enable (:e tau-system))))
+
 (fty::deffold-map subst-type-vars
   :short "Substitute free type variables in ASTs."
   :long
@@ -951,7 +960,13 @@
      but currently @(tsee fty::deffold-map) does not support such guards.
      One should call the @(tsee ast-subst-type-vars-no-capture-p) predicates
      prior to applying these substitution operations, for the time being."))
-  :types (types)
+  :types (types
+          type-option
+          type-list-option
+          var+type
+          var+type-list
+          exprs/atoms/binds
+          prog)
   :extra-args ((atom-subst string-type-mapp)
                (array-subst string-type-mapp))
   :override
@@ -977,8 +992,82 @@
             :params type.params
             :body (type-subst-type-vars type.body
                                         atom-subst
-                                        array-subst)))))
+                                        array-subst))))
+   (expr :let
+         (b* ((binds (bind-list-subst-type-vars expr.binds
+                                                atom-subst
+                                                array-subst))
+              (bound-type-vars (bind-list-bound-type-vars expr.binds))
+              ((mv atom-subst array-subst)
+               (atom/array-subst-remove-bound bound-type-vars
+                                              atom-subst
+                                              array-subst)))
+           (make-expr-let
+            :binds binds
+            :body (expr-subst-type-vars expr.body
+                                        atom-subst
+                                        array-subst))))
+   (atom :tlambda
+         (b* (((mv atom-subst array-subst)
+               (atom/array-subst-remove-bound (set::mergesort atom.params)
+                                              atom-subst
+                                              array-subst)))
+           (make-atom-tlambda
+            :params atom.params
+            :body (expr-subst-type-vars atom.body
+                                        atom-subst
+                                        array-subst))))
+   (bind :tfun
+         (b* (((mv atom-subst array-subst)
+               (atom/array-subst-remove-bound (set::mergesort bind.params)
+                                              atom-subst
+                                              array-subst)))
+           (make-bind-tfun
+            :var bind.var
+            :params bind.params
+            :type? (type-option-subst-type-vars bind.type?
+                                                atom-subst
+                                                array-subst)
+            :expr (expr-subst-type-vars bind.expr
+                                        atom-subst
+                                        array-subst))))
+   (bind :cfun
+         (type-var-list-option-case
+          bind.tparams?
+          :some (b* (((mv atom-subst array-subst)
+                      (atom/array-subst-remove-bound
+                       (set::mergesort bind.tparams?.val)
+                       atom-subst
+                       array-subst)))
+                  (make-bind-cfun
+                   :var bind.var
+                   :tparams? bind.tparams?
+                   :iparams? bind.iparams?
+                   :params (var+type-list-subst-type-vars bind.params
+                                                          atom-subst
+                                                          array-subst)
+                   :type (type-subst-type-vars bind.type
+                                               atom-subst
+                                               array-subst)
+                   :expr (expr-subst-type-vars bind.expr
+                                               atom-subst
+                                               array-subst)))
+          :none (make-bind-cfun
+                 :var bind.var
+                 :tparams? bind.tparams?
+                 :iparams? bind.iparams?
+                 :params (var+type-list-subst-type-vars bind.params
+                                                        atom-subst
+                                                        array-subst)
+                 :type (type-subst-type-vars bind.type
+                                             atom-subst
+                                             array-subst)
+                 :expr (expr-subst-type-vars bind.expr
+                                             atom-subst
+                                             array-subst)))))
   :name ast-subst-type-vars)
+
+(local (in-theory (disable (:e tau-system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
