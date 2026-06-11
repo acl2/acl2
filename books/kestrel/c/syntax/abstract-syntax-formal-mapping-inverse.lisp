@@ -887,7 +887,7 @@
   (cond ((endp chars) nil)
         (t (cons (q-char (char-code (car chars)))
                  (chars-to-q-chars (cdr chars)))))
-  :guard-hints (("Goal" :in-theory (enable ucharp-of-char-code))))
+  :guard-hints (("Goal" :in-theory (enable unicharp-of-char-code))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

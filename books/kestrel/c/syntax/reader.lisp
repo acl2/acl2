@@ -69,10 +69,10 @@
 
 (define read-char ((parstate parstatep))
   :returns (mv erp
-               (char? uchar-optionp
+               (char? unichar-optionp
                       :hints (("Goal"
                                :in-theory
-                               (e/d (uchar-optionp)
+                               (e/d (unichar-optionp)
                                     (acl2::commutativity-of-logand
                                      acl2::commutativity-2-of-+
                                      commutativity-of-+)))))
@@ -598,13 +598,13 @@
                        (= byte 11) ; VT
                        (= byte 12) ; FF
                        (and (<= 32 byte) (<= byte 126))))
-              (ucharp byte))
-     :enable ucharp)
+              (unicharp byte))
+     :enable unicharp)
 
    (defrulel returns-lemma2 ; 2-byte UTF-8
-     (ucharp (+ (ash (logand byte #b00011111) 6)
+     (unicharp (+ (ash (logand byte #b00011111) 6)
                 (logand byte2 #b00111111)))
-     :enable ucharp
+     :enable unicharp
      :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
    (defrulel returns-lemma3 ; 3-byte UTF-8
@@ -613,8 +613,8 @@
                    (logand byte3 #b00111111))))
        (implies (not (and (<= #xd800 code)
                           (<= code #xdfff)))
-                (ucharp code)))
-     :enable ucharp
+                (unicharp code)))
+     :enable unicharp
      :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
    (defrulel returns-lemma4 ; 4-byte UTF-8
@@ -624,8 +624,8 @@
                    (logand byte4 #b00111111))))
        (implies (not (or (< code #x10000)
                          (> code #x10ffff)))
-                (ucharp code)))
-     :enable ucharp))
+                (unicharp code)))
+     :enable unicharp))
 
   ///
 
@@ -647,7 +647,7 @@
     (or (natp char?)
         (equal char? nil))
     :rule-classes :type-prescription
-    :hints (("Goal" :in-theory (enable natp-when-ucharp)))))
+    :hints (("Goal" :in-theory (enable natp-when-unicharp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

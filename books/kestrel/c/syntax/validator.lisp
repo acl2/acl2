@@ -822,7 +822,7 @@
 (define valid-c-char ((cchar c-char-p) (prefix? eprefix-optionp) (ienv ienvp))
   :returns (mv (erp maybe-msgp)
                (code natp
-                     :hints (("Goal" :in-theory (enable natp-when-ucharp)))))
+                     :hints (("Goal" :in-theory (enable natp-when-unicharp)))))
   :short "Validate a character of a character constant."
   :long
   (xdoc::topstring
@@ -874,8 +874,8 @@
                            cchar.code max (eprefix-option-fix prefix?)))
                  (t (retok cchar.code)))
      :escape (valid-escape cchar.escape max)))
-  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-ucharp
-                                           rationalp-when-ucharp))))
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-unicharp
+                                           rationalp-when-unicharp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -978,7 +978,7 @@
 (define valid-s-char ((schar s-char-p) (prefix? eprefix-optionp) (ienv ienvp))
   :returns (mv (erp maybe-msgp)
                (code natp
-                     :hints (("Goal" :in-theory (enable natp-when-ucharp)))))
+                     :hints (("Goal" :in-theory (enable natp-when-unicharp)))))
   :short "Validate a character of a string literal."
   :long
   (xdoc::topstring
@@ -1012,8 +1012,8 @@
                            schar.code max (eprefix-option-fix prefix?)))
                  (t (retok schar.code)))
      :escape (valid-escape schar.escape max)))
-  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-ucharp
-                                           rationalp-when-ucharp))))
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-unicharp
+                                           rationalp-when-unicharp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
