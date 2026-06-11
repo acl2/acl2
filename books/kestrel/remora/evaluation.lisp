@@ -1195,7 +1195,17 @@
          ((ok val) (eval-atom (car atoms) denv (1- limit)))
          ((ok vals) (eval-atom-list (cdr atoms) denv (1- limit))))
       (cons val vals))
-    :measure (nfix limit))
+    :measure (nfix limit)
+
+    ///
+
+    (defret len-of-eval-atom-list
+      (implies (not (reserrp vals))
+               (equal (len vals)
+                      (len atoms)))
+      :hints (("Goal"
+               :induct (acl2::cdr-dec-induct atoms limit)
+               :in-theory (enable len)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
