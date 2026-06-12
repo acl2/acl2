@@ -50,6 +50,7 @@
      "                   :right-members ..."
      "                   :filepath      ... ; optional"
      "                   :new-tag       ... ; optional"
+     "                   :print-warnings ... ; default t"
      "  )"
      ))
    (xdoc::evmac-section-inputs
@@ -110,7 +111,12 @@
        A fresh tag is derived from it if it is not already fresh.")
      (xdoc::p
       "If this argument is omitted,
-       a fresh tag is derived from the original tag.")))
+       a fresh tag is derived from the original tag."))
+    (xdoc::desc
+     "@(':print-warnings') &mdash; default @('t')"
+     (xdoc::p
+      "A boolean indicating whether warnings encountered
+       during the transformation should be printed.")))
    (xdoc::section
     "Constraints on the Input Code"
     (xdoc::ul
@@ -171,7 +177,7 @@
        (e.g. pointers to the struct type) are not supported;
        they are detected and reported as errors.")
      (xdoc::li
-      "Assembler constructs are not transformed;
+      "Assembler constructs and attribute parameters are not transformed;
        a warning is printed when they are encountered.")
      (xdoc::li
       "Preprocessing constructs preserved in the abstract syntax

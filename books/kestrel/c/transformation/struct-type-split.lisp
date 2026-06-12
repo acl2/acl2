@@ -62,18 +62,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; High-level TODOs:
-;; - Emit warning for attrib-sts-split :name-params case.
-;;   - Similar to stmt-sts-split :asm case
-;; - Instead of printing warnings immediately (with cw), add a warning field to
-;;   the sts-split-state. A list of messages. The top-level transformation
-;;   should emit warnings.
-;;   - Add a flag to the transformation indicating whether or not to print
-;;     warnings.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Library extensions
+
+(fty::deffixtype msg
+  :pred acl2::msgp
+  :fix acl2::msg-fix
+  :equiv msg-equiv
+  :define t)
+
+(fty::deflist msg-list
+  :elt-type msg
+  :pred acl2::msg-listp
+  :true-listp t
+  :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; In C17, an lvalue is required only as the operand of the unary address
 ;; and pre/post increment/decrement operators, and as the left operand of
@@ -161,15 +164,30 @@
     have different unique identifiers.
     The @('right-name') field is the tag of the right struct type,
     which is assumed to be globally unique.
-    The @('blacklist') and @('ident-map') fields
-    accumulate.")
+    The @('blacklist'), @('ident-map'), and @('warnings') fields
+    accumulate.
+    The @('warnings') field collects warning messages,
+    in reverse chronological order;
+    they are printed at the end of the transformation
+    (see @(tsee sts-print-warnings)).")
   ((struct-uid c$::uid)
    (right-set ident-set)
    (right-name ident)
    (dialect c::dialect)
    (blacklist ident-set)
-   (ident-map uid-ident-map))
+   (ident-map uid-ident-map)
+   (warnings msg-list))
   :pred sts-split-statep)
+
+(define sts-split-state-add-warning
+  ((warning msgp)
+   (st sts-split-statep))
+  :returns (st$ sts-split-statep)
+  :short "Add a warning message to the state."
+  (change-sts-split-state
+    st
+    :warnings (cons (acl2::msg-fix warning)
+                    (sts-split-state->warnings st))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -538,13 +556,12 @@
       attrib
       :name-only (retok (c$::attrib-fix attrib) st)
       :name-params
-      ;; (b* (((erp params st)
-      ;;       (expr-list-sts-split attrib.params st)))
-      ;;   (retok (c$::make-attrib-name-params :name attrib.name :params params)
-      ;;          st))
-      ;; TODO: Is it OK not to recurse? Maybe emit a warning?
-      (retok (c$::attrib-fix attrib) st)
-      )))
+      (b* ((st (sts-split-state-add-warning
+                 (msg$ "Not transforming attribute parameters, ~
+                        because attribute expressions are not yet validated.~%~@0"
+                       (context-msg-attrib attrib (sts-split-state->dialect st)))
+                 st)))
+        (retok (c$::attrib-fix attrib) st)))))
 
 (defines sts-split
   :short "The core splitting phase of STS."
@@ -3143,9 +3160,11 @@
                                                     :expr left-expr)))
           (retok nil new-stmt new-stmt st))
         :asm
-        (b* ((- (cw "WARNING: Not transforming assembler statement, ~
-                     because assembler constructs are not yet validated.~%~@0~%"
-                    (context-msg-stmt stmt (sts-split-state->dialect st)))))
+        (b* ((st (sts-split-state-add-warning
+                   (msg$ "Not transforming assembler statement, ~
+                          because assembler constructs are not yet validated.~%~@0"
+                         (context-msg-stmt stmt (sts-split-state->dialect st)))
+                   st)))
           (retok nil (stmt-fix stmt) (stmt-fix stmt) st))))
     :measure (stmt-count stmt))
 
@@ -3321,10 +3340,12 @@
              (c$::ext-declon-fix ext-declon)
              st)
       :asm
-      (b* ((- (cw "WARNING: Not transforming assembler statement, ~
-                   because assembler constructs are not yet validated.~%~@0~%"
-                  (context-msg-asm-stmt ext-declon.stmt
-                                        (sts-split-state->dialect st)))))
+      (b* ((st (sts-split-state-add-warning
+                 (msg$ "Not transforming assembler statement, ~
+                        because assembler constructs are not yet validated.~%~@0"
+                       (context-msg-asm-stmt ext-declon.stmt
+                                             (sts-split-state->dialect st)))
+                 st)))
         (retok nil
                (c$::ext-declon-fix ext-declon)
                (c$::ext-declon-fix ext-declon)
@@ -3592,7 +3613,8 @@
    (code code-ensemblep))
   :guard (code-ensemble-annop code)
   :returns (mv (er? maybe-msgp)
-               (code$ code-ensemblep))
+               (code$ code-ensemblep)
+               (warnings acl2::msg-listp))
   :short "Split a struct type in a code ensemble."
   :long
   (xdoc::topstring-p
@@ -3616,8 +3638,10 @@
     The validation information of the resulting ensemble
     is not updated by the transformation;
     the result should be re-validated
-    before further use of its annotations.")
-  (b* (((reterr) (c$::irr-code-ensemble))
+    before further use of its annotations.
+    We also return the accumulated warnings,
+    in reverse chronological order.")
+  (b* (((reterr) (c$::irr-code-ensemble) nil)
        ((code-ensemble code) code)
        ;; The transformation assumes the C17 rules
        ;; for struct type compatibility;
@@ -3647,14 +3671,16 @@
              :right-name right-name
              :dialect (c$::ienv->dialect code.ienv)
              :blacklist (insert right-name blacklist)
-             :ident-map nil))
-       ((erp map -)
+             :ident-map nil
+             :warnings nil))
+       ((erp map st)
         (sts-split-trans-units tag primary-type completions code.ienv map st))
        (- (fast-alist-free completions)))
     (retok (change-code-ensemble
              code
              :trans-units (c$::change-trans-ensemble code.trans-units
-                                                     :units map)))))
+                                                     :units map))
+           (sts-split-state->warnings st))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3668,6 +3694,7 @@
                                   filepath
                                   right-members
                                   new-tag
+                                  print-warnings
                                   (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
                (code code-ensemblep)
@@ -3675,9 +3702,10 @@
                (filepath? c$::filepath-optionp)
                (right-members ident-listp)
                (new-tag? ident-optionp)
+               (print-warnings$ booleanp)
                (const-new$ symbolp))
   :short "Process the inputs."
-  (b* (((reterr) (c$::irr-code-ensemble) (c$::irr-ident) nil nil nil nil)
+  (b* (((reterr) (c$::irr-code-ensemble) (c$::irr-ident) nil nil nil nil nil)
        ((unless (symbolp const-old))
         (retmsg$ "~x0 must be a symbol." const-old))
        (code (acl2::constant-value const-old wrld))
@@ -3702,9 +3730,11 @@
                     (stringp new-tag)))
         (retmsg$ "~x0 must be nil or a string." new-tag))
        (new-tag? (and new-tag (c$::ident new-tag)))
+       ((unless (booleanp print-warnings))
+        (retmsg$ "~x0 must be a boolean." print-warnings))
        ((unless (symbolp const-new))
         (retmsg$ "~x0 must be a symbol." const-new)))
-    (retok code tag filepath? right-members new-tag? const-new))
+    (retok code tag filepath? right-members new-tag? print-warnings const-new))
   ///
 
   (defret code-ensemble-annop-of-sts-split-process-inputs.code
@@ -3717,20 +3747,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define sts-print-warnings ((warnings acl2::msg-listp))
+  :returns (nothing null)
+  :short "Print a list of warning messages."
+  :long
+  (xdoc::topstring-p
+   "The warnings are expected in reverse chronological order,
+    as accumulated in the @('warnings') field of @(tsee sts-split-state);
+    they are printed in chronological order.")
+  (b* (((when (endp warnings)) nil)
+       (- (sts-print-warnings (rest warnings))))
+    (cw "WARNING: ~@0~%" (first warnings))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define sts-split-gen-everything
   ((code code-ensemblep)
    (tag identp)
    (filepath? c$::filepath-optionp)
    (right-members ident-listp)
    (new-tag? ident-optionp)
+   (print-warnings booleanp)
    (const-new symbolp))
   :guard (code-ensemble-annop code)
   :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate all the events."
   (b* (((reterr) '(_))
-       ((erp code)
+       ((erp code warnings)
         (sts-split-code-ensemble tag filepath? right-members new-tag? code))
+       (- (and print-warnings
+               (sts-print-warnings warnings)))
        (defconst-event
          `(defconst ,const-new
             ',code)))
@@ -3744,19 +3791,22 @@
                               filepath
                               right-members
                               new-tag
+                              print-warnings
                               (ctx ctxp)
                               state)
   :returns (mv (erp booleanp :rule-classes :type-prescription)
                (event pseudo-event-formp)
                state)
   :short "Event expansion of @(tsee struct-type-split)."
-  (b* (((mv erp code tag filepath? right-members new-tag? const-new)
+  (b* (((mv erp code tag filepath? right-members new-tag? print-warnings
+            const-new)
         (sts-split-process-inputs const-old
                                   const-new
                                   struct-tag
                                   filepath
                                   right-members
                                   new-tag
+                                  print-warnings
                                   (w state)))
        ((when erp)
         (er-soft+ ctx t '(_) "STRUCT-TYPE-SPLIT ERROR: ~@0" erp))
@@ -3766,6 +3816,7 @@
                                   filepath?
                                   right-members
                                   new-tag?
+                                  print-warnings
                                   const-new))
        ((when erp)
         (er-soft+ ctx t '(_) "STRUCT-TYPE-SPLIT ERROR: ~@0" erp)))
@@ -3782,12 +3833,14 @@
      struct-tag
      filepath
      right-members
-     new-tag)
+     new-tag
+     (print-warnings 't))
     `(make-event (struct-type-split-fn ',const-old
                                        ',const-new
                                        ',struct-tag
                                        ',filepath
                                        ',right-members
                                        ',new-tag
+                                       ',print-warnings
                                        'struct-type-split
                                        state))))
