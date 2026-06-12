@@ -22,6 +22,8 @@
 (include-book "std/system/constant-value" :dir :system)
 
 (include-book "centaur/fty/deftypes" :dir :system)
+(include-book "kestrel/fty/msg" :dir :system)
+(include-book "kestrel/fty/msg-list" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/code-ensembles")
@@ -49,34 +51,23 @@
   ((xdoc::h3
     "Terminology"
     (xdoc::p
+     "Various functions are prefixed with ``STS.''
+      This is short for ``struct-type-split.''")
+    (xdoc::p
      "When we split something, we refer to the ``left'' and ``right'' splits.
-     The ``left struct type'' is the modification of the original type
-     with the right members removed.
-     The name is <emph>not</emph> changed.
-     The ``right struct type'' is a new struct type
-     with just the right members.
-     A ``left object'' is an object with the left struct type
-     (possibly with some level of pointers).
-     A ``right object'' is an object with the right struct type
-     (again, possible with some level of pointers)."))))
+      The ``left struct type'' is the modification of the original type
+      with the right members removed.
+      The name is <emph>not</emph> changed.
+      The ``right struct type'' is a new struct type
+      with just the right members.
+      A ``left object'' is an object with the left struct type
+      (possibly with some level of pointers).
+      A ``right object'' is an object with the right struct type
+      (again, possible with some level of pointers)."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Library extensions
-
-(fty::deffixtype msg
-  :pred acl2::msgp
-  :fix acl2::msg-fix
-  :equiv msg-equiv
-  :define t)
-
-(fty::deflist msg-list
-  :elt-type msg
-  :pred acl2::msg-listp
-  :true-listp t
-  :elementp-of-nil nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; In C17, an lvalue is required only as the operand of the unary address
 ;; and pre/post increment/decrement operators, and as the left operand of
@@ -176,7 +167,7 @@
    (dialect c::dialect)
    (blacklist ident-set)
    (ident-map uid-ident-map)
-   (warnings msg-list))
+   (warnings acl2::msg-list))
   :pred sts-split-statep)
 
 (define sts-split-state-add-warning
