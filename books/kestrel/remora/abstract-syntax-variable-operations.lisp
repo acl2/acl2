@@ -1438,7 +1438,14 @@
   :types (shapes
           ispace
           ispace-list
-          types)
+          ispace-list-option
+          types
+          type-option
+          type-list-option
+          var+type
+          var+type-list
+          exprs/atoms/binds
+          prog)
   :extra-args ((dim-renam string-string-mapp)
                (shape-renam string-string-mapp))
   :override
@@ -1477,7 +1484,114 @@
             :params type.params
             :body (type-rename-ispace-vars type.body
                                            dim-renam
-                                           shape-renam)))))
+                                           shape-renam))))
+   (expr :unbox
+         (b* ((target (expr-rename-ispace-vars expr.target
+                                               dim-renam
+                                               shape-renam))
+              ((mv bound-dim-vars bound-shape-vars)
+               (dim/shape-names-of-ispace-vars (set::mergesort expr.ispaces)))
+              (dim-renam
+               (omap::delete* bound-dim-vars
+                              (string-string-map-fix dim-renam)))
+              (shape-renam
+               (omap::delete* bound-shape-vars
+                              (string-string-map-fix shape-renam))))
+           (make-expr-unbox
+            :ispaces expr.ispaces
+            :var expr.var
+            :target target
+            :body (expr-rename-ispace-vars expr.body
+                                           dim-renam
+                                           shape-renam))))
+   (expr :let
+         (b* ((binds (bind-list-rename-ispace-vars expr.binds
+                                                   dim-renam
+                                                   shape-renam))
+              (bound-ispace-vars (bind-list-bound-ispace-vars expr.binds))
+              ((mv bound-dim-vars bound-shape-vars)
+               (dim/shape-names-of-ispace-vars bound-ispace-vars))
+              (dim-renam
+               (omap::delete* bound-dim-vars
+                              (string-string-map-fix dim-renam)))
+              (shape-renam
+               (omap::delete* bound-shape-vars
+                              (string-string-map-fix shape-renam))))
+           (make-expr-let
+            :binds binds
+            :body (expr-rename-ispace-vars expr.body
+                                           dim-renam
+                                           shape-renam))))
+   (atom :ilambda
+         (b* (((mv bound-dim-vars bound-shape-vars)
+               (dim/shape-names-of-ispace-vars (set::mergesort atom.params)))
+              (dim-renam
+               (omap::delete* bound-dim-vars
+                              (string-string-map-fix dim-renam)))
+              (shape-renam
+               (omap::delete* bound-shape-vars
+                              (string-string-map-fix shape-renam))))
+           (make-atom-ilambda
+            :params atom.params
+            :body (expr-rename-ispace-vars atom.body
+                                           dim-renam
+                                           shape-renam))))
+   (bind :ifun
+         (b* (((mv bound-dim-vars bound-shape-vars)
+               (dim/shape-names-of-ispace-vars (set::mergesort bind.params)))
+              (dim-renam
+               (omap::delete* bound-dim-vars
+                              (string-string-map-fix dim-renam)))
+              (shape-renam
+               (omap::delete* bound-shape-vars
+                              (string-string-map-fix shape-renam))))
+           (make-bind-ifun
+            :var bind.var
+            :params bind.params
+            :type? (type-option-rename-ispace-vars bind.type?
+                                                   dim-renam
+                                                   shape-renam)
+            :expr (expr-rename-ispace-vars bind.expr
+                                           dim-renam
+                                           shape-renam))))
+   (bind :cfun
+         (ispace-var-list-option-case
+          bind.iparams?
+          :some (b* (((mv bound-dim-vars bound-shape-vars)
+                      (dim/shape-names-of-ispace-vars
+                       (set::mergesort bind.iparams?.val)))
+                     (dim-renam
+                      (omap::delete* bound-dim-vars
+                                     (string-string-map-fix dim-renam)))
+                     (shape-renam
+                      (omap::delete* bound-shape-vars
+                                     (string-string-map-fix shape-renam))))
+                  (make-bind-cfun
+                   :var bind.var
+                   :tparams? bind.tparams?
+                   :iparams? bind.iparams?
+                   :params (var+type-list-rename-ispace-vars bind.params
+                                                             dim-renam
+                                                             shape-renam)
+                   :type (type-rename-ispace-vars bind.type
+                                                  dim-renam
+                                                  shape-renam)
+                   :expr (expr-rename-ispace-vars bind.expr
+                                                  dim-renam
+                                                  shape-renam)))
+          :none (make-bind-cfun
+                 :var bind.var
+                 :tparams? bind.tparams?
+                 :iparams? bind.iparams?
+                 :params (var+type-list-rename-ispace-vars bind.params
+                                                           dim-renam
+                                                           shape-renam)
+                 :type (type-rename-ispace-vars bind.type
+                                                dim-renam
+                                                shape-renam)
+                 :expr (expr-rename-ispace-vars bind.expr
+                                                dim-renam
+                                                shape-renam)))))
   :name ast-rename-ispace-vars)
 
 ;;;;;;;;;;;;;;;;;;;;
