@@ -22,6 +22,7 @@
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 (local (include-book "std/basic/ifix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/basic/rfix" :dir :system))
@@ -172,6 +173,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod var+typevalue
+  :short "Fixtype of variables with type values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the dynamic counterpart of @(tsee var+type):
+     a pair consisting of a variable name and an associated type value.
+     In the name of this fixtype,
+     we join `type' and `value' into `typevalue',
+     so that the name reads better in terms of visual grouping.
+     The field for the type value is named just @('type'),
+     which is clear in the context of this fixtype."))
+  ((var string)
+   (type type-value))
+  :pred var+typevalue-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist var+typevalue-list
+  :short "Fixtype of lists of variables with type values."
+  :elt-type var+typevalue
+  :true-listp t
+  :elementp-of-nil nil
+  :pred var+typevalue-listp)
+
+;;;;;;;;;;
+
+(std::defprojection var+typevalue-list->var ((x var+typevalue-listp))
+  :returns (strings string-listp)
+  :short "Lift @(tsee var+typevalue->var) to lists."
+  (var+typevalue->var x))
+
+;;;;;;;;;;
+
+(std::defprojection var+typevalue-list->type ((x var+typevalue-listp))
+  :returns (tvals type-value-listp)
+  :short "Lift @(tsee var+typevalue->type) to lists."
+  (var+typevalue->type x))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult var+typevalue-result
+  :short "Fixtype of (i) variables with type values and (ii) errors."
+  :ok var+typevalue
+  :pred var+typevalue-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult var+typevalue-list-result
+  :short "Fixtype of (i) lists of variables with type values and (ii) errors."
+  :ok var+typevalue-list
+  :pred var+typevalue-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod int-value
   :short "Fixtype of integer values."
   :long
@@ -315,12 +371,19 @@
        to @($\\mathit{Val}$) in [thesis],
        but with a different yet equivalent structure.")
      (xdoc::p
+      "The parameters of a lambda value associate
+       type values, not types, to the variables:
+       the parameter types are evaluated
+       when the lambda abstraction is evaluated,
+       while the body is evaluated
+       when the lambda abstraction is applied.")
+     (xdoc::p
       "This fixtype does not capture constraints like
        the non-emptiness of the value list in @(':vector'),
        and the dimension and type consistency of the elements of a @(':vector').
        These constraints are captured separately."))
     (:base ((val base-value)))
-    (:lambda ((params var+type-list)
+    (:lambda ((params var+typevalue-list)
               (body expr)))
     (:tlambda ((params type-var-list)
                (body expr)))
