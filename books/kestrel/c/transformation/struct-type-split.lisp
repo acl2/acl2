@@ -129,6 +129,8 @@
    (warnings acl2::msg-list))
   :pred sts-split-statep)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define sts-split-state-add-warning
   ((warning msgp)
    (st sts-split-statep))
@@ -176,16 +178,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines type/type-list-involves-struct-p
-  (define type-involves-struct-p
+(defines type/type-list-struct-occurs-unsupported-p
+  (define type-struct-occurs-unsupported-p
     ((type c$::typep)
      (struct-uid c$::uidp))
-    :returns (involves acl2::3p)
-    :parents (type/type-list-involves-struct-p)
-    :short "Check whether a type involves the split struct type."
+    :returns (occurs acl2::3p)
+    :parents (type/type-list-struct-occurs-unsupported-p)
+    :short "Check whether the split struct type occurs in a type
+            in an unsupported context."
     :long
     (xdoc::topstring-p
      "We check for occurrences of the split struct type at any depth.
+      All occurrences are unsupported,
+      except for function parameters of splittable type
+      (see @(tsee type-param-list-struct-occurs-unsupported-p)).
+      Note that a splittable type
+      contains an occurrence of the split struct type by definition,
+      so this function reports it as unsupported;
+      an occurrence is only really unsupported
+      in a type which is not itself splittable.
+      Callers are expected to check splittability first
+      (see @(tsee sts-check-type)).
       The result is @(':unknown') when it cannot be determined,
       due to unknown types.
       Tagged struct and union types other than the split struct type itself
@@ -207,52 +220,53 @@
                 (c$::type-struni-tag/members-case
                   type.tag/members
                   :tagged nil
-                  :untagged (type-member-list-involves-struct-p
+                  :untagged (type-member-list-struct-occurs-unsupported-p
                               type.tag/members.members
                               struct-uid)))
       :union (c$::type-struni-tag/members-case
                type.tag/members
                :tagged nil
-               :untagged (type-member-list-involves-struct-p
+               :untagged (type-member-list-struct-occurs-unsupported-p
                            type.tag/members.members
                            struct-uid))
-      :array (type-involves-struct-p type.of struct-uid)
-      :pointer (type-involves-struct-p type.to struct-uid)
+      :array (type-struct-occurs-unsupported-p type.of struct-uid)
+      :pointer (type-struct-occurs-unsupported-p type.to struct-uid)
       :function (acl2::3or
-                  (type-involves-struct-p type.ret struct-uid)
-                  (type-params-involves-struct-p type.params struct-uid))
+                  (type-struct-occurs-unsupported-p type.ret struct-uid)
+                  (type-params-struct-occurs-unsupported-p type.params struct-uid))
       :otherwise nil)
     :measure (c$::type-count type))
 
-  (define type-params-involves-struct-p
+  (define type-params-struct-occurs-unsupported-p
     ((params c$::type-params-p)
      (struct-uid c$::uidp))
-    :returns (involves acl2::3p)
-    :parents (type/type-list-involves-struct-p)
-    :short "Check whether function type parameters
-            involve the split struct type."
+    :returns (occurs acl2::3p)
+    :parents (type/type-list-struct-occurs-unsupported-p)
+    :short "Check whether the split struct type occurs
+            in function type parameters
+            in an unsupported context."
     (c$::type-params-case
       params
-      :prototype (type-param-list-involves-struct-p params.params
+      :prototype (type-param-list-struct-occurs-unsupported-p params.params
                                                     struct-uid)
-      :old-style (type-param-list-involves-struct-p params.params
+      :old-style (type-param-list-struct-occurs-unsupported-p params.params
                                                     struct-uid)
       :unspecified :unknown)
     :measure (c$::type-params-count params))
 
-  (define type-param-list-involves-struct-p
+  (define type-param-list-struct-occurs-unsupported-p
     ((types c$::type-listp)
      (struct-uid c$::uidp))
-    :returns (involves acl2::3p)
-    :parents (type/type-list-involves-struct-p)
-    :short "Check whether any function parameter type
-            involves the split struct type,
-            beyond splittable parameters."
+    :returns (occurs acl2::3p)
+    :parents (type/type-list-struct-occurs-unsupported-p)
+    :short "Check whether the split struct type occurs
+            in any function parameter type
+            in an unsupported context."
     :long
     (xdoc::topstring-p
      "Parameters of splittable type
       (i.e. the split struct type, possibly behind pointers)
-      are not considered to involve the split struct type,
+      are not unsupported occurrences,
       because such parameters are supported:
       they are split in place,
       in function definitions, function declarations, and call sites.")
@@ -262,24 +276,25 @@
         (b* ((type (first types)))
           (if (eq (sts-splittablep type struct-uid) t)
               nil
-            (type-involves-struct-p type struct-uid)))
-        (type-param-list-involves-struct-p (rest types) struct-uid)))
+            (type-struct-occurs-unsupported-p type struct-uid)))
+        (type-param-list-struct-occurs-unsupported-p (rest types) struct-uid)))
     :measure (c$::type-list-count types))
 
-  (define type-member-list-involves-struct-p
+  (define type-member-list-struct-occurs-unsupported-p
     ((members c$::type-struni-member-listp)
      (struct-uid c$::uidp))
-    :returns (involves acl2::3p)
-    :parents (type/type-list-involves-struct-p)
-    :short "Check whether any struct/union member type
-            involves the split struct type."
+    :returns (occurs acl2::3p)
+    :parents (type/type-list-struct-occurs-unsupported-p)
+    :short "Check whether the split struct type occurs
+            in any struct/union member type
+            in an unsupported context."
     (if (endp members)
         nil
       (acl2::3or
-        (type-involves-struct-p
+        (type-struct-occurs-unsupported-p
           (c$::type-struni-member->type (first members))
           struct-uid)
-        (type-member-list-involves-struct-p (rest members) struct-uid)))
+        (type-member-list-struct-occurs-unsupported-p (rest members) struct-uid)))
     :measure (c$::type-struni-member-list-count members))
 
   :verify-guards :after-returns)
@@ -298,19 +313,20 @@
    "The type must either be splittable
     (see @(tsee sts-splittablep)),
     in which case @('splitp') is @('t'),
-    or not involve the split struct type at all,
+    or the split struct type must not occur in it
+    in an unsupported context,
     in which case @('splitp') is @('nil').
     Any other type
     (e.g. an array of the split struct type,
     or a function type whose return type
-    involves the split struct type)
+    is the split struct type)
     is rejected, since the transformation cannot split it.
     Function parameters of splittable type are an exception:
     they are supported, being split in place
-    (see @(tsee type-param-list-involves-struct-p)).
+    (see @(tsee type-param-list-struct-occurs-unsupported-p)).
     Unknown types are also rejected,
     since we cannot determine whether
-    they involve the split struct type.")
+    the split struct type occurs in them.")
   (b* (((reterr) nil)
        (struct-uid (sts-split-state->struct-uid st))
        (splittablep (sts-splittablep type struct-uid))
@@ -318,12 +334,12 @@
         (retmsg$ "The type ~x0 is unknown." (c$::type-fix type)))
        ((when (eq splittablep t))
         (retok t))
-       (involves (type-involves-struct-p type struct-uid))
-       ((when (eq involves :unknown))
-        (retmsg$ "It cannot be determined whether the type ~x0 ~
-                  involves the split struct type."
+       (occurs (type-struct-occurs-unsupported-p type struct-uid))
+       ((when (eq occurs :unknown))
+        (retmsg$ "It cannot be determined whether ~
+                  the split struct type occurs in the type ~x0."
                  (c$::type-fix type)))
-       ((when (eq involves t))
+       ((when (eq occurs t))
         (retmsg$ "The split struct type may appear in a type ~
                   only as the struct type itself, ~
                   possibly behind pointers; ~
@@ -349,12 +365,12 @@
        ((unless (consp entry))
         (sts-check-completions (rest completions) struct-uid))
        (members (c$::type-struni-member-list-fix (cdr entry)))
-       (involves (type-member-list-involves-struct-p members struct-uid))
-       ((when (eq involves :unknown))
-        (msg$ "It cannot be determined whether the members of ~
-               all struct and union types ~
-               involve the split struct type."))
-       ((when (eq involves t))
+       (occurs (type-member-list-struct-occurs-unsupported-p members
+                                                              struct-uid))
+       ((when (eq occurs :unknown))
+        (msg$ "It cannot be determined whether the split struct type ~
+               occurs in the members of all struct and union types."))
+       ((when (eq occurs t))
         (msg$ "The split struct type may not appear in the members ~
                of any struct or union type ~
                (including the split struct type itself).")))
