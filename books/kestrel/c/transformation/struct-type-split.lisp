@@ -63,8 +63,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; High-level TODOs:
-;; - Consider whether there is anywhere else that we need to check for a valid
-;;   lvalue.
 ;; - Emit warning for attrib-sts-split :name-params case.
 ;;   - Similar to stmt-sts-split :asm case
 ;; - Instead of printing warnings immediately (with cw), add a warning field to
@@ -76,6 +74,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Library extensions
+
+;; In C17, an lvalue is required only as the operand of the unary address
+;; and pre/post increment/decrement operators, and as the left operand of
+;; simple and compound assignments. Accordingly, the :unary and :binary
+;; cases of expr-sts-split are the only places where the transformation
+;; must check that transformed expressions are still lvalues; both check
+;; the left and (when split) right expressions.
 
 (define unop-requires-lvalue-p ((op unopp))
   :returns (yes/no booleanp)
@@ -389,7 +394,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO GJ: Aren't we assuming that initializers have been disambiguated?
 (define desiniter-sts-rightp
   ((desiniter desiniterp)
    (st sts-split-statep))
@@ -710,11 +714,19 @@
               (retok left-expr nil st))
              ((unless (unop-case expr.op '(:address :indir)))
               (retmsg$ "Split is not supported for this unary operator.~%~@0"
-                       (context-msg-expr expr (sts-split-state->dialect st)))))
-          (retok left-expr
-                 (make-expr-unary :op expr.op
-                                  :arg right-arg?)
-                 st))
+                       (context-msg-expr expr (sts-split-state->dialect st))))
+             (right-expr (make-expr-unary :op expr.op
+                                          :arg right-arg?))
+             ((when (and (unop-requires-lvalue-p expr.op)
+                         (not (c$::expr-syntactic-lvalue-p right-arg?))))
+              (retmsg$ "Split expression is no longer an lvalue.~%~@0~%~@1"
+                       (context-msg-expr expr
+                                         (sts-split-state->dialect st)
+                                         :prefix "Original")
+                       (context-msg-expr right-expr
+                                         (sts-split-state->dialect st)
+                                         :prefix "Split"))))
+          (retok left-expr right-expr st))
         :label-addr
         (retok (expr-fix expr) nil st)
         :sizeof
@@ -779,10 +791,6 @@
              ((unless (binop-case expr.op :asg))
               (retmsg$ "Split is not supported for this binary operator.~%~@0"
                        (context-msg-expr expr (sts-split-state->dialect st))))
-             ((unless (c$::expr-syntactic-lvalue-p left-arg1))
-              (retmsg$ "Split expression is no longer an lvalue.~%~@0"
-                       (context-msg-expr left-expr
-                                         (sts-split-state->dialect st))))
              ((unless (and right-arg1? right-arg2?))
               (retmsg$ "INTERNAL ERROR. ~
                         One of (but not both) ~
