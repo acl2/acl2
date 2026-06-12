@@ -1287,7 +1287,13 @@
     "This is a conservative check:
      it does not depend on which keys of the renaming
      are actually free in the body of each binder."))
-  :types (types)
+  :types (types
+          type-option
+          type-list-option
+          var+type
+          var+type-list
+          exprs/atoms/binds
+          prog)
   :extra-args ((atom-renam string-string-mapp)
                (array-renam string-string-mapp))
   :result booleanp
@@ -1307,7 +1313,95 @@
                  array-renam)
                 (type-rename-type-vars-no-capture-p type.body
                                                     atom-renam
-                                                    array-renam)))))
+                                                    array-renam))))
+   (expr :let
+         (and (bind-list-rename-type-vars-no-capture-p expr.binds
+                                                       atom-renam
+                                                       array-renam)
+              (b* ((bound-type-vars (bind-list-bound-type-vars expr.binds))
+                   ((mv bound-atom-vars bound-array-vars)
+                    (atom/array-names-of-type-vars bound-type-vars))
+                   (atom-renam (omap::delete*
+                                bound-atom-vars
+                                (string-string-map-fix atom-renam)))
+                   (array-renam (omap::delete*
+                                 bound-array-vars
+                                 (string-string-map-fix array-renam))))
+                (and (renaming-no-capture-p
+                      (set::union bound-atom-vars bound-array-vars)
+                      atom-renam
+                      array-renam)
+                     (expr-rename-type-vars-no-capture-p expr.body
+                                                         atom-renam
+                                                         array-renam)))))
+   (atom :tlambda
+         (b* (((mv bound-atom-vars bound-array-vars)
+               (atom/array-names-of-type-vars (set::mergesort atom.params)))
+              (atom-renam (omap::delete* bound-atom-vars
+                                         (string-string-map-fix atom-renam)))
+              (array-renam (omap::delete* bound-array-vars
+                                          (string-string-map-fix array-renam))))
+           (and (renaming-no-capture-p
+                 (set::mergesort (type-var-list->name atom.params))
+                 atom-renam
+                 array-renam)
+                (expr-rename-type-vars-no-capture-p atom.body
+                                                    atom-renam
+                                                    array-renam))))
+   (bind :tfun
+         (b* (((mv bound-atom-vars bound-array-vars)
+               (atom/array-names-of-type-vars (set::mergesort bind.params)))
+              (atom-renam (omap::delete* bound-atom-vars
+                                         (string-string-map-fix atom-renam)))
+              (array-renam (omap::delete* bound-array-vars
+                                          (string-string-map-fix array-renam))))
+           (and (renaming-no-capture-p
+                 (set::mergesort (type-var-list->name bind.params))
+                 atom-renam
+                 array-renam)
+                (type-option-rename-type-vars-no-capture-p bind.type?
+                                                           atom-renam
+                                                           array-renam)
+                (expr-rename-type-vars-no-capture-p bind.expr
+                                                    atom-renam
+                                                    array-renam))))
+   (bind :cfun
+         (type-var-list-option-case
+          bind.tparams?
+          :some (b* (((mv bound-atom-vars bound-array-vars)
+                      (atom/array-names-of-type-vars
+                       (set::mergesort bind.tparams?.val)))
+                     (atom-renam (omap::delete*
+                                  bound-atom-vars
+                                  (string-string-map-fix atom-renam)))
+                     (array-renam (omap::delete*
+                                   bound-array-vars
+                                   (string-string-map-fix array-renam))))
+                  (and (renaming-no-capture-p
+                        (set::mergesort
+                         (type-var-list->name bind.tparams?.val))
+                        atom-renam
+                        array-renam)
+                       (var+type-list-rename-type-vars-no-capture-p
+                        bind.params
+                        atom-renam
+                        array-renam)
+                       (type-rename-type-vars-no-capture-p bind.type
+                                                           atom-renam
+                                                           array-renam)
+                       (expr-rename-type-vars-no-capture-p bind.expr
+                                                           atom-renam
+                                                           array-renam)))
+          :none (and (var+type-list-rename-type-vars-no-capture-p
+                      bind.params
+                      atom-renam
+                      array-renam)
+                     (type-rename-type-vars-no-capture-p bind.type
+                                                         atom-renam
+                                                         array-renam)
+                     (expr-rename-type-vars-no-capture-p bind.expr
+                                                         atom-renam
+                                                         array-renam)))))
   :name ast-rename-type-vars-no-capture-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
