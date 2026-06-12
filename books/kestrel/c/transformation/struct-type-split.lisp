@@ -3425,14 +3425,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sts-find-struct-uid-in-valid-table
+(define sts-find-tag-info-in-valid-table
   ((tag identp)
    (table c$::valid-tablep))
   :returns (mv (er? maybe-msgp)
-               (uid c$::uidp))
-  :short "Find the unique identifier of a struct type
+               (info? c$::valid-tag-info-optionp
+                      :hints
+                      (("Goal"
+                        :in-theory (enable c$::valid-tag-info-optionp)))))
+  :short "Find the validation information of a tag
           in the file scope of a validation table."
-  (b* (((reterr) (c$::irr-uid))
+  :long
+  (xdoc::topstring-p
+   "We return @('nil') if the tag is not found at file scope.
+    This benign case, in which callers may wish to look elsewhere,
+    is distinguished from more serious errors,
+    namely ill-formed validation tables,
+    which are signaled with an error message.")
+  (b* (((reterr) nil)
        (scopes (c$::valid-table->scopes table))
        ((when (endp scopes))
         (retmsg$ "Ill-formed validation table: no scope found."))
@@ -3442,15 +3452,9 @@
                  scopes))
        (scope (first scopes))
        (lookup (assoc-equal (c$::ident-fix tag)
-                            (c$::valid-scope->tag scope)))
-       ((unless lookup)
-        (retmsg$ "The struct tag ~x0 was not found at file scope."
-                 (c$::ident-fix tag)))
-       ((c$::valid-tag-info info) (cdr lookup))
-       ((unless (c$::tag-kind-case info.kind :struct))
-        (retmsg$ "The tag ~x0 names a union type, not a struct type."
-                 (c$::ident-fix tag))))
-    (retok info.uid)))
+                            (c$::valid-scope->tag scope))))
+    (retok (and lookup
+                (c$::valid-tag-info-fix (cdr lookup))))))
 
 (define sts-find-struct-uid-search
   ((tag identp)
@@ -3466,12 +3470,14 @@
                  (c$::ident-fix tag)))
        (filepath (c$::filepath-fix (omap::head-key tunits)))
        (tunit (omap::head-val tunits))
-       ((mv erp uid)
-        (sts-find-struct-uid-in-valid-table
+       ((erp info?)
+        (sts-find-tag-info-in-valid-table
           tag
           (c$::trans-unit-info->table-end (c$::trans-unit->info tunit))))
-       ((unless erp)
-        (retok uid filepath)))
+       ((when (and info?
+                   (c$::tag-kind-case (c$::valid-tag-info->kind info?)
+                                      :struct)))
+        (retok (c$::valid-tag-info->uid info?) filepath)))
     (sts-find-struct-uid-search tag (omap::tail tunits)))
   :guard-hints (("Goal" :in-theory (enable c$::filepath-trans-unit-map-annop
                                            c$::trans-unit-annop))))
@@ -3502,11 +3508,18 @@
                   translation unit ensemble."
                  filepath?))
        (tunit (cdr lookup))
-       ((erp uid)
-        (sts-find-struct-uid-in-valid-table
+       ((erp info?)
+        (sts-find-tag-info-in-valid-table
           tag
-          (c$::trans-unit-info->table-end (c$::trans-unit->info tunit)))))
-    (retok uid (c$::filepath-fix filepath?)))
+          (c$::trans-unit-info->table-end (c$::trans-unit->info tunit))))
+       ((unless info?)
+        (retmsg$ "The struct tag ~x0 was not found at file scope."
+                 (c$::ident-fix tag)))
+       ((c$::valid-tag-info info) info?)
+       ((unless (c$::tag-kind-case info.kind :struct))
+        (retmsg$ "The tag ~x0 names a union type, not a struct type."
+                 (c$::ident-fix tag))))
+    (retok info.uid (c$::filepath-fix filepath?)))
   :guard-hints (("Goal" :in-theory (enable c$::trans-ensemble-annop)))
   :prepwork
   ((defrulel trans-unit-infop-of-assoc-tunits
@@ -3567,16 +3580,22 @@
         (retok nil (sts-split-state-fix st)))
        (filepath (c$::filepath-fix (omap::head-key tunits)))
        (tunit (omap::head-val tunits))
-       ((mv erp uid)
-        (sts-find-struct-uid-in-valid-table
+       ((erp info?)
+        (sts-find-tag-info-in-valid-table
           tag
           (c$::trans-unit-info->table-end (c$::trans-unit->info tunit))))
+       (structp (and info?
+                     (c$::tag-kind-case (c$::valid-tag-info->kind info?)
+                                        :struct)))
+       (uid (if structp
+                (c$::valid-tag-info->uid info?)
+              (c$::irr-uid)))
        (current-type
          (c$::make-type-struct
            :uid uid
            :tunit? (c$::filepath-fix filepath)
            :tag/members (c$::make-type-struni-tag/members-tagged :tag tag)))
-       ((when (or erp
+       ((when (or (not structp)
                   (not (c$::type-compatible-p
                          primary-type
                          current-type
