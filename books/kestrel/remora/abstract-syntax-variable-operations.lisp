@@ -1114,7 +1114,14 @@
   :types (shapes
           ispace
           ispace-list
-          types)
+          ispace-list-option
+          types
+          type-option
+          type-list-option
+          var+type
+          var+type-list
+          exprs/atoms/binds
+          prog)
   :extra-args ((dim-renam string-string-mapp)
                (shape-renam string-string-mapp))
   :result booleanp
@@ -1148,7 +1155,113 @@
                  shape-renam)
                 (type-rename-ispace-vars-no-capture-p type.body
                                                       dim-renam
-                                                      shape-renam)))))
+                                                      shape-renam))))
+   (expr :unbox
+         (and (expr-rename-ispace-vars-no-capture-p expr.target
+                                                    dim-renam
+                                                    shape-renam)
+              (b* (((mv bound-dim-vars bound-shape-vars)
+                    (dim/shape-names-of-ispace-vars
+                     (set::mergesort expr.ispaces)))
+                   (dim-renam (omap::delete* bound-dim-vars
+                                             (string-string-map-fix dim-renam)))
+                   (shape-renam (omap::delete*
+                                 bound-shape-vars
+                                 (string-string-map-fix shape-renam))))
+                (and (renaming-no-capture-p
+                      (set::mergesort (ispace-var-list->name expr.ispaces))
+                      dim-renam
+                      shape-renam)
+                     (expr-rename-ispace-vars-no-capture-p expr.body
+                                                           dim-renam
+                                                           shape-renam)))))
+   (expr :let
+         (and (bind-list-rename-ispace-vars-no-capture-p expr.binds
+                                                         dim-renam
+                                                         shape-renam)
+              (b* ((bound-ispace-vars (bind-list-bound-ispace-vars expr.binds))
+                   ((mv bound-dim-vars bound-shape-vars)
+                    (dim/shape-names-of-ispace-vars bound-ispace-vars))
+                   (dim-renam (omap::delete* bound-dim-vars
+                                             (string-string-map-fix dim-renam)))
+                   (shape-renam (omap::delete*
+                                 bound-shape-vars
+                                 (string-string-map-fix shape-renam))))
+                (and (renaming-no-capture-p
+                      (set::union bound-dim-vars bound-shape-vars)
+                      dim-renam
+                      shape-renam)
+                     (expr-rename-ispace-vars-no-capture-p expr.body
+                                                           dim-renam
+                                                           shape-renam)))))
+   (atom :ilambda
+         (b* (((mv bound-dim-vars bound-shape-vars)
+               (dim/shape-names-of-ispace-vars (set::mergesort atom.params)))
+              (dim-renam (omap::delete* bound-dim-vars
+                                        (string-string-map-fix dim-renam)))
+              (shape-renam (omap::delete* bound-shape-vars
+                                          (string-string-map-fix shape-renam))))
+           (and (renaming-no-capture-p
+                 (set::mergesort (ispace-var-list->name atom.params))
+                 dim-renam
+                 shape-renam)
+                (expr-rename-ispace-vars-no-capture-p atom.body
+                                                      dim-renam
+                                                      shape-renam))))
+   (bind :ifun
+         (b* (((mv bound-dim-vars bound-shape-vars)
+               (dim/shape-names-of-ispace-vars (set::mergesort bind.params)))
+              (dim-renam (omap::delete* bound-dim-vars
+                                        (string-string-map-fix dim-renam)))
+              (shape-renam (omap::delete* bound-shape-vars
+                                          (string-string-map-fix shape-renam))))
+           (and (renaming-no-capture-p
+                 (set::mergesort (ispace-var-list->name bind.params))
+                 dim-renam
+                 shape-renam)
+                (type-option-rename-ispace-vars-no-capture-p bind.type?
+                                                             dim-renam
+                                                             shape-renam)
+                (expr-rename-ispace-vars-no-capture-p bind.expr
+                                                      dim-renam
+                                                      shape-renam))))
+   (bind :cfun
+         (ispace-var-list-option-case
+          bind.iparams?
+          :some (b* (((mv bound-dim-vars bound-shape-vars)
+                      (dim/shape-names-of-ispace-vars
+                       (set::mergesort bind.iparams?.val)))
+                     (dim-renam (omap::delete*
+                                 bound-dim-vars
+                                 (string-string-map-fix dim-renam)))
+                     (shape-renam (omap::delete*
+                                   bound-shape-vars
+                                   (string-string-map-fix shape-renam))))
+                  (and (renaming-no-capture-p
+                        (set::mergesort
+                         (ispace-var-list->name bind.iparams?.val))
+                        dim-renam
+                        shape-renam)
+                       (var+type-list-rename-ispace-vars-no-capture-p
+                        bind.params
+                        dim-renam
+                        shape-renam)
+                       (type-rename-ispace-vars-no-capture-p bind.type
+                                                             dim-renam
+                                                             shape-renam)
+                       (expr-rename-ispace-vars-no-capture-p bind.expr
+                                                             dim-renam
+                                                             shape-renam)))
+          :none (and (var+type-list-rename-ispace-vars-no-capture-p
+                      bind.params
+                      dim-renam
+                      shape-renam)
+                     (type-rename-ispace-vars-no-capture-p bind.type
+                                                           dim-renam
+                                                           shape-renam)
+                     (expr-rename-ispace-vars-no-capture-p bind.expr
+                                                           dim-renam
+                                                           shape-renam)))))
   :name ast-rename-ispace-vars-no-capture-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
