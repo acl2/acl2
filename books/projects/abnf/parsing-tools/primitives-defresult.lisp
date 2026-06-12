@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ parsing-primitives-defresult
-  :parents (abnf)
+  :parents (parsing-tools)
   :short "Some basic ABNF parsing functions
           for use with @(tsee fty::defresult)."
   :long

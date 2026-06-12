@@ -39,7 +39,9 @@
                           type-valuep-when-result-not-error
                           type-value-listp-when-result-not-error
                           valuep-when-result-not-error
-                          value-listp-when-result-not-error)))
+                          value-listp-when-result-not-error
+                          var+typevalue-p-when-result-not-error
+                          var+typevalue-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -345,6 +347,47 @@
   ///
 
   (fty::deffixequiv-mutual eval-types))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-var+type ((var+type var+type-p) (denv denvp))
+  :returns (var+tval var+typevalue-resultp)
+  :short "Evaluate a variable with a type
+          to a variable with a type value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variable is unchanged;
+     its associated type is evaluated to a type value."))
+  (b* (((var+type var+type) var+type)
+       ((ok tval) (eval-type var+type.type denv)))
+    (make-var+typevalue :var var+type.var :type tval)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-var+type-list ((var+types var+type-listp) (denv denvp))
+  :returns (var+tvals var+typevalue-list-resultp)
+  :short "Evaluate a list of variables with types
+          to a list of variables with type values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We evaluate each element in turn
+     and return the list of results in the same order."))
+  (b* (((when (endp var+types)) nil)
+       ((ok var+tval) (eval-var+type (car var+types) denv))
+       ((ok var+tvals) (eval-var+type-list (cdr var+types) denv)))
+    (cons var+tval var+tvals))
+
+  ///
+
+  (defret len-of-eval-var+type-list
+    (implies (not (reserrp var+tvals))
+             (equal (len var+tvals)
+                    (len var+types)))
+    :hints (("Goal"
+             :induct (len var+types)
+             :in-theory (enable len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -819,17 +862,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-vars-match-type-values-p ((vars type-var-listp)
-                                       (tvals type-value-listp))
+(define type-values-match-type-vars-p ((tvals type-value-listp)
+                                       (vars type-var-listp))
   :returns (yes/no booleanp)
-  :short "Check that type variables and type values
-          match in number and kind."
+  :short "Check that type values match type variables
+          in number and kind."
   :long
   (xdoc::topstring
    (xdoc::p
     "The two lists must have the same length,
-     and, element-wise, each type variable's kind must match
-     the corresponding type value:
+     and, element-wise, each type value must match
+     the kind of the corresponding type variable:
      an @(':atom') type variable must be matched by an atom type value,
      and an @(':array') type variable by an array type value.
      A type value has the array kind when it is an @(':array');
@@ -838,67 +881,67 @@
     "This is used to evaluate type applications,
      where the type values that a type lambda is applied to
      must match the type parameters of the type lambda."))
-  (b* (((when (endp vars)) (endp tvals))
-       ((when (endp tvals)) nil)
-       (var (car vars))
-       (tval (car tvals)))
+  (b* (((when (endp tvals)) (endp vars))
+       ((when (endp vars)) nil)
+       (tval (car tvals))
+       (var (car vars)))
     (and (type-var-case var
                         :atom (not (type-value-case tval :array))
                         :array (type-value-case tval :array))
-         (type-vars-match-type-values-p (cdr vars) (cdr tvals))))
+         (type-values-match-type-vars-p (cdr tvals) (cdr vars))))
 
   ///
 
-  (defrule len-equal-when-type-vars-match-type-values-p
-    (implies (type-vars-match-type-values-p vars tvals)
-             (equal (len vars) (len tvals)))
+  (defrule len-equal-when-type-values-match-type-vars-p
+    (implies (type-values-match-type-vars-p tvals vars)
+             (equal (len tvals) (len vars)))
     :rule-classes :forward-chaining
     :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ispace-vars-match-ispace-values-p ((vars ispace-var-listp)
-                                           (ivals ispace-value-listp))
+(define ispace-values-match-ispace-vars-p ((ivals ispace-value-listp)
+                                           (vars ispace-var-listp))
   :returns (yes/no booleanp)
-  :short "Check that ispace variables and ispace values
-          match in number and sort."
+  :short "Check that ispace values match ispace variables
+          in number and sort."
   :long
   (xdoc::topstring
    (xdoc::p
     "The two lists must have the same length,
-     and, element-wise, each ispace variable's sort must match
-     the corresponding ispace value:
+     and, element-wise, each ispace value must match
+     the sort of the corresponding ispace variable:
      a @(':dim') ispace variable must be matched by a @(':dim') ispace value,
      and a @(':shape') ispace variable by a @(':shape') ispace value.")
    (xdoc::p
     "This is used to evaluate ispace applications,
      where the ispace values that an ispace lambda is applied to
      must match the ispace parameters of the ispace lambda."))
-  (b* (((when (endp vars)) (endp ivals))
-       ((when (endp ivals)) nil)
-       (var (car vars))
-       (ival (car ivals)))
+  (b* (((when (endp ivals)) (endp vars))
+       ((when (endp vars)) nil)
+       (ival (car ivals))
+       (var (car vars)))
     (and (ispace-var-case var
                           :dim (ispace-value-case ival :dim)
                           :shape (ispace-value-case ival :shape))
-         (ispace-vars-match-ispace-values-p (cdr vars) (cdr ivals))))
+         (ispace-values-match-ispace-vars-p (cdr ivals) (cdr vars))))
 
   ///
 
-  (defrule len-equal-when-ispace-vars-match-ispace-values-p
-    (implies (ispace-vars-match-ispace-values-p vars ivals)
-             (equal (len vars) (len ivals)))
+  (defrule len-equal-when-ispace-values-match-ispace-vars-p
+    (implies (ispace-values-match-ispace-vars-p ivals vars)
+             (equal (len ivals) (len vars)))
     :rule-classes :forward-chaining
     :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-values-match-values-p ((tvals type-value-listp)
-                                    (vals value-listp))
+(define values-match-type-values-p ((vals value-listp)
+                                    (tvals type-value-listp))
   :guard (value-list-wfp vals)
   :returns (yes/no booleanp)
-  :short "Check that type values and values
-          match in number and shape."
+  :short "Check that values match type values
+          in number and shape."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -911,25 +954,25 @@
    (xdoc::p
     "This is used to evaluate term applications,
      where the values that a lambda is applied to
-     must match the parameter types of the lambda.
+     must match the parameter type values of the lambda.
      Currently we only compare the dimensions of the values
      with the shapes of the type values;
      we plan to extend this to a complete check of
      the values against the type values."))
-  (b* (((when (endp tvals)) (endp vals))
-       ((when (endp vals)) nil)
-       (tval (car tvals))
+  (b* (((when (endp vals)) (endp tvals))
+       ((when (endp tvals)) nil)
        (val (car vals))
+       (tval (car tvals))
        (shape (type-value-case tval
                                :array tval.shape
                                :otherwise nil)))
     (and (equal (dims-of-value val) shape)
-         (type-values-match-values-p (cdr tvals) (cdr vals))))
+         (values-match-type-values-p (cdr vals) (cdr tvals))))
 
   ///
 
-  (defruled len-equal-when-type-values-match-values-p
-    (implies (type-values-match-values-p tvals vals)
+  (defruled len-equal-when-values-match-type-values-p
+    (implies (values-match-type-values-p vals tvals)
              (equal (len vals) (len tvals)))
     :induct t))
 
@@ -1025,12 +1068,12 @@
        For now we require the function value to be
        a scalar lambda abstraction value,
        and the dimensions of each argument value to be exactly
-       the shape of the corresponding parameter type
+       the shape of the corresponding parameter type value
        of the lambda abstraction:
        we do not support lifting yet, but we plan to add support for it.
-       We evaluate the parameter types of the lambda abstraction,
-       and we check that the resulting type values
-       match the argument values in number and shape.
+       We check that the argument values match
+       the parameter type values of the lambda abstraction
+       in number and shape.
        We extend the dynamic environment
        to associate the argument values with the parameters
        (which may override existing associations,
@@ -1096,13 +1139,12 @@
               (value-case
                funval
                :lambda
-               (b* (((ok in-tvals) (eval-type-list
-                                    (var+type-list->type funval.params)
-                                    denv))
-                    ((unless (type-values-match-values-p in-tvals argvals))
+               (b* (((unless (values-match-type-values-p
+                              argvals
+                              (var+typevalue-list->type funval.params)))
                      (reserr nil))
                     (denv (denv-add-expr-vars
-                           (var+type-list->var funval.params)
+                           (var+typevalue-list->var funval.params)
                            argvals
                            denv)))
                  (eval-expr funval.body denv (1- limit)))
@@ -1160,20 +1202,23 @@
       "A base literal is evaluated to a base value,
        which is embedded into a value.")
      (xdoc::p
-      "A lambda abstraction,
-       a type lambda abstraction,
-       or an ispace lambda abstraction
-       evaluates to
-       a lambda value, a type lambda value, or an ispace lambda value,
+      "A lambda abstraction evaluates to a lambda value
+       with the same parameter variables,
+       whose associated types are evaluated to type values;
+       the body is not evaluated here,
+       but only when the abstraction is applied.")
+     (xdoc::p
+      "A type lambda abstraction or an ispace lambda abstraction
+       evaluates to a type lambda value or an ispace lambda value,
        respectively,
        with the same parameters and body,
        which are not evaluated here but only when the abstraction is applied."))
-    (declare (ignore denv))
     (b* (((when (zp limit)) (reserr :limit)))
       (atom-case
        atom
        :base (value-base (eval-base-lit atom.lit))
-       :lambda (make-value-lambda :params atom.params :body atom.body)
+       :lambda (b* (((ok params) (eval-var+type-list atom.params denv)))
+                 (make-value-lambda :params params :body atom.body))
        :tlambda (make-value-tlambda :params atom.params :body atom.body)
        :ilambda (make-value-ilambda :params atom.params :body atom.body)
        :box (reserr :todo)))
@@ -1265,13 +1310,14 @@
        and @('tvals') are the values of the type arguments.")
      (xdoc::p
       "The function value must be an array, of any rank,
-       whose elements are type lambda abstractions
-       whose parameters match the type argument values in number and kinds.
+       whose elements are type lambda abstractions;
+       the type argument values must match
+       the parameters in number and kinds.
        Each such lambda abstraction is applied to the type argument values.")
      (xdoc::p
       "This ACL2 function performs that element-wise application.
        The base case is that of a scalar (i.e. 0-rank array) function value:
-       we check that parameters and arguments match,
+       we check that the arguments match the parameters,
        we extend the dynamic environment
        to associate the arguments with the parameters
        (which may override existing associations,
@@ -1289,8 +1335,9 @@
       "An empty vector function value has
        no type lambda abstractions to apply,
        but it carries the type of its would-be elements,
-       which must be a universal type value
-       whose parameters match the type argument values in number and kinds.
+       which must be a universal type value;
+       the type argument values must match
+       its parameters in number and kinds.
        We extend the dynamic environment
        to associate the arguments with the parameters,
        and we evaluate the body of the universal type value,
@@ -1311,7 +1358,7 @@
       (value-case
        funval
        :tlambda
-       (b* (((unless (type-vars-match-type-values-p funval.params tvals))
+       (b* (((unless (type-values-match-type-vars-p tvals funval.params))
              (reserr nil))
             (denv (denv-add-type-vars funval.params tvals denv)))
          (eval-expr funval.body denv (1- limit)))
@@ -1325,7 +1372,7 @@
        (type-value-case
         funval.elem
         :forall
-        (b* (((unless (type-vars-match-type-values-p funval.elem.params tvals))
+        (b* (((unless (type-values-match-type-vars-p tvals funval.elem.params))
               (reserr nil))
              (denv (denv-add-type-vars funval.elem.params tvals denv))
              ((ok tval) (eval-type funval.elem.body denv))
@@ -1396,13 +1443,14 @@
        and @('ivals') are the values of the ispace arguments.")
      (xdoc::p
       "The function value must be an array, of any rank,
-       whose elements are ispace lambda abstractions
-       whose parameters match the ispace argument values in number and sorts.
+       whose elements are ispace lambda abstractions;
+       the ispace argument values must match
+       the parameters in number and sorts.
        Each such lambda abstraction is applied to the ispace argument values.")
      (xdoc::p
       "This ACL2 function performs that element-wise application.
        The base case is that of a scalar (i.e. 0-rank array) function value:
-       we check that parameters and arguments match,
+       we check that the arguments match the parameters,
        we extend the dynamic environment
        to associate the arguments with the parameters
        (which may override existing associations,
@@ -1420,8 +1468,9 @@
       "An empty vector function value has
        no ispace lambda abstractions to apply,
        but it carries the type of its would-be elements,
-       which must be a product type value
-       whose parameters match the ispace argument values in number and sorts.
+       which must be a product type value;
+       the ispace argument values must match
+       its parameters in number and sorts.
        We extend the dynamic environment
        to associate the arguments with the parameters,
        and we evaluate the body of the product type value,
@@ -1442,7 +1491,7 @@
       (value-case
        funval
        :ilambda
-       (b* (((unless (ispace-vars-match-ispace-values-p funval.params ivals))
+       (b* (((unless (ispace-values-match-ispace-vars-p ivals funval.params))
              (reserr nil))
             (denv (denv-add-ispace-vars funval.params ivals denv)))
          (eval-expr funval.body denv (1- limit)))
@@ -1456,8 +1505,8 @@
        (type-value-case
         funval.elem
         :pi
-        (b* (((unless (ispace-vars-match-ispace-values-p funval.elem.params
-                                                         ivals))
+        (b* (((unless (ispace-values-match-ispace-vars-p ivals
+                                                         funval.elem.params))
               (reserr nil))
              (denv (denv-add-ispace-vars funval.elem.params ivals denv))
              ((ok tval) (eval-type funval.elem.body denv))
@@ -1630,5 +1679,5 @@
   (verify-guards eval-expr
     :hints
     (("Goal"
-      :in-theory (e/d (len-equal-when-type-values-match-values-p)
+      :in-theory (e/d (len-equal-when-values-match-type-values-p)
                       (len-of-eval-expr-list))))))

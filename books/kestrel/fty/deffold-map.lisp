@@ -679,7 +679,12 @@
             (iff (,type-suffix ,type ,@extra-args-names)
                  ,type)
             :expand ((,type-suffix ,type ,@extra-args-names))
-            :cases ((equal ,type nil)))))
+            :cases ((equal ,type nil))
+            ;; Tau is sometimes needed to establish that
+            ;; the result of the map function for the base type of the option
+            ;; does not return NIL,
+            ;; when the map function for the base type has some overriding.
+            :in-theory (enable (:e tau-system)))))
        (ruleset-event
         `(add-to-ruleset ,(deffold-map-gen-ruleset-name name)
                          '(,type-suffix-under-iff)))
