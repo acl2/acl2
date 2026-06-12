@@ -466,10 +466,12 @@
                                    y1...ym
                                    (formals old$ wrld))))
                      ((symbolp fn/lambda) (fcons-term fn/lambda new-args))
-                     (t (make-lambda (lambda-formals fn/lambda)
+                     (t (fcons-term (make-lambda
+                                     (lambda-formals fn/lambda)
                                      (parteval-transform-rec-calls-in-term
                                       (lambda-body fn/lambda)
-                                      old$ new-name$ y1...ym wrld))))))))
+                                      old$ new-name$ y1...ym wrld))
+                                    new-args)))))))
 
   (define parteval-transform-rec-calls-in-terms ((body-terms pseudo-term-listp)
                                                  (old$ symbolp)
