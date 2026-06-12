@@ -136,7 +136,8 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; An initializer list without syntactic designations is routed
-;; using the implicit designators recorded by the validator.
+;; using the implicit designators recorded by the validator,
+;; which are made explicit in the split initializer lists.
 
 (acl2::must-succeed*
   (c$::input-files :files '("positional-init.c")
@@ -161,9 +162,48 @@ struct pair_0 {
 };
 
 int main(void) {
-  struct pair x = {1};
-  struct pair_0 x_0 = {2};
+  struct pair x = {.fst = 1};
+  struct pair_0 x_0 = {.snd = 2};
   return x_0.snd;
+}
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; An initializer list with mixed explicit and implicit designations.
+;; The implicit initializer (of z, following the explicit .y) is made
+;; explicit when split apart; if it stayed positional, it would
+;; initialize the wrong member (x) of the left struct type.
+
+(acl2::must-succeed*
+  (c$::input-files :files '("mixed-init.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "triple"
+                     :right-members ("y"))
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/mixed-init.c"
+    :content "struct triple {
+  int x;
+  int z;
+};
+
+struct triple_0 {
+  int y;
+};
+
+int main(void) {
+  struct triple t = {.z = 3};
+  struct triple_0 t_0 = {.y = 2};
+  return t.x + t.z;
 }
 ")
 

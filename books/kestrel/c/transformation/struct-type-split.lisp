@@ -1545,6 +1545,12 @@
       @('left-desiniter') or @('right-desiniter')
       based on the field it designates;
       @('rightp') in the return indicates which.
+      Initializers which are split apart
+      are given explicit designations,
+      drawn from the validator annotations
+      when there is no syntactic designation,
+      since the implicit ordering is generally not preserved
+      by the partition into left and right initializer lists.
       When @('splitp') is @('nil'), @('left-desiniter') holds the result.")
     (b* ((st (sts-split-state-fix st))
          ((reterr) nil (desiniter-fix desiniter) (desiniter-fix desiniter) st)
@@ -1564,7 +1570,16 @@
          ((unless (c$::initer-purep left-initer))
           (retmsg$ "Initializers must be pure when split apart.~%~@0"
                    (context-msg-desiniter desiniter (sts-split-state->dialect st))))
-         ((erp rightp) (desiniter-sts-rightp desiniter st)))
+         ((erp rightp) (desiniter-sts-rightp desiniter st))
+         ;; Make implicit designations explicit,
+         ;; since the implicit ordering is generally not preserved
+         ;; by the partition into left and right initializer lists.
+         (new-desiniter
+           (if designors
+               new-desiniter
+             (c$::change-desiniter
+               new-desiniter
+               :designors (c$::desiniter-info->designors desiniter.info)))))
       (retok rightp new-desiniter new-desiniter st))
     :measure (desiniter-count desiniter))
 

@@ -148,7 +148,11 @@
      (xdoc::li
       "Initializer lists of the struct type must consist of
        pure (i.e. side-effect-free) initializers,
-       since splitting the initializer list reorders them.")
+       since splitting the initializer list reorders them.
+       Initializers which are split apart
+       are given explicit member designations,
+       since the implicit positional order
+       is not preserved by the split.")
      (xdoc::li
       "The code ensemble must use the C17 standard;
        this is checked by the transformation.
