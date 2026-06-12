@@ -942,15 +942,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The deffold-map below generates, for the type-option summand, an
-; "under-iff" theorem that requires (type-subst-type-vars ...) to be known
-; non-nil. Since the :var override returns a raw map value (cdr var+type)
-; rather than a constructor, the function's type-prescription does not
-; establish that on its own; we locally re-enable the tau-system (disabled
-; by controlled-configuration above) so that the typep return type yields
-; the needed non-nil signature. The tau-system is restored right after.
-(local (in-theory (enable (:e tau-system))))
-
 (fty::deffold-map subst-type-vars
   :short "Substitute free type variables in ASTs."
   :long
@@ -1066,8 +1057,6 @@
                                              atom-subst
                                              array-subst)))))
   :name ast-subst-type-vars)
-
-(local (in-theory (disable (:e tau-system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
