@@ -1988,7 +1988,8 @@
               (info any)))
     (:union ((spec struni-spec)))
     (:enum ((spec enum-spec)))
-    (:typedef ((name ident)))
+    (:typedef ((name ident)
+               (info any)))
     ;; GCC extensions:
     (:int128 ((uscoret bool)))
     (:locase-float80 ())
