@@ -1625,7 +1625,13 @@
      but currently @(tsee fty::deffold-map) does not support such guards.
      One should call the @(tsee ast-rename-type-vars-no-capture-p) predicates
      prior to applying these renaming operations, for the time being."))
-  :types (types)
+  :types (types
+          type-option
+          type-list-option
+          var+type
+          var+type-list
+          exprs/atoms/binds
+          prog)
   :extra-args ((atom-renam string-string-mapp)
                (array-renam string-string-mapp))
   :override
@@ -1655,7 +1661,95 @@
             :params type.params
             :body (type-rename-type-vars type.body
                                          atom-renam
-                                         array-renam)))))
+                                         array-renam))))
+   (expr :let
+         (b* ((binds (bind-list-rename-type-vars expr.binds
+                                                 atom-renam
+                                                 array-renam))
+              (bound-type-vars (bind-list-bound-type-vars expr.binds))
+              ((mv bound-atom-vars bound-array-vars)
+               (atom/array-names-of-type-vars bound-type-vars))
+              (atom-renam
+               (omap::delete* bound-atom-vars
+                              (string-string-map-fix atom-renam)))
+              (array-renam
+               (omap::delete* bound-array-vars
+                              (string-string-map-fix array-renam))))
+           (make-expr-let
+            :binds binds
+            :body (expr-rename-type-vars expr.body
+                                         atom-renam
+                                         array-renam))))
+   (atom :tlambda
+         (b* (((mv bound-atom-vars bound-array-vars)
+               (atom/array-names-of-type-vars (set::mergesort atom.params)))
+              (atom-renam
+               (omap::delete* bound-atom-vars
+                              (string-string-map-fix atom-renam)))
+              (array-renam
+               (omap::delete* bound-array-vars
+                              (string-string-map-fix array-renam))))
+           (make-atom-tlambda
+            :params atom.params
+            :body (expr-rename-type-vars atom.body
+                                         atom-renam
+                                         array-renam))))
+   (bind :tfun
+         (b* (((mv bound-atom-vars bound-array-vars)
+               (atom/array-names-of-type-vars (set::mergesort bind.params)))
+              (atom-renam
+               (omap::delete* bound-atom-vars
+                              (string-string-map-fix atom-renam)))
+              (array-renam
+               (omap::delete* bound-array-vars
+                              (string-string-map-fix array-renam))))
+           (make-bind-tfun
+            :var bind.var
+            :params bind.params
+            :type? (type-option-rename-type-vars bind.type?
+                                                 atom-renam
+                                                 array-renam)
+            :expr (expr-rename-type-vars bind.expr
+                                         atom-renam
+                                         array-renam))))
+   (bind :cfun
+         (type-var-list-option-case
+          bind.tparams?
+          :some (b* (((mv bound-atom-vars bound-array-vars)
+                      (atom/array-names-of-type-vars
+                       (set::mergesort bind.tparams?.val)))
+                     (atom-renam
+                      (omap::delete* bound-atom-vars
+                                     (string-string-map-fix atom-renam)))
+                     (array-renam
+                      (omap::delete* bound-array-vars
+                                     (string-string-map-fix array-renam))))
+                  (make-bind-cfun
+                   :var bind.var
+                   :tparams? bind.tparams?
+                   :iparams? bind.iparams?
+                   :params (var+type-list-rename-type-vars bind.params
+                                                           atom-renam
+                                                           array-renam)
+                   :type (type-rename-type-vars bind.type
+                                                atom-renam
+                                                array-renam)
+                   :expr (expr-rename-type-vars bind.expr
+                                                atom-renam
+                                                array-renam)))
+          :none (make-bind-cfun
+                 :var bind.var
+                 :tparams? bind.tparams?
+                 :iparams? bind.iparams?
+                 :params (var+type-list-rename-type-vars bind.params
+                                                         atom-renam
+                                                         array-renam)
+                 :type (type-rename-type-vars bind.type
+                                              atom-renam
+                                              array-renam)
+                 :expr (expr-rename-type-vars bind.expr
+                                              atom-renam
+                                              array-renam)))))
   :name ast-rename-type-vars)
 
 ;;;;;;;;;;;;;;;;;;;;
