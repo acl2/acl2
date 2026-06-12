@@ -179,6 +179,30 @@
        We plan to support them by introducing
        parallel typedefs of the right struct type.")
      (xdoc::li
+      "The transformation checks that expressions requiring lvalues
+       (the operands of the address and increment/decrement operators,
+       and the left operands of assignments)
+       are still lvalues after transformation.
+       However, this check relies on a syntactic overapproximation of lvalues
+       (see @(tsee c$::expr-syntactic-lvalue-p)).
+       For instance, a generic selection is considered an lvalue
+       when any of its possible result expressions is an lvalue,
+       even if the result expression actually selected
+       is rewritten by the transformation into a non-lvalue.
+       Consequently, the transformation may in rare cases
+       produce invalid code which violates the lvalue requirements,
+       without reporting an error.")
+     (xdoc::li
+      "Compatible struct types in other translation units
+       are detected only at file scope.
+       A struct type declared in a block scope
+       of another translation unit
+       may be compatible with the split struct type,
+       but it is not detected or split.
+       Code using such a type to interoperate with split objects
+       (e.g. a block-scope @('extern') declaration of a split object)
+       would be silently invalidated by the transformation.")
+     (xdoc::li
       "Assembler constructs and attribute parameters are not transformed;
        a warning is printed when they are encountered.")
      (xdoc::li

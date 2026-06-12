@@ -514,7 +514,26 @@
        we explicitly check that the split expressions are still lvalues.
        In C17, lvalues are required as operands
        to certain unary and binary operators,
-       which we check accordingly."))
+       which we check accordingly.")
+     (xdoc::p
+      "Note that these lvalue checks are not yet sufficient,
+       because @(tsee c$::expr-syntactic-lvalue-p)
+       overapproximates lvalues.
+       For instance, a generic selection is considered an lvalue
+       when any of its possible result expressions is an lvalue.
+       The transformation might rewrite the selected result expression
+       such that it is no longer an lvalue
+       (e.g. by introducing a comma in a @(':member') case),
+       while the overapproximation still judges
+       the generic selection to be an lvalue
+       due to another result expression.
+       In such a case, the transformation would produce invalid code
+       without reporting an error.
+       Similarly, we do not check that the operand
+       of the unary address operator is still well-formed
+       (it must be a function designator,
+       a dereference or array subscript expression,
+       or an lvalue)."))
     (b* ((st (sts-split-state-fix st))
          ((reterr) (expr-fix expr) nil st))
       (expr-case
@@ -1495,7 +1514,9 @@
       (initer-option-case
         initer?
         :none (retok nil nil st)
-        :some (initer-sts-split (c$::initer-option-some->val initer?) splitp st)))
+        :some (initer-sts-split (c$::initer-option-some->val initer?)
+                                splitp
+                                st)))
     :measure (initer-option-count initer?))
 
   (define desiniter-sts-split
@@ -1532,8 +1553,10 @@
          ((erp left-initer right-initer? st)
           (initer-sts-split desiniter.initer nil st))
          ((when right-initer?)
-          (retmsg$ "Splits are not supported within designated initializers.~%~@0"
-                   (context-msg-desiniter desiniter (sts-split-state->dialect st))))
+          (retmsg$ "Splits are not supported ~
+                    within designated initializers.~%~@0"
+                   (context-msg-desiniter desiniter
+                                          (sts-split-state->dialect st))))
          (new-desiniter (c$::make-desiniter :designors designors
                                             :initer left-initer
                                             :info desiniter.info))
@@ -1580,19 +1603,18 @@
          ((erp rightp left-desiniter right-desiniter st)
           (desiniter-sts-split (car desiniter-list) splitp st))
          ((erp left-rest right-rest st)
-          (desiniter-list-sts-split splitp (cdr desiniter-list) st)))
-      (cond ((not splitp)
-             (retok (cons left-desiniter left-rest)
-                    (cons right-desiniter right-rest)
-                    st))
-            (rightp
-             (retok left-rest
-                    (cons right-desiniter right-rest)
-                    st))
-            (t
-             (retok (cons left-desiniter left-rest)
-                    right-rest
-                    st))))
+          (desiniter-list-sts-split splitp (cdr desiniter-list) st))
+         ((unless splitp)
+          (retok (cons left-desiniter left-rest)
+                 (cons right-desiniter right-rest)
+                 st)))
+      (if rightp
+          (retok left-rest
+                 (cons right-desiniter right-rest)
+                 st)
+        (retok (cons left-desiniter left-rest)
+               right-rest
+               st)))
     :measure (desiniter-list-count desiniter-list))
 
   (define designor-sts-split
@@ -2441,7 +2463,7 @@
                  (cons right-struct-declon right-rest)
                  st))
          ;; A member declaration with no declarators in the first place
-         ;; (i.e. an anonymous struct/union member)
+         ;; (i.e. an anonymous struct/union member or an unnamed bit field)
          ;; stays in the left struct type
          ;; (it cannot be listed in the right member set);
          ;; it is not dropped from the left struct type,
@@ -3297,8 +3319,7 @@
              st)
       :asm
       (b* ((st (sts-split-state-add-warning
-                 (msg$ "Not transforming assembler statement, ~
-                        because assembler constructs are not yet validated.~%~@0"
+                 (msg$ "Not transforming assembler statement.~%~@0"
                        (context-msg-asm-stmt ext-declon.stmt
                                              (sts-split-state->dialect st)))
                  st)))
@@ -3434,9 +3455,7 @@
                    (c$::tag-kind-case (c$::valid-tag-info->kind info?)
                                       :struct)))
         (retok (c$::valid-tag-info->uid info?) filepath)))
-    (sts-find-struct-uid-search tag (omap::tail tunits)))
-  :guard-hints (("Goal" :in-theory (enable c$::filepath-trans-unit-map-annop
-                                           c$::trans-unit-annop))))
+    (sts-find-struct-uid-search tag (omap::tail tunits))))
 
 (define sts-find-struct-uid
   ((filepath? c$::filepath-optionp)
@@ -3475,20 +3494,7 @@
        ((unless (c$::tag-kind-case info.kind :struct))
         (retmsg$ "The tag ~x0 names a union type, not a struct type."
                  (c$::ident-fix tag))))
-    (retok info.uid (c$::filepath-fix filepath?)))
-  :guard-hints (("Goal" :in-theory (enable c$::trans-ensemble-annop)))
-  :prepwork
-  ((defrulel trans-unit-infop-of-assoc-tunits
-     (implies (and (filepath-trans-unit-mapp tunits)
-                   (c$::filepath-trans-unit-map-annop tunits)
-                   (omap::assoc filepath tunits))
-              (c$::trans-unit-infop
-                (c$::trans-unit->info
-                  (cdr (omap::assoc filepath tunits)))))
-     :induct t
-     :enable (omap::assoc
-              c$::filepath-trans-unit-map-annop
-              c$::trans-unit-annop))))
+    (retok info.uid (c$::filepath-fix filepath?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3523,6 +3529,12 @@
     Note that we assume that at most one struct type
     per translation unit is subject to the split,
     namely the one denoted by the tag at file scope.
+    In particular, struct types declared in block scopes
+    are not considered:
+    a block-scope struct type in another translation unit
+    may be compatible with the primary struct type,
+    but it is not detected or split
+    (see the current limitations in @(see struct-type-split)).
     This holds in C17, in which struct types declared in different scopes
     of the same translation unit are never compatible.
     It does not generally hold in C23,
