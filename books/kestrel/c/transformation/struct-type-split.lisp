@@ -69,18 +69,6 @@
 
 ;; Library extensions
 
-(define map-ident
-  ((strings string-listp))
-  :returns (idents ident-listp)
-  :short "Map the @(tsee c$::ident) constructor over a list."
-  (if (endp strings)
-      nil
-    (cons (c$::ident (first strings))
-          (map-ident (rest strings))))
-  :guard-hints (("Goal" :in-theory (enable string-listp))))
-
-;;;;;;;;;;;;;;;;;;;;
-
 (defrulel ident-setp-of-mergesort
   (implies (ident-listp idents)
            (ident-setp (mergesort idents)))
@@ -3715,7 +3703,7 @@
         (retmsg$ "~x0 must be a list of strings." right-members))
        ((unless (consp right-members))
         (retmsg$ "At least one right member must be specified."))
-       (right-members (map-ident right-members))
+       (right-members (c$::string-list-map-ident right-members))
        ((unless (or (not new-tag)
                     (stringp new-tag)))
         (retmsg$ "~x0 must be nil or a string." new-tag))
