@@ -1060,12 +1060,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define renaming-no-capture-p ((names string-setp)
-                               (renam1 string-string-mapp)
-                               (renam2 string-string-mapp))
+(define renaming-no-capture-p ((names string-setp) (renam string-string-mapp))
   :returns (yes/no booleanp)
   :short "Check that a set of bound variable names is not captured
-          by a renaming consisting of two string-to-string maps."
+          by a renaming represented as a string-to-string map."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1075,18 +1073,25 @@
      none of the bound names must occur among the values of the renaming,
      otherwise renaming under the binder would capture them.
      We check that @('names') is disjoint from the omap values
-     of the two renaming maps.")
+     of the renaming map.")
    (xdoc::p
-    "This is shared by the cases of
+    "This operates on a single namespace, i.e. a single renaming map.
+     Since dimension and shape variables are in separate namespaces,
+     as are atom-kind and array-kind type variables,
+     the cases of
      @(tsee ast-rename-ispace-vars-no-capture-p) and
      @(tsee ast-rename-type-vars-no-capture-p)
-     for the constructs that bind variables:
-     the two maps are the dimension and shape renamings in the ispace case,
-     and the atom-kind and array-kind renamings in the type case."))
-  (set::emptyp
-   (set::intersect (string-sfix names)
-                   (set::union (omap::values (string-string-map-fix renam1))
-                               (omap::values (string-string-map-fix renam2))))))
+     that bind variables call this once per namespace:
+     once for the dimension and once for the shape renaming
+     in the ispace case,
+     and once for the atom-kind and once for the array-kind renaming
+     in the type case.
+     It would be incorrect to put the names of the two namespaces together
+     and check them against both maps,
+     because a name bound in one namespace cannot be captured
+     by a renaming in the other namespace."))
+  (set::emptyp (set::intersect (string-sfix names)
+                               (omap::values (string-string-map-fix renam)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1135,10 +1140,8 @@
                                         (string-string-map-fix dim-renam)))
               (shape-renam (omap::delete* bound-shape-vars
                                           (string-string-map-fix shape-renam))))
-           (and (renaming-no-capture-p
-                 (set::mergesort (ispace-var-list->name type.params))
-                 dim-renam
-                 shape-renam)
+           (and (renaming-no-capture-p bound-dim-vars dim-renam)
+                (renaming-no-capture-p bound-shape-vars shape-renam)
                 (type-rename-ispace-vars-no-capture-p type.body
                                                       dim-renam
                                                       shape-renam))))
@@ -1149,10 +1152,8 @@
                                         (string-string-map-fix dim-renam)))
               (shape-renam (omap::delete* bound-shape-vars
                                           (string-string-map-fix shape-renam))))
-           (and (renaming-no-capture-p
-                 (set::mergesort (ispace-var-list->name type.params))
-                 dim-renam
-                 shape-renam)
+           (and (renaming-no-capture-p bound-dim-vars dim-renam)
+                (renaming-no-capture-p bound-shape-vars shape-renam)
                 (type-rename-ispace-vars-no-capture-p type.body
                                                       dim-renam
                                                       shape-renam))))
@@ -1168,10 +1169,8 @@
                    (shape-renam (omap::delete*
                                  bound-shape-vars
                                  (string-string-map-fix shape-renam))))
-                (and (renaming-no-capture-p
-                      (set::mergesort (ispace-var-list->name expr.ispaces))
-                      dim-renam
-                      shape-renam)
+                (and (renaming-no-capture-p bound-dim-vars dim-renam)
+                     (renaming-no-capture-p bound-shape-vars shape-renam)
                      (expr-rename-ispace-vars-no-capture-p expr.body
                                                            dim-renam
                                                            shape-renam)))))
@@ -1187,10 +1186,8 @@
                    (shape-renam (omap::delete*
                                  bound-shape-vars
                                  (string-string-map-fix shape-renam))))
-                (and (renaming-no-capture-p
-                      (set::union bound-dim-vars bound-shape-vars)
-                      dim-renam
-                      shape-renam)
+                (and (renaming-no-capture-p bound-dim-vars dim-renam)
+                     (renaming-no-capture-p bound-shape-vars shape-renam)
                      (expr-rename-ispace-vars-no-capture-p expr.body
                                                            dim-renam
                                                            shape-renam)))))
@@ -1201,10 +1198,8 @@
                                         (string-string-map-fix dim-renam)))
               (shape-renam (omap::delete* bound-shape-vars
                                           (string-string-map-fix shape-renam))))
-           (and (renaming-no-capture-p
-                 (set::mergesort (ispace-var-list->name atom.params))
-                 dim-renam
-                 shape-renam)
+           (and (renaming-no-capture-p bound-dim-vars dim-renam)
+                (renaming-no-capture-p bound-shape-vars shape-renam)
                 (expr-rename-ispace-vars-no-capture-p atom.body
                                                       dim-renam
                                                       shape-renam))))
@@ -1215,10 +1210,8 @@
                                         (string-string-map-fix dim-renam)))
               (shape-renam (omap::delete* bound-shape-vars
                                           (string-string-map-fix shape-renam))))
-           (and (renaming-no-capture-p
-                 (set::mergesort (ispace-var-list->name bind.params))
-                 dim-renam
-                 shape-renam)
+           (and (renaming-no-capture-p bound-dim-vars dim-renam)
+                (renaming-no-capture-p bound-shape-vars shape-renam)
                 (type-option-rename-ispace-vars-no-capture-p bind.type?
                                                              dim-renam
                                                              shape-renam)
@@ -1237,11 +1230,8 @@
                      (shape-renam (omap::delete*
                                    bound-shape-vars
                                    (string-string-map-fix shape-renam))))
-                  (and (renaming-no-capture-p
-                        (set::mergesort
-                         (ispace-var-list->name bind.iparams?.val))
-                        dim-renam
-                        shape-renam)
+                  (and (renaming-no-capture-p bound-dim-vars dim-renam)
+                       (renaming-no-capture-p bound-shape-vars shape-renam)
                        (var+type-list-rename-ispace-vars-no-capture-p
                         bind.params
                         dim-renam
@@ -1307,10 +1297,8 @@
                                          (string-string-map-fix atom-renam)))
               (array-renam (omap::delete* bound-array-vars
                                           (string-string-map-fix array-renam))))
-           (and (renaming-no-capture-p
-                 (set::mergesort (type-var-list->name type.params))
-                 atom-renam
-                 array-renam)
+           (and (renaming-no-capture-p bound-atom-vars atom-renam)
+                (renaming-no-capture-p bound-array-vars array-renam)
                 (type-rename-type-vars-no-capture-p type.body
                                                     atom-renam
                                                     array-renam))))
@@ -1327,10 +1315,8 @@
                    (array-renam (omap::delete*
                                  bound-array-vars
                                  (string-string-map-fix array-renam))))
-                (and (renaming-no-capture-p
-                      (set::union bound-atom-vars bound-array-vars)
-                      atom-renam
-                      array-renam)
+                (and (renaming-no-capture-p bound-atom-vars atom-renam)
+                     (renaming-no-capture-p bound-array-vars array-renam)
                      (expr-rename-type-vars-no-capture-p expr.body
                                                          atom-renam
                                                          array-renam)))))
@@ -1341,10 +1327,8 @@
                                          (string-string-map-fix atom-renam)))
               (array-renam (omap::delete* bound-array-vars
                                           (string-string-map-fix array-renam))))
-           (and (renaming-no-capture-p
-                 (set::mergesort (type-var-list->name atom.params))
-                 atom-renam
-                 array-renam)
+           (and (renaming-no-capture-p bound-atom-vars atom-renam)
+                (renaming-no-capture-p bound-array-vars array-renam)
                 (expr-rename-type-vars-no-capture-p atom.body
                                                     atom-renam
                                                     array-renam))))
@@ -1355,10 +1339,8 @@
                                          (string-string-map-fix atom-renam)))
               (array-renam (omap::delete* bound-array-vars
                                           (string-string-map-fix array-renam))))
-           (and (renaming-no-capture-p
-                 (set::mergesort (type-var-list->name bind.params))
-                 atom-renam
-                 array-renam)
+           (and (renaming-no-capture-p bound-atom-vars atom-renam)
+                (renaming-no-capture-p bound-array-vars array-renam)
                 (type-option-rename-type-vars-no-capture-p bind.type?
                                                            atom-renam
                                                            array-renam)
@@ -1377,11 +1359,8 @@
                      (array-renam (omap::delete*
                                    bound-array-vars
                                    (string-string-map-fix array-renam))))
-                  (and (renaming-no-capture-p
-                        (set::mergesort
-                         (type-var-list->name bind.tparams?.val))
-                        atom-renam
-                        array-renam)
+                  (and (renaming-no-capture-p bound-atom-vars atom-renam)
+                       (renaming-no-capture-p bound-array-vars array-renam)
                        (var+type-list-rename-type-vars-no-capture-p
                         bind.params
                         atom-renam
