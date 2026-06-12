@@ -69,35 +69,6 @@
 
 ;; Library extensions
 
-;; In C17, an lvalue is required only as the operand of the unary address
-;; and pre/post increment/decrement operators, and as the left operand of
-;; simple and compound assignments. Accordingly, the :unary and :binary
-;; cases of expr-sts-split are the only places where the transformation
-;; must check that transformed expressions are still lvalues; both check
-;; the left and (when split) right expressions.
-
-(define unop-requires-lvalue-p ((op unopp))
-  :returns (yes/no booleanp)
-  (and (unop-case op '(:address :preinc :predec :postinc :postdec))
-       t))
-
-(define binop-arg1-requires-lvalue-p ((op binopp))
-  :returns (yes/no booleanp)
-  (and (binop-case op '(:asg
-                        :asg-mul
-                        :asg-div
-                        :asg-rem
-                        :asg-add
-                        :asg-su
-                        :asg-shl
-                        :asg-shr
-                        :asg-and
-                        :asg-xor
-                        :asg-ior))
-       t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define map-ident
   ((strings string-listp))
   :returns (idents ident-listp)
@@ -576,7 +547,16 @@
        any effects of the two expressions are <emph>disjoint</emph>
        (and may therefore be reordered).
        If the expression is not split,
-       the transformed expression is returned as the @('left-expr')."))
+       the transformed expression is returned as the @('left-expr').")
+     (xdoc::p
+      "Splitting an lvalue may produce non-lvalues.
+       In particular, the @(':member') and @(':memberp') cases
+       may introduce a comma to accommodate effects.
+       Therefore, in places where we need an lvalue,
+       we explicitly check that the split expressions are still lvalues.
+       In C17, lvalues are required as operands
+       to certain unary and binary operators,
+       which we check accordingly."))
     (b* ((st (sts-split-state-fix st))
          ((reterr) (expr-fix expr) nil st))
       (expr-case
@@ -709,7 +689,7 @@
               (expr-sts-split expr.arg st))
              (left-expr (make-expr-unary :op expr.op
                                          :arg left-arg))
-             ((when (and (unop-requires-lvalue-p expr.op)
+             ((when (and (c$::unop-requires-lvalue-p expr.op)
                          (not (c$::expr-syntactic-lvalue-p left-arg))))
               (retmsg$ "Split expression is no longer an lvalue.~%~@0~%~@1"
                        (context-msg-expr expr
@@ -725,7 +705,7 @@
                        (context-msg-expr expr (sts-split-state->dialect st))))
              (right-expr (make-expr-unary :op expr.op
                                           :arg right-arg?))
-             ((when (and (unop-requires-lvalue-p expr.op)
+             ((when (and (c$::unop-requires-lvalue-p expr.op)
                          (not (c$::expr-syntactic-lvalue-p right-arg?))))
               (retmsg$ "Split expression is no longer an lvalue.~%~@0~%~@1"
                        (context-msg-expr expr
@@ -785,7 +765,7 @@
              (left-expr (make-expr-binary :op expr.op
                                           :arg1 left-arg1
                                           :arg2 left-arg2))
-             ((when (and (binop-arg1-requires-lvalue-p expr.op)
+             ((when (and (c$::binop-arg1-requires-lvalue-p expr.op)
                          (not (c$::expr-syntactic-lvalue-p left-arg1))))
               (retmsg$ "Split expression is no longer an lvalue.~%~@0~%~@1"
                        (context-msg-expr expr
