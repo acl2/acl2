@@ -427,83 +427,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sts-retarget-decl-specs
-  ((decl-specs decl-spec-listp)
-   (right-name identp))
-  :returns (new-decl-specs decl-spec-listp)
-  :short "Replace a typedef name type specifier with
-          a reference to the right struct type."
-  :long
-  (xdoc::topstring-p
-   "When a split declaration denotes the struct type via a typedef name,
-    the left declaration keeps the typedef name,
-    but the right declaration must reference
-    the right struct type directly.
-    Note that this is only correct if the typedef name denotes
-    the struct type itself;
-    typedef names denoting derived types (e.g. pointers to the struct type)
-    are not supported.")
+(define decl-spec-list-typedef-spec-p
+  ((decl-specs decl-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check whether a declaration specifier list
+          includes a typedef name type specifier."
   (b* (((when (endp decl-specs))
         nil)
-       (decl-spec (first decl-specs))
-       (rest (sts-retarget-decl-specs (rest decl-specs) right-name))
-       ((unless (and (decl-spec-case decl-spec :typespec)
-                     (type-spec-case (c$::decl-spec-typespec->spec decl-spec)
-                                     :typedef)))
-        (cons (decl-spec-fix decl-spec) rest))
-       (spec (c$::make-type-spec-struct
-               :spec (c$::make-struni-spec :attribs nil
-                                           :name? (c$::ident-fix right-name)
-                                           :members nil))))
-    (cons (c$::make-decl-spec-typespec :spec spec)
-          rest)))
+       (decl-spec (first decl-specs)))
+    (or (and (decl-spec-case decl-spec :typespec)
+             (type-spec-case (c$::decl-spec-typespec->spec decl-spec)
+                             :typedef))
+        (decl-spec-list-typedef-spec-p (rest decl-specs)))))
 
-(define sts-retarget-spec/quals
-  ((specquals spec/qual-listp)
-   (right-name identp))
-  :returns (new-specquals spec/qual-listp)
-  :short "Replace a typedef name type specifier with
-          a reference to the right struct type."
-  :long
-  (xdoc::topstring-p
-   "This is the @(tsee spec/qual) counterpart
-    of @(tsee sts-retarget-decl-specs).")
+(define spec/qual-list-typedef-spec-p
+  ((specquals spec/qual-listp))
+  :returns (yes/no booleanp)
+  :short "Check whether a specifier/qualifier list
+          includes a typedef name type specifier."
   (b* (((when (endp specquals))
         nil)
-       (specqual (first specquals))
-       (rest (sts-retarget-spec/quals (rest specquals) right-name))
-       ((unless (and (spec/qual-case specqual :typespec)
-                     (type-spec-case (c$::spec/qual-typespec->spec specqual)
-                                     :typedef)))
-        (cons (spec/qual-fix specqual) rest))
-       (spec (c$::make-type-spec-struct
-               :spec (c$::make-struni-spec :attribs nil
-                                           :name? (c$::ident-fix right-name)
-                                           :members nil))))
-    (cons (c$::make-spec/qual-typespec :spec spec)
-          rest)))
-
-(define sts-remove-typedef-stoclass
-  ((decl-specs decl-spec-listp))
-  :returns (new-decl-specs decl-spec-listp)
-  :short "Remove typedef storage class specifiers."
-  :long
-  (xdoc::topstring-p
-   "When a typedef declaration defines the struct type,
-    the right declaration consists of
-    just the definition of the right struct type,
-    without any declarators,
-    so the @('typedef') storage class specifier is dropped.")
-  (b* (((when (endp decl-specs))
-        nil)
-       (decl-spec (first decl-specs))
-       (rest (sts-remove-typedef-stoclass (rest decl-specs)))
-       ((when (and (decl-spec-case decl-spec :stoclass)
-                   (c$::stor-spec-case
-                     (c$::decl-spec-stoclass->spec decl-spec)
-                     :typedef)))
-        rest))
-    (cons (decl-spec-fix decl-spec) rest)))
+       (specqual (first specquals)))
+    (or (and (spec/qual-case specqual :typespec)
+             (type-spec-case (c$::spec/qual-typespec->spec specqual)
+                             :typedef))
+        (spec/qual-list-typedef-spec-p (rest specquals)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -516,6 +464,12 @@
                (st$ sts-split-statep))
   :parents (sts-split)
   :short "Transform a GCC attribute."
+  :long
+  (xdoc::topstring
+   "Attribute parameters are not validated,
+    so we cannot transform them as we do other items in the clique
+    (and it is not clear that we should).
+    For now, we leave them as is and log the decision as a warning.")
   (b* ((st (sts-split-state-fix st))
        ((reterr) (c$::attrib-fix attrib) st))
     (c$::attrib-case
@@ -523,9 +477,9 @@
       :name-only (retok (c$::attrib-fix attrib) st)
       :name-params
       (b* ((st (sts-split-state-add-warning
-                 (msg$ "Not transforming attribute parameters, ~
-                        because attribute expressions are not yet validated.~%~@0"
-                       (context-msg-attrib attrib (sts-split-state->dialect st)))
+                 (msg$ "Not transforming attribute parameter.~%~@0"
+                       (context-msg-attrib attrib
+                                           (sts-split-state->dialect st)))
                  st)))
         (retok (c$::attrib-fix attrib) st)))))
 
@@ -1168,6 +1122,9 @@
               (enum-spec-sts-split type-spec.spec st)))
           (retok (c$::make-type-spec-enum :spec spec) nil st))
         :typedef
+        ;; Typedef names denoting the split struct type
+        ;; are rejected by the callers which determine splits
+        ;; (tyname-sts-split, declon-sts-split, param-declon-sts-split).
         (retok (type-spec-fix type-spec) nil st)
         :int128
         (retok (type-spec-fix type-spec) nil st)
@@ -1279,22 +1236,34 @@
      (st sts-split-statep))
     :guard (spec/qual-list-annop specquals)
     :returns (mv (er? maybe-msgp)
+                 (splitp booleanp)
                  (left-spec/qual-list spec/qual-listp)
                  (right-spec/qual-list spec/qual-listp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a specifier/qualifier list."
+    :long
+    (xdoc::topstring-p
+     "The returned @('splitp') indicates whether
+      any specifier in the list split,
+      which happens when the list includes
+      a type specifier denoting the target struct type.
+      The right list is only meaningful in that case;
+      elements which do not split
+      contribute their left transformation to both lists.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil nil st))
-      (if (atom specquals)
-          (retok nil nil st)
-        (b* (((erp - left-specqual right-specqual st)
-              (spec/qual-sts-split (car specquals) st))
-             ((erp left-rest right-rest st)
-              (spec/qual-list-sts-split (cdr specquals) st)))
-          (retok (cons left-specqual left-rest)
-                 (cons right-specqual right-rest)
-                 st))))
+         ((reterr) nil nil nil st)
+         ((when (endp specquals))
+          (retok nil nil nil st))
+        ((erp first-splitp left-specqual right-specqual st)
+         (spec/qual-sts-split (car specquals) st))
+        ((erp rest-splitp left-rest right-rest st)
+         (spec/qual-list-sts-split (cdr specquals) st)))
+      (retok (or first-splitp rest-splitp)
+             (cons left-specqual left-rest)
+             (cons (if first-splitp right-specqual left-specqual)
+                   right-rest)
+             st))
     :measure (spec/qual-list-count specquals))
 
   (define align-spec-sts-split
@@ -1395,7 +1364,11 @@
      "The returned @('splitp') indicates whether
       any specifier in the list split,
       which happens when the list includes
-      a definition of the target struct type.")
+      a type specifier denoting the target struct type
+      (a definition or a tagged reference).
+      The right list is only meaningful in that case;
+      elements which do not split
+      contribute their left transformation to both lists.")
     (b* ((st (sts-split-state-fix st))
          ((reterr) nil nil nil st))
       (if (atom decl-specs)
@@ -1406,7 +1379,8 @@
               (decl-spec-list-sts-split (cdr decl-specs) st)))
           (retok (or first-splitp rest-splitp)
                  (cons left-decl-spec left-rest)
-                 (cons right-decl-spec right-rest)
+                 (cons (if first-splitp right-decl-spec left-decl-spec)
+                       right-rest)
                  st))))
     :measure (decl-spec-list-count decl-specs))
 
@@ -2145,19 +2119,18 @@
                    erp
                    (context-msg-param-declon param-declon
                                              (sts-split-state->dialect st))))
+         ((when (and splitp
+                     (decl-spec-list-typedef-spec-p param-declon.specs)))
+          (retmsg$ "Typedef names denoting the split struct type ~
+                    are not supported.~%~@0"
+                   (context-msg-param-declon param-declon
+                                             (sts-split-state->dialect st))))
          ((erp - left-specs right-specs st)
           (decl-spec-list-sts-split param-declon.specs st))
          ((erp - left-declor right-declor st)
           (param-declor-sts-split param-declon.declor splitp st))
          ((erp attribs st)
           (attrib-spec-list-sts-split param-declon.attribs st))
-         ;; A typedef name type specifier (if any) is replaced by
-         ;; a reference to the right struct type.
-         (right-specs
-           (if splitp
-               (sts-retarget-decl-specs right-specs
-                                        (sts-split-state->right-name st))
-             right-specs))
          (left-param-declon
            (c$::make-param-declon :specs left-specs
                                   :declor left-declor
@@ -2289,17 +2262,15 @@
           (retmsg$ "~@0~%~@1"
                    erp
                    (context-msg-tyname tyname (sts-split-state->dialect st))))
-         ((erp left-specquals right-specquals st)
+         ((when (and splitp
+                     (spec/qual-list-typedef-spec-p tyname.specquals)))
+          (retmsg$ "Typedef names denoting the split struct type ~
+                    are not supported.~%~@0"
+                   (context-msg-tyname tyname (sts-split-state->dialect st))))
+         ((erp - left-specquals right-specquals st)
           (spec/qual-list-sts-split tyname.specquals st))
          ((erp left-declor? right-declor? st)
-          (absdeclor-option-sts-split tyname.declor? splitp st))
-         ;; A typedef name type specifier (if any) is replaced by
-         ;; a reference to the right struct type.
-         (right-specquals
-           (if splitp
-               (sts-retarget-spec/quals right-specquals
-                                        (sts-split-state->right-name st))
-             right-specquals)))
+          (absdeclor-option-sts-split tyname.declor? splitp st)))
       (retok splitp
              (c$::make-tyname :specquals left-specquals
                               :declor? left-declor?
@@ -2394,8 +2365,16 @@
       (struct-declon-case
         struct-declon
         :member
-        (b* (((erp left-specquals - st)
+        (b* (((erp specquals-splitp left-specquals - st)
               (spec/qual-list-sts-split struct-declon.specquals st))
+             ((when specquals-splitp)
+              (retmsg$ "INTERNAL ERROR. ~
+                        The split struct type occurs in ~
+                        a struct member declaration, ~
+                        which should have been rejected upstream.~%~@0"
+                       (context-msg-struct-declon
+                         struct-declon
+                         (sts-split-state->dialect st))))
              ((erp left-declors right-declors st)
               (struct-declor-list-sts-split splitp struct-declon.declors st))
              ((erp attribs st)
@@ -2739,15 +2718,11 @@
                    erp
                    (context-msg-init-declor init-declor
                                             (sts-split-state->dialect st))))
-         ((when (and type-splitp
-                     info.typedefp
-                     (not (type-case info.type :struct))))
-          (retmsg$ "Typedefs denoting types derived from ~
-                    the split struct type are not supported.~%~@0"
+         ((when (and type-splitp info.typedefp))
+          (retmsg$ "Typedefs of the split struct type are not supported.~%~@0"
                    (context-msg-init-declor init-declor
                                             (sts-split-state->dialect st))))
-         (splitp (and type-splitp
-                      (not info.typedefp)))
+         (splitp type-splitp)
          ((when (and splitp (not info.uid?)))
           (retmsg$ "INTERNAL ERROR. ~
                     An initializer declarator of splittable type ~
@@ -2852,7 +2827,8 @@
         ;; The declarators are processed before the specifiers
         ;; to determine whether the declaration splits.
         ;; The declaration also splits when the specifiers split,
-        ;; i.e. when they include a definition of the target struct type,
+        ;; i.e. when they include a type specifier
+        ;; denoting the target struct type,
         ;; even if there are no declarators.
         (b* (((erp left-declors right-declors st)
               (init-declor-list-sts-split declon.declors st))
@@ -2860,19 +2836,12 @@
              ((erp specs-splitp left-specs right-specs st)
               (decl-spec-list-sts-split declon.specs st))
              (splitp (or declors-splitp specs-splitp))
-             ;; If the right declaration has declarators,
-             ;; a typedef name type specifier (if any)
-             ;; is replaced by a reference to the right struct type.
-             ;; Otherwise, the right declaration is just
-             ;; a definition of the right struct type,
-             ;; and any typedef storage class specifier is dropped.
-             (right-specs
-               (cond ((not splitp) right-specs)
-                     (declors-splitp
-                      (sts-retarget-decl-specs
-                        right-specs
-                        (sts-split-state->right-name st)))
-                     (t (sts-remove-typedef-stoclass right-specs))))
+             ((when (and splitp
+                         (decl-spec-list-typedef-spec-p declon.specs)))
+              (retmsg$ "Typedef names denoting the split struct type ~
+                        are not supported.~%~@0"
+                       (context-msg-declon declon
+                                           (sts-split-state->dialect st))))
              (left-declon
                (c$::make-declon-declon :extension declon.extension
                                        :specs left-specs
@@ -3151,8 +3120,7 @@
           (retok nil new-stmt new-stmt st))
         :asm
         (b* ((st (sts-split-state-add-warning
-                   (msg$ "Not transforming assembler statement, ~
-                          because assembler constructs are not yet validated.~%~@0"
+                   (msg$ "Not transforming assembler statement.~%~@0"
                          (context-msg-stmt stmt (sts-split-state->dialect st)))
                    st)))
           (retok nil (stmt-fix stmt) (stmt-fix stmt) st))))

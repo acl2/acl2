@@ -420,49 +420,28 @@ int getz(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The struct type is defined via a typedef.
-;; The left declarations keep the typedef name,
-;; while the right declarations reference the right struct type directly.
+;; Typedefs of the split struct type are not supported,
+;; and are detected and rejected.
+;; TODO: support typedefs by introducing parallel typedefs
+;; of the right struct type and substituting them in.
 
 (acl2::must-succeed*
   (c$::input-files :files '("typedef.c")
                    :const *old*)
 
-  (struct-type-split *old*
-                     *new*
-                     :struct-tag "point"
-                     :right-members ("z")
-                     :new-tag "point_right")
-
-  (c$::output-files :const *new*
-                    :base-dir "new")
-
-  (assert-file-contents
-    :file "new/typedef.c"
-    :content "typedef struct point {
-  int x;
-} point_t;
-
-struct point_right {
-  int z;
-};
-
-static point_t p;
-
-static struct point_right p_0;
-
-int main(void) {
-  p.x = 4;
-  return p.x + p_0.z;
-}
-")
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")
+                       :new-tag "point_right"))
 
   :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A typedef denoting a derived type (here a pointer to the struct type)
-;; is not supported, and is detected and rejected.
-;; TODO: we need to consider how to better support typedefs.
+;; is likewise not supported, and is detected and rejected.
 
 (acl2::must-succeed*
   (c$::input-files :files '("typedef-ptr.c")

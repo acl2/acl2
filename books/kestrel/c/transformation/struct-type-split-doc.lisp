@@ -172,14 +172,12 @@
       in the future with improvements to the implementation.")
     (xdoc::ul
      (xdoc::li
-      "Typedefs of the struct type are supported:
-       declarations via the typedef name
-       keep the typedef name for the left object
-       and reference the right struct type directly
-       for the right object.
-       However, typedefs denoting derived types
-       (e.g. pointers to the struct type) are not supported;
-       they are detected and reported as errors.")
+      "Typedefs of the struct type
+       (including typedefs of derived types, such as pointers to it)
+       are not supported;
+       they are detected and reported as errors.
+       We plan to support them by introducing
+       parallel typedefs of the right struct type.")
      (xdoc::li
       "Assembler constructs and attribute parameters are not transformed;
        a warning is printed when they are encountered.")
