@@ -32,16 +32,15 @@
                   :stobjs state
                   :verify-guards nil ; todo: because of fundef-disabledp
                   ))
-  (let* ((old-fn-disabled (fundef-disabledp old-fn state))
-         (old-fn-non-executable (non-executablep old-fn (w state)))
-         (disabled (if (eq new-fn-disabled :auto)
-                       ;; :auto means disable iff the old function is disabled
-                       old-fn-disabled
+  (let* ((disabled (if (eq new-fn-disabled :auto)
+                       ;; :auto means disable iff the old function is disabled:
+                       (fundef-disabledp old-fn state)
                      new-fn-disabled))
          (non-executable (if (eq new-fn-non-executable :auto)
                              ;; :auto means non-exec iff the old function is
-                             ;; non-exec
-                             old-fn-non-executable
+                             ;; non-exec:
+                             (non-executablep old-fn (w state))
+                           ;; Use the explicit boolean value provided:
                            new-fn-non-executable)))
     (if disabled
         (if non-executable
