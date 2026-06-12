@@ -359,7 +359,7 @@
   (xdoc::topstring-p
    "This includes the members of the split struct type itself,
     so self-referential split struct types are rejected.")
-  (b* (((when (atom completions))
+  (b* (((when (endp completions))
         nil)
        (entry (first completions))
        ((unless (consp entry))
@@ -1370,18 +1370,18 @@
       elements which do not split
       contribute their left transformation to both lists.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil nil nil st))
-      (if (atom decl-specs)
-          (retok nil nil nil st)
-        (b* (((erp first-splitp left-decl-spec right-decl-spec st)
-              (decl-spec-sts-split (car decl-specs) st))
-             ((erp rest-splitp left-rest right-rest st)
-              (decl-spec-list-sts-split (cdr decl-specs) st)))
-          (retok (or first-splitp rest-splitp)
-                 (cons left-decl-spec left-rest)
-                 (cons (if first-splitp right-decl-spec left-decl-spec)
-                       right-rest)
-                 st))))
+         ((reterr) nil nil nil st)
+         ((when (endp decl-specs))
+          (retok nil nil nil st))
+         ((erp first-splitp left-decl-spec right-decl-spec st)
+          (decl-spec-sts-split (car decl-specs) st))
+         ((erp rest-splitp left-rest right-rest st)
+          (decl-spec-list-sts-split (cdr decl-specs) st)))
+      (retok (or first-splitp rest-splitp)
+             (cons left-decl-spec left-rest)
+             (cons (if first-splitp right-decl-spec left-decl-spec)
+                   right-rest)
+             st))
     :measure (decl-spec-list-count decl-specs))
 
   (define typequal/attribspec-sts-split
@@ -1414,14 +1414,14 @@
     :parents (sts-split)
     :short "Transform a type-qualifier/attribute-specifier list."
     (b* ((st (sts-split-state-fix st))
-         ((reterr) (c$::typequal/attribspec-list-fix tyqualattribs) st))
-      (if (atom tyqualattribs)
-          (retok nil st)
-        (b* (((erp head st)
-              (typequal/attribspec-sts-split (car tyqualattribs) st))
-             ((erp rest st)
-              (typequal/attribspec-list-sts-split (cdr tyqualattribs) st)))
-          (retok (cons head rest) st))))
+         ((reterr) (c$::typequal/attribspec-list-fix tyqualattribs) st)
+         ((when (endp tyqualattribs))
+          (retok nil st))
+         ((erp head st)
+          (typequal/attribspec-sts-split (car tyqualattribs) st))
+         ((erp rest st)
+          (typequal/attribspec-list-sts-split (cdr tyqualattribs) st)))
+      (retok (cons head rest) st))
     :measure (c$::typequal/attribspec-list-count tyqualattribs))
 
   (define typequal/attribspec-list-list-sts-split
@@ -1434,17 +1434,15 @@
     :parents (sts-split)
     :short "Transform a list of type-qualifier/attribute-specifier lists."
     (b* ((st (sts-split-state-fix st))
-         ((reterr) (c$::typequal/attribspec-list-list-fix tyqualattribs) st))
-      (if (atom tyqualattribs)
-          (retok nil st)
-        (b* (((erp head st)
-              (typequal/attribspec-list-sts-split (car tyqualattribs) st))
-             ((erp rest st)
-              (typequal/attribspec-list-list-sts-split (cdr tyqualattribs) st)))
-          (retok (cons head rest) st))))
+         ((reterr) (c$::typequal/attribspec-list-list-fix tyqualattribs) st)
+         ((when (endp tyqualattribs))
+          (retok nil st))
+         ((erp head st)
+          (typequal/attribspec-list-sts-split (car tyqualattribs) st))
+         ((erp rest st)
+          (typequal/attribspec-list-list-sts-split (cdr tyqualattribs) st)))
+      (retok (cons head rest) st))
     :measure (c$::typequal/attribspec-list-list-count tyqualattribs))
-
-  ;; GJ: resume here
 
   (define initer-sts-split
     ((initer initerp)
@@ -1576,25 +1574,25 @@
       When @('splitp') is @('nil'),
       both lists hold the same transformed initializers.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil nil st))
-      (if (atom desiniter-list)
-          (retok nil nil st)
-        (b* (((erp rightp left-desiniter right-desiniter st)
-              (desiniter-sts-split (car desiniter-list) splitp st))
-             ((erp left-rest right-rest st)
-              (desiniter-list-sts-split splitp (cdr desiniter-list) st)))
-          (cond ((not splitp)
-                 (retok (cons left-desiniter left-rest)
-                        (cons right-desiniter right-rest)
-                        st))
-                (rightp
-                 (retok left-rest
-                        (cons right-desiniter right-rest)
-                        st))
-                (t
-                 (retok (cons left-desiniter left-rest)
-                        right-rest
-                        st))))))
+         ((reterr) nil nil st)
+         ((when (endp desiniter-list))
+          (retok nil nil st))
+         ((erp rightp left-desiniter right-desiniter st)
+          (desiniter-sts-split (car desiniter-list) splitp st))
+         ((erp left-rest right-rest st)
+          (desiniter-list-sts-split splitp (cdr desiniter-list) st)))
+      (cond ((not splitp)
+             (retok (cons left-desiniter left-rest)
+                    (cons right-desiniter right-rest)
+                    st))
+            (rightp
+             (retok left-rest
+                    (cons right-desiniter right-rest)
+                    st))
+            (t
+             (retok (cons left-desiniter left-rest)
+                    right-rest
+                    st))))
     :measure (desiniter-list-count desiniter-list))
 
   (define designor-sts-split
@@ -1637,14 +1635,14 @@
     :parents (sts-split)
     :short "Transform a designator list."
     (b* ((st (sts-split-state-fix st))
-         ((reterr) (designor-list-fix designors) st))
-      (if (atom designors)
-          (retok nil st)
-        (b* (((erp head st)
-              (designor-sts-split (car designors) st))
-             ((erp rest st)
-              (designor-list-sts-split (cdr designors) st)))
-          (retok (cons head rest) st))))
+         ((reterr) (designor-list-fix designors) st)
+         ((when (endp designors))
+          (retok nil st))
+         ((erp head st)
+          (designor-sts-split (car designors) st))
+         ((erp rest st)
+          (designor-list-sts-split (cdr designors) st)))
+      (retok (cons head rest) st))
     :measure (designor-list-count designors))
 
   (define declor-sts-split
@@ -2160,16 +2158,16 @@
     (xdoc::topstring-p
      "Splits are spliced into the list in-place.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) (param-declon-list-fix params) st))
-      (if (atom params)
-          (retok nil st)
-        (b* (((erp splitp left right st)
-              (param-declon-sts-split (car params) st))
-             ((erp rest st)
-              (param-declon-list-sts-split (cdr params) st)))
-          (if splitp
-              (retok (list* left right rest) st)
-            (retok (cons left rest) st)))))
+         ((reterr) (param-declon-list-fix params) st)
+         ((when (endp params))
+          (retok nil st))
+         ((erp splitp left right st)
+          (param-declon-sts-split (car params) st))
+         ((erp rest st)
+          (param-declon-list-sts-split (cdr params) st)))
+      (if splitp
+          (retok (list* left right rest) st)
+        (retok (cons left rest) st)))
     :measure (param-declon-list-count params))
 
   (define param-declor-sts-split
@@ -2431,44 +2429,44 @@
       member declarations whose declarators
       were all routed to the other side are dropped.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil nil st))
-      (if (atom struct-declons)
-          (retok nil nil st)
-        (b* (((erp dsplitp left-struct-declon right-struct-declon st)
-              (struct-declon-sts-split (car struct-declons) splitp st))
-             ((erp left-rest right-rest st)
-              (struct-declon-list-sts-split splitp (cdr struct-declons) st))
-             ((unless dsplitp)
-              (retok (cons left-struct-declon left-rest)
-                     (cons right-struct-declon right-rest)
-                     st))
-             ;; A member declaration with no declarators in the first place
-             ;; (i.e. an anonymous struct/union member)
-             ;; stays in the left struct type
-             ;; (it cannot be listed in the right member set);
-             ;; it is not dropped from the left struct type,
-             ;; unlike member declarations
-             ;; whose declarators were all routed to the right.
-             (orig-emptyp
-               (and (struct-declon-case (car struct-declons) :member)
-                    (atom (c$::struct-declon-member->declors
-                            (car struct-declons)))))
-             (left-emptyp
-               (and (not orig-emptyp)
-                    (struct-declon-case left-struct-declon :member)
-                    (atom (c$::struct-declon-member->declors
-                            left-struct-declon))))
-             (right-emptyp
-               (and (struct-declon-case right-struct-declon :member)
-                    (atom (c$::struct-declon-member->declors
-                            right-struct-declon)))))
-          (retok (if left-emptyp
-                     left-rest
-                   (cons left-struct-declon left-rest))
-                 (if right-emptyp
-                     right-rest
-                   (cons right-struct-declon right-rest))
-                 st))))
+         ((reterr) nil nil st)
+         ((when (endp struct-declons))
+          (retok nil nil st))
+         ((erp dsplitp left-struct-declon right-struct-declon st)
+          (struct-declon-sts-split (car struct-declons) splitp st))
+         ((erp left-rest right-rest st)
+          (struct-declon-list-sts-split splitp (cdr struct-declons) st))
+         ((unless dsplitp)
+          (retok (cons left-struct-declon left-rest)
+                 (cons right-struct-declon right-rest)
+                 st))
+         ;; A member declaration with no declarators in the first place
+         ;; (i.e. an anonymous struct/union member)
+         ;; stays in the left struct type
+         ;; (it cannot be listed in the right member set);
+         ;; it is not dropped from the left struct type,
+         ;; unlike member declarations
+         ;; whose declarators were all routed to the right.
+         (orig-emptyp
+           (and (struct-declon-case (car struct-declons) :member)
+                (atom (c$::struct-declon-member->declors
+                        (car struct-declons)))))
+         (left-emptyp
+           (and (not orig-emptyp)
+                (struct-declon-case left-struct-declon :member)
+                (atom (c$::struct-declon-member->declors
+                        left-struct-declon))))
+         (right-emptyp
+           (and (struct-declon-case right-struct-declon :member)
+                (atom (c$::struct-declon-member->declors
+                        right-struct-declon)))))
+      (retok (if left-emptyp
+                 left-rest
+               (cons left-struct-declon left-rest))
+             (if right-emptyp
+                 right-rest
+               (cons right-struct-declon right-rest))
+             st))
     :measure (struct-declon-list-count struct-declons))
 
   (define struct-declor-sts-split
@@ -2605,14 +2603,14 @@
     :parents (sts-split)
     :short "Transform an enumerator list."
     (b* ((st (sts-split-state-fix st))
-         ((reterr) (enumer-list-fix enumers) st))
-      (if (atom enumers)
-          (retok nil st)
-        (b* (((erp head st)
-              (enumer-sts-split (car enumers) st))
-             ((erp rest st)
-              (enumer-list-sts-split (cdr enumers) st)))
-          (retok (cons head rest) st))))
+         ((reterr) (enumer-list-fix enumers) st)
+         ((when (endp enumers))
+          (retok nil st))
+         ((erp head st)
+          (enumer-sts-split (car enumers) st))
+         ((erp rest st)
+          (enumer-list-sts-split (cdr enumers) st)))
+      (retok (cons head rest) st))
     :measure (enumer-list-count enumers))
 
   (define statassert-sts-split
@@ -2646,14 +2644,14 @@
     :parents (sts-split)
     :short "Transform a GCC attribute list."
     (b* ((st (sts-split-state-fix st))
-         ((reterr) (c$::attrib-list-fix attribs) st))
-      (if (atom attribs)
-          (retok nil st)
-        (b* (((erp head st)
-              (attrib-sts-split (car attribs) st))
-             ((erp rest st)
-              (attrib-list-sts-split (cdr attribs) st)))
-          (retok (cons head rest) st))))
+         ((reterr) (c$::attrib-list-fix attribs) st)
+         ((when (endp attribs))
+          (retok nil st))
+         ((erp head st)
+          (attrib-sts-split (car attribs) st))
+         ((erp rest st)
+          (attrib-list-sts-split (cdr attribs) st)))
+      (retok (cons head rest) st))
     :measure (c$::attrib-list-count attribs))
 
   (define attrib-spec-sts-split
@@ -2682,14 +2680,14 @@
     :parents (sts-split)
     :short "Transform a GCC attribute specifier list."
     (b* ((st (sts-split-state-fix st))
-         ((reterr) (c$::attrib-spec-list-fix attrib-specs) st))
-      (if (atom attrib-specs)
-          (retok nil st)
-        (b* (((erp head st)
-              (attrib-spec-sts-split (car attrib-specs) st))
-             ((erp rest st)
-              (attrib-spec-list-sts-split (cdr attrib-specs) st)))
-          (retok (cons head rest) st))))
+         ((reterr) (c$::attrib-spec-list-fix attrib-specs) st)
+         ((when (endp attrib-specs))
+          (retok nil st))
+         ((erp head st)
+          (attrib-spec-sts-split (car attrib-specs) st))
+         ((erp rest st)
+          (attrib-spec-list-sts-split (cdr attrib-specs) st)))
+      (retok (cons head rest) st))
     :measure (c$::attrib-spec-list-count attrib-specs))
 
   (define init-declor-sts-split
@@ -3200,16 +3198,16 @@
     (xdoc::topstring-p
      "Splits within block items are spliced in-place.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) (block-item-list-fix block-items) st))
-      (if (atom block-items)
-          (retok nil st)
-        (b* (((erp splitp left right st)
-              (block-item-sts-split (car block-items) st))
-             ((erp rest st)
-              (block-item-list-sts-split (cdr block-items) st)))
-          (if splitp
-              (retok (list* left right rest) st)
-            (retok (cons left rest) st)))))
+         ((reterr) (block-item-list-fix block-items) st)
+         ((when (endp block-items))
+          (retok nil st))
+         ((erp splitp left right st)
+          (block-item-sts-split (car block-items) st))
+         ((erp rest st)
+          (block-item-list-sts-split (cdr block-items) st)))
+      (if splitp
+          (retok (list* left right rest) st)
+        (retok (cons left rest) st)))
     :measure (block-item-list-count block-items))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3358,7 +3356,7 @@
   :short "Transform a translation item list."
   (b* ((st (sts-split-state-fix st))
        ((reterr) nil st)
-       ((when (atom items))
+       ((when (endp items))
         (retok nil st))
        ((erp first-items st)
         (trans-item-sts-split (car items) st))
