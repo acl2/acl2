@@ -1092,6 +1092,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define string-list-map-ident
+  ((strings string-listp))
+  :returns (idents ident-listp)
+  :short "Map @(tsee ident) over a list of strings."
+  (if (endp strings)
+      nil
+    (cons (ident (mbe :logic (acl2::str-fix (first strings))
+                      :exec (first strings)))
+          (string-list-map-ident (rest strings))))
+  :guard-hints (("Goal" :in-theory (enable string-listp)))
+  ///
+
+  (more-returns
+   (idents true-listp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ident-list-map-expr-ident
   ((idents ident-listp))
   :returns (exprs expr-listp)
