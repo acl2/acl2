@@ -46,6 +46,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defmacro lstrfix (x)
+  `(mbe :logic (acl2::str-fix ,x) :exec ,x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define context-msg-expr
   ((expr exprp)
    (dialect c::dialectp)
@@ -55,14 +60,14 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for an expression."
   :long
   (xdoc::topstring-p
     "Returns a message of the form
      ``[prefix] [expression kind]: [printed expression]'',
      for use in error messages.")
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (expr (expr-fix expr))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        (case-str (expr-case
@@ -89,7 +94,7 @@
                    :otherwise "expression"))
        ((unless (and (expr-unambp expr)
                     (expr-aidentp expr dialect)))
-        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str (expr-fix expr)))
+        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str expr))
        (expr-str (print-expr-to-str expr dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str expr-str)))
 
@@ -104,9 +109,8 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a statement."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
        (stmt (stmt-fix stmt))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
@@ -135,8 +139,7 @@
                     (stmt-aidentp stmt dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str stmt))
        (stmt-str (print-stmt-to-str stmt dialect :options options :indent t)))
-    (msg$ "~s0 ~s1:~%~s2" prefix case-str stmt-str))
-  :verbosep t)
+    (msg$ "~s0 ~s1:~%~s2" prefix case-str stmt-str)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -149,9 +152,9 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a declaration."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (declon (declon-fix declon))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        (case-str (declon-case
@@ -160,7 +163,7 @@
                    :statassert "static assertion"))
        ((unless (and (declon-unambp declon)
                     (declon-aidentp declon dialect)))
-        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str (declon-fix declon)))
+        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str declon))
        (declon-str (print-declon-to-str declon dialect :options options :indent t)))
     (msg$ "~s0 ~s1:~%~s2" prefix case-str declon-str)))
 
@@ -175,14 +178,14 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a function definition."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (fundef (fundef-fix fundef))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (fundef-unambp fundef)
                     (fundef-aidentp fundef dialect)))
-        (msg$ "~s1 function definition:~%~_0~x2" indent-size prefix (fundef-fix fundef)))
+        (msg$ "~s1 function definition:~%~_0~x2" indent-size prefix fundef))
        (fundef-str (print-fundef-to-str fundef dialect :options options :indent t)))
     (msg$ "~s1 function definition:~%~_0~s2" indent-size prefix fundef-str)))
 
@@ -197,15 +200,15 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a constant expression."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (cexpr (c$::const-expr-fix cexpr))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (const-expr-unambp cexpr)
                     (const-expr-aidentp cexpr dialect)))
         (msg$ "~s1 constant expression:~%~_0~x2"
-              indent-size prefix (c$::const-expr-fix cexpr)))
+              indent-size prefix cexpr))
        (str (print-const-expr-to-str cexpr dialect :options options)))
     (msg$ "~s1 constant expression:~%~_0~s2" indent-size prefix str)))
 
@@ -220,9 +223,9 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a generic association."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (genassoc (genassoc-fix genassoc))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        (case-str (genassoc-case
@@ -231,7 +234,7 @@
                    :default "default generic association"))
        ((unless (and (genassoc-unambp genassoc)
                     (genassoc-aidentp genassoc dialect)))
-        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str (genassoc-fix genassoc)))
+        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str genassoc))
        (str (print-genassoc-to-str genassoc dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
 
@@ -246,9 +249,9 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a member designator."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (memdes (member-designor-fix memdes))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        (case-str (member-designor-case
@@ -259,7 +262,7 @@
        ((unless (and (member-designor-unambp memdes)
                     (member-designor-aidentp memdes dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3"
-              indent-size prefix case-str (member-designor-fix memdes)))
+              indent-size prefix case-str memdes))
        (str (print-member-designor-to-str memdes dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
 
@@ -274,14 +277,14 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a type specifier."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (tyspec (type-spec-fix tyspec))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (type-spec-unambp tyspec)
                     (type-spec-aidentp tyspec dialect)))
-        (msg$ "~s1 type specifier:~%~_0~x2" indent-size prefix (type-spec-fix tyspec)))
+        (msg$ "~s1 type specifier:~%~_0~x2" indent-size prefix tyspec))
        (str (print-type-spec-to-str tyspec dialect :options options)))
     (msg$ "~s1 type specifier:~%~_0~s2" indent-size prefix str)))
 
@@ -296,9 +299,9 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a specifier or qualifier."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (specqual (spec/qual-fix specqual))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        (case-str (spec/qual-case
@@ -309,7 +312,7 @@
                    :attrib   "attribute specifier"))
        ((unless (and (spec/qual-unambp specqual)
                     (spec/qual-aidentp specqual dialect)))
-        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str (spec/qual-fix specqual)))
+        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str specqual))
        (str (print-spec/qual-to-str specqual dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
 
@@ -324,9 +327,9 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for an alignment specifier."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (alignspec (align-spec-fix alignspec))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        (case-str (align-spec-case
@@ -336,7 +339,7 @@
                    :alignas-ambig "alignment specifier"))
        ((unless (and (align-spec-unambp alignspec)
                     (align-spec-aidentp alignspec dialect)))
-        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str (align-spec-fix alignspec)))
+        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str alignspec))
        (str (print-align-spec-to-str alignspec dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
 
@@ -351,9 +354,9 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a declaration specifier."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (declspec (decl-spec-fix declspec))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        (case-str (decl-spec-case
@@ -368,7 +371,7 @@
                    :declspec "declspec attribute"))
        ((unless (and (decl-spec-unambp declspec)
                     (decl-spec-aidentp declspec dialect)))
-        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str (decl-spec-fix declspec)))
+        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str declspec))
        (str (print-decl-spec-to-str declspec dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
 
@@ -383,14 +386,14 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a type qualifier or attribute specifier."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (tyqualattrib (c$::typequal/attribspec-fix tyqualattrib))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (c$::typequal/attribspec-aidentp tyqualattrib dialect))
         (msg$ "~s1 type qualifier or attribute specifier:~%~_0~x2"
-              indent-size prefix (c$::typequal/attribspec-fix tyqualattrib)))
+              indent-size prefix tyqualattrib))
        (str (print-typequal/attribspec-to-str tyqualattrib dialect :options options)))
     (msg$ "~s1 type qualifier or attribute specifier:~%~_0~s2" indent-size prefix str)))
 
@@ -405,9 +408,9 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for an initializer."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (initer (initer-fix initer))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        (case-str (initer-case
@@ -416,7 +419,7 @@
                    :list   "list initializer"))
        ((unless (and (initer-unambp initer)
                     (initer-aidentp initer dialect)))
-        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str (initer-fix initer)))
+        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str initer))
        (str (print-initer-to-str initer dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
 
@@ -431,15 +434,15 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for an initializer with optional designations."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (desiniter (desiniter-fix desiniter))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (desiniter-unambp desiniter)
                     (desiniter-aidentp desiniter dialect)))
         (msg$ "~s1 initializer with optional designations:~%~_0~x2"
-              indent-size prefix (desiniter-fix desiniter)))
+              indent-size prefix desiniter))
        (str (print-desiniter-to-str desiniter dialect :options options)))
     (msg$ "~s1 initializer with optional designations:~%~_0~s2"
           indent-size prefix str)))
@@ -455,9 +458,9 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a designator."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (designor (designor-fix designor))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        (case-str (designor-case
@@ -466,7 +469,7 @@
                    :dot "member designator"))
        ((unless (and (designor-unambp designor)
                     (designor-aidentp designor dialect)))
-        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str (designor-fix designor)))
+        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str designor))
        (str (print-designor-to-str designor dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
 
@@ -481,14 +484,14 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a declarator."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (declor (declor-fix declor))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (declor-unambp declor)
                     (declor-aidentp declor dialect)))
-        (msg$ "~s1 declarator:~%~_0~x2" indent-size prefix (declor-fix declor)))
+        (msg$ "~s1 declarator:~%~_0~x2" indent-size prefix declor))
        (str (print-declor-to-str declor dialect :options options)))
     (msg$ "~s1 declarator:~%~_0~s2" indent-size prefix str)))
 
@@ -503,9 +506,9 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a direct declarator."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (dirdeclor (dirdeclor-fix dirdeclor))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        (case-str (dirdeclor-case
@@ -520,7 +523,7 @@
                    :function-names  "function declarator"))
        ((unless (and (dirdeclor-unambp dirdeclor)
                     (dirdeclor-aidentp dirdeclor dialect)))
-        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str (dirdeclor-fix dirdeclor)))
+        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str dirdeclor))
        (str (print-dirdeclor-to-str dirdeclor dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
 
@@ -535,15 +538,15 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for an abstract declarator."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (absdeclor (absdeclor-fix absdeclor))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (absdeclor-unambp absdeclor)
                     (absdeclor-aidentp absdeclor dialect)))
         (msg$ "~s1 abstract declarator:~%~_0~x2"
-              indent-size prefix (absdeclor-fix absdeclor)))
+              indent-size prefix absdeclor))
        (str (print-absdeclor-to-str absdeclor dialect :options options)))
     (msg$ "~s1 abstract declarator:~%~_0~s2" indent-size prefix str)))
 
@@ -558,9 +561,9 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a direct abstract declarator."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (dirabsdeclor (dirabsdeclor-fix dirabsdeclor))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        (case-str (dirabsdeclor-case
@@ -575,7 +578,7 @@
        ((unless (and (dirabsdeclor-unambp dirabsdeclor)
                     (dirabsdeclor-aidentp dirabsdeclor dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3"
-              indent-size prefix case-str (dirabsdeclor-fix dirabsdeclor)))
+              indent-size prefix case-str dirabsdeclor))
        (str (print-dirabsdeclor-to-str dirabsdeclor dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
 
@@ -590,15 +593,15 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a parameter declaration."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (param (param-declon-fix param))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (param-declon-unambp param)
                     (param-declon-aidentp param dialect)))
         (msg$ "~s1 parameter declaration:~%~_0~x2"
-              indent-size prefix (param-declon-fix param)))
+              indent-size prefix param))
        (str (print-param-declon-to-str param dialect :options options)))
     (msg$ "~s1 parameter declaration:~%~_0~s2" indent-size prefix str)))
 
@@ -613,9 +616,9 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a parameter declarator."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (paramdeclor (param-declor-fix paramdeclor))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        (case-str (param-declor-case
@@ -627,7 +630,7 @@
        ((unless (and (param-declor-unambp paramdeclor)
                     (param-declor-aidentp paramdeclor dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3"
-              indent-size prefix case-str (param-declor-fix paramdeclor)))
+              indent-size prefix case-str paramdeclor))
        (str (print-param-declor-to-str paramdeclor dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
 
@@ -642,14 +645,14 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a type name."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (tyname (tyname-fix tyname))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (tyname-unambp tyname)
                     (tyname-aidentp tyname dialect)))
-        (msg$ "~s1 type name:~%~_0~x2" indent-size prefix (tyname-fix tyname)))
+        (msg$ "~s1 type name:~%~_0~x2" indent-size prefix tyname))
        (str (print-tyname-to-str tyname dialect :options options)))
     (msg$ "~s1 type name:~%~_0~s2" indent-size prefix str)))
 
@@ -664,15 +667,15 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a struct or union specifier."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (struni-spec (struni-spec-fix struni-spec))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (struni-spec-unambp struni-spec)
                     (struni-spec-aidentp struni-spec dialect)))
         (msg$ "~s1 struct or union specifier:~%~_0~x2"
-              indent-size prefix (struni-spec-fix struni-spec)))
+              indent-size prefix struni-spec))
        (str (print-struni-spec-to-str struni-spec dialect :options options :indent t)))
     (msg$ "~s1 struct or union specifier:~%~_0~s2" indent-size prefix str)))
 
@@ -687,9 +690,9 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a struct declaration."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (structdeclon (struct-declon-fix structdeclon))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        (case-str (struct-declon-case
@@ -700,7 +703,7 @@
        ((unless (and (struct-declon-unambp structdeclon)
                     (struct-declon-aidentp structdeclon dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3"
-              indent-size prefix case-str (struct-declon-fix structdeclon)))
+              indent-size prefix case-str structdeclon))
        (str (print-struct-declon-to-str structdeclon dialect :options options :indent t)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
 
@@ -715,15 +718,15 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a struct declarator."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (structdeclor (struct-declor-fix structdeclor))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (struct-declor-unambp structdeclor)
                     (struct-declor-aidentp structdeclor dialect)))
         (msg$ "~s1 struct declarator:~%~_0~x2"
-              indent-size prefix (struct-declor-fix structdeclor)))
+              indent-size prefix structdeclor))
        (str (print-struct-declor-to-str structdeclor dialect :options options)))
     (msg$ "~s1 struct declarator:~%~_0~s2" indent-size prefix str)))
 
@@ -738,15 +741,15 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for an enumeration specifier."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (enumspec (enum-spec-fix enumspec))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (enum-spec-unambp enumspec)
                     (enum-spec-aidentp enumspec dialect)))
         (msg$ "~s1 enumeration specifier:~%~_0~x2"
-              indent-size prefix (enum-spec-fix enumspec)))
+              indent-size prefix enumspec))
        (str (print-enum-spec-to-str enumspec dialect :options options)))
     (msg$ "~s1 enumeration specifier:~%~_0~s2" indent-size prefix str)))
 
@@ -761,14 +764,14 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for an enumerator."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (enumer (enumer-fix enumer))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (enumer-unambp enumer)
                     (enumer-aidentp enumer dialect)))
-        (msg$ "~s1 enumerator:~%~_0~x2" indent-size prefix (enumer-fix enumer)))
+        (msg$ "~s1 enumerator:~%~_0~x2" indent-size prefix enumer))
        (str (print-enumer-to-str enumer dialect :options options)))
     (msg$ "~s1 enumerator:~%~_0~s2" indent-size prefix str)))
 
@@ -783,15 +786,15 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a static assertion."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (statassert (statassert-fix statassert))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (statassert-unambp statassert)
                     (statassert-aidentp statassert dialect)))
         (msg$ "~s1 static assertion:~%~_0~x2"
-              indent-size prefix (statassert-fix statassert)))
+              indent-size prefix statassert))
        (str (print-statassert-to-str statassert dialect :options options)))
     (msg$ "~s1 static assertion:~%~_0~s2" indent-size prefix str)))
 
@@ -806,13 +809,13 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a GCC attribute."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (attr (c$::attrib-fix attr))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (c$::attrib-aidentp attr dialect))
-        (msg$ "~s1 attribute:~%~_0~x2" indent-size prefix (c$::attrib-fix attr)))
+        (msg$ "~s1 attribute:~%~_0~x2" indent-size prefix attr))
        (str (print-attrib-to-str attr dialect :options options)))
     (msg$ "~s1 attribute:~%~_0~s2" indent-size prefix str)))
 
@@ -827,14 +830,14 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a GCC attribute specifier."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (attrspec (c$::attrib-spec-fix attrspec))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (c$::attrib-spec-aidentp attrspec dialect))
         (msg$ "~s1 attribute specifier:~%~_0~x2"
-              indent-size prefix (c$::attrib-spec-fix attrspec)))
+              indent-size prefix attrspec))
        (str (print-attrib-spec-to-str attrspec dialect :options options)))
     (msg$ "~s1 attribute specifier:~%~_0~s2" indent-size prefix str)))
 
@@ -849,15 +852,15 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for an initializer declarator."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (initdeclor (init-declor-fix initdeclor))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (init-declor-unambp initdeclor)
                     (init-declor-aidentp initdeclor dialect)))
         (msg$ "~s1 initializer declarator:~%~_0~x2"
-              indent-size prefix (init-declor-fix initdeclor)))
+              indent-size prefix initdeclor))
        (str (print-init-declor-to-str initdeclor dialect :options options)))
     (msg$ "~s1 initializer declarator:~%~_0~s2" indent-size prefix str)))
 
@@ -872,9 +875,9 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a label."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (label (label-fix label))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        (case-str (label-case
@@ -884,7 +887,7 @@
                    :default "default label"))
        ((unless (and (label-unambp label)
                     (label-aidentp label dialect)))
-        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str (label-fix label)))
+        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str label))
        (str (print-label-to-str label dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
 
@@ -899,14 +902,14 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for an assembler output operand."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (output (c$::asm-output-fix output))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (c$::asm-output-aidentp output dialect))
         (msg$ "~s1 assembler output operand:~%~_0~x2"
-              indent-size prefix (c$::asm-output-fix output)))
+              indent-size prefix output))
        (str (print-asm-output-to-str output dialect :options options)))
     (msg$ "~s1 assembler output operand:~%~_0~s2" indent-size prefix str)))
 
@@ -921,14 +924,14 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for an assembler input operand."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (input (c$::asm-input-fix input))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (c$::asm-input-aidentp input dialect))
         (msg$ "~s1 assembler input operand:~%~_0~x2"
-              indent-size prefix (c$::asm-input-fix input)))
+              indent-size prefix input))
        (str (print-asm-input-to-str input dialect :options options)))
     (msg$ "~s1 assembler input operand:~%~_0~s2" indent-size prefix str)))
 
@@ -943,14 +946,14 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for an assembly statement."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (asm (c$::asm-stmt-fix asm))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (c$::asm-stmt-aidentp asm dialect))
         (msg$ "~s1 assembly statement:~%~_0~x2"
-              indent-size prefix (c$::asm-stmt-fix asm)))
+              indent-size prefix asm))
        (str (print-asm-stmt-to-str asm dialect :options options :indent t)))
     (msg$ "~s1 assembly statement:~%~_0~s2" indent-size prefix str)))
 
@@ -965,15 +968,15 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a compound statement."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (cstmt (c$::comp-stmt-fix cstmt))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (comp-stmt-unambp cstmt)
                     (comp-stmt-aidentp cstmt dialect)))
         (msg$ "~s1 compound statement:~%~_0~x2"
-              indent-size prefix (c$::comp-stmt-fix cstmt)))
+              indent-size prefix cstmt))
        (str (print-comp-stmt-to-str cstmt dialect :options options :indent t)))
     (msg$ "~s1 compound statement:~%~_0~s2" indent-size prefix str)))
 
@@ -988,9 +991,9 @@
                  (not options)))
     'nil))
   :returns (msg msgp)
-  :hooks nil
   :short "Generate a context message for a block item."
-  (b* ((prefix (acl2::str-fix prefix))
+  (b* ((prefix (lstrfix prefix))
+       (item (block-item-fix item))
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        (case-str (block-item-case
@@ -1000,6 +1003,6 @@
                    :ambig  "ambiguous block item"))
        ((unless (and (block-item-unambp item)
                     (block-item-aidentp item dialect)))
-        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str (block-item-fix item)))
+        (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str item))
        (str (print-block-item-to-str item dialect :options options :indent t)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
