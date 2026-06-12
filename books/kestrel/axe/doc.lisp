@@ -252,7 +252,7 @@ See also @(see formal-unit-testing-example)."))
   :short "Simple example of Formal Unit Testing"
   :long
   (xdoc::topparas
-    "To illustrate the Formal Unit Testing idea, consider the following C code (from an implementation of the AES block cipher):"
+    "To illustrate the @(see formal-unit-testing) idea, consider the following C code (from an implementation of the AES block cipher):"
 
    "@({
 unsigned char sbox [] = {
