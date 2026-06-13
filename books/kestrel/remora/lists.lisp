@@ -265,3 +265,26 @@
     (equal (consp cars)
            (consp lists))
     :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define cdr-list ((lists true-list-listp))
+  :returns (cdrs true-list-listp)
+  :short "Remove the first element from each list in a list of lists,
+          returning the list of shortened lists in the same order."
+  (cond ((endp lists) nil)
+        (t (cons (cdr (mbe :logic (true-list-fix (car lists))
+                           :exec (car lists)))
+                 (cdr-list (cdr lists)))))
+
+  ///
+
+  (defret len-of-cdr-list
+    (equal (len cdrs)
+           (len lists))
+    :hints (("Goal" :induct t)))
+
+  (defret consp-of-cdr-list
+    (equal (consp cdrs)
+           (consp lists))
+    :hints (("Goal" :induct t))))
