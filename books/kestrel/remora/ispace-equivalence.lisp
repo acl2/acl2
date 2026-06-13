@@ -53,8 +53,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce addp
-  :short "Check if a dimension or shape or ispace or a list thereof
-          only contains addition, no multiplication or subtraction."
+  :short "Check if dimensions, shapes, and ispaces only contains additions
+          (no multiplications or subtractions)."
   :types (dims
           shapes
           ispace
