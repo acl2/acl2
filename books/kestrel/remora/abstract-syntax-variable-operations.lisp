@@ -1648,6 +1648,64 @@
                                                          array-renam)))))
   :name ast-rename-type-vars-no-capture-p)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce rename-expr-vars-no-capture-p
+  :short "Check that renaming expression variables in ASTs
+          does not result in variable capture."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The renaming consists of one map,
+     as in @(tsee ast-rename-expr-vars).")
+   (xdoc::p
+    "At each expression-binding construct,
+     we remove the bound variables from the domain of the renaming
+     (since they do not get renamed under the binder)
+     and we check that those bound variables do not appear
+     among the omap values of the resulting (restricted) renaming.
+     We then recurse into the body of the binder
+     with the restricted renaming.")
+   (xdoc::p
+    "This is a conservative check:
+     it does not depend on which keys of the renaming
+     are actually free in the body of each binder."))
+  :types (exprs/atoms/binds
+          prog)
+  :extra-args ((renam string-string-mapp))
+  :result booleanp
+  :default t
+  :combine and
+  :override
+  ((expr :unbox
+         (and (expr-rename-expr-vars-no-capture-p expr.target renam)
+              (b* ((renam
+                    (omap::delete expr.var (string-string-map-fix renam))))
+                (and (renaming-no-capture-p (set::insert expr.var nil) renam)
+                     (expr-rename-expr-vars-no-capture-p expr.body renam)))))
+   (expr :let
+         (and (bind-list-rename-expr-vars-no-capture-p expr.binds renam)
+              (b* ((bound (bind-list-bound-expr-vars expr.binds))
+                   (renam (omap::delete* bound (string-string-map-fix renam))))
+                (and (renaming-no-capture-p bound renam)
+                     (expr-rename-expr-vars-no-capture-p expr.body renam)))))
+   (atom :lambda
+         (b* ((bound (set::mergesort (var+type-list->var atom.params)))
+              (renam (omap::delete* bound (string-string-map-fix renam))))
+           (and (renaming-no-capture-p bound renam)
+                (expr-rename-expr-vars-no-capture-p atom.body renam))))
+   (bind :fun
+         (b* ((bound (set::mergesort (var+type-list->var bind.params)))
+              (renam (omap::delete* bound (string-string-map-fix renam))))
+           (and (renaming-no-capture-p bound renam)
+                (expr-rename-expr-vars-no-capture-p bind.expr renam))))
+   (bind :cfun
+         (b* ((bound (set::mergesort (var+type-list->var bind.params)))
+              (renam (omap::delete* bound (string-string-map-fix renam))))
+           (and (renaming-no-capture-p bound renam)
+                (expr-rename-expr-vars-no-capture-p bind.expr renam)))))
+  :name ast-rename-expr-vars-no-capture-p)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map rename-dim-vars
@@ -2015,3 +2073,64 @@
                                        type-list-rename-type-vars
                                        type-count
                                        type-list-count)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-map rename-expr-vars
+  :short "Rename free expression variables in ASTs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This should be guarded by @(tsee ast-rename-expr-vars-no-capture-p),
+     but currently @(tsee fty::deffold-map) does not support such guards.
+     One should call the @(tsee ast-rename-expr-vars-no-capture-p) predicates
+     prior to applying these renaming operations, for the time being."))
+  :types (exprs/atoms/binds
+          prog)
+  :extra-args ((renam string-string-mapp))
+  :override
+  ((expr :var (b* ((renam (string-string-map-fix renam))
+                   (var+name (omap::assoc expr.name renam)))
+                (if var+name
+                    (expr-var (cdr var+name))
+                  (expr-var expr.name))))
+   (expr :unbox
+         (b* ((target (expr-rename-expr-vars expr.target renam))
+              (renam (omap::delete expr.var (string-string-map-fix renam))))
+           (make-expr-unbox
+            :ispaces expr.ispaces
+            :var expr.var
+            :target target
+            :body (expr-rename-expr-vars expr.body renam))))
+   (expr :let
+         (b* ((binds (bind-list-rename-expr-vars expr.binds renam))
+              (bound (bind-list-bound-expr-vars expr.binds))
+              (renam (omap::delete* bound (string-string-map-fix renam))))
+           (make-expr-let
+            :binds binds
+            :body (expr-rename-expr-vars expr.body renam))))
+   (atom :lambda
+         (b* ((bound (set::mergesort (var+type-list->var atom.params)))
+              (renam (omap::delete* bound (string-string-map-fix renam))))
+           (make-atom-lambda
+            :params atom.params
+            :body (expr-rename-expr-vars atom.body renam))))
+   (bind :fun
+         (b* ((bound (set::mergesort (var+type-list->var bind.params)))
+              (renam (omap::delete* bound (string-string-map-fix renam))))
+           (make-bind-fun
+            :var bind.var
+            :params bind.params
+            :type? bind.type?
+            :expr (expr-rename-expr-vars bind.expr renam))))
+   (bind :cfun
+         (b* ((bound (set::mergesort (var+type-list->var bind.params)))
+              (renam (omap::delete* bound (string-string-map-fix renam))))
+           (make-bind-cfun
+            :var bind.var
+            :tparams? bind.tparams?
+            :iparams? bind.iparams?
+            :params bind.params
+            :type bind.type
+            :expr (expr-rename-expr-vars bind.expr renam)))))
+  :name ast-rename-expr-vars)
