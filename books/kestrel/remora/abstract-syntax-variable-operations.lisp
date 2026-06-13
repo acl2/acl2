@@ -43,19 +43,19 @@
     "The renamings are represented as maps from strings to strings.")
    (xdoc::p
     "Dimensions contain dimension variables,
-     but no shape or type or term variables;
+     but no shape or type or expression variables;
      so they only need one substitution or renaming map.
      All the variables in a dimension are free,
      because dimensions have no binders.")
    (xdoc::p
     "Shapes and ispaces contain dimension and shape variables,
-     but no type or term variables;
+     but no type or expression variables;
      so they need two substitution or renaming maps.
      All the variables in a shape or ispace are free,
      because shapes and ispaces have no binders.")
    (xdoc::p
     "Types contain ispace (dimension and shape) and type variables,
-     but no term variables;
+     but no expression variables;
      so they need three substitution or renaming maps in general,
      but we provide separate substitution and renaming operations
      for ispace and type variables in types.
@@ -67,7 +67,7 @@
     "We also plan to add substitution and renaming operations
      on expressions and atoms,
      involving not only ispace and type variables,
-     but also term variables.")
+     but also expression variables.")
    (xdoc::p
     "The current substitution and renaming operations
      do not check for variable capture,
@@ -91,7 +91,7 @@
    (xdoc::p
     "Only an ispace binding binds an ispace variable.
      An ispace function binding does not bind ispace variables:
-     it binds a term variable;
+     it binds an expression variable;
      the ispace parameters of the function are handled separately,
      in the calculation of the free variables of the binding itself."))
   (bind-case
@@ -124,7 +124,7 @@
    (xdoc::p
     "Only a type binding binds a type variable.
      A type function binding does not bind type variables:
-     it binds a term variable;
+     it binds an expression variable;
      the type parameters of the function are handled separately,
      in the calculation of the free variables of the binding itself."))
   (bind-case
@@ -151,12 +151,12 @@
 
 (define bind-bound-expr-vars ((bind bindp))
   :returns (vars string-setp)
-  :short "Set of term variables bound in a binding."
+  :short "Set of expression variables bound in a binding."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The value and function bindings each bind a term variable;
-     the ispace and type bindings do not bind term variables.
+    "The value and function bindings each bind an expression variable;
+     the ispace and type bindings do not bind expression variables.
      The parameters of the @(':fun') and @(':cfun') bindings
      are not included here:
      they are bound within the function's own body,
@@ -176,7 +176,7 @@
 
 (define bind-list-bound-expr-vars ((binds bind-listp))
   :returns (vars string-setp)
-  :short "Set of term variables bound in a list of bindings."
+  :short "Set of expression variables bound in a list of bindings."
   (cond ((endp binds) nil)
         (t (set::union (bind-bound-expr-vars (car binds))
                        (bind-list-bound-expr-vars (cdr binds)))))
