@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "std/basic/pos-fix" :dir :system)
+(include-book "std/lists/prefixp" :dir :system)
 (include-book "std/lists/repeat" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/deflist" :dir :system)
@@ -370,3 +371,56 @@
   (theory-invariant
    (incompatible (:definition check-list-suffix)
                  (:rewrite check-list-suffix-alt-def))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define list-prefix-join ((lists true-list-listp))
+  :returns (mv (joinp booleanp) (join true-listp))
+  :short "Least upper bound of a list of lists,
+          with respect to the prefix partial order on lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Lists are partially ordered by the prefix relation:
+     a list is less than or equal to another list
+     when the former is a prefix of the latter
+     (each list being a prefix of itself).
+     The join, i.e. least upper bound, of a list of lists
+     is the shortest list that has all of the given lists as prefixes.
+     It exists if and only if the given lists form a chain,
+     i.e. they are totally ordered by the prefix relation,
+     in which case the join is the longest of the given lists.
+     The first result says whether the join exists;
+     if it does, the second result is the join,
+     otherwise the second result is @('nil') but is irrelevant.")
+   (xdoc::p
+    "We go through the list of lists in order,
+     but the order is irrelevant to the result.
+     If the list of lists is empty,
+     the join is the empty list,
+     which is the bottom of the partial order.
+     If the list of lists is a singleton,
+     the join is its only element.
+     If the list of lists has two or more elements,
+     we recursively calculate the join of the @(tsee cdr),
+     and we compare the @(tsee car) with it:
+     if neither is a prefix of the other, there is no join;
+     otherwise the join is the longer of the two."))
+  (b* (((when (endp lists)) (mv t nil))
+       ((when (endp (cdr lists)))
+        (mv t (true-list-fix (car lists))))
+       ((mv joinp cdr-join) (list-prefix-join (cdr lists)))
+       ((unless joinp) (mv nil nil))
+       (car-list (true-list-fix (car lists))))
+    (cond ((prefixp car-list cdr-join) (mv t cdr-join))
+          ((prefixp cdr-join car-list) (mv t car-list))
+          (t (mv nil nil))))
+
+  ///
+
+  (defret list-prefix-join-upper-bound
+    (implies (and joinp
+                  (member-equal l lists))
+             (prefixp l join))
+    :hints (("Goal" :induct t)))
+  (in-theory (disable list-prefix-join-upper-bound)))
