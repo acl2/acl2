@@ -298,6 +298,47 @@
                            :none nil))))
   :name ast-free-type-vars)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce free-expr-vars
+  :short "Set of free expression variables in ASTs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The free variables of a binder are the ones
+     in the thing that the variable is bound to.
+     Thus, for the expression and combined function binders,
+     we remove the parameters,
+     because the thing that the variable is bound to
+     is like a lambda abstraction."))
+  :types (exprs/atoms/binds
+          prog
+          string-expr-map)
+  :result string-setp
+  :default nil
+  :combine set::union
+  :override
+  ((expr :var (set::insert expr.name nil))
+   (expr :unbox
+         (set::union (expr-free-expr-vars expr.target)
+                     (set::delete expr.var
+                                  (expr-free-expr-vars expr.body))))
+   (expr :let
+         (set::union
+          (bind-list-free-expr-vars expr.binds)
+          (set::difference (expr-free-expr-vars expr.body)
+                           (bind-list-bound-expr-vars expr.binds))))
+   (atom :lambda
+         (set::difference (expr-free-expr-vars atom.body)
+                          (set::mergesort (var+type-list->var atom.params))))
+   (bind :fun
+         (set::difference (expr-free-expr-vars bind.expr)
+                          (set::mergesort (var+type-list->var bind.params))))
+   (bind :cfun
+         (set::difference (expr-free-expr-vars bind.expr)
+                          (set::mergesort (var+type-list->var bind.params)))))
+  :name ast-free-expr-vars)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce all-ispace-vars
