@@ -22,6 +22,7 @@
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/utilities/true-list-listp-theorems" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
+(local (include-book "std/basic/fix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
 
@@ -287,4 +288,28 @@
   (defret consp-of-cdr-list
     (equal (consp cdrs)
            (consp lists))
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define repeat-each ((n natp) (list true-listp))
+  :returns (new-list true-listp)
+  :short "Repeat each element of a list a given number of times,
+          consecutively and in place."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each element of the list is replaced by @('n') consecutive copies of it,
+     preserving the order of the elements.
+     For instance, repeating each element of @('(a b c)') three times
+     yields @('(a a a b b b c c c)')."))
+  (cond ((endp list) nil)
+        (t (append (repeat n (car list))
+                   (repeat-each n (cdr list)))))
+
+  ///
+
+  (defret len-of-repeat-each
+    (equal (len new-list)
+           (* (nfix n) (len list)))
     :hints (("Goal" :induct t))))
