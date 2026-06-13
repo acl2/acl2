@@ -367,6 +367,14 @@
   :ok string-type-map
   :pred string-type-map-resultp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap string-expr-map
+  :short "Fixtype of maps from strings to expressions."
+  :key-type string
+  :val-type expr
+  :pred string-expr-mapp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod string-type-map-pair
