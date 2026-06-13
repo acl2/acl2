@@ -46,9 +46,7 @@
    (xdoc::p
     "We also plan to formalize a more general notion of equivalence,
      also involving multiplication and subtraction of dimensions,
-     without necessarily requiring decidability.
-     Indeed, Remora was planned to evolve towards undecidability,
-     in order to capture stronger constraints via types."))
+     without necessarily requiring decidability."))
   :order-subtopics t
   :default-parent t)
 
