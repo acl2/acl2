@@ -194,9 +194,10 @@
      If the list is a singleton, the result is its only element.
      If the list has two or more elements,
      we recursively calculate the join of the @(tsee cdr) of the list,
-     then we normalize that and the @(tsee car) and compare them.
-     If neither the @(tsee car) is a prefix of the join nor vice versa,
-     it is an error, i.e. there is no join;
+     then we normalize that and the @(tsee car),
+     and we use @(tsee list-prefix-join)
+     to join the underlying lists of variables and single-dimension shapes:
+     if neither is a prefix of the other, there is no join;
      otherwise the result is the longer concatenation."))
   (b* (((when (endp shapes)) (shape-append nil))
        ((when (endp (cdr shapes))) (shape-fix (car shapes)))
@@ -213,12 +214,19 @@
         (raise "Internal error: normalized shape is ~x0." car-shape)
         (reserr nil))
        (car-elements (shape-append->shapes car-shape))
-       (cdr-elements (shape-append->shapes cdr-shape)))
-    (cond ((prefixp car-elements cdr-elements) (shape-append cdr-elements))
-          ((prefixp cdr-elements car-elements) (shape-append car-elements))
-          (t (reserr nil))))
+       (cdr-elements (shape-append->shapes cdr-shape))
+       ((mv joinp join) (list-prefix-join (list car-elements cdr-elements))))
+    (if joinp
+        (shape-append join)
+      (reserr nil)))
   :no-function nil
   :verify-guards :after-returns
+  :prepwork
+  ((defrulel shape-listp-of-list-prefix-join-of-pair
+     (implies (and (shape-listp a)
+                   (shape-listp b))
+              (shape-listp (mv-nth 1 (list-prefix-join (list a b)))))
+     :enable list-prefix-join))
   ///
   (fty::deffixequiv join-shapes
     :hints (("Goal" :induct t :in-theory (enable shape-list-fix)))))
