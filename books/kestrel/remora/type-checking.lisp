@@ -111,8 +111,8 @@
      lists of variables and single-dimension shapes.
      We use @(tsee check-list-suffix) to check whether
      the second list is a suffix of the first list,
-     obtaining the prefix if so.
-     If the prefix is a singleton list, we return its element."))
+     obtaining the prefix if so,
+     which we return as a concatenation."))
   (b* (((unless (and (shape-addp shape)
                      (shape-addp suffix)))
         (reserr nil)) ; not supported
@@ -129,19 +129,9 @@
        ((mv suffixp prefix-elements)
         (check-list-suffix shape-elements suffix-elements))
        ((unless suffixp) (reserr nil)))
-    (if (and (consp prefix-elements)
-             (endp (cdr prefix-elements)))
-        (car prefix-elements)
-      (shape-append prefix-elements)))
+    (shape-append prefix-elements))
   :no-function nil
-  :guard-hints (("Goal" :in-theory (enable check-list-suffix-alt-def nfix)))
-  :prepwork
-  ((defrulel returns-lemma1
-     (implies (< 0 (- (len x) (len y)))
-              (consp x)))
-   (defrulel returns-lemma2
-     (implies (<= 1 (len x))
-              (consp x)))))
+  :guard-hints (("Goal" :in-theory (enable check-list-suffix-alt-def nfix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
