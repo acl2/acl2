@@ -82,7 +82,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-shape-suffix ((shape shapep) (suffix shapep))
-  :returns (prefix shape-resultp)
+  :returns (prefix shape-resultp
+                   :hints
+                   (("Goal" :in-theory (enable check-list-suffix-alt-def))))
   :short "Check if a shape has another shape as suffix,
           returning the prefix shape if successful."
   :long
@@ -107,7 +109,9 @@
     "To perform this check, we need to normalize both shapes,
      which results into two concatenations of
      lists of variables and single-dimension shapes.
-     We check whether the second list is a suffix of the first list.
+     We use @(tsee check-list-suffix) to check whether
+     the second list is a suffix of the first list,
+     obtaining the prefix if so.
      If the prefix is a singleton list, we return its element."))
   (b* (((unless (and (shape-addp shape)
                      (shape-addp suffix)))
@@ -122,21 +126,15 @@
         (reserr nil))
        (shape-elements (shape-append->shapes shape))
        (suffix-elements (shape-append->shapes suffix))
-       ((unless (<= (len suffix-elements) (len shape-elements))) (reserr nil))
-       ((unless (equal suffix-elements
-                       (nthcdr (- (len shape-elements)
-                                  (len suffix-elements))
-                               shape-elements)))
-        (reserr nil))
-       (prefix-elements (take (- (len shape-elements)
-                                 (len suffix-elements))
-                              shape-elements)))
+       ((mv suffixp prefix-elements)
+        (check-list-suffix shape-elements suffix-elements))
+       ((unless suffixp) (reserr nil)))
     (if (and (consp prefix-elements)
              (endp (cdr prefix-elements)))
         (car prefix-elements)
       (shape-append prefix-elements)))
   :no-function nil
-  :guard-hints (("Goal" :in-theory (enable nfix)))
+  :guard-hints (("Goal" :in-theory (enable check-list-suffix-alt-def nfix)))
   :prepwork
   ((defrulel returns-lemma1
      (implies (< 0 (- (len x) (len y)))
