@@ -147,6 +147,41 @@
                        (bind-list-bound-type-vars (cdr binds)))))
   :verify-guards :after-returns)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bind-bound-expr-vars ((bind bindp))
+  :returns (vars string-setp)
+  :short "Set of term variables bound in a binding."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The value and function bindings each bind a term variable;
+     the ispace and type bindings do not bind term variables.
+     The parameters of the @(':fun') and @(':cfun') bindings
+     are not included here:
+     they are bound within the function's own body,
+     and are handled separately
+     in the calculation of the free variables of the binding itself."))
+  (bind-case
+   bind
+   :ispace nil
+   :type nil
+   :val (set::insert bind.var nil)
+   :fun (set::insert bind.var nil)
+   :tfun (set::insert bind.var nil)
+   :ifun (set::insert bind.var nil)
+   :cfun (set::insert bind.var nil)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define bind-list-bound-expr-vars ((binds bind-listp))
+  :returns (vars string-setp)
+  :short "Set of term variables bound in a list of bindings."
+  (cond ((endp binds) nil)
+        (t (set::union (bind-bound-expr-vars (car binds))
+                       (bind-list-bound-expr-vars (cdr binds)))))
+  :verify-guards :after-returns)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce free-ispace-vars
