@@ -191,6 +191,7 @@
      (xdoc::p
       "We go through each dimension and flatten it.
        However, as explained in @(tsee flatten-add-in-dim),
+       if the @('addp') flag is @('t'),
        we splice any obtained sub-addition into the current list,
        which is put into the super-addition by @(tsee flatten-add-in-dim).
        The @('addp') flag is @('t') exactly when
