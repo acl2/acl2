@@ -632,6 +632,29 @@
     (set::union (string-type-map-free-type-vars atom-subst)
                 (string-type-map-free-type-vars array-subst)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-subst-no-capture-p ((vars string-setp) (subst string-expr-mapp))
+  :returns (yes/no booleanp)
+  :short "Check that a set of bound expression variables is not captured
+          by an expression substitution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When a substitution of expression variables descends under a construct
+     that binds the expression variables in @('vars'),
+     after those bound variables have been removed from the substitution,
+     none of the bound variables must occur free
+     among the values of the resulting substitution,
+     otherwise substituting under the binder would capture them.
+     We check that @('vars') is disjoint from the free expression variables
+     of the substitution.")
+   (xdoc::p
+    "This is shared by the cases of @(tsee ast-subst-expr-vars-no-capture-p)
+     for the constructs that bind expression variables."))
+  (set::emptyp (set::intersect (string-sfix vars)
+                               (string-expr-map-free-expr-vars subst))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce subst-ispace-vars-no-capture-p
@@ -647,7 +670,7 @@
     "At each ispace-binding construct,
      we remove the bound variables from the domain of the substitution
      (since they do not get substituted under the binder)
-     and we check that those bound parameters do not appear
+     and we check that those bound variables do not appear
      among the free ispace variables of the values
      of the resulting (restricted) substitution.
      We then recurse into the body of the binder
@@ -797,7 +820,7 @@
     "At each type-binding construct,
      we remove the bound variables from the domain of the substitution
      (since they do not get substituted under the binder)
-     and we check that those bound parameters do not appear
+     and we check that those bound variables do not appear
      among the free type variables of the values
      of the resulting (restricted) substitution.
      We then recurse into the body of the binder
@@ -902,6 +925,64 @@
                                                         atom-subst
                                                         array-subst)))))
   :name ast-subst-type-vars-no-capture-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce subst-expr-vars-no-capture-p
+  :short "Check that substituting expression variables in ASTs
+          does not result in variable capture."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The substitution consists of one map,
+     as in @(tsee ast-subst-expr-vars).")
+   (xdoc::p
+    "At each expression-binding construct,
+     we remove the bound variables from the domain of the substitution
+     (since they do not get substituted under the binder)
+     and we check that those bound variables do not appear
+     among the free expression variables of the values
+     of the resulting (restricted) substitution.
+     We then recurse into the body of the binder
+     with the restricted substitution.")
+   (xdoc::p
+    "This is a conservative check:
+     it does not depend on which keys of the substitution
+     are actually free in the body of each binder."))
+  :types (exprs/atoms/binds
+          prog)
+  :extra-args ((subst string-expr-mapp))
+  :result booleanp
+  :default t
+  :combine and
+  :override
+  ((expr :unbox
+         (and (expr-subst-expr-vars-no-capture-p expr.target subst)
+              (b* ((subst (omap::delete expr.var (string-expr-map-fix subst))))
+                (and (expr-subst-no-capture-p (set::insert expr.var nil) subst)
+                     (expr-subst-expr-vars-no-capture-p expr.body subst)))))
+   (expr :let
+         (and (bind-list-subst-expr-vars-no-capture-p expr.binds subst)
+              (b* ((bound (bind-list-bound-expr-vars expr.binds))
+                   (subst (omap::delete* bound (string-expr-map-fix subst))))
+                (and (expr-subst-no-capture-p bound subst)
+                     (expr-subst-expr-vars-no-capture-p expr.body subst)))))
+   (atom :lambda
+         (b* ((bound (set::mergesort (var+type-list->var atom.params)))
+              (subst (omap::delete* bound (string-expr-map-fix subst))))
+           (and (expr-subst-no-capture-p bound subst)
+                (expr-subst-expr-vars-no-capture-p atom.body subst))))
+   (bind :fun
+         (b* ((bound (set::mergesort (var+type-list->var bind.params)))
+              (subst (omap::delete* bound (string-expr-map-fix subst))))
+           (and (expr-subst-no-capture-p bound subst)
+                (expr-subst-expr-vars-no-capture-p bind.expr subst))))
+   (bind :cfun
+         (b* ((bound (set::mergesort (var+type-list->var bind.params)))
+              (subst (omap::delete* bound (string-expr-map-fix subst))))
+           (and (expr-subst-no-capture-p bound subst)
+                (expr-subst-expr-vars-no-capture-p bind.expr subst)))))
+  :name ast-subst-expr-vars-no-capture-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1180,6 +1261,67 @@
                                              atom-subst
                                              array-subst)))))
   :name ast-subst-type-vars)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-map subst-expr-vars
+  :short "Substitute free expression variables in ASTs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This should be guarded by @(tsee ast-subst-expr-vars-no-capture-p),
+     but currently @(tsee fty::deffold-map) does not support such guards.
+     One should call the @(tsee ast-subst-expr-vars-no-capture-p) predicates
+     prior to applying these substitution operations, for the time being."))
+  :types (exprs/atoms/binds
+          prog)
+  :extra-args ((subst string-expr-mapp))
+  :override
+  ((expr :var (b* ((subst (string-expr-map-fix subst))
+                   (var+expr (omap::assoc expr.name subst)))
+                (if var+expr
+                    (cdr var+expr)
+                  (expr-var expr.name))))
+   (expr :unbox
+         (b* ((target (expr-subst-expr-vars expr.target subst))
+              (subst (omap::delete expr.var (string-expr-map-fix subst))))
+           (make-expr-unbox
+            :ispaces expr.ispaces
+            :var expr.var
+            :target target
+            :body (expr-subst-expr-vars expr.body subst))))
+   (expr :let
+         (b* ((binds (bind-list-subst-expr-vars expr.binds subst))
+              (bound (bind-list-bound-expr-vars expr.binds))
+              (subst (omap::delete* bound (string-expr-map-fix subst))))
+           (make-expr-let
+            :binds binds
+            :body (expr-subst-expr-vars expr.body subst))))
+   (atom :lambda
+         (b* ((bound (set::mergesort (var+type-list->var atom.params)))
+              (subst (omap::delete* bound (string-expr-map-fix subst))))
+           (make-atom-lambda
+            :params atom.params
+            :body (expr-subst-expr-vars atom.body subst))))
+   (bind :fun
+         (b* ((bound (set::mergesort (var+type-list->var bind.params)))
+              (subst (omap::delete* bound (string-expr-map-fix subst))))
+           (make-bind-fun
+            :var bind.var
+            :params bind.params
+            :type? bind.type?
+            :expr (expr-subst-expr-vars bind.expr subst))))
+   (bind :cfun
+         (b* ((bound (set::mergesort (var+type-list->var bind.params)))
+              (subst (omap::delete* bound (string-expr-map-fix subst))))
+           (make-bind-cfun
+            :var bind.var
+            :tparams? bind.tparams?
+            :iparams? bind.iparams?
+            :params bind.params
+            :type bind.type
+            :expr (expr-subst-expr-vars bind.expr subst)))))
+  :name ast-subst-expr-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
