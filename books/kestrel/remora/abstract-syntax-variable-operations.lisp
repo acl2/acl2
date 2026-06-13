@@ -429,6 +429,53 @@
                                         (expr-all-type-vars bind.expr))))))
   :name ast-all-type-vars)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce all-expr-vars
+  :short "Set of all (i.e. free and bound) expression variables in ASTs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are all the variables that occur anywhere,
+     including the parameters of lambda abstractions,
+     the parameters of function bindings,
+     and the expression variables introduced by
+     @('let') bindings and unboxing expressions."))
+  :types (exprs/atoms/binds
+          prog)
+  :result string-setp
+  :default nil
+  :combine set::union
+  :override
+  ((expr :var (set::insert expr.name nil))
+   (expr :unbox
+         (set::insert expr.var
+                      (set::union (expr-all-expr-vars expr.target)
+                                  (expr-all-expr-vars expr.body))))
+   (atom :lambda
+         (set::union (set::mergesort (var+type-list->var atom.params))
+                     (expr-all-expr-vars atom.body)))
+   (bind :val
+         (set::insert bind.var
+                      (expr-all-expr-vars bind.expr)))
+   (bind :fun
+         (set::insert bind.var
+                      (set::union
+                       (set::mergesort (var+type-list->var bind.params))
+                       (expr-all-expr-vars bind.expr))))
+   (bind :tfun
+         (set::insert bind.var
+                      (expr-all-expr-vars bind.expr)))
+   (bind :ifun
+         (set::insert bind.var
+                      (expr-all-expr-vars bind.expr)))
+   (bind :cfun
+         (set::insert bind.var
+                      (set::union
+                       (set::mergesort (var+type-list->var bind.params))
+                       (expr-all-expr-vars bind.expr)))))
+  :name ast-all-expr-vars)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dim/shape-names-of-ispace-vars ((vars ispace-var-setp))
