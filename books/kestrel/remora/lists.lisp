@@ -313,3 +313,60 @@
     (equal (len new-list)
            (* (nfix n) (len list)))
     :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-list-suffix ((list true-listp) (suffix true-listp))
+  :returns (mv (suffixp booleanp) (prefix true-listp))
+  :short "Check whether a list is a suffix of another list,
+          returning the prefix if so."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If @('suffix') is a suffix of @('list'),
+     the first result is @('t') and
+     the second result is the prefix,
+     i.e. the list that, with @('suffix') appended to it, yields @('list').
+     Otherwise, the first result is @('nil'),
+     and the second result is @('nil') too,
+     but in this case the second result is irrelevant
+     and should not be used.")
+   (xdoc::p
+    "For instance, @('(c)') is a suffix of @('(a b c)'),
+     with prefix @('(a b)');
+     but @('(x)') is not a suffix of @('(a b c)')."))
+  (b* (((when (equal (true-list-fix list)
+                     (true-list-fix suffix)))
+        (mv t nil))
+       ((when (endp list))
+        (mv nil nil))
+       ((mv suffixp prefix)
+        (check-list-suffix (cdr list) suffix)))
+    (if suffixp
+        (mv t (cons (car list) prefix))
+      (mv nil nil)))
+
+  ///
+
+  (defret check-list-suffix-decomposition
+    (implies suffixp
+             (equal (append prefix (true-list-fix suffix))
+                    (true-list-fix list)))
+    :hints (("Goal" :induct t)))
+
+  (defruled check-list-suffix-alt-def
+    (equal (check-list-suffix list suffix)
+           (b* ((list (true-list-fix list))
+                (suffix (true-list-fix suffix))
+                (n (- (len list) (len suffix))))
+             (if (and (<= (len suffix) (len list))
+                      (equal suffix (nthcdr n list)))
+                 (mv t (take n list))
+               (mv nil nil))))
+    :induct t
+    :expand ((len list))
+    :enable (nthcdr take))
+
+  (theory-invariant
+   (incompatible (:definition check-list-suffix)
+                 (:rewrite check-list-suffix-alt-def))))
