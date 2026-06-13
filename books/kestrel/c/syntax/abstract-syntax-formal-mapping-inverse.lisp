@@ -276,7 +276,8 @@
                 (make-enum-spec :name? (ildm-ident tyspecs.tag)
                                 :enumers nil
                                 :final-comma nil)))
-   :typedef (list (type-spec-typedef (ildm-ident tyspecs.name))))
+   :typedef (list (make-type-spec-typedef :name (ildm-ident tyspecs.name)
+                                          :info nil)))
   :guard-hints (("Goal"
                  :use (:instance c::tyspecseq-sint-requirements (x tyspecs))
                  :in-theory (disable c::tyspecseq-sint-requirements)))

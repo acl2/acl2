@@ -1850,7 +1850,8 @@
                                (ident->unwrap tyspec.name))))
                   (dimb-kind-case
                    kind
-                   :typedef (retok (type-spec-typedef tyspec.name)
+                   :typedef (retok (make-type-spec-typedef :name tyspec.name
+                                                           :info nil)
                                    (dstate-fix dstate))
                    :objfun (retmsg$ "The identifier ~x0 denotes ~
                                      an object or function ~

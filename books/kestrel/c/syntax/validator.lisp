@@ -3877,13 +3877,17 @@
                                (ident->unwrap tyspec.name))))
                   (valid-ord-info-case
                    info?
-                   :typedef (retok (type-spec-typedef tyspec.name)
-                                   info?.def
-                                   nil
-                                   nil
-                                   same-vstate)
+                   :typedef (b* ((info (type-spec-typedef-info info?.def)))
+                              (retok (make-type-spec-typedef
+                                      :name tyspec.name
+                                      :info info)
+                                     info?.def
+                                     nil
+                                     nil
+                                     same-vstate))
                    :otherwise (retmsg$ "The identifier ~x0 does not ~
-                                        represent a typedef.")))
+                                        represent a typedef."
+                                       (ident->unwrap tyspec.name))))
        :int128 (retok (make-type-spec-int128 :uscoret tyspec.uscoret)
                       nil
                       ext-tyspecs

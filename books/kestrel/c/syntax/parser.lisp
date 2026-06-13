@@ -4871,7 +4871,8 @@
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
         (retok (spec/qual-typespec
-                (type-spec-typedef (token-ident->ident token)))
+                (make-type-spec-typedef :name (token-ident->ident token)
+                                        :info nil))
                span
                parstate))
        ;; If token is 'typeof' or '__typeof' or '__typeof__',
@@ -5156,7 +5157,8 @@
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
         (retok (decl-spec-typespec
-                (type-spec-typedef (token-ident->ident token)))
+                (make-type-spec-typedef :name (token-ident->ident token)
+                                        :info nil))
                span
                parstate))
        ;; If token is 'typeof' or '__typeof' or '__typeof__',
