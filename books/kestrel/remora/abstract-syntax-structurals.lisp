@@ -260,3 +260,13 @@
            (atom-listp (append-all lists)))
   :induct t
   :enable append-all)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule shape-listp-of-mv-nth-1-of-list-prefix-join
+  :short "Type of the join returned by @(tsee list-prefix-join)
+          on a list of lists of shapes."
+  (implies (shape-list-listp lists)
+           (shape-listp (mv-nth 1 (list-prefix-join lists))))
+  :induct t
+  :enable list-prefix-join)
