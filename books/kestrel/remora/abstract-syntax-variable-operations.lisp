@@ -2218,3 +2218,87 @@
                                              avoid)))
        (mv (cons fresh-var fresh-vars) dim-subst shape-subst))
      :verify-guards :after-returns)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atom/array-subst-alpha-bound ((bound-vars type-var-listp)
+                                      (atom-subst string-type-mapp)
+                                      (array-subst string-type-mapp)
+                                      (body-vars type-var-setp))
+  :returns (mv (fresh-vars type-var-listp)
+               (new-atom-subst string-type-mapp)
+               (new-array-subst string-type-mapp))
+  :short "Alpha-rename a list of bound type variables to fresh ones,
+          extending an atom-kind and an array-kind type substitution
+          accordingly."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This supports the capture-avoiding substitution of type variables.
+     When the substitution descends under a construct
+     that binds the type variables @('bound-vars'),
+     instead of merely removing them from the substitution maps
+     (which could capture variables),
+     we rename them to fresh variables, on the fly,
+     by extending the (restricted) substitution maps to send
+     each bound variable to the type consisting of a fresh variable.
+     The fresh variables avoid
+     the free type variables of the restricted substitution maps
+     and the type variables @('body-vars') of the body of the binder,
+     so that no capture occurs and binding structure is preserved.
+     We return the fresh variables (to rebuild the binder)
+     and the extended substitution maps (to recurse into the body)."))
+  (b* (((mv atom-subst array-subst)
+        (atom/array-subst-remove-bound
+         (set::mergesort (type-var-list-fix bound-vars))
+         atom-subst
+         array-subst))
+       (avoid (set::union
+               (type-var-set-fix body-vars)
+               (set::union (string-type-map-free-type-vars atom-subst)
+                           (string-type-map-free-type-vars array-subst)))))
+    (atom/array-subst-alpha-bound-loop bound-vars atom-subst array-subst avoid))
+  :verify-guards :after-returns
+
+  :prepwork
+  ((define atom/array-subst-alpha-bound-loop ((bound-vars type-var-listp)
+                                              (atom-subst string-type-mapp)
+                                              (array-subst string-type-mapp)
+                                              (avoid type-var-setp))
+     :returns (mv (fresh-vars type-var-listp)
+                  (new-atom-subst string-type-mapp)
+                  (new-array-subst string-type-mapp))
+     :parents nil
+     (b* (((when (endp bound-vars))
+           (mv nil
+               (string-type-map-fix atom-subst)
+               (string-type-map-fix array-subst)))
+          (var (car bound-vars))
+          ((mv fresh-var atom-subst array-subst avoid)
+           (type-var-case
+            var
+            :atom (b* ((fresh (fresh-atom-type-var var.name avoid))
+                       (atom-subst
+                        (omap::update var.name
+                                      (type-var fresh)
+                                      (string-type-map-fix atom-subst))))
+                    (mv fresh
+                        atom-subst
+                        array-subst
+                        (set::insert fresh (type-var-set-fix avoid))))
+            :array (b* ((fresh (fresh-array-type-var var.name avoid))
+                        (array-subst
+                         (omap::update var.name
+                                       (type-var fresh)
+                                       (string-type-map-fix array-subst))))
+                     (mv fresh
+                         atom-subst
+                         array-subst
+                         (set::insert fresh (type-var-set-fix avoid))))))
+          ((mv fresh-vars atom-subst array-subst)
+           (atom/array-subst-alpha-bound-loop (cdr bound-vars)
+                                              atom-subst
+                                              array-subst
+                                              avoid)))
+       (mv (cons fresh-var fresh-vars) atom-subst array-subst))
+     :verify-guards :after-returns)))
