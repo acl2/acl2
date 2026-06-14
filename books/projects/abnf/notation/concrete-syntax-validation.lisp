@@ -12,10 +12,10 @@
 
 (include-book "concrete-syntax")
 
-(include-book "../operations/well-formedness")
-(include-book "../operations/closure")
-(include-book "../operations/in-terminal-set")
-(include-book "../operations/plugging")
+(include-book "../grammar-operations/well-formedness")
+(include-book "../grammar-operations/closure")
+(include-book "../grammar-operations/in-terminal-set")
+(include-book "../grammar-operations/plugging")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

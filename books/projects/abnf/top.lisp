@@ -15,7 +15,7 @@
 (include-book "grammar-parser/top")
 (include-book "grammar-printer/top")
 (include-book "grammar-definer/top")
-(include-book "operations/top")
+(include-book "grammar-operations/top")
 (include-book "parsing-tools/top")
 (include-book "examples/top")
 (include-book "tree-utilities")
