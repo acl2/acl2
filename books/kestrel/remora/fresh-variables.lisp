@@ -12,6 +12,8 @@
 
 (include-book "abstract-syntax-trees")
 
+(include-book "kestrel/fty/string-set" :dir :system)
+
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 
@@ -34,8 +36,7 @@
      But it takes a little machinery to prove termination in the theorem prover,
      which we do here.")
    (xdoc::p
-    "We start with ispace and type variables,
-     but we plan to do the same for term variables."))
+    "We provide this for ispace, type, and expression variables."))
   :order-subtopics t
   :default-parent t)
 
@@ -815,3 +816,179 @@
 
   (defret fresh-array-type-var-is-fresh
     (not (set::in var (type-var-set-fix used)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-var-with-index ((prefix stringp) (index natp))
+  :returns (var stringp)
+  :short "Generate an expression variable
+          from a prefix and a numeric index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In concrete syntax,
+     the variable would have the form @('<p><i>'),
+     where @('<p>') is the prefix and @('<i>') is the index.
+     If the prefix is a legal Remora identifier,
+     so is the generated variable's name.
+     A key property is that it is an injective mapping given a prefix:
+     different indices yield different variables."))
+  (str::cat prefix (str::nat-to-dec-string (lnfix index)))
+
+  ///
+
+  (defrule expr-var-with-index-injective
+    (equal (equal (expr-var-with-index prefix index1)
+                  (expr-var-with-index prefix index2))
+           (equal (nfix index1)
+                  (nfix index2)))
+    :enable string-append))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-vars-with-index-below ((prefix stringp) (index natp))
+  :returns (vars string-setp)
+  :short "Generate the set of expression variables
+          with a given prefix for all the numeric indices below a given index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to remove, from the set of variables to be avoided,
+     all the failed attempts at generating a fresh variable.")
+   (xdoc::p
+    "Membership and subset reduce to index comparison;
+     the injectivity of @(tsee expr-var-with-index) is needed here.
+     This function is also injective."))
+  (b* (((when (zp index)) nil)
+       (index (1- index)))
+    (set::insert (expr-var-with-index prefix index)
+                 (expr-vars-with-index-below prefix index)))
+  :verify-guards :after-returns
+  :prepwork ((local (in-theory (enable nfix))))
+
+  ///
+
+  (defrule expr-var-with-index-in-set-below
+    (equal (set::in (expr-var-with-index prefix index1)
+                    (expr-vars-with-index-below prefix index2))
+           (< (nfix index1)
+              (nfix index2)))
+    :induct t
+    :enable nfix)
+
+  (defrule expr-vars-with-index-below-subset
+    (equal (set::subset (expr-vars-with-index-below prefix index1)
+                        (expr-vars-with-index-below prefix index2))
+           (<= (nfix index1) (nfix index2)))
+    :use (if-part only-if-part)
+    :prep-lemmas
+    ((defrule if-part
+       (implies (<= (nfix index1) (nfix index2))
+                (set::subset (expr-vars-with-index-below prefix index1)
+                             (expr-vars-with-index-below prefix index2)))
+       :induct t)
+     (defrule only-if-part
+       (implies (set::subset (expr-vars-with-index-below prefix index1)
+                             (expr-vars-with-index-below prefix index2))
+                (<= (nfix index1) (nfix index2)))
+       :induct t
+       :enable nfix)))
+
+  (defrule expr-vars-with-index-below-injective
+    (implies (equal (expr-vars-with-index-below prefix index1)
+                    (expr-vars-with-index-below prefix index2))
+             (equal (nfix index1) (nfix index2)))
+    :enable set::double-containment-no-backchain-limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define remove-expr-vars-below-index ((prefix stringp)
+                                      (index natp)
+                                      (vars string-setp))
+  :returns (new-vars string-setp)
+  :short "Remove, from a set of expression variables,
+          all the expression variables
+          with a given prefix and with indices below a given index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the termination argument for generating fresh variables,
+     the set @('vars') is the one to be avoided.
+     So when we remove the variables below the index,
+     we remove all the variables attempted so far."))
+  (set::difference (string-sfix vars)
+                   (expr-vars-with-index-below prefix index))
+
+  ///
+
+  (defrule expr-var-with-index-in-remove-expr-vars-below-index
+    (equal (set::in (expr-var-with-index prefix index1)
+                    (remove-expr-vars-below-index prefix index2 vars))
+           (and (set::in (expr-var-with-index prefix index1)
+                         (string-sfix vars))
+                (>= (nfix index1) (nfix index2)))))
+
+  (defrule remove-expr-vars-below-index-subset-when-index-leq
+    (implies (>= (nfix index1) (nfix index2))
+             (set::subset
+              (remove-expr-vars-below-index prefix index1 vars)
+              (remove-expr-vars-below-index prefix index2 vars)))
+    :enable set::expensive-rules))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fresh-expr-var ((prefix stringp) (used string-setp))
+  :returns (var stringp)
+  :short "Generate a fresh expression variable,
+          i.e. one not in the set of already used expression variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use the approach in @(see fresh-variables).
+     The termination lemma relies on the set theorem explained earlier."))
+  (fresh-expr-var-loop prefix 0 used)
+
+  :prepwork
+  ((define fresh-expr-var-loop ((prefix stringp)
+                                (index natp)
+                                (used string-setp))
+     :returns (var stringp)
+     :parents nil
+     (b* ((var (expr-var-with-index prefix index)))
+       (if (set::in var (string-sfix used))
+           (fresh-expr-var-loop prefix (1+ (lnfix index)) used)
+         var))
+     :measure (set::cardinality
+               (remove-expr-vars-below-index prefix index used))
+     :prepwork
+     ((defrulel termination-lemma
+        (implies (set::in (expr-var-with-index prefix index)
+                          (string-sfix vars))
+                 (< (set::cardinality
+                     (remove-expr-vars-below-index prefix
+                                                   (1+ (nfix index))
+                                                   vars))
+                    (set::cardinality
+                     (remove-expr-vars-below-index prefix
+                                                   index
+                                                   vars))))
+        :use (:instance
+              cardinality-lt-when-subset-and-not-member
+              (x (remove-expr-vars-below-index prefix
+                                               (1+ (nfix index))
+                                               vars))
+              (y (remove-expr-vars-below-index prefix
+                                               index
+                                               vars))
+              (a (expr-var-with-index prefix index)))))
+
+     ///
+
+     (defret fresh-expr-var-loop-is-fresh
+       (not (set::in var (string-sfix used)))
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret fresh-expr-var-is-fresh
+    (not (set::in var (string-sfix used)))))
