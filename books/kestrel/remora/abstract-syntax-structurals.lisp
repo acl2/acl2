@@ -54,6 +54,14 @@
   :guard (expr-listp x)
   (expr-case x :frame))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist shape-list-case-append (x)
+  :short "Check if all the shapes in a list
+          are in the @(':append') summand."
+  :guard (shape-listp x)
+  (shape-case x :append))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection dim-const-list ((x nat-listp))
@@ -141,6 +149,14 @@
                   (expr-list-case-frame exprs))
              (expr-list-list-corep (expr-frame-list->exprs exprs)))
     :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection shape-append-list->shapes ((x shape-listp))
+  :guard (shape-list-case-append x)
+  :returns (shapess shape-list-listp)
+  :short "Lift @(tsee shape-append->shapes) to lists."
+  (shape-append->shapes x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
