@@ -213,6 +213,7 @@
                                       (index natp)
                                       (used ispace-var-setp))
      :returns (var ispace-varp)
+     :parents nil
      (b* ((var (ispace-var-dim-with-index prefix index)))
        (if (set::in var (ispace-var-set-fix used))
            (fresh-dim-ispace-var-loop prefix (1+ (lnfix index)) used)
@@ -399,6 +400,7 @@
                                         (index natp)
                                         (used ispace-var-setp))
      :returns (var ispace-varp)
+     :parents nil
      (b* ((var (ispace-var-shape-with-index prefix index)))
        (if (set::in var (ispace-var-set-fix used))
            (fresh-shape-ispace-var-loop prefix (1+ (lnfix index)) used)
@@ -583,6 +585,7 @@
                                      (index natp)
                                      (used type-var-setp))
      :returns (var type-varp)
+     :parents nil
      (b* ((var (type-var-atom-with-index prefix index)))
        (if (set::in var (type-var-set-fix used))
            (fresh-atom-type-var-loop prefix (1+ (lnfix index)) used)
@@ -766,6 +769,7 @@
                                       (index natp)
                                       (used type-var-setp))
      :returns (var type-varp)
+     :parents nil
      (b* ((var (type-var-array-with-index prefix index)))
        (if (set::in var (type-var-set-fix used))
            (fresh-array-type-var-loop prefix (1+ (lnfix index)) used)
