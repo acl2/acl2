@@ -116,21 +116,12 @@
   (b* (((unless (and (shape-addp shape)
                      (shape-addp suffix)))
         (reserr nil)) ; not supported
-       (shape (normalize-shape shape))
-       (suffix (normalize-shape suffix))
-       ((unless (shape-case shape :append))
-        (raise "Internal error: normalized shape is ~x0." shape)
-        (reserr nil))
-       ((unless (shape-case suffix :append))
-        (raise "Internal error: normalized shape is ~x0." suffix)
-        (reserr nil))
-       (shape-elements (shape-append->shapes shape))
-       (suffix-elements (shape-append->shapes suffix))
+       (shape-elements (shape-append->shapes (normalize-shape shape)))
+       (suffix-elements (shape-append->shapes (normalize-shape suffix)))
        ((mv suffixp prefix-elements)
         (check-list-suffix shape-elements suffix-elements))
        ((unless suffixp) (reserr nil)))
     (shape-append prefix-elements))
-  :no-function nil
   :guard-hints (("Goal" :in-theory (enable check-list-suffix-alt-def nfix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -177,49 +168,30 @@
      @($\\iota\\sqsubseteq\\iota'$) iff @($\\iota$) is a prefix of @($\\iota'$)
      (including the case @($\\iota=\\iota'$)).")
    (xdoc::p
-    "We go through the list in order,
-     but the order of the list is irrelevant.
+    "The order of the list is irrelevant to the result.
      If the list is empty, the result is the empty concatenation,
      which is the bottom of the partial order.
      If the list is a singleton, the result is its only element.
-     If the list has two or more elements,
-     we recursively calculate the join of the @(tsee cdr) of the list,
-     then we normalize that and the @(tsee car),
+     Otherwise, we normalize every shape (see @(tsee normalize-shape-list)),
+     we extract the elements of the resulting concatenations
+     (see @(tsee shape-append-list->shapes)),
      and we use @(tsee list-prefix-join)
-     to join the underlying lists of variables and single-dimension shapes:
-     if neither is a prefix of the other, there is no join;
-     otherwise the result is the longer concatenation."))
+     to join those lists of variables and single-dimension shapes:
+     if they do not form a chain under the prefix order, there is no join;
+     otherwise the result is the longest of them,
+     turned back into a concatenation."))
   (b* (((when (endp shapes)) (shape-append nil))
        ((when (endp (cdr shapes))) (shape-fix (car shapes)))
-       ((ok cdr-shape) (join-shapes (cdr shapes)))
-       ((unless (and (shape-addp cdr-shape)
-                     (shape-addp (car shapes))))
-        (reserr nil)) ; not supported
-       (cdr-shape (normalize-shape cdr-shape))
-       (car-shape (normalize-shape (car shapes)))
-       ((unless (shape-case cdr-shape :append))
-        (raise "Internal error: normalized shape is ~x0." cdr-shape)
-        (reserr nil))
-       ((unless (shape-case car-shape :append))
-        (raise "Internal error: normalized shape is ~x0." car-shape)
-        (reserr nil))
-       (car-elements (shape-append->shapes car-shape))
-       (cdr-elements (shape-append->shapes cdr-shape))
-       ((mv joinp join) (list-prefix-join (list car-elements cdr-elements))))
+       ((unless (shape-list-addp shapes)) (reserr nil)) ; not supported
+       (element-lists
+        (shape-append-list->shapes (normalize-shape-list shapes)))
+       ((mv joinp join) (list-prefix-join element-lists)))
     (if joinp
         (shape-append join)
       (reserr nil)))
-  :no-function nil
   :verify-guards :after-returns
-  :prepwork
-  ((defrulel shape-listp-of-list-prefix-join-of-pair
-     (implies (and (shape-listp a)
-                   (shape-listp b))
-              (shape-listp (mv-nth 1 (list-prefix-join (list a b)))))
-     :enable list-prefix-join))
-  ///
-  (fty::deffixequiv join-shapes
-    :hints (("Goal" :induct t :in-theory (enable shape-list-fix)))))
+  :guard-hints
+  (("Goal" :in-theory (enable true-list-listp-when-shape-list-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
