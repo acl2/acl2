@@ -537,6 +537,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define normalize-shape-list ((shapes shape-listp))
+  :guard (shape-list-addp shapes)
+  :returns (new-shapes shape-listp)
+  :short "Lift @(tsee normalize-shape) to lists."
+  (cond ((endp shapes) nil)
+        (t (cons (normalize-shape (car shapes))
+                 (normalize-shape-list (cdr shapes)))))
+
+  ///
+
+  (defret shape-list-case-append-of-normalize-shape-list
+    (shape-list-case-append new-shapes)
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define shape-equivp ((shape1 shapep) (shape2 shapep))
   :returns (yes/no booleanp)
   :short "Check if two shapes are equivalent."
