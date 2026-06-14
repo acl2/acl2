@@ -2338,10 +2338,7 @@
   :verify-guards :after-returns
 
   :prepwork
-  ((local (in-theory (enable set::cardinality$inline
-                             acl2::string-string-mapp-of-update
-                             acl2::string-setp-of-tail-when-string-setp)))
-   (define expr-subst-alpha-bound-loop ((bound-vars string-listp)
+  ((define expr-subst-alpha-bound-loop ((bound-vars string-listp)
                                         (subst string-expr-mapp)
                                         (avoid string-setp))
      :returns (mv (fresh-vars string-listp)
