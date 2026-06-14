@@ -455,7 +455,9 @@
    (xdoc::p
     "The flattening of concatenations also has the effect of
      eliminating empty sub-concatenations used in super-concatenations,
-     e.g. @('(++ i (++ j k) (++) l)') results in @('(++ i j k l)')."))
+     e.g. @('(++ i (++ j k) (++) l)') results in @('(++ i j k l)').")
+   (xdoc::p
+    "The result of flattening a shape is always a concatenation shape."))
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -501,7 +503,12 @@
 
   ///
 
-  (fty::deffixequiv-mutual flatten-append-in-shapes))
+  (fty::deffixequiv-mutual flatten-append-in-shapes)
+
+  (defrule shape-kind-of-flatten-append-in-shape
+    (equal (shape-kind (flatten-append-in-shape shape))
+           :append)
+    :expand ((flatten-append-in-shape shape))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -514,11 +521,19 @@
    (xdoc::p
     "We normalize its dimensions,
      then we normalize shapes to have single dimensions,
-     and finally we flatten all concatenations."))
+     and finally we flatten all concatenations.")
+   (xdoc::p
+    "A normalized shape is always a concatenation."))
   (b* ((shape (normalize-dims-in-shape shape))
        (shape (normalize-shapes-single-in-shape shape))
        (shape (flatten-append-in-shape shape)))
-    shape))
+    shape)
+
+  ///
+
+  (defrule shape-kind-of-normalize-shape
+    (equal (shape-kind (normalize-shape shape))
+           :append)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
