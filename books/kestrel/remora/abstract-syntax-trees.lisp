@@ -199,6 +199,15 @@
     :elementp-of-nil nil
     :pred shape-listp))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist shape-list-list
+  :short "Fixtype of lists of lists of shapes."
+  :elt-type shape-list
+  :true-listp t
+  :elementp-of-nil t
+  :pred shape-list-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum ispace

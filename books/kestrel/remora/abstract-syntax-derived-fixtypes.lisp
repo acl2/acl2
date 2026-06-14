@@ -68,6 +68,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult shape-list-list-result
+  :short "Fixtype of (i) lists of lists of shapes and (ii) errors."
+  :ok shape-list-list
+  :pred shape-list-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult ispace-result
   :short "Fixtype of ispaces and errors."
   :ok ispace
