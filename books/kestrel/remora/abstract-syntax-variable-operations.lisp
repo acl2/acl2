@@ -19,6 +19,7 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -2301,4 +2302,61 @@
                                               array-subst
                                               avoid)))
        (mv (cons fresh-var fresh-vars) atom-subst array-subst))
+     :verify-guards :after-returns)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-subst-alpha-bound ((bound-vars string-listp)
+                                (subst string-expr-mapp)
+                                (body-vars string-setp))
+  :returns (mv (fresh-vars string-listp)
+               (new-subst string-expr-mapp))
+  :short "Alpha-rename a set of bound expression variables to fresh ones,
+          extending an expression substitution accordingly."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This supports the capture-avoiding substitution of expression variables.
+     When the substitution descends under a construct
+     that binds the expression variables @('bound-vars'),
+     instead of merely removing them from the substitution
+     (which could capture variables),
+     we rename them to fresh variables, on the fly,
+     by extending the (restricted) substitution to send
+     each bound variable to the expression consisting of a fresh variable.
+     The fresh variables avoid
+     the free expression variables of the restricted substitution
+     and the expression variables @('body-vars') of the body of the binder,
+     so that no capture occurs and binding structure is preserved.
+     We return the fresh variables (to rebuild the binder)
+     and the extended substitution (to recurse into the body)."))
+  (b* ((subst (omap::delete* (set::mergesort (string-list-fix bound-vars))
+                             (string-expr-map-fix subst)))
+       (avoid (set::union (string-sfix body-vars)
+                          (string-expr-map-free-expr-vars subst))))
+    (expr-subst-alpha-bound-loop bound-vars subst avoid))
+  :verify-guards :after-returns
+
+  :prepwork
+  ((local (in-theory (enable set::cardinality$inline
+                             acl2::string-string-mapp-of-update
+                             acl2::string-setp-of-tail-when-string-setp)))
+   (define expr-subst-alpha-bound-loop ((bound-vars string-listp)
+                                        (subst string-expr-mapp)
+                                        (avoid string-setp))
+     :returns (mv (fresh-vars string-listp)
+                  (new-subst string-expr-mapp))
+     :parents nil
+     (b* (((when (endp bound-vars)) (mv nil (string-expr-map-fix subst)))
+          (var (car bound-vars))
+          (fresh-var (fresh-expr-var var avoid))
+          (subst (omap::update (str-fix var)
+                               (expr-var fresh-var)
+                               (string-expr-map-fix subst)))
+          ((mv fresh-vars subst)
+           (expr-subst-alpha-bound-loop (cdr bound-vars)
+                                        subst
+                                        (set::insert fresh-var
+                                                     (string-sfix avoid)))))
+       (mv (cons fresh-var fresh-vars) subst))
      :verify-guards :after-returns)))
