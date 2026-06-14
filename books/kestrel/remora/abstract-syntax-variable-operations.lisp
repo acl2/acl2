@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-structurals")
+(include-book "fresh-variables")
 
 (include-book "kestrel/fty/deffold-map" :dir :system)
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
@@ -2134,3 +2135,86 @@
             :type bind.type
             :expr (expr-rename-expr-vars bind.expr renam)))))
   :name ast-rename-expr-vars)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dim/shape-subst-alpha-bound ((bound-vars ispace-var-listp)
+                                     (dim-subst string-dim-mapp)
+                                     (shape-subst string-shape-mapp)
+                                     (body-vars ispace-var-setp))
+  :returns (mv (fresh-vars ispace-var-listp)
+               (new-dim-subst string-dim-mapp)
+               (new-shape-subst string-shape-mapp))
+  :short "Alpha-rename a list of bound ispace variables to fresh ones,
+          extending a dimension and a shape substitution accordingly."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This supports the capture-avoiding substitution of ispace variables.
+     When the substitution descends under a construct
+     that binds the ispace variables @('bound-vars'),
+     instead of merely removing them from the substitution maps
+     (which could capture variables),
+     we rename them to fresh variables, on the fly,
+     by extending the (restricted) substitution maps to send
+     each bound variable to a fresh dimension or shape variable.
+     The fresh variables avoid
+     the free ispace variables of the restricted substitution maps
+     and the ispace variables @('body-vars') of the body of the binder,
+     so that no capture occurs and binding structure is preserved.
+     We return the fresh variables (to rebuild the binder)
+     and the extended substitution maps (to recurse into the body)."))
+  (b* (((mv dim-subst shape-subst)
+        (dim/shape-subst-remove-bound
+         (set::mergesort (ispace-var-list-fix bound-vars))
+         dim-subst
+         shape-subst))
+       (avoid (set::union
+               (ispace-var-set-fix body-vars)
+               (set::union (string-dim-map-free-ispace-vars dim-subst)
+                           (string-shape-map-free-ispace-vars shape-subst)))))
+    (dim/shape-subst-alpha-bound-loop bound-vars dim-subst shape-subst avoid))
+  :verify-guards :after-returns
+
+  :prepwork
+  ((define dim/shape-subst-alpha-bound-loop ((bound-vars ispace-var-listp)
+                                             (dim-subst string-dim-mapp)
+                                             (shape-subst string-shape-mapp)
+                                             (avoid ispace-var-setp))
+     :returns (mv (fresh-vars ispace-var-listp)
+                  (new-dim-subst string-dim-mapp)
+                  (new-shape-subst string-shape-mapp))
+     :parents nil
+     (b* (((when (endp bound-vars))
+           (mv nil
+               (string-dim-map-fix dim-subst)
+               (string-shape-map-fix shape-subst)))
+          (var (car bound-vars))
+          ((mv fresh-var dim-subst shape-subst avoid)
+           (ispace-var-case
+            var
+            :dim (b* ((fresh (fresh-dim-ispace-var var.name avoid))
+                      (dim-subst
+                       (omap::update var.name
+                                     (dim-var (ispace-var->name fresh))
+                                     (string-dim-map-fix dim-subst))))
+                   (mv fresh
+                       dim-subst
+                       shape-subst
+                       (set::insert fresh (ispace-var-set-fix avoid))))
+            :shape (b* ((fresh (fresh-shape-ispace-var var.name avoid))
+                        (shape-subst
+                         (omap::update var.name
+                                       (shape-var (ispace-var->name fresh))
+                                       (string-shape-map-fix shape-subst))))
+                     (mv fresh
+                         dim-subst
+                         shape-subst
+                         (set::insert fresh (ispace-var-set-fix avoid))))))
+          ((mv fresh-vars dim-subst shape-subst)
+           (dim/shape-subst-alpha-bound-loop (cdr bound-vars)
+                                             dim-subst
+                                             shape-subst
+                                             avoid)))
+       (mv (cons fresh-var fresh-vars) dim-subst shape-subst))
+     :verify-guards :after-returns)))
