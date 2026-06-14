@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ numeric-range-retrieval
-  :parents (operations)
+  :parents (grammar-operations)
   :short "Retrieval of numeric ranges from an ABNF grammar."
   :long
   (xdoc::topstring

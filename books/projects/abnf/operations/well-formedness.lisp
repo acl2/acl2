@@ -20,7 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ well-formedness
-  :parents (operations)
+  :parents (grammar-operations)
   :short "Well-formed ABNF grammars."
   :long
   (xdoc::topstring-p

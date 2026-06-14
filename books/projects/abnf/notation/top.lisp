@@ -78,7 +78,7 @@
     (xdoc::seetopic "concrete-syntax-rules-validation"
                     "validation of the concrete syntax rules")
     ", using some of the "
-    (xdoc::seetopic "operations" "grammar operations")
+    (xdoc::seetopic "grammar-operations" "grammar operations")
     ".")
    (xdoc::p
     "We put concrete syntax rules and (the used) core rules together
@@ -99,7 +99,7 @@
     (xdoc::seetopic "concrete-syntax-validation"
                     "validation of the concrete syntax")
     ", via some of the "
-    (xdoc::seetopic "operations" "grammar operations")
+    (xdoc::seetopic "grammar-operations" "grammar operations")
     ".")
    (xdoc::p
     "With a formalization of the ABNF notation in hand,

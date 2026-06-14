@@ -23,7 +23,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ in-terminal-set
-  :parents (operations)
+  :parents (grammar-operations)
   :short "ABNF grammars that generate only terminals in given sets."
   :long
   (xdoc::topstring

@@ -31,7 +31,9 @@
    (xdoc::p
     "As done for @(see core-rules-validation),
      we put the validation of the concrete syntax rules in a separate file
-     so that their definition does not depend on grammar @(see operations)."))
+     so that their definition does not depend on "
+    (xdoc::seetopic "grammar-operations" "grammar operations")
+    "."))
 
   (defruled rulelist-wfp-of-*concrete-syntax-rules*
     (rulelist-wfp *concrete-syntax-rules*)))

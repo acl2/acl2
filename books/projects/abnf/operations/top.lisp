@@ -23,7 +23,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ operations
+(defxdoc+ grammar-operations
   :parents (abnf)
   :short "Operations on ABNF grammars."
   :order-subtopics t)

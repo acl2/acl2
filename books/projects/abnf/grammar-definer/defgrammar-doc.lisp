@@ -40,7 +40,9 @@
       and introduces a named constant for this abstract syntax tree.
       This provides an ACL2 representation of the grammar,
       which has a formal @(see semantics)
-      and which is amenable to @(see operations), "
+      and which is amenable to "
+     (xdoc::seetopic "grammar-operations" "grammar operations")
+     ", "
      (xdoc::seetopic "defdefparse" "parser generation")
      ", etc.")
 

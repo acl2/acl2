@@ -39,8 +39,9 @@
    (xdoc::p
     "These theorems are in a separate file
      so that the definition of the concrete syntax
-     does not depend on the grammar @(see operations),
-     as also done for @(see core-rules-validation)
+     does not depend on the "
+    (xdoc::seetopic "grammar-operations" "grammar operations")
+    ", as also done for @(see core-rules-validation)
      and for @(see concrete-syntax-rules-validation)."))
 
   (defruled rulelist-wfp-of-*grammar*

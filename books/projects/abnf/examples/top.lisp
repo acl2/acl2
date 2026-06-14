@@ -31,5 +31,7 @@
    " and "
    (xdoc::seetopic "syntax-abstraction" "abstractor")
    ". We also demonstrate the use of
-    some @(see operations) on these grammars.")
+    some "
+   (xdoc::seetopic "grammar-operations" "operations")
+   " on these grammars.")
   :order-subtopics t)

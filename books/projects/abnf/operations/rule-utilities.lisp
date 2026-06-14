@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ rule-utilities
-  :parents (operations)
+  :parents (grammar-operations)
   :short "Finding various structures within rule lists."
   :long
   (xdoc::topstring

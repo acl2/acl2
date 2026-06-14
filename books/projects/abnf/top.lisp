@@ -68,7 +68,9 @@
       into a formal representation suitable for formal specification
       (e.g. for HTTP parsing).")
     (xdoc::li
-     "Executable @(see operations) on ABNF grammars,
+     "Executable "
+     (xdoc::seetopic "grammar-operations" "operations")
+     " on ABNF grammars,
       e.g. to check their well-formedness and to compose them.")
     (xdoc::li
      "A @(tsee defgrammar) tool
@@ -88,12 +90,16 @@
       parsing functions from grammar rules.")
     (xdoc::li
      "Some @(see examples) of
-      use of @(tsee defgrammar) and some grammar @(see operations)
-      on a few real-world ABNF grammars (e.g. for HTTP)."))
+      use of @(tsee defgrammar) and
+      use of some "
+     (xdoc::seetopic "grammar-operations" "operations")
+     " on a few real-world ABNF grammars (e.g. for HTTP)."))
 
    (xdoc::p
     "Besides the aforementioned examples,
-     @(tsee defgrammar) and some grammar @(see operations) have been used on "
+     @(tsee defgrammar) and some "
+    (xdoc::seetopic "grammar-operations" "grammar operations")
+    " have been used on "
     (xdoc::seetopic "java::grammar" "an ABNF grammar of Java")
     ", "
     (xdoc::seetopic "yul::concrete-syntax" "two ABNF grammars of Yul")

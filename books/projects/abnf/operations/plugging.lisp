@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ plugging
-  :parents (operations)
+  :parents (grammar-operations)
   :short "Composition of ABNF grammars."
   :long
   (xdoc::topstring

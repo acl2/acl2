@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ removal
-  :parents (operations)
+  :parents (grammar-operations)
   :short "Removal of rules in ABNF grammars."
   :long
   (xdoc::topstring

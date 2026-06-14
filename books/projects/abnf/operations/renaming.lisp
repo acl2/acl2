@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ renaming
-  :parents (operations)
+  :parents (grammar-operations)
   :short "Renaming of rules in ABNF grammars."
   :long
   (xdoc::topstring

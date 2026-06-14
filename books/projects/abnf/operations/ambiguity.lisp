@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ ambiguity
-  :parents (operations)
+  :parents (grammar-operations)
   :short "Ambiguity (and unambiguity) in ABNF grammars."
   :long
   (xdoc::topstring-p

@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ character-value-retrieval
-  :parents (operations)
+  :parents (grammar-operations)
   :short "Retrieval of character value notations from an ABNF grammar."
   :long
   (xdoc::topstring
