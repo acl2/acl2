@@ -206,7 +206,15 @@
   :elt-type shape-list
   :true-listp t
   :elementp-of-nil t
-  :pred shape-list-listp)
+  :pred shape-list-listp
+
+  ///
+
+  (defruled true-list-listp-when-shape-list-listp
+    (implies (shape-list-listp x)
+             (true-list-listp x))
+    :induct t
+    :enable shape-list-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
