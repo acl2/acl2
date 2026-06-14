@@ -2175,7 +2175,6 @@
                (set::union (string-dim-map-free-ispace-vars dim-subst)
                            (string-shape-map-free-ispace-vars shape-subst)))))
     (dim/shape-subst-alpha-bound-loop bound-vars dim-subst shape-subst avoid))
-  :verify-guards :after-returns
 
   :prepwork
   ((define dim/shape-subst-alpha-bound-loop ((bound-vars ispace-var-listp)
@@ -2259,7 +2258,6 @@
                (set::union (string-type-map-free-type-vars atom-subst)
                            (string-type-map-free-type-vars array-subst)))))
     (atom/array-subst-alpha-bound-loop bound-vars atom-subst array-subst avoid))
-  :verify-guards :after-returns
 
   :prepwork
   ((define atom/array-subst-alpha-bound-loop ((bound-vars type-var-listp)
@@ -2335,7 +2333,6 @@
        (avoid (set::union (string-sfix body-vars)
                           (string-expr-map-free-expr-vars subst))))
     (expr-subst-alpha-bound-loop bound-vars subst avoid))
-  :verify-guards :after-returns
 
   :prepwork
   ((define expr-subst-alpha-bound-loop ((bound-vars string-listp)
