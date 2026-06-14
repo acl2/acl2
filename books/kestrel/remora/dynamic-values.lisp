@@ -159,6 +159,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(std::deflist type-value-list-case-array (x)
+  :short "Check if all the type values in a list
+          are in the @(':array') summand."
+  :guard (type-value-listp x)
+  (type-value-case x :array))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type-value-array-list->shape ((x type-value-listp))
+  :guard (type-value-list-case-array x)
+  :returns (shapes nat-list-listp)
+  :short "Lift @(tsee type-value-array->shape) to lists."
+  (type-value-array->shape x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult type-value-result
   :short "Fixtype of type values and errors."
   :ok type-value
