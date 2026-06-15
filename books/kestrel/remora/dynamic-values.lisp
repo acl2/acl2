@@ -159,6 +159,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(std::deflist type-value-list-case-array (x)
+  :short "Check if all the type values in a list
+          are in the @(':array') summand."
+  :guard (type-value-listp x)
+  (type-value-case x :array))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type-value-array-list->shape ((x type-value-listp))
+  :guard (type-value-list-case-array x)
+  :returns (shapes nat-list-listp)
+  :short "Lift @(tsee type-value-array->shape) to lists."
+  (type-value-array->shape x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult type-value-result
   :short "Fixtype of type values and errors."
   :ok type-value
@@ -768,3 +784,54 @@
     :enable (value-wfp
              value-list-wfp-alt-def)
     :expand (check-dims-of-value val)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-first-lambda ((val valuep))
+  :returns (lval value-resultp)
+  :short "First lambda leaf value of a value, in row-major order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A term function value is an array, of any rank,
+     whose elements are (term) lambda abstractions,
+     all with equivalent types if the value is well-formed.
+     This descends into the first element of each vector
+     until it reaches a scalar lambda abstraction, which it returns.
+     A representative lambda is used by term application (see @(tsee eval-expr))
+     to read the function's parameter type values,
+     which determine the expected cell shapes of the arguments
+     and hence the frames over which the application is lifted.")
+   (xdoc::p
+    "It is an error if a non-lambda leaf is reached,
+     or if an empty vector is reached, which has no lambda to return.")
+   (xdoc::p
+    "It should be an invariant that, in a well-formed value,
+     all elements (if the value is not scalar) have equivalent types,
+     which implies that it makes no difference that this function
+     picks the first scalar value rather than any of the others.
+     Our current notion of well-formedness of values
+     does not capture the invariant about equivalent types,
+     but we plan to add it;
+     then we might consider replacing the use of this function
+     with something that returns, under well-formedness guards,
+     the shape that @(tsee eval-expr) needs."))
+  (value-case
+   val
+   :base (reserr nil)
+   :lambda (value-fix val)
+   :tlambda (reserr nil)
+   :ilambda (reserr nil)
+   :box (reserr nil)
+   :vector (if (consp val.elems)
+               (value-first-lambda (car val.elems))
+             (reserr nil))
+   :vector-empty (reserr nil))
+  :measure (value-count val)
+
+  ///
+
+  (defret value-kind-of-value-first-lambda
+    (implies (not (reserrp lval))
+             (equal (value-kind lval) :lambda))
+    :hints (("Goal" :induct t))))

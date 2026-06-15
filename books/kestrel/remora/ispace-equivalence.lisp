@@ -46,17 +46,15 @@
    (xdoc::p
     "We also plan to formalize a more general notion of equivalence,
      also involving multiplication and subtraction of dimensions,
-     without necessarily requiring decidability.
-     Indeed, Remora was planned to evolve towards undecidability,
-     in order to capture stronger constraints via types."))
+     without necessarily requiring decidability."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce addp
-  :short "Check if a dimension or shape or ispace or a list thereof
-          only contains addition, no multiplication or subtraction."
+  :short "Check if dimensions, shapes, and ispaces only contains additions
+          (no multiplications or subtractions)."
   :types (dims
           shapes
           ispace
@@ -193,6 +191,7 @@
      (xdoc::p
       "We go through each dimension and flatten it.
        However, as explained in @(tsee flatten-add-in-dim),
+       if the @('addp') flag is @('t'),
        we splice any obtained sub-addition into the current list,
        which is put into the super-addition by @(tsee flatten-add-in-dim).
        The @('addp') flag is @('t') exactly when
@@ -456,7 +455,9 @@
    (xdoc::p
     "The flattening of concatenations also has the effect of
      eliminating empty sub-concatenations used in super-concatenations,
-     e.g. @('(++ i (++ j k) (++) l)') results in @('(++ i j k l)')."))
+     e.g. @('(++ i (++ j k) (++) l)') results in @('(++ i j k l)').")
+   (xdoc::p
+    "The result of flattening a shape is always a concatenation shape."))
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -502,7 +503,12 @@
 
   ///
 
-  (fty::deffixequiv-mutual flatten-append-in-shapes))
+  (fty::deffixequiv-mutual flatten-append-in-shapes)
+
+  (defrule shape-kind-of-flatten-append-in-shape
+    (equal (shape-kind (flatten-append-in-shape shape))
+           :append)
+    :expand ((flatten-append-in-shape shape))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -515,11 +521,35 @@
    (xdoc::p
     "We normalize its dimensions,
      then we normalize shapes to have single dimensions,
-     and finally we flatten all concatenations."))
+     and finally we flatten all concatenations.")
+   (xdoc::p
+    "A normalized shape is always a concatenation."))
   (b* ((shape (normalize-dims-in-shape shape))
        (shape (normalize-shapes-single-in-shape shape))
        (shape (flatten-append-in-shape shape)))
-    shape))
+    shape)
+
+  ///
+
+  (defrule shape-kind-of-normalize-shape
+    (equal (shape-kind (normalize-shape shape))
+           :append)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define normalize-shape-list ((shapes shape-listp))
+  :guard (shape-list-addp shapes)
+  :returns (new-shapes shape-listp)
+  :short "Lift @(tsee normalize-shape) to lists."
+  (cond ((endp shapes) nil)
+        (t (cons (normalize-shape (car shapes))
+                 (normalize-shape-list (cdr shapes)))))
+
+  ///
+
+  (defret shape-list-case-append-of-normalize-shape-list
+    (shape-list-case-append new-shapes)
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

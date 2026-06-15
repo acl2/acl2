@@ -82,7 +82,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-shape-suffix ((shape shapep) (suffix shapep))
-  :returns (prefix shape-resultp)
+  :returns (prefix shape-resultp
+                   :hints
+                   (("Goal" :in-theory (enable check-list-suffix-alt-def))))
   :short "Check if a shape has another shape as suffix,
           returning the prefix shape if successful."
   :long
@@ -107,43 +109,20 @@
     "To perform this check, we need to normalize both shapes,
      which results into two concatenations of
      lists of variables and single-dimension shapes.
-     We check whether the second list is a suffix of the first list.
-     If the prefix is a singleton list, we return its element."))
+     We use @(tsee check-list-suffix) to check whether
+     the second list is a suffix of the first list,
+     obtaining the prefix if so,
+     which we return as a concatenation."))
   (b* (((unless (and (shape-addp shape)
                      (shape-addp suffix)))
         (reserr nil)) ; not supported
-       (shape (normalize-shape shape))
-       (suffix (normalize-shape suffix))
-       ((unless (shape-case shape :append))
-        (raise "Internal error: normalized shape is ~x0." shape)
-        (reserr nil))
-       ((unless (shape-case suffix :append))
-        (raise "Internal error: normalized shape is ~x0." suffix)
-        (reserr nil))
-       (shape-elements (shape-append->shapes shape))
-       (suffix-elements (shape-append->shapes suffix))
-       ((unless (<= (len suffix-elements) (len shape-elements))) (reserr nil))
-       ((unless (equal suffix-elements
-                       (nthcdr (- (len shape-elements)
-                                  (len suffix-elements))
-                               shape-elements)))
-        (reserr nil))
-       (prefix-elements (take (- (len shape-elements)
-                                 (len suffix-elements))
-                              shape-elements)))
-    (if (and (consp prefix-elements)
-             (endp (cdr prefix-elements)))
-        (car prefix-elements)
-      (shape-append prefix-elements)))
-  :no-function nil
-  :guard-hints (("Goal" :in-theory (enable nfix)))
-  :prepwork
-  ((defrulel returns-lemma1
-     (implies (< 0 (- (len x) (len y)))
-              (consp x)))
-   (defrulel returns-lemma2
-     (implies (<= 1 (len x))
-              (consp x)))))
+       (shape-elements (shape-append->shapes (normalize-shape shape)))
+       (suffix-elements (shape-append->shapes (normalize-shape suffix)))
+       ((mv suffixp prefix-elements)
+        (check-list-suffix shape-elements suffix-elements))
+       ((unless suffixp) (reserr nil)))
+    (shape-append prefix-elements))
+  :guard-hints (("Goal" :in-theory (enable check-list-suffix-alt-def nfix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -189,41 +168,30 @@
      @($\\iota\\sqsubseteq\\iota'$) iff @($\\iota$) is a prefix of @($\\iota'$)
      (including the case @($\\iota=\\iota'$)).")
    (xdoc::p
-    "We go through the list in order,
-     but the order of the list is irrelevant.
+    "The order of the list is irrelevant to the result.
      If the list is empty, the result is the empty concatenation,
      which is the bottom of the partial order.
      If the list is a singleton, the result is its only element.
-     If the list has two or more elements,
-     we recursively calculate the join of the @(tsee cdr) of the list,
-     then we normalize that and the @(tsee car) and compare them.
-     If neither the @(tsee car) is a prefix of the join nor vice versa,
-     it is an error, i.e. there is no join;
-     otherwise the result is the longer concatenation."))
+     Otherwise, we normalize every shape (see @(tsee normalize-shape-list)),
+     we extract the elements of the resulting concatenations
+     (see @(tsee shape-append-list->shapes)),
+     and we use @(tsee list-prefix-join)
+     to join those lists of variables and single-dimension shapes:
+     if they do not form a chain under the prefix order, there is no join;
+     otherwise the result is the longest of them,
+     turned back into a concatenation."))
   (b* (((when (endp shapes)) (shape-append nil))
        ((when (endp (cdr shapes))) (shape-fix (car shapes)))
-       ((ok cdr-shape) (join-shapes (cdr shapes)))
-       ((unless (and (shape-addp cdr-shape)
-                     (shape-addp (car shapes))))
-        (reserr nil)) ; not supported
-       (cdr-shape (normalize-shape cdr-shape))
-       (car-shape (normalize-shape (car shapes)))
-       ((unless (shape-case cdr-shape :append))
-        (raise "Internal error: normalized shape is ~x0." cdr-shape)
-        (reserr nil))
-       ((unless (shape-case car-shape :append))
-        (raise "Internal error: normalized shape is ~x0." car-shape)
-        (reserr nil))
-       (car-elements (shape-append->shapes car-shape))
-       (cdr-elements (shape-append->shapes cdr-shape)))
-    (cond ((prefixp car-elements cdr-elements) (shape-append cdr-elements))
-          ((prefixp cdr-elements car-elements) (shape-append car-elements))
-          (t (reserr nil))))
-  :no-function nil
+       ((unless (shape-list-addp shapes)) (reserr nil)) ; not supported
+       (element-lists
+        (shape-append-list->shapes (normalize-shape-list shapes)))
+       ((mv joinp join) (list-prefix-join element-lists)))
+    (if joinp
+        (shape-append join)
+      (reserr nil)))
   :verify-guards :after-returns
-  ///
-  (fty::deffixequiv join-shapes
-    :hints (("Goal" :induct t :in-theory (enable shape-list-fix)))))
+  :guard-hints
+  (("Goal" :in-theory (enable true-list-listp-when-shape-list-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

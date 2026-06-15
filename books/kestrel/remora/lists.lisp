@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "std/basic/pos-fix" :dir :system)
+(include-book "std/lists/prefixp" :dir :system)
 (include-book "std/lists/repeat" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/deflist" :dir :system)
@@ -22,6 +23,7 @@
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/utilities/true-list-listp-theorems" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
+(local (include-book "std/basic/fix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
 
@@ -265,3 +267,196 @@
     (equal (consp cars)
            (consp lists))
     :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define cdr-list ((lists true-list-listp))
+  :returns (cdrs true-list-listp)
+  :short "Remove the first element from each list in a list of lists,
+          returning the list of shortened lists in the same order."
+  (cond ((endp lists) nil)
+        (t (cons (cdr (mbe :logic (true-list-fix (car lists))
+                           :exec (car lists)))
+                 (cdr-list (cdr lists)))))
+
+  ///
+
+  (defret len-of-cdr-list
+    (equal (len cdrs)
+           (len lists))
+    :hints (("Goal" :induct t)))
+
+  (defret consp-of-cdr-list
+    (equal (consp cdrs)
+           (consp lists))
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define repeat-each ((n natp) (list true-listp))
+  :returns (new-list true-listp)
+  :short "Repeat each element of a list a given number of times,
+          consecutively and in place."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each element of the list is replaced by @('n') consecutive copies of it,
+     preserving the order of the elements.
+     For instance, repeating each element of @('(a b c)') three times
+     yields @('(a a a b b b c c c)')."))
+  (cond ((endp list) nil)
+        (t (append (repeat n (car list))
+                   (repeat-each n (cdr list)))))
+
+  ///
+
+  (defret len-of-repeat-each
+    (equal (len new-list)
+           (* (nfix n) (len list)))
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-list-suffix ((list true-listp) (suffix true-listp))
+  :returns (mv (suffixp booleanp) (prefix true-listp))
+  :short "Check whether a list is a suffix of another list,
+          returning the prefix if so."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If @('suffix') is a suffix of @('list'),
+     the first result is @('t') and
+     the second result is the prefix,
+     i.e. the list that, with @('suffix') appended to it, yields @('list').
+     Otherwise, the first result is @('nil'),
+     and the second result is @('nil') too,
+     but in this case the second result is irrelevant
+     and should not be used.")
+   (xdoc::p
+    "For instance, @('(c)') is a suffix of @('(a b c)'),
+     with prefix @('(a b)');
+     but @('(x)') is not a suffix of @('(a b c)')."))
+  (b* (((when (equal (true-list-fix list)
+                     (true-list-fix suffix)))
+        (mv t nil))
+       ((when (endp list))
+        (mv nil nil))
+       ((mv suffixp prefix)
+        (check-list-suffix (cdr list) suffix)))
+    (if suffixp
+        (mv t (cons (car list) prefix))
+      (mv nil nil)))
+
+  ///
+
+  (defret check-list-suffix-decomposition
+    (implies suffixp
+             (equal (append prefix (true-list-fix suffix))
+                    (true-list-fix list)))
+    :hints (("Goal" :induct t)))
+
+  (defruled check-list-suffix-alt-def
+    (equal (check-list-suffix list suffix)
+           (b* ((list (true-list-fix list))
+                (suffix (true-list-fix suffix))
+                (n (- (len list) (len suffix))))
+             (if (and (<= (len suffix) (len list))
+                      (equal suffix (nthcdr n list)))
+                 (mv t (take n list))
+               (mv nil nil))))
+    :induct t
+    :expand ((len list))
+    :enable (nthcdr take))
+
+  (theory-invariant
+   (incompatible (:definition check-list-suffix)
+                 (:rewrite check-list-suffix-alt-def))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-list-suffixes ((lists true-list-listp) (suffixes true-list-listp))
+  :guard (equal (len lists) (len suffixes))
+  :returns (mv (suffixesp booleanp) (prefixes true-list-listp))
+  :short "Check whether each list in a list of lists has,
+          as a suffix, the corresponding list in another list of lists,
+          returning the prefixes if so."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee check-list-suffix) to two lists of lists,
+     which must have the same length,
+     checking each list against the corresponding suffix.
+     If they all succeed, the first result is @('t')
+     and the second result is the list of prefixes, in the same order;
+     otherwise the first result is @('nil')
+     and the second result is @('nil') but is irrelevant."))
+  (b* (((when (endp lists)) (mv t nil))
+       ((unless (mbt (consp suffixes))) (mv nil nil))
+       ((mv suffixp prefix)
+        (check-list-suffix (car lists) (car suffixes)))
+       ((unless suffixp) (mv nil nil))
+       ((mv suffixesp prefixes)
+        (check-list-suffixes (cdr lists) (cdr suffixes)))
+       ((unless suffixesp) (mv nil nil)))
+    (mv t (cons prefix prefixes)))
+
+  ///
+
+  (defret len-of-check-list-suffixes
+    (implies suffixesp
+             (equal (len prefixes)
+                    (len lists)))
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define list-prefix-join ((lists true-list-listp))
+  :returns (mv (joinp booleanp) (join true-listp))
+  :short "Least upper bound of a list of lists,
+          with respect to the prefix partial order on lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Lists are partially ordered by the prefix relation:
+     a list is less than or equal to another list
+     when the former is a prefix of the latter
+     (each list being a prefix of itself).
+     The join, i.e. least upper bound, of a list of lists
+     is the shortest list that has all of the given lists as prefixes.
+     It exists if and only if the given lists form a chain,
+     i.e. they are totally ordered by the prefix relation,
+     in which case the join is the longest of the given lists.
+     The first result says whether the join exists;
+     if it does, the second result is the join,
+     otherwise the second result is @('nil') but is irrelevant.")
+   (xdoc::p
+    "We go through the list of lists in order,
+     but the order is irrelevant to the result.
+     If the list of lists is empty,
+     the join is the empty list,
+     which is the bottom of the partial order.
+     If the list of lists is a singleton,
+     the join is its only element.
+     If the list of lists has two or more elements,
+     we recursively calculate the join of the @(tsee cdr),
+     and we compare the @(tsee car) with it:
+     if neither is a prefix of the other, there is no join;
+     otherwise the join is the longer of the two."))
+  (b* (((when (endp lists)) (mv t nil))
+       ((when (endp (cdr lists)))
+        (mv t (true-list-fix (car lists))))
+       ((mv joinp cdr-join) (list-prefix-join (cdr lists)))
+       ((unless joinp) (mv nil nil))
+       (car-list (true-list-fix (car lists))))
+    (cond ((prefixp car-list cdr-join) (mv t cdr-join))
+          ((prefixp cdr-join car-list) (mv t car-list))
+          (t (mv nil nil))))
+
+  ///
+
+  (defret list-prefix-join-upper-bound
+    (implies (and joinp
+                  (member-equal l lists))
+             (prefixp l join))
+    :hints (("Goal" :induct t)))
+  (in-theory (disable list-prefix-join-upper-bound)))
