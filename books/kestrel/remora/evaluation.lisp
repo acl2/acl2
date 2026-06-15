@@ -878,9 +878,7 @@
      (whose shapes are @($n_a\\ldots n_i\\ldots$) in [thesis]).
      The @('pframe') input of this ACL2 function corresponds to
      @($n_p\\ldots$) in [thesis], i.e. the principal frame,
-     of which @('frame') is a prefix, as expressed in the guard.
-     (We could also add a guard saying that
-     @(tsee dims-of-value) of @('val') is a prefix of @('pframe').)")
+     of which @('frame') is a prefix, as expressed in the guard.")
    (xdoc::p
     "This ACL2 function obtains all the sub-values (cells) of @('val')
      at depth @('(len frame)'),
