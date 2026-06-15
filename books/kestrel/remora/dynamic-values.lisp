@@ -421,7 +421,15 @@
     :elt-type value
     :true-listp t
     :elementp-of-nil nil
-    :pred value-listp))
+    :pred value-listp
+
+    ///
+
+    (defrule value-listp-of-repeat-each
+      (implies (value-listp vals)
+               (value-listp (repeat-each n vals)))
+      :induct (repeat-each n vals)
+      :enable (repeat-each value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -917,4 +925,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((local (in-theory (enable value-listp-when-result-not-error)))))
+  :prepwork ((local (in-theory (enable value-listp-when-result-not-error))))
+
+  ///
+
+  (fty::deffixequiv-mutual cells-at-depth-in-values
+    :hints (("Goal" :in-theory (enable nfix)))))
