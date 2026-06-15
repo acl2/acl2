@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ closure
-  :parents (operations)
+  :parents (grammar-operations)
   :short "Closure in ABNF grammars."
   :long
   (xdoc::topstring

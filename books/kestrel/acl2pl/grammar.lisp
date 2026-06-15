@@ -11,7 +11,7 @@
 (in-package "ACL2PL")
 
 (include-book "projects/abnf/grammar-definer/defgrammar" :dir :system)
-(include-book "projects/abnf/operations/in-terminal-set" :dir :system)
+(include-book "projects/abnf/grammar-operations/in-terminal-set" :dir :system)
 (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system)
 
 ; (depends-on "grammar.abnf")

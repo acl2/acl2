@@ -11,9 +11,9 @@
 (in-package "ABNF")
 
 (include-book "core-rules")
-(include-book "../operations/well-formedness")
-(include-book "../operations/closure")
-(include-book "../operations/in-terminal-set")
+(include-book "../grammar-operations/well-formedness")
+(include-book "../grammar-operations/closure")
+(include-book "../grammar-operations/in-terminal-set")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,8 +35,9 @@
      "Without the @('OCTET') rule,
       generate only strings of ASCII codes."))
    (xdoc::p
-    "These validation theorems depend on some grammar @(see operations).
-     Thus, we put them in a separate file,
+    "These validation theorems depend on some "
+    (xdoc::seetopic "grammar-operations" "grammar operations")
+    ". Thus, we put them in a separate file,
      avoiding a dependency of the file that defines the core rules
      on the grammar operations."))
 
