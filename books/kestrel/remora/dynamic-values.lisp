@@ -117,7 +117,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum type-value
-    :parents (values type-values)
+    :parents (dynamic-values type-values)
     :short "Fixtype of type values."
     :long
     (xdoc::topstring
@@ -150,7 +150,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist type-value-list
-    :parents (values type-values)
+    :parents (dynamic-values type-values)
     :short "Fixtype of lists of type values."
     :elt-type type-value
     :true-listp t
@@ -341,7 +341,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum value
-    :parents (values)
+    :parents (dynamic-values values)
     :short "Fixtype of values."
     :long
     (xdoc::topstring
@@ -416,7 +416,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist value-list
-    :parents (values)
+    :parents (dynamic-values values)
     :short "Fixtype of lists of values."
     :elt-type value
     :true-listp t
@@ -503,7 +503,7 @@
 
   (define check-dims-of-value ((val valuep))
     :returns (dims nat-list-resultp)
-    :parents (values check-dims-of-values)
+    :parents (dynamic-values check-dims-of-values)
     :short "Check dimension constraints on values."
     :long
     (xdoc::topstring
@@ -549,7 +549,7 @@
 
   (define check-dims-of-value-list ((vals value-listp))
     :returns (dimss nat-list-list-resultp)
-    :parents (values check-dims-of-values)
+    :parents (dynamic-values check-dims-of-values)
     :short "Check dimension constraints on lists of values."
     :long
     (xdoc::topstring
