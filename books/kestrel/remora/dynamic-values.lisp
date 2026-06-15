@@ -880,7 +880,7 @@
        It is used on the values that
        the arguments of an application expression evaluate to.
        It roughly corresponds to
-       @($\\mathir{Split}_{n_{\\mathit{ac}}}
+       @($\\mathit{Split}_{n_{\\mathit{ac}}}
           \\llbracket \\mathfrak{v}_a \\ldots \\rrbracket$)
        in [thesis],
        where values, unlike our @(tsee value) fixtype,

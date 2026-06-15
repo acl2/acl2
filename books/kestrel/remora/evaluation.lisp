@@ -895,13 +895,13 @@
     "Roughly speaking, this ACL2 function corresponds to
      @($Rep_{n_{\\mathit{fe}}}
         \\llbracket
-          \\mathir{Split}_1
+          \\mathit{Split}_1
           \\llbracket \\mathfrak{v}_f \\ldots \\rrbracket
         \\rrbracket$)
      and
      @($Rep_{n_{\\mathit{ae}}}
         \\llbracket
-          \\mathir{Split}_{n_{\\mathit{ac}}}
+          \\mathit{Split}_{n_{\\mathit{ac}}}
           \\llbracket \\mathfrak{v}_a \\ldots \\rrbracket
         \\rrbracket$)
      in [thesis]."))
