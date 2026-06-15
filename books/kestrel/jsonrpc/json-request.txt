@@ -1,4 +1,1 @@
-[
-        {"jsonrpc": "2.0", "method": "notify_sum", "params": [1,2,4]},
-        {"jsonrpc": "2.0", "method": "notify_hello", "params": [7]}
-    ]
+{"jsonrpc": "2.0", "method": "subtract", "params": [42, 23], "id": 1}

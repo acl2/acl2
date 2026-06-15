@@ -28,7 +28,7 @@
   JSON-RPC messages, dispatches them through the same pipeline as
   @(see process-json-rpc-file), and writes the responses back on the same
   connection.  A single connection may carry multiple request/response
-  exchanges (keep-alive); the connection is closed when the client
+  exchanges; the connection is closed when the client
   disconnects.</p>
 
   <p>Usage:</p>
@@ -37,13 +37,7 @@
     (run-jsonrpc-server 7070 state)
   })
 
-  <p>The port number is printed to standard output when the server starts
-  listening, so that callers can confirm the address.</p>
-
-  <p>Messages are framed by JSON structure: the server reads characters until
-  it has received one complete JSON value (tracking brace/bracket nesting and
-  string escapes), then processes it.  This means pretty-printed (multi-line)
-  JSON is accepted as well as compact single-line JSON.</p>
+  <p>Messages must be delimited by a newline character.</p>
 
   <p>This function does not return under normal operation.  It can be
   interrupted with a SIGINT (Ctrl-C).</p>")

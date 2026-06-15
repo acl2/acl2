@@ -74,9 +74,8 @@
   <p>Every method function must have the following signature:</p>
 
   @({
-    (defun jsonrpc::my-method (param1 param2 ... state)
-      (declare (xargs :guard (and (valuep param1) (valuep param2) ...)
-                      :mode :program
+    (defun my-method (params state)
+      (declare (xargs :guard (structuredp params)
                       :stobjs state))
       ...)
   })
@@ -84,30 +83,24 @@
   <p>The rules are:</p>
 
   <ul>
-    <li>The function must be in the @('JSONRPC') package. The method name in
-    the JSON request is upcased and interned into this package to find the
-    function.</li>
+    <li>The function must be in the @('JSONRPC') package.</li>
 
-    <li>Each parameter corresponds to one element of the @('params') field in
-    the request. If @('params') is a JSON Array, the elements are passed
-    positionally. If @('params') is a JSON Object, the members are passed as
-    keyword arguments (e.g. @(':name value')). If @('params') is absent, only
-    @('state') is passed.</li>
-
-    <li>All parameters (except @('state')) are of type @('valuep') — raw JSON
-    values. The method function is responsible for validating and extracting the
-    values it needs.</li>
+    <li>The @('params') field in request is passed directly to the first
+    argument of the method function. The method function is responsible for
+    processing the params. If @('params') is absent, only @('state') is
+    passed.</li>
 
     <li>@('state') is always passed as the last argument.</li>
 
-    <li>The function must return @('(mv erp result state)') where:
+    <li>The function must return a error-triple @('(mv erp result state)')
+    where:
     <ul>
       <li>@('erp') is @('nil') on success, or an @(see error) value on
       failure.</li>
       <li>@('result') is a @('valuep') — the JSON value to be returned in the
       response's @('\"result\"') field. It is only used when @('erp') is
       @('nil').</li>
-      <li>@('state') is the (possibly updated) ACL2 state.</li>
+      <li>@('state') is the ACL2 state.</li>
     </ul></li>
   </ul>
 
@@ -119,21 +112,35 @@
   <p>Here is an example method function that subtracts two numbers:</p>
 
   @({
-    (defun jsonrpc::subtract (x y state)
-      (declare (xargs :guard (and (valuep x) (valuep y))
-                      :mode :program
-                      :stobjs state))
-      (b* (((unless (equal (value-kind x) :number))
-            (mv (make-invalid-params-error \"First argument must be a number\")
-                (value-null)
-                state))
-           ((unless (equal (value-kind y) :number))
-            (mv (make-invalid-params-error \"Second argument must be a number\")
-                (value-null)
-                state))
-           (result (make-value-number :get (- (value-number->get x)
-                                              (value-number->get y)))))
-        (mv nil result state)))
+    (define subtract ((params structuredp) state)
+      :returns (mv erp (res valuep) state)
+      :stobjs state
+      (b* (((mv x y)
+        (if (equal (structured-kind params) :array)
+            (b* ((elems (structured-array->elements params)))
+              (if (= (len elems) 2)
+                  (mv (first elems) (second elems))
+                (mv nil nil)))
+          (b* ((members (structured-object->members params))
+               (x (find-member-value \"minuend\" members))
+               (y (find-member-value \"subtrahend\" members)))
+            (mv x y))))
+       ((unless (and x y))
+        (mv (make-invalid-params-error
+             \"Params must be [minuend, subtrahend] or
+             {\"minuend\":...,\"subtrahend\":...}\")
+            (value-null)
+            state))
+       ((unless (equal (value-kind x) :number))
+        (mv (make-invalid-params-error \"minuend must be a number\")
+            (value-null)
+            state))
+       ((unless (equal (value-kind y) :number))
+        (mv (make-invalid-params-error \"subtrahend must be a number\")
+            (value-null)
+            state))
+       (result (- (value-number->get x) (value-number->get y))))
+    (mv nil (value-number result) state)))
   })
 
   <h3>Batch Requests</h3>

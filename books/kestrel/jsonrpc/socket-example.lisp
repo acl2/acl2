@@ -34,6 +34,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define subtract ((params structuredp) state)
+  :returns (mv erp (res valuep) state)
   :stobjs state
   (b* (((mv x y)
         (if (equal (structured-kind params) :array)

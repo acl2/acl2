@@ -15,11 +15,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; looks up a member by name in a member-list, returns nil if not found
-(defun find-member-value (name members)
-  (declare (xargs :guard (and (stringp name)
-                              (member-listp members))
-                  :mode :program))
-  (cond ((endp members) nil)
+(define find-member-value ((name stringp) (members member-listp))
+  :returns (val valuep)
+  (cond ((endp members) (value-null))
         ((equal (member->name (car members)) name)
          (member->value (car members)))
         (t (find-member-value name (cdr members)))))
@@ -27,9 +25,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define subtract ((params structuredp) state)
-  :short "Subtract two numbers. Accepts array [minuend, subtrahend] or
-          object {\"minuend\": ..., \"subtrahend\": ...}."
-  :mode :program
+  :returns (mv erp (res valuep) state)
   :stobjs state
   (b* (((mv x y)
         (if (equal (structured-kind params) :array)
@@ -43,7 +39,8 @@
             (mv x y))))
        ((unless (and x y))
         (mv (make-invalid-params-error
-             "params must be [minuend, subtrahend] or {\"minuend\":...,\"subtrahend\":...}")
+             "Params must be [minuend, subtrahend] or
+             {\"minuend\":...,\"subtrahend\":...}")
             (value-null)
             state))
        ((unless (equal (value-kind x) :number))
@@ -55,7 +52,7 @@
             (value-null)
             state))
        (result (- (value-number->get x) (value-number->get y))))
-    (mv nil (make-value-number :get result) state)))
+    (mv nil (value-number result) state)))
 
 #|
 
