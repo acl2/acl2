@@ -15,7 +15,6 @@
 
 (include-book "kestrel/fty/deffold-map" :dir :system)
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
-(include-book "kestrel/fty/string-set" :dir :system)
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -477,40 +476,6 @@
                        (set::mergesort (var+type-list->var bind.params))
                        (expr-all-expr-vars bind.expr)))))
   :name ast-all-expr-vars)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define dim/shape-names-of-ispace-vars ((vars ispace-var-setp))
-  :returns (mv (dim-names string-setp) (shape-names string-setp))
-  :short "Extract the sets of dimension and shape variable names
-          from a set of ispace variables."
-  (b* (((when (set::emptyp (ispace-var-set-fix vars))) (mv nil nil))
-       ((mv dim-vars shape-vars)
-        (dim/shape-names-of-ispace-vars (set::tail vars)))
-       (param (set::head vars)))
-    (ispace-var-case
-     param
-     :dim (mv (set::insert param.name dim-vars) shape-vars)
-     :shape (mv dim-vars (set::insert param.name shape-vars))))
-  :prepwork ((local (in-theory (enable emptyp-of-ispace-var-set-fix))))
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atom/array-names-of-type-vars ((vars type-var-setp))
-  :returns (mv (atom-names string-setp) (array-names string-setp))
-  :short "Extract the sets of atom and array type variable names
-          from a set of type variables."
-  (b* (((when (set::emptyp (type-var-set-fix vars))) (mv nil nil))
-       ((mv atom-vars array-vars)
-        (atom/array-names-of-type-vars (set::tail vars)))
-       (var (set::head vars)))
-    (type-var-case
-     var
-     :atom (mv (set::insert var.name atom-vars) array-vars)
-     :array (mv atom-vars (set::insert var.name array-vars))))
-  :prepwork ((local (in-theory (enable emptyp-of-type-var-set-fix))))
-  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
