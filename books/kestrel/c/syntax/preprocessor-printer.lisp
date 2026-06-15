@@ -203,36 +203,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-line-comment ((content uchar-listp) (bytes byte-listp))
+(define pprint-line-comment ((content unichar-listp) (bytes byte-listp))
   :returns (new-bytes byte-listp)
   :short "Print a line comment after preprocessing."
   (b* ((bytes (pprint-astring "//" bytes))
        ((unless (grammar-character-listp content))
         (raise "Internal error: bad line comment content ~x0."
-               (uchar-list-fix content)))
+               (unichar-list-fix content)))
        (bytes (pprint-chars content bytes)))
     bytes)
-  :guard-hints (("Goal" :in-theory (enable nat-listp-when-uchar-listp)))
+  :guard-hints (("Goal" :in-theory (enable nat-listp-when-unichar-listp)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-block-comment ((content uchar-listp) (bytes byte-listp))
+(define pprint-block-comment ((content unichar-listp) (bytes byte-listp))
   :returns (new-bytes byte-listp)
   :short "Print a block comment after preprocessing."
   (b* ((bytes (pprint-astring "/*" bytes))
        ((unless (grammar-character-listp content))
         (raise "Internal error: bad block comment content ~x0."
-               (uchar-list-fix content)))
+               (unichar-list-fix content)))
        (bytes (pprint-chars content bytes))
        (bytes (pprint-astring "*/" bytes)))
     bytes)
-  :guard-hints (("Goal" :in-theory (enable nat-listp-when-uchar-listp)))
+  :guard-hints (("Goal" :in-theory (enable nat-listp-when-unichar-listp)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-other ((char ucharp) (bytes byte-listp))
+(define pprint-other ((char unicharp) (bytes byte-listp))
   :returns (new-bytes byte-listp)
   :short "Print a character that does not fit any lexeme after preprocessing."
   :long
@@ -242,7 +242,7 @@
   (b* (((unless (grammar-character-p char))
         (raise "Internal error: bad character code ~x0." (nfix char))))
     (pprint-char char bytes))
-  :guard-hints (("Goal" :in-theory (enable natp-when-ucharp)))
+  :guard-hints (("Goal" :in-theory (enable natp-when-unicharp)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -403,7 +403,7 @@
                (raise "Internal error: bad character code ~x0." cchar.code)))
            (pprint-char cchar.code bytes))
    :escape (pprint-escape cchar.escape bytes))
-  :guard-hints (("Goal" :in-theory (enable natp-when-ucharp)))
+  :guard-hints (("Goal" :in-theory (enable natp-when-unicharp)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -418,7 +418,7 @@
                (raise "Internal error: bad character code ~x0." schar.code)))
            (pprint-char schar.code bytes))
    :escape (pprint-escape schar.escape bytes))
-  :guard-hints (("Goal" :in-theory (enable natp-when-ucharp)))
+  :guard-hints (("Goal" :in-theory (enable natp-when-unicharp)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -431,7 +431,7 @@
        ((unless (grammar-character-p code))
         (raise "Internal error: bad character code ~x0." code)))
     (pprint-char code bytes))
-  :guard-hints (("Goal" :in-theory (enable natp-when-ucharp)))
+  :guard-hints (("Goal" :in-theory (enable natp-when-unicharp)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -444,7 +444,7 @@
        ((unless (grammar-character-p code))
         (raise "Internal error: bad character code ~x0." code)))
     (pprint-char code bytes))
-  :guard-hints (("Goal" :in-theory (enable natp-when-ucharp)))
+  :guard-hints (("Goal" :in-theory (enable natp-when-unicharp)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -850,7 +850,9 @@
      arm::getbit-0-of-cmp-carry
      arm::getbit-0-of-cmp-zero
      arm::getbit-0-of-cmp-sign
-     arm::getbit-0-of-cmp-overflow)))
+     arm::getbit-0-of-cmp-overflow
+
+     arm::reg*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

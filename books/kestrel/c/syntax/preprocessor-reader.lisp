@@ -101,10 +101,10 @@
 
 (define read-next-char ((pos positionp) (bytes byte-listp) (ienv ienvp))
   :returns (mv erp
-               (char? uchar-optionp
+               (char? unichar-optionp
                       :hints (("Goal"
                                :induct t
-                               :in-theory (e/d (uchar-optionp)
+                               :in-theory (e/d (unichar-optionp)
                                                (acl2::commutativity-of-logand
                                                 acl2::commutativity-2-of-+
                                                 commutativity-of-+)))))
@@ -562,17 +562,17 @@
                        (utf8-= byte 11) ; VT
                        (utf8-= byte 12) ; FF
                        (and (utf8-<= 32 byte) (utf8-<= byte 126))))
-              (ucharp byte))
-     :enable ucharp)
+              (unicharp byte))
+     :enable unicharp)
 
    (defrulel returns-lemma2 ; 2-byte UTF-8
      (implies (and (bytep byte)
                    (bytep byte2)
                    (utf8-= (logand byte #b11100000) #b11000000)
                    (utf8-= (logand byte2 #b11000000) #b10000000))
-              (ucharp (+ (ash (logand byte #b00011111) 6)
+              (unicharp (+ (ash (logand byte #b00011111) 6)
                          (logand byte2 #b00111111))))
-     :enable ucharp
+     :enable unicharp
      :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
    (defrulel returns-lemma3 ; 3-byte UTF-8
@@ -587,8 +587,8 @@
                             (logand byte3 #b00111111))))
                 (implies (not (and (utf8-<= #xd800 char)
                                    (utf8-<= char #xdfff)))
-                         (ucharp char))))
-     :enable ucharp
+                         (unicharp char))))
+     :enable unicharp
      :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
    (defrulel returns-lemma4 ; 4-byte UTF-8
@@ -606,8 +606,8 @@
                             (logand byte4 #b00111111))))
                 (implies (not (or (< char #x10000)
                                   (> char #x10ffff)))
-                         (ucharp char))))
-     :enable ucharp))
+                         (unicharp char))))
+     :enable unicharp))
 
   ///
 
@@ -632,7 +632,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-chars+positions ((file stringp) (bytes byte-listp) (ienv ienvp))
-  :returns (mv erp (chars uchar-listp) (poss position-listp))
+  :returns (mv erp (chars unichar-listp) (poss position-listp))
   :short "Read all the characters from a list of bytes,
           obtaining the list of characters and the corresponding positions."
   :long
@@ -651,7 +651,7 @@
   ((define read-chars+positions-loop ((pos positionp)
                                       (bytes byte-listp)
                                       (ienv ienvp))
-     :returns (mv erp (chars uchar-listp) (poss position-listp))
+     :returns (mv erp (chars unichar-listp) (poss position-listp))
      :parents nil
      (b* (((reterr) nil (list (irr-position)))
           ((erp char? pos pos-next bytes) (read-next-char pos bytes ienv))
@@ -703,7 +703,7 @@
 
 (define read-pchar ((ppstate ppstatep))
   :returns (mv erp
-               (char? uchar-optionp)
+               (char? unichar-optionp)
                (pos positionp)
                (new-ppstate ppstatep))
   :short "Read a character during preprocessing."

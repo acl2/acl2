@@ -21,4 +21,17 @@
   :elt-type nat-list
   :true-listp t
   :elementp-of-nil t
-  :pred nat-list-listp)
+  :pred nat-list-listp
+
+  ///
+
+  (defrule nat-list-listp-of-repeat
+    (equal (nat-list-listp (repeat n x))
+           (or (zp n) (nat-listp x)))
+    :induct t
+    :enable repeat)
+
+  (defruled true-list-listp-when-nat-list-listp
+    (implies (nat-list-listp x)
+             (true-list-listp x))
+    :induct t))

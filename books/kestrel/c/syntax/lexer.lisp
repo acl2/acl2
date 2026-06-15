@@ -2847,7 +2847,7 @@
      :guard-hints
      (("Goal"
        :in-theory (enable nfix)
-       :use (:instance natp-when-ucharp
+       :use (:instance natp-when-unicharp
                        (x (char+position->char (parstate->char i parstate)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

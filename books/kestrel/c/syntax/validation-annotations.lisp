@@ -207,6 +207,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod type-spec-struct-info
+  :short "Fixtype of validation information for struct type specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to struct type specifiers,
+     i.e. the @(':struct') and @('struct-empty') cases of @(tsee type-spec).
+     The information for a struct type specifier consists of
+     the corresponding struct type."))
+  ((type type
+         :reqfix
+         (type-case
+           type
+           :struct type
+           :otherwise (make-type-struct
+                        :uid (irr-uid)
+                        :tunit? nil
+                        :tag/members (make-type-struni-tag/members-tagged
+                                       :tag (irr-ident))))))
+  :require (type-case type :struct)
+  :pred type-spec-struct-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod type-spec-typedef-info
+  :short "Fixtype of validation information for
+          @('typedef') name type specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to @('typedef') name type specifiers,
+     i.e. the @(':typedef') case of @(tsee type-spec).
+     The information for a @('typedef') name type specifier consists of
+     the type denoted by the @('typedef') name.
+     Note that this type is fully expanded:
+     since the @(tsee type) fixtype has no case for @('typedef') names,
+     the validator expands @('typedef') names to
+     their @('typedef')-name-free types
+     (see @(tsee valid-type-spec))."))
+  ((type type))
+  :pred type-spec-typedef-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod desiniter-info
   :short "Fixtype of validation information for initializers with optional
           designations."
@@ -452,6 +498,11 @@
      (desiniter (and (designor-list-annop (desiniter->designors desiniter))
                      (initer-annop (desiniter->initer desiniter))
                      (desiniter-infop (desiniter->info desiniter))))
+     (type-spec :struct (and (struni-spec-annop type-spec.spec)
+                             (type-spec-struct-infop type-spec.info)))
+     (type-spec :typedef (type-spec-typedef-infop type-spec.info))
+     (type-spec :struct-empty (and (attrib-spec-list-annop type-spec.attribs)
+                                   (type-spec-struct-infop type-spec.info)))
      (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
                                      (type-spec-fix type-spec)))
      (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
@@ -586,6 +637,26 @@
                 (initer-annop initer)
                 (desiniter-infop info)))
     :expand (desiniter-annop (desiniter designors initer info))
+    :enable identity)
+
+  (defrule type-spec-annop-of-type-spec-struct
+    (equal (type-spec-annop (type-spec-struct spec info))
+           (and (struni-spec-annop spec)
+                (type-spec-struct-infop info)))
+    :expand (type-spec-annop (type-spec-struct spec info))
+    :enable identity)
+
+  (defrule type-spec-annop-of-type-spec-typedef
+    (equal (type-spec-annop (type-spec-typedef name info))
+           (type-spec-typedef-infop info))
+    :expand (type-spec-annop (type-spec-typedef name info))
+    :enable identity)
+
+  (defrule type-spec-annop-of-type-spec-struct-empty
+    (equal (type-spec-annop (type-spec-struct-empty attribs name? info))
+           (and (attrib-spec-list-annop attribs)
+                (type-spec-struct-infop info)))
+    :expand (type-spec-annop (type-spec-struct-empty attribs name? info))
     :enable identity)
 
   (defruled tyname-annop-of-tyname
@@ -763,6 +834,37 @@
              (desiniter-infop (desiniter->info desiniter)))
     :enable desiniter-annop)
 
+  (defrule struni-spec-annop-of-type-spec-struct->spec
+    (implies (and (type-spec-annop type-spec)
+                  (type-spec-case type-spec :struct))
+             (struni-spec-annop (type-spec-struct->spec type-spec)))
+    :enable type-spec-annop)
+
+  (defrule type-spec-struct-infop-of-type-spec-struct->info
+    (implies (and (type-spec-annop type-spec)
+                  (type-spec-case type-spec :struct))
+             (type-spec-struct-infop (type-spec-struct->info type-spec)))
+    :enable type-spec-annop)
+
+  (defrule type-spec-typedef-infop-of-type-spec-typedef->info
+    (implies (and (type-spec-annop type-spec)
+                  (type-spec-case type-spec :typedef))
+             (type-spec-typedef-infop (type-spec-typedef->info type-spec)))
+    :enable type-spec-annop)
+
+  (defrule attrib-spec-list-annop-of-type-spec-struct-empty->attribs
+    (implies (and (type-spec-annop type-spec)
+                  (type-spec-case type-spec :struct-empty))
+             (attrib-spec-list-annop
+               (type-spec-struct-empty->attribs type-spec)))
+    :enable type-spec-annop)
+
+  (defrule type-spec-struct-infop-of-type-spec-struct-empty->info
+    (implies (and (type-spec-annop type-spec)
+                  (type-spec-case type-spec :struct-empty))
+             (type-spec-struct-infop (type-spec-struct-empty->info type-spec)))
+    :enable type-spec-annop)
+
   (defruled declor-annop-of-init-declor->declor
     (implies (init-declor-annop init-declor)
              (declor-annop (init-declor->declor init-declor)))
@@ -894,6 +996,9 @@
      expr-annop-of-expr-binary
      const-expr-annop-of-const-expr
      desiniter-annop-of-desiniter
+     type-spec-annop-of-type-spec-struct
+     type-spec-annop-of-type-spec-typedef
+     type-spec-annop-of-type-spec-struct-empty
      tyname-annop-of-tyname
      param-declon-annop-of-param-declon
      param-declor-annop-of-param-declor-nonabstract
@@ -923,6 +1028,11 @@
      designor-list-annop-of-desiniter->designors
      initer-annop-of-desiniter->initer
      desiniter-infop-of-desiniter->info
+     struni-spec-annop-of-type-spec-struct->spec
+     type-spec-struct-infop-of-type-spec-struct->info
+     type-spec-typedef-infop-of-type-spec-typedef->info
+     attrib-spec-list-annop-of-type-spec-struct-empty->attribs
+     type-spec-struct-infop-of-type-spec-struct-empty->info
      declor-annop-of-init-declor->declor
      initer-option-annop-of-init-declor->initer?
      init-declor-infop-of-init-declor->info

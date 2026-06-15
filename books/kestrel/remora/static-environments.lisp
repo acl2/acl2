@@ -11,7 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-derived-fixtypes")
-(include-book "abstract-syntax-structural-operations")
+(include-book "abstract-syntax-structurals")
 (include-book "abstract-syntax-constructors")
 
 (local (include-book "std/lists/no-duplicatesp" :dir :system))

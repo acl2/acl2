@@ -19,7 +19,7 @@
 (include-book "disambiguation")
 (include-book "validation")
 (include-book "printing")
-(include-book "built-in")
+(include-book "built-ins")
 (include-book "input-files")
 (include-book "input-files-doc")
 (include-book "output-files")
@@ -216,6 +216,4 @@
                     printing
                     input-files
                     output-files
-                    abstract-syntax-formal-mapping-direct
-                    abstract-syntax-formal-mapping-inverse
-                    abstract-syntax-formal-subset))
+                    types-formal-subet-and-mapping))

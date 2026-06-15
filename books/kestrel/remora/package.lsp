@@ -50,7 +50,9 @@
                     nat-list-resultp
                     nat-list-listp
                     nat-list-list-resultp
+                    nat-list-list-listp
                     nats=>string
+                    pos-fix
                     prefixp
                     str-fix
                     string=>nats
@@ -76,4 +78,5 @@
                     str::dec-digit-char-list
                     str::hex-digit-char-list
                     str::oct-digit-char-list
-                    str::string-list)))
+                    str::string-list
+                    str::string-list-fix)))

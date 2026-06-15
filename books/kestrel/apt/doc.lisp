@@ -16,6 +16,8 @@
 (include-book "common-concepts")
 (include-book "common-options")
 
+(include-book "add-return-values")
+
 (include-book "annotate-c-locals")
 
 (include-book "casesplit")

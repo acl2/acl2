@@ -4871,7 +4871,8 @@
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
         (retok (spec/qual-typespec
-                (type-spec-typedef (token-ident->ident token)))
+                (make-type-spec-typedef :name (token-ident->ident token)
+                                        :info nil))
                span
                parstate))
        ;; If token is 'typeof' or '__typeof' or '__typeof__',
@@ -5156,7 +5157,8 @@
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
         (retok (decl-spec-typespec
-                (type-spec-typedef (token-ident->ident token)))
+                (make-type-spec-typedef :name (token-ident->ident token)
+                                        :info nil))
                span
                parstate))
        ;; If token is 'typeof' or '__typeof' or '__typeof__',
@@ -5602,10 +5604,12 @@
                          ((erp last-span parstate)
                           ;; struct [attrs] ident { structdeclons }
                           (read-punctuator "}" parstate)))
-                      (retok (type-spec-struct
-                              (make-struni-spec :attribs attrspecs
-                                                :name? ident
-                                                :members structdeclons))
+                      (retok (make-type-spec-struct
+                               :spec
+                               (make-struni-spec :attribs attrspecs
+                                                 :name? ident
+                                                 :members structdeclons)
+                               :info nil)
                              (span-join struct/union-span last-span)
                              parstate)))))
               ;; if we are parsing a union type specifier
@@ -5619,10 +5623,12 @@
                     ;; union [attrs] ident { structdeclons }
                     (read-punctuator "}" parstate)))
                 (retok (if structp
-                           (type-spec-struct
-                            (make-struni-spec :attribs attrspecs
-                                              :name? ident
-                                              :members structdeclons))
+                           (make-type-spec-struct
+                             :spec
+                             (make-struni-spec :attribs attrspecs
+                                               :name? ident
+                                               :members structdeclons)
+                             :info nil)
                          (type-spec-union
                           (make-struni-spec :attribs attrspecs
                                             :name? ident
@@ -5636,10 +5642,12 @@
             (b* ((parstate ; struct/union [attrs] ident
                   (if token2 (unread-token parstate) parstate)))
               (retok (if structp
-                         (type-spec-struct
-                          (make-struni-spec :attribs attrspecs
-                                            :name? ident
-                                            :members nil))
+                         (make-type-spec-struct
+                           :spec
+                           (make-struni-spec :attribs attrspecs
+                                             :name? ident
+                                             :members nil)
+                           :info nil)
                        (type-spec-union
                         (make-struni-spec :attribs attrspecs
                                           :name? ident
@@ -5679,10 +5687,12 @@
                      ((erp last-span parstate)
                       ;; struct [attrs] { structdeclons }
                       (read-punctuator "}" parstate)))
-                  (retok (type-spec-struct
-                          (make-struni-spec :attribs attrspecs
-                                            :name? nil
-                                            :members structdeclons))
+                  (retok (make-type-spec-struct
+                           :spec
+                           (make-struni-spec :attribs attrspecs
+                                             :name? nil
+                                             :members structdeclons)
+                           :info nil)
                          (span-join struct/union-span last-span)
                          parstate)))))
           ;; If we are parsing a union type specifier
@@ -5695,10 +5705,12 @@
                 ;; struct/union [attrs] { structdeclons }
                 (read-punctuator "}" parstate)))
             (retok (if structp
-                       (type-spec-struct
-                        (make-struni-spec :attribs attrspecs
-                                          :name? nil
-                                          :members structdeclons))
+                       (make-type-spec-struct
+                         :spec
+                         (make-struni-spec :attribs attrspecs
+                                           :name? nil
+                                           :members structdeclons)
+                         :info nil)
                      (type-spec-union
                       (make-struni-spec :attribs attrspecs
                                         :name? nil

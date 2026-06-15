@@ -358,9 +358,11 @@
      (type-spec-atomic
        (tyname-subst-free (c$::type-spec-atomic->type type-spec)
                           subst bound-vars))
-     :struct (type-spec-struct (struni-spec-subst-free
-                                 (c$::type-spec-struct->spec type-spec)
-                                 subst bound-vars))
+     :struct (c$::make-type-spec-struct
+               :spec (struni-spec-subst-free
+                       (c$::type-spec-struct->spec type-spec)
+                       subst bound-vars)
+               :info type-spec.info)
      :union (type-spec-union (struni-spec-subst-free
                                (c$::type-spec-union->spec type-spec)
                                subst bound-vars))

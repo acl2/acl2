@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
@@ -15,7 +15,7 @@
 (include-book "grammar-parser/top")
 (include-book "grammar-printer/top")
 (include-book "grammar-definer/top")
-(include-book "operations/top")
+(include-book "grammar-operations/top")
 (include-book "parsing-tools/top")
 (include-book "examples/top")
 (include-book "tree-utilities")
@@ -68,7 +68,9 @@
       into a formal representation suitable for formal specification
       (e.g. for HTTP parsing).")
     (xdoc::li
-     "Executable @(see operations) on ABNF grammars,
+     "Executable "
+     (xdoc::seetopic "grammar-operations" "operations")
+     " on ABNF grammars,
       e.g. to check their well-formedness and to compose them.")
     (xdoc::li
      "A @(tsee defgrammar) tool
@@ -88,12 +90,16 @@
       parsing functions from grammar rules.")
     (xdoc::li
      "Some @(see examples) of
-      use of @(tsee defgrammar) and some grammar @(see operations)
-      on a few real-world ABNF grammars (e.g. for HTTP)."))
+      use of @(tsee defgrammar) and
+      use of some "
+     (xdoc::seetopic "grammar-operations" "operations")
+     " on a few real-world ABNF grammars (e.g. for HTTP)."))
 
    (xdoc::p
     "Besides the aforementioned examples,
-     @(tsee defgrammar) and some grammar @(see operations) have been used on "
+     @(tsee defgrammar) and some "
+    (xdoc::seetopic "grammar-operations" "grammar operations")
+    " have been used on "
     (xdoc::seetopic "java::grammar" "an ABNF grammar of Java")
     ", "
     (xdoc::seetopic "yul::concrete-syntax" "two ABNF grammars of Yul")

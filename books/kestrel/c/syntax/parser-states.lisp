@@ -177,8 +177,8 @@
   (xdoc::topstring
    (xdoc::p
     "The character is a Unicode character, i.e. a Unicode scalar value;
-     see @(tsee uchar)."))
-  ((char uchar)
+     see @(tsee unichar)."))
+  ((char unichar)
    (position position))
   :pred char+position-p
   :layout :fulltree)

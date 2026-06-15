@@ -62,6 +62,7 @@
 (include-book "maybe-string")
 (include-book "maybe-string-result")
 (include-book "nat-list-list")
+(include-book "nat-list-list-list")
 (include-book "nat-list-list-result")
 (include-book "nat-list-result")
 (include-book "nat-natlist")

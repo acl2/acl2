@@ -68,6 +68,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult shape-list-list-result
+  :short "Fixtype of (i) lists of lists of shapes and (ii) errors."
+  :ok shape-list-list
+  :pred shape-list-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult ispace-result
   :short "Fixtype of ispaces and errors."
   :ok ispace
@@ -366,6 +373,14 @@
   :short "Fixtype of (i) maps from strings to types and (ii) errors."
   :ok string-type-map
   :pred string-type-map-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap string-expr-map
+  :short "Fixtype of maps from strings to expressions."
+  :key-type string
+  :val-type expr
+  :pred string-expr-mapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -12,8 +12,8 @@
 
 (include-book "../grammar-definer/defgrammar")
 (include-book "../grammar-definer/deftreeops")
-(include-book "../operations/in-terminal-set")
-(include-book "../operations/plugging")
+(include-book "../grammar-operations/in-terminal-set")
+(include-book "../grammar-operations/plugging")
 
 ; (depends-on "imap.abnf")
 

@@ -1,10 +1,10 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -44,9 +44,9 @@
      between (concrete syntax) trees
      and abstract syntactic entities.")
    (xdoc::p
-    "With a formal semantics in hand, we proceed to formalize the "
-    (xdoc::seetopic "concrete-syntax" "concrete syntax")
-    " of ABNF using ABNF itself, as follows.")
+    "With a formal semantics in hand,
+     we proceed to formalize the concrete syntax of ABNF using ABNF itself,
+     as follows.")
    (xdoc::p
     "The files @('concrete-syntax-rules.abnf') and @('core-rules.abnf')
      contain the ABNF grammar of ABNF, along with the core rules.
@@ -78,7 +78,7 @@
     (xdoc::seetopic "concrete-syntax-rules-validation"
                     "validation of the concrete syntax rules")
     ", using some of the "
-    (xdoc::seetopic "operations" "grammar operations")
+    (xdoc::seetopic "grammar-operations" "grammar operations")
     ".")
    (xdoc::p
     "We put concrete syntax rules and (the used) core rules together
@@ -99,7 +99,7 @@
     (xdoc::seetopic "concrete-syntax-validation"
                     "validation of the concrete syntax")
     ", via some of the "
-    (xdoc::seetopic "operations" "grammar operations")
+    (xdoc::seetopic "grammar-operations" "grammar operations")
     ".")
    (xdoc::p
     "With a formalization of the ABNF notation in hand,
@@ -110,4 +110,13 @@
      but we use it to "
     (xdoc::seetopic "meta-circular-validation" "validate the meta-circularity")
     " with which [RFC] defines the syntax of ABNF."))
-  :order-subtopics t)
+  :order-subtopics (abstract-syntax
+                    semantics
+                    convenience-constructors
+                    core-rules
+                    core-rules-validation
+                    concrete-syntax-rules
+                    concrete-syntax-rules-validation
+                    concrete-syntax
+                    syntax-abstraction
+                    meta-circular-validation))

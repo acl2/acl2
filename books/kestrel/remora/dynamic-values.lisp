@@ -11,12 +11,18 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-trees")
-(include-book "abstract-syntax-structural-operations")
+(include-book "abstract-syntax-structurals")
 
+(include-book "kestrel/fty/nat-list-list-list" :dir :system)
 (include-book "kestrel/fty/nat-list-result" :dir :system)
 (include-book "kestrel/fty/nat-list-list-result" :dir :system)
 
+(local (include-book "arithmetic"))
+
+(local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 (local (include-book "std/basic/ifix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/basic/rfix" :dir :system))
@@ -153,6 +159,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(std::deflist type-value-list-case-array (x)
+  :short "Check if all the type values in a list
+          are in the @(':array') summand."
+  :guard (type-value-listp x)
+  (type-value-case x :array))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type-value-array-list->shape ((x type-value-listp))
+  :guard (type-value-list-case-array x)
+  :returns (shapes nat-list-listp)
+  :short "Lift @(tsee type-value-array->shape) to lists."
+  (type-value-array->shape x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult type-value-result
   :short "Fixtype of type values and errors."
   :ok type-value
@@ -164,6 +186,61 @@
   :short "Fixtype of (i) lists of type values and (ii) errors."
   :ok type-value-list
   :pred type-value-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod var+typevalue
+  :short "Fixtype of variables with type values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the dynamic counterpart of @(tsee var+type):
+     a pair consisting of a variable name and an associated type value.
+     In the name of this fixtype,
+     we join `type' and `value' into `typevalue',
+     so that the name reads better in terms of visual grouping.
+     The field for the type value is named just @('type'),
+     which is clear in the context of this fixtype."))
+  ((var string)
+   (type type-value))
+  :pred var+typevalue-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist var+typevalue-list
+  :short "Fixtype of lists of variables with type values."
+  :elt-type var+typevalue
+  :true-listp t
+  :elementp-of-nil nil
+  :pred var+typevalue-listp)
+
+;;;;;;;;;;
+
+(std::defprojection var+typevalue-list->var ((x var+typevalue-listp))
+  :returns (strings string-listp)
+  :short "Lift @(tsee var+typevalue->var) to lists."
+  (var+typevalue->var x))
+
+;;;;;;;;;;
+
+(std::defprojection var+typevalue-list->type ((x var+typevalue-listp))
+  :returns (tvals type-value-listp)
+  :short "Lift @(tsee var+typevalue->type) to lists."
+  (var+typevalue->type x))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult var+typevalue-result
+  :short "Fixtype of (i) variables with type values and (ii) errors."
+  :ok var+typevalue
+  :pred var+typevalue-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult var+typevalue-list-result
+  :short "Fixtype of (i) lists of variables with type values and (ii) errors."
+  :ok var+typevalue-list
+  :pred var+typevalue-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -184,6 +261,15 @@
      For now, we use ACL2 integers."))
   ((int int))
   :pred int-valuep)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist int-value-list
+  :short "Fixtype of lists of integer values."
+  :elt-type int-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred int-value-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -231,6 +317,22 @@
   (:float ((val float-value)))
   :pred base-valuep)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist base-value-list
+  :short "Fixtype of lists of base values."
+  :elt-type base-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred base-value-listp)
+
+;;;;;;;;;;
+
+(std::defprojection base-value-int-list ((x int-value-listp))
+  :returns (vals base-value-listp)
+  :short "Lift @(tsee base-value-int) to lists."
+  (base-value-int x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes values
@@ -259,7 +361,7 @@
        We treat empty vectors separately:
        they carry their own type,
        in the form of
-       (i) a non-empty list of the dimensions of its elements
+       (i) a list of the dimensions of its elements
        (not the dimensions of the whole vector,
        which is obtained by adding a 0 dimension
        in front of the elements' dimensions;
@@ -285,12 +387,19 @@
        to @($\\mathit{Val}$) in [thesis],
        but with a different yet equivalent structure.")
      (xdoc::p
+      "The parameters of a lambda value associate
+       type values, not types, to the variables:
+       the parameter types are evaluated
+       when the lambda abstraction is evaluated,
+       while the body is evaluated
+       when the lambda abstraction is applied.")
+     (xdoc::p
       "This fixtype does not capture constraints like
        the non-emptiness of the value list in @(':vector'),
        and the dimension and type consistency of the elements of a @(':vector').
        These constraints are captured separately."))
     (:base ((val base-value)))
-    (:lambda ((params var+type-list)
+    (:lambda ((params var+typevalue-list)
               (body expr)))
     (:tlambda ((params type-var-list)
                (body expr)))
@@ -313,6 +422,43 @@
     :true-listp t
     :elementp-of-nil nil
     :pred value-listp))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection value-base-list ((x base-value-listp))
+  :returns (vals value-listp)
+  :short "Lift @(tsee value-base) to lists."
+  (value-base x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist value-list-list
+  :short "Fixtype of lists of lists of values."
+  :elt-type value-list
+  :true-listp t
+  :elementp-of-nil t
+  :pred value-list-listp
+
+  ///
+
+  (defruled true-list-listp-when-value-list-listp
+    (implies (value-list-listp x)
+             (true-list-listp x))
+    :induct t
+    :enable true-list-listp)
+
+  (defrule value-list-listp-of-list-split
+    (implies (and (value-listp vals)
+                  (posp n)
+                  (integerp (/ (len vals) n)))
+             (value-list-listp (list-split vals n)))
+    :induct t
+    :enable (list-split
+             value-list-listp
+             lt-to-zero-when-divided-by-pos
+             nfix
+             posp)
+    :prep-books ((include-book "arithmetic-3/top" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -386,9 +532,8 @@
      :box nil
      :vector (b* (((ok dimss) (check-dims-of-value-list val.elems))
                   ((unless (consp dimss)) (reserr nil))
-                  (dims (car dimss))
-                  ((unless (all-equalp dims dimss)) (reserr nil)))
-               (cons (len val.elems) dims))
+                  ((unless (list-repeatp dimss)) (reserr nil)))
+               (cons (len val.elems) (car dimss)))
      :vector-empty (cons 0 val.dims))
     :measure (value-count val))
 
@@ -408,13 +553,33 @@
          ((ok dims) (check-dims-of-value (car vals)))
          ((ok dimss) (check-dims-of-value-list (cdr vals))))
       (cons dims dimss))
-    :measure (value-list-count vals))
+    :measure (value-list-count vals)
+
+    ///
+
+    (defret consp-of-check-dims-of-value-list-when-not-error
+      (implies (not (reserrp dimss))
+               (equal (consp dimss)
+                      (consp vals)))
+      :hints (("Goal"
+               :induct (len vals)
+               :in-theory (enable len))))
+
+    (defret len-of-check-dims-of-value-list-when-not-error
+      (implies (not (reserrp dimss))
+               (equal (len dimss)
+                      (len vals)))
+      :hints (("Goal"
+               :induct (len vals)
+               :in-theory (enable len)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :prepwork
   ((local (in-theory (enable acl2::true-listp-when-nat-list-listp
                              acl2::nat-listp-of-car-when-nat-list-listp))))
+
+  :verify-guards :after-returns
 
   ///
 
@@ -428,7 +593,19 @@
                     (equal dimss (repeat n dims)))))
     :induct (repeat n dims)
     :enable (repeat
-             acl2::not-reserrp-when-nat-list-listp)))
+             acl2::not-reserrp-when-nat-list-listp))
+
+  (defruled check-dims-of-value-list-of-value-base-list
+    (equal (check-dims-of-value-list (value-base-list bvals))
+           (repeat (len bvals) nil))
+    :induct (value-base-list bvals)
+    :enable (value-base-list
+             check-dims-of-value-list
+             check-dims-of-value
+             repeat
+             len
+             acl2::not-reserrp-when-nat-list-listp)
+    :prep-books ((local (include-book "arithmetic-3/top" :dir :system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -447,7 +624,32 @@
 (std::deflist value-list-wfp (x)
   :guard (value-listp x)
   :short "Lift @(tsee value-wfp) to lists."
-  (value-wfp x))
+  (value-wfp x)
+
+  ///
+
+  (defruled value-list-wfp-alt-def
+    (equal (value-list-wfp x)
+           (not (reserrp (check-dims-of-value-list x))))
+    :induct t
+    :enable (check-dims-of-value-list
+             value-wfp
+             acl2::not-reserrp-when-nat-list-listp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist value-list-list-wfp (x)
+  :guard (value-list-listp x)
+  :short "Lift @(tsee value-list-wfp) to lists."
+  (value-list-wfp x)
+
+  ///
+
+  (defrule value-list-list-wfp-of-list-split
+    (implies (value-list-wfp vals)
+             (value-list-list-wfp (list-split vals n)))
+    :induct t
+    :enable list-split))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -461,10 +663,175 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dims-of-value-list ((vals value-listp))
-  :guard (value-list-wfp vals)
+(std::defprojection dims-of-value-list ((x value-listp))
+  :guard (value-list-wfp x)
   :returns (dimss nat-list-listp)
   :short "Lift @(tsee dims-of-value) to lists."
-  (cond ((endp vals) nil)
-        (t (cons (dims-of-value (car vals))
-                 (dims-of-value-list (cdr vals))))))
+  (dims-of-value x)
+  :nil-preservingp t
+
+  ///
+
+  (defrule dims-of-value-list-of-repeat
+    (equal (dims-of-value-list (repeat n val))
+           (repeat n (dims-of-value val)))
+    :induct t
+    :enable repeat)
+
+  (defruled dims-of-value-list-when-value-list-wfp
+    (implies (value-list-wfp vals)
+             (equal (dims-of-value-list vals)
+                    (check-dims-of-value-list vals)))
+    :induct t
+    :enable (dims-of-value-list
+             check-dims-of-value-list
+             value-list-wfp
+             dims-of-value
+             value-wfp
+             acl2::not-reserrp-when-nat-list-listp))
+
+  (defruled check-dims-of-value-list-when-value-list-wfp
+    (implies (value-list-wfp vals)
+             (equal (check-dims-of-value-list vals)
+                    (dims-of-value-list vals)))
+    :enable dims-of-value-list-when-value-list-wfp)
+
+  (theory-invariant
+   (incompatible
+    (:rewrite dims-of-value-list-when-value-list-wfp)
+    (:rewrite check-dims-of-value-list-when-value-list-wfp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection dims-of-value-list-list ((x value-list-listp))
+  :guard (value-list-list-wfp x)
+  :returns (dimss nat-list-list-listp)
+  :short "Lift @(tsee dims-of-value-list) to lists."
+  (dims-of-value-list x)
+  :nil-preservingp t
+
+  ///
+
+  (defruled dims-of-value-list-list-of-cdr
+    (equal (dims-of-value-list-list (cdr valss))
+           (cdr (dims-of-value-list-list valss))))
+
+  (theory-invariant (incompatible (:rewrite dims-of-value-list-list-of-cdr)
+                                  (:rewrite cdr-of-dims-of-value-list-list)))
+
+  (defrule dims-of-value-list-list-of-list-split
+    (equal (dims-of-value-list-list (list-split vals n))
+           (list-split (dims-of-value-list vals) n))
+    :induct t
+    :enable (list-split
+             dims-of-value-list-list)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection value-wfp-theorems
+  :short "Theorems about the well-formedness of certain values."
+
+  (defrule value-wfp-of-value-base
+    (value-wfp (value-base base))
+    :enable (value-wfp check-dims-of-value))
+
+  (defrule value-wfp-of-value-lambda
+    (value-wfp (value-lambda params body))
+    :enable (value-wfp check-dims-of-value))
+
+  (defrule value-wfp-of-value-tlambda
+    (value-wfp (value-tlambda params body))
+    :enable (value-wfp check-dims-of-value))
+
+  (defrule value-wfp-of-value-ilambda
+    (value-wfp (value-ilambda params body))
+    :enable (value-wfp check-dims-of-value))
+
+  (defrule value-wfp-of-value-vector-empty
+    (value-wfp (value-vector-empty dims elem))
+    :enable (value-wfp
+             check-dims-of-value
+             acl2::not-reserrp-when-nat-listp))
+
+  (defrule value-wfp-of-value-vector-of-value-base-list
+    (implies (consp bvals)
+             (value-wfp (value-vector (value-base-list bvals))))
+    :enable (value-wfp
+             check-dims-of-value
+             check-dims-of-value-list-of-value-base-list
+             acl2::consp-of-repeat
+             car-of-repeat
+             list-repeatp-of-repeat
+             acl2::not-reserrp-when-nat-listp
+             acl2::not-reserrp-when-nat-list-listp))
+
+  (defrule value-wfp-of-value-vector
+    (implies (and (consp vals)
+                  (value-list-wfp vals)
+                  (list-repeatp (dims-of-value-list vals)))
+             (value-wfp (value-vector vals)))
+    :enable (value-wfp
+             check-dims-of-value-list-when-value-list-wfp
+             consp-of-dims-of-value-list
+             acl2::not-reserrp-when-nat-listp
+             acl2::not-reserrp-when-nat-list-listp)
+    :expand (check-dims-of-value (value-vector vals)))
+
+  (defrule value-list-wfp-of-value-vector->elems
+    (implies (and (value-wfp val)
+                  (value-case val :vector))
+             (value-list-wfp (value-vector->elems val)))
+    :enable (value-wfp
+             value-list-wfp-alt-def)
+    :expand (check-dims-of-value val)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-first-lambda ((val valuep))
+  :returns (lval value-resultp)
+  :short "First lambda leaf value of a value, in row-major order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A term function value is an array, of any rank,
+     whose elements are (term) lambda abstractions,
+     all with equivalent types if the value is well-formed.
+     This descends into the first element of each vector
+     until it reaches a scalar lambda abstraction, which it returns.
+     A representative lambda is used by term application (see @(tsee eval-expr))
+     to read the function's parameter type values,
+     which determine the expected cell shapes of the arguments
+     and hence the frames over which the application is lifted.")
+   (xdoc::p
+    "It is an error if a non-lambda leaf is reached,
+     or if an empty vector is reached, which has no lambda to return.")
+   (xdoc::p
+    "It should be an invariant that, in a well-formed value,
+     all elements (if the value is not scalar) have equivalent types,
+     which implies that it makes no difference that this function
+     picks the first scalar value rather than any of the others.
+     Our current notion of well-formedness of values
+     does not capture the invariant about equivalent types,
+     but we plan to add it;
+     then we might consider replacing the use of this function
+     with something that returns, under well-formedness guards,
+     the shape that @(tsee eval-expr) needs."))
+  (value-case
+   val
+   :base (reserr nil)
+   :lambda (value-fix val)
+   :tlambda (reserr nil)
+   :ilambda (reserr nil)
+   :box (reserr nil)
+   :vector (if (consp val.elems)
+               (value-first-lambda (car val.elems))
+             (reserr nil))
+   :vector-empty (reserr nil))
+  :measure (value-count val)
+
+  ///
+
+  (defret value-kind-of-value-first-lambda
+    (implies (not (reserrp lval))
+             (equal (value-kind lval) :lambda))
+    :hints (("Goal" :induct t))))

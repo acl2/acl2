@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "annotate-c-locals-tests")
+(include-book "arrange-ifs-and-mbts-tests")
 (include-book "casesplit-tests")
 (include-book "drop-irrelevant-params-tests")
 (include-book "expdata-tests")

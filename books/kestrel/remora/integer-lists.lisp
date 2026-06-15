@@ -19,9 +19,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ integer-list-operations
+(defxdoc+ integer-lists
   :parents (library-extensions)
-  :short "Operations on lists of integer numbers."
+  :short "Library extensions for lists of integer numbers."
   :order-subtopics t
   :default-parent t)
 

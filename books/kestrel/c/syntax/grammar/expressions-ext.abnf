@@ -107,4 +107,12 @@ unary-expression-ext = alignof-keyword unary-expression
                      / %s"__imag__" cast-expression
                      / "&&" identifier
 
+; As a GCC and C extension, we allow contiional expressions
+; whose second operand is omitted
+; [GCCM:6.12.13](https://gcc.gnu.org/onlinedocs/gcc/Conditionals.html).
+; We did not find this documented in [CLE], but Clang implementations accept it.
+
+conditional-expression-ext =
+    logical-or-expression "?" ":" conditional-expression
+
 ; TODO: add other kinds of expressions

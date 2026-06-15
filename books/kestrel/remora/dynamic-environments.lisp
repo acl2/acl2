@@ -12,6 +12,9 @@
 
 (include-book "dynamic-values")
 
+(local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -108,3 +111,179 @@
   :short "Fixtype of dynamic environments and errors."
   :ok denv
   :pred denv-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define string-value-map-wfp ((map string-value-mapp))
+  :returns (yes/no booleanp)
+  :short "Check that all the values in a string-to-value map are well-formed."
+  (or (omap::emptyp (string-value-map-fix map))
+      (and (value-wfp (omap::head-val map))
+           (string-value-map-wfp (omap::tail map))))
+
+  ///
+
+  (defruled value-wfp-of-cdr-of-assoc-when-string-value-map-wfp
+    (implies (and (string-value-mapp map)
+                  (string-value-map-wfp map)
+                  (omap::assoc key map))
+             (value-wfp (cdr (omap::assoc key map))))
+    :induct t
+    :enable omap::assoc)
+
+  (defruled string-value-map-wfp-of-update
+    (implies (and (string-value-mapp map)
+                  (string-value-map-wfp map)
+                  (value-wfp val))
+             (string-value-map-wfp (omap::update key val map)))
+    :induct (string-value-map-wfp map)
+    :expand ((string-value-map-wfp (omap::update key val map)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define denv-wfp ((denv denvp))
+  :returns (yes/no booleanp)
+  :short "Check that the (expression) values in a dynamic environment
+          are well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is an initial notion of well-formedness,
+     concerning just the values bound to expression variables.
+     We may extend it, or fold it into a broader notion,
+     when we introduce well-formedness conditions
+     on the ispace and type variables as well."))
+  (string-value-map-wfp (denv->expr-vars denv))
+
+  ///
+
+  (defruled value-wfp-of-cdr-of-assoc-when-denv-wfp
+    (implies (and (denv-wfp denv)
+                  (omap::assoc key (denv->expr-vars denv)))
+             (value-wfp (cdr (omap::assoc key (denv->expr-vars denv)))))
+    :enable (denv-wfp
+             value-wfp-of-cdr-of-assoc-when-string-value-map-wfp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define denv-add-ispace-vars ((vars ispace-var-listp)
+                              (ivals ispace-value-listp)
+                              (denv denvp))
+  :guard (equal (len vars) (len ivals))
+  :returns (new-denv denvp)
+  :short "Add zero or more ispace variables, with associated ispace values,
+          to a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This may override an existing variable,
+     which is intended hiding behavior."))
+  (b* (((when (endp vars)) (denv-fix denv))
+       ((unless (mbt (consp ivals))) (denv-fix denv))
+       (denv (change-denv
+              denv
+              :ispace-vars (omap::update (ispace-var-fix (car vars))
+                                         (ispace-value-fix (car ivals))
+                                         (denv->ispace-vars denv)))))
+    (denv-add-ispace-vars (cdr vars) (cdr ivals) denv))
+
+  ///
+
+  (defret denv->type-vars-of-denv-add-ispace-vars
+    (equal (denv->type-vars new-denv)
+           (denv->type-vars denv))
+    :hints (("Goal" :induct t)))
+
+  (defret denv->expr-vars-of-denv-add-ispace-vars
+    (equal (denv->expr-vars new-denv)
+           (denv->expr-vars denv))
+    :hints (("Goal" :induct t)))
+
+  (defret denv-wfp-of-denv-add-ispace-vars
+    (implies (denv-wfp denv)
+             (denv-wfp new-denv))
+    :hints (("Goal" :in-theory (enable denv-wfp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define denv-add-type-vars ((vars type-var-listp)
+                            (tvals type-value-listp)
+                            (denv denvp))
+  :guard (equal (len vars) (len tvals))
+  :returns (new-denv denvp)
+  :short "Add zero or more type variables, with associated type values,
+          to a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This may override an existing variable,
+     which is intended hiding behavior."))
+  (b* (((when (endp vars)) (denv-fix denv))
+       ((unless (mbt (consp tvals))) (denv-fix denv))
+       (denv (change-denv
+              denv
+              :type-vars (omap::update (type-var-fix (car vars))
+                                       (type-value-fix (car tvals))
+                                       (denv->type-vars denv)))))
+    (denv-add-type-vars (cdr vars) (cdr tvals) denv))
+
+  ///
+
+  (defret denv->ispace-vars-of-denv-add-type-vars
+    (equal (denv->ispace-vars new-denv)
+           (denv->ispace-vars denv))
+    :hints (("Goal" :induct t)))
+
+  (defret denv->expr-vars-of-denv-add-type-vars
+    (equal (denv->expr-vars new-denv)
+           (denv->expr-vars denv))
+    :hints (("Goal" :induct t)))
+
+  (defret denv-wfp-of-denv-add-type-vars
+    (implies (denv-wfp denv)
+             (denv-wfp new-denv))
+    :hints (("Goal" :in-theory (enable denv-wfp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define denv-add-expr-vars ((vars string-listp)
+                            (vals value-listp)
+                            (denv denvp))
+  :guard (equal (len vars) (len vals))
+  :returns (new-denv denvp)
+  :short "Add zero or more (expression) variables, with associated values,
+          to a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This may override an existing variable,
+     which is intended hiding behavior."))
+  (b* (((when (endp vars)) (denv-fix denv))
+       ((unless (mbt (consp vals))) (denv-fix denv))
+       (denv (change-denv
+              denv
+              :expr-vars (omap::update (str::str-fix (car vars))
+                                       (value-fix (car vals))
+                                       (denv->expr-vars denv)))))
+    (denv-add-expr-vars (cdr vars) (cdr vals) denv))
+
+  ///
+
+  (defret denv->ispace-vars-of-denv-add-expr-vars
+    (equal (denv->ispace-vars new-denv)
+           (denv->ispace-vars denv))
+    :hints (("Goal" :induct t)))
+
+  (defret denv->type-vars-of-denv-add-expr-vars
+    (equal (denv->type-vars new-denv)
+           (denv->type-vars denv))
+    :hints (("Goal" :induct t)))
+
+  (defret denv-wfp-of-denv-add-expr-vars
+    (implies (and (denv-wfp denv)
+                  (value-list-wfp vals))
+             (denv-wfp new-denv))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable denv-wfp
+                                string-value-map-wfp-of-update)))))

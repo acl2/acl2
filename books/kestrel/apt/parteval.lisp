@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -427,7 +427,9 @@
                 (pos (position-eq yj rem-formals))
                 (rec-args (append (take pos rec-args)
                                   (nthcdr (1+ pos) rec-args))))
-             (parteval-transform-rec-args rec-args (cdr yj...ym) (remove-eq yj rem-formals))))))
+             (parteval-transform-rec-args rec-args
+                                          (cdr yj...ym)
+                                          (remove-eq yj rem-formals))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -459,12 +461,17 @@
                                                                    wrld)))
                (cond ((eq fn/lambda old$)
                       (fcons-term new-name$
-                                  (parteval-transform-rec-args new-args y1...ym (formals old$ wrld))))
+                                  (parteval-transform-rec-args
+                                   new-args
+                                   y1...ym
+                                   (formals old$ wrld))))
                      ((symbolp fn/lambda) (fcons-term fn/lambda new-args))
-                     (t (make-lambda (lambda-formals fn/lambda)
+                     (t (fcons-term (make-lambda
+                                     (lambda-formals fn/lambda)
                                      (parteval-transform-rec-calls-in-term
                                       (lambda-body fn/lambda)
-                                      old$ new-name$ y1...ym wrld))))))))
+                                      old$ new-name$ y1...ym wrld))
+                                    new-args)))))))
 
   (define parteval-transform-rec-calls-in-terms ((body-terms pseudo-term-listp)
                                                  (old$ symbolp)
@@ -564,7 +571,9 @@
        (wfrel? (and (= case 2)
                     (get-well-founded-relation old$ wrld)))
        (measure? (and (= case 2)
-                      (untranslate (fsublis-var static$ (get-measure old$ wrld)) nil wrld)))
+                      (untranslate (fsublis-var static$ (get-measure old$ wrld))
+                                   nil
+                                   wrld)))
        (termination-hints? (and (= case 2)
                                 `(("Goal"
                                    :in-theory nil

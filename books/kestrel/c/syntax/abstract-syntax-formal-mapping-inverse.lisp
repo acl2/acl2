@@ -27,7 +27,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-formal-mapping-inverse
-  :parents (syntax-for-tools)
+  :parents (abstract-syntax-formal-subset-and-mapping)
   :short "Mapping from the language definition to the tool-oriented syntax."
   :long
   (xdoc::topstring
@@ -262,10 +262,12 @@
                       (type-spec-complex))
               (list (type-spec-long)
                     (type-spec-double)))
-   :struct (list (type-spec-struct
-                  (make-struni-spec :attribs nil
-                                    :name? (ildm-ident tyspecs.tag)
-                                    :members nil)))
+   :struct (list (make-type-spec-struct
+                   :spec
+                   (make-struni-spec :attribs nil
+                                     :name? (ildm-ident tyspecs.tag)
+                                     :members nil)
+                   :info nil))
    :union (list (type-spec-union
                  (make-struni-spec :attribs nil
                                    :name? (ildm-ident tyspecs.tag)
@@ -274,7 +276,8 @@
                 (make-enum-spec :name? (ildm-ident tyspecs.tag)
                                 :enumers nil
                                 :final-comma nil)))
-   :typedef (list (type-spec-typedef (ildm-ident tyspecs.name))))
+   :typedef (list (make-type-spec-typedef :name (ildm-ident tyspecs.name)
+                                          :info nil)))
   :guard-hints (("Goal"
                  :use (:instance c::tyspecseq-sint-requirements (x tyspecs))
                  :in-theory (disable c::tyspecseq-sint-requirements)))
@@ -575,7 +578,8 @@
                         :attribs nil
                         :name? (ildm-ident declon.tag)
                         :members (ildm-struct-declon-list declon.members))))
-                   (type-spec-struct strunispec))
+                   (make-type-spec-struct :spec strunispec
+                                          :info nil))
          :union (b* ((strunispec
                       (make-struni-spec
                        :attribs nil
@@ -884,7 +888,7 @@
   (cond ((endp chars) nil)
         (t (cons (q-char (char-code (car chars)))
                  (chars-to-q-chars (cdr chars)))))
-  :guard-hints (("Goal" :in-theory (enable ucharp-of-char-code))))
+  :guard-hints (("Goal" :in-theory (enable unicharp-of-char-code))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

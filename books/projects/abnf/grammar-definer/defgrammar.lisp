@@ -12,8 +12,8 @@
 
 (include-book "../grammar-parser/executable")
 (include-book "../notation/syntax-abstraction")
-(include-book "../operations/well-formedness")
-(include-book "../operations/closure")
+(include-book "../grammar-operations/well-formedness")
+(include-book "../grammar-operations/closure")
 
 (include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)

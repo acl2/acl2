@@ -1257,6 +1257,7 @@
        state)))
   :parents (acl2::axe-x86 acl2::axe-lifters)
   :short "A tool to lift x86 binary code into logic, unrolling loops as needed."
+  ;; WARNING: Some of these should be kept in sync with the doc from tester.lisp:
   :args ((lifted-name "A symbol, the name to use for the generated function.  The name of the generated constant is created by adding stars to the front and back of this symbol.")
          (executable "The x86 binary executable that contains the target function.  Usually this is a string representing the file name/path of the executable.  However, it can instead be a parsed executable (satisfying @('parsed-executablep')).") ; todo: mention defconst-x86?
          (target "Where to start lifting (a numeric offset, the name of a subroutine (a string), or the symbol :entry-point)")

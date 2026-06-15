@@ -730,7 +730,8 @@
  :dialect (c::make-dialect :std (c::standard-c17))
  :cond (and (equal (tyname->specquals ast)
                    (list (spec/qual-typespec
-                          (type-spec-typedef (ident "bool")))))
+                          (make-type-spec-typedef :name (ident "bool")
+                                                  :info nil))))
             (equal (tyname->declor? ast)
                    nil)))
 

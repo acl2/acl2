@@ -199,6 +199,23 @@
     :elementp-of-nil nil
     :pred shape-listp))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist shape-list-list
+  :short "Fixtype of lists of lists of shapes."
+  :elt-type shape-list
+  :true-listp t
+  :elementp-of-nil t
+  :pred shape-list-listp
+
+  ///
+
+  (defruled true-list-listp-when-shape-list-listp
+    (implies (shape-list-listp x)
+             (true-list-listp x))
+    :induct t
+    :enable shape-list-listp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum ispace
@@ -739,6 +756,7 @@
      (xdoc::p
       "There are
        named variables,
+       atoms (auto-lifted to expressions),
        non-empty arrays with at least one atom,
        empty arrays with the type of the elements,
        non-empty frames with at least one expression,
@@ -767,6 +785,7 @@
        @($\\mathfrak{a}\\ \\mathfrak{a}\\ldots$) and @($e\\ e\\ldots$),
        while [arxiv] paper does not."))
     (:var ((name string)))
+    (:atom ((atom atom)))
     (:array ((dims nat-list)
              (atoms atom-list)))
     (:array-empty ((dims nat-list)
