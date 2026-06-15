@@ -12,7 +12,7 @@
 
 (include-book "abstract-syntax-variable-operations")
 (include-book "ispace-equivalence")
-(include-book "fresh-variables")
+(include-book "fresh-variable-operations")
 
 (include-book "kestrel/fty/string-string-map-quadruple-result" :dir :system)
 

@@ -21,15 +21,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ fresh-variables
-  :parents (abstract-syntax)
-  :short "Generation of fresh variables."
+(defxdoc+ fresh-variable-operations
+  :parents (abstract-syntax-variable-operations)
+  :short "Operations to generate fresh variables."
   :long
   (xdoc::topstring
    (xdoc::p
     "For certain purposes, we need to generate fresh variables,
      i.e. variables that do not occur in a given set.
-     This is easy to do and show correct, intuitively:
+     This is easy to do and see correct, intuitively:
      we attempt to generate distinct variables from increasing numeric indices,
      until we find one not in the given set.
      The process terminates because the given set is finite.
