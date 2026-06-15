@@ -39,13 +39,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (defrule str-fix-of-str-fix
-         (equal (acl2::str-fix (acl2::str-fix x))
-                (acl2::str-fix x))
-         :enable acl2::str-fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defmacro lstrfix (x)
   `(mbe :logic (acl2::str-fix ,x) :exec ,x))
 
@@ -63,7 +56,7 @@
   :short "Generate a context message for an expression."
   :long
   (xdoc::topstring-p
-    "Returns a message of the form
+   "Returns a message of the form
      ``[prefix] [expression kind]: [printed expression]'',
      for use in error messages.")
   (b* ((prefix (lstrfix prefix))
@@ -93,7 +86,7 @@
                    :offsetof  "offsetof expression"
                    :otherwise "expression"))
        ((unless (and (expr-unambp expr)
-                    (expr-aidentp expr dialect)))
+                     (expr-aidentp expr dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str expr))
        (expr-str (print-expr-to-str expr dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str expr-str)))
@@ -136,7 +129,7 @@
                    :return-attrib "return statement"
                    :asm           "assembly statement"))
        ((unless (and (stmt-unambp stmt)
-                    (stmt-aidentp stmt dialect)))
+                     (stmt-aidentp stmt dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str stmt))
        (stmt-str (print-stmt-to-str stmt dialect :options options :indent t)))
     (msg$ "~s0 ~s1:~%~s2" prefix case-str stmt-str)))
@@ -162,7 +155,7 @@
                    :declon     "declaration"
                    :statassert "static assertion"))
        ((unless (and (declon-unambp declon)
-                    (declon-aidentp declon dialect)))
+                     (declon-aidentp declon dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str declon))
        (declon-str (print-declon-to-str declon dialect :options options :indent t)))
     (msg$ "~s0 ~s1:~%~s2" prefix case-str declon-str)))
@@ -184,7 +177,7 @@
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (fundef-unambp fundef)
-                    (fundef-aidentp fundef dialect)))
+                     (fundef-aidentp fundef dialect)))
         (msg$ "~s1 function definition:~%~_0~x2" indent-size prefix fundef))
        (fundef-str (print-fundef-to-str fundef dialect :options options :indent t)))
     (msg$ "~s1 function definition:~%~_0~s2" indent-size prefix fundef-str)))
@@ -206,7 +199,7 @@
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (const-expr-unambp cexpr)
-                    (const-expr-aidentp cexpr dialect)))
+                     (const-expr-aidentp cexpr dialect)))
         (msg$ "~s1 constant expression:~%~_0~x2"
               indent-size prefix cexpr))
        (str (print-const-expr-to-str cexpr dialect :options options)))
@@ -233,7 +226,7 @@
                    :type    "generic association with type"
                    :default "default generic association"))
        ((unless (and (genassoc-unambp genassoc)
-                    (genassoc-aidentp genassoc dialect)))
+                     (genassoc-aidentp genassoc dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str genassoc))
        (str (print-genassoc-to-str genassoc dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
@@ -260,7 +253,7 @@
                    :dot   "member access designator"
                    :sub   "subscript designator"))
        ((unless (and (member-designor-unambp memdes)
-                    (member-designor-aidentp memdes dialect)))
+                     (member-designor-aidentp memdes dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3"
               indent-size prefix case-str memdes))
        (str (print-member-designor-to-str memdes dialect :options options)))
@@ -283,7 +276,7 @@
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (type-spec-unambp tyspec)
-                    (type-spec-aidentp tyspec dialect)))
+                     (type-spec-aidentp tyspec dialect)))
         (msg$ "~s1 type specifier:~%~_0~x2" indent-size prefix tyspec))
        (str (print-type-spec-to-str tyspec dialect :options options)))
     (msg$ "~s1 type specifier:~%~_0~s2" indent-size prefix str)))
@@ -311,7 +304,7 @@
                    :align    "alignment specifier"
                    :attrib   "attribute specifier"))
        ((unless (and (spec/qual-unambp specqual)
-                    (spec/qual-aidentp specqual dialect)))
+                     (spec/qual-aidentp specqual dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str specqual))
        (str (print-spec/qual-to-str specqual dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
@@ -338,7 +331,7 @@
                    :alignas-expr  "expression alignment specifier"
                    :alignas-ambig "alignment specifier"))
        ((unless (and (align-spec-unambp alignspec)
-                    (align-spec-aidentp alignspec dialect)))
+                     (align-spec-aidentp alignspec dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str alignspec))
        (str (print-align-spec-to-str alignspec dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
@@ -370,7 +363,7 @@
                    :stdcall  "stdcall specifier"
                    :declspec "declspec attribute"))
        ((unless (and (decl-spec-unambp declspec)
-                    (decl-spec-aidentp declspec dialect)))
+                     (decl-spec-aidentp declspec dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str declspec))
        (str (print-decl-spec-to-str declspec dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
@@ -418,7 +411,7 @@
                    :single "single initializer"
                    :list   "list initializer"))
        ((unless (and (initer-unambp initer)
-                    (initer-aidentp initer dialect)))
+                     (initer-aidentp initer dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str initer))
        (str (print-initer-to-str initer dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
@@ -440,7 +433,7 @@
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (desiniter-unambp desiniter)
-                    (desiniter-aidentp desiniter dialect)))
+                     (desiniter-aidentp desiniter dialect)))
         (msg$ "~s1 initializer with optional designations:~%~_0~x2"
               indent-size prefix desiniter))
        (str (print-desiniter-to-str desiniter dialect :options options)))
@@ -468,7 +461,7 @@
                    :sub "subscript designator"
                    :dot "member designator"))
        ((unless (and (designor-unambp designor)
-                    (designor-aidentp designor dialect)))
+                     (designor-aidentp designor dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str designor))
        (str (print-designor-to-str designor dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
@@ -490,7 +483,7 @@
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (declor-unambp declor)
-                    (declor-aidentp declor dialect)))
+                     (declor-aidentp declor dialect)))
         (msg$ "~s1 declarator:~%~_0~x2" indent-size prefix declor))
        (str (print-declor-to-str declor dialect :options options)))
     (msg$ "~s1 declarator:~%~_0~s2" indent-size prefix str)))
@@ -522,7 +515,7 @@
                    :function-params "function declarator"
                    :function-names  "function declarator"))
        ((unless (and (dirdeclor-unambp dirdeclor)
-                    (dirdeclor-aidentp dirdeclor dialect)))
+                     (dirdeclor-aidentp dirdeclor dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str dirdeclor))
        (str (print-dirdeclor-to-str dirdeclor dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
@@ -544,7 +537,7 @@
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (absdeclor-unambp absdeclor)
-                    (absdeclor-aidentp absdeclor dialect)))
+                     (absdeclor-aidentp absdeclor dialect)))
         (msg$ "~s1 abstract declarator:~%~_0~x2"
               indent-size prefix absdeclor))
        (str (print-absdeclor-to-str absdeclor dialect :options options)))
@@ -576,7 +569,7 @@
                    :array-star    "abstract array declarator with star"
                    :function      "abstract function declarator"))
        ((unless (and (dirabsdeclor-unambp dirabsdeclor)
-                    (dirabsdeclor-aidentp dirabsdeclor dialect)))
+                     (dirabsdeclor-aidentp dirabsdeclor dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3"
               indent-size prefix case-str dirabsdeclor))
        (str (print-dirabsdeclor-to-str dirabsdeclor dialect :options options)))
@@ -599,7 +592,7 @@
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (param-declon-unambp param)
-                    (param-declon-aidentp param dialect)))
+                     (param-declon-aidentp param dialect)))
         (msg$ "~s1 parameter declaration:~%~_0~x2"
               indent-size prefix param))
        (str (print-param-declon-to-str param dialect :options options)))
@@ -628,7 +621,7 @@
                    :none        "empty parameter declarator"
                    :ambig       "ambiguous parameter declarator"))
        ((unless (and (param-declor-unambp paramdeclor)
-                    (param-declor-aidentp paramdeclor dialect)))
+                     (param-declor-aidentp paramdeclor dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3"
               indent-size prefix case-str paramdeclor))
        (str (print-param-declor-to-str paramdeclor dialect :options options)))
@@ -651,7 +644,7 @@
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (tyname-unambp tyname)
-                    (tyname-aidentp tyname dialect)))
+                     (tyname-aidentp tyname dialect)))
         (msg$ "~s1 type name:~%~_0~x2" indent-size prefix tyname))
        (str (print-tyname-to-str tyname dialect :options options)))
     (msg$ "~s1 type name:~%~_0~s2" indent-size prefix str)))
@@ -673,7 +666,7 @@
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (struni-spec-unambp struni-spec)
-                    (struni-spec-aidentp struni-spec dialect)))
+                     (struni-spec-aidentp struni-spec dialect)))
         (msg$ "~s1 struct or union specifier:~%~_0~x2"
               indent-size prefix struni-spec))
        (str (print-struni-spec-to-str struni-spec dialect :options options :indent t)))
@@ -701,7 +694,7 @@
                    :statassert "static assertion"
                    :empty      "empty struct declaration"))
        ((unless (and (struct-declon-unambp structdeclon)
-                    (struct-declon-aidentp structdeclon dialect)))
+                     (struct-declon-aidentp structdeclon dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3"
               indent-size prefix case-str structdeclon))
        (str (print-struct-declon-to-str structdeclon dialect :options options :indent t)))
@@ -724,7 +717,7 @@
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (struct-declor-unambp structdeclor)
-                    (struct-declor-aidentp structdeclor dialect)))
+                     (struct-declor-aidentp structdeclor dialect)))
         (msg$ "~s1 struct declarator:~%~_0~x2"
               indent-size prefix structdeclor))
        (str (print-struct-declor-to-str structdeclor dialect :options options)))
@@ -747,7 +740,7 @@
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (enum-spec-unambp enumspec)
-                    (enum-spec-aidentp enumspec dialect)))
+                     (enum-spec-aidentp enumspec dialect)))
         (msg$ "~s1 enumeration specifier:~%~_0~x2"
               indent-size prefix enumspec))
        (str (print-enum-spec-to-str enumspec dialect :options options)))
@@ -770,7 +763,7 @@
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (enumer-unambp enumer)
-                    (enumer-aidentp enumer dialect)))
+                     (enumer-aidentp enumer dialect)))
         (msg$ "~s1 enumerator:~%~_0~x2" indent-size prefix enumer))
        (str (print-enumer-to-str enumer dialect :options options)))
     (msg$ "~s1 enumerator:~%~_0~s2" indent-size prefix str)))
@@ -792,7 +785,7 @@
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (statassert-unambp statassert)
-                    (statassert-aidentp statassert dialect)))
+                     (statassert-aidentp statassert dialect)))
         (msg$ "~s1 static assertion:~%~_0~x2"
               indent-size prefix statassert))
        (str (print-statassert-to-str statassert dialect :options options)))
@@ -858,7 +851,7 @@
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (init-declor-unambp initdeclor)
-                    (init-declor-aidentp initdeclor dialect)))
+                     (init-declor-aidentp initdeclor dialect)))
         (msg$ "~s1 initializer declarator:~%~_0~x2"
               indent-size prefix initdeclor))
        (str (print-init-declor-to-str initdeclor dialect :options options)))
@@ -886,7 +879,7 @@
                    :casexpr "case label"
                    :default "default label"))
        ((unless (and (label-unambp label)
-                    (label-aidentp label dialect)))
+                     (label-aidentp label dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str label))
        (str (print-label-to-str label dialect :options options)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
@@ -974,7 +967,7 @@
        (options (or options (c$::default-priopt)))
        (indent-size (c$::priopt->indent-size options))
        ((unless (and (comp-stmt-unambp cstmt)
-                    (comp-stmt-aidentp cstmt dialect)))
+                     (comp-stmt-aidentp cstmt dialect)))
         (msg$ "~s1 compound statement:~%~_0~x2"
               indent-size prefix cstmt))
        (str (print-comp-stmt-to-str cstmt dialect :options options :indent t)))
@@ -1002,7 +995,7 @@
                    :stmt   "statement"
                    :ambig  "ambiguous block item"))
        ((unless (and (block-item-unambp item)
-                    (block-item-aidentp item dialect)))
+                     (block-item-aidentp item dialect)))
         (msg$ "~s1 ~s2:~%~_0~x3" indent-size prefix case-str item))
        (str (print-block-item-to-str item dialect :options options :indent t)))
     (msg$ "~s1 ~s2:~%~_0~s3" indent-size prefix case-str str)))
