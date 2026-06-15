@@ -47,6 +47,7 @@
 
 (xdoc::evmac-topic-implementation
   struct-type-split
+  :default-parent t
   :additional
   ((xdoc::h3
     "Terminology"
@@ -179,6 +180,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines type/type-list-struct-occurs-unsupported-p
+  :short "Check whether the split struct type occurs
+          in an unsupported context within types."
   (define type-struct-occurs-unsupported-p
     ((type c$::typep)
      (struct-uid c$::uidp))
@@ -3730,7 +3733,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(xdoc::evmac-topic-event-generation struct-split-type)
+(xdoc::evmac-topic-event-generation struct-type-split)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
