@@ -862,6 +862,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define lift-value-to-frame ((val valuep) (frame nat-listp) (pframe nat-listp))
+  :guard (prefixp frame pframe)
+  :returns (cells value-list-resultp)
+  :short "Lift a value to a principal frame,
+          returning its cells in row-major order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is part of lifting for Remora function application.
+     The @('frame') input of this ACL2 function corresponds to
+     @($n_f\\ldots$) and @($n_a\\ldots$) in [thesis],
+     which is the full shape in the case of the function,
+     while it is in general a prefix of the shape in the case of an argument
+     (whose shapes are @($n_a\\ldots n_i\\ldots$) in [thesis]).
+     The @('pframe') input of this ACL2 function corresponds to
+     @($n_p\\ldots$) in [thesis], i.e. the principal frame,
+     of which @('frame') is a prefix, as expressed in the guard.
+     (We could also add a guard saying that
+     @(tsee dims-of-value) of @('val') is a prefix of @('pframe').)")
+   (xdoc::p
+    "This ACL2 function obtains all the sub-values (cells) of @('val')
+     at depth @('(len frame)'),
+     which are a singleton scalar for the function value,
+     and which have shape @($n_i\\ldots$) for the argument values.
+     Then it replicates each such sub-value
+     as many times as needed to fill the dimensions
+     that follow @('frame') in @('pframe'),
+     i.e. @($n_{\\mathit{fe}}\\ldots$) and @($n_{\\mathit{ae}}\\ldots$)
+     in [thesis].")
+   (xdoc::p
+    "Roughly speaking, this ACL2 function corresponds to
+     @($Rep_{n_{\\mathit{fe}}}
+        \\llbracket
+          \\mathir{Split}_1
+          \\llbracket \\mathfrak{v}_f \\ldots \\rrbracket
+        \\rrbracket$)
+     and
+     @($Rep_{n_{\\mathit{ae}}}
+        \\llbracket
+          \\mathir{Split}_{n_{\\mathit{ac}}}
+          \\llbracket \\mathfrak{v}_a \\ldots \\rrbracket
+        \\rrbracket$)
+     in [thesis]."))
+  (b* (((ok cells) (cells-at-depth-in-value val (len frame))))
+    (repeat-each (nat-list-product (nthcdr (len frame) pframe)) cells)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-values-match-type-vars-p ((tvals type-value-listp)
                                        (vars type-var-listp))
   :returns (yes/no booleanp)
