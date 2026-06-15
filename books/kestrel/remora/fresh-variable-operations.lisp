@@ -205,7 +205,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We use the approach in @(see fresh-variables).
+    "We use the approach in @(see fresh-variable-operations).
      The termination lemma relies on the set theorem explained earlier."))
   (fresh-dim-ispace-var-loop prefix 0 used)
 
@@ -392,7 +392,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We use the approach in @(see fresh-variables).
+    "We use the approach in @(see fresh-variable-operations).
      The termination lemma relies on the set theorem explained earlier."))
   (fresh-shape-ispace-var-loop prefix 0 used)
 
@@ -577,7 +577,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We use the approach in @(see fresh-variables).
+    "We use the approach in @(see fresh-variable-operations).
      The termination lemma relies on the set theorem explained earlier."))
   (fresh-atom-type-var-loop prefix 0 used)
 
@@ -761,7 +761,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We use the approach in @(see fresh-variables).
+    "We use the approach in @(see fresh-variable-operations).
      The termination lemma relies on the set theorem explained earlier."))
   (fresh-array-type-var-loop prefix 0 used)
 
@@ -944,7 +944,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We use the approach in @(see fresh-variables).
+    "We use the approach in @(see fresh-variable-operations).
      The termination lemma relies on the set theorem explained earlier."))
   (fresh-expr-var-loop prefix 0 used)
 
