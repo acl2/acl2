@@ -374,6 +374,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-list-suffixes ((lists true-list-listp) (suffixes true-list-listp))
+  :guard (equal (len lists) (len suffixes))
+  :returns (mv (suffixesp booleanp) (prefixes true-list-listp))
+  :short "Check whether each list in a list of lists has,
+          as a suffix, the corresponding list in another list of lists,
+          returning the prefixes if so."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee check-list-suffix) to two lists of lists,
+     which must have the same length,
+     checking each list against the corresponding suffix.
+     If they all succeed, the first result is @('t')
+     and the second result is the list of prefixes, in the same order;
+     otherwise the first result is @('nil')
+     and the second result is @('nil') but is irrelevant."))
+  (b* (((when (endp lists)) (mv t nil))
+       ((unless (mbt (consp suffixes))) (mv nil nil))
+       ((mv suffixp prefix)
+        (check-list-suffix (car lists) (car suffixes)))
+       ((unless suffixp) (mv nil nil))
+       ((mv suffixesp prefixes)
+        (check-list-suffixes (cdr lists) (cdr suffixes)))
+       ((unless suffixesp) (mv nil nil)))
+    (mv t (cons prefix prefixes)))
+
+  ///
+
+  (defret len-of-check-list-suffixes
+    (implies suffixesp
+             (equal (len prefixes)
+                    (len lists)))
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define list-prefix-join ((lists true-list-listp))
   :returns (mv (joinp booleanp) (join true-listp))
   :short "Least upper bound of a list of lists,
