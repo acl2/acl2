@@ -21,7 +21,7 @@
   :long
   (xdoc::topstring-p
    "The recognizer is @(tsee msgp)
-    and the fixer is @(tsee msg-fix).")
+    and the fixer is @('msg-fix').")
 
   (fty::deffixtype msg
     :pred msgp
