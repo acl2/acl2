@@ -466,7 +466,13 @@
              lt-to-zero-when-divided-by-pos
              nfix
              posp)
-    :prep-books ((include-book "arithmetic-3/top" :dir :system))))
+    :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+
+  (defrule value-list-listp-of-cdr-list
+    (implies (value-list-listp x)
+             (value-list-listp (cdr-list x)))
+    :induct t
+    :enable cdr-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
