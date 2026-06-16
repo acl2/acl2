@@ -430,34 +430,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define decl-spec-list-typedef-spec-p
-  ((decl-specs decl-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check whether a declaration specifier list
-          includes a typedef name type specifier."
-  (b* (((when (endp decl-specs))
-        nil)
-       (decl-spec (first decl-specs)))
-    (or (and (decl-spec-case decl-spec :typespec)
-             (type-spec-case (c$::decl-spec-typespec->spec decl-spec)
-                             :typedef))
-        (decl-spec-list-typedef-spec-p (rest decl-specs)))))
-
-(define spec/qual-list-typedef-spec-p
-  ((specquals spec/qual-listp))
-  :returns (yes/no booleanp)
-  :short "Check whether a specifier/qualifier list
-          includes a typedef name type specifier."
-  (b* (((when (endp specquals))
-        nil)
-       (specqual (first specquals)))
-    (or (and (spec/qual-case specqual :typespec)
-             (type-spec-case (c$::spec/qual-typespec->spec specqual)
-                             :typedef))
-        (spec/qual-list-typedef-spec-p (rest specquals)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define attrib-sts-split
   ((attrib c$::attribp)
    (st sts-split-statep))
@@ -1144,10 +1116,24 @@
               (enum-spec-sts-split type-spec.spec st)))
           (retok (c$::make-type-spec-enum :spec spec) nil st))
         :typedef
-        ;; Typedef names denoting the split struct type
-        ;; are rejected by the callers which determine splits
-        ;; (tyname-sts-split, declon-sts-split, param-declon-sts-split).
-        (retok (type-spec-fix type-spec) nil st)
+        (b* (((c$::type-spec-typedef-info info) type-spec.info)
+             ((unless (eq (sts-splittablep info.type
+                                           (sts-split-state->struct-uid st))
+                          t))
+              (retok (type-spec-fix type-spec) nil st))
+             (right-ident? (omap::assoc info.uid
+                                        (sts-split-state->ident-map st)))
+             ((unless right-ident?)
+              (retmsg$ "INTERNAL ERROR. ~
+                        A use of the splittable typedef name ~x0 ~
+                        has no associated right name.~%~@1"
+                       (c$::type-spec-typedef->name type-spec)
+                       (context-msg-type-spec
+                         type-spec
+                         (sts-split-state->dialect st)))))
+          (retok (type-spec-fix type-spec)
+                 (c$::make-type-spec-typedef :name (cdr right-ident?))
+                 st))
         :int128
         (retok (type-spec-fix type-spec) nil st)
         :locase-float80
@@ -2142,12 +2128,6 @@
                    erp
                    (context-msg-param-declon param-declon
                                              (sts-split-state->dialect st))))
-         ((when (and splitp
-                     (decl-spec-list-typedef-spec-p param-declon.specs)))
-          (retmsg$ "Typedef names denoting the split struct type ~
-                    are not supported.~%~@0"
-                   (context-msg-param-declon param-declon
-                                             (sts-split-state->dialect st))))
          ((erp - left-specs right-specs st)
           (decl-spec-list-sts-split param-declon.specs st))
          ((erp - left-declor right-declor st)
@@ -2284,11 +2264,6 @@
          ((when erp)
           (retmsg$ "~@0~%~@1"
                    erp
-                   (context-msg-tyname tyname (sts-split-state->dialect st))))
-         ((when (and splitp
-                     (spec/qual-list-typedef-spec-p tyname.specquals)))
-          (retmsg$ "Typedef names denoting the split struct type ~
-                    are not supported.~%~@0"
                    (context-msg-tyname tyname (sts-split-state->dialect st))))
          ((erp - left-specquals right-specquals st)
           (spec/qual-list-sts-split tyname.specquals st))
@@ -2465,13 +2440,6 @@
           (retok (cons left-struct-declon left-rest)
                  (cons right-struct-declon right-rest)
                  st))
-         ;; A member declaration with no declarators in the first place
-         ;; (i.e. an anonymous struct/union member or an unnamed bit field)
-         ;; stays in the left struct type
-         ;; (it cannot be listed in the right member set);
-         ;; it is not dropped from the left struct type,
-         ;; unlike member declarations
-         ;; whose declarators were all routed to the right.
          (orig-emptyp
            (and (struct-declon-case (car struct-declons) :member)
                 (atom (c$::struct-declon-member->declors
@@ -2741,10 +2709,6 @@
                    erp
                    (context-msg-init-declor init-declor
                                             (sts-split-state->dialect st))))
-         ((when (and type-splitp info.typedefp))
-          (retmsg$ "Typedefs of the split struct type are not supported.~%~@0"
-                   (context-msg-init-declor init-declor
-                                            (sts-split-state->dialect st))))
          (splitp type-splitp)
          ((when (and splitp init-declor.asm?))
           (retmsg$ "Splits are not supported alongside ~
@@ -2853,12 +2817,6 @@
              ((erp specs-splitp left-specs right-specs st)
               (decl-spec-list-sts-split declon.specs st))
              (splitp (or declors-splitp specs-splitp))
-             ((when (and splitp
-                         (decl-spec-list-typedef-spec-p declon.specs)))
-              (retmsg$ "Typedef names denoting the split struct type ~
-                        are not supported.~%~@0"
-                       (context-msg-declon declon
-                                           (sts-split-state->dialect st))))
              (left-declon
                (c$::make-declon-declon :extension declon.extension
                                        :specs left-specs
