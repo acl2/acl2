@@ -143,7 +143,9 @@
     ". For enumeration constants names,
      for now we only track that they are enumeration constants.
      For @('typedef') names, we track the type corresponding to its
-     definition.")
+     definition, as well as a "
+    (xdoc::seetopic "uid" "unique identifier")
+    ".")
    (xdoc::p
     "We will refine this fixtype as we refine our validator."))
   (:objfun ((type type)
@@ -151,7 +153,8 @@
             (defstatus valid-defstatus)
             (uid uid)))
   (:enumconst ())
-  (:typedef ((def type)))
+  (:typedef ((def type)
+             (uid uid)))
   :pred valid-ord-infop)
 
 ;;;;;;;;;;;;;;;;;;;;

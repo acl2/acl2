@@ -114,7 +114,7 @@
        ((when (equal (declor->ident declor.declor) qual-ident.ident))
         (b* (((unless (c$::init-declor-infop declor.info))
               (retmsg$ "Initializer declarator info is not well-formed."))
-             (uid? (c$::init-declor-info->uid? declor.info))
+             (uid? (c$::init-declor-info->uid declor.info))
              ((unless uid?)
               ;; TODO: should this be an error?
               (retok nil)))

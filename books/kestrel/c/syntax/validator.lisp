@@ -3877,7 +3877,9 @@
                                (ident->unwrap tyspec.name))))
                   (valid-ord-info-case
                    info?
-                   :typedef (b* ((info (type-spec-typedef-info info?.def)))
+                   :typedef (b* ((info (make-type-spec-typedef-info
+                                        :type info?.def
+                                        :uid info?.uid)))
                               (retok (make-type-spec-typedef
                                       :name tyspec.name
                                       :info info)
@@ -6625,12 +6627,18 @@
                           is already declared in the current scope ~
                           with associated information ~x1."
                          ident info?))
+               ((mv uid vstate)
+                (if (and info? currentp (valid-ord-info-case info? :typedef))
+                    (mv (valid-ord-info-typedef->uid info?) vstate)
+                  (vstate-get-fresh-uid ident (linkage-none) vstate)))
                (vstate (vstate-add-ord ident
-                                       (valid-ord-info-typedef type)
+                                       (make-valid-ord-info-typedef
+                                        :def type
+                                        :uid uid)
                                        vstate))
                (anno-info (make-init-declor-info :type type
                                                  :typedefp t
-                                                 :uid? nil)))
+                                                 :uid uid)))
             (retok (make-init-declor :declor new-declor
                                      :asm? initdeclor.asm?
                                      :attribs initdeclor.attribs
@@ -6670,7 +6678,7 @@
          (vstate (vstate-add-ord ident new-info vstate))
          (anno-info (make-init-declor-info :type type
                                            :typedefp nil
-                                           :uid? uid))
+                                           :uid uid))
          ((erp new-initer? more-types vstate)
           (valid-initer-option initdeclor.initer? type lifetime? vstate))
          ((when (and (linkage-case linkage :external)
