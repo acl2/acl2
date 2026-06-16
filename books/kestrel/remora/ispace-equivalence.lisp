@@ -376,19 +376,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines normalize-shapes-single-in-shapes
-  :short "Normalize shapes to single dimensions in a shape or list of shapes."
+  :short "Normalize shapes to single-dimension lists
+          in a shape or list of shapes."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We decompose shapes into concatenations of single-dimension shapes;
-     that is, we eliminate @(':dims') shapes
-     in favor of concatenations of @(':dim') shapes.
-     If a @(':dims') shape has no dimensions,
-     we turn it into the empty concatenation.
-     If a @(':dims') shape has one dimension,
-     we convert it to a @(':dim') shape with that dimension.
-     If a @(':dims') shape has two or more dimensions,
-     we turn it into a concatenation of @(':dim') shapes,
+    "We decompose shapes into concatenations of
+     shapes consisting of singleton lists of dimensions.
+     We turn a @(':dim') shape into a @(':dims') shape of a singleton.
+     We normalize a @(':dims') shape as follows:
+     if the @(':dims') shape has no dimensions,
+     we turn it into the empty concatenation;
+     if the @(':dims') shape has one dimension,
+     we leave it unchanged;
+     if the @(':dims') shape has two or more dimensions,
+     we turn it into a concatenation of singleton @(':dims') shapes,
      each of which contains one of the dimensions."))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -400,13 +402,14 @@
     (shape-case
      shape
      :var (shape-var shape.name)
-     :dim (shape-dim shape.dim)
+     :dim (shape-dims (list shape.dim))
      :dims (cond ((endp shape.dims) ; no dimensions
                   (shape-append nil))
                  ((endp (cdr shape.dims)) ; one dimension
-                  (shape-dim (car shape.dims)))
+                  (shape-fix shape))
                  (t ; two or more dimensions
-                  (shape-append (shape-dim-list shape.dims))))
+                  (shape-append
+                   (shape-dims-list (list-to-singletons shape.dims)))))
      :append (shape-append
               (normalize-shapes-single-in-shape-list shape.shapes))
      :splice (shape-splice
