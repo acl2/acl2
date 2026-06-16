@@ -2746,12 +2746,6 @@
                    (context-msg-init-declor init-declor
                                             (sts-split-state->dialect st))))
          (splitp type-splitp)
-         ((when (and splitp (not info.uid?)))
-          (retmsg$ "INTERNAL ERROR. ~
-                    An initializer declarator of splittable type ~
-                    does not have a unique identifier.~%~@0"
-                   (context-msg-init-declor init-declor
-                                            (sts-split-state->dialect st))))
          ((when (and splitp init-declor.asm?))
           (retmsg$ "Splits are not supported alongside ~
                     assembler name specifiers.~%~@0"
@@ -2760,7 +2754,7 @@
          ((erp left-declor right-declor? st)
           (declor-sts-split init-declor.declor
                             splitp
-                            (and splitp info.uid?)
+                            (and splitp info.uid)
                             st))
          ((when (xor splitp right-declor?))
           (retmsg$ "INTERNAL ERROR. ~
