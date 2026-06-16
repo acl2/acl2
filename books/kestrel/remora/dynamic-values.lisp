@@ -271,6 +271,13 @@
   :elementp-of-nil nil
   :pred int-value-listp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult int-value-result
+  :short "Fixtype of (i) integer values and (ii) errors."
+  :ok int-value
+  :pred int-value-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum float-value
@@ -303,6 +310,14 @@
   (:neginf ())
   (:nan ())
   :pred float-valuep)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult float-value-result
+  :short "Fixtype of (i) float values and (ii) errors."
+  :ok float-value
+  :pred float-value-resultp
+  :prepwork ((local (in-theory (enable float-value-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
