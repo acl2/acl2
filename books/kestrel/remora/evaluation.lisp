@@ -40,6 +40,7 @@
                           type-value-listp-when-result-not-error
                           valuep-when-result-not-error
                           value-listp-when-result-not-error
+                          value-list-listp-when-result-not-error
                           var+typevalue-p-when-result-not-error
                           var+typevalue-listp-when-result-not-error)))
 
@@ -862,6 +863,82 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define lift-value-to-frame ((val valuep) (frame nat-listp) (pframe nat-listp))
+  :guard (prefixp frame pframe)
+  :returns (cells value-list-resultp)
+  :short "Lift a value to a principal frame,
+          returning its cells in row-major order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is part of lifting for Remora function application.
+     The @('frame') input of this ACL2 function corresponds to
+     @($n_f\\ldots$) and @($n_a\\ldots$) in [thesis],
+     which is the full shape in the case of the function,
+     while it is in general a prefix of the shape in the case of an argument
+     (whose shapes are @($n_a\\ldots n_i\\ldots$) in [thesis]).
+     The @('pframe') input of this ACL2 function corresponds to
+     @($n_p\\ldots$) in [thesis], i.e. the principal frame,
+     of which @('frame') is a prefix, as expressed in the guard.")
+   (xdoc::p
+    "This ACL2 function obtains all the sub-values (cells) of @('val')
+     at depth @('(len frame)'),
+     which are a singleton scalar for the function value,
+     and which have shape @($n_i\\ldots$) for the argument values.
+     Then it replicates each such sub-value
+     as many times as needed to fill the dimensions
+     that follow @('frame') in @('pframe'),
+     i.e. @($n_{\\mathit{fe}}\\ldots$) and @($n_{\\mathit{ae}}\\ldots$)
+     in [thesis].")
+   (xdoc::p
+    "Roughly speaking, this ACL2 function corresponds to
+     @($Rep_{n_{\\mathit{fe}}}
+        \\llbracket
+          \\mathit{Split}_1
+          \\llbracket \\mathfrak{v}_f \\ldots \\rrbracket
+        \\rrbracket$)
+     and
+     @($Rep_{n_{\\mathit{ae}}}
+        \\llbracket
+          \\mathit{Split}_{n_{\\mathit{ac}}}
+          \\llbracket \\mathfrak{v}_a \\ldots \\rrbracket
+        \\rrbracket$)
+     in [thesis]."))
+  (b* (((ok cells) (cells-at-depth-in-value val (len frame))))
+    (repeat-each (nat-list-product (nthcdr (len frame) pframe)) cells)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lift-value-list-to-frame ((vals value-listp)
+                                  (frames nat-list-listp)
+                                  (pframe nat-listp))
+  :guard (and (equal (len vals) (len frames))
+              (all-prefixp frames pframe))
+  :returns (cell-lists value-list-list-resultp)
+  :short "Lift @(tsee lift-value-to-frame)
+          to a list of values with corresponding frames."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used on the argument values in a function application.
+     They all share the principal frame @('pframe'),
+     but each value has its own frame (a prefix of @('pframe')),
+     so there is a list of frames corresponding to the list of values.
+     Each value is lifted via @(tsee lift-value-to-frame),
+     yielding a list of cell lists, one per argument value,
+     all of the same length (the number of positions of @('pframe')),
+     lined up for the cell-wise application."))
+  (b* (((when (endp vals)) nil)
+       ((unless (mbt (consp frames))) (reserr nil))
+       ((ok cells) (lift-value-to-frame (car vals) (car frames) pframe))
+       ((ok cell-lists)
+        (lift-value-list-to-frame (cdr vals) (cdr frames) pframe)))
+    (cons cells cell-lists))
+  :guard-hints
+  (("Goal" :in-theory (enable acl2::true-list-listp-when-nat-list-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-values-match-type-vars-p ((tvals type-value-listp)
                                        (vars type-var-listp))
   :returns (yes/no booleanp)
@@ -1064,21 +1141,9 @@
      (xdoc::p
       "For a term application,
        we evaluate the function sub-expression
-       and the argument sub-expressions.
-       For now we require the function value to be
-       a scalar lambda abstraction value,
-       and the dimensions of each argument value to be exactly
-       the shape of the corresponding parameter type value
-       of the lambda abstraction:
-       we do not support lifting yet, but we plan to add support for it.
-       We check that the argument values match
-       the parameter type values of the lambda abstraction
-       in number and shape.
-       We extend the dynamic environment
-       to associate the argument values with the parameters
-       (which may override existing associations,
-       which is intended hiding behavior),
-       and we evaluate the body of the lambda abstraction.")
+       and the argument sub-expressions,
+       and we use a separate ACL2 function to apply
+       the function value to the argument values.")
      (xdoc::p
       "For a type application,
        we evaluate the function sub-expression and the type arguments,
@@ -1134,21 +1199,7 @@
                   :elem (type-value-base (base-type-int))))
        :app (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                  ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
-              ;; TODO: extend to non-scalar functions
-              ;; and framed arguments (lifting)
-              (value-case
-               funval
-               :lambda
-               (b* (((unless (values-match-type-values-p
-                              argvals
-                              (var+typevalue-list->type funval.params)))
-                     (reserr nil))
-                    (denv (denv-add-expr-vars
-                           (var+typevalue-list->var funval.params)
-                           argvals
-                           denv)))
-                 (eval-expr funval.body denv (1- limit)))
-               :otherwise (reserr nil)))
+              (eval-app funval argvals denv (1- limit)))
        :tapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                   ((ok tvals) (eval-type-list expr.args denv)))
                (eval-tapp funval tvals denv (1- limit)))
@@ -1559,6 +1610,174 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define eval-app ((funval valuep)
+                    (argvals value-listp)
+                    (denv denvp)
+                    (limit natp))
+    :guard (and (value-wfp funval)
+                (value-list-wfp argvals)
+                (denv-wfp denv))
+    :returns (val value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Apply a value to argument values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called by @(tsee eval-expr) for a term application,
+       after the function and the argument expressions have been evaluated:
+       @('funval') is the value of the function,
+       and @('argvals') are the values of the arguments.")
+     (xdoc::p
+      "The function value must be an array, of any rank,
+       whose elements are lambda abstractions,
+       all with the same number of parameters
+       and equivalent parameter type values;
+       we obtain the parameters from the first such lambda abstraction
+       (via @(tsee value-first-lambda)),
+       we check that they all have array types,
+       and we obtain their dimensions.
+       (As noted in @(tsee value-first-lambda),
+       given suitable well-formedness invariants,
+       it would not matter if we picked
+       any other lambda abstraction in @('funval').)
+       The number of arguments must match the number of parameters.")
+     (xdoc::p
+      "Following the rank-polymorphic application semantics of Remora,
+       each argument array is split into a frame and a cell,
+       where the cell dimensions are
+       the ones expected of the corresponding parameter
+       and the frame consists of the remaining leading dimensions;
+       the dimensions of the function array form its own frame.
+       The principal frame is the join of all these frames
+       under the prefix order (see @(tsee list-prefix-join)):
+       it exists only if the frames form a chain,
+       and each frame is then a prefix of the principal one.")
+     (xdoc::p
+      "The case of an empty principal frame,
+       i.e. one with some zero dimension,
+       is not handled yet.")
+     (xdoc::p
+      "We lift the function and every argument to the principal frame
+       (see @(tsee lift-value-to-frame) and @(tsee lift-value-list-to-frame)),
+       obtaining, for each application position in the frame,
+       a function cell and the corresponding argument cells.
+       We apply them element-wise via a separate ACL2 function,
+       and we assemble the resulting cells into an array
+       whose frame is the principal frame
+       (see @(tsee value-with-nonempty-dims)).
+       The checks on the result
+       (that its length matches the size of the frame,
+       that its cells are well-formed,
+       and that they all have the same dimensions)
+       should be eliminable via proofs, as we plan to do."))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((ok lval) (value-first-lambda funval))
+         (tvals (var+typevalue-list->type (value-lambda->params lval)))
+         ((unless (type-value-list-case-array tvals)) (reserr nil))
+         (param-dims (type-value-array-list->shape tvals))
+         ((unless (equal (len argvals) (len param-dims))) (reserr nil))
+         (arg-dims (dims-of-value-list argvals))
+         ((mv suffixesp arg-frames) (check-list-suffixes arg-dims param-dims))
+         ((unless suffixesp) (reserr nil))
+         (fun-frame (dims-of-value funval))
+         ((mv joinp pframe) (list-prefix-join (cons fun-frame arg-frames)))
+         ((unless joinp) (reserr nil))
+         ((when (member-equal 0 pframe)) (reserr :todo))
+         ((ok fun-cells) (lift-value-to-frame funval fun-frame pframe))
+         ((ok arg-cell-lists)
+          (lift-value-list-to-frame argvals arg-frames pframe))
+         ((ok result-cells)
+          (eval-app-list fun-cells arg-cell-lists denv (1- limit)))
+         ;; TODO: eliminate the next three checks via proof
+         ((unless (equal (len result-cells) (nat-list-product pframe)))
+          (reserr nil))
+         ((unless (value-list-wfp result-cells)) (reserr nil))
+         ((unless (list-repeatp (dims-of-value-list result-cells)))
+          (reserr nil)))
+      (value-with-nonempty-dims pframe result-cells))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-app-list ((funcells value-listp)
+                         (argcell-lists value-list-listp)
+                         (denv denvp)
+                         (limit natp))
+    :guard (denv-wfp denv)
+    :returns (vals value-list-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Apply function cells to argument cells, position-wise."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is used by @(tsee eval-app) after lifting:
+       @('funcells') are the function cells, one per application position,
+       and @('argcell-lists') are the cells of the arguments,
+       one list per argument, each in application-position order.
+       We go through the function cells in order;
+       for each one, we collect the corresponding cells of all the arguments
+       (the heads of the argument cell lists, via @(tsee car-list))
+       and apply the function cell to them via a separate ACL2 function,
+       advancing all the argument cell lists (via @(tsee cdr-list)).
+       We return the list of results in application-position order.")
+     (xdoc::p
+      "The check that the collected argument cells form a list of values
+       should be eliminable via proof, as we plan to do."))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (endp funcells)) nil)
+         (argcell-lists (value-list-list-fix argcell-lists))
+         (argcells (car-list argcell-lists))
+         ;; TODO: eliminate the next two checks via proof
+         ((unless (value-listp argcells)) (reserr nil))
+         ((unless (value-list-wfp argcells)) (reserr nil))
+         ((ok val) (eval-app-cell (car funcells) argcells denv (1- limit)))
+         ((ok vals) (eval-app-list (cdr funcells)
+                                   (cdr-list argcell-lists)
+                                   denv (1- limit))))
+      (cons val vals))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-app-cell ((funcell valuep)
+                         (argcells value-listp)
+                         (denv denvp)
+                         (limit natp))
+    :guard (and (value-list-wfp argcells)
+                (denv-wfp denv))
+    :returns (val value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Apply a single (scalar) function cell to its argument cells."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is the base case of term application,
+       used by @(tsee eval-app-list) at each application position.
+       The function cell must be a (scalar) lambda abstraction;
+       the argument cells must match its parameters in number and types.
+       We extend the dynamic environment
+       to associate the arguments with the parameters
+       (which may override existing associations,
+       which is intended hiding behavior),
+       and we evaluate the body of the lambda abstraction."))
+    (b* (((when (zp limit)) (reserr :limit)))
+      (value-case
+       funcell
+       :lambda
+       (b* (((unless (values-match-type-values-p
+                      argcells
+                      (var+typevalue-list->type funcell.params)))
+             (reserr nil))
+            (denv (denv-add-expr-vars
+                   (var+typevalue-list->var funcell.params)
+                   argcells
+                   denv)))
+         (eval-expr funcell.body denv (1- limit)))
+       :otherwise (reserr nil)))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove eventually
 
   :verify-guards nil ; done below
@@ -1605,7 +1824,24 @@
                                       ivals denv limit)
                       (eval-iapp-list funvals
                                       (ispace-value-list-fix ivals) denv limit)
-                      (eval-iapp-list funvals ivals (denv-fix denv) limit))
+                      (eval-iapp-list funvals ivals (denv-fix denv) limit)
+                      (eval-app funval argvals denv limit)
+                      (eval-app (value-fix funval) argvals denv limit)
+                      (eval-app funval (value-list-fix argvals) denv limit)
+                      (eval-app funval argvals (denv-fix denv) limit)
+                      (eval-app-list funcells argcell-lists denv limit)
+                      (eval-app-list (value-list-fix funcells)
+                                     argcell-lists denv limit)
+                      (eval-app-list funcells
+                                     (value-list-list-fix argcell-lists)
+                                     denv limit)
+                      (eval-app-list funcells argcell-lists
+                                     (denv-fix denv) limit)
+                      (eval-app-cell funcell argcells denv limit)
+                      (eval-app-cell (value-fix funcell) argcells denv limit)
+                      (eval-app-cell funcell (value-list-fix argcells)
+                                     denv limit)
+                      (eval-app-cell funcell argcells (denv-fix denv) limit))
              :in-theory (enable nfix zp))))
 
   (defret-mutual value-wfp-of-eval-exprs/atoms/binds
@@ -1659,10 +1895,27 @@
                     (not (reserrp vals)))
                (value-list-wfp vals))
       :fn eval-iapp-list)
+    (defret value-wfp-of-eval-app
+      (implies (and (denv-wfp denv)
+                    (not (reserrp val)))
+               (value-wfp val))
+      :fn eval-app)
+    (defret value-list-wfp-of-eval-app-list
+      (implies (and (denv-wfp denv)
+                    (not (reserrp vals)))
+               (value-list-wfp vals))
+      :fn eval-app-list)
+    (defret value-wfp-of-eval-app-cell
+      (implies (and (denv-wfp denv)
+                    (value-list-wfp argcells)
+                    (not (reserrp val)))
+               (value-wfp val))
+      :fn eval-app-cell)
     :mutual-recursion eval-exprs/atoms/binds
     :hints
     (("Goal"
       :in-theory (enable value-wfp-of-cdr-of-assoc-when-denv-wfp
+                         value-wfp-of-value-with-nonempty-dims
                          nfix
                          zp)
       :expand ((eval-expr expr denv limit)
@@ -1674,10 +1927,16 @@
                (eval-tapp funval tvals denv limit)
                (eval-tapp-list funvals tvals denv limit)
                (eval-iapp funval ivals denv limit)
-               (eval-iapp-list funvals ivals denv limit)))))
+               (eval-iapp-list funvals ivals denv limit)
+               (eval-app funval argvals denv limit)
+               (eval-app-list funcells argcell-lists denv limit)
+               (eval-app-cell funcell argcells denv limit)))))
 
   (verify-guards eval-expr
     :hints
     (("Goal"
-      :in-theory (e/d (len-equal-when-values-match-type-values-p)
+      :in-theory (e/d (len-equal-when-values-match-type-values-p
+                       true-listp-when-nat-listp
+                       acl2::true-list-listp-when-nat-list-listp
+                       true-list-listp-when-value-list-listp)
                       (len-of-eval-expr-list))))))

@@ -117,7 +117,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum type-value
-    :parents (values type-values)
+    :parents (dynamic-values type-values)
     :short "Fixtype of type values."
     :long
     (xdoc::topstring
@@ -150,7 +150,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist type-value-list
-    :parents (values type-values)
+    :parents (dynamic-values type-values)
     :short "Fixtype of lists of type values."
     :elt-type type-value
     :true-listp t
@@ -271,6 +271,13 @@
   :elementp-of-nil nil
   :pred int-value-listp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult int-value-result
+  :short "Fixtype of (i) integer values and (ii) errors."
+  :ok int-value
+  :pred int-value-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum float-value
@@ -303,6 +310,14 @@
   (:neginf ())
   (:nan ())
   :pred float-valuep)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult float-value-result
+  :short "Fixtype of (i) float values and (ii) errors."
+  :ok float-value
+  :pred float-value-resultp
+  :prepwork ((local (in-theory (enable float-value-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -341,7 +356,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum value
-    :parents (values)
+    :parents (dynamic-values values)
     :short "Fixtype of values."
     :long
     (xdoc::topstring
@@ -416,12 +431,20 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist value-list
-    :parents (values)
+    :parents (dynamic-values values)
     :short "Fixtype of lists of values."
     :elt-type value
     :true-listp t
     :elementp-of-nil nil
-    :pred value-listp))
+    :pred value-listp
+
+    ///
+
+    (defrule value-listp-of-repeat-each
+      (implies (value-listp vals)
+               (value-listp (repeat-each n vals)))
+      :induct (repeat-each n vals)
+      :enable (repeat-each value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -458,7 +481,13 @@
              lt-to-zero-when-divided-by-pos
              nfix
              posp)
-    :prep-books ((include-book "arithmetic-3/top" :dir :system))))
+    :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+
+  (defrule value-list-listp-of-cdr-list
+    (implies (value-list-listp x)
+             (value-list-listp (cdr-list x)))
+    :induct t
+    :enable cdr-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -473,6 +502,13 @@
   :short "Fixtype of (i) lists of values and (ii) errors."
   :ok value-list
   :pred value-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult value-list-list-result
+  :short "Fixtype of (i) lists of lists of values and (ii) errors."
+  :ok value-list-list
+  :pred value-list-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -495,7 +531,7 @@
 
   (define check-dims-of-value ((val valuep))
     :returns (dims nat-list-resultp)
-    :parents (values check-dims-of-values)
+    :parents (dynamic-values check-dims-of-values)
     :short "Check dimension constraints on values."
     :long
     (xdoc::topstring
@@ -541,7 +577,7 @@
 
   (define check-dims-of-value-list ((vals value-listp))
     :returns (dimss nat-list-list-resultp)
-    :parents (values check-dims-of-values)
+    :parents (dynamic-values check-dims-of-values)
     :short "Check dimension constraints on lists of values."
     :long
     (xdoc::topstring
@@ -835,3 +871,91 @@
     (implies (not (reserrp lval))
              (equal (value-kind lval) :lambda))
     :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines cells-at-depth-in-values
+  :short "Cells of a value, or list of values, at a given frame depth."
+
+  (define cells-at-depth-in-value ((val valuep) (depth natp))
+    :returns (cells value-list-resultp)
+    :parents (dynamic-values cells-at-depth-in-values)
+    :short "Cells of a value at a given frame depth, in row-major order."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A value is an array, whose dimensions may be split into
+       a frame (a prefix) and a cell shape (the remaining suffix);
+       the exact point of splitting depends on the purpose.
+       Given the frame depth, i.e. the number of frame dimensions,
+       this function returns the cells in row-major order:
+       the sub-arrays reached by descending @('depth') levels into the value.
+       Note that this returns a flat list of cell values:
+       as we descend into the depth of the frame,
+       the nested vector structure is discarded.")
+     (xdoc::p
+      "At depth 0 there is no frame,
+       so the whole value is the single cell,
+       which we return as a singleton.
+       At a positive depth the value must be a non-empty vector,
+       and we collect the cells of each element at one less depth, in order.
+       It is an error if the depth exceeds the rank,
+       i.e. if a non-vector value is reached before the depth is exhausted.
+       It is also an error if we reach an empty vector;
+       this function only operates on values without 0 dimensions.")
+     (xdoc::p
+      "This is used as part of the rank lifting in the dynamic semantics.
+       It is used on the values that
+       the arguments of an application expression evaluate to.
+       It roughly corresponds to
+       @($\\mathit{Split}_{n_{\\mathit{ac}}}
+          \\llbracket \\mathfrak{v}_a \\ldots \\rrbracket$)
+       in [thesis],
+       where values, unlike our @(tsee value) fixtype,
+       are represented as flat lists of atoms wrapped in
+       an array expression that specifies the dimensions
+       (which is an equivalent representation to ours).
+       This ACL2 function returns a list isomorphic to that one,
+       but its elements (the cells) retain their structure.
+       Although [thesis] defines @($n_{\\mathit{ac}}$)
+       in terms of the dimensions @($n_i\\ldots$) of
+       the input type of the Remora function,
+       we get the same effect by using,
+       as the depth passed to this ACL2 function,
+       the number of dimensions @($n_a\\ldots$)
+       that precede @($n_i\\ldots$) in the full dimensions of the argument."))
+    (if (zp depth)
+        (list (value-fix val))
+      (value-case
+       val
+       :base (reserr nil)
+       :lambda (reserr nil)
+       :tlambda (reserr nil)
+       :ilambda (reserr nil)
+       :box (reserr nil)
+       :vector (cells-at-depth-in-value-list val.elems (1- depth))
+       :vector-empty (reserr nil)))
+    :measure (value-count val))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define cells-at-depth-in-value-list ((vals value-listp) (depth natp))
+    :returns (cells value-list-resultp)
+    :parents (dynamic-values cells-at-depth-in-values)
+    :short "Concatenation of
+            the cells of a list of values at a given frame depth,
+            in the same order as the list."
+    (b* (((when (endp vals)) nil)
+         ((ok cells1) (cells-at-depth-in-value (car vals) depth))
+         ((ok cells2) (cells-at-depth-in-value-list (cdr vals) depth)))
+      (append cells1 cells2))
+    :measure (value-list-count vals))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork ((local (in-theory (enable value-listp-when-result-not-error))))
+
+  ///
+
+  (fty::deffixequiv-mutual cells-at-depth-in-values
+    :hints (("Goal" :in-theory (enable nfix)))))

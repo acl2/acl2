@@ -16,7 +16,7 @@
 
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
-(include-book "projects/abnf/constructor-utilities" :dir :system)
+(include-book "projects/abnf/syntax-operations/constructor-utilities" :dir :system)
 (include-book "projects/abnf/parsing-tools/defdefparse" :dir :system)
 (include-book "std/util/defines" :dir :system)
 (include-book "unicode/read-utf8" :dir :system)

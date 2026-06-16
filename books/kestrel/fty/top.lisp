@@ -61,6 +61,8 @@
 (include-book "map")
 (include-book "maybe-string")
 (include-book "maybe-string-result")
+(include-book "msg")
+(include-book "msg-list")
 (include-book "nat-list-list")
 (include-book "nat-list-list-list")
 (include-book "nat-list-list-result")

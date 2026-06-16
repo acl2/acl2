@@ -161,7 +161,10 @@
      (xdoc::ul
       (xdoc::li
        "A pair @('(<type> <term>)'),
-        where @('<type>') is a @(tsee defprod) or @(tsee deftagsum),
+        where @('<type>') is a
+        @(tsee defprod),
+        @(tsee deftagsum),
+        or @(tsee deflist),
         and @('<term>') is an (untranslated) term
         whose only free variables may be @('<type>')
         and the formals specified in @(':extra-args').")
@@ -298,18 +301,27 @@
        "If @('<type>') is a @(tsee deflist):"
        (xdoc::ul
         (xdoc::li
-         "If the list is empty,
-          the function is defined to return
-          the term specified by the @(':default') input.")
+         "If the @(':override') input includes
+          an element @('(<type> <term>')),
+          the function is defined to return @('<term>').")
         (xdoc::li
-         "If the list is not empty,
-          the function is defined to return
-          the result of combining,
-          via the function specified by the @(':combine') input,
-          the result of applying the element type's fold function
-          to the @(tsee car) of the list
-          with the result of applying to list type's fold function
-          to the @(tsee cdr) of the list.")))
+         "If the @(':override') input does not include
+          an element of the form @('(<type> <term>')),
+          the function is defined to return the following:")
+        (xdoc::ul
+         (xdoc::li
+          "If the list is empty,
+           the function is defined to return
+           the term specified by the @(':default') input.")
+         (xdoc::li
+          "If the list is not empty,
+           the function is defined to return
+           the result of combining,
+           via the function specified by the @(':combine') input,
+           the result of applying the element type's fold function
+           to the @(tsee car) of the list
+           with the result of applying to list type's fold function
+           to the @(tsee cdr) of the list."))))
       (xdoc::li
        "If @('<type>') is a @(tsee defoption):"
        (xdoc::ul
@@ -395,6 +407,8 @@
      (xdoc::p
       "For each @(tsee deflist) type @('<type>')
        specified by the @(':types') input,
+       such that the @(':override') input
+       does not include an element @('(<type> ...)'),
        with element type @('<elemtype>'),
        we generate the following theorems,
        whose exact form can be inspected with @(tsee pe) or similar command:")

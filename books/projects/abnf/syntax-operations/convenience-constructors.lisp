@@ -10,7 +10,7 @@
 
 (in-package "ABNF")
 
-(include-book "abstract-syntax")
+(include-book "../notation/abstract-syntax")
 
 (include-book "std/system/pseudo-event-form-listp" :dir :system)
 
@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ convenience-constructors
-  :parents (notation)
+  :parents (syntax-operations)
   :short "Utilities to conveniently construct abstract syntactic entities."
   :long
   (xdoc::topstring

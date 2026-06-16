@@ -1092,6 +1092,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define string-list-map-ident
+  ((strings string-listp))
+  :returns (idents ident-listp)
+  :short "Map @(tsee ident) over a list of strings."
+  (if (endp strings)
+      nil
+    (cons (ident (mbe :logic (acl2::str-fix (first strings))
+                      :exec (first strings)))
+          (string-list-map-ident (rest strings))))
+  :guard-hints (("Goal" :in-theory (enable string-listp)))
+  ///
+
+  (more-returns
+   (idents true-listp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ident-list-map-expr-ident
   ((idents ident-listp))
   :returns (exprs expr-listp)
@@ -1366,7 +1383,8 @@
     :guard (not (endp items))
     :returns (yes/no booleanp)
     (b* (((unless (mbt (not (endp items)))) nil)
-         ((when (endp (cdr items))) (block-item-syntactic-lvalue-p (car items))))
+         ((when (endp (cdr items)))
+          (block-item-syntactic-lvalue-p (car items))))
       (block-item-list-syntactic-lvalue-p (cdr items)))
     :measure (block-item-list-count items))
 
@@ -1412,3 +1430,44 @@
   ///
 
   (fty::deffixequiv-mutual expr-syntactic-lvalue-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define unop-requires-lvalue-p ((op unopp))
+  :returns (yes/no booleanp)
+  :short "Recognize unary operators which require an lvalue operand."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The operand must be an lvalue for
+     prefix increments/decrements [C17:6.5.3.1/1]
+     and postfix increments/decrements [C17:6.5.2.4/1].")
+   (xdoc::p
+    "The operand to the address operator @('&') may be an lvalue,
+     but it is not required [C17:6.5.3.2/1].
+     It may also be a function designator,
+     a dereference expression,
+     or an array subscript expression."))
+  (and (unop-case op '(:preinc :predec :postinc :postdec))
+       t))
+
+(define binop-arg1-requires-lvalue-p ((op binopp))
+  :returns (yes/no booleanp)
+  :short "Recognize binary operators which require an lvalue
+          for the first operand."
+  :long
+  (xdoc::topstring-p
+   "All assignment operators must have an lvalue
+    for the first operand [C17:6.5.16].")
+  (and (binop-case op '(:asg
+                        :asg-mul
+                        :asg-div
+                        :asg-rem
+                        :asg-add
+                        :asg-sub
+                        :asg-shl
+                        :asg-shr
+                        :asg-and
+                        :asg-xor
+                        :asg-ior))
+       t))
