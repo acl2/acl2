@@ -159,7 +159,10 @@
      Both sum and product types are stored in the table as sum types,
      but the data structure indicates the type macro,
      i.e. whether it is a @(tsee defprod) or @(tsee deftagsum);
-     we use that to distinguish them."))
+     we use that to distinguish them.
+     List types are not stored as sum types;
+     for a list type, only the 2-tuple form is allowed,
+     since a list has no kinds."))
   (b* (((reterr) nil)
        ((unless (true-listp override))
         (reterr (msg "The :OVERRIDE input must be a list, ~
@@ -195,23 +198,26 @@
                          must be the name of a type, ~
                          but ~x0 is not."
                         type)))
-          ((unless (flexsum-p info))
+          ((unless (or (and (flexsum-p info)
+                            (member-eq (flexsum->typemacro info)
+                                       (list 'defprod 'deftagsum)))
+                       (flexlist-p info)))
            (reterr (msg "The first element of ~
                          every element of the :OVERRIDE list ~
-                         must be the name of a product or sum type, ~
-                         but ~x0 is not."
-                        type)))
-          (typemacro (flexsum->typemacro info))
-          ((unless (member-eq typemacro (list 'defprod 'deftagsum)))
-           (reterr (msg "The first element of ~
-                         every element of the :OVERRIDE list ~
-                         must be the name of a product or sum type, ~
+                         must be the name of ~
+                         a product, sum, or list type, ~
                          but ~x0 is not."
                         type)))
           ((erp key val)
            (if (= (len ovrd) 2)
                (mv nil type term)
              (b* (((reterr) nil nil)
+                  ((unless (flexsum-p info))
+                   (reterr (msg "The type ~x0 in the :OVERRIDE list ~
+                                 is accompanied by the kind ~x1, ~
+                                 but a kind can be specified ~
+                                 only for a sum type."
+                                type (cadr ovrd))))
                   (kind (cadr ovrd))
                   ((unless (keywordp kind))
                    (reterr (msg "The second element of ~
@@ -963,6 +969,7 @@
                                   (result symbolp)
                                   (default t)
                                   (combine symbolp)
+                                  (overrides alistp)
                                   (name symbolp)
                                   (fty-table alistp))
   :returns (mv (fn-event acl2::pseudo-event-formp)
@@ -974,6 +981,15 @@
    (xdoc::p
     "This is as described in @(tsee deffold-reduce).")
    (xdoc::p
+    "If the override alist includes an entry for this list type,
+     we use that as the body of the function,
+     and we generate no accompanying theorems,
+     because in general we do not know
+     which properties hold of the overriding term.
+     In this case we also generate an `ignorable' declaration
+     for the main formal,
+     in case the overriding term does not mention it.")
+   (xdoc::p
     "The @('mutrecp') flag says whether
      this list type is part of a mutually recursive clique."))
   (b* ((type (flexlist->name list))
@@ -983,13 +999,27 @@
        (type-suffix (deffoldred-gen-fold-name type suffix))
        (type-count (flexlist->count list))
        (recog (flexlist->pred list))
+       (recp (flexlist->recp list))
+       (result-var (intern-in-package-of-symbol "RESULT" suffix))
+       (term-assoc (assoc-equal type overrides))
+       ((when term-assoc)
+        (mv `(define ,type-suffix ((,type ,recog) ,@extra-args)
+               (declare (ignorable ,type))
+               :returns (,result-var ,result)
+               :parents (,name)
+               ,(cdr term-assoc)
+               ,@(and (or mutrecp recp)
+                      `(:measure (,type-count ,type)
+                        :hints (("Goal" :in-theory (enable o< o-finp)))))
+               ,@(and (not mutrecp) '(:verify-guards :after-returns))
+               ,@(and (not mutrecp) '(:hooks (:fix))))
+            nil))
        (elt-recog (flexlist->elt-type list))
        ((unless (symbolp elt-recog))
         (raise "Internal error: malformed recognizer ~x0." elt-recog)
         (mv '(_) nil))
        (elt-info (flextype-with-recognizer elt-recog fty-table))
        (elt-type (flextype->name elt-info))
-       (recp (flexlist->recp list))
        ((unless (symbolp elt-type))
         (raise "Internal error: malformed type name ~x0." elt-type)
         (mv '(_) nil))
@@ -1000,7 +1030,6 @@
                 ,default)
                (t (,combine (,elt-type-suffix (car ,type) ,@extra-args-names)
                             (,type-suffix (cdr ,type) ,@extra-args-names)))))
-       (result-var (intern-in-package-of-symbol "RESULT" suffix))
        (fn-event
         `(define ,type-suffix ((,type ,recog) ,@extra-args)
            :returns (,result-var ,result)
@@ -1270,7 +1299,7 @@
            targets extra-args result default combine overrides name fty-table))
         ((flexlist-p flex)
          (deffoldred-gen-list-fold flex mutrecp suffix
-           extra-args result default combine name fty-table))
+           extra-args result default combine overrides name fty-table))
         ((flexomap-p flex)
          (deffoldred-gen-omap-fold flex mutrecp suffix
            extra-args result default combine name fty-table))
