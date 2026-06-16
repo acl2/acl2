@@ -85,6 +85,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defprojection shape-dims-list ((x dim-list-listp))
+  :returns (shapes shape-listp)
+  :short "Lift @(tsee shape-dims) to lists."
+  (shape-dims x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defprojection base-lit-int-list ((x int-lit-listp))
   :returns (lits base-lit-listp)
   :short "Lift @(tsee base-lit-int) to lists."
@@ -305,3 +312,12 @@
            (shape-listp (mv-nth 1 (list-prefix-join lists))))
   :induct t
   :enable list-prefix-join)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule dim-list-listp-of-list-to-singleton
+  :short "Type of @(tsee list-to-singletons) on a list of dimensions."
+  (implies (dim-listp dims)
+           (dim-list-listp (list-to-singletons dims)))
+  :induct t
+  :enable list-to-singletons)
