@@ -1723,9 +1723,9 @@
      (xdoc::p
       "The check that the collected argument cells form a list of values
        should be eliminable via proof, as we plan to do."))
-    (b* ((argcell-lists (value-list-list-fix argcell-lists)) ; TODO: refine
-         ((when (zp limit)) (reserr :limit))
+    (b* (((when (zp limit)) (reserr :limit))
          ((when (endp funcells)) nil)
+         (argcell-lists (value-list-list-fix argcell-lists))
          (argcells (car-list argcell-lists))
          ;; TODO: eliminate the next two checks via proof
          ((unless (value-listp argcells)) (reserr nil))
