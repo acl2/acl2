@@ -40,6 +40,7 @@
                           type-value-listp-when-result-not-error
                           valuep-when-result-not-error
                           value-listp-when-result-not-error
+                          value-list-listp-when-result-not-error
                           var+typevalue-p-when-result-not-error
                           var+typevalue-listp-when-result-not-error)))
 
@@ -905,6 +906,37 @@
      in [thesis]."))
   (b* (((ok cells) (cells-at-depth-in-value val (len frame))))
     (repeat-each (nat-list-product (nthcdr (len frame) pframe)) cells)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lift-value-list-to-frame ((vals value-listp)
+                                  (frames nat-list-listp)
+                                  (pframe nat-listp))
+  :guard (and (equal (len vals) (len frames))
+              (all-prefixp frames pframe))
+  :returns (cell-lists value-list-list-resultp)
+  :short "Lift @(tsee lift-value-to-frame)
+          to a list of values with corresponding frames."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used on all the values involved in a function application:
+     the function value, and the argument values.
+     They all share the principal frame @('pframe'),
+     but each value has its own frame (a prefix of @('pframe')),
+     so there is a list of frames corresponding to the list of values.
+     Each value is lifted via @(tsee lift-value-to-frame),
+     yielding a list of cell lists, one per function or argument value,
+     all of the same length (the number of positions of @('pframe')),
+     lined up for the cell-wise application."))
+  (b* (((when (endp vals)) nil)
+       ((unless (mbt (consp frames))) (reserr nil))
+       ((ok cells) (lift-value-to-frame (car vals) (car frames) pframe))
+       ((ok cell-lists)
+        (lift-value-list-to-frame (cdr vals) (cdr frames) pframe)))
+    (cons cells cell-lists))
+  :guard-hints
+  (("Goal" :in-theory (enable acl2::true-list-listp-when-nat-list-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
