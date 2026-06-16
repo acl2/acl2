@@ -13,6 +13,7 @@
 (include-book "dynamic-values")
 (include-book "type-value-equivalence")
 (include-book "dynamic-environments")
+(include-book "primitives-evaluation")
 (include-book "evaluation")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -30,4 +31,5 @@
   :order-subtopics (dynamic-values
                     type-value-equivalence
                     dynamic-environments
+                    primitives-evaluation
                     evaluation))

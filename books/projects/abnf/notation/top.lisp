@@ -12,7 +12,6 @@
 
 (include-book "abstract-syntax")
 (include-book "semantics")
-(include-book "convenience-constructors")
 (include-book "core-rules")
 (include-book "core-rules-validation")
 (include-book "concrete-syntax-rules")
@@ -64,10 +63,9 @@
    (xdoc::p
     "To make the rules written in abstract syntax
      look more like if they were written in concrete syntax,
-     we introduce some "
+     we use the "
     (xdoc::seetopic "convenience-constructors" "convenience constructors")
-    " for ABNF abstract syntax.
-     We use them to define, in abstract syntax, the "
+    " to define, in abstract syntax, the "
     (xdoc::seetopic "core-rules" "core rules")
     " and the "
     (xdoc::seetopic "concrete-syntax-rules" "concrete syntax rules")
@@ -112,7 +110,6 @@
     " with which [RFC] defines the syntax of ABNF."))
   :order-subtopics (abstract-syntax
                     semantics
-                    convenience-constructors
                     core-rules
                     core-rules-validation
                     concrete-syntax-rules

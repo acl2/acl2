@@ -12,6 +12,7 @@
 (in-package "ABNF")
 
 (include-book "notation/top")
+(include-book "syntax-operations/top")
 (include-book "grammar-parser/top")
 (include-book "grammar-printer/top")
 (include-book "grammar-definer/top")

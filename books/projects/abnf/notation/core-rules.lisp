@@ -10,7 +10,7 @@
 
 (in-package "ABNF")
 
-(include-book "convenience-constructors")
+(include-book "../syntax-operations/convenience-constructors")
 
 (include-book "kestrel/utilities/untranslate-preprocessing" :dir :system)
 (include-book "std/util/defval" :dir :system)

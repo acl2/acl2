@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ constructor-utilities
-  :parents (abnf)
+  :parents (syntax-operations)
   :short "Some utilities to construct ABNF abstract syntax."
   :order-subtopics t
   :default-parent t)
