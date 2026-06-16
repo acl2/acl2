@@ -31,6 +31,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled true-listp-when-nat-listp
+  :short "A list of naturals is a true list."
+  (implies (nat-listp x)
+           (true-listp x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define nat-list-sum ((nats nat-listp))
   :returns (sum natp)
   :short "Sum of a list of zero or more natural numbers."
@@ -135,10 +142,3 @@
            (nat-listp (mv-nth 1 (list-prefix-join lists))))
   :induct t
   :enable list-prefix-join)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled true-listp-when-nat-listp
-  :short "A list of naturals is a true list."
-  (implies (nat-listp x)
-           (true-listp x)))
