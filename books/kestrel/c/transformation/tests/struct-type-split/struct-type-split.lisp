@@ -420,39 +420,136 @@ int getz(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The struct type is defined via a typedef.
-;; Typedefs of the split struct type are not supported,
-;; and are detected and rejected.
-;; TODO: support typedefs by introducing parallel typedefs
-;; of the right struct type and substituting them in.
+;; The typedef is split into a parallel right typedef,
+;; and uses of the typedef name are split accordingly.
 
 (acl2::must-succeed*
   (c$::input-files :files '("typedef.c")
                    :const *old*)
 
-  (must-fail
-    (struct-type-split *old*
-                       *new*
-                       :struct-tag "point"
-                       :right-members ("z")
-                       :new-tag "point_right"))
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/typedef.c"
+    :content "typedef struct point {
+  int x;
+} point_t;
+
+typedef struct point_right {
+  int z;
+} point_t_0;
+
+static point_t p;
+
+static point_t_0 p_0;
+
+int main(void) {
+  p.x = 4;
+  return p.x + p_0.z;
+}
+")
 
   :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A typedef denoting a derived type (here a pointer to the struct type)
-;; is likewise not supported, and is detected and rejected.
+;; is split into a parallel right typedef of the corresponding right type.
 
 (acl2::must-succeed*
   (c$::input-files :files '("typedef-ptr.c")
                    :const *old*)
 
-  (must-fail
-    (struct-type-split *old*
-                       *new*
-                       :struct-tag "point"
-                       :right-members ("z")
-                       :new-tag "point_right"))
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/typedef-ptr.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+typedef struct point *pp_t;
+
+typedef struct point_right *pp_t_0;
+
+static struct point p;
+
+static struct point_right p_0;
+
+static pp_t q = &p;
+
+static pp_t_0 q_0 = &p_0;
+
+int main(void) {
+  return q_0->z;
+}
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A typedef chain: each typedef in the chain is split,
+;; and the use of an earlier typedef in a later one is substituted.
+
+(acl2::must-succeed*
+  (c$::input-files :files '("typedef-chain.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/typedef-chain.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+typedef struct point pt_t;
+
+typedef struct point_right pt_t_0;
+
+typedef pt_t pt2_t;
+
+typedef pt_t_0 pt2_t_0;
+
+static pt2_t p;
+
+static pt2_t_0 p_0;
+
+int main(void) {
+  p.x = 1;
+  return p.x + p_0.z;
+}
+")
 
   :with-output-off nil)
 

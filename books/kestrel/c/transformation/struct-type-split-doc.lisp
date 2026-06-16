@@ -135,6 +135,16 @@
        so the struct type may not be self-referential).
        Such occurrences are detected and reported as errors.")
      (xdoc::li
+      "Typedefs whose denoted type is splittable
+       (the struct type itself, possibly behind pointers) are supported.
+       Each such typedef is split into a parallel right typedef
+       of the corresponding right type,
+       and uses of the typedef name are split accordingly.
+       For example, @('typedef struct foo *foo_p;') yields a right typedef
+       @('typedef struct foo_right *foo_p_0;'),
+       and a use @('foo_p x;') is split into @('foo_p x;') and @('foo_p_0 x_0;').
+       Typedef chains are handled as well.")
+     (xdoc::li
       "The struct type must not appear in certain expression contexts,
        such as @('sizeof') and @('_Alignof') expressions;
        such occurrences are detected and reported as errors.")
@@ -171,13 +181,6 @@
      "The following are temporary limitations which will hopefully be removed
       in the future with improvements to the implementation.")
     (xdoc::ul
-     (xdoc::li
-      "Typedefs of the struct type
-       (including typedefs of derived types, such as pointers to it)
-       are not supported;
-       they are detected and reported as errors.
-       We plan to support them by introducing
-       parallel typedefs of the right struct type.")
      (xdoc::li
       "The transformation checks that expressions requiring lvalues
        (the operands of the address and increment/decrement operators,
