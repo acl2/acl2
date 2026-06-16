@@ -133,6 +133,23 @@
     :elementp-of-nil nil
     :pred dim-listp))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist dim-list-list
+  :short "Fixtype of lists of lists of dimensions."
+  :elt-type dim-list
+  :true-listp t
+  :elementp-of-nil t
+  :pred dim-list-listp
+
+  ///
+
+  (defruled true-list-listp-when-dim-list-listp
+    (implies (dim-list-listp x)
+             (true-list-listp x))
+    :induct t
+    :enable dim-list-listp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes shapes
