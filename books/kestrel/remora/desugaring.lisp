@@ -66,8 +66,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A shape with a list of zero or more dimensions
-     is turned into a concatenation of single-dimension shapes.")
+    "A dimension lifted to a shape, i.e. the @(':dim') summand of @(tsee shape),
+     is turned into a shape with a singleton list of that dimension.")
+   (xdoc::p
+    "A shape with a list of zero or more dimensions is handled as follows:
+     if the shape has no dimensions, it is turned into the empty concatenation;
+     if the shape has one dimension, it is left unchanges;
+     if the shape has two or more dimensions,
+     it is turned into the concanetation of the singletons of the dimensions.")
    (xdoc::p
     "A shape splice is turned into a concatenation.")
    (xdoc::p
@@ -115,7 +121,14 @@
           exprs/atoms/binds
           prog)
   :override
-  ((shape :dims (shape-append (shape-dim-list shape.dims)))
+  ((shape :dim (shape-dims (list shape.dim)))
+   (shape :dims (cond ((endp shape.dims) ; no dimensions
+                       (shape-append nil))
+                      ((endp (cdr shape.dims)) ; one dimension
+                       (shape-fix shape))
+                      (t ; two or more dimensions
+                       (shape-append
+                        (shape-dims-list (list-to-singletons shape.dims))))))
    (shape :splice (shape-append (shape-list-desugar shape.shapes)))
    (type :bracket (make-type-array :elem (type-desugar type.elem)
                                    :shape (shape-append
@@ -293,7 +306,12 @@
       (shape-list-corep result)
       :fn shape-list-desugar)
     :mutual-recursion shapes-desugar
-    :hints (("Goal" :in-theory (enable shape-desugar shape-list-desugar))))
+    :hints
+    (("Goal"
+      :in-theory
+      (enable shape-desugar
+              shape-list-desugar
+              shape-list-corep-of-shape-dims-list-of-list-to-singletons))))
 
   (defret ispace-corep-of-ispace-desugar
     (ispace-corep result)

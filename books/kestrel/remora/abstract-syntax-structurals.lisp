@@ -75,20 +75,22 @@
 (std::defprojection shape-dim-list ((x dim-listp))
   :returns (shapes shape-listp)
   :short "Lift @(tsee shape-dim) to lists."
-  (shape-dim x)
-
-  ///
-
-  (defrule shape-list-corep-of-shape-dim-list
-    (shape-list-corep (shape-dim-list dims))
-    :induct t))
+  (shape-dim x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection shape-dims-list ((x dim-list-listp))
   :returns (shapes shape-listp)
   :short "Lift @(tsee shape-dims) to lists."
-  (shape-dims x))
+  (shape-dims x)
+
+  ///
+
+  (defruled shape-list-corep-of-shape-dims-list-of-list-to-singletons
+    (shape-list-corep (shape-dims-list (list-to-singletons dims)))
+    :induct t
+    :enable (list-to-singletons
+             shape-corep-when-dims-and-singleton)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
