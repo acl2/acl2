@@ -494,3 +494,26 @@
     (implies (mv-nth 0 (list-prefix-join (cons a x)))
              (all-prefixp x (mv-nth 1 (list-prefix-join (cons a x)))))
     :use (:instance list-prefix-join-upper-bound-all (lists (cons a x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define list-to-singletons ((list true-listp))
+  :returns (sing-list true-list-listp)
+  :short "Turn a list into a list of singleton lists of the original elements,
+          in the same order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For instance, @('(a b c)') is turned into @('((a) (b) (c))')."))
+  (cond ((endp list) nil)
+        (t (cons (list (car list)) (list-to-singletons (cdr list)))))
+
+  ///
+
+  (defret len-of-list-to-singletons
+    (equal (len sing-list) (len list))
+    :hints (("Goal" :induct t)))
+
+  (defret all-of-len-p-1-of-list-to-singletons
+    (all-of-len-p sing-list 1)
+    :hints (("Goal" :induct t))))
