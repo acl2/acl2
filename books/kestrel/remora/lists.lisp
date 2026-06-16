@@ -149,11 +149,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist all-prefixp (x suffix)
+(std::deflist all-prefixp (x list)
   :guard (and (true-list-listp x)
-              (true-listp suffix))
+              (true-listp list))
   :short "Check if all the lists in a list of lists are prefixes of a list."
-  (prefixp x suffix))
+  (prefixp x list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
