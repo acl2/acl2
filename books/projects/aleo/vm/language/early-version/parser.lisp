@@ -18,7 +18,7 @@
 (include-book "../../../leo/early-version/definition/bit-sizes")
 
 (include-book "kestrel/utilities/user-interface" :dir :system)
-(include-book "projects/abnf/constructor-utilities" :dir :system)
+(include-book "projects/abnf/syntax-operations/constructor-utilities" :dir :system)
 (include-book "projects/abnf/parsing-tools/defdefparse" :dir :system)
 (include-book "unicode/read-utf8" :dir :system)
 
