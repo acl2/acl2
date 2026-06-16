@@ -153,7 +153,15 @@
   :guard (and (true-list-listp x)
               (true-listp list))
   :short "Check if all the lists in a list of lists are prefixes of a list."
-  (prefixp x list))
+  (prefixp x list)
+
+  ///
+
+  (defruled all-prefixp-when-prefixp-of-whole
+    (implies (and (all-prefixp x whole1)
+                  (prefixp whole1 whole2))
+             (all-prefixp x whole2))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -467,4 +475,22 @@
                   (member-equal l lists))
              (prefixp l join))
     :hints (("Goal" :induct t)))
-  (in-theory (disable list-prefix-join-upper-bound)))
+
+  (defret list-prefix-join-upper-bound-all
+    (implies joinp
+             (all-prefixp lists join))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable all-prefixp-when-prefixp-of-whole))))
+
+  (in-theory (disable list-prefix-join-upper-bound
+                      list-prefix-join-upper-bound-all))
+
+  (defrule prefixp-of-car-when-list-prefix-join-of-cons
+    (implies (mv-nth 0 (list-prefix-join (cons a x)))
+             (prefixp a (mv-nth 1 (list-prefix-join (cons a x))))))
+
+  (defrule all-prefixp-of-cdr-when-list-prefix-join-of-cons
+    (implies (mv-nth 0 (list-prefix-join (cons a x)))
+             (all-prefixp x (mv-nth 1 (list-prefix-join (cons a x)))))
+    :use (:instance list-prefix-join-upper-bound-all (lists (cons a x)))))
