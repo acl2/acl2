@@ -149,6 +149,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::deflist all-prefixp (x suffix)
+  :guard (and (true-list-listp x)
+              (true-listp suffix))
+  :short "Check if all the lists in a list of lists are prefixes of a list."
+  (prefixp x suffix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define list-split ((list true-listp) (chunk posp))
   :guard (integerp (/ (len list) chunk))
   :returns (lists true-list-listp)
