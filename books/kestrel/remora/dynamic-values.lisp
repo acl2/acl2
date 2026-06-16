@@ -958,4 +958,17 @@
   ///
 
   (fty::deffixequiv-mutual cells-at-depth-in-values
-    :hints (("Goal" :in-theory (enable nfix)))))
+    :hints (("Goal" :in-theory (enable nfix))))
+
+  (defret-mutual value-list-wfp-of-cells-at-depth-in-values
+    (defret value-list-wfp-of-cells-at-depth-in-value
+      (implies (and (value-wfp val)
+                    (not (reserrp cells)))
+               (value-list-wfp cells))
+      :fn cells-at-depth-in-value)
+    (defret value-list-wfp-of-cells-at-depth-in-value-list
+      (implies (and (value-list-wfp vals)
+                    (not (reserrp cells)))
+               (value-list-wfp cells))
+      :fn cells-at-depth-in-value-list)
+    :mutual-recursion cells-at-depth-in-values))
