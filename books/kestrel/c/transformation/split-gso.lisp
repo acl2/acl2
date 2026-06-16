@@ -1337,15 +1337,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ident-map
-  ((strings string-listp))
-  :returns (idents ident-listp)
-  (if (endp strings)
-      nil
-    (cons (ident (first strings))
-          (ident-map (rest strings))))
-  :guard-hints (("Goal" :in-theory (enable string-listp))))
-
 (define split-gso-process-inputs (const-old
                                   const-new
                                   object-name
@@ -1412,7 +1403,7 @@
        (new-type2 (and new-type2 (c$::ident new-type2)))
        ((unless (string-listp split-members))
         (retmsg$ "~x0 must be a string list" split-members))
-       (split-members (ident-map split-members))
+       (split-members (c$::string-list-map-ident split-members))
        ((unless (symbolp const-new))
         (retmsg$ "~x0 must be a symbol" const-new)))
     (retok code
