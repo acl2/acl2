@@ -1936,8 +1936,6 @@
     :hints
     (("Goal"
       :in-theory (e/d (len-equal-when-values-match-type-values-p
-                       value-kind-of-value-first-lambda
-                       len-of-check-list-suffixes
                        true-listp-when-nat-listp
                        acl2::true-list-listp-when-nat-list-listp
                        true-list-listp-when-value-list-listp)
