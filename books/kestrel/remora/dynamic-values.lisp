@@ -482,6 +482,13 @@
   :ok value-list
   :pred value-list-resultp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult value-list-list-result
+  :short "Fixtype of (i) lists of lists of values and (ii) errors."
+  :ok value-list-list
+  :pred value-list-list-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines check-dims-of-values
