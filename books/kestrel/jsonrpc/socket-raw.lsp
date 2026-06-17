@@ -23,18 +23,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun handle-connection (stream state)
+(defun handle-connection (stream allowed-methods state)
   "Handle a connection: loop reading newline-delimited JSON messages,
    processing each through the ACL2 JSON-RPC pipeline, and writing
-   responses back.  Returns when the client disconnects (EOF)."
+   responses back.  Returns (mv nil \"Connection closed\" state) on EOF."
   (loop
     (let ((json-string (read-json-line stream)))
       (when (null json-string)
-        (return state))
+        (return (mv nil "Connection closed" state)))
       (mv-let (batchp alist)
         (parse-json-rpc json-string)
-        (mv-let (responses state)
-          (process-all alist 'run-jsonrpc-server state)
+        (mv-let (erp responses state)
+          (process-all alist allowed-methods 'run-jsonrpc-server state)
           (let* ((response-val
                   (cond ((endp responses) nil)
                         (batchp (value-array responses))
@@ -43,21 +43,27 @@
                   (if response-val
                       (value-to-json-string response-val)
                     nil)))
-            (when response-str
+            (format t "~a~%" response-str)
+            (force-output)
+            (when (and (not erp) response-str)
               (write-string response-str stream)
               (write-char #\Newline stream)
               (force-output stream))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun run-jsonrpc-server (port state)
+(defun run-jsonrpc-server (port interface allowed-methods state)
   "Start a TCP JSON-RPC 2.0 server listening on PORT.
+   INTERFACE is the bind address string (e.g. \"127.0.0.1\" or \"0.0.0.0\");
+   NIL defaults to \"127.0.0.1\".
+   ALLOWED-METHODS is either :any or a list of permitted method symbols.
    Accepts one connection, handles all its newline-delimited messages,
-   then returns."
-  (let ((server-socket
-         (usocket:socket-listen "0.0.0.0" port
-                                :reuse-address t
-                                :element-type 'character)))
+   then returns (mv erp msg state)."
+  (let* ((host (or interface "127.0.0.1"))
+         (server-socket
+          (usocket:socket-listen host port
+                                 :reuse-address t
+                                 :element-type 'character)))
     (format t "JSON-RPC server listening on port ~a~%" port)
     (force-output)
     (unwind-protect
@@ -67,11 +73,10 @@
                                            :element-type 'character))
                    (stream (usocket:socket-stream client-socket)))
               (unwind-protect
-                  (handle-connection stream state)
+                  (handle-connection stream allowed-methods state)
                 (usocket:socket-close client-socket)))
           (error (c)
-            (format t "JSON-RPC server: error handling connection: ~a~%" c)
+            (format t "JSON-RPC server error: ~a~%" c)
             (force-output)
-            state))
-      (usocket:socket-close server-socket)))
-  (mv nil state))
+            (mv t (format nil "Error: ~a" c) state)))
+      (usocket:socket-close server-socket))))

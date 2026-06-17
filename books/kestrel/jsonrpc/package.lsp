@@ -47,17 +47,17 @@
                             json::member->value
                             json::make-member
                             json::make-value-number
-                            json::object-member-value?
+                            json::object-member-values
                             json::object-has-member-p
                             json::parsed-to-value
-                            acl2::int
-                            acl2::bool
-                            acl2::nat-to-string
-                            acl2::parse-string-as-json
-                            acl2::string-upcase
-                            acl2::trans-eval-error-triple
-                            acl2::read-file-into-character-list-safe
-                            acl2::write-strings-to-file
-                            acl2::defttag
-                            acl2::include-raw)))
+                            int
+                            bool
+                            nat-to-string
+                            parse-string-as-json
+                            string-upcase
+                            trans-eval-error-triple
+                            read-file-into-character-list-safe
+                            write-strings-to-file
+                            defttag
+                            include-raw)))
 

@@ -45,17 +45,20 @@
   method function, and writes the JSON-RPC response to the output file.</p>
 
   @({
-    (process-json-rpc-file \"request.json\" \"response.json\" state)
+    (process-json-rpc-file \"request.json\" \"response.json\" '(subtract) state)
   })
 
   <p><b>Socket transport.</b> The entry point is @(see run-jsonrpc-server).
-  It opens a TCP server socket on the given port and loops accepting
-  connections.  Each connection may carry multiple request/response exchanges
-  (keep-alive) and is closed when the client disconnects.  Messages are
-  framed by JSON structure — pretty-printed multi-line JSON is accepted.</p>
+  It opens a TCP server socket on the given port and accepts a single
+  connection.  It then loops reading JSON-RPC messages from that connection
+  until the client disconnects.  Messages must be compact (single-line) JSON
+  terminated by a newline character.  The second argument controls the bind
+  interface: @('nil') (or @('\"127.0.0.1\"')) binds to localhost only;
+  @('\"0.0.0.0\"') accepts connections from any host.  The third argument is
+  the allowed-methods list (see below).</p>
 
   @({
-    (run-jsonrpc-server 7070 state)
+    (run-jsonrpc-server 7070 nil '(subtract) state)
   })
 
   <p>The input file must contain a valid JSON-RPC 2.0 request object, or an
@@ -69,7 +72,9 @@
 
   <p>Method functions are ACL2 functions defined in the @('JSONRPC') package.
   When a request arrives with @('\"method\": \"foo\"'), the library dispatches
-  to the function @('jsonrpc::foo').</p>
+  to the function @('jsonrpc::foo'), provided that @('foo') appears in the
+  @('allowed-methods') list passed to the entry point (or @('allowed-methods')
+  is @(':any')).</p>
 
   <p>Every method function must have the following signature:</p>
 

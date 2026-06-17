@@ -68,7 +68,7 @@
 ;  - params-presentp: whether the params are present
 ;  - params: a structured JSON value (array or object)
 ;  - notificationp: true if no id provided
-;  - id: the request id 
+;  - id: the request id
 (fty::defprod request
   :short "A parsed JSON-RPC 2.0 request object."
   :long "<p>Represents a successfully parsed JSON-RPC 2.0 Request object with

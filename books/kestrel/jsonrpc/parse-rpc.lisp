@@ -41,10 +41,10 @@
   :short "Extract the @('id') field from a JSON-RPC request object."
   :guard (equal (value-kind obj) :object)
   :returns (mv (has-id booleanp) (is-valid booleanp) (id idp))
-  (b* ((id-val? (object-member-value? "id" obj))
-       ((unless id-val?)
+  (b* ((id-val-list (object-member-values "id" obj))
+       ((unless (equal (len id-val-list) 1))
         (mv nil t (id-null)))
-       (id-val id-val?)
+       (id-val (car id-val-list))
        ((when (equal (value-kind id-val) :string))
         (mv t t (id-string (value-string->get id-val))))
        ((when (and (equal (value-kind id-val) :number)
@@ -62,42 +62,57 @@
         (mv (id-null)
             (request+error-error
              (make-invalid-request-error "Request must be a JSON object"))))
-       (jsonrpc-val? (object-member-value? "jsonrpc" val))
-       ((unless (and jsonrpc-val?
-                     (value-case jsonrpc-val? :string)
-                     (equal (value-string->get jsonrpc-val?) "2.0")))
+       (jsonrpc-val-list (object-member-values "jsonrpc" val))
+       ((unless (equal (len jsonrpc-val-list) 1))
         (mv (id-null)
             (request+error-error
-             (make-invalid-request-error 
+             (make-invalid-request-error
+              "Duplicate \"jsonrpc\" field"))))
+       (jsonrpc-val (car jsonrpc-val-list))
+       ((unless (and (value-case jsonrpc-val :string)
+                     (equal (value-string->get jsonrpc-val) "2.0")))
+        (mv (id-null)
+            (request+error-error
+             (make-invalid-request-error
               "Missing or invalid \"jsonrpc\" field; must be \"2.0\""))))
-       (method-val? (object-member-value? "method" val))
-       ((unless (and method-val?
-                     (equal (value-kind method-val?) :string)))
+       (method-val-list (object-member-values "method" val))
+       ((unless (equal (len method-val-list) 1))
         (mv (id-null)
             (request+error-error
-             (make-invalid-request-error 
+             (make-invalid-request-error
+              "Duplicate \"member\" field"))))
+       (method-val (car method-val-list))
+       ((unless (equal (value-kind method-val) :string))
+        (mv (id-null)
+            (request+error-error
+             (make-invalid-request-error
               "Missing or invalid \"method\" field; must be a string"))))
-       (method (value-string->get method-val?))
+       (method (value-string->get method-val))
        (params-presentp (object-has-member-p "params" val))
-       (params-val? (and params-presentp 
-                         (object-member-value? "params" val)))
-       ((when (and params-val?
-                   (not (value-case params-val? :array))
-                   (not (value-case params-val? :object))))
+       (params-val-list (and params-presentp
+                             (object-member-values "params" val)))
+       ((unless (equal (len params-val-list) 1))
         (mv (id-null)
             (request+error-error
-             (make-invalid-request-error 
+             (make-invalid-request-error
+              "Duplicate \"params\" field"))))
+       (params-val (car params-val-list))
+       ((when (and (not (value-case params-val :array))
+                   (not (value-case params-val :object))))
+        (mv (id-null)
+            (request+error-error
+             (make-invalid-request-error
               "\"params\" must be an array or object"))))
-       (params (if params-val?
-                   (if (equal (value-kind params-val?) :array)
-                       (structured-array (value-array->elements params-val?))
-                     (structured-object (value-object->members params-val?)))
+       (params (if params-presentp
+                   (if (equal (value-kind params-val) :array)
+                       (structured-array (value-array->elements params-val))
+                     (structured-object (value-object->members params-val)))
                  (irr-structured)))
        ((mv has-id is-valid id-val) (parse-rpc-id val))
        ((unless is-valid)
         (mv (id-null)
             (request+error-error
-             (make-invalid-request-error 
+             (make-invalid-request-error
               "\"id\" must either be a number, string, or null"))))
        (notificationp (not has-id)))
     (mv id-val
@@ -152,5 +167,5 @@
           (mv nil (list (cons id req+err))))))
     (mv nil (list (cons (id-null)
                         (request+error-error
-                 (make-invalid-request-error 
+                 (make-invalid-request-error
                   "Top-level JSON value must be an object or array")))))))

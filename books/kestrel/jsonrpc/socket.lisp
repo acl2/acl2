@@ -10,10 +10,7 @@
 
 (in-package "JSONRPC")
 
-; include-raw is a macro defined in tools/include-raw, not a built-in.
 (include-book "tools/include-raw" :dir :system)
-
-; Load usocket transitively via hunchentoot (same pattern as centaur/bridge).
 (include-book "quicklisp/hunchentoot" :dir :system)
 
 (include-book "process-rpc")
@@ -24,36 +21,50 @@
   :parents (jsonrpc)
   :short "Start a TCP socket server that handles JSON-RPC 2.0 requests."
   :long "<p>@('run-jsonrpc-server') opens a TCP server socket on the given
-  port and enters an accept loop.  For each incoming connection it reads
-  JSON-RPC messages, dispatches them through the same pipeline as
-  @(see process-json-rpc-file), and writes the responses back on the same
-  connection.  A single connection may carry multiple request/response
-  exchanges; the connection is closed when the client
-  disconnects.</p>
+  port and accepts a single connection.  It then enters a loop reading
+  JSON-RPC messages from that connection, dispatching them through the same
+  pipeline as @(see process-json-rpc-file), and writing the responses back.
+  The loop exits when the client disconnects (EOF), at which point the
+  function returns.</p>
 
-  <p>Usage:</p>
+  <p>The @('interface') argument controls which network interface the server
+  binds to.  Pass @('nil') (or @('\"127.0.0.1\"')) to accept connections only
+  from the local machine.  Pass @('\"0.0.0.0\"') to accept connections from
+  any host on the network — use this only in trusted environments.</p>
+
+  <p>The @('allowed-methods') argument restricts which methods may be called.
+  Pass a list of symbols naming the permitted methods, e.g. @(''(subtract add)').
+  Pass @(':any') to allow any method in the @('JSONRPC') package (unrestricted).
+  Requests for methods not in the list are rejected with a method-not-found
+  error.</p>
+
+  <p>Usage (localhost, subtract only):</p>
 
   @({
-    (run-jsonrpc-server 7070 state)
+    (run-jsonrpc-server 7070 nil '(subtract) state)
   })
 
-  <p>Messages must be delimited by a newline character.</p>
+  <p>Usage (all interfaces, unrestricted):</p>
 
-  <p>This function does not return under normal operation.  It can be
-  interrupted with a SIGINT (Ctrl-C).</p>")
+  @({
+    (run-jsonrpc-server 7070 \"0.0.0.0\" :any state)
+  })
+
+  <p>Messages must be delimited by a newline character.</p>")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Logical stub — the real definition is installed by socket-raw.lsp below.
 
-(defun run-jsonrpc-server (port state)
-  (declare (xargs :guard (natp port)
+(defun run-jsonrpc-server (port interface allowed-methods state)
+  (declare (xargs :guard (and (natp port)
+                              (or (null interface) (stringp interface)))
                   :mode :program
                   :stobjs state))
-  (declare (ignore port))
+  (declare (ignore port interface allowed-methods))
   (prog2$ (er hard? 'run-jsonrpc-server
               "Raw Lisp definition of run-jsonrpc-server not installed.")
-          (mv nil state)))
+          (mv nil nil state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
