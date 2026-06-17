@@ -125,9 +125,7 @@
       "This is like a normalized ground form of type ASTs:
        if there are no free variables,
        a type is a base type,
-       or an array with a type value element
-       and a list of natural numbers as shape
-       (like a shape ispace value, see @(tsee ispace-value)),
+       or an array with a type value element with a list of dimensions,
        or a function type with input and output type values,
        or a universal, product, or sum type.
        The latter three categories of types do not use type values in bodies,
@@ -136,7 +134,7 @@
        like common lambda abstractions."))
     (:base ((type base-type)))
     (:array ((elem type-value)
-             (shape nat-list)))
+             (dims nat-list)))
     (:fun ((in type-value-list)
            (out type-value)))
     (:forall ((params type-var-list)
@@ -167,11 +165,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection type-value-array-list->shape ((x type-value-listp))
+(std::defprojection type-value-array-list->dims ((x type-value-listp))
   :guard (type-value-list-case-array x)
   :returns (shapes nat-list-listp)
-  :short "Lift @(tsee type-value-array->shape) to lists."
-  (type-value-array->shape x))
+  :short "Lift @(tsee type-value-array->dims) to lists."
+  (type-value-array->dims x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -69,7 +69,7 @@
        and the dimensions must be the same.
        Unlike array type equivalence,
        we do not need to check shape equivalence,
-       because a type value contains a shape value.")
+       because an array type value contains explicit dimensions.")
      (xdoc::p
       "In the case of two function type values,
        the input and output type values must be equivalent.")
@@ -87,7 +87,7 @@
      :array (type-value-case
              tval2
              :array (and (type-value-equivp tval1.elem tval2.elem)
-                         (equal tval1.shape tval2.shape))
+                         (equal tval1.dims tval2.dims))
              :otherwise nil)
      :fun (type-value-case
            tval2

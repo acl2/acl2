@@ -322,11 +322,11 @@
      :base (type-value-base type.type)
      :array (b* (((ok elem-tval) (eval-type type.elem denv))
                  ((ok nats) (eval-shape type.shape denv)))
-              (make-type-value-array :elem elem-tval :shape nats))
+              (make-type-value-array :elem elem-tval :dims nats))
      :bracket (b* (((ok elem-tval) (eval-type type.elem denv))
                    ((ok natss) (eval-shape-list type.shapes denv))
                    (nats (append-all natss)))
-                (make-type-value-array :elem elem-tval :shape nats))
+                (make-type-value-array :elem elem-tval :dims nats))
      :fun (b* (((ok in-tvals) (eval-type-list type.in denv))
                ((ok out-tval) (eval-type type.out denv)))
             (make-type-value-fun :in in-tvals :out out-tval))
@@ -1071,10 +1071,10 @@
        ((when (endp tvals)) nil)
        (val (car vals))
        (tval (car tvals))
-       (shape (type-value-case tval
-                               :array tval.shape
-                               :otherwise nil)))
-    (and (equal (dims-of-expr-value val) shape)
+       (dims (type-value-case tval
+                              :array tval.dims
+                              :otherwise nil)))
+    (and (equal (dims-of-expr-value val) dims)
          (expr-values-match-type-values-p (cdr vals) (cdr tvals))))
 
   ///
@@ -1216,7 +1216,7 @@
                          ((mv elem cell-dims)
                           (type-value-case
                            tval
-                           :array (mv tval.elem tval.shape)
+                           :array (mv tval.elem tval.dims)
                            :otherwise (mv tval nil)))
                          ((when (type-value-case elem :array)) (reserr nil))
                          (dims (append expr.dims cell-dims)))
@@ -1462,7 +1462,7 @@
              ((mv elem body-dims)
               (type-value-case
                tval
-               :array (mv tval.elem tval.shape)
+               :array (mv tval.elem tval.dims)
                :otherwise (mv tval nil)))
              ((when (type-value-case elem :array)) (reserr nil)))
           (make-expr-value-vector-empty :dims (append funval.dims body-dims)
@@ -1596,7 +1596,7 @@
              ((mv elem body-dims)
               (type-value-case
                tval
-               :array (mv tval.elem tval.shape)
+               :array (mv tval.elem tval.dims)
                :otherwise (mv tval nil)))
              ((when (type-value-case elem :array)) (reserr nil)))
           (make-expr-value-vector-empty :dims (append funval.dims body-dims)
@@ -1707,7 +1707,7 @@
          ((ok lval) (expr-value-first-lambda funval))
          (tvals (var+typevalue-list->type (expr-value-lambda->params lval)))
          ((unless (type-value-list-case-array tvals)) (reserr nil))
-         (param-dims (type-value-array-list->shape tvals))
+         (param-dims (type-value-array-list->dims tvals))
          ((unless (equal (len argvals) (len param-dims))) (reserr nil))
          (arg-dims (dims-of-expr-value-list argvals))
          ((mv suffixesp arg-frames) (check-list-suffixes arg-dims param-dims))
