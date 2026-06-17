@@ -2329,7 +2329,7 @@
        This cannot be disambiguated purely syntactically.
        So, during parsing, we always generate the @(':function-params') case,
        which may be re-classified into the @(':function-names') case
-       during post-parsing semantic analysis."))
+       by the @(see disambiguator)."))
     (:ident ((ident ident)))
     (:paren ((inner declor)))
     (:array ((declor dirdeclor)

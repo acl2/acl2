@@ -2278,6 +2278,9 @@
     :long
     (xdoc::topstring
      (xdoc::p
+      "The meaning of the @('fundefp') and @('declsp') inputs
+       is as explained in @(tsee dimb-declor).")
+     (xdoc::p
       "As explained in @(tsee dimb-declor),
        a (direct) declarator adds an identifier to the scope.
        So here we return the identifier,
@@ -2300,7 +2303,14 @@
       "For a @(':function-params'), there are two cases.")
      (xdoc::p
       "The first case is when we need to turn it into a @(':function-names').
-       This happens when the following conditions hold:
+       This happens in one of the following two sub-cases.
+       The first sub-case is when:
+       (i) the standard is C17;
+       (ii) the @('fundefp') flag is cleared;
+       (iii) the list of parameters is empty.
+       This means that we are not in a function declaration (not definition),
+       and for that only the empty list of identifiers is allowed in C17.
+       The second sub-case is when:
        (i) the standard is C17;
        (ii) the @('fundefp') flag is set,
        i.e. the declarator is one of a function definition;
@@ -2311,7 +2321,10 @@
        happens exactly when there are one or more names as parameters);
        (iv) this is the innermost @(':function-params')
        (the reason for this is explained below).
-       Besides turning the @(':function-params') into a @(':function-names'),
+       The second sub-case is tested after the first sub-case,
+       so if the second sub-case holds it means that there are some parameters.
+       If @('fundefp') is @('t'),
+       besides turning the @(':function-params') into a @(':function-names'),
        we also push a new scope for the function parameters and body.
        The scope will be populated by the declarations
        between the declarator and the body of the function definition
@@ -2319,8 +2332,8 @@
        We also ensure that there is no ellipsis in this case,
        because otherwise we would be masking erroneous code.")
      (xdoc::p
-      "The second case happens when
-       any of the three conditions above does not hold.
+      "The second case happens when none of the two sub-cases above holds.
+       Then the @(':function-params') stays as such.
        We push a new scope for the parameters,
        and we disambiguate the parameters.
        Then we pop the scope,
@@ -2329,7 +2342,7 @@
        because in this case we must leave the scope open
        for the body of the function definition.")
      (xdoc::p
-      "The check (iii) mentioned above
+      "The check (iv) mentioned earlier
        is performed via @(tsee dirdeclor-has-params-p).
        The need for this check can be seen
        from the example function definition")
@@ -2400,6 +2413,23 @@
        :function-params
        (b* (((erp new-dirdeclor ident dstate)
              (dimb-dirdeclor dirdeclor.declor fundefp declsp dstate))
+            ;; 1st sub-case of 1st case in doc above:
+            ((when (and (c::standard-case
+                         (c::dialect->std (ienv->dialect (dstate->ienv dstate)))
+                         :c17)
+                        (not fundefp)
+                        (endp dirdeclor.params)))
+             (b* (((when dirdeclor.ellipsis)
+                   (retmsg$ "The declarator ~x0 is invalid, ~
+                             because it must be disambiguated to ~
+                             one with function parameter names, ~
+                             but it also contains an ellipsis."
+                            (dirdeclor-fix dirdeclor))))
+               (retok (make-dirdeclor-function-names :declor new-dirdeclor
+                                                     :names nil)
+                      ident
+                      dstate))) ; no scope is pushed
+            ;; 2nd sub-case of 1st case in doc above:
             ((when (and (c::standard-case
                          (c::dialect->std (ienv->dialect (dstate->ienv dstate)))
                          :c17)
@@ -2424,6 +2454,7 @@
                                                      :names names)
                       ident
                       (dimb-push-scope dstate))))
+            ;; 2nd case in doc above:
             (dstate (dimb-push-scope dstate))
             ((erp new-params dstate)
              (dimb-param-declon-list dirdeclor.params dstate))
