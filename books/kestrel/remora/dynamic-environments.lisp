@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "dynamic-values")
+(include-book "values")
 
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))

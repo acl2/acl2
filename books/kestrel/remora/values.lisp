@@ -36,7 +36,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ dynamic-values
+(defxdoc+ values
   :parents (dynamic-semantics)
   :short "Values used in the dynamic semantics."
   :long
@@ -117,7 +117,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum type-value
-    :parents (dynamic-values type-values)
+    :parents (values type-values)
     :short "Fixtype of type values."
     :long
     (xdoc::topstring
@@ -150,7 +150,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist type-value-list
-    :parents (dynamic-values type-values)
+    :parents (values type-values)
     :short "Fixtype of lists of type values."
     :elt-type type-value
     :true-listp t
@@ -356,7 +356,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum expr-value
-    :parents (dynamic-values expr-values)
+    :parents (values expr-values)
     :short "Fixtype of expression values."
     :long
     (xdoc::topstring
@@ -434,7 +434,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist expr-value-list
-    :parents (dynamic-values expr-values)
+    :parents (values expr-values)
     :short "Fixtype of lists of expression values."
     :elt-type expr-value
     :true-listp t
@@ -536,7 +536,7 @@
 
   (define check-dims-of-expr-value ((val expr-valuep))
     :returns (dims nat-list-resultp)
-    :parents (dynamic-values check-dims-of-expr-values)
+    :parents (values check-dims-of-expr-values)
     :short "Check dimension constraints on expression values."
     :long
     (xdoc::topstring
@@ -582,7 +582,7 @@
 
   (define check-dims-of-expr-value-list ((vals expr-value-listp))
     :returns (dimss nat-list-list-resultp)
-    :parents (dynamic-values check-dims-of-expr-values)
+    :parents (values check-dims-of-expr-values)
     :short "Check dimension constraints on lists of expression values."
     :long
     (xdoc::topstring
@@ -886,7 +886,7 @@
 
   (define cells-at-depth-in-expr-value ((val expr-valuep) (depth natp))
     :returns (cells expr-value-list-resultp)
-    :parents (dynamic-values cells-at-depth-in-expr-values)
+    :parents (values cells-at-depth-in-expr-values)
     :short "Cells of an expression value at a given frame depth,
             in row-major order."
     :long
@@ -951,7 +951,7 @@
   (define cells-at-depth-in-expr-value-list ((vals expr-value-listp)
                                              (depth natp))
     :returns (cells expr-value-list-resultp)
-    :parents (dynamic-values cells-at-depth-in-expr-values)
+    :parents (values cells-at-depth-in-expr-values)
     :short "Concatenation of
             the cells of a list of expression values at a given frame depth,
             in the same order as the list."

@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "dynamic-values")
+(include-book "values")
 (include-book "type-value-equivalence")
 (include-book "dynamic-environments")
 (include-book "primitives-evaluation")
@@ -28,7 +28,7 @@
      in the Remora publications [thesis] [arxiv] [esop].
      We plan to formalize those inference rules as directly as possible,
      but we will start by providing an executable interpreter."))
-  :order-subtopics (dynamic-values
+  :order-subtopics (values
                     type-value-equivalence
                     dynamic-environments
                     primitives-evaluation

@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "dynamic-values")
+(include-book "values")
 (include-book "type-equivalence")
 
 (local (include-book "std/basic/inductions" :dir :system))

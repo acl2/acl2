@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "dynamic-values")
+(include-book "values")
 
 (acl2::controlled-configuration)
 
