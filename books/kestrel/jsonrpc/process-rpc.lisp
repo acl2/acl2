@@ -129,7 +129,7 @@
   function, and writes the response JSON to @('output-file').</p>
 
   <p>@('allowed-methods') must be either the keyword @(':any') (no restriction)
-  or a list of symbols naming the permitted methods, e.g. @(''(subtract add)').
+  or a list of symbols naming the permitted methods, e.g. @('(subtract add)').
   Requests for methods not in the list are rejected with a method-not-found
   error.</p>
 

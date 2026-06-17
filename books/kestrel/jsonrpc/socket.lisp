@@ -33,7 +33,7 @@
   any host on the network — use this only in trusted environments.</p>
 
   <p>The @('allowed-methods') argument restricts which methods may be called.
-  Pass a list of symbols naming the permitted methods, e.g. @(''(subtract add)').
+  Pass a list of symbols naming the permitted methods, e.g. @('(subtract add)').
   Pass @(':any') to allow any method in the @('JSONRPC') package (unrestricted).
   Requests for methods not in the list are rejected with a method-not-found
   error.</p>
