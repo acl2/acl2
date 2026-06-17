@@ -4919,6 +4919,9 @@
 
 (defrec ancestor
 
+; As the rewriter backchains, these records are added to the ancestors stack by
+; push-ancestor (or using make-ancestor-binding-hyp, for binding hyps).
+
 ; Note: if lit is :binding-hyp, then atm is hyp, fn-count is unify-subst and
 ; tokens is nil (see relevant comment in earlier-ancestor-biggerp).  See
 ; make-ancestor-binding-hyp, ancestor-binding-hyp-p, ancestor-binding-hyp/hyp,
