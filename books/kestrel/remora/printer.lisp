@@ -719,7 +719,7 @@
                 (pdoc-bracket
                  (pdoc-concat (type-to-pdoc ty.elem)
                               (pdoc-concat (pdoc-line)
-                                           (shape-list-to-pdoc ty.shapes)))))
+                                           (ispace-list-to-pdoc ty.ispaces)))))
       :fun (pdoc-prefix-form
             "->"
             (pdoc-concat (pdoc-paren (type-list-to-pdoc ty.in))

@@ -119,6 +119,13 @@
    :dim (list ival.val)
    :shape ival.val))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection ispace-value-list-to-dims ((x ispace-value-listp))
+  :returns (dimss nat-list-listp)
+  :short "Lift @(tsee ispace-value-to-dims) to lists."
+  (ispace-value-to-dims x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes type-values

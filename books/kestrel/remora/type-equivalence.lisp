@@ -266,17 +266,26 @@
              :bracket (and (type-equivp type1.elem type2.elem)
                            (ispace-equivp type1.ispace
                                           (ispace-shape
-                                           (shape-append type2.shapes))))
+                                           (shape-append
+                                            (shape-list-from-ispace-list
+                                             type2.ispaces)))))
              :otherwise nil)
      :bracket (type-case
                type2
                :array (and (type-equivp type1.elem type2.elem)
                            (ispace-equivp (ispace-shape
-                                           (shape-append type1.shapes))
+                                           (shape-append
+                                            (shape-list-from-ispace-list
+                                             type1.ispaces)))
                                           type2.ispace))
                :bracket (and (type-equivp type1.elem type2.elem)
-                             (shape-equivp (shape-append type1.shapes)
-                                           (shape-append type2.shapes)))
+                             (ispace-equivp
+                              (ispace-shape
+                               (shape-append
+                                (shape-list-from-ispace-list type1.ispaces)))
+                              (ispace-shape
+                               (shape-append
+                                (shape-list-from-ispace-list type2.ispaces)))))
                :otherwise nil)
      :fun (type-case
            type2

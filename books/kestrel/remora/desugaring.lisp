@@ -178,7 +178,9 @@
                    :elem (type-desugar type.elem)
                    :ispace (ispace-shape
                             (shape-append
-                             (shape-list-desugar type.shapes)))))
+                             (ispace-shape-list->shape
+                              (ispace-list-desugar-in-splice
+                               (ispace-list-desugar type.ispaces)))))))
    (expr :atom (make-expr-array :dims nil
                                 :atoms (list (atom-desugar expr.atom))))
    (expr :string (if (consp expr.chars)

@@ -1294,9 +1294,8 @@
           (abnf::check-tree-nonleaf-6 tree "bracket-type"))
          ((okf te-tree) (abnf::check-tree-list-1 sub.3rd))
          ((okf elem) (abs-type-exp te-tree))
-         ((okf ispaces) (abs-*-ws-ispace sub.4th))
-         (shapes (ispaces-to-shapes ispaces)))
-      (make-type-bracket :elem elem :shapes shapes))
+         ((okf ispaces) (abs-*-ws-ispace sub.4th)))
+      (make-type-bracket :elem elem :ispaces ispaces))
     :measure (abnf::tree-count tree))
 
   ;; array-type = "A" ws type-exp ws shape

@@ -424,10 +424,8 @@
        base types,
        array types consisting of a type for the elements
        and an ispace indicating how the elements are arranged,
-       bracket types which are like array types
-       but the zero or more shapes are concatenated
-       (the splicing comes from the fact that
-       dimensions are auto-lifted to shapes as in bracket shapes),
+       bracket types which are similar to array types
+       but they have zero or more ispaces to be spliced,
        function types (with zero or more input types and an output type),
        universal types (quantified over kinded variables),
        product types (quantified over ispace parameters),
@@ -437,7 +435,7 @@
     (:array ((elem type)
              (ispace ispace)))
     (:bracket ((elem type)
-               (shapes shape-list)))
+               (ispaces ispace-list)))
     (:fun ((in type-list)
            (out type)))
     (:forall ((params type-var-list)
