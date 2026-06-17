@@ -2661,3 +2661,11 @@
          (pair a1 a2))
   :hints (("Goal" :in-theory (enable extensionality-rewrite subset)))
   :props (zfc domain$prop))
+
+(defthmz not-in-in-0
+
+; This was developed to support intersection$comprehension-improved in
+; intersection.lisp.
+
+  (not (in-in x 0))
+  :hints (("Goal" :in-theory (enable in-in))))

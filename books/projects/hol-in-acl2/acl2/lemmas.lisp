@@ -462,22 +462,6 @@
            (natp (union2 n (pair n n))))
   :hints (("Goal" :use n+1-as-union2)))
 
-(defthmz image-union2-1-1
-  (implies (in a (image (union2 x y)))
-           (in a (union2 (image x) (image y))))
-  :hints (("Goal"
-           :in-theory (disable in-image-necc)
-           :use ((:instance in-image-necc
-                            (x a)
-                            (f (union2 x y))))))
-  :props (zfc domain$prop prod2$prop inverse$prop))
-
-(defthmz image-union2-1
-  (subset (image (union2 x y))
-          (union2 (image x) (image y)))
-  :hints (("Goal" :in-theory (enable subset)))
-  :props (zfc domain$prop prod2$prop inverse$prop))
-
 (defthmz domain-monotone-1
   (implies (and (subset x y)
                 (in a (domain x)))
@@ -504,12 +488,6 @@
   (implies (subset x y)
            (subset (image x) (image y)))
   :hints (("Goal" :in-theory (e/d (image) (domain-inverse))))
-  :props (zfc domain$prop prod2$prop inverse$prop))
-
-(defthmz image-union2
-  (equal (image (union2 x y))
-         (union2 (image x) (image y)))
-  :hints (("Goal" :in-theory (enable extensionality-rewrite)))
   :props (zfc domain$prop prod2$prop inverse$prop))
 
 (defthmz image-pair-1

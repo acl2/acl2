@@ -1094,24 +1094,17 @@
 
 (defpointer set-theory zfc)
 
-#|
- The boot-strap theory is a
- consequence of ZF
+(defxdoc zf::remove-hypz
 
+; Warning: Be careful about using @(def ..), since this book is in the "ACL2"
+; package but the documentation states that ``This documentation topic displays
+; events as though the current-package is "ZF".''
 
-
- Those theorems are
-
-that an @(tsee encapsulate) event introduces a
- zero-ary function, @('zfc'), that serves as a hypothesis for most of the
- theorems exported from that @('encapsulate') event.  Those theorems are
- provable because the @(see local) witness for @('zfc') is defined to return
- @('nil').  There are also zero-ary-
-
- <p>The following predicate recognizes the ACL2 objects that one could, at
- least in principle, encounter during evaluation.</p>
-
-
-
- <p>
-|#
+  :parents (projects)
+  :short "@(tsee Remove-hyps) variable for @('thmz'), @('defthmz'), and @('defthmdz') forms"
+  :long "<p>Instead of taking a @(tsee thm), @(tsee defthm), or @(tsee defthmd)
+ form, @('remove-hypz') takes a @('thmz'), @('defthmz'), or @('defthmdz') form.
+ The resulting form is a @('thm'), @('defthm'), or @('defthmd') form that can
+ easily be manually edited into a corresponding @('thmz'), @('defthmz'), or
+ @('defthmdz') form.  Perhaps a future version will do that final editing
+ automatically.</p>")

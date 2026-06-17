@@ -5,8 +5,8 @@
 (in-package "ACL2")
 
 ; The utility repkg-expr was originally used during development of the book
-; schroeder-bernstein-support.lisp, as indicated in comments therein.  The idea
-; of (repkg-expr x wit) is to change packages of variables, not function
+; ../schroeder-bernstein-support.lisp, as indicated in comments therein.  The
+; idea of (repkg-expr x wit) is to change packages of variables, not function
 ; symbols, of x into the package of the symbol, wit.  It's not perfect, since
 ; macros can mess things up.  But it worked for my purpose, so I'll keep this
 ; book around in case it is useful for something else, either directly or as

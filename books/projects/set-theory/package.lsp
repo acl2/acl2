@@ -28,7 +28,7 @@
 ; ZF function symbols, we exclude them as well so as to avoid potential user
 ; confusion.
 
-   '(apply omega union fn-equal map
+   '(apply omega union intersection fn-equal map
            tc ; transitive closure
            subsetp functionp
            )))
