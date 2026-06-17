@@ -41,22 +41,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist expr-list-case-array (x)
-  :short "Check if all the expressions in a list
-          are in the @(':array') summand."
-  :guard (expr-listp x)
-  (expr-case x :array))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist expr-list-case-frame (x)
-  :short "Check if all the expressions in a list
-          are in the @(':frame') summand."
-  :guard (expr-listp x)
-  (expr-case x :frame))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (std::deflist shape-list-case-append (x)
   :short "Check if all the shapes in a list
           are in the @(':append') summand."
@@ -70,6 +54,22 @@
           are in the @(':shape') summand."
   :guard (ispace-listp x)
   (ispace-case x :shape))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist expr-list-case-array (x)
+  :short "Check if all the expressions in a list
+          are in the @(':array') summand."
+  :guard (expr-listp x)
+  (expr-case x :array))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist expr-list-case-frame (x)
+  :short "Check if all the expressions in a list
+          are in the @(':frame') summand."
+  :guard (expr-listp x)
+  (expr-case x :frame))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
