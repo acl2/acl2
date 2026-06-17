@@ -453,3 +453,17 @@
   int *x;
 } my_union_t;
 ")
+
+(test-dimb
+ "int f();
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc nil)
+ :cond (b* ((items (trans-unit->items ast))
+            (item (car items))
+            (edeclon (trans-item-declon->declon item))
+            (declon (ext-declon-declon->declon edeclon))
+            (ideclors (declon-declon->declors declon))
+            (ideclor (car ideclors))
+            (declor (init-declor->declor ideclor))
+            (ddeclor (declor->direct declor)))
+         (dirdeclor-case ddeclor :function-names)))
