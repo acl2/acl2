@@ -596,7 +596,19 @@
   (defrule shape-kind-of-flatten-append-in-shape
     (equal (shape-kind (flatten-append-in-shape shape))
            :append)
-    :expand ((flatten-append-in-shape shape))))
+    :expand ((flatten-append-in-shape shape)))
+
+  (defrule ispace-kind-of-flatten-append-in-ispace
+    (equal (ispace-kind (flatten-append-in-ispace ispace))
+           (ispace-kind ispace))
+    :expand ((flatten-append-in-ispace ispace)))
+
+  (defrule shape-kind-of-flatten-append-in-ispace-when-shape
+    (implies (ispace-case ispace :shape)
+             (equal (shape-kind
+                     (ispace-shape->shape (flatten-append-in-ispace ispace)))
+                    :append))
+    :expand (flatten-append-in-ispace ispace)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -623,7 +635,7 @@
     (equal (shape-kind (normalize-shape shape))
            :append)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (define normalize-shape-list ((shapes shape-listp))
   :guard (shape-list-addp shapes)
@@ -641,6 +653,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define normalize-ispace ((ispace ispacep))
+  :guard (ispace-addp ispace)
+  :returns (new-ispace ispacep)
+  :short "Normalize an ispace."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We normalize the dimensions,
+     then we normalize to single-dimension shapes,
+     and finally we flatten all concatenations.")
+   (xdoc::p
+    "A normalized ispace is always a concatenation shape."))
+  (b* ((ispace (normalize-dims-in-ispace ispace))
+       (ispace (normalize-shapes-single-in-ispace ispace))
+       (ispace (flatten-append-in-ispace ispace)))
+    ispace)
+
+  ///
+
+  (defrule ispace-kind-of-normalize-ispace
+    (equal (ispace-kind (normalize-ispace ispace))
+           :shape))
+
+  (defrule shape-kind-of-normalize-ispace
+    (equal (shape-kind (ispace-shape->shape (normalize-ispace ispace)))
+           :append)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define normalize-ispace-list ((ispaces ispace-listp))
+  :guard (ispace-list-addp ispaces)
+  :returns (new-ispaces ispace-listp)
+  :short "Lift @(tsee normalize-ispace) to lists."
+  (cond ((endp ispaces) nil)
+        (t (cons (normalize-ispace (car ispaces))
+                 (normalize-ispace-list (cdr ispaces)))))
+
+  ///
+
+  (defret ispace-list-case-shape-of-normalize-ispace-list
+    (ispace-list-case-shape new-ispaces)
+    :hints (("Goal" :induct t)))
+
+  (defret shape-list-case-append-of-normalize-ispace-list
+    (shape-list-case-append (ispace-shape-list->shape new-ispaces))
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define shape-equivp ((shape1 shapep) (shape2 shapep))
   :returns (yes/no booleanp)
   :short "Check if two shapes are equivalent."
@@ -653,3 +714,18 @@
        (shape-addp shape2)
        (equal (normalize-shape shape1)
               (normalize-shape shape2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ispace-equivp ((ispace1 ispacep) (ispace2 ispacep))
+  :returns (yes/no booleanp)
+  :short "Check if two ispaces are equivalent."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case iff they only use addition
+     and they normalize to the same ispace."))
+  (and (ispace-addp ispace1)
+       (ispace-addp ispace2)
+       (equal (normalize-ispace ispace1)
+              (normalize-ispace ispace2))))
