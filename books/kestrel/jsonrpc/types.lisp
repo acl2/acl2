@@ -49,7 +49,7 @@
 (fty::deftagsum structured
   :short "A structured JSON value (Array or Object)."
   :long "<p>Per the JSON-RPC 2.0 specification, the @('params') field of a
-  request, if present, MUST be a Structured value — either a JSON Array
+  request, if present, MUST be a Structured value &mdash; either a JSON Array
   (for by-position parameter passing) or a JSON Object (for by-name parameter
   passing).</p>"
   (:array ((elements value-list)))
@@ -178,7 +178,7 @@
 (fty::defalist id-request+error-alist
   :short "An alist mapping request ids to their parsed results."
   :long "<p>Maps each request @(see id) to the corresponding @(see
-  request+error) — either a successfully parsed @(see request) or a
+  request+error) &mdash; either a successfully parsed @(see request) or a
   parse-time @(see error). This is the output of @(see parse-json-rpc) and
   the input to @(see process-all). For batch requests, there is one entry per
   element of the input array. For single requests, there is exactly one

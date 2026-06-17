@@ -102,7 +102,7 @@
     <ul>
       <li>@('erp') is @('nil') on success, or an @(see error) value on
       failure.</li>
-      <li>@('result') is a @('valuep') — the JSON value to be returned in the
+      <li>@('result') is a @('valuep') &mdash; the JSON value to be returned in the
       response's @('\"result\"') field. It is only used when @('erp') is
       @('nil').</li>
       <li>@('state') is the ACL2 state.</li>

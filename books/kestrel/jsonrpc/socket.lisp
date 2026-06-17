@@ -30,7 +30,7 @@
   <p>The @('interface') argument controls which network interface the server
   binds to.  Pass @('nil') (or @('\"127.0.0.1\"')) to accept connections only
   from the local machine.  Pass @('\"0.0.0.0\"') to accept connections from
-  any host on the network — use this only in trusted environments.</p>
+  any host on the network &mdash; use this only in trusted environments.</p>
 
   <p>The @('allowed-methods') argument restricts which methods may be called.
   Pass a list of symbols naming the permitted methods, e.g. @('(subtract add)').
@@ -54,7 +54,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Logical stub — the real definition is installed by socket-raw.lsp below.
+; Logical stub -- the real definition is installed by socket-raw.lsp below.
 
 (defun run-jsonrpc-server (port interface allowed-methods state)
   (declare (xargs :guard (and (natp port)

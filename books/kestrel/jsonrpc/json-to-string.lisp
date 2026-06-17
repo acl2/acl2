@@ -20,7 +20,7 @@
   :short "Serializing JSON values to strings."
   :long "<p>These functions serialize @(see valuep) objects to JSON strings
   suitable for writing to files or sending over a transport. The main function
-  is @(see value-to-json-string). String values are properly escaped per
+  is @('value-to-json-string'). String values are properly escaped per
   RFC 4627. Integer-valued rationals are printed without a decimal point.
   Non-integer rationals (fractions) are not valid JSON numbers and cannot be
   serialized; see @(see rational-to-json-string) for details.</p>"
