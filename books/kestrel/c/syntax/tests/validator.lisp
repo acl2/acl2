@@ -1870,3 +1870,11 @@ void f(void) {
                         (type-spec-typedef->info use-tyspec))))
           (and (not (equal outer-uid inner-uid))
                (equal inner-uid use-uid))))
+
+(test-valid
+  "int f();
+
+void g(void) {
+  f(3);
+}
+")
