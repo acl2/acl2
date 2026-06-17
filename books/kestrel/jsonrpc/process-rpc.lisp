@@ -56,7 +56,7 @@
   <p>@('allowed-methods') must be either the keyword @(':any') (no restriction)
   or a list of symbols naming the permitted methods.  The check compares by
   symbol name, so the symbols may be in any package — e.g. passing
-  @(''(subtract)) works regardless of the current package.</p>"
+  @('(subtract)') works regardless of the current package.</p>"
   :mode :program
   :stobjs state
   (b* ((method-name (string-upcase (request->method req)))
