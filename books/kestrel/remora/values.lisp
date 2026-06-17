@@ -111,6 +111,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ispace-value-to-dims ((ival ispace-valuep))
+  :returns (dims nat-listp)
+  :short "Turn an ispace value into a list of dimensions."
+  (ispace-value-case
+   ival
+   :dim (list ival.val)
+   :shape ival.val))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftypes type-values
   :short "Fixtypes of type values and lists of type values."
 
