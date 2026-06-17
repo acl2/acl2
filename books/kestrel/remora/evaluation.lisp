@@ -150,14 +150,9 @@
     "We concatenate all the dimensions,
      returning the resulting list of dimensions.
      This is used to evaluate splice shapes."))
-  (b* (((when (endp ivals)) nil)
-       (ival (car ivals))
-       (ival-nats (ispace-value-case
-                   ival
-                   :dim (list ival.val)
-                   :shape ival.val))
-       (ivals-nats (splice-ispace-values (cdr ivals))))
-    (append ival-nats ivals-nats)))
+  (cond ((endp ivals) nil)
+        (t (append (ispace-value-to-dims (car ivals))
+                   (splice-ispace-values (cdr ivals))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
