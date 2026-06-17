@@ -1309,7 +1309,7 @@
          ((okf shape-tree) (abnf::check-tree-list-1 sub.5th))
          ((okf elem) (abs-type-exp te-tree))
          ((okf shape) (abs-shape shape-tree)))
-      (make-type-array :elem elem :shape shape))
+      (make-type-array :elem elem :ispace (ispace-shape shape)))
     :measure (abnf::tree-count tree))
 
   ;; arrow-type = ( "->" / %x2192 ) ws "(" *( ws type-exp ) ws ")" ws type-exp

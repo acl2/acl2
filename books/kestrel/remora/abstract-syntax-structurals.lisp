@@ -227,6 +227,20 @@
   :short "Lift @(tsee type+shape->shape) to lists."
   (type+shape->shape x))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type+ispace-list->type ((x type+ispace-listp))
+  :returns (types type-listp)
+  :short "Lift @(tsee type+ispace->type) to lists."
+  (type+ispace->type x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type+ispace-list->ispace ((x type+ispace-listp))
+  :returns (ispaces ispace-listp)
+  :short "Lift @(tsee type+ispace->ispace) to lists."
+  (type+ispace->ispace x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ispace-var->name ((var ispace-varp))

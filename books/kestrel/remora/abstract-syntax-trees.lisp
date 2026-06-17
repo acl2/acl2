@@ -423,7 +423,7 @@
        variables (of two kinds),
        base types,
        array types consisting of a type for the elements
-       and a shape in which the elements are arranged,
+       and an ispace indicating how the elements are arranged,
        bracket types which are like array types
        but the zero or more shapes are concatenated
        (the splicing comes from the fact that
@@ -435,7 +435,7 @@
     (:var ((var type-var)))
     (:base ((type base-type)))
     (:array ((elem type)
-             (shape shape)))
+             (ispace ispace)))
     (:bracket ((elem type)
                (shapes shape-list)))
     (:fun ((in type-list)

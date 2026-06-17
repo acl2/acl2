@@ -714,7 +714,7 @@
               "A"
               (pdoc-concat (type-to-pdoc ty.elem)
                            (pdoc-concat (pdoc-line)
-                                        (shape-to-pdoc ty.shape))))
+                                        (ispace-to-pdoc ty.ispace))))
       :bracket (pdoc-group
                 (pdoc-bracket
                  (pdoc-concat (type-to-pdoc ty.elem)
