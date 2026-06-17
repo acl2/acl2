@@ -61,6 +61,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ispace-desugar-in-splice ((ispace ispacep))
+  :returns (new-ispace ispacep)
+  :short "Desugar an ispace that occurs in a shape splice."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since shape splices are desugared to shape concatenations,
+     we need to turn dimensions into singleton shapes.
+     This is done by this ACL2 function."))
+  (ispace-case
+   ispace
+   :dim (ispace-shape (shape-dims (list ispace.dim)))
+   :shape (ispace-fix ispace))
+
+  ///
+
+  (defret ispace-kind-of-ispace-desugar-in-splice
+    (equal (ispace-kind new-ispace) :shape))
+
+  (defrule ispace-corep-of-ispace-desugar-in-splice
+    (equal (ispace-corep (ispace-desugar-in-splice ispace))
+           (ispace-corep ispace))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection ispace-list-desugar-in-splice ((x ispace-listp))
+  :returns (new-ispaces ispace-listp)
+  :short "Lift @(tsee ispace-desugar-in-splice) to lists."
+  (ispace-desugar-in-splice x)
+
+  ///
+
+  (defret ispace-list-case-shape-of-ispace-list-desugar-in-splice
+    (ispace-list-case-shape new-ispaces)
+    :hints (("Goal" :induct t)))
+
+  (defrule ispace-list-corep-of-ispace-list-desugar-in-splice
+    (equal (ispace-list-corep (ispace-list-desugar-in-splice ispaces))
+           (ispace-list-corep ispaces))
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deffold-map desugar
   :short "Desugar ASTs."
   :long
@@ -127,7 +170,10 @@
                       (t ; two or more dimensions
                        (shape-append
                         (shape-dims-list (list-to-singletons shape.dims))))))
-   (shape :splice (shape-append (shape-list-desugar shape.shapes)))
+   (shape :splice (shape-append
+                   (ispace-shape-list->shape
+                    (ispace-list-desugar-in-splice
+                     (ispace-list-desugar shape.ispaces)))))
    (type :bracket (make-type-array :elem (type-desugar type.elem)
                                    :shape (shape-append
                                            (shape-list-desugar type.shapes))))

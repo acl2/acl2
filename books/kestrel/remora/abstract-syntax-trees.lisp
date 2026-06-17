@@ -208,7 +208,7 @@
     (:dim ((dim dim)))
     (:dims ((dims dim-list)))
     (:append ((shapes shape-list)))
-    (:splice ((shapes shape-list)))
+    (:splice ((ispaces ispace-list)))
     :pred shapep)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

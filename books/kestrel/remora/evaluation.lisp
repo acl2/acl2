@@ -141,14 +141,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines eval-shapes
-  :short "Evaluate shapes and lists of shapes."
+(define splice-ispace-values ((ivals ispace-value-listp))
+  :returns (dims nat-listp)
+  :short "Splice zero or more ispace values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We concatenate all the dimensions,
+     returning the resulting list of dimensions.
+     This is used to evaluate splice shapes."))
+  (b* (((when (endp ivals)) nil)
+       (ival (car ivals))
+       (ival-nats (ispace-value-case
+                   ival
+                   :dim (list ival.val)
+                   :shape ival.val))
+       (ivals-nats (splice-ispace-values (cdr ivals))))
+    (append ival-nats ivals-nats)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines eval-shapes/ispaces
+  :short "Evaluate shapes and ispaces."
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define eval-shape ((shape shapep) (denv denvp))
     :returns (nats nat-list-resultp)
-    :parents (evaluation eval-shapes)
+    :parents (evaluation eval-shapes/ispaces)
     :short "Evaluate a shape to a list of naturals."
     :long
     (xdoc::topstring
@@ -197,15 +217,15 @@
              ints)
      :append (b* (((ok natss) (eval-shape-list shape.shapes denv)))
                (append-all natss))
-     :splice (b* (((ok natss) (eval-shape-list shape.shapes denv)))
-               (append-all natss)))
+     :splice (b* (((ok ivals) (eval-ispace-list shape.ispaces denv)))
+               (splice-ispace-values ivals)))
     :measure (shape-count shape))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define eval-shape-list ((shapes shape-listp) (denv denvp))
     :returns (natss nat-list-list-resultp)
-    :parents (evaluation eval-shapes)
+    :parents (evaluation eval-shapes/ispaces)
     :short "Evaluate a list of shapes to a list of lists of naturals."
     :long
     (xdoc::topstring
@@ -220,6 +240,40 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define eval-ispace ((ispace ispacep) (denv denvp))
+    :returns (ival ispace-value-resultp)
+    :parents (evaluation eval-shapes/ispaces)
+    :short "Evaluate an ispace to an ispace value."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "For a dimension, we ensure that the integer is non-negative,
+       and we embed it into an ispace value.")
+     (xdoc::p
+      "For a shape, we embed the list of naturals into an ispace value."))
+    (ispace-case
+     ispace
+     :dim (b* (((ok int) (eval-dim ispace.dim denv))
+               ((unless (natp int)) (reserr nil)))
+            (ispace-value-dim int))
+     :shape (b* (((ok nats) (eval-shape ispace.shape denv)))
+              (ispace-value-shape nats)))
+    :measure (ispace-count ispace))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-ispace-list ((ispaces ispace-listp) (denv denvp))
+    :returns (ivals ispace-value-list-resultp)
+    :parents (evaluation eval-shapes/ispaces)
+    :short "Evaluate a list of ispaces to a list of ispace values."
+    (b* (((when (endp ispaces)) nil)
+         ((ok ival) (eval-ispace (car ispaces) denv))
+         ((ok ivals) (eval-ispace-list (cdr ispaces) denv)))
+      (cons ival ivals))
+    :measure (ispace-list-count ispaces))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :verify-guards :after-returns
 
   :guard-hints
@@ -227,37 +281,7 @@
 
   ///
 
-  (fty::deffixequiv-mutual eval-shapes))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define eval-ispace ((ispace ispacep) (denv denvp))
-  :returns (ival ispace-value-resultp)
-  :short "Evaluate an ispace to an ispace value."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For a dimension, we ensure that the integer is non-negative,
-     and we embed it into an ispace value.")
-   (xdoc::p
-    "For a shape, we embed the list of naturals into an ispace value."))
-  (ispace-case
-   ispace
-   :dim (b* (((ok int) (eval-dim ispace.dim denv))
-             ((unless (natp int)) (reserr nil)))
-          (ispace-value-dim int))
-   :shape (b* (((ok nats) (eval-shape ispace.shape denv)))
-            (ispace-value-shape nats))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define eval-ispace-list ((ispaces ispace-listp) (denv denvp))
-  :returns (ivals ispace-value-list-resultp)
-  :short "Evaluate a list of ispaces to a list of ispace values."
-  (b* (((when (endp ispaces)) nil)
-       ((ok ival) (eval-ispace (car ispaces) denv))
-       ((ok ivals) (eval-ispace-list (cdr ispaces) denv)))
-    (cons ival ivals)))
+  (fty::deffixequiv-mutual eval-shapes/ispaces))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

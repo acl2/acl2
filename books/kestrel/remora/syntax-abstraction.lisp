@@ -1086,7 +1086,7 @@
                 ;; repetition list (a tree-listp).
                 ((okf ispaces) (abs-*-ws-ispace sub.3rd))
                 (shapes (ispaces-to-shapes ispaces)))
-             (make-shape-splice :shapes shapes)))
+             (make-shape-splice :ispaces (ispace-shape-list shapes))))
         (otherwise
          (reserrf (list :shape-shape (abnf::tree-info-for-error tree))))))
     :measure (abnf::tree-count tree))
