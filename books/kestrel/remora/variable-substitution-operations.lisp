@@ -201,9 +201,7 @@
     "This is a conservative check:
      it does not depend on which keys of the substitution
      are actually free in the body of each binder."))
-  :types (shapes
-          ispace
-          ispace-list
+  :types (shapes/ispaces
           ispace-list-option
           types
           type-option
@@ -537,9 +535,7 @@
      but currently @(tsee fty::deffold-map) does not support such guards.
      One should call the @(tsee ast-subst-ispace-vars-no-capture-p) predicates
      prior to applying these substitution operations, for the time being."))
-  :types (shapes
-          ispace
-          ispace-list
+  :types (shapes/ispaces
           ispace-list-option
           types
           type-option

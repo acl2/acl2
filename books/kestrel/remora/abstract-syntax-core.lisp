@@ -129,9 +129,7 @@
      since their parameters are just ispace and type variables,
      which do not require anything extra (like types for term variables).
      We plan to work on that soon."))
-  :types (shapes
-          ispace
-          ispace-list
+  :types (shapes/ispaces
           ispace-list-option
           types
           type-option

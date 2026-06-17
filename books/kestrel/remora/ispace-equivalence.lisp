@@ -56,9 +56,7 @@
   :short "Check if dimensions, shapes, and ispaces only contains additions
           (no multiplications or subtractions)."
   :types (dims
-          shapes
-          ispace
-          ispace-list)
+          shapes/ispaces)
   :result booleanp
   :default t
   :combine and

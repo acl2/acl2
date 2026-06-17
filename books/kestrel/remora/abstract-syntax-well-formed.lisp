@@ -58,9 +58,7 @@
 (fty::deffold-reduce wf-ast-p
   :short "Recursive well-formedness predicate over ASTs."
   :types (dims
-          shapes
-          ispace
-          ispace-list
+          shapes/ispaces
           ispace-list-option
           ispace-var
           ispace-var-list

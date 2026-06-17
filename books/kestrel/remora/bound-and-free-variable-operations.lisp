@@ -143,9 +143,7 @@
      because the thing that the variable is bound to
      is like a lambda abstraction."))
   :types (dims
-          shapes
-          ispace
-          ispace-list
+          shapes/ispaces
           ispace-list-option
           types
           type-option
@@ -297,9 +295,7 @@
      including the parameters of product and sum types
      and the ispace variables introduced by ispace binders."))
   :types (dims
-          shapes
-          ispace
-          ispace-list
+          shapes/ispaces
           ispace-list-option
           types
           type-option
