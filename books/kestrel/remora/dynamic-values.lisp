@@ -48,10 +48,10 @@
      that ispaces and types evaluate to.
      [thesis], [arxiv], and [esop],
      in line with much programming language literature,
-     define values as subsets of expressions and atoms,
+     define expression values as subsets of expressions and atoms,
      namely the ones that cannot be further reduced.
      While we could follow the same approach here,
-     instead we start by defining separate fixtypes for values.")
+     instead we start by defining separate fixtypes for expression values.")
    (xdoc::p
     "This separation seems a bit cleaner,
      also given the higher level of detail of our formalization
@@ -65,7 +65,7 @@
      The difference is even more pronounced for floats.")
    (xdoc::p
     "Nonetheless, if we discover that it is more convenient
-     to define values as subsets of expressions and atoms,
+     to define expression values as subsets of expressions and atoms,
      we will switch to that approach."))
   :order-subtopics t
   :default-parent t)
@@ -350,26 +350,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftypes values
-  :short "Fixtypes of values and lists of values."
+(fty::deftypes expr-values
+  :short "Fixtypes of expression values and lists of expression values."
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum value
-    :parents (dynamic-values values)
-    :short "Fixtype of values."
+  (fty::deftagsum expr-value
+    :parents (dynamic-values expr-values)
+    :short "Fixtype of expression values."
     :long
     (xdoc::topstring
      (xdoc::p
-      "In Remora, every value, which an expression may evaluate to, is an array.
+      "In Remora, every value that an expression may evaluate to is an array.
        Scalar values are zero-rank arrays, consisting of single atom values,
        but we do not define a distinct notion of atom value,
-       folding them into the first five summands of this fixtype of values
+       folding them into the first five summands of
+       this fixtype of expression values
        (described in more detail below).
        Non-scalar values are positive-rank arrays,
-       consisting of zero or more values of rank immediately lower
+       consisting of zero or more expression values of rank immediately lower
        (i.e. the rank of the containing array decremented by one);
-       we call non-scalars `vectors' in our model of values.
+       we call non-scalars `vectors' in our model of expression values.
        A one-dimensional array is a vector of scalars,
        a two-dimensional array is a vector of one-dimensional arrays,
        and so on.
@@ -380,9 +381,10 @@
        (not the dimensions of the whole vector,
        which is obtained by adding a 0 dimension
        in front of the elements' dimensions;
-       see @(tsee check-dims-of-value))
+       see @(tsee check-dims-of-expr-value))
        and (ii) an (atom) type value;
-       together, (i) and (ii) determine the array type of the value.")
+       together, (i) and (ii) determine
+       the array type of the expression value.")
      (xdoc::p
       "The atoms that form scalar values are
        base values,
@@ -397,8 +399,9 @@
        because in our ASTs, as in [impl],
        primitive operations are represented as variables
        (whose values are predefined).
-       However, as already noted, we fold atom values into (array) values.
-       Our fixtype of values loosely corresponds
+       However, as already noted,
+       we fold atom values into (array) expression values.
+       Our fixtype of expression values loosely corresponds
        to @($\\mathit{Val}$) in [thesis],
        but with a different yet equivalent structure.")
      (xdoc::p
@@ -410,7 +413,7 @@
        when the lambda abstraction is applied.")
      (xdoc::p
       "This fixtype does not capture constraints like
-       the non-emptiness of the value list in @(':vector'),
+       the non-emptiness of the expression value list in @(':vector'),
        and the dimension and type consistency of the elements of a @(':vector').
        These constraints are captured separately."))
     (:base ((val base-value)))
@@ -421,118 +424,120 @@
     (:ilambda ((params ispace-var-list)
                (body expr)))
     (:box ((ispaces ispace-list)
-           (array value)
+           (array expr-value)
            (type type)))
-    (:vector ((elems value-list)))
+    (:vector ((elems expr-value-list)))
     (:vector-empty ((dims nat-list)
                     (elem type-value)))
-    :pred valuep)
+    :pred expr-valuep)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deflist value-list
-    :parents (dynamic-values values)
-    :short "Fixtype of lists of values."
-    :elt-type value
+  (fty::deflist expr-value-list
+    :parents (dynamic-values expr-values)
+    :short "Fixtype of lists of expression values."
+    :elt-type expr-value
     :true-listp t
     :elementp-of-nil nil
-    :pred value-listp
+    :pred expr-value-listp
 
     ///
 
-    (defrule value-listp-of-repeat-each
-      (implies (value-listp vals)
-               (value-listp (repeat-each n vals)))
+    (defrule expr-value-listp-of-repeat-each
+      (implies (expr-value-listp vals)
+               (expr-value-listp (repeat-each n vals)))
       :induct (repeat-each n vals)
-      :enable (repeat-each value-listp))))
+      :enable (repeat-each expr-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection value-base-list ((x base-value-listp))
-  :returns (vals value-listp)
-  :short "Lift @(tsee value-base) to lists."
-  (value-base x))
+(std::defprojection expr-value-base-list ((x base-value-listp))
+  :returns (vals expr-value-listp)
+  :short "Lift @(tsee expr-value-base) to lists."
+  (expr-value-base x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist value-list-list
-  :short "Fixtype of lists of lists of values."
-  :elt-type value-list
+(fty::deflist expr-value-list-list
+  :short "Fixtype of lists of lists of expression values."
+  :elt-type expr-value-list
   :true-listp t
   :elementp-of-nil t
-  :pred value-list-listp
+  :pred expr-value-list-listp
 
   ///
 
-  (defruled true-list-listp-when-value-list-listp
-    (implies (value-list-listp x)
+  (defruled true-list-listp-when-expr-value-list-listp
+    (implies (expr-value-list-listp x)
              (true-list-listp x))
     :induct t
     :enable true-list-listp)
 
-  (defrule value-list-listp-of-list-split
-    (implies (and (value-listp vals)
+  (defrule expr-value-list-listp-of-list-split
+    (implies (and (expr-value-listp vals)
                   (posp n)
                   (integerp (/ (len vals) n)))
-             (value-list-listp (list-split vals n)))
+             (expr-value-list-listp (list-split vals n)))
     :induct t
     :enable (list-split
-             value-list-listp
+             expr-value-list-listp
              lt-to-zero-when-divided-by-pos
              nfix
              posp)
     :prep-books ((include-book "arithmetic-3/top" :dir :system)))
 
-  (defrule value-list-listp-of-cdr-list
-    (implies (value-list-listp x)
-             (value-list-listp (cdr-list x)))
+  (defrule expr-value-list-listp-of-cdr-list
+    (implies (expr-value-list-listp x)
+             (expr-value-list-listp (cdr-list x)))
     :induct t
     :enable cdr-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult value-result
-  :short "Fixtype of values and errors."
-  :ok value
-  :pred value-resultp)
+(fty::defresult expr-value-result
+  :short "Fixtype of expression values and errors."
+  :ok expr-value
+  :pred expr-value-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult value-list-result
-  :short "Fixtype of (i) lists of values and (ii) errors."
-  :ok value-list
-  :pred value-list-resultp)
+(fty::defresult expr-value-list-result
+  :short "Fixtype of (i) lists of expression values and (ii) errors."
+  :ok expr-value-list
+  :pred expr-value-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult value-list-list-result
-  :short "Fixtype of (i) lists of lists of values and (ii) errors."
-  :ok value-list-list
-  :pred value-list-list-resultp)
+(fty::defresult expr-value-list-list-result
+  :short "Fixtype of (i) lists of lists of expression values and (ii) errors."
+  :ok expr-value-list-list
+  :pred expr-value-list-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines check-dims-of-values
-  :short "Check dimension constraints on values and lists of values."
+(defines check-dims-of-expr-values
+  :short "Check dimension constraints on
+          expression values and lists of expression values."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As discussed in @(tsee value),
-     that fixtype does not capture many of the constraints of values.
+    "As discussed in @(tsee expr-value),
+     that fixtype does not capture many of the constraints of expression values.
      We do that in these functions,
-     which also return the dimensions of the values
-     if the values satisfy the constraints:
-     the dimensions are needed to check the containing values.
+     which also return the dimensions of the expression values
+     if the expression values satisfy the constraints:
+     the dimensions are needed to check the containing expression values.
      So these functions define, simultaneously,
-     predicates on values saying whether the values are well-formed,
-     and functions returning dimensions of well-formed values."))
+     predicates on expression values saying whether
+     the expression values are well-formed,
+     and functions returning dimensions of well-formed expression values."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define check-dims-of-value ((val valuep))
+  (define check-dims-of-expr-value ((val expr-valuep))
     :returns (dims nat-list-resultp)
-    :parents (dynamic-values check-dims-of-values)
-    :short "Check dimension constraints on values."
+    :parents (dynamic-values check-dims-of-expr-values)
+    :short "Check dimension constraints on expression values."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -540,7 +545,7 @@
        and have the empty list of dimensions.")
      (xdoc::p
       "For a (non-empty) vector, there must be at least one element.
-       We recursively check its element values,
+       We recursively check its element expression values,
        obtaining a list of lists of dimensions, in the same order.
        All the lists of dimensions in the list must be the same,
        i.e. all the elements must have the same dimensions.
@@ -551,7 +556,7 @@
        each of which is a 3x4 matrix,
        the vector value is a 2x3x4 tensor.")
      (xdoc::p
-      "An empty vector, as noted in @(tsee value),
+      "An empty vector, as noted in @(tsee expr-value),
        carries the dimensions of its non-existent elements,
        which otherwise could not be determined.
        The dimensions of the whole vector are obtained
@@ -559,26 +564,26 @@
        It may seem strange to have dimensions for non-existent elements,
        but that matches the Remora type system:
        in particular, the syntax for empty arrays."))
-    (value-case
+    (expr-value-case
      val
      :base nil
      :lambda nil
      :tlambda nil
      :ilambda nil
      :box nil
-     :vector (b* (((ok dimss) (check-dims-of-value-list val.elems))
+     :vector (b* (((ok dimss) (check-dims-of-expr-value-list val.elems))
                   ((unless (consp dimss)) (reserr nil))
                   ((unless (list-repeatp dimss)) (reserr nil)))
                (cons (len val.elems) (car dimss)))
      :vector-empty (cons 0 val.dims))
-    :measure (value-count val))
+    :measure (expr-value-count val))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define check-dims-of-value-list ((vals value-listp))
+  (define check-dims-of-expr-value-list ((vals expr-value-listp))
     :returns (dimss nat-list-list-resultp)
-    :parents (dynamic-values check-dims-of-values)
-    :short "Check dimension constraints on lists of values."
+    :parents (dynamic-values check-dims-of-expr-values)
+    :short "Check dimension constraints on lists of expression values."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -586,14 +591,14 @@
        If they all check successfully,
        we return the dimensions of each, in the same order as the list."))
     (b* (((when (endp vals)) nil)
-         ((ok dims) (check-dims-of-value (car vals)))
-         ((ok dimss) (check-dims-of-value-list (cdr vals))))
+         ((ok dims) (check-dims-of-expr-value (car vals)))
+         ((ok dimss) (check-dims-of-expr-value-list (cdr vals))))
       (cons dims dimss))
-    :measure (value-list-count vals)
+    :measure (expr-value-list-count vals)
 
     ///
 
-    (defret consp-of-check-dims-of-value-list-when-not-error
+    (defret consp-of-check-dims-of-expr-value-list-when-not-error
       (implies (not (reserrp dimss))
                (equal (consp dimss)
                       (consp vals)))
@@ -601,7 +606,7 @@
                :induct (len vals)
                :in-theory (enable len))))
 
-    (defret len-of-check-dims-of-value-list-when-not-error
+    (defret len-of-check-dims-of-expr-value-list-when-not-error
       (implies (not (reserrp dimss))
                (equal (len dimss)
                       (len vals)))
@@ -619,11 +624,11 @@
 
   ///
 
-  (fty::deffixequiv-mutual check-dims-of-values)
+  (fty::deffixequiv-mutual check-dims-of-expr-values)
 
-  (defruled check-dims-of-value-list-of-repeat
-    (b* ((dims (check-dims-of-value val))
-         (dimss (check-dims-of-value-list (repeat n val))))
+  (defruled check-dims-of-expr-value-list-of-repeat
+    (b* ((dims (check-dims-of-expr-value val))
+         (dimss (check-dims-of-expr-value-list (repeat n val))))
       (implies (not (reserrp dims))
                (and (not (reserrp dimss))
                     (equal dimss (repeat n dims)))))
@@ -631,13 +636,13 @@
     :enable (repeat
              acl2::not-reserrp-when-nat-list-listp))
 
-  (defruled check-dims-of-value-list-of-value-base-list
-    (equal (check-dims-of-value-list (value-base-list bvals))
+  (defruled check-dims-of-expr-value-list-of-expr-value-base-list
+    (equal (check-dims-of-expr-value-list (expr-value-base-list bvals))
            (repeat (len bvals) nil))
-    :induct (value-base-list bvals)
-    :enable (value-base-list
-             check-dims-of-value-list
-             check-dims-of-value
+    :induct (expr-value-base-list bvals)
+    :enable (expr-value-base-list
+             check-dims-of-expr-value-list
+             check-dims-of-expr-value
              repeat
              len
              acl2::not-reserrp-when-nat-list-listp)
@@ -645,193 +650,194 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define value-wfp ((val valuep))
+(define expr-value-wfp ((val expr-valuep))
   :returns (yes/no booleanp)
-  :short "Check if a value is well-formed."
+  :short "Check if an expression value is well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The value must satisfy the dimension constraints.
+    "The expression value must satisfy the dimension constraints.
      We will extend this to also add the satisfaction of type constraints."))
-  (not (reserrp (check-dims-of-value val))))
+  (not (reserrp (check-dims-of-expr-value val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist value-list-wfp (x)
-  :guard (value-listp x)
-  :short "Lift @(tsee value-wfp) to lists."
-  (value-wfp x)
+(std::deflist expr-value-list-wfp (x)
+  :guard (expr-value-listp x)
+  :short "Lift @(tsee expr-value-wfp) to lists."
+  (expr-value-wfp x)
 
   ///
 
-  (defruled value-list-wfp-alt-def
-    (equal (value-list-wfp x)
-           (not (reserrp (check-dims-of-value-list x))))
+  (defruled expr-value-list-wfp-alt-def
+    (equal (expr-value-list-wfp x)
+           (not (reserrp (check-dims-of-expr-value-list x))))
     :induct t
-    :enable (check-dims-of-value-list
-             value-wfp
+    :enable (check-dims-of-expr-value-list
+             expr-value-wfp
              acl2::not-reserrp-when-nat-list-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist value-list-list-wfp (x)
-  :guard (value-list-listp x)
-  :short "Lift @(tsee value-list-wfp) to lists."
-  (value-list-wfp x)
+(std::deflist expr-value-list-list-wfp (x)
+  :guard (expr-value-list-listp x)
+  :short "Lift @(tsee expr-value-list-wfp) to lists."
+  (expr-value-list-wfp x)
 
   ///
 
-  (defrule value-list-list-wfp-of-list-split
-    (implies (value-list-wfp vals)
-             (value-list-list-wfp (list-split vals n)))
+  (defrule expr-value-list-list-wfp-of-list-split
+    (implies (expr-value-list-wfp vals)
+             (expr-value-list-list-wfp (list-split vals n)))
     :induct t
     :enable list-split))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dims-of-value ((val valuep))
-  :guard (value-wfp val)
-  :returns (dims nat-listp :hints (("Goal" :in-theory (enable value-wfp))))
-  :short "Dimensions of a well-formed value."
-  (if (mbt (value-wfp val))
-      (check-dims-of-value val)
+(define dims-of-expr-value ((val expr-valuep))
+  :guard (expr-value-wfp val)
+  :returns (dims nat-listp :hints (("Goal" :in-theory (enable expr-value-wfp))))
+  :short "Dimensions of a well-formed expression value."
+  (if (mbt (expr-value-wfp val))
+      (check-dims-of-expr-value val)
     nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection dims-of-value-list ((x value-listp))
-  :guard (value-list-wfp x)
+(std::defprojection dims-of-expr-value-list ((x expr-value-listp))
+  :guard (expr-value-list-wfp x)
   :returns (dimss nat-list-listp)
-  :short "Lift @(tsee dims-of-value) to lists."
-  (dims-of-value x)
+  :short "Lift @(tsee dims-of-expr-value) to lists."
+  (dims-of-expr-value x)
   :nil-preservingp t
 
   ///
 
-  (defrule dims-of-value-list-of-repeat
-    (equal (dims-of-value-list (repeat n val))
-           (repeat n (dims-of-value val)))
+  (defrule dims-of-expr-value-list-of-repeat
+    (equal (dims-of-expr-value-list (repeat n val))
+           (repeat n (dims-of-expr-value val)))
     :induct t
     :enable repeat)
 
-  (defruled dims-of-value-list-when-value-list-wfp
-    (implies (value-list-wfp vals)
-             (equal (dims-of-value-list vals)
-                    (check-dims-of-value-list vals)))
+  (defruled dims-of-expr-value-list-when-expr-value-list-wfp
+    (implies (expr-value-list-wfp vals)
+             (equal (dims-of-expr-value-list vals)
+                    (check-dims-of-expr-value-list vals)))
     :induct t
-    :enable (dims-of-value-list
-             check-dims-of-value-list
-             value-list-wfp
-             dims-of-value
-             value-wfp
+    :enable (dims-of-expr-value-list
+             check-dims-of-expr-value-list
+             expr-value-list-wfp
+             dims-of-expr-value
+             expr-value-wfp
              acl2::not-reserrp-when-nat-list-listp))
 
-  (defruled check-dims-of-value-list-when-value-list-wfp
-    (implies (value-list-wfp vals)
-             (equal (check-dims-of-value-list vals)
-                    (dims-of-value-list vals)))
-    :enable dims-of-value-list-when-value-list-wfp)
+  (defruled check-dims-of-expr-value-list-when-expr-value-list-wfp
+    (implies (expr-value-list-wfp vals)
+             (equal (check-dims-of-expr-value-list vals)
+                    (dims-of-expr-value-list vals)))
+    :enable dims-of-expr-value-list-when-expr-value-list-wfp)
 
   (theory-invariant
    (incompatible
-    (:rewrite dims-of-value-list-when-value-list-wfp)
-    (:rewrite check-dims-of-value-list-when-value-list-wfp))))
+    (:rewrite dims-of-expr-value-list-when-expr-value-list-wfp)
+    (:rewrite check-dims-of-expr-value-list-when-expr-value-list-wfp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection dims-of-value-list-list ((x value-list-listp))
-  :guard (value-list-list-wfp x)
+(std::defprojection dims-of-expr-value-list-list ((x expr-value-list-listp))
+  :guard (expr-value-list-list-wfp x)
   :returns (dimss nat-list-list-listp)
-  :short "Lift @(tsee dims-of-value-list) to lists."
-  (dims-of-value-list x)
+  :short "Lift @(tsee dims-of-expr-value-list) to lists."
+  (dims-of-expr-value-list x)
   :nil-preservingp t
 
   ///
 
-  (defruled dims-of-value-list-list-of-cdr
-    (equal (dims-of-value-list-list (cdr valss))
-           (cdr (dims-of-value-list-list valss))))
+  (defruled dims-of-expr-value-list-list-of-cdr
+    (equal (dims-of-expr-value-list-list (cdr valss))
+           (cdr (dims-of-expr-value-list-list valss))))
 
-  (theory-invariant (incompatible (:rewrite dims-of-value-list-list-of-cdr)
-                                  (:rewrite cdr-of-dims-of-value-list-list)))
+  (theory-invariant (incompatible (:rewrite dims-of-expr-value-list-list-of-cdr)
+                                  (:rewrite cdr-of-dims-of-expr-value-list-list)))
 
-  (defrule dims-of-value-list-list-of-list-split
-    (equal (dims-of-value-list-list (list-split vals n))
-           (list-split (dims-of-value-list vals) n))
+  (defrule dims-of-expr-value-list-list-of-list-split
+    (equal (dims-of-expr-value-list-list (list-split vals n))
+           (list-split (dims-of-expr-value-list vals) n))
     :induct t
     :enable (list-split
-             dims-of-value-list-list)))
+             dims-of-expr-value-list-list)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection value-wfp-theorems
-  :short "Theorems about the well-formedness of certain values."
+(defsection expr-value-wfp-theorems
+  :short "Theorems about the well-formedness of certain expression values."
 
-  (defrule value-wfp-of-value-base
-    (value-wfp (value-base base))
-    :enable (value-wfp check-dims-of-value))
+  (defrule expr-value-wfp-of-expr-value-base
+    (expr-value-wfp (expr-value-base base))
+    :enable (expr-value-wfp check-dims-of-expr-value))
 
-  (defrule value-wfp-of-value-lambda
-    (value-wfp (value-lambda params body))
-    :enable (value-wfp check-dims-of-value))
+  (defrule expr-value-wfp-of-expr-value-lambda
+    (expr-value-wfp (expr-value-lambda params body))
+    :enable (expr-value-wfp check-dims-of-expr-value))
 
-  (defrule value-wfp-of-value-tlambda
-    (value-wfp (value-tlambda params body))
-    :enable (value-wfp check-dims-of-value))
+  (defrule expr-value-wfp-of-expr-value-tlambda
+    (expr-value-wfp (expr-value-tlambda params body))
+    :enable (expr-value-wfp check-dims-of-expr-value))
 
-  (defrule value-wfp-of-value-ilambda
-    (value-wfp (value-ilambda params body))
-    :enable (value-wfp check-dims-of-value))
+  (defrule expr-value-wfp-of-expr-value-ilambda
+    (expr-value-wfp (expr-value-ilambda params body))
+    :enable (expr-value-wfp check-dims-of-expr-value))
 
-  (defrule value-wfp-of-value-vector-empty
-    (value-wfp (value-vector-empty dims elem))
-    :enable (value-wfp
-             check-dims-of-value
+  (defrule expr-value-wfp-of-expr-value-vector-empty
+    (expr-value-wfp (expr-value-vector-empty dims elem))
+    :enable (expr-value-wfp
+             check-dims-of-expr-value
              acl2::not-reserrp-when-nat-listp))
 
-  (defrule value-wfp-of-value-vector-of-value-base-list
+  (defrule expr-value-wfp-of-expr-value-vector-of-expr-value-base-list
     (implies (consp bvals)
-             (value-wfp (value-vector (value-base-list bvals))))
-    :enable (value-wfp
-             check-dims-of-value
-             check-dims-of-value-list-of-value-base-list
+             (expr-value-wfp (expr-value-vector (expr-value-base-list bvals))))
+    :enable (expr-value-wfp
+             check-dims-of-expr-value
+             check-dims-of-expr-value-list-of-expr-value-base-list
              acl2::consp-of-repeat
              car-of-repeat
              list-repeatp-of-repeat
              acl2::not-reserrp-when-nat-listp
              acl2::not-reserrp-when-nat-list-listp))
 
-  (defrule value-wfp-of-value-vector
+  (defrule expr-value-wfp-of-expr-value-vector
     (implies (and (consp vals)
-                  (value-list-wfp vals)
-                  (list-repeatp (dims-of-value-list vals)))
-             (value-wfp (value-vector vals)))
-    :enable (value-wfp
-             check-dims-of-value-list-when-value-list-wfp
-             consp-of-dims-of-value-list
+                  (expr-value-list-wfp vals)
+                  (list-repeatp (dims-of-expr-value-list vals)))
+             (expr-value-wfp (expr-value-vector vals)))
+    :enable (expr-value-wfp
+             check-dims-of-expr-value-list-when-expr-value-list-wfp
+             consp-of-dims-of-expr-value-list
              acl2::not-reserrp-when-nat-listp
              acl2::not-reserrp-when-nat-list-listp)
-    :expand (check-dims-of-value (value-vector vals)))
+    :expand (check-dims-of-expr-value (expr-value-vector vals)))
 
-  (defrule value-list-wfp-of-value-vector->elems
-    (implies (and (value-wfp val)
-                  (value-case val :vector))
-             (value-list-wfp (value-vector->elems val)))
-    :enable (value-wfp
-             value-list-wfp-alt-def)
-    :expand (check-dims-of-value val)))
+  (defrule expr-value-list-wfp-of-expr-value-vector->elems
+    (implies (and (expr-value-wfp val)
+                  (expr-value-case val :vector))
+             (expr-value-list-wfp (expr-value-vector->elems val)))
+    :enable (expr-value-wfp
+             expr-value-list-wfp-alt-def)
+    :expand (check-dims-of-expr-value val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define value-first-lambda ((val valuep))
-  :returns (lval value-resultp)
-  :short "First lambda leaf value of a value, in row-major order."
+(define expr-value-first-lambda ((val expr-valuep))
+  :returns (lval expr-value-resultp)
+  :short "First lambda leaf expression value of an expression value,
+          in row-major order."
   :long
   (xdoc::topstring
    (xdoc::p
     "A term function value is an array, of any rank,
      whose elements are (term) lambda abstractions,
-     all with equivalent types if the value is well-formed.
+     all with equivalent types if the expression value is well-formed.
      This descends into the first element of each vector
      until it reaches a scalar lambda abstraction, which it returns.
      A representative lambda is used by term application (see @(tsee eval-expr))
@@ -842,76 +848,79 @@
     "It is an error if a non-lambda leaf is reached,
      or if an empty vector is reached, which has no lambda to return.")
    (xdoc::p
-    "It should be an invariant that, in a well-formed value,
-     all elements (if the value is not scalar) have equivalent types,
+    "It should be an invariant that, in a well-formed expression value,
+     all elements (if the expression value is not scalar) have equivalent types,
      which implies that it makes no difference that this function
      picks the first scalar value rather than any of the others.
-     Our current notion of well-formedness of values
+     Our current notion of well-formedness of expression values
      does not capture the invariant about equivalent types,
      but we plan to add it;
      then we might consider replacing the use of this function
      with something that returns, under well-formedness guards,
      the shape that @(tsee eval-expr) needs."))
-  (value-case
+  (expr-value-case
    val
    :base (reserr nil)
-   :lambda (value-fix val)
+   :lambda (expr-value-fix val)
    :tlambda (reserr nil)
    :ilambda (reserr nil)
    :box (reserr nil)
    :vector (if (consp val.elems)
-               (value-first-lambda (car val.elems))
+               (expr-value-first-lambda (car val.elems))
              (reserr nil))
    :vector-empty (reserr nil))
-  :measure (value-count val)
+  :measure (expr-value-count val)
 
   ///
 
-  (defret value-kind-of-value-first-lambda
+  (defret expr-value-kind-of-expr-value-first-lambda
     (implies (not (reserrp lval))
-             (equal (value-kind lval) :lambda))
+             (equal (expr-value-kind lval) :lambda))
     :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines cells-at-depth-in-values
-  :short "Cells of a value, or list of values, at a given frame depth."
+(defines cells-at-depth-in-expr-values
+  :short "Cells of an expression value, or list of expression values,
+          at a given frame depth."
 
-  (define cells-at-depth-in-value ((val valuep) (depth natp))
-    :returns (cells value-list-resultp)
-    :parents (dynamic-values cells-at-depth-in-values)
-    :short "Cells of a value at a given frame depth, in row-major order."
+  (define cells-at-depth-in-expr-value ((val expr-valuep) (depth natp))
+    :returns (cells expr-value-list-resultp)
+    :parents (dynamic-values cells-at-depth-in-expr-values)
+    :short "Cells of an expression value at a given frame depth,
+            in row-major order."
     :long
     (xdoc::topstring
      (xdoc::p
-      "A value is an array, whose dimensions may be split into
+      "A expression value is an array, whose dimensions may be split into
        a frame (a prefix) and a cell shape (the remaining suffix);
        the exact point of splitting depends on the purpose.
        Given the frame depth, i.e. the number of frame dimensions,
        this function returns the cells in row-major order:
-       the sub-arrays reached by descending @('depth') levels into the value.
+       the sub-arrays reached by descending @('depth') levels
+       into the expression value.
        Note that this returns a flat list of cell values:
        as we descend into the depth of the frame,
        the nested vector structure is discarded.")
      (xdoc::p
       "At depth 0 there is no frame,
-       so the whole value is the single cell,
+       so the whole expression value is the single cell,
        which we return as a singleton.
-       At a positive depth the value must be a non-empty vector,
+       At a positive depth the expression value must be a non-empty vector,
        and we collect the cells of each element at one less depth, in order.
        It is an error if the depth exceeds the rank,
        i.e. if a non-vector value is reached before the depth is exhausted.
        It is also an error if we reach an empty vector;
-       this function only operates on values without 0 dimensions.")
+       this function only operates on expression values without 0 dimensions.")
      (xdoc::p
       "This is used as part of the rank lifting in the dynamic semantics.
-       It is used on the values that
+       It is used on the expression values that
        the arguments of an application expression evaluate to.
        It roughly corresponds to
        @($\\mathit{Split}_{n_{\\mathit{ac}}}
           \\llbracket \\mathfrak{v}_a \\ldots \\rrbracket$)
        in [thesis],
-       where values, unlike our @(tsee value) fixtype,
+       where expression values, unlike our @(tsee expr-value) fixtype,
        are represented as flat lists of atoms wrapped in
        an array expression that specifies the dimensions
        (which is an equivalent representation to ours).
@@ -925,50 +934,52 @@
        the number of dimensions @($n_a\\ldots$)
        that precede @($n_i\\ldots$) in the full dimensions of the argument."))
     (if (zp depth)
-        (list (value-fix val))
-      (value-case
+        (list (expr-value-fix val))
+      (expr-value-case
        val
        :base (reserr nil)
        :lambda (reserr nil)
        :tlambda (reserr nil)
        :ilambda (reserr nil)
        :box (reserr nil)
-       :vector (cells-at-depth-in-value-list val.elems (1- depth))
+       :vector (cells-at-depth-in-expr-value-list val.elems (1- depth))
        :vector-empty (reserr nil)))
-    :measure (value-count val))
+    :measure (expr-value-count val))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define cells-at-depth-in-value-list ((vals value-listp) (depth natp))
-    :returns (cells value-list-resultp)
-    :parents (dynamic-values cells-at-depth-in-values)
+  (define cells-at-depth-in-expr-value-list ((vals expr-value-listp)
+                                             (depth natp))
+    :returns (cells expr-value-list-resultp)
+    :parents (dynamic-values cells-at-depth-in-expr-values)
     :short "Concatenation of
-            the cells of a list of values at a given frame depth,
+            the cells of a list of expression values at a given frame depth,
             in the same order as the list."
     (b* (((when (endp vals)) nil)
-         ((ok cells1) (cells-at-depth-in-value (car vals) depth))
-         ((ok cells2) (cells-at-depth-in-value-list (cdr vals) depth)))
+         ((ok cells1) (cells-at-depth-in-expr-value (car vals) depth))
+         ((ok cells2) (cells-at-depth-in-expr-value-list (cdr vals) depth)))
       (append cells1 cells2))
-    :measure (value-list-count vals))
+    :measure (expr-value-list-count vals))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((local (in-theory (enable value-listp-when-result-not-error))))
+  :prepwork
+  ((local (in-theory (enable expr-value-listp-when-result-not-error))))
 
   ///
 
-  (fty::deffixequiv-mutual cells-at-depth-in-values
+  (fty::deffixequiv-mutual cells-at-depth-in-expr-values
     :hints (("Goal" :in-theory (enable nfix))))
 
-  (defret-mutual value-list-wfp-of-cells-at-depth-in-values
-    (defret value-list-wfp-of-cells-at-depth-in-value
-      (implies (and (value-wfp val)
+  (defret-mutual expr-value-list-wfp-of-cells-at-depth-in-expr-values
+    (defret expr-value-list-wfp-of-cells-at-depth-in-expr-value
+      (implies (and (expr-value-wfp val)
                     (not (reserrp cells)))
-               (value-list-wfp cells))
-      :fn cells-at-depth-in-value)
-    (defret value-list-wfp-of-cells-at-depth-in-value-list
-      (implies (and (value-list-wfp vals)
+               (expr-value-list-wfp cells))
+      :fn cells-at-depth-in-expr-value)
+    (defret expr-value-list-wfp-of-cells-at-depth-in-expr-value-list
+      (implies (and (expr-value-list-wfp vals)
                     (not (reserrp cells)))
-               (value-list-wfp cells))
-      :fn cells-at-depth-in-value-list)
-    :mutual-recursion cells-at-depth-in-values))
+               (expr-value-list-wfp cells))
+      :fn cells-at-depth-in-expr-value-list)
+    :mutual-recursion cells-at-depth-in-expr-values))

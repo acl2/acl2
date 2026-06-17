@@ -30,11 +30,12 @@
     "The Remora primitives are built-in functions
      whose definition is not written in Remora.
      Here we provide a definition of them in ACL2,
-     as ACL2 functions that take and return Remora values.
-     The functions defensively check that the values have the correct types,
+     as ACL2 functions that take and return Remora expression values.
+     The functions defensively check that
+     the expression values have the correct types,
      returning an error if they do not;
      the functions also return errors if
-     the operation is not well-defined on the type-correct values
+     the operation is not well-defined on the type-correct expression values
      (e.g. division by zero).")
    (xdoc::p
     "We will connect these with our formalization of @(see evaluation).
@@ -50,34 +51,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-value-int ((val valuep))
+(define check-expr-value-int ((val expr-valuep))
   :returns (ival int-value-resultp)
-  :short "Check if a value is an integer value, returning it if so."
-  (b* (((unless (value-case val :base)) (reserr nil))
-       (bval (value-base->val val))
+  :short "Check if an expression value is an integer value, returning it if so."
+  (b* (((unless (expr-value-case val :base)) (reserr nil))
+       (bval (expr-value-base->val val))
        ((unless (base-value-case bval :int)) (reserr nil))
        (ival (base-value-int->val bval)))
     ival))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-value-float ((val valuep))
+(define check-expr-value-float ((val expr-valuep))
   :returns (fval float-value-resultp)
-  :short "Check if a value is a float value, returning it if so."
-  (b* (((unless (value-case val :base)) (reserr nil))
-       (bval (value-base->val val))
+  :short "Check if an expression value is a float value, returning it if so."
+  (b* (((unless (expr-value-case val :base)) (reserr nil))
+       (bval (expr-value-base->val val))
        ((unless (base-value-case bval :float)) (reserr nil))
        (fval (base-value-float->val bval)))
     fval))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define prim-int-add ((val1 valuep) (val2 valuep))
-  :returns (val value-resultp)
+(define prim-int-add ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
   :short "Evaluation of integer addition."
-  (b* (((ok (int-value i1)) (check-value-int val1))
-       ((ok (int-value i2)) (check-value-int val2))
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (+ i1.int i2.int))))
-    (value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival))))
 
 ; TODO: add others

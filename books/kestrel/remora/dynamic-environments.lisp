@@ -68,11 +68,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap string-value-map
-  :short "Fixtype of maps from strings to values."
+(fty::defomap string-expr-value-map
+  :short "Fixtype of maps from strings to expression values."
   :key-type string
-  :val-type value
-  :pred string-value-mapp)
+  :val-type expr-value
+  :pred string-expr-value-mapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -86,15 +86,15 @@
     (xdoc::li
      "A map from ispace variables to ispace values.
       This consists of the ispace variables in scope,
-      with the associated values.")
+      with the associated ispace values.")
     (xdoc::li
      "A map from type variables to type values.
       This consists of the type variables in scope,
-      with the associated values.")
+      with the associated type values.")
     (xdoc::li
-     "A map from (expression) variables to (array) values.
+     "A map from (expression) variables to (array) expression values.
       This consists of the variables in scope,
-      with the associated values."))
+      with the associated expression values."))
    (xdoc::p
     "As noted in "
     (xdoc::seetopic "static-environments" "static environment")
@@ -102,7 +102,7 @@
      dimensions, shapes, atom types, array types, and expressions."))
   ((ispace-vars ispace-var-ispace-value-map)
    (type-vars type-var-type-value-map)
-   (expr-vars string-value-map))
+   (expr-vars string-expr-value-map))
   :pred denvp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -114,55 +114,57 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define string-value-map-wfp ((map string-value-mapp))
+(define string-expr-value-map-wfp ((map string-expr-value-mapp))
   :returns (yes/no booleanp)
-  :short "Check that all the values in a string-to-value map are well-formed."
-  (or (omap::emptyp (string-value-map-fix map))
-      (and (value-wfp (omap::head-val map))
-           (string-value-map-wfp (omap::tail map))))
+  :short "Check that all the expression values
+          in a string-to-expression-value map
+          are well-formed."
+  (or (omap::emptyp (string-expr-value-map-fix map))
+      (and (expr-value-wfp (omap::head-val map))
+           (string-expr-value-map-wfp (omap::tail map))))
 
   ///
 
-  (defruled value-wfp-of-cdr-of-assoc-when-string-value-map-wfp
-    (implies (and (string-value-mapp map)
-                  (string-value-map-wfp map)
+  (defruled expr-value-wfp-of-cdr-of-assoc-when-string-expr-value-map-wfp
+    (implies (and (string-expr-value-mapp map)
+                  (string-expr-value-map-wfp map)
                   (omap::assoc key map))
-             (value-wfp (cdr (omap::assoc key map))))
+             (expr-value-wfp (cdr (omap::assoc key map))))
     :induct t
     :enable omap::assoc)
 
-  (defruled string-value-map-wfp-of-update
-    (implies (and (string-value-mapp map)
-                  (string-value-map-wfp map)
-                  (value-wfp val))
-             (string-value-map-wfp (omap::update key val map)))
-    :induct (string-value-map-wfp map)
-    :expand ((string-value-map-wfp (omap::update key val map)))))
+  (defruled string-expr-value-map-wfp-of-update
+    (implies (and (string-expr-value-mapp map)
+                  (string-expr-value-map-wfp map)
+                  (expr-value-wfp val))
+             (string-expr-value-map-wfp (omap::update key val map)))
+    :induct (string-expr-value-map-wfp map)
+    :expand ((string-expr-value-map-wfp (omap::update key val map)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define denv-wfp ((denv denvp))
   :returns (yes/no booleanp)
-  :short "Check that the (expression) values in a dynamic environment
+  :short "Check that the expression values in a dynamic environment
           are well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is an initial notion of well-formedness,
-     concerning just the values bound to expression variables.
+     concerning just the expression values bound to expression variables.
      We may extend it, or fold it into a broader notion,
      when we introduce well-formedness conditions
      on the ispace and type variables as well."))
-  (string-value-map-wfp (denv->expr-vars denv))
+  (string-expr-value-map-wfp (denv->expr-vars denv))
 
   ///
 
-  (defruled value-wfp-of-cdr-of-assoc-when-denv-wfp
+  (defruled expr-value-wfp-of-cdr-of-assoc-when-denv-wfp
     (implies (and (denv-wfp denv)
                   (omap::assoc key (denv->expr-vars denv)))
-             (value-wfp (cdr (omap::assoc key (denv->expr-vars denv)))))
+             (expr-value-wfp (cdr (omap::assoc key (denv->expr-vars denv)))))
     :enable (denv-wfp
-             value-wfp-of-cdr-of-assoc-when-string-value-map-wfp)))
+             expr-value-wfp-of-cdr-of-assoc-when-string-expr-value-map-wfp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -176,7 +178,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This may override an existing variable,
+    "This may override existing variables,
      which is intended hiding behavior."))
   (b* (((when (endp vars)) (denv-fix denv))
        ((unless (mbt (consp ivals))) (denv-fix denv))
@@ -216,7 +218,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This may override an existing variable,
+    "This may override existing variables,
      which is intended hiding behavior."))
   (b* (((when (endp vars)) (denv-fix denv))
        ((unless (mbt (consp tvals))) (denv-fix denv))
@@ -247,23 +249,24 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define denv-add-expr-vars ((vars string-listp)
-                            (vals value-listp)
+                            (vals expr-value-listp)
                             (denv denvp))
   :guard (equal (len vars) (len vals))
   :returns (new-denv denvp)
-  :short "Add zero or more (expression) variables, with associated values,
+  :short "Add zero or more expression variables,
+          with associated expression values,
           to a dynamic environment."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This may override an existing variable,
+    "This may override existing variables,
      which is intended hiding behavior."))
   (b* (((when (endp vars)) (denv-fix denv))
        ((unless (mbt (consp vals))) (denv-fix denv))
        (denv (change-denv
               denv
               :expr-vars (omap::update (str::str-fix (car vars))
-                                       (value-fix (car vals))
+                                       (expr-value-fix (car vals))
                                        (denv->expr-vars denv)))))
     (denv-add-expr-vars (cdr vars) (cdr vals) denv))
 
@@ -281,9 +284,9 @@
 
   (defret denv-wfp-of-denv-add-expr-vars
     (implies (and (denv-wfp denv)
-                  (value-list-wfp vals))
+                  (expr-value-list-wfp vals))
              (denv-wfp new-denv))
     :hints (("Goal"
              :induct t
              :in-theory (enable denv-wfp
-                                string-value-map-wfp-of-update)))))
+                                string-expr-value-map-wfp-of-update)))))
