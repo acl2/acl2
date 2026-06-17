@@ -1086,7 +1086,7 @@
                 ;; repetition list (a tree-listp).
                 ((okf ispaces) (abs-*-ws-ispace sub.3rd))
                 (shapes (ispaces-to-shapes ispaces)))
-             (make-shape-splice :shapes shapes)))
+             (make-shape-splice :ispaces (ispace-shape-list shapes))))
         (otherwise
          (reserrf (list :shape-shape (abnf::tree-info-for-error tree))))))
     :measure (abnf::tree-count tree))
@@ -1294,9 +1294,8 @@
           (abnf::check-tree-nonleaf-6 tree "bracket-type"))
          ((okf te-tree) (abnf::check-tree-list-1 sub.3rd))
          ((okf elem) (abs-type-exp te-tree))
-         ((okf ispaces) (abs-*-ws-ispace sub.4th))
-         (shapes (ispaces-to-shapes ispaces)))
-      (make-type-bracket :elem elem :shapes shapes))
+         ((okf ispaces) (abs-*-ws-ispace sub.4th)))
+      (make-type-bracket :elem elem :ispaces ispaces))
     :measure (abnf::tree-count tree))
 
   ;; array-type = "A" ws type-exp ws shape
@@ -1309,7 +1308,7 @@
          ((okf shape-tree) (abnf::check-tree-list-1 sub.5th))
          ((okf elem) (abs-type-exp te-tree))
          ((okf shape) (abs-shape shape-tree)))
-      (make-type-array :elem elem :shape shape))
+      (make-type-array :elem elem :ispace (ispace-shape shape)))
     :measure (abnf::tree-count tree))
 
   ;; arrow-type = ( "->" / %x2192 ) ws "(" *( ws type-exp ) ws ")" ws type-exp

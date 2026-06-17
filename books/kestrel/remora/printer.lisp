@@ -607,11 +607,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Shapes (mutually recursive: shape, shape-list).
+;; Shapes and ispaces (mutually recursive clique).
 ;;
 
-(defines shape-to-pdoc-defs
-  :short "Render @(tsee shape) and @(tsee shape-list) values as pdocs."
+(defines shape/ispace-to-pdoc-defs
+  :short "Render @(tsee shape), @(tsee ispace), and their list versions
+          as pdocs."
   :verify-guards :after-returns
 
   (define shape-to-pdoc ((s shapep))
@@ -627,7 +628,7 @@
                 (pdoc-naked-form "++"))
       :splice (pdoc-group
                (pdoc-bracket
-                (shape-list-to-pdoc s.shapes))))
+                (ispace-list-to-pdoc s.ispaces))))
     :measure (shape-count s))
 
   (define shape-list-to-pdoc ((ss shape-listp))
@@ -637,26 +638,23 @@
           (t (pdoc-concat (shape-to-pdoc (car ss))
                           (pdoc-concat (pdoc-line)
                                        (shape-list-to-pdoc (cdr ss))))))
-    :measure (shape-list-count ss)))
+    :measure (shape-list-count ss))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; Ispaces (deftagsum, not in a deftypes block).
-;;
+  (define ispace-to-pdoc ((i ispacep))
+    :returns (out pdocp)
+    (ispace-case i
+                 :dim (dim-to-pdoc i.dim)
+                 :shape (shape-to-pdoc i.shape))
+    :measure (ispace-count i))
 
-(define ispace-to-pdoc ((i ispacep))
-  :returns (out pdocp)
-  (ispace-case i
-    :dim (dim-to-pdoc i.dim)
-    :shape (shape-to-pdoc i.shape)))
-
-(define ispace-list-to-pdoc ((is ispace-listp))
-  :returns (out pdocp)
-  (cond ((endp is) (pdoc-empty))
-        ((endp (cdr is)) (ispace-to-pdoc (car is)))
-        (t (pdoc-concat (ispace-to-pdoc (car is))
-                        (pdoc-concat (pdoc-line)
-                                     (ispace-list-to-pdoc (cdr is)))))))
+  (define ispace-list-to-pdoc ((is ispace-listp))
+    :returns (out pdocp)
+    (cond ((endp is) (pdoc-empty))
+          ((endp (cdr is)) (ispace-to-pdoc (car is)))
+          (t (pdoc-concat (ispace-to-pdoc (car is))
+                          (pdoc-concat (pdoc-line)
+                                       (ispace-list-to-pdoc (cdr is))))))
+    :measure (ispace-list-count is)))
 
 (define ispace-list-option-to-pdoc ((io ispace-list-optionp))
   :returns (out pdocp)
@@ -716,12 +714,12 @@
               "A"
               (pdoc-concat (type-to-pdoc ty.elem)
                            (pdoc-concat (pdoc-line)
-                                        (shape-to-pdoc ty.shape))))
+                                        (ispace-to-pdoc ty.ispace))))
       :bracket (pdoc-group
                 (pdoc-bracket
                  (pdoc-concat (type-to-pdoc ty.elem)
                               (pdoc-concat (pdoc-line)
-                                           (shape-list-to-pdoc ty.shapes)))))
+                                           (ispace-list-to-pdoc ty.ispaces)))))
       :fun (pdoc-prefix-form
             "->"
             (pdoc-concat (pdoc-paren (type-list-to-pdoc ty.in))

@@ -242,13 +242,16 @@
      the validator adds to @('typedef') name type specifiers,
      i.e. the @(':typedef') case of @(tsee type-spec).
      The information for a @('typedef') name type specifier consists of
-     the type denoted by the @('typedef') name.
+     the type denoted by the @('typedef') name, as well as the "
+    (xdoc::seetopic "uid" "unique identifier")
+    " of the @('typedef') name.
      Note that this type is fully expanded:
      since the @(tsee type) fixtype has no case for @('typedef') names,
      the validator expands @('typedef') names to
      their @('typedef')-name-free types
      (see @(tsee valid-type-spec))."))
-  ((type type))
+  ((type type)
+   (uid uid))
   :pred type-spec-typedef-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -334,17 +337,15 @@
      the type of (or denoted by) the declared identifier,
      a flag saying whether the identifier is a @('typdef') or not
      (if the flag is @('t') the type is the one denoted by the identifier),
-     and an "
-    (xdoc::seetopic "uid-option" "optional unique identifier")
-    ". Currently, we only assign unique identifiers to
-     ordinary identifiers representing an object or function.
-     Therefore, only initializer declarators corresponding
-     to those such identifiers are annotated with unique identifiers.
-     Initializer declarators which correspond to @('typedef') declarations
-     are not annotated with a unique identifier."))
+     and a "
+    (xdoc::seetopic "uid" "unique identifier")
+    ". An initializer declarator always declares an ordinary identifier
+     representing an object, function, or @('typedef') name,
+     each of which is assigned a unique identifier;
+     thus the unique identifier is always present here."))
   ((type type)
    (typedefp bool)
-   (uid? uid-option))
+   (uid uid))
   :pred init-declor-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

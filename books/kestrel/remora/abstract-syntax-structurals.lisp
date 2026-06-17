@@ -41,6 +41,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::deflist shape-list-case-append (x)
+  :short "Check if all the shapes in a list
+          are in the @(':append') summand."
+  :guard (shape-listp x)
+  (shape-case x :append))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist ispace-list-case-shape (x)
+  :short "Check if all the ispaces in a list
+          are in the @(':shape') summand."
+  :guard (ispace-listp x)
+  (ispace-case x :shape))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::deflist expr-list-case-array (x)
   :short "Check if all the expressions in a list
           are in the @(':array') summand."
@@ -55,14 +71,6 @@
   :guard (expr-listp x)
   (expr-case x :frame))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist shape-list-case-append (x)
-  :short "Check if all the shapes in a list
-          are in the @(':append') summand."
-  :guard (shape-listp x)
-  (shape-case x :append))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection dim-const-list ((x nat-listp))
@@ -72,16 +80,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection shape-dim-list ((x dim-listp))
+(std::defprojection shape-dims-list ((x dim-list-listp))
   :returns (shapes shape-listp)
-  :short "Lift @(tsee shape-dim) to lists."
-  (shape-dim x)
+  :short "Lift @(tsee shape-dims) to lists."
+  (shape-dims x)
 
   ///
 
-  (defrule shape-list-corep-of-shape-dim-list
-    (shape-list-corep (shape-dim-list dims))
-    :induct t))
+  (defruled shape-list-corep-of-shape-dims-list-of-list-to-singletons
+    (shape-list-corep (shape-dims-list (list-to-singletons dims)))
+    :induct t
+    :enable (list-to-singletons
+             shape-corep-when-dims-and-singleton)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection ispace-shape-list ((x shape-listp))
+  :returns (ispaces ispace-listp)
+  :short "Lift @(tsee ispace-shape) to lists."
+  (ispace-shape x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -161,6 +178,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defprojection ispace-shape-list->shape ((x ispace-listp))
+  :guard (ispace-list-case-shape x)
+  :returns (shapes shape-listp)
+  :short "Lift @(tsee ispace-shape->shape) to lists."
+  (ispace-shape->shape x)
+
+  ///
+
+  (defrule shape-list-corep-of-ispace-shape-list->shape
+    (implies (and (ispace-list-corep ispaces)
+                  (ispace-list-case-shape ispaces))
+             (shape-list-corep (ispace-shape-list->shape ispaces)))
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defprojection var+type-list->var ((x var+type-listp))
   :returns (strings string-listp)
   :short "Lift @(tsee var+type->var) to lists."
@@ -186,6 +219,20 @@
   :returns (ispaces shape-listp)
   :short "Lift @(tsee type+shape->shape) to lists."
   (type+shape->shape x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type+ispace-list->type ((x type+ispace-listp))
+  :returns (types type-listp)
+  :short "Lift @(tsee type+ispace->type) to lists."
+  (type+ispace->type x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type+ispace-list->ispace ((x type+ispace-listp))
+  :returns (ispaces ispace-listp)
+  :short "Lift @(tsee type+ispace->ispace) to lists."
+  (type+ispace->ispace x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -305,3 +352,12 @@
            (shape-listp (mv-nth 1 (list-prefix-join lists))))
   :induct t
   :enable list-prefix-join)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule dim-list-listp-of-list-to-singleton
+  :short "Type of @(tsee list-to-singletons) on a list of dimensions."
+  (implies (dim-listp dims)
+           (dim-list-listp (list-to-singletons dims)))
+  :induct t
+  :enable list-to-singletons)

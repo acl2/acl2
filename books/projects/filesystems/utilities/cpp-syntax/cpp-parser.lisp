@@ -41,6 +41,8 @@
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
+(local (in-theory (disable member-equal acl2::member-of-cons string-append append)))
+
 (set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

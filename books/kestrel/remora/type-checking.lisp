@@ -37,8 +37,8 @@
           typep-when-result-not-error
           type-listp-when-result-not-error
           acl2::string-string-map-pairp-when-result-not-error
-          type+shape-p-when-result-not-error
-          type+shape-listp-when-result-not-error
+          type+ispace-p-when-result-not-error
+          type+ispace-listp-when-result-not-error
           typelist+type-p-when-result-not-error
           ispacevarlist+type-p-when-result-not-error
           typevarlist+type-p-when-result-not-error
@@ -518,7 +518,7 @@
      :atom
      (b* (((ok type) (check-atom expr.atom senv)))
        (make-type-array :elem type
-                        :shape (shape-dims nil)))
+                        :ispace (ispace-shape (shape-dims nil))))
      :array
      (b* (((when (member-equal 0 expr.dims)) (reserr nil))
           ((unless (= (len expr.atoms)
@@ -528,7 +528,8 @@
           ((unless (type-list-all-equivp types)) (reserr nil))
           (type (car types)))
        (make-type-array :elem type
-                        :shape (shape-dims (dim-const-list expr.dims))))
+                        :ispace (ispace-shape
+                                 (shape-dims (dim-const-list expr.dims)))))
      :array-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
           ((unless (type-atomp expr.type)) (reserr nil))
@@ -538,7 +539,8 @@
                          (type-free-type-vars expr.type) senv)))
            (reserr nil)))
        (make-type-array :elem expr.type
-                        :shape (shape-dims (dim-const-list expr.dims))))
+                        :ispace (ispace-shape
+                                 (shape-dims (dim-const-list expr.dims)))))
      :frame
      (b* (((when (member-equal 0 expr.dims)) (reserr nil))
           ((unless (= (len expr.exprs)
@@ -547,11 +549,12 @@
           ((ok types) (check-expr-list expr.exprs senv))
           ((unless (type-list-all-equivp types)) (reserr nil))
           (type (car types))
-          ((ok (type+shape array)) (type-match-array type)))
+          ((ok (type+ispace array)) (type-match-array type)))
        (make-type-array
         :elem array.type
-        :shape (shape-append (list (shape-dims (dim-const-list expr.dims))
-                                   array.shape))))
+        :ispace (ispace-shape
+                 (shape-append (list (shape-dims (dim-const-list expr.dims))
+                                     (shape-from-ispace array.ispace))))))
      :frame-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
           ((unless (and (ispace-vars-in-scope-p
@@ -559,50 +562,60 @@
                         (type-vars-in-scope-p
                          (type-free-type-vars expr.type) senv)))
            (reserr nil))
-          ((ok (type+shape array)) (type-match-array expr.type)))
+          ((ok (type+ispace array)) (type-match-array expr.type)))
        (make-type-array
         :elem array.type
-        :shape (shape-append (list (shape-dims (dim-const-list expr.dims))
-                                   array.shape))))
+        :ispace (ispace-shape
+                 (shape-append (list (shape-dims (dim-const-list expr.dims))
+                                     (shape-from-ispace array.ispace))))))
      :string
      (make-type-array :elem (type-base (base-type-int))
-                      :shape (shape-dims (list (dim-const (len expr.chars)))))
+                      :ispace (ispace-shape
+                               (shape-dims
+                                (list (dim-const (len expr.chars))))))
      :app
      (b* (((ok fun-arr-type) (check-expr expr.fun senv))
-          ((ok fun-arr-type+shape) (type-match-array fun-arr-type))
-          (fun-type (type+shape->type fun-arr-type+shape))
-          (fun-shape (type+shape->shape fun-arr-type+shape))
+          ((ok fun-arr-type+ispace) (type-match-array fun-arr-type))
+          (fun-type (type+ispace->type fun-arr-type+ispace))
+          (fun-ispace (type+ispace->ispace fun-arr-type+ispace))
+          (fun-shape (shape-from-ispace fun-ispace))
           ((ok fun-types+type) (type-match-fun fun-type))
           (in-types (typelist+type->types fun-types+type))
           (out-type (typelist+type->type fun-types+type))
-          ((ok in-types+shapes) (type-list-match-array in-types))
-          (in-atom-types (type+shape-list->type in-types+shapes))
-          (in-shapes (type+shape-list->shape in-types+shapes))
-          ((ok out-type+shape) (type-match-array out-type))
-          (out-atom-type (type+shape->type out-type+shape))
-          (out-shape (type+shape->shape out-type+shape))
+          ((ok in-types+ispaces) (type-list-match-array in-types))
+          (in-atom-types (type+ispace-list->type in-types+ispaces))
+          (in-ispaces (type+ispace-list->ispace in-types+ispaces))
+          (in-shapes (shape-list-from-ispace-list in-ispaces))
+          ((ok out-type+ispace) (type-match-array out-type))
+          (out-atom-type (type+ispace->type out-type+ispace))
+          (out-ispace (type+ispace->ispace out-type+ispace))
+          (out-shape (shape-from-ispace out-ispace))
           ((ok arg-types) (check-expr-list expr.args senv))
-          ((ok arg-types+shapes) (type-list-match-array arg-types))
-          (arg-atom-types (type+shape-list->type arg-types+shapes))
-          (arg-shapes (type+shape-list->shape arg-types+shapes))
+          ((ok arg-types+ispaces) (type-list-match-array arg-types))
+          (arg-atom-types (type+ispace-list->type arg-types+ispaces))
+          (arg-ispaces (type+ispace-list->ispace arg-types+ispaces))
+          (arg-shapes (shape-list-from-ispace-list arg-ispaces))
           ((unless (type-list-equivp arg-atom-types in-atom-types))
            (reserr nil))
           ((ok prefix-shapes) (check-shape-suffixes arg-shapes in-shapes))
           ((ok principal-shape) (join-shapes (cons fun-shape prefix-shapes))))
        (make-type-array
         :elem out-atom-type
-        :shape (shape-append (list principal-shape out-shape))))
+        :ispace (ispace-shape
+                 (shape-append (list principal-shape out-shape)))))
      :tapp
      (b* (((ok fun-arr-type) (check-expr expr.fun senv))
-          ((ok fun-arr-type+shape) (type-match-array fun-arr-type))
-          (fun-type (type+shape->type fun-arr-type+shape))
-          (fun-shape (type+shape->shape fun-arr-type+shape))
+          ((ok fun-arr-type+ispace) (type-match-array fun-arr-type))
+          (fun-type (type+ispace->type fun-arr-type+ispace))
+          (fun-ispace (type+ispace->ispace fun-arr-type+ispace))
+          (fun-shape (shape-from-ispace fun-ispace))
           ((ok fun-vars+type) (type-match-forall fun-type))
           (vars (typevarlist+type->vars fun-vars+type))
           (body-arr-type (typevarlist+type->type fun-vars+type))
-          ((ok body-type+shape) (type-match-array body-arr-type))
-          (body-atom-type (type+shape->type body-type+shape))
-          (body-shape (type+shape->shape body-type+shape))
+          ((ok body-type+ispace) (type-match-array body-arr-type))
+          (body-atom-type (type+ispace->type body-type+ispace))
+          (body-ispace (type+ispace->ispace body-type+ispace))
+          (body-shape (shape-from-ispace body-ispace))
           ((unless (and (ispace-vars-in-scope-p
                          (type-list-free-ispace-vars expr.args) senv)
                         (type-vars-in-scope-p
@@ -620,18 +633,20 @@
                                  type-maps.2nd)))
        (make-type-array
         :elem body-atom-type-subst
-        :shape (shape-append (list fun-shape body-shape))))
+        :ispace (ispace-shape (shape-append (list fun-shape body-shape)))))
      :iapp
      (b* (((ok fun-arr-type) (check-expr expr.fun senv))
-          ((ok fun-arr-type+shape) (type-match-array fun-arr-type))
-          (fun-type (type+shape->type fun-arr-type+shape))
-          (fun-shape (type+shape->shape fun-arr-type+shape))
+          ((ok fun-arr-type+ispace) (type-match-array fun-arr-type))
+          (fun-type (type+ispace->type fun-arr-type+ispace))
+          (fun-ispace (type+ispace->ispace fun-arr-type+ispace))
+          (fun-shape (shape-from-ispace fun-ispace))
           ((ok fun-vars+type) (type-match-product fun-type))
           (vars (ispacevarlist+type->vars fun-vars+type))
           (body-arr-type (ispacevarlist+type->type fun-vars+type))
-          ((ok body-type+shape) (type-match-array body-arr-type))
-          (body-atom-type (type+shape->type body-type+shape))
-          (body-shape (type+shape->shape body-type+shape))
+          ((ok body-type+ispace) (type-match-array body-arr-type))
+          (body-atom-type (type+ispace->type body-type+ispace))
+          (body-ispace (type+ispace->ispace body-type+ispace))
+          (body-shape (shape-from-ispace body-ispace))
           ((unless (ispace-vars-in-scope-p
                     (ispace-list-free-ispace-vars expr.args) senv))
            (reserr nil))
@@ -650,15 +665,17 @@
                                                      ispace-maps.shape-map)))
        (make-type-array
         :elem body-atom-type-subst
-        :shape (shape-append (list fun-shape body-shape-subst))))
+        :ispace (ispace-shape
+                 (shape-append (list fun-shape body-shape-subst)))))
      :capp (reserr :todo)
      :unbox
      (b* (((unless (no-duplicatesp-equal expr.ispaces))
            (reserr nil))
           ((ok target-arr-type) (check-expr expr.target senv))
-          ((ok target-arr-type+shape) (type-match-array target-arr-type))
-          (sum-type (type+shape->type target-arr-type+shape))
-          (sum-shape (type+shape->shape target-arr-type+shape))
+          ((ok target-arr-type+ispace) (type-match-array target-arr-type))
+          (sum-type (type+ispace->type target-arr-type+ispace))
+          (sum-ispace (type+ispace->ispace target-arr-type+ispace))
+          (sum-shape (shape-from-ispace sum-ispace))
           ((ok sum-vars+type) (type-match-sum sum-type))
           (sum-vars (ispacevarlist+type->vars sum-vars+type))
           (sum-body-type (ispacevarlist+type->type sum-vars+type))
@@ -676,11 +693,13 @@
           (senv (senv-add-ispace-vars expr.ispaces senv))
           (senv (senv-add-var+type expr.var sum-body-type-renam senv))
           ((ok arr-type) (check-expr expr.body senv))
-          ((ok arr-type+shape) (type-match-array arr-type))
-          (body-atom-type (type+shape->type arr-type+shape))
-          (body-shape (type+shape->shape arr-type+shape)))
+          ((ok arr-type+ispace) (type-match-array arr-type))
+          (body-atom-type (type+ispace->type arr-type+ispace))
+          (body-ispace (type+ispace->ispace arr-type+ispace))
+          (body-shape (shape-from-ispace body-ispace)))
        (make-type-array :elem body-atom-type
-                        :shape (shape-append (list sum-shape body-shape))))
+                        :ispace (ispace-shape
+                                 (shape-append (list sum-shape body-shape)))))
      :bracket (reserr :todo)
      :let (reserr :todo))
     :measure (expr-count expr))
@@ -885,18 +904,18 @@
                          (check-expr-list exprs senv))))
                   (not (reserrp (type-list-match-array x)))
                   (type-list-equivp
-                   (type+shape-list->type
+                   (type+ispace-list->type
                     (type-list-match-array
                      (check-expr-list exprs senv)))
-                   (type+shape-list->type
+                   (type+ispace-list->type
                     (type-list-match-array x))))
              (equal (len x)
                     (len exprs)))
     :use ((:instance same-len-when-type-list-equivp
-                     (types1 (type+shape-list->type
+                     (types1 (type+ispace-list->type
                               (type-list-match-array
                                (check-expr-list exprs senv))))
-                     (types2 (type+shape-list->type
+                     (types2 (type+ispace-list->type
                               (type-list-match-array x))))))
 
   (verify-guards check-expr)

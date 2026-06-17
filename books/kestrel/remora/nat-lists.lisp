@@ -31,6 +31,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled true-listp-when-nat-listp
+  :short "A list of naturals is a true list."
+  (implies (nat-listp x)
+           (true-listp x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define nat-list-sum ((nats nat-listp))
   :returns (sum natp)
   :short "Sum of a list of zero or more natural numbers."
@@ -106,9 +113,32 @@
   :induct t
   :enable append-all)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled true-listp-when-nat-listp
-  :short "A list of naturals is a true list."
-  (implies (nat-listp x)
-           (true-listp x)))
+(defrule nat-listp-of-mv-nth-1-of-check-list-suffix
+  :short "Type of the prefix returned by @(tsee check-list-suffix)
+          on a list of naturals."
+  (implies (nat-listp list)
+           (nat-listp (mv-nth 1 (check-list-suffix list suffix))))
+  :induct (check-list-suffix list suffix)
+  :enable check-list-suffix)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule nat-list-listp-of-mv-nth-1-of-check-list-suffixes
+  :short "Type of the prefixes returned by @(tsee check-list-suffixes)
+          on a list of lists of naturals."
+  (implies (nat-list-listp lists)
+           (nat-list-listp (mv-nth 1 (check-list-suffixes lists suffixes))))
+  :induct (check-list-suffixes lists suffixes)
+  :enable check-list-suffixes)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule nat-listp-of-mv-nth-1-of-list-prefix-join
+  :short "Type of the join returned by @(tsee list-prefix-join)
+          on a list of lists of naturals."
+  (implies (nat-list-listp lists)
+           (nat-listp (mv-nth 1 (list-prefix-join lists))))
+  :induct t
+  :enable list-prefix-join)

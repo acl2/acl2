@@ -133,21 +133,43 @@
     :elementp-of-nil nil
     :pred dim-listp))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist dim-list-list
+  :short "Fixtype of lists of lists of dimensions."
+  :elt-type dim-list
+  :true-listp t
+  :elementp-of-nil t
+  :pred dim-list-listp
+
+  ///
+
+  (defruled true-list-listp-when-dim-list-listp
+    (implies (dim-list-listp x)
+             (true-list-listp x))
+    :induct t
+    :enable dim-list-listp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftypes shapes
-  :short "Fixtypes of shapes and lists of shapes."
+(fty::deftypes shapes/ispaces
+  :short "Fixtypes of shapes and ispaces."
   :long
   (xdoc::topstring
    (xdoc::p
     "See @(tsee dims) for the reason why
      we define dimensions and shapes separately,
-     as in [impl] but unlike [thesis]."))
+     as in [impl] but unlike [thesis].")
+   (xdoc::p
+    "Shapes and ispaces will be mutually recursive
+     because splices, which are shapes, will contain ispaces instead of shapes,
+     because we will eliminate the @(':dim') summand from @(tsee shape) soon.
+     This is consistent with a recent change to [impl]."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum shape
-    :parents (abstract-syntax-trees shapes)
+    :parents (abstract-syntax-trees shapes/ispaces)
     :short "Fixtype of shapes."
     :long
     (xdoc::topstring
@@ -186,18 +208,41 @@
     (:dim ((dim dim)))
     (:dims ((dims dim-list)))
     (:append ((shapes shape-list)))
-    (:splice ((shapes shape-list)))
+    (:splice ((ispaces ispace-list)))
     :pred shapep)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist shape-list
-    :parents (abstract-syntax-trees shapes)
+    :parents (abstract-syntax-trees shapes/ispaces)
     :short "Fixtype of lists of shapes."
     :elt-type shape
     :true-listp t
     :elementp-of-nil nil
-    :pred shape-listp))
+    :pred shape-listp)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deftagsum ispace
+    :parents (abstract-syntax-trees shapes/ispaces)
+    :short "Fixtype of ispaces."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This corresponds to @('ispace') in the ABNF grammar."))
+    (:dim ((dim dim)))
+    (:shape ((shape shape)))
+    :pred ispacep)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist ispace-list
+    :parents (abstract-syntax-trees shapes/ispaces)
+    :short "Fixtype of lists of ispaces."
+    :elt-type ispace
+    :true-listp t
+    :elementp-of-nil nil
+    :pred ispace-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -215,27 +260,6 @@
              (true-list-listp x))
     :induct t
     :enable shape-list-listp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum ispace
-  :short "Fixtype of ispaces."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This corresponds to @('ispace') in the ABNF grammar."))
-  (:dim ((dim dim)))
-  (:shape ((shape shape)))
-  :pred ispacep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist ispace-list
-  :short "Fixtype of lists of ispaces."
-  :elt-type ispace
-  :true-listp t
-  :elementp-of-nil nil
-  :pred ispace-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -399,11 +423,9 @@
        variables (of two kinds),
        base types,
        array types consisting of a type for the elements
-       and a shape in which the elements are arranged,
-       bracket types which are like array types
-       but the zero or more shapes are concatenated
-       (the splicing comes from the fact that
-       dimensions are auto-lifted to shapes as in bracket shapes),
+       and an ispace indicating how the elements are arranged,
+       bracket types which are similar to array types
+       but they have zero or more ispaces to be spliced,
        function types (with zero or more input types and an output type),
        universal types (quantified over kinded variables),
        product types (quantified over ispace parameters),
@@ -411,9 +433,9 @@
     (:var ((var type-var)))
     (:base ((type base-type)))
     (:array ((elem type)
-             (shape shape)))
+             (ispace ispace)))
     (:bracket ((elem type)
-               (shapes shape-list)))
+               (ispaces ispace-list)))
     (:fun ((in type-list)
            (out type)))
     (:forall ((params type-var-list)

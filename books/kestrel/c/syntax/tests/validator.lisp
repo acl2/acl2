@@ -871,7 +871,7 @@ void bar(void) {
              (tunit2 (omap::head-val (omap::tail filepath-trans-unit-map)))
              (items1 (trans-unit->items tunit1))
              (foo-init1 (first (declon-declon->declors (ext-declon-declon->declon (trans-item-declon->declon (first items1))))))
-             (foo-init1-uid (init-declor-info->uid? (init-declor->info foo-init1)))
+             (foo-init1-uid (init-declor-info->uid (init-declor->info foo-init1)))
              ;; (- (cw "foo-init1 uid: ~x0~%" foo-init1-uid))
              (bar-fundef (ext-declon-fundef->fundef (trans-item-declon->declon (second items1))))
              (bar-fundef-uid (fundef-info->uid (fundef->info bar-fundef)))
@@ -882,21 +882,21 @@ void bar(void) {
              ;; (- (cw "x-param uid: ~x0~%" x-param-uid))
              (bar-body-decl1 (first (comp-stmt->items (fundef->body bar-fundef))))
              (foo-init2 (first (declon-declon->declors (block-item-declon->declon bar-body-decl1))))
-             (foo-init2-uid (init-declor-info->uid? (init-declor->info foo-init2)))
+             (foo-init2-uid (init-declor-info->uid (init-declor->info foo-init2)))
              ;; (- (cw "foo-init2 uid: ~x0~%" foo-init2-uid))
              (x-expr (initer-single->expr (init-declor->initer? foo-init2)))
              (x-expr-uid (var-info->uid (expr-ident->info x-expr)))
              ;; (- (cw "x-expr uid: ~x0~%" x-expr-uid))
              (bar-body-decl2 (first (comp-stmt->items (stmt-compound->stmt (block-item-stmt->stmt (second (comp-stmt->items (fundef->body bar-fundef))))))))
              (foo-init3 (first (declon-declon->declors (block-item-declon->declon bar-body-decl2))))
-             (foo-init3-uid (init-declor-info->uid? (init-declor->info foo-init3)))
+             (foo-init3-uid (init-declor-info->uid (init-declor->info foo-init3)))
              ;; (- (cw "foo-init3 uid: ~x0~%" foo-init3-uid))
              (bar-return-stmt (block-item-stmt->stmt (third (comp-stmt->items (fundef->body bar-fundef)))))
              (foo-expr-uid (var-info->uid (expr-ident->info (stmt-return->expr? bar-return-stmt))))
              ;; (- (cw "foo-expr uid: ~x0~%" foo-expr-uid))
              (items2 (trans-unit->items tunit2))
              (bar-init (first (declon-declon->declors (ext-declon-declon->declon (trans-item-declon->declon (first items2))))))
-             (bar-init-uid (init-declor-info->uid? (init-declor->info bar-init)))
+             (bar-init-uid (init-declor-info->uid (init-declor->info bar-init)))
              ;; (- (cw "bar-init uid: ~x0~%" bar-init-uid))
              (foo-fundef (ext-declon-fundef->fundef (trans-item-declon->declon (second items2))))
              (foo-fundef-uid (fundef-info->uid (fundef->info foo-fundef)))
@@ -1777,3 +1777,96 @@ int * d = 1 - 1;
 (test-valid-fail
   "int * x = 2 - 1;
 ")
+
+;; Typedef UIDs.
+
+;; A typedef redefined in the same scope, with a compatible type, reuses the
+;; same UID as the original declaration.
+(test-valid
+  "typedef int T;
+typedef int T;
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (items (trans-unit->items tunit))
+             (declon1 (ext-declon-declon->declon
+                        (trans-item-declon->declon (first items))))
+             (declon2 (ext-declon-declon->declon
+                        (trans-item-declon->declon (second items))))
+             (info1 (init-declor->info
+                      (first (declon-declon->declors declon1))))
+             (info2 (init-declor->info
+                      (first (declon-declon->declors declon2)))))
+          (and (init-declor-info->typedefp info1)
+               (init-declor-info->typedefp info2)
+               (equal (init-declor-info->uid info1)
+                      (init-declor-info->uid info2)))))
+
+;; Distinct typedef names get distinct UIDs.
+(test-valid
+  "typedef int T;
+typedef int U;
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (items (trans-unit->items tunit))
+             (declon1 (ext-declon-declon->declon
+                        (trans-item-declon->declon (first items))))
+             (declon2 (ext-declon-declon->declon
+                        (trans-item-declon->declon (second items))))
+             (info1 (init-declor->info
+                      (first (declon-declon->declors declon1))))
+             (info2 (init-declor->info
+                      (first (declon-declon->declors declon2)))))
+          (not (equal (init-declor-info->uid info1)
+                      (init-declor-info->uid info2)))))
+
+;; A typedef name used as a type specifier is annotated with the UID of its
+;; declaration.
+(test-valid
+  "typedef int T;
+T x;
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (items (trans-unit->items tunit))
+             (declon1 (ext-declon-declon->declon
+                        (trans-item-declon->declon (first items))))
+             (declon2 (ext-declon-declon->declon
+                        (trans-item-declon->declon (second items))))
+             (decl-uid (init-declor-info->uid
+                         (init-declor->info
+                           (first (declon-declon->declors declon1)))))
+             (tyspec (decl-spec-typespec->spec
+                       (first (declon-declon->specs declon2))))
+             (use-uid (type-spec-typedef-info->uid
+                        (type-spec-typedef->info tyspec))))
+          (equal decl-uid use-uid)))
+
+;; A typedef shadowed in an inner scope gets a fresh UID distinct from the
+;; outer typedef, and uses within the inner scope refer to the inner UID.
+(test-valid
+  "typedef int T;
+void f(void) {
+  typedef int T;
+  T x;
+}
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (items (trans-unit->items tunit))
+             (outer-declon (ext-declon-declon->declon
+                             (trans-item-declon->declon (first items))))
+             (outer-uid (init-declor-info->uid
+                          (init-declor->info
+                            (first (declon-declon->declors outer-declon)))))
+             (fundef (ext-declon-fundef->fundef
+                       (trans-item-declon->declon (second items))))
+             (block-items (comp-stmt->items (fundef->body fundef)))
+             (inner-declon (block-item-declon->declon (first block-items)))
+             (inner-uid (init-declor-info->uid
+                          (init-declor->info
+                            (first (declon-declon->declors inner-declon)))))
+             (use-declon (block-item-declon->declon (second block-items)))
+             (use-tyspec (decl-spec-typespec->spec
+                           (first (declon-declon->specs use-declon))))
+             (use-uid (type-spec-typedef-info->uid
+                        (type-spec-typedef->info use-tyspec))))
+          (and (not (equal outer-uid inner-uid))
+               (equal inner-uid use-uid))))

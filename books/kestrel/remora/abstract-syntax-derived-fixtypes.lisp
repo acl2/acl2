@@ -433,6 +433,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod type+ispace
+  :short "Fixtype of pairs consisting of a type and an ispace."
+  ((type type)
+   (ispace ispace))
+  :pred type+ispace-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type+ispace-result
+  :short "Fixtype of (i) pairs consisting of a type and an ispace
+          and (ii) errors."
+  :ok type+ispace
+  :pred type+ispace-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist type+ispace-list
+  :short "Fixtype of lists of pairs consisting of a type and an ispace."
+  :elt-type type+ispace
+  :true-listp t
+  :elementp-of-nil nil
+  :pred type+ispace-listp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type+ispace-list-result
+  :short "Fixtype of (i) lists of pairs consisting of a type and an ispace
+          and (ii) errors."
+  :ok type+ispace-list
+  :pred type+ispace-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod typelist+type
   :short "Fixtype of pairs consisting of
           a list of types and a type."

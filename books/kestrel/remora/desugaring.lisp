@@ -61,13 +61,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ispace-desugar-in-splice ((ispace ispacep))
+  :returns (new-ispace ispacep)
+  :short "Desugar an ispace that occurs in a shape splice."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since shape splices are desugared to shape concatenations,
+     we need to turn dimensions into singleton shapes.
+     This is done by this ACL2 function."))
+  (ispace-case
+   ispace
+   :dim (ispace-shape (shape-dims (list ispace.dim)))
+   :shape (ispace-fix ispace))
+
+  ///
+
+  (defret ispace-kind-of-ispace-desugar-in-splice
+    (equal (ispace-kind new-ispace) :shape))
+
+  (defrule ispace-corep-of-ispace-desugar-in-splice
+    (equal (ispace-corep (ispace-desugar-in-splice ispace))
+           (ispace-corep ispace))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection ispace-list-desugar-in-splice ((x ispace-listp))
+  :returns (new-ispaces ispace-listp)
+  :short "Lift @(tsee ispace-desugar-in-splice) to lists."
+  (ispace-desugar-in-splice x)
+
+  ///
+
+  (defret ispace-list-case-shape-of-ispace-list-desugar-in-splice
+    (ispace-list-case-shape new-ispaces)
+    :hints (("Goal" :induct t)))
+
+  (defrule ispace-list-corep-of-ispace-list-desugar-in-splice
+    (equal (ispace-list-corep (ispace-list-desugar-in-splice ispaces))
+           (ispace-list-corep ispaces))
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deffold-map desugar
   :short "Desugar ASTs."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A shape with a list of zero or more dimensions
-     is turned into a concatenation of single-dimension shapes.")
+    "A dimension lifted to a shape, i.e. the @(':dim') summand of @(tsee shape),
+     is turned into a shape with a singleton list of that dimension.")
+   (xdoc::p
+    "A shape with a list of zero or more dimensions is handled as follows:
+     if the shape has no dimensions, it is turned into the empty concatenation;
+     if the shape has one dimension, it is left unchanges;
+     if the shape has two or more dimensions,
+     it is turned into the concanetation of the singletons of the dimensions.")
    (xdoc::p
     "A shape splice is turned into a concatenation.")
    (xdoc::p
@@ -104,9 +153,7 @@
      for a type function binding, it is a universal type;
      for an ispace function binding, it is a product type.
      A combined function binding results in nested lambda abstractions."))
-  :types (shapes
-          ispace
-          ispace-list
+  :types (shapes/ispaces
           ispace-list-option
           types
           type-option
@@ -115,11 +162,25 @@
           exprs/atoms/binds
           prog)
   :override
-  ((shape :dims (shape-append (shape-dim-list shape.dims)))
-   (shape :splice (shape-append (shape-list-desugar shape.shapes)))
-   (type :bracket (make-type-array :elem (type-desugar type.elem)
-                                   :shape (shape-append
-                                           (shape-list-desugar type.shapes))))
+  ((shape :dim (shape-dims (list shape.dim)))
+   (shape :dims (cond ((endp shape.dims) ; no dimensions
+                       (shape-append nil))
+                      ((endp (cdr shape.dims)) ; one dimension
+                       (shape-fix shape))
+                      (t ; two or more dimensions
+                       (shape-append
+                        (shape-dims-list (list-to-singletons shape.dims))))))
+   (shape :splice (shape-append
+                   (ispace-shape-list->shape
+                    (ispace-list-desugar-in-splice
+                     (ispace-list-desugar shape.ispaces)))))
+   (type :bracket (make-type-array
+                   :elem (type-desugar type.elem)
+                   :ispace (ispace-shape
+                            (shape-append
+                             (ispace-shape-list->shape
+                              (ispace-list-desugar-in-splice
+                               (ispace-list-desugar type.ispaces)))))))
    (expr :atom (make-expr-array :dims nil
                                 :atoms (list (atom-desugar expr.atom))))
    (expr :string (if (consp expr.chars)
@@ -285,25 +346,28 @@
 (defsection corep-of-desugar
   :short "Desugaring always returns core ASTs."
 
-  (defret-mutual shapes-corep-of-shapes-desugar
+  (defret-mutual shapes/ispaces-corep-of-shapes/ispaces-desugar
     (defret shape-corep-of-shape-desugar
       (shape-corep result)
       :fn shape-desugar)
     (defret shape-list-corep-of-shape-list-desugar
       (shape-list-corep result)
       :fn shape-list-desugar)
-    :mutual-recursion shapes-desugar
-    :hints (("Goal" :in-theory (enable shape-desugar shape-list-desugar))))
-
-  (defret ispace-corep-of-ispace-desugar
-    (ispace-corep result)
-    :fn ispace-desugar
-    :hints (("Goal" :in-theory (enable ispace-desugar))))
-
-  (defret ispace-list-corep-of-ispace-list-desugar
-    (ispace-list-corep result)
-    :fn ispace-list-desugar
-    :hints (("Goal" :induct t :in-theory (enable ispace-list-desugar))))
+    (defret ispace-corep-of-ispace-desugar
+      (ispace-corep result)
+      :fn ispace-desugar)
+    (defret ispace-list-corep-of-ispace-list-desugar
+      (ispace-list-corep result)
+      :fn ispace-list-desugar)
+    :mutual-recursion shapes/ispaces-desugar
+    :hints
+    (("Goal"
+      :in-theory
+      (enable shape-desugar
+              shape-list-desugar
+              ispace-desugar
+              ispace-list-desugar
+              shape-list-corep-of-shape-dims-list-of-list-to-singletons))))
 
   (defret ispace-list-option-corep-of-ispace-list-option-desugar
     (ispace-list-option-corep result)
@@ -373,7 +437,7 @@
 (defsection desugar-when-corep
   :short "Desugaring does nothing on core ASTs."
 
-  (defret-mutual shapes-desugar-when-shapes-corep
+  (defret-mutual shapes/ispaces-desugar-when-shapes/ispaces-corep
     (defret shape-desugar-when-shape-corep
       (equal result (shape-fix shape))
       :hyp (shape-corep shape)
@@ -382,21 +446,21 @@
       (equal result (shape-list-fix shape-list))
       :hyp (shape-list-corep shape-list)
       :fn shape-list-desugar)
-    :mutual-recursion shapes-desugar
+    (defret ispace-desugar-when-ispace-corep
+      (equal result (ispace-fix ispace))
+      :hyp (ispace-corep ispace)
+      :fn ispace-desugar)
+    (defret ispace-list-desugar-when-ispace-list-corep
+      (equal result (ispace-list-fix ispace-list))
+      :hyp (ispace-list-corep ispace-list)
+      :fn ispace-list-desugar)
+    :mutual-recursion shapes/ispaces-desugar
     :hints
-    (("Goal" :in-theory (enable shape-desugar shape-list-desugar shape-corep))))
-
-  (defret ispace-desugar-when-ispace-corep
-    (equal result (ispace-fix ispace))
-    :hyp (ispace-corep ispace)
-    :fn ispace-desugar
-    :hints (("Goal" :in-theory (enable ispace-desugar))))
-
-  (defret ispace-list-desugar-when-ispace-list-corep
-    (equal result (ispace-list-fix ispace-list))
-    :hyp (ispace-list-corep ispace-list)
-    :fn ispace-list-desugar
-    :hints (("Goal" :induct t :in-theory (enable ispace-list-desugar))))
+    (("Goal" :in-theory (enable shape-desugar
+                                shape-list-desugar
+                                ispace-desugar
+                                ispace-list-desugar
+                                shape-corep))))
 
   (defret ispace-list-option-desugar-when-ispace-list-option-corep
     (equal result (ispace-list-option-fix ispace-list-option))

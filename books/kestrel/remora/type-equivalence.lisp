@@ -218,7 +218,7 @@
      (xdoc::p
       "In the case of two array or bracket types,
        we recursively check the equivalence of the element types
-       and the equivalence of the shapes.")
+       and the equivalence of the ispaces.")
      (xdoc::p
       "In the case of two function types,
        we recursively check the equivalence
@@ -262,19 +262,30 @@
      :array (type-case
              type2
              :array (and (type-equivp type1.elem type2.elem)
-                         (shape-equivp type1.shape type2.shape))
+                         (ispace-equivp type1.ispace type2.ispace))
              :bracket (and (type-equivp type1.elem type2.elem)
-                           (shape-equivp type1.shape
-                                         (shape-append type2.shapes)))
+                           (ispace-equivp type1.ispace
+                                          (ispace-shape
+                                           (shape-append
+                                            (shape-list-from-ispace-list
+                                             type2.ispaces)))))
              :otherwise nil)
      :bracket (type-case
                type2
                :array (and (type-equivp type1.elem type2.elem)
-                           (shape-equivp (shape-append type1.shapes)
-                                         type2.shape))
+                           (ispace-equivp (ispace-shape
+                                           (shape-append
+                                            (shape-list-from-ispace-list
+                                             type1.ispaces)))
+                                          type2.ispace))
                :bracket (and (type-equivp type1.elem type2.elem)
-                             (shape-equivp (shape-append type1.shapes)
-                                           (shape-append type2.shapes)))
+                             (ispace-equivp
+                              (ispace-shape
+                               (shape-append
+                                (shape-list-from-ispace-list type1.ispaces)))
+                              (ispace-shape
+                               (shape-append
+                                (shape-list-from-ispace-list type2.ispaces)))))
                :otherwise nil)
      :fun (type-case
            type2

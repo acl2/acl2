@@ -149,6 +149,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::deflist all-prefixp (x list)
+  :guard (and (true-list-listp x)
+              (true-listp list))
+  :short "Check if all the lists in a list of lists are prefixes of a list."
+  (prefixp x list)
+
+  ///
+
+  (defruled all-prefixp-when-prefixp-of-whole
+    (implies (and (all-prefixp x whole1)
+                  (prefixp whole1 whole2))
+             (all-prefixp x whole2))
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define list-split ((list true-listp) (chunk posp))
   :guard (integerp (/ (len list) chunk))
   :returns (lists true-list-listp)
@@ -459,4 +475,45 @@
                   (member-equal l lists))
              (prefixp l join))
     :hints (("Goal" :induct t)))
-  (in-theory (disable list-prefix-join-upper-bound)))
+
+  (defret list-prefix-join-upper-bound-all
+    (implies joinp
+             (all-prefixp lists join))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable all-prefixp-when-prefixp-of-whole))))
+
+  (in-theory (disable list-prefix-join-upper-bound
+                      list-prefix-join-upper-bound-all))
+
+  (defrule prefixp-of-car-when-list-prefix-join-of-cons
+    (implies (mv-nth 0 (list-prefix-join (cons a x)))
+             (prefixp a (mv-nth 1 (list-prefix-join (cons a x))))))
+
+  (defrule all-prefixp-of-cdr-when-list-prefix-join-of-cons
+    (implies (mv-nth 0 (list-prefix-join (cons a x)))
+             (all-prefixp x (mv-nth 1 (list-prefix-join (cons a x)))))
+    :use (:instance list-prefix-join-upper-bound-all (lists (cons a x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define list-to-singletons ((list true-listp))
+  :returns (sing-list true-list-listp)
+  :short "Turn a list into a list of singleton lists of the original elements,
+          in the same order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For instance, @('(a b c)') is turned into @('((a) (b) (c))')."))
+  (cond ((endp list) nil)
+        (t (cons (list (car list)) (list-to-singletons (cdr list)))))
+
+  ///
+
+  (defret len-of-list-to-singletons
+    (equal (len sing-list) (len list))
+    :hints (("Goal" :induct t)))
+
+  (defret all-of-len-p-1-of-list-to-singletons
+    (all-of-len-p sing-list 1)
+    :hints (("Goal" :induct t))))

@@ -43,9 +43,14 @@
     "We exclude:")
    (xdoc::ul
     (xdoc::li
-     "Shapes with zero or more dimensions,
+     "Dimensions lifted to shapes, i.e. the @(':dim') summand of @(tsee shape),
+      because it will be eliminated soon.
+      When we eliminate it, we will remove this documentation bullet.")
+    (xdoc::li
+     "Shapes with non-singleton lists of dimensions
+      (the @(':dims') summand of @(tsee shape)),
       because they are expressible as concatenations of
-      shapes with single dimensions.")
+      shapes with singleton lists of dimensions.")
     (xdoc::li
      "Shape splices,
       because they are expressible as concatenations.")
@@ -124,9 +129,7 @@
      since their parameters are just ispace and type variables,
      which do not require anything extra (like types for term variables).
      We plan to work on that soon."))
-  :types (shapes
-          ispace
-          ispace-list
+  :types (shapes/ispaces
           ispace-list-option
           types
           type-option
@@ -140,7 +143,9 @@
   :default t
   :combine and
   :override
-  ((shape :dims nil)
+  ((shape :dim nil)
+   (shape :dims (and (consp shape.dims)
+                     (endp (cdr shape.dims))))
    (shape :splice nil)
    (type :bracket nil)
    (expr :atom nil)
@@ -163,8 +168,10 @@
              (shape-corep shape))
     :enable shape-corep)
 
-  (defruled shape-corep-when-dim
-    (implies (shape-case shape :dim)
+  (defruled shape-corep-when-dims-and-singleton
+    (implies (and (shape-case shape :dims)
+                  (consp (shape-dims->dims shape))
+                  (endp (cdr (shape-dims->dims shape))))
              (shape-corep shape))
     :enable shape-corep)
 
@@ -213,7 +220,7 @@
              (not (bind-corep bind)))
     :enable bind-corep)
 
-  (defrule expr-list-corep-of-append-all
+  (defruled expr-list-corep-of-append-all
     (equal (expr-list-corep (append-all exprss))
            (expr-list-list-corep exprss))
     :induct t
@@ -222,7 +229,7 @@
              expr-list-list-corep-of-cons
              expr-list-list-corep-when-atom))
 
-  (defrule atom-list-corep-of-append-all
+  (defruled atom-list-corep-of-append-all
     (equal (atom-list-corep (append-all atomss))
            (atom-list-list-corep atomss))
     :induct t
@@ -233,7 +240,7 @@
 
   (add-to-ruleset ast-corep-rules
                   '(shape-corep-when-var
-                    shape-corep-when-dim
+                    shape-corep-when-dims-and-singleton
                     ispace-corep-when-dim
                     type-corep-when-var
                     type-corep-when-base

@@ -1,2 +1,1 @@
-(TH)
 (STACK-HEIGHT)
