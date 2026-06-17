@@ -132,4 +132,3 @@
   write any response, per the JSON-RPC 2.0 specification.</p>"
   :order-subtopics t
   :default-parent t)
-
