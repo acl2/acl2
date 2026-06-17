@@ -392,7 +392,7 @@
               (retmsg$ "Initializer declarator does not have ~
                         init-declor-info metadata: ~x0"
                        (init-declor-fix (first init)))))
-           (retok (c$::init-declor-info->uid?
+           (retok (c$::init-declor-info->uid
                     (c$::init-declor->info (first init)))))))
     (retok uid? wrapper? wrapper-name?$))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
