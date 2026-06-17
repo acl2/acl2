@@ -23,8 +23,7 @@
   is @(see value-to-json-string). String values are properly escaped per
   RFC 4627. Integer-valued rationals are printed without a decimal point.
   Non-integer rationals (fractions) are not valid JSON numbers and cannot be
-  serialized; @(see rational-to-json-string) throws a hard error if given
-  one.</p>"
+  serialized; see @(see rational-to-json-string) for details.</p>"
   :order-subtopics t
   :default-parent t)
 
@@ -56,6 +55,10 @@
   (json-escape-string-chars (coerce s 'list)))
 
 (define rational-to-json-string ((r rationalp))
+  :short "Serialize a rational number to a JSON number string."
+  :long "<p>Integer-valued rationals are printed without a decimal point.
+  Non-integer rationals (fractions) are not valid JSON numbers; this function
+  throws a hard error if given one.</p>"
   :returns (s stringp)
   (if (integerp r)
       (if (< r 0)
@@ -68,6 +71,10 @@
             "")))
 
 (defines value-to-json-string
+  :short "Serialize a @(see valuep) to a JSON string."
+  :long "<p>Recursively converts a JSON value to its string representation.
+  Strings are escaped per RFC 4627.  Numbers must be integer-valued rationals;
+  see @(see rational-to-json-string) for the limitation on fractions.</p>"
 
   (define value-to-json-string ((val valuep))
     :returns (s stringp)
