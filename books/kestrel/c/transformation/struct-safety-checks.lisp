@@ -249,7 +249,6 @@
    (expr :sizeof nil)
    (expr :alignof nil)
    (expr :cast nil)
-   (expr :binary nil)
    (expr :tycompat nil)
    (expr :offsetof nil)
    (expr :va-arg nil)
