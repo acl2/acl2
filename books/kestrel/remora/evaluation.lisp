@@ -1182,7 +1182,16 @@
       "For an ispace application,
        we evaluate the function sub-expression and the ispace arguments,
        and we use a separate ACL2 function to apply
-       the function value to the argument ispace values."))
+       the function value to the argument ispace values.")
+     (xdoc::p
+      "For a combined application,
+       we evaluate the function sub-expression,
+       and then we successively apply the resulting function value to
+       the type arguments, the ispace arguments, and the term arguments,
+       reusing the ACL2 functions for
+       type, ispace, and term applications.
+       The type arguments and the ispace arguments are optional:
+       the corresponding application is skipped when they are absent."))
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-case
        expr
@@ -1235,7 +1244,22 @@
        :iapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                   ((ok ivals) (eval-ispace-list expr.args denv)))
                (eval-iapp funval ivals denv (1- limit)))
-       :capp (reserr :todo)
+       :capp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
+                  ((ok funval)
+                   (type-list-option-case
+                    expr.targs
+                    :some (b* (((ok tvals) (eval-type-list expr.targs.val denv)))
+                            (eval-tapp funval tvals denv (1- limit)))
+                    :none funval))
+                  ((ok funval)
+                   (ispace-list-option-case
+                    expr.iargs
+                    :some (b* (((ok ivals)
+                                (eval-ispace-list expr.iargs.val denv)))
+                            (eval-iapp funval ivals denv (1- limit)))
+                    :none funval))
+                  ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
+               (eval-app funval argvals denv (1- limit)))
        :unbox (reserr :todo)
        :bracket (reserr :todo)
        :let (reserr :todo)))
