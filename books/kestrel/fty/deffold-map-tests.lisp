@@ -213,3 +213,107 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Extra arguments must be made ignorable in the generated functions:
+; an :OVERRIDE term need not mention every extra argument
+; (nor the main formal),
+; so without the `ignorable' declaration the unused extra formal
+; would cause an error.
+
+; Product type whose override term does not mention the extra argument.
+
+(acl2::must-succeed*
+  (defprod ipair
+    ((left acl2::int) (right acl2::int))
+    :pred ipairp)
+
+  (deffold-map norm
+    :types (ipair)
+    :extra-args ((extra booleanp))
+    :override ((ipair (ipair 0 0)))
+    :name test)
+
+  (acl2::assert-equal (ipair-norm (ipair 1 2) t) (ipair 0 0))
+  (acl2::assert-equal (ipair-norm (ipair 3 4) nil) (ipair 0 0))
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Sum type whose override term does not mention the extra argument.
+
+(acl2::must-succeed*
+  (deftagsum rgb
+    (:red ())
+    (:green ())
+    (:blue ())
+    :pred rgbp)
+
+  (deffold-map norm
+    :types (rgb)
+    :extra-args ((extra booleanp))
+    :override ((rgb (rgb-red)))
+    :name test)
+
+  (acl2::assert-equal (rgb-norm (rgb-blue) t) (rgb-red))
+  (acl2::assert-equal (rgb-norm (rgb-green) nil) (rgb-red))
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; List type whose override term mentions neither the main formal
+; nor the extra argument, here a standalone (singly recursive) list.
+
+(acl2::must-succeed*
+  (defprod elem
+    ((val acl2::int))
+    :pred elemp)
+  (deflist elemlist
+    :elt-type elem
+    :true-listp t
+    :pred elemlistp)
+
+  (deffold-map clear
+    :types (elemlist)
+    :extra-args ((extra booleanp))
+    :override ((elemlist nil))
+    :name test)
+
+  (acl2::assert-equal (elemlist-clear (list (elem 1) (elem 2)) t) nil)
+  (acl2::assert-equal (elemlist-clear nil nil) nil)
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; List type override that mentions neither the main formal
+; nor the extra argument, here in a mutually recursive clique.
+
+(acl2::must-succeed*
+  (deftypes tree+
+    (deftagsum tree
+      (:leaf ((val acl2::int)))
+      (:node ((children treelist)))
+      :pred treep)
+    (deflist treelist
+      :elt-type tree
+      :true-listp t
+      :pred treelistp))
+
+  (deffold-map clear
+    :types (tree+)
+    :extra-args ((extra booleanp))
+    :override ((treelist nil))
+    :name test)
+
+  (acl2::assert-equal
+    (treelist-clear (list (tree-leaf 1) (tree-leaf 2)) t)
+    nil)
+  (acl2::assert-equal
+    (tree-clear (tree-node (list (tree-leaf 1))) nil)
+    (tree-node nil))
+
+  :with-output-off nil)
