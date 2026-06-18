@@ -73,8 +73,8 @@
 
 #|
 
-(process-json-rpc-file "json-request.txt"
-                       "json-response.txt"
+(process-json-rpc-file "example-request.json"
+                       "example-response.json"
                        '(subtract)
                        state)
 
