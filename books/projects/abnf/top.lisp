@@ -19,6 +19,7 @@
 (include-book "grammar-operations/top")
 (include-book "parsing-tools/top")
 (include-book "examples/top")
+(include-book "tree-operations/top")
 (include-book "tree-utilities")
 ;; These packages are mentioned in the doc below:
 (include-book "kestrel/c/portcullis" :dir :system)
