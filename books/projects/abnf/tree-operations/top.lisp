@@ -10,13 +10,11 @@
 
 (in-package "ABNF")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
-
-(include-book "../portcullis")
+(include-book "tree-utilities")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ tree-operations
   :parents (abnf)
   :short "Operations on ABNF trees."
-  :order-subtopics ())
+  :order-subtopics (tree-utilities))

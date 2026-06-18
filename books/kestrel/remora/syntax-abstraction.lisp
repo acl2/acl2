@@ -18,7 +18,7 @@
 (include-book "kestrel/fty/nat-list-result" :dir :system)
 (include-book "kestrel/fty/string-result" :dir :system)
 (include-book "kestrel/fty/boolean-result" :dir :system)
-(include-book "projects/abnf/tree-utilities" :dir :system)
+(include-book "projects/abnf/tree-operations/tree-utilities" :dir :system)
 (include-book "unicode/utf8-encode" :dir :system)
 
 (local

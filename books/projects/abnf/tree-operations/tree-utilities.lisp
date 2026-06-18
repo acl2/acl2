@@ -1,5 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ; Copyright (C) 2022-2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
@@ -37,7 +38,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ tree-utilities
-  :parents (abnf)
+  :parents (tree-operations)
   :short "Some utilities to manipulate ABNF trees."
   :long
   (xdoc::topstring
