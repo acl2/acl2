@@ -1699,7 +1699,22 @@
        (that its length matches the size of the frame,
        that its cells are well-formed,
        and that they all have the same dimensions)
-       should be eliminable via proofs, as we plan to do."))
+       should be eliminable via proofs, as we plan to do.")
+     (xdoc::p
+      "Our current approach to frame lifting
+       is somewhat in line with [thesis],
+       which represents values as
+       the list of their constituent atoms
+       accompanied by their dimensions,
+       wrapped in an array expression:
+       in [thesis], frame lifting is performed by
+       suitably recombining those atoms.
+       Our approach also (partially) flattens, and then recombines,
+       constituent values.
+       A different approach, more in line with our model of values,
+       would instead preserve the recursive structure of our values,
+       and perform the necessary replication in the framework of that structure.
+       We plan to explore this alternative approach."))
     (b* (((when (zp limit)) (reserr :limit))
          ((ok lval) (expr-value-first-lambda funval))
          (tvals (var+typevalue-list->type (expr-value-lambda->params lval)))
