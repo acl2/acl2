@@ -65,6 +65,9 @@
 
     asm-name-spec-optionp
 
+    exprs/decls/stmts
+
+    expr
     exprp
     expr-fix
     expr-count
@@ -146,6 +149,7 @@
     make-member-designor-dot
     make-member-designor-sub
 
+    type-spec
     type-specp
     type-spec-fix
     type-spec-count
@@ -444,8 +448,8 @@
     comp-stmt->labels
     comp-stmt->items
 
-    fundefp
     fundef
+    fundefp
     fundef-fix
     make-fundef
     fundef->declor
@@ -453,6 +457,7 @@
     fundef-optionp
     fundef-option-case
 
+    ext-declon
     ext-declonp
     ext-declon-fix
     ext-declon-case
@@ -464,6 +469,8 @@
     ext-declon-listp
     ext-declon-list-fix
 
+    trans-items
+
     trans-itemp
     trans-item-fix
     trans-item-case
@@ -473,16 +480,17 @@
     trans-item-listp
     trans-item-list-fix
 
-    trans-unitp
     trans-unit
+    trans-unitp
     make-trans-unit
     trans-unit-fix
     trans-unit->items
 
+    filepath-trans-unit-map
     filepath-trans-unit-mapp
 
-    trans-ensemblep
     trans-ensemble
+    trans-ensemblep
     trans-ensemble->units
 
     filepathp
