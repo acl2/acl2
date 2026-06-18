@@ -80,7 +80,7 @@
         (mv (id-null)
             (request+error-error
              (make-invalid-request-error
-              "Duplicate \"member\" field"))))
+              "Duplicate \"method\" field"))))
        (method-val (car method-val-list))
        ((unless (equal (value-kind method-val) :string))
         (mv (id-null)
