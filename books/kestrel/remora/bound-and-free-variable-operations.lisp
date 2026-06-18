@@ -141,7 +141,15 @@
      Thus, for the ispace and combined function binders,
      we remove the parameters,
      because the thing that the variable is bound to
-     is like a lambda abstraction."))
+     is like a lambda abstraction.")
+   (xdoc::p
+    "Since @('let') bindings are sequential,
+     we need to override the function for @(tsee bind-list)
+     to remove, from the free variables of
+     the @(tsee cdr) of a non-empty list of bindings,
+     the free variable (if any) bound in the @(tsee car) of the list.
+     For the body of a @('let') expression,
+     we just remove all the variables bound in the bindings."))
   :types (dims
           shapes/ispaces
           ispace-list-option
@@ -190,7 +198,13 @@
                           (ispace-var-list-option-case
                            bind.iparams?
                            :some (set::mergesort bind.iparams?.val)
-                           :none nil))))
+                           :none nil)))
+   (bind-list (b* (((when (endp bind-list)) nil)
+                   (bind (car bind-list)))
+                (set::union (bind-free-ispace-vars bind)
+                            (set::difference
+                             (bind-list-free-ispace-vars (cdr bind-list))
+                             (bind-bound-ispace-vars bind))))))
   :name ast-free-ispace-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -205,7 +219,15 @@
      Thus, for the type and combined function binders,
      we remove the parameters,
      because the thing that the variable is bound to
-     is like a lambda abstraction."))
+     is like a lambda abstraction.")
+   (xdoc::p
+    "Since @('let') bindings are sequential,
+     we need to override the function for @(tsee bind-list)
+     to remove, from the free variables of
+     the @(tsee cdr) of a non-empty list of bindings,
+     the free variable (if any) bound in the @(tsee car) of the list.
+     For the body of a @('let') expression,
+     we just remove all the variables bound in the bindings."))
   :types (types
           type-option
           type-list-option
@@ -240,7 +262,13 @@
                           (type-var-list-option-case
                            bind.tparams?
                            :some (set::mergesort bind.tparams?.val)
-                           :none nil))))
+                           :none nil)))
+   (bind-list (b* (((when (endp bind-list)) nil)
+                   (bind (car bind-list)))
+                (set::union (bind-free-type-vars bind)
+                            (set::difference
+                             (bind-list-free-type-vars (cdr bind-list))
+                             (bind-bound-type-vars bind))))))
   :name ast-free-type-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -255,7 +283,15 @@
      Thus, for the expression and combined function binders,
      we remove the parameters,
      because the thing that the variable is bound to
-     is like a lambda abstraction."))
+     is like a lambda abstraction.")
+   (xdoc::p
+    "Since @('let') bindings are sequential,
+     we need to override the function for @(tsee bind-list)
+     to remove, from the free variables of
+     the @(tsee cdr) of a non-empty list of bindings,
+     the free variable (if any) bound in the @(tsee car) of the list.
+     For the body of a @('let') expression,
+     we just remove all the variables bound in the bindings."))
   :types (exprs/atoms/binds
           prog
           string-expr-map)
@@ -281,7 +317,13 @@
                           (set::mergesort (var+type-list->var bind.params))))
    (bind :cfun
          (set::difference (expr-free-expr-vars bind.expr)
-                          (set::mergesort (var+type-list->var bind.params)))))
+                          (set::mergesort (var+type-list->var bind.params))))
+   (bind-list (b* (((when (endp bind-list)) nil)
+                   (bind (car bind-list)))
+                (set::union (bind-free-expr-vars bind)
+                            (set::difference
+                             (bind-list-free-expr-vars (cdr bind-list))
+                             (bind-bound-expr-vars bind))))))
   :name ast-free-expr-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
