@@ -21,11 +21,11 @@
   :parents (jsonrpc)
   :short "Start a TCP socket server that handles JSON-RPC 2.0 requests."
   :long "<p>@('run-jsonrpc-server') opens a TCP server socket on the given
-  port and accepts a single connection.  It then enters a loop reading
-  JSON-RPC messages from that connection, dispatching them through the same
+  port and accepts connections sequentially.  For each connection it enters
+  a loop reading JSON-RPC messages, dispatching them through the same
   pipeline as @(see process-json-rpc-file), and writing the responses back.
-  The loop exits when the client disconnects (EOF), at which point the
-  function returns.</p>
+  When a client disconnects (EOF), the server waits for the next connection.
+  The function only returns on error.</p>
 
   <p>The @('interface') argument controls which network interface the server
   binds to.  Pass @('nil') (or @('\"127.0.0.1\"')) to accept connections only

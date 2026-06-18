@@ -57,8 +57,8 @@
    INTERFACE is the bind address string (e.g. \"127.0.0.1\" or \"0.0.0.0\");
    NIL defaults to \"127.0.0.1\".
    ALLOWED-METHODS is either :any or a list of permitted method symbols.
-   Accepts one connection, handles all its newline-delimited messages,
-   then returns (mv erp msg state)."
+   Accepts connections sequentially; after one client disconnects, waits
+   for the next.  Returns (mv erp msg state) on error."
   (let* ((host (or interface "127.0.0.1"))
          (server-socket
           (usocket:socket-listen host port
@@ -67,16 +67,22 @@
     (format t "JSON-RPC server listening on port ~a~%" port)
     (force-output)
     (unwind-protect
-        (handler-case
-            (let* ((client-socket
-                    (usocket:socket-accept server-socket
-                                           :element-type 'character))
-                   (stream (usocket:socket-stream client-socket)))
-              (unwind-protect
-                  (handle-connection stream allowed-methods state)
-                (usocket:socket-close client-socket)))
-          (error (c)
-            (format t "JSON-RPC server error: ~a~%" c)
-            (force-output)
-            (mv t (format nil "Error: ~a" c) state)))
+        (loop
+          (handler-case
+              (let* ((client-socket
+                      (usocket:socket-accept server-socket
+                                             :element-type 'character))
+                     (stream (usocket:socket-stream client-socket)))
+                (unwind-protect
+                    (mv-let (erp msg new-state)
+                      (handle-connection stream allowed-methods state)
+                      (declare (ignore msg))
+                      (setq state new-state)
+                      (when erp
+                        (return (mv erp nil state))))
+                  (usocket:socket-close client-socket)))
+            (error (c)
+              (format t "JSON-RPC server error: ~a~%" c)
+              (force-output)
+              (return (mv t (format nil "Error: ~a" c) state)))))
       (usocket:socket-close server-socket))))

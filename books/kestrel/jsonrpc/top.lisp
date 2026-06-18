@@ -49,9 +49,9 @@
   })
 
   <p><b>Socket transport.</b> The entry point is @(see run-jsonrpc-server).
-  It opens a TCP server socket on the given port and accepts a single
-  connection.  It then loops reading JSON-RPC messages from that connection
-  until the client disconnects.  Messages must be compact (single-line) JSON
+  It opens a TCP server socket on the given port and accepts connections
+  sequentially.  For each connection it loops reading JSON-RPC messages
+  until the client disconnects, then waits for the next connection.  Messages must be compact (single-line) JSON
   terminated by a newline character.  The second argument controls the bind
   interface: @('nil') (or @('\"127.0.0.1\"')) binds to localhost only;
   @('\"0.0.0.0\"') accepts connections from any host.  The third argument is
