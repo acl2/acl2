@@ -70,6 +70,63 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defines check-dims
+  :short "Check dimensions and lists of dimensions."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-dim ((dim dimp) (senv senvp))
+    :returns (yes/no booleanp)
+    :parents (type-checking check-dims)
+    :short "Check a dimension."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We return @('t') if the check is successful, otherwise @('nil').")
+     (xdoc::p
+      "A variable must be in the environment.")
+     (xdoc::p
+      "Any constant is valid.")
+     (xdoc::p
+      "Any addition of valid dimensions is valid.")
+     (xdoc::p
+      "Any multiplication of valid dimensions is valid.")
+     (xdoc::p
+      "Any non-empty subtraction of valid dimensions is valid."))
+    (dim-case
+     dim
+     :var (set::in (ispace-var-dim dim.name) (senv->ispace-vars senv))
+     :const t
+     :add (check-dim-list dim.dims senv)
+     :mul (check-dim-list dim.dims senv)
+     :sub (and (check-dim-list dim.dims senv)
+               (consp dim.dims)))
+    :measure (dim-count dim))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-dim-list ((dims dim-listp) (senv senvp))
+    :returns (yes/no booleanp)
+    :parents (type-checking check-dims)
+    :short "Check a list of dimensions."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check each dimension in turn,
+       returning @('t') iff they are all valid."))
+    (or (endp dims)
+        (and (check-dim (car dims) senv)
+             (check-dim-list (cdr dims) senv)))
+    :measure (dim-list-count dims))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ///
+
+  (fty::deffixequiv-mutual check-dims))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define base-type-of-base-lit ((lit base-litp))
   :returns (btype base-typep)
   :short "Base type of a base value."
