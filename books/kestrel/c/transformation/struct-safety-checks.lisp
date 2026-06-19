@@ -81,7 +81,7 @@
      only in ways that are safe for transformations
      that operate on the struct type, e.g. that split it.")
    (xdoc::p
-    "The predicates start at the @(tsee exprs/decls/stmts) clique.
+    "The predicates should start at the @(tsee exprs/decls/stmts) clique.
      It is not hard to see that
      all the ASTs in @(see abstract-syntax-trees) before that clique
      do not contain anything directly related to structs.
@@ -92,9 +92,19 @@
      it is only when used in a larger context (e.g. an expression)
      that we can detect unsafety.
      More concretely,
-     all the ASTs that precede the  @(tsee exprs/decls/stmts) clique
+     all the ASTs that precede the @(tsee exprs/decls/stmts) clique
      have to deemed safe when taken in isolation,
      and thus we do not need to define any predicates on them.")
+   (xdoc::p
+    "However, above we said `should' because, for now,
+     we are including the @(tsee type-qual) fixtype,
+     so that we can exclude the @('_Atomic') qualifier.
+     In general, for now we want to reject code
+     where the struct type is qualified as being atomic,
+     because it is not clear how that interacts with
+     transformations such as splitting the struct.
+     So we just forbid the qualifier.
+     We will revisit this if it turns out to be too draconian.")
    (xdoc::p
     "The predicates end at the @(tsee trans-ensemble) type.
      We could extend this to @(tsee code-ensemble) if needed.")
@@ -227,7 +237,8 @@
    (xdoc::p
     "Several things are not handled by this initial version,
      and will be addressed as we refine these checks:"))
-  :types (exprs/decls/stmts
+  :types (type-qual
+          exprs/decls/stmts
           fundef
           ext-declon
           trans-items
@@ -239,7 +250,8 @@
   :combine and
   :extra-args ((struct identp))
   :override
-  ((expr :gensel nil)
+  ((type-qual :atomic nil)
+   (expr :gensel nil)
    (expr :arrsub nil)
    (expr :funcall nil)
    (expr :member nil)
