@@ -97,16 +97,19 @@
      and thus we do not need to define any predicates on them.")
    (xdoc::p
     "However, above we said `should' because, for now,
-     we are including the @(tsee type-qual) fixtype,
-     so that we can exclude the @('_Atomic') qualifier.
+     we are including the @(tsee stor-spec) and @(tsee type-qual) fixtypes,
+     so that we can exclude
+     the @('_Atomic') type qualifier
+     and the @('auto') storage specifier.
      In general, for now we want to reject code
      where the struct type is qualified as being atomic,
      because it is not clear how that interacts with
-     transformations such as splitting the struct.
-     So we just forbid the qualifier.
-     We will revisit this if it turns out to be too draconian.
-     That is the only type qualifier that we exclude;
-     all the others should be safe for struct transformations.")
+     transformations such as splitting the struct;
+     so we just forbid that type qualifier.
+     The reason for excluding the @('auto') storage specifier
+     is that, in C23, it does type inference,
+     which might resolve to the struct type of interest,
+     and so we exlude that for now.")
    (xdoc::p
     "The predicates end at the @(tsee trans-ensemble) type.
      We could extend this to @(tsee code-ensemble) if needed.")
@@ -129,6 +132,18 @@
      The reason is that @('t') is the identity of @(tsee and),
      which is obviously the right combination operator for this fold.
      Thus empty lists and absent sub-constructs would be deemed safe.")
+   (xdoc::p
+    "Since we operate on validated (and thus disambiguated) ASTs,
+     the ambiguous constructs do not occur,
+     so for now we do not handle them specially.")
+   (xdoc::p
+    "Option and list AST types are safe iff their components are.
+     This is the default generated definition of the predicates.")
+   (xdoc::p
+    "AST types that merely wrap other AST types,
+     like @(tsee const-expr) and @(tsee spec/qual),
+     are allowed iff their wrapped ASTs are,
+     which is the default definition.")
    (xdoc::p
     "Consider expressions:")
    (xdoc::ul
@@ -214,31 +229,63 @@
       the expression itself is,
       so we leave it as default."))
    (xdoc::p
-    "The @(tsee const-expr) fixtype is just a wrapper of @(tsee expr).")
+    "We do not need to override @(tsee genassoc)
+     because it is only reachable from @(':genassoc') expressions,
+     which we currently reject.")
    (xdoc::p
-    "We do not need to override definitions for
-     AST fixtypes that are currently ``unreachable''.
-     For instance, since we override @('expr') @(':gensel') to return @('nil'),
-     we do not need to override @(tsee genassoc).")
+    "We do not need to override @(tsee member-designor)
+     because it is only reachable from
+     @(':genassoc') and @(':offsetof') expressions,
+     which we currently reject.")
    (xdoc::p
-    "Option and list AST types are safe iff their components are.
-     This is the default generated definition of the predicates.")
+    "We allow most type specifiers, except the following:")
+   (xdoc::ul
+    (xdoc::li
+     "@('_Atomic'), for the same reason as the homonymous type qualifier,
+      as explained earlier.")
+    (xdoc::li
+     "@('typedef'), since it could be the struct type of interest.
+      Clearly we should relax this.")
+    (xdoc::li
+     "@('typeof') and spelling variants,
+      in C23 or in GCC/Clang-extended C17.
+      This is because the type may denote the struct type of interest,
+      without that being immediately syntactically apparent.")
+    (xdoc::li
+     "@('__auto_type') is excluded for the same reason as
+      the storage specifier @('auto') explained earlier."))
    (xdoc::p
-    "We reject struct type specifiers initially.
-     This is enough to reject all unsafety,
-     but it is also clearly not useful.
-     It is just an initial definition.
-     We need to exclude nested structs of interest,
-     which requires a little additional work,
-     which we will do next.")
+    "Since @('struct') specifiers are allowed,
+     we need to reject constructs that nest
+     the struct of interest in other aggregate data types.")
    (xdoc::p
-    "Because of the rejection mentioned just above,
-     all the remaining constructs,
-     inside and outside the @(tsee exprs/decls/stmts),
-     do not need any overriding at this moment.")
+    "We reject all alignment specifiers,
+     because they may apply to the struct of interest.")
    (xdoc::p
-    "Several things are not handled by this initial version,
-     and will be addressed as we refine these checks:"))
+    "Certain GCC/Clang attributes might need to be rejected,
+     but we need to examine them in more detail.")
+   (xdoc::p
+    "We reject the @('__stdcall') and @('__declspec') declaration specifiers,
+     out of caution.")
+   (xdoc::p
+    "We reject list initializers for now,
+     because they may affect the struct of interest.")
+   (xdoc::p
+    "Initializers with optional designations are only reachable
+     from listt initializers, which are excluded (see above).")
+   (xdoc::p
+    "We exclude declarators and abstract declarators,
+     because in combination with type specifiers
+     they may give rise to arrays of the struct of interest.
+     We may need to look at types added by the validator
+     to make this kind of checks more easily.")
+   (xdoc::p
+    "The exclusion of declarators and abstract declarators
+     implies the exclusion of many constructs,
+     e.g. most parameter and structure declarations;
+     the latter prevent the nesting of the struct of interest.")
+   (xdoc::p
+    "We exclude assembly, because we do not know what it does exactly."))
   :types (type-qual
           exprs/decls/stmts
           fundef
@@ -252,7 +299,8 @@
   :combine and
   :extra-args ((struct identp))
   :override
-  ((type-qual :atomic nil)
+  ((stor-spec :auto nil)
+   (type-qual :atomic nil)
    (expr :gensel nil)
    (expr :arrsub nil)
    (expr :funcall nil)
@@ -266,5 +314,16 @@
    (expr :tycompat nil)
    (expr :offsetof nil)
    (expr :va-arg nil)
-   (type-spec :struct nil))
+   (type-spec :atomic nil)
+   (type-spec :typedef nil)
+   (type-spec :typeof-expr nil)
+   (type-spec :typeof-type nil)
+   (type-spec :auto-type nil)
+   (align-spec nil)
+   (decl-spec :stdcall nil)
+   (decl-spec :declspec nil)
+   (initer :list nil)
+   (declor nil)
+   (absdeclor nil)
+   (asm-stmt nil))
   :name abstract-syntax-ssafep)
