@@ -63,6 +63,8 @@
     binop-case
     binop-kind
 
+    stor-spec
+
     type-qual
 
     asm-name-spec-optionp
@@ -179,6 +181,7 @@
     spec/qual-list-fix
     spec/qual-list-count
 
+    align-spec
     align-specp
     align-spec-fix
     align-spec-count
@@ -186,6 +189,7 @@
     align-spec-alignas-type
     align-spec-alignas-expr
 
+    decl-spec
     decl-specp
     decl-spec-fix
     decl-spec-count
@@ -198,6 +202,7 @@
     decl-spec-list-fix
     decl-spec-list-count
 
+    initer
     initerp
     initer-fix
     initer-count
@@ -220,6 +225,7 @@
     desiniter-list-fix
     desiniter-list-count
 
+    designor
     designorp
     designor-fix
     designor-count
@@ -399,6 +405,8 @@
     label-case
     make-label-name
     make-label-casexpr
+
+    asm-stmt
 
     stmtp
     stmt-fix
