@@ -286,7 +286,8 @@
      the latter prevent the nesting of the struct of interest.")
    (xdoc::p
     "We exclude assembly, because we do not know what it does exactly."))
-  :types (type-qual
+  :types (stor-spec
+          type-qual
           exprs/decls/stmts
           fundef
           ext-declon
