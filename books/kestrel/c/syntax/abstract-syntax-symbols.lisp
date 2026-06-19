@@ -63,6 +63,8 @@
     binop-case
     binop-kind
 
+    type-qual
+
     asm-name-spec-optionp
 
     exprs/decls/stmts
