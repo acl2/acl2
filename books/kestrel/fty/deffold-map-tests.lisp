@@ -268,22 +268,19 @@
 ; nor the extra argument, here a standalone (singly recursive) list.
 
 (acl2::must-succeed*
-  (defprod elem
-    ((val acl2::int))
-    :pred elemp)
-  (deflist elemlist
-    :elt-type elem
+  (deflist intlist
+    :elt-type acl2::int
     :true-listp t
-    :pred elemlistp)
+    :pred intlistp)
 
   (deffold-map clear
-    :types (elemlist)
+    :types (intlist)
     :extra-args ((extra booleanp))
-    :override ((elemlist nil))
+    :override ((intlist nil))
     :name test)
 
-  (acl2::assert-equal (elemlist-clear (list (elem 1) (elem 2)) t) nil)
-  (acl2::assert-equal (elemlist-clear nil nil) nil)
+  (acl2::assert-equal (intlist-clear '(1 2 3) t) nil)
+  (acl2::assert-equal (intlist-clear nil nil) nil)
 
   :with-output-off nil)
 
