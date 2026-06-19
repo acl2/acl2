@@ -370,3 +370,32 @@
         (raise "Internal error: malformed accessor name ~x0." some-accessor)
         (mv nil nil)))
     (mv base-name some-accessor)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define name-with-recognizer ((recog symbolp) (fty-table alistp))
+  :returns (name symbolp)
+  :short "Name of the fixtype with a given recognizer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is normally obtained via the FTY table,
+     but some base types do not have entries in that table,
+     and thus they need to be handled explicitly."))
+  (b* ((info (fty::flextype-with-recognizer recog fty-table))
+       ((when info) (fty::flextype->name info)))
+    (case recog
+      (acl2-numberp 'acl2::acl2-number)
+      (acl2::any-p 'acl2::any)
+      (bitp 'bit)
+      (booleanp 'acl2::bool)
+      (characterp 'character)
+      (integerp 'acl2::int)
+      (natp 'acl2::nat)
+      (posp 'acl2::pos)
+      (rationalp 'rational)
+      (stringp 'string)
+      (symbolp 'symbol)
+      (acl2::true-p 'acl2::true)
+      (true-listp 'acl2::true-list)
+      (t (raise "No fixtype found with recognizer ~x0." recog)))))

@@ -155,3 +155,91 @@
 
   (assert-event (equal (intlist-sz nil) 7))
   (assert-event (equal (intlist-sz '(1 2 3)) 7)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Extra arguments must be made ignorable in the generated functions:
+; an :OVERRIDE term (or a combination that reduces to the default)
+; need not mention every extra argument,
+; so without the `ignorable' declaration the unused extra formal
+; would cause an error.
+
+; Product type whose override term does not mention the extra argument.
+
+(acl2::must-succeed*
+  (defprod ipair
+    ((left acl2::int) (right acl2::int))
+    :pred ipairp)
+
+  (deffold-reduce sz
+    :types (ipair)
+    :extra-args ((extra booleanp))
+    :result natp
+    :default 0
+    :combine binary-+
+    :override ((ipair 3))
+    :name test)
+
+  (assert-event (equal (ipair-sz (ipair 1 2) nil) 3))
+  (assert-event (equal (ipair-sz (ipair 1 2) t) 3)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Sum type whose override term does not mention the extra argument.
+
+(acl2::must-succeed*
+  (deftagsum rgb
+    (:red ())
+    (:green ())
+    (:blue ())
+    :pred rgbp)
+
+  (deffold-reduce sz
+    :types (rgb)
+    :extra-args ((extra booleanp))
+    :result natp
+    :default 0
+    :combine binary-+
+    :override ((rgb 9))
+    :name test)
+
+  (assert-event (equal (rgb-sz (rgb-red) nil) 9))
+  (assert-event (equal (rgb-sz (rgb-blue) t) 9)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Sum/list types whose combination reduces to the default
+; (and a list override) do not mention the extra argument,
+; here in a mutually recursive clique.
+
+(acl2::must-succeed*
+  (deftypes foo+
+    (deftagsum foo
+      (:list ((list foo-list)))
+      (:omap ((omap foo-omap)))
+      (:bar ())
+      :pred foop)
+    (deflist foo-list
+      :elt-type foo
+      :true-listp t
+      :pred foo-listp)
+    (defomap foo-omap
+      :key-type acl2::int
+      :val-type foo
+      :pred foo-omapp))
+
+  (deffold-reduce count-bars
+    :types (foo+)
+    :extra-args ((extra booleanp))
+    :result natp
+    :default 0
+    :combine binary-+
+    :override
+    ((foo :bar 1)
+     (foo-list 5))
+    :name test)
+
+  ;; The list override term is used as the body of the list function,
+  ;; regardless of the extra argument.
+  (assert-event (equal (foo-list-count-bars nil nil) 5))
+  (assert-event (equal (foo-list-count-bars (list (foo-bar) (foo-bar)) t) 5)))
