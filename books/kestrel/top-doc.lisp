@@ -49,6 +49,7 @@
    (include-book "java/top")
    (include-book "jvm/doc")
    (include-book "json/top")
+   (include-book "jsonrpc/top")
    (include-book "lists-light/doc")
    (include-book "number-theory/top")
    (include-book "prime-fields/doc")
