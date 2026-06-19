@@ -12,6 +12,8 @@
 
 (include-book "values")
 
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -99,7 +101,7 @@
 
 (define prim-int-div ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
-  :short "Evaluaton of integer division."
+  :short "Evaluation of integer division."
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (zerop i2.int)) (reserr nil)) ;; ERROR: division by zero
@@ -160,7 +162,7 @@
   :short "Evaluation of integer shift left."
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
-       ((when (negp i2.int)) (reserr nil)) ;; ERROR: shift by negative bits
+       ((when (< i2.int 0)) (reserr nil)) ;; ERROR: shift by negative bits
        (ival (int-value (ash i1.int i2.int))))
     (expr-value-base (base-value-int ival))))
 
@@ -169,7 +171,7 @@
   :short "Evaluation of integer shift right."
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
-       ((when (negp i2.int)) (reserr nil)) ;; ERROR: shift by negative bits
+       ((when (< i2.int 0)) (reserr nil)) ;; ERROR: shift by negative bits
        (ival (int-value (ash i1.int (- i2.int)))))
     (expr-value-base (base-value-int ival))))
 
