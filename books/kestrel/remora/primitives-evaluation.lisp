@@ -254,4 +254,3 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        (bval (not (zerop i1.int))))
     (expr-value-base (base-value-bool bval))))
-      
