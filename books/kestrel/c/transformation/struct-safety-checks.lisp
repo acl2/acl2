@@ -63,7 +63,7 @@
    (xdoc::p
     "We define a family of predicates on ASTs,
      using @(tsee fty::deffold-reduce).
-     The ASTs must satisfy the @(tsee abstract-syntax-annop) predicates,
+     The ASTs must satisfy the @(tsee c$::abstract-syntax-annop) predicates,
      i.e. they must include validation annotations,
      but currently @(tsee fty::deffold-reduce) does not support
      the use of another @(tsee fty::deffold-reduce) as guards
@@ -83,7 +83,7 @@
    (xdoc::p
     "The predicates should start at the @(tsee exprs/decls/stmts) clique.
      It is not hard to see that
-     all the ASTs in @(see abstract-syntax-trees) before that clique
+     all the ASTs in @(see c$::abstract-syntax-trees) before that clique
      do not contain anything directly related to structs.
      As a simple example, an identifier,
      although it could a struct name,
