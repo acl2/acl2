@@ -104,7 +104,9 @@
      because it is not clear how that interacts with
      transformations such as splitting the struct.
      So we just forbid the qualifier.
-     We will revisit this if it turns out to be too draconian.")
+     We will revisit this if it turns out to be too draconian.
+     That is the only type qualifier that we exclude;
+     all the others should be safe for struct transformations.")
    (xdoc::p
     "The predicates end at the @(tsee trans-ensemble) type.
      We could extend this to @(tsee code-ensemble) if needed.")
