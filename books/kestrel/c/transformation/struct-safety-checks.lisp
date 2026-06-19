@@ -163,7 +163,7 @@
     (xdoc::li
      "We reject array subscripting for now.
       This should be safe for structs,
-      in the sense that it does break their abstraction;
+      in the sense that it does not break their abstraction;
       it is, after all, just pointer addition and dereferencing.
       But a transformation may not handle arrays of structs yet.
       These checks should be refined to look at the type of the array,
