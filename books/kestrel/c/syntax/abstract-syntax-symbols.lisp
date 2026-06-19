@@ -135,6 +135,7 @@
     const-expr-option-count
     const-expr-option-case
 
+    genassoc
     genassocp
     genassoc-fix
     genassoc-count
@@ -146,6 +147,7 @@
     genassoc-list-fix
     genassoc-list-count
 
+    member-designor
     member-designorp
     member-designor-fix
     member-designor-count
@@ -169,6 +171,7 @@
 
     type-spec-listp
 
+    spec/qual
     spec/qual-p
     spec/qual-fix
     spec/qual-count
