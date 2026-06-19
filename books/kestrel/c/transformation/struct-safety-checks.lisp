@@ -55,6 +55,235 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define struct-type-is-the-struct-p ((uid uidp)
+                                     (tunit? filepath-optionp)
+                                     (tag/members type-struni-tag/members-p)
+                                     (the-struct identp))
+  :returns (yes/no booleanp)
+  :short "Check if a struct type is the one of interest."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first three inputs of this function are
+     the fields of the @(':struct') summand of @(tsee type).
+     The last input of this function is the tag of the struct of interest,
+     i.e. the one being transformed.
+     We check whether the struct type consisting of the three fields
+     is a tagged one with the same tag as the struct of interest.
+     We will need to elaborate this check,
+     because in general a tag alone may not uniquely identify a struct type,
+     and we may also need to take into account type compatibility."))
+  (declare (ignore uid tunit?))
+  (and (type-struni-tag/members-case tag/members :tagged)
+       (b* ((tag (type-struni-tag/members-tagged->tag tag/members)))
+         (equal tag (ident-fix the-struct)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-is-the-struct-p ((type typep) (the-struct identp))
+  :returns (yes/no booleanp)
+  :short "Check if a type is the struct type of interest."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is true if the type is a struct type,
+     and @(tsee struct-type-is-the-struct-p) holds:
+     see the documentation of that function."))
+  (and (type-case type :struct)
+       (struct-type-is-the-struct-p (type-struct->uid type)
+                                    (type-struct->tunit? type)
+                                    (type-struct->tag/members type)
+                                    the-struct)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines type/type-list-ssafep
+  :short "Check that types are safe
+          for transformations that operate on a given struct type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check that the struct type of interest
+     is not nested in array, union, or (other) struct types."))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (define type-ssafep ((type typep) (nested booleanp) (struct identp))
+    :returns (yes/no booleanp)
+    :parents (struct-safety-checks type/type-list-ssafep)
+    :short "Check that a type is safe
+            for transformations that operate on a given struct type."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('nested') input indicates whether the @('type') input
+       is nested under some array or union or struct type.")
+     (xdoc::p
+      "Most types are safe because they do not contain other types.
+       When we reach a struct type, we compare it with the one of interest:
+       if they are the same, and we are nested under some type,
+       the safety check fails, otherwise it succeeds.
+       We use separate functions to check the content of struct and union types.
+       For array types, we check the element type,
+       setting the @('nested') flag to @('t') since the element type is nested.
+       For pointer and function types, we leave the @('nested') flag as is;
+       although the struct type of interest cannot be nested as such in them,
+       we also disallow nesting of pointers to the struct type of interest,
+       at least for now.
+       We regard an unknown type as unsafe, because it could be anything.
+       The same goes for an unknown scalar type,
+       because it could be a pointer to an unsafe type
+       (e.g. structs that contain the struct of interest).
+       An unknown arithmetic type is safe,
+       because it can never contain the struct of interest."))
+    (type-case
+     type
+     :void t
+     :char t
+     :schar t
+     :uchar t
+     :sshort t
+     :ushort t
+     :sint t
+     :uint t
+     :slong t
+     :ulong t
+     :sllong t
+     :ullong t
+     :float t
+     :double t
+     :ldouble t
+     :floatc t
+     :doublec t
+     :ldoublec t
+     :bool t
+     :struct (if (and nested
+                      (struct-type-is-the-struct-p type.uid
+                                                   type.tunit?
+                                                   type.tag/members
+                                                   struct))
+                 nil
+               (type-struni-tag/members-ssafep type.tag/members struct))
+     :union (type-struni-tag/members-ssafep type.tag/members struct)
+     :enum t
+     :array (type-ssafep type.of t struct)
+     :pointer (type-ssafep type.to nested struct)
+     :function (and (type-ssafep type.ret nested struct)
+                    (type-params-ssafep type.params nested struct))
+     :unknown nil
+     :unknown-scalar nil
+     :unknown-arithmetic t)
+    :measure (type-count type))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (define type-list-ssafep ((types type-listp) (nested booleanp) (struct identp))
+    :returns (yes/no booleanp)
+    :parents (struct-safety-checks type/type-list-ssafep)
+    :short "Check that a list of types are safe
+            for transformations that operate on a given struct type."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check every type in turn."))
+    (or (endp types)
+        (and (type-ssafep (car types) nested struct)
+             (type-list-ssafep (cdr types) nested struct)))
+    :measure (type-list-count types))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (define type-struni-tag/members-ssafep ((tystr-tag/mems
+                                           type-struni-tag/members-p)
+                                          (struct identp))
+    :returns (yes/no booleanp)
+    :parents (struct-safety-checks type/type-list-ssafep)
+    :short "Check that the portion of a struct/union type
+            that corresponds to the tag and members
+            is safe for transformations that operate on a given struct type."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A tag alone is safe, because it does not contain types;
+       checks on the definition of the type referred to by the tag
+       are performed elsewhere.
+       Otherwise, we descend into the members."))
+    (type-struni-tag/members-case
+     tystr-tag/mems
+     :tagged t
+     :untagged (type-struni-member-list-ssafep tystr-tag/mems.members struct))
+    :measure (type-struni-tag/members-count tystr-tag/mems))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (define type-struni-member-ssafep ((mem type-struni-member-p) (struct identp))
+    :returns (yes/no booleanp)
+    :parents (struct-safety-checks type/type-list-ssafep)
+    :short "Check that a struct/union member is safe
+            for transformations that operate on a given struct type."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check the type, passing @('t') as the @('nested') flag,
+       because we arrived here from a struct or union type,
+       so we are in a nested situation."))
+    (type-ssafep (type-struni-member->type mem) t struct)
+    :measure (type-struni-member-count mem))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (define type-struni-member-list-ssafep ((mems type-struni-member-listp)
+                                          (struct identp))
+    :returns (yes/no booleanp)
+    :parents (struct-safety-checks type/type-list-ssafep)
+    :short "Check that a list of struct/union members are safe
+            for transformations that operate on a given struct type."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check every member in turn."))
+    (or (endp mems)
+        (and (type-struni-member-ssafep (car mems) struct)
+             (type-struni-member-list-ssafep (cdr mems) struct)))
+    :measure (type-struni-member-list-count mems))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (define type-params-ssafep ((params type-params-p)
+                              (nested booleanp)
+                              (struct identp))
+    :returns (yes/no booleanp)
+    :parents (struct-safety-checks type/type-list-ssafep)
+    :short "Check that the portion of a function type
+            pertaining to the function parameters
+            is safe for transformations that operate on a given struct type."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check all the types."))
+    (type-params-case
+     params
+     :prototype (type-list-ssafep params.params nested struct)
+     :old-style (type-list-ssafep params.params nested struct)
+     :unspecified t)
+    :measure (type-params-count params))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  ///
+
+  (fty::deffixequiv-mutual type/type-list-ssafep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define top-type-ssafep ((type typep) (struct identp))
+  :returns (yes/no booleanp)
+  :short "Check that a top-level type is safe
+          for transformations that operate on a given struct type."
+  (type-ssafep type nil struct))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deffold-reduce ssafep
   :short "Check that a struct type is used safely,
           for transformations that operate on the struct type."
