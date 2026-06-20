@@ -16,7 +16,7 @@
 
 (defxdoc defgrammar
 
-  :parents (abnf)
+  :parents (grammar-definer)
 
   :short "Build an ACL2 representation of an ABNF grammar from a file."
 
