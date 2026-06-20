@@ -168,6 +168,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define denv-add-ispace-var ((var ispace-varp) (ival ispace-valuep) (denv denvp))
+  :returns (new-denv denvp)
+  :short "Add an ispace variable, with an associated ispace value,
+          to a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This may override an existing variable,
+     which is intended hiding behavior."))
+  (change-denv denv
+               :ispace-vars (omap::update (ispace-var-fix var)
+                                          (ispace-value-fix ival)
+                                          (denv->ispace-vars denv)))
+
+  ///
+
+  (defret denv->type-vars-of-denv-add-ispace-var
+    (equal (denv->type-vars new-denv)
+           (denv->type-vars denv)))
+
+  (defret denv->expr-vars-of-denv-add-ispace-var
+    (equal (denv->expr-vars new-denv)
+           (denv->expr-vars denv)))
+
+  (defret denv-wfp-of-denv-add-ispace-var
+    (implies (denv-wfp denv)
+             (denv-wfp new-denv))
+    :hints (("Goal" :in-theory (enable denv-wfp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define denv-add-ispace-vars ((vars ispace-var-listp)
                               (ivals ispace-value-listp)
                               (denv denvp))
@@ -182,11 +213,7 @@
      which is intended hiding behavior."))
   (b* (((when (endp vars)) (denv-fix denv))
        ((unless (mbt (consp ivals))) (denv-fix denv))
-       (denv (change-denv
-              denv
-              :ispace-vars (omap::update (ispace-var-fix (car vars))
-                                         (ispace-value-fix (car ivals))
-                                         (denv->ispace-vars denv)))))
+       (denv (denv-add-ispace-var (car vars) (car ivals) denv)))
     (denv-add-ispace-vars (cdr vars) (cdr ivals) denv))
 
   ///
@@ -204,7 +231,7 @@
   (defret denv-wfp-of-denv-add-ispace-vars
     (implies (denv-wfp denv)
              (denv-wfp new-denv))
-    :hints (("Goal" :in-theory (enable denv-wfp)))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
