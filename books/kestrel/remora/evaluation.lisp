@@ -1191,7 +1191,27 @@
        reusing the ACL2 functions for
        type, ispace, and term applications.
        The type arguments and the ispace arguments are optional:
-       the corresponding application is skipped when they are absent."))
+       the corresponding application is skipped when they are absent.")
+     (xdoc::p
+      "For an unboxing expression,
+       we evaluate the target expression.
+       If it evaluates to a scalar box value,
+       we check that the box's ispace values match,
+       in number and sorts,
+       the ispace variables of the unboxing expression;
+       we extend the dynamic environment
+       to bind the ispace variables to the box's ispace values
+       and the term variable to the box's array value;
+       and we evaluate the body in the extended environment.
+       The case in which the target evaluates to a vector
+       (i.e. an array of boxes), empty or not, is not handled yet.")
+     (xdoc::p
+      "For a bracket expression,
+       we evaluate the sub-expressions,
+       we ensure that there is at least one resulting value
+       (a bracket cannot be empty),
+       we ensure that all the resulting values have the same dimensions,
+       and we form a vector value with those values."))
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-case
        expr
@@ -1260,8 +1280,28 @@
                     :none funval))
                   ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
                (eval-app funval argvals denv (1- limit)))
-       :unbox (reserr :todo)
-       :bracket (reserr :todo)
+       :unbox (b* (((ok targetval) (eval-expr expr.target denv (1- limit))))
+                (expr-value-case
+                 targetval
+                 :box
+                 (b* (((unless (ispace-values-match-ispace-vars-p
+                                targetval.ispaces expr.ispaces))
+                       (reserr nil))
+                      (denv (denv-add-ispace-vars expr.ispaces
+                                                  targetval.ispaces
+                                                  denv))
+                      (denv (denv-add-expr-var expr.var
+                                               targetval.array
+                                               denv)))
+                   (eval-expr expr.body denv (1- limit)))
+                 :vector (reserr :todo)
+                 :vector-empty (reserr :todo)
+                 :otherwise (reserr nil)))
+       :bracket (b* (((ok vals) (eval-expr-list expr.exprs denv (1- limit)))
+                     ((unless (consp vals)) (reserr nil))
+                     ((unless (list-repeatp (dims-of-expr-value-list vals)))
+                      (reserr nil)))
+                  (expr-value-vector vals))
        :let (reserr :todo)))
     :measure (nfix limit))
 
