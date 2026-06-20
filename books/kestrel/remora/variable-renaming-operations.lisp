@@ -163,6 +163,16 @@
      We then recurse into the body of the binder
      with the restricted renaming.")
    (xdoc::p
+    "Since @('let') bindings are sequential,
+     we override the function for @(tsee bind-list)
+     so that, for a non-empty list of bindings,
+     after checking the @(tsee car) of the list under the current renaming,
+     we remove from the renaming the variables bound in the @(tsee car)
+     (checking that they are not captured)
+     before checking the @(tsee cdr) of the list.
+     The body of a @('let') is then checked with
+     all the variables bound in the bindings removed from the renaming.")
+   (xdoc::p
     "This is a conservative check:
      it does not depend on which keys of the renaming
      are actually free in the body of each binder."))
@@ -280,7 +290,20 @@
                                                            shape-renam)
                      (expr-rename-ispace-vars-no-capture-p bind.expr
                                                            dim-renam
-                                                           shape-renam)))))
+                                                           shape-renam))))
+   (bind-list
+    (b* (((when (endp bind-list)) t)
+         (bind (car bind-list)))
+      (and (bind-rename-ispace-vars-no-capture-p bind dim-renam shape-renam)
+           (b* (((mv bound-dim-vars bound-shape-vars dim-renam shape-renam)
+                 (dim/shape-rename-remove-bound (bind-bound-ispace-vars bind)
+                                                dim-renam
+                                                shape-renam)))
+             (and (renaming-no-capture-p bound-dim-vars dim-renam)
+                  (renaming-no-capture-p bound-shape-vars shape-renam)
+                  (bind-list-rename-ispace-vars-no-capture-p (cdr bind-list)
+                                                             dim-renam
+                                                             shape-renam)))))))
   :name ast-rename-ispace-vars-no-capture-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -302,6 +325,16 @@
      among the omap values of the resulting (restricted) renaming.
      We then recurse into the body of the binder
      with the restricted renaming.")
+   (xdoc::p
+    "Since @('let') bindings are sequential,
+     we override the function for @(tsee bind-list)
+     so that, for a non-empty list of bindings,
+     after checking the @(tsee car) of the list under the current renaming,
+     we remove from the renaming the variables bound in the @(tsee car)
+     (checking that they are not captured)
+     before checking the @(tsee cdr) of the list.
+     The body of a @('let') is then checked with
+     all the variables bound in the bindings removed from the renaming.")
    (xdoc::p
     "This is a conservative check:
      it does not depend on which keys of the renaming
@@ -396,7 +429,20 @@
                                                          array-renam)
                      (expr-rename-type-vars-no-capture-p bind.expr
                                                          atom-renam
-                                                         array-renam)))))
+                                                         array-renam))))
+   (bind-list
+    (b* (((when (endp bind-list)) t)
+         (bind (car bind-list)))
+      (and (bind-rename-type-vars-no-capture-p bind atom-renam array-renam)
+           (b* (((mv bound-atom-vars bound-array-vars atom-renam array-renam)
+                 (atom/array-rename-remove-bound (bind-bound-type-vars bind)
+                                                 atom-renam
+                                                 array-renam)))
+             (and (renaming-no-capture-p bound-atom-vars atom-renam)
+                  (renaming-no-capture-p bound-array-vars array-renam)
+                  (bind-list-rename-type-vars-no-capture-p (cdr bind-list)
+                                                           atom-renam
+                                                           array-renam)))))))
   :name ast-rename-type-vars-no-capture-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -417,6 +463,16 @@
      among the omap values of the resulting (restricted) renaming.
      We then recurse into the body of the binder
      with the restricted renaming.")
+   (xdoc::p
+    "Since @('let') bindings are sequential,
+     we override the function for @(tsee bind-list)
+     so that, for a non-empty list of bindings,
+     after checking the @(tsee car) of the list under the current renaming,
+     we remove from the renaming the variables bound in the @(tsee car)
+     (checking that they are not captured)
+     before checking the @(tsee cdr) of the list.
+     The body of a @('let') is then checked with
+     all the variables bound in the bindings removed from the renaming.")
    (xdoc::p
     "This is a conservative check:
      it does not depend on which keys of the renaming
@@ -454,7 +510,16 @@
          (b* ((bound (set::mergesort (var+type-list->var bind.params)))
               (renam (omap::delete* bound (string-string-map-fix renam))))
            (and (renaming-no-capture-p bound renam)
-                (expr-rename-expr-vars-no-capture-p bind.expr renam)))))
+                (expr-rename-expr-vars-no-capture-p bind.expr renam))))
+   (bind-list
+    (b* (((when (endp bind-list)) t)
+         (bind (car bind-list)))
+      (and (bind-rename-expr-vars-no-capture-p bind renam)
+           (b* ((bound (bind-bound-expr-vars bind))
+                (renam (omap::delete* bound (string-string-map-fix renam))))
+             (and (renaming-no-capture-p bound renam)
+                  (bind-list-rename-expr-vars-no-capture-p (cdr bind-list)
+                                                           renam)))))))
   :name ast-rename-expr-vars-no-capture-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
