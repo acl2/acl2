@@ -552,8 +552,10 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Scalar values always satisfy dimension constraints
-       and have the empty list of dimensions.")
+      "Base and abstraction values always satisfy dimension constraints
+       and have the empty list of dimensions.
+       Box values also have the empty list of dimensions,
+       but their boxed value must satisfy the dimension constraints.")
      (xdoc::p
       "For a (non-empty) vector, there must be at least one element.
        We recursively check its element expression values,
@@ -581,7 +583,8 @@
      :lambda nil
      :tlambda nil
      :ilambda nil
-     :box nil
+     :box (b* (((ok &) (check-dims-of-expr-value val.array)))
+            nil)
      :vector (b* (((ok dimss) (check-dims-of-expr-value-list val.elems))
                   ((unless (consp dimss)) (reserr nil))
                   ((unless (list-repeatp dimss)) (reserr nil)))
@@ -800,8 +803,10 @@
     :enable (expr-value-wfp check-dims-of-expr-value))
 
   (defrule expr-value-wfp-of-expr-value-box
-    (expr-value-wfp (expr-value-box ispaces array type))
-    :enable (expr-value-wfp check-dims-of-expr-value))
+    (equal (expr-value-wfp (expr-value-box ispaces array type))
+           (expr-value-wfp array))
+    :enable expr-value-wfp
+    :expand (check-dims-of-expr-value (expr-value-box ispaces array type)))
 
   (defrule expr-value-wfp-of-expr-value-vector-empty
     (expr-value-wfp (expr-value-vector-empty dims elem))
