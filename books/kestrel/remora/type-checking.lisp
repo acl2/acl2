@@ -127,6 +127,183 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defines check-shapes/ispaces
+  :short "Check shapes, ispaces, and lists thereof."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-shape ((shape shapep) (senv senvp))
+    :returns (yes/no booleanp)
+    :parents (type-checking check-shapes/ispaces)
+    :short "Check a shape."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We return @('t') if the check is successful, otherwise @('nil').")
+     (xdoc::p
+      "A variable must be in the environment.")
+     (xdoc::p
+      "A shape consisting of dimensions is valid
+       iff all the dimensions are valid.")
+     (xdoc::p
+      "A concatenation of shapes is valid
+       iff all the shapes are valid.")
+     (xdoc::p
+      "A splicing of ispaces is valid
+       iff all the ispaces are valid."))
+    (shape-case
+     shape
+     :var (set::in (ispace-var-shape shape.name) (senv->ispace-vars senv))
+     :dims (check-dim-list shape.dims senv)
+     :append (check-shape-list shape.shapes senv)
+     :splice (check-ispace-list shape.ispaces senv))
+    :measure (shape-count shape))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-shape-list ((shapes shape-listp) (senv senvp))
+    :returns (yes/no booleanp)
+    :parents (type-checking check-shapes/ispaces)
+    :short "Check a list of shapes."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check each shape in turn,
+       returning @('t') iff they are all valid."))
+    (or (endp shapes)
+        (and (check-shape (car shapes) senv)
+             (check-shape-list (cdr shapes) senv)))
+    :measure (shape-list-count shapes))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-ispace ((ispace ispacep) (senv senvp))
+    :returns (yes/no booleanp)
+    :parents (type-checking check-shapes/ispaces)
+    :short "Check an ispace."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "An ispace that is a dimension is valid
+       iff the dimension is valid.")
+     (xdoc::p
+      "An ispace that is a shape is valid
+       iff the shape is valid."))
+    (ispace-case
+     ispace
+     :dim (check-dim ispace.dim senv)
+     :shape (check-shape ispace.shape senv))
+    :measure (ispace-count ispace))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-ispace-list ((ispaces ispace-listp) (senv senvp))
+    :returns (yes/no booleanp)
+    :parents (type-checking check-shapes/ispaces)
+    :short "Check a list of ispaces."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check each ispace in turn,
+       returning @('t') iff they are all valid."))
+    (or (endp ispaces)
+        (and (check-ispace (car ispaces) senv)
+             (check-ispace-list (cdr ispaces) senv)))
+    :measure (ispace-list-count ispaces))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ///
+
+  (fty::deffixequiv-mutual check-shapes/ispaces))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines check-types
+  :short "Check types and lists of types."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-type ((type typep) (senv senvp))
+    :returns (yes/no booleanp)
+    :parents (type-checking check-types)
+    :short "Check a type."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We return @('t') if the check is successful, otherwise @('nil').")
+     (xdoc::p
+      "A variable must be in the environment.")
+     (xdoc::p
+      "A base type is always valid.")
+     (xdoc::p
+      "An array type is valid iff
+       its element type is valid and atom-kinded (i.e. not an array type),
+       and its ispace is valid.")
+     (xdoc::p
+      "A bracket type is valid iff
+       its element type is valid and atom-kinded (i.e. not an array type),
+       and its ispaces are valid.")
+     (xdoc::p
+      "The atom-kind requirement on the element type of
+       an array or bracket type is the only kind constraint:
+       as explained in @(tsee type),
+       an atom-kinded type may otherwise be used
+       wherever an array-kinded type is expected,
+       being auto-lifted to a zero-rank array type.")
+     (xdoc::p
+      "A function type is valid iff
+       its input types and its output type are all valid.")
+     (xdoc::p
+      "A universal type is valid iff its body is valid
+       in the environment extended with the bound type variables.")
+     (xdoc::p
+      "A product type is valid iff its body is valid
+       in the environment extended with the bound ispace variables.")
+     (xdoc::p
+      "A sum type is valid iff its body is valid
+       in the environment extended with the bound ispace variables."))
+    (type-case
+     type
+     :var (set::in type.var (senv->type-vars senv))
+     :base t
+     :array (and (check-type type.elem senv)
+                 (type-atomp type.elem)
+                 (check-ispace type.ispace senv))
+     :bracket (and (check-type type.elem senv)
+                   (type-atomp type.elem)
+                   (check-ispace-list type.ispaces senv))
+     :fun (and (check-type-list type.in senv)
+               (check-type type.out senv))
+     :forall (check-type type.body (senv-add-type-vars type.params senv))
+     :pi (check-type type.body (senv-add-ispace-vars type.params senv))
+     :sigma (check-type type.body (senv-add-ispace-vars type.params senv)))
+    :measure (type-count type))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-type-list ((types type-listp) (senv senvp))
+    :returns (yes/no booleanp)
+    :parents (type-checking check-types)
+    :short "Check a list of types."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check each type in turn,
+       returning @('t') iff they are all valid."))
+    (or (endp types)
+        (and (check-type (car types) senv)
+             (check-type-list (cdr types) senv)))
+    :measure (type-list-count types))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ///
+
+  (fty::deffixequiv-mutual check-types))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define base-type-of-base-lit ((lit base-litp))
   :returns (btype base-typep)
   :short "Base type of a base value."
@@ -374,28 +551,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ispace-vars-in-scope-p ((vars ispace-var-setp) (senv senvp))
-  :returns (yes/no booleanp)
-  :short "Check if the ispace variables in a set are all in scope."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the case when the variables are all in the static environment."))
-  (set::subset (ispace-var-set-fix vars) (senv->ispace-vars senv)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-vars-in-scope-p ((vars type-var-setp) (senv senvp))
-  :returns (yes/no booleanp)
-  :short "Check if the type variables in a set are all in scope."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the case when the variables are all in the static environment."))
-  (set::subset (type-var-set-fix vars) (senv->type-vars senv)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defines check-exprs/atoms
   :short "Check expressions, atoms, and lists thereof."
   :long
@@ -437,8 +592,7 @@
        and we return the array type.")
      (xdoc::p
       "For an empty array, there must be a 0 dimension.
-       The type must have atom kind.
-       We ensure that the ispace and type variables of the type are in scope.
+       The type must be valid and atom-kinded.
        We form a shape with the dimensions, and we return the array type.")
      (xdoc::p
       "A (non-empty) frame is similar to a (non-empty) array,
@@ -499,12 +653,10 @@
        @($\\tau_u$) corresponds to @('body-atom-type'),
        @($\\iota_u$) corresponds to @('body-shape'),
        and @($\\iota_f$) corresponds to @('fun-shape').
-       We check that
-       all the free ispace and type variables of the type arguments
-       are in scope.
-       We check all the type arguments
-       (@($\\tau\\ldots$) in [arxiv] and [thesis]),
-       ensuring that their kinds match the ones of
+       We check that the type arguments
+       (@($\\tau\\ldots$) in [arxiv] and [thesis])
+       are valid and
+       that their kinds match the ones of
        the variables in the universal type.
        We form a substitution from the bound variables to the argument types,
        and we apply it to the body atom type
@@ -524,8 +676,7 @@
        @($\\tau_p$) corresponds to @('body-atom-type'),
        @($\\iota_p$) corresponds to @('body-shape'),
        and @($\\iota_f$) corresponds to @('fun-shape').
-       We check that
-       all the free (ispace) variables in the ispace arguments are in scope.
+       We check that the ispace arguments are valid.
        We check all the ispace arguments
        (@($\\iota\\ldots$) in [arxiv] and [thesis]),
        ensuring that their sorts match the ones of
@@ -589,12 +740,8 @@
                                  (shape-dims (dim-const-list expr.dims)))))
      :array-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-          ((unless (type-atomp expr.type)) (reserr nil))
-          ((unless (and (ispace-vars-in-scope-p
-                         (type-free-ispace-vars expr.type) senv)
-                        (type-vars-in-scope-p
-                         (type-free-type-vars expr.type) senv)))
-           (reserr nil)))
+          ((unless (check-type expr.type senv)) (reserr nil))
+          ((unless (type-atomp expr.type)) (reserr nil)))
        (make-type-array :elem expr.type
                         :ispace (ispace-shape
                                  (shape-dims (dim-const-list expr.dims)))))
@@ -614,11 +761,7 @@
                                      (shape-from-ispace array.ispace))))))
      :frame-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-          ((unless (and (ispace-vars-in-scope-p
-                         (type-free-ispace-vars expr.type) senv)
-                        (type-vars-in-scope-p
-                         (type-free-type-vars expr.type) senv)))
-           (reserr nil))
+          ((unless (check-type expr.type senv)) (reserr nil))
           ((ok (type+ispace array)) (type-match-array expr.type)))
        (make-type-array
         :elem array.type
@@ -673,11 +816,7 @@
           (body-atom-type (type+ispace->type body-type+ispace))
           (body-ispace (type+ispace->ispace body-type+ispace))
           (body-shape (shape-from-ispace body-ispace))
-          ((unless (and (ispace-vars-in-scope-p
-                         (type-list-free-ispace-vars expr.args) senv)
-                        (type-vars-in-scope-p
-                         (type-list-free-type-vars expr.args) senv)))
-           (reserr nil))
+          ((unless (check-type-list expr.args senv)) (reserr nil))
           ((ok (string-type-map-pair type-maps))
            (check-type-params-and-args vars expr.args))
           ((unless (type-subst-type-vars-no-capture-p body-atom-type
@@ -704,9 +843,7 @@
           (body-atom-type (type+ispace->type body-type+ispace))
           (body-ispace (type+ispace->ispace body-type+ispace))
           (body-shape (shape-from-ispace body-ispace))
-          ((unless (ispace-vars-in-scope-p
-                    (ispace-list-free-ispace-vars expr.args) senv))
-           (reserr nil))
+          ((unless (check-ispace-list expr.args senv)) (reserr nil))
           ((ok (stringdimmap+stringshapemap ispace-maps))
            (check-ispace-params-and-args vars expr.args))
           ((unless (type-subst-ispace-vars-no-capture-p body-atom-type
@@ -811,9 +948,8 @@
      (xdoc::p
       "For a term abstraction,
        first we check that there are no duplicate bound variable names.
-       We check that
-       all the ispace and type variables in the types of the parameters
-       are in scope.
+       We check that the types of the parameters are valid
+       (see @(tsee check-type-list)).
        We extend the static environment with the bound variables,
        and we check the body of the abstraction
        in the extended static environment.
@@ -839,9 +975,9 @@
        whose bound variables are the same as the abstraction.")
      (xdoc::p
       "For a boxing atom,
-       the free (ispace) variables in the ispaces must be in scope,
+       the ispaces must be valid (see @(tsee check-ispace-list)),
        and the type that is part of its syntax must be a sum type.
-       The free ispace and type variables of the type must be in scope.
+       The type must be valid (see @(tsee check-type)).
        We check that the ispaces in the boxing atom have the same sorts
        as the bound variables of the sum type,
        obtaining a dimension substitution and a shape substitution.
@@ -861,11 +997,7 @@
      (b* (((unless (no-duplicatesp-equal (var+type-list->var atom.params)))
            (reserr nil))
           (types (var+type-list->type atom.params))
-          ((unless (and (ispace-vars-in-scope-p
-                         (type-list-free-ispace-vars types) senv)
-                        (type-vars-in-scope-p
-                         (type-list-free-type-vars types) senv)))
-           (reserr nil))
+          ((unless (check-type-list types senv)) (reserr nil))
           (senv (senv-add-vars+types atom.params senv))
           ((ok type) (check-expr atom.body senv)))
        (make-type-fun :in types :out type))
@@ -882,16 +1014,10 @@
           ((ok type) (check-expr atom.body senv)))
        (make-type-pi :params atom.params :body type))
      :box
-     (b* (((unless (ispace-vars-in-scope-p
-                    (ispace-list-free-ispace-vars atom.ispaces) senv))
-           (reserr nil))
+     (b* (((unless (check-ispace-list atom.ispaces senv)) (reserr nil))
           ((unless (type-atomp atom.type)) (reserr nil))
           (box-type atom.type)
-          ((unless (and (ispace-vars-in-scope-p
-                         (type-free-ispace-vars box-type) senv)
-                        (type-vars-in-scope-p
-                         (type-free-type-vars box-type) senv)))
-           (reserr nil))
+          ((unless (check-type box-type senv)) (reserr nil))
           ((ok vars+type) (type-match-sum box-type))
           (vars (ispacevarlist+type->vars vars+type))
           (body-type (ispacevarlist+type->type vars+type))
