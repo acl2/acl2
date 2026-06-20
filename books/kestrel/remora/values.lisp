@@ -838,6 +838,13 @@
              acl2::not-reserrp-when-nat-list-listp)
     :expand (check-dims-of-expr-value (expr-value-vector vals)))
 
+  (defrule expr-value-wfp-of-expr-value-box->array
+    (implies (and (expr-value-wfp val)
+                  (expr-value-case val :box))
+             (expr-value-wfp (expr-value-box->array val)))
+    :enable expr-value-wfp
+    :expand (check-dims-of-expr-value val))
+
   (defrule expr-value-list-wfp-of-expr-value-vector->elems
     (implies (and (expr-value-wfp val)
                   (expr-value-case val :vector))
