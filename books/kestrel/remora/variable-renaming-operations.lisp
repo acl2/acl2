@@ -505,7 +505,6 @@
                  (if var+name
                      (shape-var (cdr var+name))
                    (shape-var shape.name))))
-   (shape :dim (shape-dim (dim-rename-dim-vars shape.dim dim-renam)))
    (shape :dims (shape-dims (dim-list-rename-dim-vars shape.dims dim-renam)))
    (ispace :dim (ispace-dim (dim-rename-dim-vars ispace.dim dim-renam)))
    (type :pi

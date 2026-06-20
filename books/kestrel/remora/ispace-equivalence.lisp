@@ -345,7 +345,6 @@
     (shape-case
      shape
      :var (shape-var shape.name)
-     :dim (shape-dim (normalize-dim shape.dim))
      :dims (shape-dims (normalize-dim-list shape.dims))
      :append (shape-append (normalize-dims-in-shape-list shape.shapes))
      :splice (shape-splice (normalize-dims-in-ispace-list shape.ispaces)))
@@ -405,7 +404,6 @@
    (xdoc::p
     "We decompose shapes into concatenations of
      shapes consisting of singleton lists of dimensions.
-     We turn a @(':dim') shape into a @(':dims') shape of a singleton.
      We normalize a @(':dims') shape as follows:
      if the @(':dims') shape has no dimensions,
      we turn it into the empty concatenation;
@@ -426,7 +424,6 @@
     (shape-case
      shape
      :var (shape-var shape.name)
-     :dim (shape-dims (list shape.dim))
      :dims (cond ((endp shape.dims) ; no dimensions
                   (shape-append nil))
                  ((endp (cdr shape.dims)) ; one dimension
@@ -527,7 +524,6 @@
     (shape-case
      shape
      :var (shape-append (list (shape-var shape.name)))
-     :dim (shape-append (list (shape-dim shape.dim)))
      :dims (shape-append (list (shape-dims shape.dims)))
      :append (shape-append (flatten-append-in-shape-list shape.shapes t))
      :splice (b* ((ispaces (flatten-append-in-ispace-list shape.ispaces))

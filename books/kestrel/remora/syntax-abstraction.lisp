@@ -1059,7 +1059,7 @@
       (case (len treess)
         (1 (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "shape"))
                 ((okf d) (abs-dim inner)))
-             (make-shape-dim :dim d)))
+             (make-shape-dims :dims (list d))))
         (2 (b* (((okf (abnf::tree-list-tuple2 sub))
                  (abnf::check-tree-list-list-2 treess))
                 ((okf sigil-tree) (abnf::check-tree-list-1 sub.1st))
@@ -1083,10 +1083,11 @@
                  (reserrf (list :shape-open
                                 (abnf::tree-info-for-error open-tree))))
                 ;; "[" ws *( ws ispace ) ws "]" form: sub.3rd is the
-                ;; repetition list (a tree-listp).
-                ((okf ispaces) (abs-*-ws-ispace sub.3rd))
-                (shapes (ispaces-to-shapes ispaces)))
-             (make-shape-splice :ispaces (ispace-shape-list shapes))))
+                ;; repetition list (a tree-listp).  The spliced elements
+                ;; are kept as ispaces and a single dim stays an ispace :dim;
+                ;; shape and ispace are mutually recursive.
+                ((okf ispaces) (abs-*-ws-ispace sub.3rd)))
+             (make-shape-splice :ispaces ispaces)))
         (otherwise
          (reserrf (list :shape-shape (abnf::tree-info-for-error tree))))))
     :measure (abnf::tree-count tree))
@@ -1166,22 +1167,6 @@
 
   :ruler-extenders :all
   :verify-guards nil ; done below
-
-  :prepwork
-  ((define ispace-to-shape ((i ispacep))
-     :returns (s shapep)
-     :parents nil
-     :short "Lift one ispace to a shape (a dim becomes a singleton shape)."
-     (ispace-case i
-                  :dim (make-shape-dim :dim i.dim)
-                  :shape i.shape))
-   (define ispaces-to-shapes ((ispaces ispace-listp))
-     :returns (ss shape-listp)
-     :parents nil
-     :short "Lift each ispace to a shape."
-     (cond ((endp ispaces) nil)
-           (t (cons (ispace-to-shape (car ispaces))
-                    (ispaces-to-shapes (cdr ispaces)))))))
 
   ///
 
@@ -1298,17 +1283,17 @@
       (make-type-bracket :elem elem :ispaces ispaces))
     :measure (abnf::tree-count tree))
 
-  ;; array-type = "A" ws type-exp ws shape
+  ;; array-type = "A" ws type-exp ws ispace
   (define abs-array-type ((tree abnf::treep))
     :returns (ty type-resultp)
     :short "Abstract an @('array-type') to a @(tsee type) @(':array')."
     (b* (((okf (abnf::tree-list-tuple5 sub))
           (abnf::check-tree-nonleaf-5 tree "array-type"))
          ((okf te-tree) (abnf::check-tree-list-1 sub.3rd))
-         ((okf shape-tree) (abnf::check-tree-list-1 sub.5th))
+         ((okf ispace-tree) (abnf::check-tree-list-1 sub.5th))
          ((okf elem) (abs-type-exp te-tree))
-         ((okf shape) (abs-shape shape-tree)))
-      (make-type-array :elem elem :ispace (ispace-shape shape)))
+         ((okf ispace) (abs-ispace ispace-tree)))
+      (make-type-array :elem elem :ispace ispace))
     :measure (abnf::tree-count tree))
 
   ;; arrow-type = ( "->" / %x2192 ) ws "(" *( ws type-exp ) ws ")" ws type-exp

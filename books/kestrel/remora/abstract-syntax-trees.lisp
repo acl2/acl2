@@ -161,9 +161,8 @@
      we define dimensions and shapes separately,
      as in [impl] but unlike [thesis].")
    (xdoc::p
-    "Shapes and ispaces will be mutually recursive
-     because splices, which are shapes, will contain ispaces instead of shapes,
-     because we will eliminate the @(':dim') summand from @(tsee shape) soon.
+    "Shapes and ispaces are mutually recursive
+     because splices, which are shapes, contain ispaces.
      This is consistent with a recent change to [impl]."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -178,18 +177,11 @@
      (xdoc::p
       "There are
        named variables,
-       dimensions (lifted to be shapes),
        shapes built from zero or more dimensions,
        concatenations of shapes,
-       and splicing of dimensions and shapes.")
+       and splicing of ispaces.")
      (xdoc::p
-      "The @(':dim') summand captures the case in which
-       a shape is expected
-       (currently the only place is in an array type),
-       but a dimension is provided:
-       the dimension is auto-lifted to a singleton shape;
-       it is a convenience construct, not a core construct.
-       In contrast, the @(':dims') summand is the core constructor
+      "The @(':dims') summand is the core constructor
        for a shape consisting of zero or more dimensions;
        in [esop] it is written as @($(\\mathtt{S}\\ \\iota\\ldots)$),
        in [arxiv] it is written as @($(\\mathtt{Shp}\\ \\iota\\ldots)$),
@@ -199,13 +191,11 @@
        so we use @(':dims') here.")
      (xdoc::p
       "The @(':splice') summand represents the square bracket notation.
-       Although [impl] and the ABNF grammar use ispaces inside the brackets,
-       since dimensions may be auto-lifted to shapes,
-       we can just use shapes, and avoid a mutual recursion with ispaces here.
+       As in [impl] and the ABNF grammar, it contains ispaces,
+       which is why shapes and ispaces are mutually recursive.
        This makes it apparent that
        concatenation and splicing are equivalent constructs."))
     (:var ((name string)))
-    (:dim ((dim dim)))
     (:dims ((dims dim-list)))
     (:append ((shapes shape-list)))
     (:splice ((ispaces ispace-list)))
