@@ -436,7 +436,7 @@
                (body expr)))
     (:box ((ispaces ispace-value-list)
            (array expr-value)
-           (type type)))
+           (type type-value)))
     (:vector ((elems expr-value-list)))
     (:vector-empty ((dims nat-list)
                     (elem type-value)))
