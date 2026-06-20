@@ -1463,7 +1463,17 @@
        we form the product type, instead of evaluating the result type directly,
        because the result type may reference the ispace parameters.")
      (xdoc::p
-      "The combined function bindings are not handled yet."))
+      "For a combined function binding,
+       we form the nested abstraction expression
+       (a lambda over the value parameters,
+       wrapped in an ispace lambda if there are ispace parameters,
+       and then in a type lambda if there are type parameters),
+       and we evaluate it to obtain the value to bind;
+       this is the value that the binding would yield
+       after being desugared to a value binding.
+       As for the other bindings,
+       we also form the corresponding nested type and evaluate it,
+       ignoring the resulting type value for now."))
     (b* (((when (zp limit)) (reserr :limit)))
       (bind-case
        bind
@@ -1504,7 +1514,39 @@
                                   denv)
                            :none nil)))
                (denv-add-expr-var bind.var val denv))
-       :cfun (reserr :todo)))
+       :cfun (b* ((lambda-expr (make-expr-array
+                                :dims nil
+                                :atoms (list (make-atom-lambda
+                                              :params bind.params
+                                              :body bind.expr))))
+                  (lambda-type (make-type-fun
+                                :in (var+type-list->type bind.params)
+                                :out bind.type))
+                  ((mv iexpr itype)
+                   (ispace-var-list-option-case
+                    bind.iparams?
+                    :some (mv (make-expr-array
+                               :dims nil
+                               :atoms (list (make-atom-ilambda
+                                             :params bind.iparams?.val
+                                             :body lambda-expr)))
+                              (make-type-pi :params bind.iparams?.val
+                                            :body lambda-type))
+                    :none (mv lambda-expr lambda-type)))
+                  ((mv cfun-expr cfun-type)
+                   (type-var-list-option-case
+                    bind.tparams?
+                    :some (mv (make-expr-array
+                               :dims nil
+                               :atoms (list (make-atom-tlambda
+                                             :params bind.tparams?.val
+                                             :body iexpr)))
+                              (make-type-forall :params bind.tparams?.val
+                                                :body itype))
+                    :none (mv iexpr itype)))
+                  ((ok val) (eval-expr cfun-expr denv (1- limit)))
+                  ((ok &) (eval-type cfun-type denv)))
+               (denv-add-expr-var bind.var val denv))))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
