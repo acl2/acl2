@@ -799,6 +799,10 @@
     (expr-value-wfp (expr-value-ilambda params body))
     :enable (expr-value-wfp check-dims-of-expr-value))
 
+  (defrule expr-value-wfp-of-expr-value-box
+    (expr-value-wfp (expr-value-box ispaces array type))
+    :enable (expr-value-wfp check-dims-of-expr-value))
+
   (defrule expr-value-wfp-of-expr-value-vector-empty
     (expr-value-wfp (expr-value-vector-empty dims elem))
     :enable (expr-value-wfp
