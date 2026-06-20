@@ -43,10 +43,6 @@
     "We exclude:")
    (xdoc::ul
     (xdoc::li
-     "Dimensions lifted to shapes, i.e. the @(':dim') summand of @(tsee shape),
-      because it will be eliminated soon.
-      When we eliminate it, we will remove this documentation bullet.")
-    (xdoc::li
      "Shapes with non-singleton lists of dimensions
       (the @(':dims') summand of @(tsee shape)),
       because they are expressible as concatenations of
@@ -143,8 +139,7 @@
   :default t
   :combine and
   :override
-  ((shape :dim nil)
-   (shape :dims (and (consp shape.dims)
+  ((shape :dims (and (consp shape.dims)
                      (endp (cdr shape.dims))))
    (shape :splice nil)
    (type :bracket nil)
