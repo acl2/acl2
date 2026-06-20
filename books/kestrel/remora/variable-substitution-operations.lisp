@@ -552,7 +552,6 @@
                  (if var+shape
                      (cdr var+shape)
                    (shape-var shape.name))))
-   (shape :dim (shape-dim (dim-subst-dim-vars shape.dim dim-subst)))
    (shape :dims (shape-dims (dim-list-subst-dim-vars shape.dims dim-subst)))
    (ispace :dim (ispace-dim (dim-subst-dim-vars ispace.dim dim-subst)))
    (type :pi (b* (((mv dim-subst shape-subst)
