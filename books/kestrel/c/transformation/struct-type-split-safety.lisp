@@ -107,7 +107,7 @@
 
   (define type-sts-safep ((type typep) (nested booleanp) (struct identp))
     :returns (yes/no booleanp)
-    :parents (struct-safety-checks type/type-list-sts-safep)
+    :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a type is safe for the STS transformation."
     :long
     (xdoc::topstring
@@ -175,7 +175,7 @@
 
   (define type-list-sts-safep ((types type-listp) (nested booleanp) (struct identp))
     :returns (yes/no booleanp)
-    :parents (struct-safety-checks type/type-list-sts-safep)
+    :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a list of types are safe for the STS transformation."
     :long
     (xdoc::topstring
@@ -192,7 +192,7 @@
                                               type-struni-tag/members-p)
                                              (struct identp))
     :returns (yes/no booleanp)
-    :parents (struct-safety-checks type/type-list-sts-safep)
+    :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that the portion of a struct/union type
             that corresponds to the tag and members
             is safe for the STS transformation."
@@ -214,7 +214,7 @@
   (define type-struni-member-sts-safep ((mem type-struni-member-p)
                                         (struct identp))
     :returns (yes/no booleanp)
-    :parents (struct-safety-checks type/type-list-sts-safep)
+    :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a struct/union member
             is safe for the STS transformation."
     :long
@@ -231,7 +231,7 @@
   (define type-struni-member-list-sts-safep ((mems type-struni-member-listp)
                                              (struct identp))
     :returns (yes/no booleanp)
-    :parents (struct-safety-checks type/type-list-sts-safep)
+    :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a list of struct/union members
             are safe for the STS transformation."
     :long
@@ -249,7 +249,7 @@
                                  (nested booleanp)
                                  (struct identp))
     :returns (yes/no booleanp)
-    :parents (struct-safety-checks type/type-list-sts-safep)
+    :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that the portion of a function type
             pertaining to the function parameters
             is safe for the STS transformation."
