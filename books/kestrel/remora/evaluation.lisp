@@ -1438,7 +1438,22 @@
        the function type value can be assembled from these pieces
        when we need to check it against the lambda value.")
      (xdoc::p
-      "The type function, ispace function, and combined function bindings
+      "For a type function binding,
+       we extend the dynamic environment
+       to bind the variable to the corresponding type lambda value,
+       whose type parameters and body are taken without evaluation
+       (the body is evaluated only when the abstraction is applied).
+       As for a value binding,
+       if the optional result type is present,
+       we form the universal type
+       over the type parameters with the result type as body,
+       and we evaluate it, ignoring the resulting type value for now.
+       Note that we cannot just evaluate the type in the bindings,
+       but we need to form the universal type
+       (or, equivalently, extend the dynamic environment)
+       because that type may reference the type parameters.")
+     (xdoc::p
+      "The ispace function and combined function bindings
        are not handled yet."))
     (b* (((when (zp limit)) (reserr :limit)))
       (bind-case
@@ -1460,7 +1475,16 @@
                           :some (eval-type bind.type?.val denv)
                           :none nil)))
               (denv-add-expr-var bind.var val denv))
-       :tfun (reserr :todo)
+       :tfun (b* ((val (make-expr-value-tlambda :params bind.params
+                                                :body bind.expr))
+                  ((ok &) (type-option-case
+                           bind.type?
+                           :some (eval-type
+                                  (make-type-forall
+                                   :params bind.params :body bind.type?.val)
+                                  denv)
+                           :none nil)))
+               (denv-add-expr-var bind.var val denv))
        :ifun (reserr :todo)
        :cfun (reserr :todo)))
     :measure (nfix limit))
