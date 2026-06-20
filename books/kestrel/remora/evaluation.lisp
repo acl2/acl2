@@ -1431,8 +1431,7 @@
        to bind the variable to the resulting lambda value;
        this is the value that the binding would yield
        after being desugared to a value binding.
-       As for a value binding,
-       if the optional result type is present,
+       If the optional result type is present,
        we evaluate it, ignoring the resulting type value for now.
        Since the parameter types are already evaluated for the lambda value,
        the function type value can be assembled from these pieces
@@ -1443,8 +1442,7 @@
        to bind the variable to the corresponding type lambda value,
        whose type parameters and body are taken without evaluation
        (the body is evaluated only when the abstraction is applied).
-       As for a value binding,
-       if the optional result type is present,
+       If the optional result type is present,
        we form the universal type
        over the type parameters with the result type as body,
        and we evaluate it, ignoring the resulting type value for now.
@@ -1453,8 +1451,19 @@
        (or, equivalently, extend the dynamic environment)
        because that type may reference the type parameters.")
      (xdoc::p
-      "The ispace function and combined function bindings
-       are not handled yet."))
+      "For an ispace function binding,
+       we extend the dynamic environment
+       to bind the variable to the corresponding ispace lambda value,
+       whose ispace parameters and body are taken without evaluation
+       (the body is evaluated only when the abstraction is applied).
+       If the optional result type is present,
+       we form the product type
+       over the ispace parameters with the result type as body,
+       and we evaluate it, ignoring the resulting type value for now;
+       we form the product type, instead of evaluating the result type directly,
+       because the result type may reference the ispace parameters.")
+     (xdoc::p
+      "The combined function bindings are not handled yet."))
     (b* (((when (zp limit)) (reserr :limit)))
       (bind-case
        bind
@@ -1480,12 +1489,21 @@
                   ((ok &) (type-option-case
                            bind.type?
                            :some (eval-type
-                                  (make-type-forall
-                                   :params bind.params :body bind.type?.val)
+                                  (make-type-forall :params bind.params
+                                                    :body bind.type?.val)
                                   denv)
                            :none nil)))
                (denv-add-expr-var bind.var val denv))
-       :ifun (reserr :todo)
+       :ifun (b* ((val (make-expr-value-ilambda :params bind.params
+                                                :body bind.expr))
+                  ((ok &) (type-option-case
+                           bind.type?
+                           :some (eval-type
+                                  (make-type-pi :params bind.params
+                                                :body bind.type?.val)
+                                  denv)
+                           :none nil)))
+               (denv-add-expr-var bind.var val denv))
        :cfun (reserr :todo)))
     :measure (nfix limit))
 
