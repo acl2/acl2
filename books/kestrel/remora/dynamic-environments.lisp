@@ -248,6 +248,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define denv-add-expr-var ((var stringp) (val expr-valuep) (denv denvp))
+  :returns (new-denv denvp)
+  :short "Add an expression variable,
+          with an associated expression value,
+          to a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This may override an existing variable,
+     which is intended hiding behavior."))
+  (change-denv denv
+               :expr-vars (omap::update (str::str-fix var)
+                                        (expr-value-fix val)
+                                        (denv->expr-vars denv)))
+
+  ///
+
+  (defret denv->ispace-vars-of-denv-add-expr-var
+    (equal (denv->ispace-vars new-denv)
+           (denv->ispace-vars denv)))
+
+  (defret denv->type-vars-of-denv-add-expr-var
+    (equal (denv->type-vars new-denv)
+           (denv->type-vars denv)))
+
+  (defret denv-wfp-of-denv-add-expr-var
+    (implies (and (denv-wfp denv)
+                  (expr-value-wfp val))
+             (denv-wfp new-denv))
+    :hints (("Goal"
+             :in-theory (enable denv-wfp
+                                string-expr-value-map-wfp-of-update)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define denv-add-expr-vars ((vars string-listp)
                             (vals expr-value-listp)
                             (denv denvp))
@@ -263,11 +298,7 @@
      which is intended hiding behavior."))
   (b* (((when (endp vars)) (denv-fix denv))
        ((unless (mbt (consp vals))) (denv-fix denv))
-       (denv (change-denv
-              denv
-              :expr-vars (omap::update (str::str-fix (car vars))
-                                       (expr-value-fix (car vals))
-                                       (denv->expr-vars denv)))))
+       (denv (denv-add-expr-var (car vars) (car vals) denv)))
     (denv-add-expr-vars (cdr vars) (cdr vals) denv))
 
   ///
@@ -286,7 +317,4 @@
     (implies (and (denv-wfp denv)
                   (expr-value-list-wfp vals))
              (denv-wfp new-denv))
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable denv-wfp
-                                string-expr-value-map-wfp-of-update)))))
+    :hints (("Goal" :induct t))))
