@@ -405,10 +405,6 @@
        base values,
        lambda abstractions,
        and boxed values.
-       Our current definition of box values follows [thesis],
-       but we may be able to derive ispace values and types
-       from the array value itself;
-       this will be investigated soon.
        Scalar values correspond to atom values @($\\mathit{Atval}$) in [thesis],
        with the difference that we do not have @($\\mathfrak{o}$) here,
        because in our ASTs, as in [impl],
