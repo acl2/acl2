@@ -406,7 +406,7 @@
        lambda abstractions,
        and boxed values.
        Our current definition of box values follows [thesis],
-       but we may be able to derive ispaces and types
+       but we may be able to derive ispace values and types
        from the array value itself;
        this will be investigated soon.
        Scalar values correspond to atom values @($\\mathit{Atval}$) in [thesis],
@@ -438,7 +438,7 @@
                (body expr)))
     (:ilambda ((params ispace-var-list)
                (body expr)))
-    (:box ((ispaces ispace-list)
+    (:box ((ispaces ispace-value-list)
            (array expr-value)
            (type type)))
     (:vector ((elems expr-value-list)))
