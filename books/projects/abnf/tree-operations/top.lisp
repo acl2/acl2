@@ -11,10 +11,13 @@
 (in-package "ABNF")
 
 (include-book "tree-utilities")
+(include-book "deftreeops-doc")
+(include-book "deftreeops")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ tree-operations
   :parents (abnf)
   :short "Operations on ABNF trees."
-  :order-subtopics (tree-utilities))
+  :order-subtopics (tree-utilities
+                    deftreeops))

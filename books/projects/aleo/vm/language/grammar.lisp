@@ -12,7 +12,7 @@
 (in-package "ALEOVM")
 
 (include-book "projects/abnf/grammar-definer/defgrammar" :dir :system)
-(include-book "projects/abnf/grammar-definer/deftreeops" :dir :system)
+(include-book "projects/abnf/tree-operations/deftreeops" :dir :system)
 (include-book "projects/abnf/grammar-operations/in-terminal-set" :dir :system)
 
 (local (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system))

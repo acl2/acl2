@@ -13,5 +13,9 @@
 (include-book "defgrammar")
 (include-book "defgrammar-doc")
 
-(include-book "deftreeops")
-(include-book "deftreeops-doc")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ grammar-definer
+  :parents (abnf)
+  :short "Tools to define ABNF grammars in ACL2 from files."
+  :order-subtopics (defgrammar))

@@ -12,7 +12,7 @@
 (in-package "C")
 
 (include-book "projects/abnf/grammar-definer/defgrammar" :dir :system)
-(include-book "projects/abnf/grammar-definer/deftreeops" :dir :system)
+(include-book "projects/abnf/tree-operations/deftreeops" :dir :system)
 (include-book "projects/abnf/grammar-operations/in-terminal-set" :dir :system)
 
 (include-book "std/basic/controlled-configuration" :dir :system)

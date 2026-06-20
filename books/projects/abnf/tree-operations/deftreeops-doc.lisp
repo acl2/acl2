@@ -12,11 +12,13 @@
 
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 
+(include-book "../portcullis")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc deftreeops
 
-  :parents (abnf)
+  :parents (tree-operations)
 
   :short "Generate grammar-specific operations on trees."
 
