@@ -219,6 +219,91 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defines check-types
+  :short "Check types and lists of types."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-type ((type typep) (senv senvp))
+    :returns (yes/no booleanp)
+    :parents (type-checking check-types)
+    :short "Check a type."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We return @('t') if the check is successful, otherwise @('nil').")
+     (xdoc::p
+      "A variable must be in the environment.")
+     (xdoc::p
+      "A base type is always valid.")
+     (xdoc::p
+      "An array type is valid iff
+       its element type is valid and atom-kinded (i.e. not an array type),
+       and its ispace is valid.")
+     (xdoc::p
+      "A bracket type is valid iff
+       its element type is valid and atom-kinded (i.e. not an array type),
+       and its ispaces are valid.")
+     (xdoc::p
+      "The atom-kind requirement on the element type of
+       an array or bracket type is the only kind constraint:
+       as explained in @(tsee type),
+       an atom-kinded type may otherwise be used
+       wherever an array-kinded type is expected,
+       being auto-lifted to a zero-rank array type.")
+     (xdoc::p
+      "A function type is valid iff
+       its input types and its output type are all valid.")
+     (xdoc::p
+      "A universal type is valid iff its body is valid
+       in the environment extended with the bound type variables.")
+     (xdoc::p
+      "A product type is valid iff its body is valid
+       in the environment extended with the bound ispace variables.")
+     (xdoc::p
+      "A sum type is valid iff its body is valid
+       in the environment extended with the bound ispace variables."))
+    (type-case
+     type
+     :var (set::in type.var (senv->type-vars senv))
+     :base t
+     :array (and (check-type type.elem senv)
+                 (type-atomp type.elem)
+                 (check-ispace type.ispace senv))
+     :bracket (and (check-type type.elem senv)
+                   (type-atomp type.elem)
+                   (check-ispace-list type.ispaces senv))
+     :fun (and (check-type-list type.in senv)
+               (check-type type.out senv))
+     :forall (check-type type.body (senv-add-type-vars type.params senv))
+     :pi (check-type type.body (senv-add-ispace-vars type.params senv))
+     :sigma (check-type type.body (senv-add-ispace-vars type.params senv)))
+    :measure (type-count type))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-type-list ((types type-listp) (senv senvp))
+    :returns (yes/no booleanp)
+    :parents (type-checking check-types)
+    :short "Check a list of types."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check each type in turn,
+       returning @('t') iff they are all valid."))
+    (or (endp types)
+        (and (check-type (car types) senv)
+             (check-type-list (cdr types) senv)))
+    :measure (type-list-count types))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ///
+
+  (fty::deffixequiv-mutual check-types))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define base-type-of-base-lit ((lit base-litp))
   :returns (btype base-typep)
   :short "Base type of a base value."
