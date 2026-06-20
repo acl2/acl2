@@ -1408,13 +1408,19 @@
        and we extend the dynamic environment
        to bind the ispace variable to that ispace value.")
      (xdoc::p
+      "For a type binding,
+       we evaluate the type to a type value,
+       and we extend the dynamic environment
+       to bind the type variable to that type value.")
+     (xdoc::p
       "The other kinds of bindings are not handled yet."))
     (b* (((when (zp limit)) (reserr :limit)))
       (bind-case
        bind
        :ispace (b* (((ok ival) (eval-ispace bind.ispace denv)))
                  (denv-add-ispace-var bind.var ival denv))
-       :type (reserr :todo)
+       :type (b* (((ok tval) (eval-type bind.type denv)))
+               (denv-add-type-var bind.var tval denv))
        :val (reserr :todo)
        :fun (reserr :todo)
        :tfun (reserr :todo)
