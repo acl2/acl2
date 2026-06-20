@@ -12318,7 +12318,7 @@
                :OP2 '(H X)
                :OP3 '(W X))
           '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+            (operation . #.*OP-OR*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPOR"
           (OP :OP #xFEB
@@ -12328,7 +12328,7 @@
                :OP2 '(H X)
                :OP3 '(W X))
           '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+            (operation . #.*OP-OR*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPORD"
           (OP :OP #xFEB
