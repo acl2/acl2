@@ -198,6 +198,16 @@
      We then recurse into the body of the binder
      with the restricted substitution.")
    (xdoc::p
+    "Since @('let') bindings are sequential,
+     we override the function for @(tsee bind-list)
+     so that, for a non-empty list of bindings,
+     after checking the @(tsee car) of the list under the current substitution,
+     we remove from the substitution the variables bound in the @(tsee car)
+     (checking that they are not captured)
+     before checking the @(tsee cdr) of the list.
+     The body of a @('let') is then checked with
+     all the variables bound in the bindings removed from the substitution.")
+   (xdoc::p
     "This is a conservative check:
      it does not depend on which keys of the substitution
      are actually free in the body of each binder."))
@@ -322,7 +332,18 @@
                                                           shape-subst)
                      (expr-subst-ispace-vars-no-capture-p bind.expr
                                                           dim-subst
-                                                          shape-subst)))))
+                                                          shape-subst))))
+   (bind-list
+    (b* (((when (endp bind-list)) t)
+         (bind (car bind-list)))
+      (and (bind-subst-ispace-vars-no-capture-p bind dim-subst shape-subst)
+           (b* ((bound (bind-bound-ispace-vars bind))
+                ((mv dim-subst shape-subst)
+                 (dim/shape-subst-remove-bound bound dim-subst shape-subst)))
+             (and (dim/shape-subst-no-capture-p bound dim-subst shape-subst)
+                  (bind-list-subst-ispace-vars-no-capture-p (cdr bind-list)
+                                                            dim-subst
+                                                            shape-subst)))))))
   :name ast-subst-ispace-vars-no-capture-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -345,6 +366,16 @@
      of the resulting (restricted) substitution.
      We then recurse into the body of the binder
      with the restricted substitution.")
+   (xdoc::p
+    "Since @('let') bindings are sequential,
+     we override the function for @(tsee bind-list)
+     so that, for a non-empty list of bindings,
+     after checking the @(tsee car) of the list under the current substitution,
+     we remove from the substitution the variables bound in the @(tsee car)
+     (checking that they are not captured)
+     before checking the @(tsee cdr) of the list.
+     The body of a @('let') is then checked with
+     all the variables bound in the bindings removed from the substitution.")
    (xdoc::p
     "This is a conservative check:
      it does not depend on which keys of the substitution
@@ -443,7 +474,18 @@
                                                         array-subst)
                      (expr-subst-type-vars-no-capture-p bind.expr
                                                         atom-subst
-                                                        array-subst)))))
+                                                        array-subst))))
+   (bind-list
+    (b* (((when (endp bind-list)) t)
+         (bind (car bind-list)))
+      (and (bind-subst-type-vars-no-capture-p bind atom-subst array-subst)
+           (b* ((bound (bind-bound-type-vars bind))
+                ((mv atom-subst array-subst)
+                 (atom/array-subst-remove-bound bound atom-subst array-subst)))
+             (and (atom/array-subst-no-capture-p bound atom-subst array-subst)
+                  (bind-list-subst-type-vars-no-capture-p (cdr bind-list)
+                                                          atom-subst
+                                                          array-subst)))))))
   :name ast-subst-type-vars-no-capture-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -465,6 +507,16 @@
      of the resulting (restricted) substitution.
      We then recurse into the body of the binder
      with the restricted substitution.")
+   (xdoc::p
+    "Since @('let') bindings are sequential,
+     we override the function for @(tsee bind-list)
+     so that, for a non-empty list of bindings,
+     after checking the @(tsee car) of the list under the current substitution,
+     we remove from the substitution the variables bound in the @(tsee car)
+     (checking that they are not captured)
+     before checking the @(tsee cdr) of the list.
+     The body of a @('let') is then checked with
+     all the variables bound in the bindings removed from the substitution.")
    (xdoc::p
     "This is a conservative check:
      it does not depend on which keys of the substitution
@@ -501,7 +553,16 @@
          (b* ((bound (set::mergesort (var+type-list->var bind.params)))
               (subst (omap::delete* bound (string-expr-map-fix subst))))
            (and (expr-subst-no-capture-p bound subst)
-                (expr-subst-expr-vars-no-capture-p bind.expr subst)))))
+                (expr-subst-expr-vars-no-capture-p bind.expr subst))))
+   (bind-list
+    (b* (((when (endp bind-list)) t)
+         (bind (car bind-list)))
+      (and (bind-subst-expr-vars-no-capture-p bind subst)
+           (b* ((bound (bind-bound-expr-vars bind))
+                (subst (omap::delete* bound (string-expr-map-fix subst))))
+             (and (expr-subst-no-capture-p bound subst)
+                  (bind-list-subst-expr-vars-no-capture-p (cdr bind-list)
+                                                          subst)))))))
   :name ast-subst-expr-vars-no-capture-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
