@@ -1194,17 +1194,9 @@
        the corresponding application is skipped when they are absent.")
      (xdoc::p
       "For an unboxing expression,
-       we evaluate the target expression.
-       If it evaluates to a scalar box value,
-       we check that the box's ispace values match,
-       in number and sorts,
-       the ispace variables of the unboxing expression;
-       we extend the dynamic environment
-       to bind the ispace variables to the box's ispace values
-       and the term variable to the box's array value;
-       and we evaluate the body in the extended environment.
-       The case in which the target evaluates to a vector
-       (i.e. an array of boxes), empty or not, is not handled yet.")
+       we evaluate the target expression,
+       and then we evaluate the unboxing over the resulting value
+       via a separate ACL2 function (see @(tsee eval-unbox)).")
      (xdoc::p
       "For a bracket expression,
        we evaluate the sub-expressions,
@@ -1281,22 +1273,12 @@
                   ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
                (eval-app funval argvals denv (1- limit)))
        :unbox (b* (((ok targetval) (eval-expr expr.target denv (1- limit))))
-                (expr-value-case
-                 targetval
-                 :box
-                 (b* (((unless (ispace-values-match-ispace-vars-p
-                                targetval.ispaces expr.ispaces))
-                       (reserr nil))
-                      (denv (denv-add-ispace-vars expr.ispaces
-                                                  targetval.ispaces
-                                                  denv))
-                      (denv (denv-add-expr-var expr.var
-                                               targetval.array
-                                               denv)))
-                   (eval-expr expr.body denv (1- limit)))
-                 :vector (reserr :todo)
-                 :vector-empty (reserr :todo)
-                 :otherwise (reserr nil)))
+                (eval-unbox targetval
+                            expr.ispaces
+                            expr.var
+                            expr.body
+                            denv
+                            (1- limit)))
        :bracket (b* (((ok vals) (eval-expr-list expr.exprs denv (1- limit)))
                      ((unless (consp vals)) (reserr nil))
                      ((unless (list-repeatp (dims-of-expr-value-list vals)))
@@ -1900,6 +1882,106 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define eval-unbox ((target expr-valuep)
+                      (ispaces ispace-var-listp)
+                      (var stringp)
+                      (body exprp)
+                      (denv denvp)
+                      (limit natp))
+    :guard (and (expr-value-wfp target)
+                (denv-wfp denv))
+    :returns (val expr-value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate the unboxing of a target value."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called by @(tsee eval-expr) for an unboxing expression,
+       after the target expression has been evaluated to @('target');
+       @('ispaces'), @('var'), and @('body') are
+       the ispace variables, the term variable, and the body
+       of the unboxing expression.")
+     (xdoc::p
+      "If the target is a scalar box value,
+       we check that its ispace values match,
+       in number and sorts,
+       the ispace variables of the unboxing expression;
+       we extend the dynamic environment
+       to bind the ispace variables to the box's ispace values
+       and the term variable to the box's array value;
+       and we evaluate the body in the extended environment.")
+     (xdoc::p
+      "If the target is a non-empty vector,
+       i.e. a non-empty array of boxes,
+       we recursively evaluate the unboxing over each element,
+       via a separate ACL2 function,
+       and we form a vector value with the results.")
+     (xdoc::p
+      "The case of an empty vector,
+       i.e. an empty array of boxes,
+       is not handled yet:
+       it requires type information
+       to determine the dimensions of the result."))
+    (b* (((when (zp limit)) (reserr :limit)))
+      (expr-value-case
+       target
+       :box
+       (b* (((unless (ispace-values-match-ispace-vars-p target.ispaces ispaces))
+             (reserr nil))
+            (denv (denv-add-ispace-vars ispaces target.ispaces denv))
+            (denv (denv-add-expr-var var target.array denv)))
+         (eval-expr body denv (1- limit)))
+       :vector
+       (b* (((ok vals)
+             (eval-unbox-list target.elems ispaces var body denv (1- limit)))
+            ;; TODO: eliminate the next two checks via proof
+            ((unless (consp vals)) (reserr nil))
+            ((unless (list-repeatp (dims-of-expr-value-list vals))) (reserr nil)))
+         (expr-value-vector vals))
+       :vector-empty (reserr :todo)
+       :otherwise (reserr nil)))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-unbox-list ((targets expr-value-listp)
+                           (ispaces ispace-var-listp)
+                           (var stringp)
+                           (body exprp)
+                           (denv denvp)
+                           (limit natp))
+    :guard (and (expr-value-list-wfp targets)
+                (denv-wfp denv))
+    :returns (vals expr-value-list-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Lift @(tsee eval-unbox) to a list of target values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This evaluates the unboxing over each element,
+       returning the list of results in the same order.
+       It is used to lift unboxing over
+       a non-empty array of boxes (see @(tsee eval-unbox))."))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (endp targets)) nil)
+         ((ok val) (eval-unbox (car targets) ispaces var body denv (1- limit)))
+         ((ok vals)
+          (eval-unbox-list (cdr targets) ispaces var body denv (1- limit))))
+      (cons val vals))
+    :measure (nfix limit)
+
+    ///
+
+    (defret len-of-eval-unbox-list
+      (implies (not (reserrp vals))
+               (equal (len vals)
+                      (len targets)))
+      :hints (("Goal"
+               :induct (acl2::cdr-dec-induct targets limit)
+               :in-theory (enable len)))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove eventually
 
   :verify-guards nil ; done below
@@ -1963,7 +2045,27 @@
                       (eval-app-cell (expr-value-fix funcell) argcells denv limit)
                       (eval-app-cell funcell (expr-value-list-fix argcells)
                                      denv limit)
-                      (eval-app-cell funcell argcells (denv-fix denv) limit))
+                      (eval-app-cell funcell argcells (denv-fix denv) limit)
+                      (eval-unbox target ispaces var body denv limit)
+                      (eval-unbox (expr-value-fix target)
+                                  ispaces var body denv limit)
+                      (eval-unbox target (ispace-var-list-fix ispaces)
+                                  var body denv limit)
+                      (eval-unbox target ispaces (str::str-fix var)
+                                  body denv limit)
+                      (eval-unbox target ispaces var (expr-fix body) denv limit)
+                      (eval-unbox target ispaces var body (denv-fix denv) limit)
+                      (eval-unbox-list targets ispaces var body denv limit)
+                      (eval-unbox-list (expr-value-list-fix targets)
+                                       ispaces var body denv limit)
+                      (eval-unbox-list targets (ispace-var-list-fix ispaces)
+                                       var body denv limit)
+                      (eval-unbox-list targets ispaces (str::str-fix var)
+                                       body denv limit)
+                      (eval-unbox-list targets ispaces var (expr-fix body)
+                                       denv limit)
+                      (eval-unbox-list targets ispaces var body
+                                       (denv-fix denv) limit))
              :in-theory (enable nfix zp))))
 
   (defret-mutual expr-value-wfp-of-eval-exprs/atoms/binds
@@ -2033,6 +2135,18 @@
                     (not (reserrp val)))
                (expr-value-wfp val))
       :fn eval-app-cell)
+    (defret expr-value-wfp-of-eval-unbox
+      (implies (and (denv-wfp denv)
+                    (expr-value-wfp target)
+                    (not (reserrp val)))
+               (expr-value-wfp val))
+      :fn eval-unbox)
+    (defret expr-value-list-wfp-of-eval-unbox-list
+      (implies (and (denv-wfp denv)
+                    (expr-value-list-wfp targets)
+                    (not (reserrp vals)))
+               (expr-value-list-wfp vals))
+      :fn eval-unbox-list)
     :mutual-recursion eval-exprs/atoms/binds
     :hints
     (("Goal"
@@ -2052,7 +2166,9 @@
                (eval-iapp-list funvals ivals denv limit)
                (eval-app funval argvals denv limit)
                (eval-app-list funcells argcell-lists denv limit)
-               (eval-app-cell funcell argcells denv limit)))))
+               (eval-app-cell funcell argcells denv limit)
+               (eval-unbox target ispaces var body denv limit)
+               (eval-unbox-list targets ispaces var body denv limit)))))
 
   (verify-guards eval-expr
     :hints
