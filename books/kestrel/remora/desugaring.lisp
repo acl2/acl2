@@ -109,9 +109,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A dimension lifted to a shape, i.e. the @(':dim') summand of @(tsee shape),
-     is turned into a shape with a singleton list of that dimension.")
-   (xdoc::p
     "A shape with a list of zero or more dimensions is handled as follows:
      if the shape has no dimensions, it is turned into the empty concatenation;
      if the shape has one dimension, it is left unchanges;
@@ -162,8 +159,7 @@
           exprs/atoms/binds
           prog)
   :override
-  ((shape :dim (shape-dims (list shape.dim)))
-   (shape :dims (cond ((endp shape.dims) ; no dimensions
+  ((shape :dims (cond ((endp shape.dims) ; no dimensions
                        (shape-append nil))
                       ((endp (cdr shape.dims)) ; one dimension
                        (shape-fix shape))

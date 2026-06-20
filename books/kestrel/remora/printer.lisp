@@ -619,7 +619,6 @@
     :returns (out pdocp)
     (shape-case s
       :var (pdoc-text (str::cat "@" s.name))
-      :dim (dim-to-pdoc s.dim)
       :dims (if (consp s.dims)
                 (pdoc-prefix-form "dims" (dim-list-to-pdoc s.dims))
               (pdoc-naked-form "dims"))
