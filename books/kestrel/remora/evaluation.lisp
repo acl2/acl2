@@ -1397,6 +1397,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define eval-bind ((bind bindp) (denv denvp) (limit natp))
+    :guard (denv-wfp denv)
     :returns (new-denv denv-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate a binding, extending the dynamic environment."
@@ -1413,6 +1414,17 @@
        and we extend the dynamic environment
        to bind the type variable to that type value.")
      (xdoc::p
+      "For a value binding,
+       we evaluate the expression to an expression value,
+       and we extend the dynamic environment
+       to bind the variable to that expression value.
+       If the optional type is present,
+       we evaluate it as well, ignoring the resulting type value for now.
+       The reason for evaluating it is that,
+       once we extend expression values with type information,
+       we plan to defensively check that the type,
+       when present, is one of the value.")
+     (xdoc::p
       "The other kinds of bindings are not handled yet."))
     (b* (((when (zp limit)) (reserr :limit)))
       (bind-case
@@ -1421,7 +1433,12 @@
                  (denv-add-ispace-var bind.var ival denv))
        :type (b* (((ok tval) (eval-type bind.type denv)))
                (denv-add-type-var bind.var tval denv))
-       :val (reserr :todo)
+       :val (b* (((ok val) (eval-expr bind.expr denv (1- limit)))
+                 ((ok &) (type-option-case
+                          bind.type?
+                          :some (eval-type bind.type?.val denv)
+                          :none nil)))
+              (denv-add-expr-var bind.var val denv))
        :fun (reserr :todo)
        :tfun (reserr :todo)
        :ifun (reserr :todo)
@@ -1431,6 +1448,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define eval-bind-list ((binds bind-listp) (denv denvp) (limit natp))
+    :guard (denv-wfp denv)
     :returns (new-denv denv-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate a list of bindings,
