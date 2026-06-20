@@ -125,6 +125,35 @@
 (test-roundtrip "(array [0] *t)")               ; array type variable
 (test-roundtrip "(array [0] (-> (Int) Bool))")  ; function element type
 
+;; The array-type index is an ispace: a bare dim stays an ispace :dim,
+;; whereas (dims d) is an ispace :shape holding a singleton dims shape.
+;; So (A Int 3) and (A Int (dims 3)) intentionally abstract to different
+;; ASTs (they are to be unified later, during desugaring).
+(test-parse "(array [0] (A Int 3))"
+            (make-prog
+             :expr (make-expr-array-empty
+                    :dims '(0)
+                    :type (make-type-array
+                           :elem (make-type-base :type (base-type-int))
+                           :ispace (make-ispace-dim
+                                    :dim (make-dim-const :val 3))))))
+(test-parse "(array [0] (A Int (dims 3)))"
+            (make-prog
+             :expr (make-expr-array-empty
+                    :dims '(0)
+                    :type (make-type-array
+                           :elem (make-type-base :type (base-type-int))
+                           :ispace (make-ispace-shape
+                                    :shape (make-shape-dims
+                                            :dims (list (make-dim-const
+                                                         :val 3))))))))
+
+;; A dim variable, shape variable, and bracket splice as the array index
+;; all parse and round-trip.
+(test-roundtrip "(array [0] (A Int $d))")       ; dim-variable index
+(test-roundtrip "(array [0] (A Int @s))")       ; shape-variable index
+(test-roundtrip "(array [0] (A Int [3 4]))")    ; bracket-splice index
+
 ;; ---- Non-empty arrays: (array <shape> <atom> ...) -> :array ----
 
 ;; A vector of two integers.
