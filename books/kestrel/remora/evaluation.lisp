@@ -1423,9 +1423,23 @@
        The reason for evaluating it is that,
        once we extend expression values with type information,
        we plan to defensively check that the type,
-       when present, is one of the value.")
+       when present, is matched by the value.")
      (xdoc::p
-      "The other kinds of bindings are not handled yet."))
+      "For a function binding,
+       we evaluate the parameter types to type values,
+       and we extend the dynamic environment
+       to bind the variable to the resulting lambda value;
+       this is the value that the binding would yield
+       after being desugared to a value binding.
+       As for a value binding,
+       if the optional result type is present,
+       we evaluate it, ignoring the resulting type value for now.
+       Since the parameter types are already evaluated for the lambda value,
+       the function type value can be assembled from these pieces
+       when we need to check it against the lambda value.")
+     (xdoc::p
+      "The type function, ispace function, and combined function bindings
+       are not handled yet."))
     (b* (((when (zp limit)) (reserr :limit)))
       (bind-case
        bind
@@ -1439,7 +1453,13 @@
                           :some (eval-type bind.type?.val denv)
                           :none nil)))
               (denv-add-expr-var bind.var val denv))
-       :fun (reserr :todo)
+       :fun (b* (((ok params) (eval-var+type-list bind.params denv))
+                 (val (make-expr-value-lambda :params params :body bind.expr))
+                 ((ok &) (type-option-case
+                          bind.type?
+                          :some (eval-type bind.type?.val denv)
+                          :none nil)))
+              (denv-add-expr-var bind.var val denv))
        :tfun (reserr :todo)
        :ifun (reserr :todo)
        :cfun (reserr :todo)))
