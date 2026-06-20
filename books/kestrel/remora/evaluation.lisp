@@ -42,7 +42,8 @@
                           expr-value-listp-when-result-not-error
                           expr-value-list-listp-when-result-not-error
                           var+typevalue-p-when-result-not-error
-                          var+typevalue-listp-when-result-not-error)))
+                          var+typevalue-listp-when-result-not-error
+                          denvp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1203,7 +1204,12 @@
        we ensure that there is at least one resulting value
        (a bracket cannot be empty),
        we ensure that all the resulting values have the same dimensions,
-       and we form a vector value with those values."))
+       and we form a vector value with those values.")
+     (xdoc::p
+      "For a @('let') expression,
+       we evaluate the bindings,
+       which extend the dynamic environment,
+       and then we evaluate the body in the extended environment."))
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-case
        expr
@@ -1284,7 +1290,8 @@
                      ((unless (list-repeatp (dims-of-expr-value-list vals)))
                       (reserr nil)))
                   (expr-value-vector vals))
-       :let (reserr :todo)))
+       :let (b* (((ok denv) (eval-bind-list expr.binds denv (1- limit))))
+              (eval-expr expr.body denv (1- limit)))))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
