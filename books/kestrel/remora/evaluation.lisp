@@ -1297,6 +1297,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define eval-atom ((atom atomp) (denv denvp) (limit natp))
+    :guard (denv-wfp denv)
     :returns (val expr-value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate an atom to an expression value."
@@ -1316,7 +1317,12 @@
        evaluates to a type lambda value or an ispace lambda value,
        respectively,
        with the same parameters and body,
-       which are not evaluated here but only when the abstraction is applied."))
+       which are not evaluated here but only when the abstraction is applied.")
+     (xdoc::p
+      "A box evaluates to a box value:
+       the ispaces are evaluated to ispace values,
+       the array is evaluated to an expression value,
+       and the type is evaluated to a type value."))
     (b* (((when (zp limit)) (reserr :limit)))
       (atom-case
        atom
@@ -1325,12 +1331,18 @@
                  (make-expr-value-lambda :params params :body atom.body))
        :tlambda (make-expr-value-tlambda :params atom.params :body atom.body)
        :ilambda (make-expr-value-ilambda :params atom.params :body atom.body)
-       :box (reserr :todo)))
+       :box (b* (((ok ivals) (eval-ispace-list atom.ispaces denv))
+                 ((ok arrayval) (eval-expr atom.array denv (1- limit)))
+                 ((ok tval) (eval-type atom.type denv)))
+              (make-expr-value-box :ispaces ivals
+                                   :array arrayval
+                                   :type tval))))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define eval-atom-list ((atoms atom-listp) (denv denvp) (limit natp))
+    :guard (denv-wfp denv)
     :returns (vals expr-value-list-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate a list of atoms to a list of expression values."
