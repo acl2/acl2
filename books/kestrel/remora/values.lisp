@@ -938,7 +938,7 @@
        the arguments of an application expression evaluate to.
        It roughly corresponds to
        @($\\mathit{Split}_{n_{\\mathit{ac}}}
-          \\llbracket \\mathfrak{v}_a \\ldots \\rrbracket$)
+          [\\![ \\mathfrak{v}_a \\ldots ]\!!]$)
        in [thesis],
        where expression values, unlike our @(tsee expr-value) fixtype,
        are represented as flat lists of atoms wrapped in

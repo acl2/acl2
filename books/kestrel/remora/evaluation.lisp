@@ -920,16 +920,16 @@
    (xdoc::p
     "Roughly speaking, this ACL2 function corresponds to
      @($Rep_{n_{\\mathit{fe}}}
-        \\llbracket
+        [\\![
           \\mathit{Split}_1
-          \\llbracket \\mathfrak{v}_f \\ldots \\rrbracket
-        \\rrbracket$)
+          [\\![ \\mathfrak{v}_f \\ldots ]\!!]
+        ]\!!]$)
      and
      @($Rep_{n_{\\mathit{ae}}}
-        \\llbracket
+        [\\![
           \\mathit{Split}_{n_{\\mathit{ac}}}
-          \\llbracket \\mathfrak{v}_a \\ldots \\rrbracket
-        \\rrbracket$)
+          [\\![ \\mathfrak{v}_a \\ldots ]\!!]
+        ]\!!]$)
      in [thesis]."))
   (b* (((ok cells) (cells-at-depth-in-expr-value val (len frame))))
     (repeat-each (nat-list-product (nthcdr (len frame) pframe)) cells)))
