@@ -1400,11 +1400,20 @@
     :returns (new-denv denv-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate a binding, extending the dynamic environment."
-    (declare (ignore denv))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "For an ispace binding,
+       we evaluate the ispace to an ispace value,
+       and we extend the dynamic environment
+       to bind the ispace variable to that ispace value.")
+     (xdoc::p
+      "The other kinds of bindings are not handled yet."))
     (b* (((when (zp limit)) (reserr :limit)))
       (bind-case
        bind
-       :ispace (reserr :todo)
+       :ispace (b* (((ok ival) (eval-ispace bind.ispace denv)))
+                 (denv-add-ispace-var bind.var ival denv))
        :type (reserr :todo)
        :val (reserr :todo)
        :fun (reserr :todo)
