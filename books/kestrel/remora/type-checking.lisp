@@ -127,6 +127,98 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defines check-shapes/ispaces
+  :short "Check shapes, ispaces, and lists thereof."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-shape ((shape shapep) (senv senvp))
+    :returns (yes/no booleanp)
+    :parents (type-checking check-shapes/ispaces)
+    :short "Check a shape."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We return @('t') if the check is successful, otherwise @('nil').")
+     (xdoc::p
+      "A variable must be in the environment.")
+     (xdoc::p
+      "A shape consisting of dimensions is valid
+       iff all the dimensions are valid.")
+     (xdoc::p
+      "A concatenation of shapes is valid
+       iff all the shapes are valid.")
+     (xdoc::p
+      "A splicing of ispaces is valid
+       iff all the ispaces are valid."))
+    (shape-case
+     shape
+     :var (set::in (ispace-var-shape shape.name) (senv->ispace-vars senv))
+     :dims (check-dim-list shape.dims senv)
+     :append (check-shape-list shape.shapes senv)
+     :splice (check-ispace-list shape.ispaces senv))
+    :measure (shape-count shape))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-shape-list ((shapes shape-listp) (senv senvp))
+    :returns (yes/no booleanp)
+    :parents (type-checking check-shapes/ispaces)
+    :short "Check a list of shapes."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check each shape in turn,
+       returning @('t') iff they are all valid."))
+    (or (endp shapes)
+        (and (check-shape (car shapes) senv)
+             (check-shape-list (cdr shapes) senv)))
+    :measure (shape-list-count shapes))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-ispace ((ispace ispacep) (senv senvp))
+    :returns (yes/no booleanp)
+    :parents (type-checking check-shapes/ispaces)
+    :short "Check an ispace."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "An ispace that is a dimension is valid
+       iff the dimension is valid.")
+     (xdoc::p
+      "An ispace that is a shape is valid
+       iff the shape is valid."))
+    (ispace-case
+     ispace
+     :dim (check-dim ispace.dim senv)
+     :shape (check-shape ispace.shape senv))
+    :measure (ispace-count ispace))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-ispace-list ((ispaces ispace-listp) (senv senvp))
+    :returns (yes/no booleanp)
+    :parents (type-checking check-shapes/ispaces)
+    :short "Check a list of ispaces."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check each ispace in turn,
+       returning @('t') iff they are all valid."))
+    (or (endp ispaces)
+        (and (check-ispace (car ispaces) senv)
+             (check-ispace-list (cdr ispaces) senv)))
+    :measure (ispace-list-count ispaces))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ///
+
+  (fty::deffixequiv-mutual check-shapes/ispaces))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define base-type-of-base-lit ((lit base-litp))
   :returns (btype base-typep)
   :short "Base type of a base value."
