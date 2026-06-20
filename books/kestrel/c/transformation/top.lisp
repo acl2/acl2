@@ -32,10 +32,10 @@
 (include-book "split-gso-doc")
 (include-book "struct-type-split")
 (include-book "struct-type-split-doc")
+(include-book "struct-type-split-safety")
 (include-book "utilities/top")
 (include-book "wrap-fn")
 (include-book "wrap-fn-doc")
-(include-book "struct-safety-checks")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

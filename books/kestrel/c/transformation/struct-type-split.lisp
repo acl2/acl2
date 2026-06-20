@@ -70,14 +70,6 @@
 
 ;; Library extensions
 
-(defrulel ident-setp-of-mergesort
-  (implies (ident-listp idents)
-           (ident-setp (mergesort idents)))
-  :induct t
-  :enable mergesort)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define stmts-to-compound
   ((left-stmt stmtp)
    (right-stmt stmtp))

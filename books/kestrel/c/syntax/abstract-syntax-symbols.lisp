@@ -499,6 +499,8 @@
     trans-unit-fix
     trans-unit->items
 
+    filepath-optionp
+
     filepath-trans-unit-map
     filepath-trans-unit-mapp
 
@@ -727,10 +729,37 @@
 
     ;; validation information:
 
+    uidp
+
+    typep
     type-case
     type-kind
+    type-count
     type-void
     type-sint
+
+    type-listp
+    type-list-count
+
+    type-struct->uid
+    type-struct->tunit?
+    type-struct->tag/members
+
+    type-struni-tag/members-p
+    type-struni-tag/members-count
+    type-struni-tag/members-case
+    type-struni-tag/members-tagged->tag
+
+    type-struni-member-p
+    type-struni-member-count
+
+    type-struni-member-listp
+    type-struni-member-list-count
+    type-struni-member->type
+
+    type-params-p
+    type-params-case
+    type-params-count
 
     ident-type-map
     ident-type-mapp

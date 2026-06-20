@@ -213,7 +213,15 @@
   :short "Fixtype of sets of identifiers."
   :elt-type ident
   :elementp-of-nil nil
-  :pred ident-setp)
+  :pred ident-setp
+
+  ///
+
+  (defrule ident-setp-of-mergesort
+    (equal (ident-setp (set::mergesort idents))
+           (ident-listp (true-list-fix idents)))
+    :induct t
+    :enable set::mergesort))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
