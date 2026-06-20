@@ -235,6 +235,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define denv-add-type-var ((var type-varp) (tval type-valuep) (denv denvp))
+  :returns (new-denv denvp)
+  :short "Add a type variable, with an associated type value,
+          to a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This may override an existing variable,
+     which is intended hiding behavior."))
+  (change-denv denv
+               :type-vars (omap::update (type-var-fix var)
+                                        (type-value-fix tval)
+                                        (denv->type-vars denv)))
+
+  ///
+
+  (defret denv->ispace-vars-of-denv-add-type-var
+    (equal (denv->ispace-vars new-denv)
+           (denv->ispace-vars denv)))
+
+  (defret denv->expr-vars-of-denv-add-type-var
+    (equal (denv->expr-vars new-denv)
+           (denv->expr-vars denv)))
+
+  (defret denv-wfp-of-denv-add-type-var
+    (implies (denv-wfp denv)
+             (denv-wfp new-denv))
+    :hints (("Goal" :in-theory (enable denv-wfp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define denv-add-type-vars ((vars type-var-listp)
                             (tvals type-value-listp)
                             (denv denvp))
@@ -249,11 +280,7 @@
      which is intended hiding behavior."))
   (b* (((when (endp vars)) (denv-fix denv))
        ((unless (mbt (consp tvals))) (denv-fix denv))
-       (denv (change-denv
-              denv
-              :type-vars (omap::update (type-var-fix (car vars))
-                                       (type-value-fix (car tvals))
-                                       (denv->type-vars denv)))))
+       (denv (denv-add-type-var (car vars) (car tvals) denv)))
     (denv-add-type-vars (cdr vars) (cdr tvals) denv))
 
   ///
@@ -271,7 +298,7 @@
   (defret denv-wfp-of-denv-add-type-vars
     (implies (denv-wfp denv)
              (denv-wfp new-denv))
-    :hints (("Goal" :in-theory (enable denv-wfp)))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
