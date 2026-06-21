@@ -115,20 +115,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod expr-unary-info
-  :short "Fixtype of validation information for unary expressions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of the annotations that
-     the validator adds to unary expressions,
-     i.e. the @(':unary') case of @(tsee expr).
-     The information for a unary expression consists of its type."))
-  ((type type))
-  :pred expr-unary-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod expr-binary-info
   :short "Fixtype of validation information for binary expressions."
   :long
@@ -425,7 +411,7 @@
                          (expr-list-annop expr.args)
                          (type-vinfop expr.info)))
      (expr :unary (and (expr-annop expr.arg)
-                       (expr-unary-infop expr.info)))
+                       (type-vinfop expr.info)))
      (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                                 (expr-fix expr)))
      (expr :alignof-ambig (raise "Internal error: ambiguous ~x0."
@@ -567,7 +553,7 @@
   (defruled expr-annop-of-expr-unary
     (equal (expr-annop (expr-unary op arg info))
            (and (expr-annop arg)
-                (expr-unary-infop info)))
+                (type-vinfop info)))
     :expand (expr-annop (expr-unary op arg info)))
 
   (defruled expr-annop-of-expr-binary
@@ -737,10 +723,10 @@
              (expr-annop (expr-unary->arg expr)))
     :enable expr-annop)
 
-  (defruled expr-unary-infop-of-expr-unary->info
+  (defruled type-vinfop-of-expr-unary->info
     (implies (and (expr-annop expr)
                   (expr-case expr :unary))
-             (expr-unary-infop (expr-unary->info expr)))
+             (type-vinfop (expr-unary->info expr)))
     :enable expr-annop)
 
   (defruled expr-annop-of-expr-binary->arg1
@@ -971,7 +957,7 @@
      expr-list-annop-of-expr-funcall->args
      type-vinfop-of-expr-funcall->info
      expr-annop-of-expr-unary->arg
-     expr-unary-infop-of-expr-unary->info
+     type-vinfop-of-expr-unary->info
      expr-annop-of-expr-binary->arg1
      expr-annop-of-expr-binary->arg2
      expr-binary-infop-of-expr-binary->info
@@ -1045,7 +1031,7 @@
    :member (type-unknown)
    :memberp (type-unknown)
    :complit (type-unknown)
-   :unary (expr-unary-info->type expr.info)
+   :unary (type-vinfo->type expr.info)
    :label-addr (type-pointer (type-void))
    :sizeof (type-unknown-arithmetic)
    :alignof (type-unknown-arithmetic)

@@ -1214,7 +1214,7 @@
                         (arg exprp)
                         (arg-new exprp)
                         (arg-thm-name symbolp)
-                        (info expr-unary-infop)
+                        (info type-vinfop)
                         (gin ginp))
   :guard (and (expr-unambp arg)
               (expr-annop arg)
@@ -1296,7 +1296,7 @@
   (defret expr-annop-of-xeq-expr-unary
     (expr-annop expr)
     :hyp (and (expr-annop arg-new)
-              (expr-unary-infop info)))
+              (type-vinfop info)))
 
   (defret expr-aidentp-of-xeq-expr-unary
     (expr-aidentp expr gcc)

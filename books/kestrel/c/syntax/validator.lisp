@@ -3120,7 +3120,7 @@
        :unary (b* (((erp new-arg type-arg types-arg vstate)
                     (valid-expr expr.arg vstate))
                    ((erp type) (valid-unary expr expr.op type-arg ienv))
-                   (info (make-expr-unary-info :type type)))
+                   (info (make-type-vinfo :type type)))
                 (retok (make-expr-unary :op expr.op
                                         :arg new-arg
                                         :info info)
