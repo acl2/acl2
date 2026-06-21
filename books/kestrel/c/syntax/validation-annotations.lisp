@@ -163,30 +163,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod type-spec-typedef-info
-  :short "Fixtype of validation information for
-          @('typedef') name type specifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of the annotations that
-     the validator adds to @('typedef') name type specifiers,
-     i.e. the @(':typedef') case of @(tsee type-spec).
-     The information for a @('typedef') name type specifier consists of
-     the type denoted by the @('typedef') name, as well as the "
-    (xdoc::seetopic "uid" "unique identifier")
-    " of the @('typedef') name.
-     Note that this type is fully expanded:
-     since the @(tsee type) fixtype has no case for @('typedef') names,
-     the validator expands @('typedef') names to
-     their @('typedef')-name-free types
-     (see @(tsee valid-type-spec))."))
-  ((type type)
-   (uid uid))
-  :pred type-spec-typedef-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod desiniter-info
   :short "Fixtype of validation information for initializers with optional
           designations."
@@ -361,7 +337,15 @@
        this should be probably extended to all expressions.
        A few kinds of expressions have additional information.")
      (xdoc::p
-      "Type names are annotated with the type they denote."))
+      "Type names are annotated with the type they denote.")
+     (xdoc::p
+      "@('typedef') type specifiers are annotated with
+       the type that they denote and the UID of the name.
+       The annotating type is fully expanded:
+       since the @(tsee type) fixtype has no case for @('typedef') names,
+       the validator expands @('typedef') names to
+       their @('typedef')-name-free types
+       (see @(tsee valid-type-spec))."))
     :types (ident
             ident-list
             ident-option
@@ -424,7 +408,7 @@
                      (desiniter-infop (desiniter->info desiniter))))
      (type-spec :struct (and (struni-spec-annop type-spec.spec)
                              (type-spec-struct-infop type-spec.info)))
-     (type-spec :typedef (type-spec-typedef-infop type-spec.info))
+     (type-spec :typedef (type+uid-vinfop type-spec.info))
      (type-spec :struct-empty (and (attrib-spec-list-annop type-spec.attribs)
                                    (type-spec-struct-infop type-spec.info)))
      (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
@@ -572,7 +556,7 @@
 
   (defrule type-spec-annop-of-type-spec-typedef
     (equal (type-spec-annop (type-spec-typedef name info))
-           (type-spec-typedef-infop info))
+           (type+uid-vinfop info))
     :expand (type-spec-annop (type-spec-typedef name info))
     :enable identity)
 
@@ -770,10 +754,10 @@
              (type-spec-struct-infop (type-spec-struct->info type-spec)))
     :enable type-spec-annop)
 
-  (defrule type-spec-typedef-infop-of-type-spec-typedef->info
+  (defrule type+uid-vinfop-of-type-spec-typedef->info
     (implies (and (type-spec-annop type-spec)
                   (type-spec-case type-spec :typedef))
-             (type-spec-typedef-infop (type-spec-typedef->info type-spec)))
+             (type+uid-vinfop (type-spec-typedef->info type-spec)))
     :enable type-spec-annop)
 
   (defrule attrib-spec-list-annop-of-type-spec-struct-empty->attribs
@@ -954,7 +938,7 @@
      desiniter-infop-of-desiniter->info
      struni-spec-annop-of-type-spec-struct->spec
      type-spec-struct-infop-of-type-spec-struct->info
-     type-spec-typedef-infop-of-type-spec-typedef->info
+     type+uid-vinfop-of-type-spec-typedef->info
      attrib-spec-list-annop-of-type-spec-struct-empty->attribs
      type-spec-struct-infop-of-type-spec-struct-empty->info
      declor-annop-of-init-declor->declor

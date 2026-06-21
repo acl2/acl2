@@ -3877,7 +3877,7 @@
                                (ident->unwrap tyspec.name))))
                   (valid-ord-info-case
                    info?
-                   :typedef (b* ((info (make-type-spec-typedef-info
+                   :typedef (b* ((info (make-type+uid-vinfo
                                         :type info?.def
                                         :uid info?.uid)))
                               (retok (make-type-spec-typedef

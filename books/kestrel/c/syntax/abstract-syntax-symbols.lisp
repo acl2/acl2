@@ -779,6 +779,8 @@
     type-vinfop
     type-vinfo-fix
 
+    type+uid-vinfo
+
     param-declor-nonabstract-info
     param-declor-nonabstract-info->type
 

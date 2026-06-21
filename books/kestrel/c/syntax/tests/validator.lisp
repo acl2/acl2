@@ -1836,7 +1836,7 @@ T x;
                            (first (declon-declon->declors declon1)))))
              (tyspec (decl-spec-typespec->spec
                        (first (declon-declon->specs declon2))))
-             (use-uid (type-spec-typedef-info->uid
+             (use-uid (type+uid-vinfo->uid
                         (type-spec-typedef->info tyspec))))
           (equal decl-uid use-uid)))
 
@@ -1866,7 +1866,7 @@ void f(void) {
              (use-declon (block-item-declon->declon (second block-items)))
              (use-tyspec (decl-spec-typespec->spec
                            (first (declon-declon->specs use-declon))))
-             (use-uid (type-spec-typedef-info->uid
+             (use-uid (type+uid-vinfo->uid
                         (type-spec-typedef->info use-tyspec))))
           (and (not (equal outer-uid inner-uid))
                (equal inner-uid use-uid))))

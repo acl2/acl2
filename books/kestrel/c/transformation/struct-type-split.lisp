@@ -1113,7 +1113,7 @@
         ;; recorded in the identifier map, keyed by the typedef's
         ;; unique identifier; the typedef declaration, which is
         ;; processed before any use, populates the map.
-        (b* (((c$::type-spec-typedef-info info) type-spec.info)
+        (b* (((type+uid-vinfo info) type-spec.info)
              ((unless (eq (sts-splittablep info.type
                                            (sts-split-state->struct-uid st))
                           t))
