@@ -2935,7 +2935,7 @@
                                      types-arg
                                      (vstate->completions vstate)
                                      ienv))
-                     (info (make-expr-funcall-info :type type)))
+                     (info (make-type-vinfo :type type)))
                   (retok (make-expr-funcall :fun new-fun
                                             :args new-args
                                             :info info)

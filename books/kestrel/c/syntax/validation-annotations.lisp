@@ -115,20 +115,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod expr-funcall-info
-  :short "Fixtype of validation information for function call expressions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of the annotations
-     that the validator adds to function call expressions,
-     i.e. the @('funcall') case of @(tsee expr).
-     The information for a function call consists of the type."))
-  ((type type))
-  :pred expr-funcall-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod expr-unary-info
   :short "Fixtype of validation information for unary expressions."
   :long
@@ -437,7 +423,7 @@
                         (type-vinfop expr.info)))
      (expr :funcall (and (expr-annop expr.fun)
                          (expr-list-annop expr.args)
-                         (expr-funcall-infop expr.info)))
+                         (type-vinfop expr.info)))
      (expr :unary (and (expr-annop expr.arg)
                        (expr-unary-infop expr.info)))
      (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
@@ -575,7 +561,7 @@
     (equal (expr-annop (expr-funcall fun args info))
            (and (expr-annop fun)
                 (expr-list-annop args)
-                (expr-funcall-infop info)))
+                (type-vinfop info)))
     :expand (expr-annop (expr-funcall fun args info)))
 
   (defruled expr-annop-of-expr-unary
@@ -739,10 +725,10 @@
              (expr-list-annop (expr-funcall->args expr)))
     :enable expr-annop)
 
-  (defruled expr-funcall-infop-of-expr-funcall->info
+  (defruled type-vinfop-of-expr-funcall->info
     (implies (and (expr-annop expr)
                   (expr-case expr :funcall))
-             (expr-funcall-infop (expr-funcall->info expr)))
+             (type-vinfop (expr-funcall->info expr)))
     :enable expr-annop)
 
   (defruled expr-annop-of-expr-unary->arg
@@ -983,7 +969,7 @@
      type-vinfop-of-expr-arrsub->info
      expr-annop-of-expr-funcall->fun
      expr-list-annop-of-expr-funcall->args
-     expr-funcall-infop-of-expr-funcall->info
+     type-vinfop-of-expr-funcall->info
      expr-annop-of-expr-unary->arg
      expr-unary-infop-of-expr-unary->info
      expr-annop-of-expr-binary->arg1
@@ -1055,7 +1041,7 @@
    :paren (expr-type expr.inner)
    :gensel (type-unknown)
    :arrsub (type-vinfo->type expr.info)
-   :funcall (expr-funcall-info->type expr.info)
+   :funcall (type-vinfo->type expr.info)
    :member (type-unknown)
    :memberp (type-unknown)
    :complit (type-unknown)

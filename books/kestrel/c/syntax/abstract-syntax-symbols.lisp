@@ -779,8 +779,6 @@
     type-vinfop
     type-vinfo-fix
 
-    expr-funcall-infop
-
     expr-unary-infop
 
     expr-binary-infop
