@@ -115,6 +115,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod type+uid-vinfo
+  :short "Fixtype of validator information consisting of a type and a UID."
+  ((type type)
+   (uid uid))
+  :pred type+uid-vinfop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod const-expr-info
   :short "Fixtype of validation information for constant expressions."
   :long
