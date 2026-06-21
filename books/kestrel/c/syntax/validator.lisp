@@ -2918,7 +2918,7 @@
                     ((erp new-arg2 type-arg2 types-arg2 vstate)
                      (valid-expr expr.arg2 vstate))
                     ((erp type) (valid-arrsub expr type-arg1 type-arg2))
-                    (info (make-expr-arrsub-info :type type)))
+                    (info (make-type-vinfo :type type)))
                  (retok (make-expr-arrsub :arg1 new-arg1
                                           :arg2 new-arg2
                                           :info info)

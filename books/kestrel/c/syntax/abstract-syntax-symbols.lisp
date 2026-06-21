@@ -779,8 +779,6 @@
     type-vinfop
     type-vinfo-fix
 
-    expr-arrsub-infop
-
     expr-funcall-infop
 
     expr-unary-infop

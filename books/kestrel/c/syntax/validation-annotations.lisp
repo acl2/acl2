@@ -115,20 +115,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod expr-arrsub-info
-  :short "Fixtype of validation information for array subscript expressions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of the annotations
-     that the validator adds to array subscript expressions,
-     i.e. the @('arrsub') case of @(tsee expr).
-     The information for an array subscript consists of the type."))
-  ((type type))
-  :pred expr-arrsub-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod expr-funcall-info
   :short "Fixtype of validation information for function call expressions."
   :long
@@ -448,7 +434,7 @@
      (expr :string (type-vinfop expr.info))
      (expr :arrsub (and (expr-annop expr.arg1)
                         (expr-annop expr.arg2)
-                        (expr-arrsub-infop expr.info)))
+                        (type-vinfop expr.info)))
      (expr :funcall (and (expr-annop expr.fun)
                          (expr-list-annop expr.args)
                          (expr-funcall-infop expr.info)))
@@ -582,7 +568,7 @@
     (equal (expr-annop (expr-arrsub arg1 arg2 info))
            (and (expr-annop arg1)
                 (expr-annop arg2)
-                (expr-arrsub-infop info)))
+                (type-vinfop info)))
     :expand (expr-annop (expr-arrsub arg1 arg2 info)))
 
   (defruled expr-annop-of-expr-funcall
@@ -735,10 +721,10 @@
              (expr-annop (expr-arrsub->arg2 expr)))
     :enable expr-annop)
 
-  (defruled expr-arrsub-infop-of-expr-arrsub->info
+  (defruled type-vinfop-of-expr-arrsub->info
     (implies (and (expr-annop expr)
                   (expr-case expr :arrsub))
-             (expr-arrsub-infop (expr-arrsub->info expr)))
+             (type-vinfop (expr-arrsub->info expr)))
     :enable expr-annop)
 
   (defruled expr-annop-of-expr-funcall->fun
@@ -994,7 +980,7 @@
      type-vinfop-of-expr-string->info
      expr-annop-of-expr-arrsub->arg1
      expr-annop-of-expr-arrsub->arg2
-     expr-arrsub-infop-of-expr-arrsub->info
+     type-vinfop-of-expr-arrsub->info
      expr-annop-of-expr-funcall->fun
      expr-list-annop-of-expr-funcall->args
      expr-funcall-infop-of-expr-funcall->info
@@ -1068,7 +1054,7 @@
    :string (type-vinfo->type expr.info)
    :paren (expr-type expr.inner)
    :gensel (type-unknown)
-   :arrsub (expr-arrsub-info->type expr.info)
+   :arrsub (type-vinfo->type expr.info)
    :funcall (expr-funcall-info->type expr.info)
    :member (type-unknown)
    :memberp (type-unknown)
