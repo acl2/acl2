@@ -46,6 +46,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod type-vinfo
+  :short "Fixtype of validator information consisting of a type."
+  ((type type))
+  :pred type-vinfop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod type+uid-vinfo
+  :short "Fixtype of validator information consisting of a type and a UID."
+  ((type type)
+   (uid uid))
+  :pred type+uid-vinfop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod iconst-info
   :short "Fixtype of validation information for integer constants."
   :long
@@ -105,21 +120,6 @@
     (prog2$ (raise "Internal error: ~x0 does not satisfy VAR-INFOP." x)
             (irr-var-info)))
   :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod type-vinfo
-  :short "Fixtype of validator information consisting of a type."
-  ((type type))
-  :pred type-vinfop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod type+uid-vinfo
-  :short "Fixtype of validator information consisting of a type and a UID."
-  ((type type)
-   (uid uid))
-  :pred type+uid-vinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
