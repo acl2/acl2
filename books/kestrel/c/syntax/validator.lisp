@@ -2895,7 +2895,7 @@
                        nil
                        (vstate-fix vstate)))
        :string (b* (((erp type) (valid-stringlit-list expr.strings ienv))
-                    (info (make-expr-string-info :type type)))
+                    (info (make-type-vinfo :type type)))
                  (retok (change-expr-string expr :info info)
                         type
                         nil
@@ -3070,7 +3070,7 @@
                                    target-type
                                    str-expr
                                    str-type))
-                         (info (make-expr-string-info :type str-type))
+                         (info (make-type-vinfo :type str-type))
                          (new-complit
                           (make-expr-complit
                            :type new-type
@@ -4583,7 +4583,7 @@
                                 (vstate->completions vstate)
                                 ienv)))
                          (retok nil nil nil nil nil))
-                        (info (make-expr-string-info :type str-type)))
+                        (info (make-type-vinfo :type str-type)))
                      (retok t
                             (initer-single
                              (make-expr-string
@@ -4644,7 +4644,7 @@
                                       (type-integerp
                                        (type-array->of target-type))))
                          (retok nil nil nil nil nil))
-                        (info (make-expr-string-info :type str-type))
+                        (info (make-type-vinfo :type str-type))
                         (new-initer
                          (make-initer-list
                           :elems

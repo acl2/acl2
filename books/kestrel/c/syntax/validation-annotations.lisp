@@ -115,20 +115,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod expr-string-info
-  :short "Fixtype of validation information for string literal expressions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of the annotations
-     that the validator adds to string literal expressions,
-     i.e. the @('string') case of @(tsee expr).
-     The information for a string literal consists of the type."))
-  ((type type))
-  :pred expr-string-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod expr-arrsub-info
   :short "Fixtype of validation information for array subscript expressions."
   :long
@@ -459,7 +445,7 @@
      (expr :ident (var-infop expr.info))
      (expr :const (and (const-annop expr.const)
                        (type-vinfop expr.info)))
-     (expr :string (expr-string-infop expr.info))
+     (expr :string (type-vinfop expr.info))
      (expr :arrsub (and (expr-annop expr.arg1)
                         (expr-annop expr.arg2)
                         (expr-arrsub-infop expr.info)))
@@ -589,7 +575,7 @@
 
   (defruled expr-annop-of-expr-string
     (equal (expr-annop (expr-string strings info))
-           (expr-string-infop info))
+           (type-vinfop info))
     :enable expr-annop)
 
   (defruled expr-annop-of-expr-arrsub
@@ -731,10 +717,10 @@
              (type-vinfop (expr-const->info expr)))
     :enable expr-annop)
 
-  (defruled expr-string-infop-of-expr-string->info
+  (defruled type-vinfop-of-expr-string->info
     (implies (and (expr-annop expr)
                   (expr-case expr :string))
-             (expr-string-infop (expr-string->info expr)))
+             (type-vinfop (expr-string->info expr)))
     :enable expr-annop)
 
   (defruled expr-annop-of-expr-arrsub->arg1
@@ -1005,7 +991,7 @@
      var-infop-of-expr-ident->info
      const-annop-of-expr-const->const
      type-vinfop-of-expr-const->info
-     expr-string-infop-of-expr-string->info
+     type-vinfop-of-expr-string->info
      expr-annop-of-expr-arrsub->arg1
      expr-annop-of-expr-arrsub->arg2
      expr-arrsub-infop-of-expr-arrsub->info
@@ -1079,7 +1065,7 @@
    expr
    :ident (var-info->type expr.info)
    :const (type-vinfo->type expr.info)
-   :string (expr-string-info->type expr.info)
+   :string (type-vinfo->type expr.info)
    :paren (expr-type expr.inner)
    :gensel (type-unknown)
    :arrsub (expr-arrsub-info->type expr.info)
