@@ -1435,7 +1435,7 @@
                          (arg2 exprp)
                          (arg2-new exprp)
                          (arg2-thm-name symbolp)
-                         (info expr-binary-infop)
+                         (info type-vinfop)
                          (gin ginp))
   :guard (and (expr-unambp arg1)
               (expr-annop arg1)
@@ -1667,7 +1667,7 @@
     (expr-annop expr)
     :hyp (and (expr-annop arg1-new)
               (expr-annop arg2-new)
-              (expr-binary-infop info)))
+              (type-vinfop info)))
 
   (defret expr-aidentp-of-xeq-expr-binary
     (expr-aidentp expr gcc)

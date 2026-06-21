@@ -779,8 +779,6 @@
     type-vinfop
     type-vinfo-fix
 
-    expr-binary-infop
-
     tyname-info
     tyname-infop
 

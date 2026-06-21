@@ -115,20 +115,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod expr-binary-info
-  :short "Fixtype of validation information for binary expressions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of the annotations that
-     the validator adds to binary expressions,
-     i.e. the @(':binary') case of @(tsee expr).
-     The information for a binary expression consists of its type."))
-  ((type type))
-  :pred expr-binary-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod const-expr-info
   :short "Fixtype of validation information for constant expressions."
   :long
@@ -418,7 +404,7 @@
                                  (expr-fix expr)))
      (expr :binary (and (expr-annop expr.arg1)
                         (expr-annop expr.arg2)
-                        (expr-binary-infop expr.info)))
+                        (type-vinfop expr.info)))
      (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
                                    (expr-fix expr)))
      (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."
@@ -560,7 +546,7 @@
     (equal (expr-annop (expr-binary op arg1 arg2 info))
            (and (expr-annop arg1)
                 (expr-annop arg2)
-                (expr-binary-infop info)))
+                (type-vinfop info)))
     :expand (expr-annop (expr-binary op arg1 arg2 info)))
 
   (defruled const-expr-annop-of-const-expr
@@ -741,10 +727,10 @@
              (expr-annop (expr-binary->arg2 expr)))
     :enable expr-annop)
 
-  (defruled expr-binary-infop-of-expr-binary->info
+  (defruled type-vinfop-of-expr-binary->info
     (implies (and (expr-annop expr)
                   (expr-case expr :binary))
-             (expr-binary-infop (expr-binary->info expr)))
+             (type-vinfop (expr-binary->info expr)))
     :enable expr-annop)
 
   (defruled expr-annop-of-const-expr->expr
@@ -960,7 +946,7 @@
      type-vinfop-of-expr-unary->info
      expr-annop-of-expr-binary->arg1
      expr-annop-of-expr-binary->arg2
-     expr-binary-infop-of-expr-binary->info
+     type-vinfop-of-expr-binary->info
      expr-annop-of-const-expr->expr
      const-expr-infop-of-const-expr->info
      designor-list-annop-of-desiniter->designors
@@ -1036,7 +1022,7 @@
    :sizeof (type-unknown-arithmetic)
    :alignof (type-unknown-arithmetic)
    :cast (tyname-info->type (tyname->info expr.type))
-   :binary (expr-binary-info->type expr.info)
+   :binary (type-vinfo->type expr.info)
    :cond (b* (((when (expr-option-case expr.then :none)) (type-unknown))
               (expr.then (expr-option-some->val expr.then))
               (then-type (expr-type expr.then))

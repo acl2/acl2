@@ -3163,7 +3163,7 @@
                                    type-arg2
                                    (vstate->completions vstate)
                                    ienv))
-                    (info (make-expr-binary-info :type type)))
+                    (info (make-type-vinfo :type type)))
                  (retok (make-expr-binary :op expr.op
                                           :arg1 new-arg1
                                           :arg2 new-arg2
