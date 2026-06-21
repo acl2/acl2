@@ -347,7 +347,13 @@
        Thus, for now we add run-time checks, in the form of @(tsee raise),
        for the cases in which the unambiguity predicates do not hold;
        note that @(tsee raise) is logically @('nil'),
-       so the annotation predicates are false on ambiguous constructs."))
+       so the annotation predicates are false on ambiguous constructs.")
+     (xdoc::p
+      "Some kinds of expressions are annotated with their type;
+       this should be probably extended to all expressions.
+       A few kinds of expressions have additional information.")
+     (xdoc::p
+      "Type names are annotated with the type they denote."))
     :types (ident
             ident-list
             ident-option
