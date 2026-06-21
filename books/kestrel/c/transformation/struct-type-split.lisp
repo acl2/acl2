@@ -2255,7 +2255,7 @@
     (b* ((st (sts-split-state-fix st))
          ((reterr) nil (tyname-fix tyname) (tyname-fix tyname) st)
          ((tyname tyname) tyname)
-         ((c$::tyname-info info) tyname.info)
+         ((c$::type-vinfo info) tyname.info)
          ((mv erp splitp)
           (sts-check-type info.type st))
          ((when erp)

@@ -6014,7 +6014,7 @@
           (valid-spec/qual-list tyname.specquals nil nil vstate))
          ((erp new-decl? type more-types vstate)
           (valid-absdeclor-option tyname.declor? type vstate))
-         (info (make-tyname-info :type type)))
+         (info (make-type-vinfo :type type)))
       (retok (make-tyname :specquals new-specquals
                           :declor? new-decl?
                           :info info)

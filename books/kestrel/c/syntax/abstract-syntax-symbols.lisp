@@ -779,9 +779,6 @@
     type-vinfop
     type-vinfo-fix
 
-    tyname-info
-    tyname-infop
-
     param-declor-nonabstract-info
     param-declor-nonabstract-info->type
 

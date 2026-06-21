@@ -233,20 +233,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod tyname-info
-  :short "Fixtype of validation information for type names."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of the annotations that
-     the validator adds to type names,
-     i.e. the @(tsee tyname) fixtype.
-     The information for a type name consists of its denoted type."))
-  ((type type))
-  :pred tyname-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod init-declor-info
   :short "Fixtype of validation information for initializer declarators."
   :long
@@ -436,7 +422,7 @@
                                        direct abstract declarator."))
      (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
                   (absdeclor-option-annop (tyname->declor? tyname))
-                  (tyname-infop (tyname->info tyname))))
+                  (type-vinfop (tyname->info tyname))))
      (param-declon (and (decl-spec-list-annop
                           (param-declon->specs param-declon))
                         (param-declor-annop (param-declon->declor param-declon))
@@ -587,7 +573,7 @@
     (equal (tyname-annop (tyname specquals declor? info))
            (and (spec/qual-list-annop specquals)
                 (absdeclor-option-annop declor?)
-                (tyname-infop info)))
+                (type-vinfop info)))
     :expand (tyname-annop (tyname specquals declor? info)))
 
   (defruled param-declon-annop-of-param-declon
@@ -814,9 +800,9 @@
              (absdeclor-option-annop (tyname->declor? tyname)))
     :enable tyname-annop)
 
-  (defruled tyname-infop-of-tyname->info
+  (defruled type-vinfop-of-tyname->info
     (implies (tyname-annop tyname)
-             (tyname-infop (tyname->info tyname)))
+             (type-vinfop (tyname->info tyname)))
     :enable tyname-annop)
 
   (defruled decl-spec-list-annop-of-param-declon->specs
@@ -962,7 +948,7 @@
      init-declor-infop-of-init-declor->info
      spec/qual-list-annop-of-tyname->specquals
      absdeclor-option-annop-of-tyname->declor?
-     tyname-infop-of-tyname->info
+     type-vinfop-of-tyname->info
      declor-annop-of-param-declor-nonabstract->declor
      decl-spec-list-annop-of-param-declon->specs
      param-declor-annop-of-param-declon->declor
@@ -1021,7 +1007,7 @@
    :label-addr (type-pointer (type-void))
    :sizeof (type-unknown-arithmetic)
    :alignof (type-unknown-arithmetic)
-   :cast (tyname-info->type (tyname->info expr.type))
+   :cast (type-vinfo->type (tyname->info expr.type))
    :binary (type-vinfo->type expr.info)
    :cond (b* (((when (expr-option-case expr.then :none)) (type-unknown))
               (expr.then (expr-option-some->val expr.then))
