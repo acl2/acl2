@@ -108,6 +108,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod type-vinfo
+  :short "Fixtype of validator information consisting of a type."
+  ((type type))
+  :pred type-vinfop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod expr-const-info
   :short "Fixtype of validation information for constant expressions."
   :long
