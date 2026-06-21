@@ -2888,7 +2888,7 @@
                        nil
                        (vstate-fix vstate)))
        :const (b* (((erp const type) (valid-const expr.const vstate))
-                   (info (make-expr-const-info :type type)))
+                   (info (make-type-vinfo :type type)))
                 (retok (make-expr-const :const const
                                         :info info)
                        type

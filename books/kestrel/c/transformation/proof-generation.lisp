@@ -1099,7 +1099,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define xeq-expr-const ((const constp) (info expr-const-infop) (gin ginp))
+(define xeq-expr-const ((const constp) (info type-vinfop) (gin ginp))
   :guard (const-annop const)
   :returns (mv (expr exprp) (gout goutp))
   :short "Equality transformation of a constant."
@@ -1140,7 +1140,7 @@
      Until we extend our dynamic semantics to be more general,
      we need this additional condition for proof generation."))
   (b* (((gin gin) gin)
-       (info (expr-const-info-fix info))
+       (info (type-vinfo-fix info))
        (expr (make-expr-const :const const :info info))
        (gout-no-thm (gout-no-thm gin))
        ((unless (const-case const :int)) (mv expr gout-no-thm))
@@ -1193,7 +1193,7 @@
   (defret expr-annop-of-xeq-expr-const
     (expr-annop expr)
     :hyp (and (const-annop const)
-              (expr-const-infop info)))
+              (type-vinfop info)))
 
   (defret expr-aidentp-of-xeq-expr-const
     (expr-aidentp expr gcc)

@@ -115,20 +115,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod expr-const-info
-  :short "Fixtype of validation information for constant expressions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of the annotations
-     that the validator adds to constant expressions,
-     i.e. the @('const') case of @(tsee expr).
-     The information for a constant consists of the type."))
-  ((type type))
-  :pred expr-const-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod expr-string-info
   :short "Fixtype of validation information for string literal expressions."
   :long
@@ -472,7 +458,7 @@
     ((iconst (iconst-infop (iconst->info iconst)))
      (expr :ident (var-infop expr.info))
      (expr :const (and (const-annop expr.const)
-                       (expr-const-infop expr.info)))
+                       (type-vinfop expr.info)))
      (expr :string (expr-string-infop expr.info))
      (expr :arrsub (and (expr-annop expr.arg1)
                         (expr-annop expr.arg2)
@@ -598,7 +584,7 @@
   (defruled expr-annop-of-expr-const
     (equal (expr-annop (expr-const const info))
            (and (const-annop const)
-                (expr-const-infop info)))
+                (type-vinfop info)))
     :enable expr-annop)
 
   (defruled expr-annop-of-expr-string
@@ -739,10 +725,10 @@
              (const-annop (expr-const->const expr)))
     :enable expr-annop)
 
-  (defruled expr-const-infop-of-expr-const->info
+  (defruled type-vinfop-of-expr-const->info
     (implies (and (expr-annop expr)
                   (expr-case expr :const))
-             (expr-const-infop (expr-const->info expr)))
+             (type-vinfop (expr-const->info expr)))
     :enable expr-annop)
 
   (defruled expr-string-infop-of-expr-string->info
@@ -1018,7 +1004,7 @@
      iconst-infop-of-iconst->info
      var-infop-of-expr-ident->info
      const-annop-of-expr-const->const
-     expr-const-infop-of-expr-const->info
+     type-vinfop-of-expr-const->info
      expr-string-infop-of-expr-string->info
      expr-annop-of-expr-arrsub->arg1
      expr-annop-of-expr-arrsub->arg2
@@ -1092,7 +1078,7 @@
   (expr-case
    expr
    :ident (var-info->type expr.info)
-   :const (expr-const-info->type expr.info)
+   :const (type-vinfo->type expr.info)
    :string (expr-string-info->type expr.info)
    :paren (expr-type expr.inner)
    :gensel (type-unknown)

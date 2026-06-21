@@ -776,8 +776,8 @@
     var-info-fix
     coerce-var-info
 
-    expr-const-infop
-    expr-const-info-fix
+    type-vinfop
+    type-vinfo-fix
 
     expr-string-infop
 
