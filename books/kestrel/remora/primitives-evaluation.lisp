@@ -269,5 +269,5 @@
   :returns (val expr-value-resultp)
   :short "Evaluation of integer conversion to boolean."
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
-       (bval (not (zerop i1.int))))
+       (bval (not (= i1.int 0))))
     (expr-value-base (base-value-bool bval))))
