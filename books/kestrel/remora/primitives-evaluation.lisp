@@ -12,7 +12,6 @@
 (in-package "REMORA")
 
 (include-book "values")
-(include-book "kestrel/fty/boolean-result" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
@@ -21,8 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local (in-theory (enable int-valuep-when-result-not-error
-                          float-valuep-when-result-not-error
-                          booleanp-when-result-not-error)))
+                          float-valuep-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
