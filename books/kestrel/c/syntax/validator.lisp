@@ -3339,7 +3339,7 @@
          ((erp new-expr type types vstate)
           (valid-expr (const-expr->expr cexpr) vstate))
          (val (const-eval-expr new-expr ienv))
-         (info (make-const-expr-info :value val)))
+         (info (make-const-expr-vinfo :value val)))
       (retok (make-const-expr :expr new-expr :info info) type types vstate))
     :measure (acl2::two-nats-measure (const-expr-count cexpr) 0))
 
@@ -4965,13 +4965,13 @@
                       (designor-fix designor)
                       (type-fix target-type)))
             (element-type (type-array->of target-type))
-            ((unless (const-expr-infop (const-expr->info new-index)))
+            ((unless (const-expr-vinfop (const-expr->info new-index)))
              (retmsg$ "Internal error. ~
                        Constant expression is not annotated: ~x0."
                       new-index))
             (index-nat?
              (value-to-integer
-              (const-expr-info->value (const-expr->info new-index))))
+              (const-expr-vinfo->value (const-expr->info new-index))))
             ((when (and index-nat? (not (natp index-nat?))))
              (retmsg$ "The first or only index of the designator ~x0 ~
                        is negative."))
@@ -4985,14 +4985,14 @@
                   ((when (const-expr-option-case new-range? :none))
                    (retok nil))
                   (new-range (const-expr-option-some->val new-range?))
-                  ((unless (const-expr-infop
+                  ((unless (const-expr-vinfop
                             (const-expr->info new-range)))
                    (retmsg$ "Internal error. ~
                              Constant expression is not annotated: ~x0."
                             new-range))
                   (range-nat?
                    (value-to-integer
-                    (const-expr-info->value (const-expr->info new-range))))
+                    (const-expr-vinfo->value (const-expr->info new-range))))
                   ((when (and range-nat? (not (natp range-nat?))))
                    (retmsg$ "The second index of the designator ~x0 ~
                              is negative.")))

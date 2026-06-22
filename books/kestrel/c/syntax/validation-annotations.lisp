@@ -123,7 +123,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod const-expr-info
+(fty::defprod const-expr-vinfo
   :short "Fixtype of validation information for constant expressions."
   :long
   (xdoc::topstring
@@ -134,7 +134,7 @@
      The information for a constant expression consists of
      its value after evaluation."))
   ((value valuep))
-  :pred const-expr-infop)
+  :pred const-expr-vinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -374,7 +374,7 @@
      (expr :cast/logand-ambig (raise "Internal error: ambiguous ~x0."
                                      (expr-fix expr)))
      (const-expr (and (expr-annop (const-expr->expr const-expr))
-                      (const-expr-infop (const-expr->info const-expr))))
+                      (const-expr-vinfop (const-expr->info const-expr))))
      (desiniter (and (designor-list-annop (desiniter->designors desiniter))
                      (initer-annop (desiniter->initer desiniter))
                      (desiniter-infop (desiniter->info desiniter))))
@@ -508,7 +508,7 @@
   (defruled const-expr-annop-of-const-expr
     (equal (const-expr-annop (const-expr expr info))
            (and (expr-annop expr)
-                (const-expr-infop info)))
+                (const-expr-vinfop info)))
     :expand (const-expr-annop (const-expr expr info)))
 
   (defruled desiniter-annop-of-desiniter
@@ -694,9 +694,9 @@
              (expr-annop (const-expr->expr const-expr)))
     :enable const-expr-annop)
 
-  (defruled const-expr-infop-of-const-expr->info
+  (defruled const-expr-vinfop-of-const-expr->info
     (implies (const-expr-annop const-expr)
-             (const-expr-infop (const-expr->info const-expr)))
+             (const-expr-vinfop (const-expr->info const-expr)))
     :enable const-expr-annop)
 
   (defruled designor-list-annop-of-desiniter->designors
@@ -904,7 +904,7 @@
      expr-annop-of-expr-binary->arg2
      type-vinfop-of-expr-binary->info
      expr-annop-of-const-expr->expr
-     const-expr-infop-of-const-expr->info
+     const-expr-vinfop-of-const-expr->info
      designor-list-annop-of-desiniter->designors
      initer-annop-of-desiniter->initer
      desiniter-infop-of-desiniter->info
