@@ -678,7 +678,19 @@
                                                 shape-renam)
                  :expr (expr-rename-ispace-vars bind.expr
                                                 dim-renam
-                                                shape-renam)))))
+                                                shape-renam))))
+   (bind-list
+    (b* (((when (endp bind-list)) nil)
+         (bind (car bind-list))
+         (new-bind (bind-rename-ispace-vars bind dim-renam shape-renam))
+         ((mv & & dim-renam shape-renam)
+          (dim/shape-rename-remove-bound (bind-bound-ispace-vars bind)
+                                         dim-renam
+                                         shape-renam)))
+      (cons new-bind
+            (bind-list-rename-ispace-vars (cdr bind-list)
+                                          dim-renam
+                                          shape-renam)))))
   :name ast-rename-ispace-vars)
 
 ;;;;;;;;;;;;;;;;;;;;
