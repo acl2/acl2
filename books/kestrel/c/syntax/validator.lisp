@@ -2879,9 +2879,9 @@
       (expr-case
        expr
        :ident (b* (((erp type linkage uid) (valid-var expr.ident vstate))
-                   (info (make-var-info :type type
-                                        :linkage linkage
-                                        :uid uid)))
+                   (info (make-var-vinfo :type type
+                                         :linkage linkage
+                                         :uid uid)))
                 (retok (make-expr-ident :ident expr.ident
                                         :info info)
                        type

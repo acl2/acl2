@@ -1094,8 +1094,8 @@
             ((unless (equal expr.ident original))
              (expr-fix c$::expr))
             (ident-linkage
-              (c$::var-info->linkage
-                (c$::coerce-var-info expr.info)))
+              (c$::var-vinfo->linkage
+                (c$::coerce-var-vinfo expr.info)))
             (- (and (equal linkage ident-linkage)
                     (raise "SPLIT-GSO ERROR: ~
                             Global struct object ~x0 occurs in illegal
@@ -1113,8 +1113,8 @@
                 :ident (b* (((unless (equal expr.arg.ident original))
                              nil)
                             (ident-linkage
-                              (c$::var-info->linkage
-                                (c$::coerce-var-info expr.arg.info))))
+                              (c$::var-vinfo->linkage
+                                (c$::coerce-var-vinfo expr.arg.info))))
                          (equal linkage ident-linkage))
                 :otherwise nil))
             ((unless match)
@@ -1144,8 +1144,8 @@
                                         ((unless (equal expr.arg.ident original))
                                          nil)
                                         (ident-linkage
-                                          (c$::var-info->linkage
-                                            (c$::coerce-var-info expr.arg.info))))
+                                          (c$::var-vinfo->linkage
+                                            (c$::coerce-var-vinfo expr.arg.info))))
                                      (equal linkage ident-linkage))
                             :otherwise nil)
                   :otherwise nil))

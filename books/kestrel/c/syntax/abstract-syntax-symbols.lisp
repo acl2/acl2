@@ -771,10 +771,11 @@
 
     iconst-vinfo
 
-    var-info
-    var-infop
-    var-info-fix
-    coerce-var-info
+    var-vinfo
+    var-vinfop
+    var-vinfo-fix
+    var-vinfo->uid
+    coerce-var-vinfo
 
     type-vinfop
     type-vinfo-fix

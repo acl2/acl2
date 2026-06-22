@@ -35,8 +35,8 @@
           (new-fn (ident-fix new-fn)))
        (expr-case
          c$::expr
-         :ident (if (and (var-infop c$::expr.info)
-                         (c$::uid-equal (c$::var-info->uid c$::expr.info)
+         :ident (if (and (var-vinfop c$::expr.info)
+                         (c$::uid-equal (var-vinfo->uid c$::expr.info)
                                         uid))
                     (make-expr-ident :ident new-fn :info nil)
                   (expr-fix c$::expr))

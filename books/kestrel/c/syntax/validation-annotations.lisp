@@ -78,7 +78,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod var-info
+(fty::defprod var-vinfo
   :short "Fixtype of validation information for variables."
   :long
   (xdoc::topstring
@@ -94,31 +94,31 @@
   ((type type)
    (linkage linkage)
    (uid uid))
-  :pred var-infop)
+  :pred var-vinfop)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-var-info
+(defirrelevant irr-var-vinfo
   :short "An irrelevant validation information for variables."
-  :type var-infop
-  :body (make-var-info :type (irr-type)
-                       :linkage (irr-linkage)
-                       :uid (irr-uid)))
+  :type var-vinfop
+  :body (make-var-vinfo :type (irr-type)
+                        :linkage (irr-linkage)
+                        :uid (irr-uid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define coerce-var-info (x)
-  :returns (info var-infop)
-  :short "Coerce a value to @(tsee var-info)."
+(define coerce-var-vinfo (x)
+  :returns (info var-vinfop)
+  :short "Coerce a value to @(tsee var-vinfo)."
   :long
   (xdoc::topstring
    (xdoc::p
     "This must be used when the value is expected to have that type.
      We raise a hard error if that is not the case."))
-  (if (var-infop x)
+  (if (var-vinfop x)
       x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy VAR-INFOP." x)
-            (irr-var-info)))
+    (prog2$ (raise "Internal error: ~x0 does not satisfy VAR-VINFOP." x)
+            (irr-var-vinfo)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -342,7 +342,7 @@
     :combine and
     :override
     ((iconst (iconst-vinfop (iconst->info iconst)))
-     (expr :ident (var-infop expr.info))
+     (expr :ident (var-vinfop expr.info))
      (expr :const (and (const-annop expr.const)
                        (type-vinfop expr.info)))
      (expr :string (type-vinfop expr.info))
@@ -464,7 +464,7 @@
 
   (defruled expr-annop-of-expr-ident
     (equal (expr-annop (expr-ident ident info))
-           (var-infop info))
+           (var-vinfop info))
     :enable expr-annop)
 
   (defruled expr-annop-of-expr-const
@@ -599,10 +599,10 @@
              (iconst-vinfop (iconst->info iconst)))
     :enable iconst-annop)
 
-  (defruled var-infop-of-expr-ident->info
+  (defruled var-vinfop-of-expr-ident->info
     (implies (and (expr-annop expr)
                   (expr-case expr :ident))
-             (var-infop (expr-ident->info expr)))
+             (var-vinfop (expr-ident->info expr)))
     :enable expr-annop)
 
   (defruled const-annop-of-expr-const->const
@@ -888,7 +888,7 @@
      trans-unit-annop-of-trans-unit
      trans-ensemble-annop-of-trans-ensemble
      iconst-vinfop-of-iconst->info
-     var-infop-of-expr-ident->info
+     var-vinfop-of-expr-ident->info
      const-annop-of-expr-const->const
      type-vinfop-of-expr-const->info
      type-vinfop-of-expr-string->info
@@ -963,7 +963,7 @@
      This is an approximation."))
   (expr-case
    expr
-   :ident (var-info->type expr.info)
+   :ident (var-vinfo->type expr.info)
    :const (type-vinfo->type expr.info)
    :string (type-vinfo->type expr.info)
    :paren (expr-type expr.inner)

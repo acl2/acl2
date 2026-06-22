@@ -1020,7 +1020,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define xeq-expr-ident ((ident identp) (info var-infop) (gin ginp))
+(define xeq-expr-ident ((ident identp) (info var-vinfop) (gin ginp))
   :returns (mv (expr exprp) (gout goutp))
   :short "Equality transformation of an identifier expression (i.e. variable)."
   :long
@@ -1041,7 +1041,7 @@
      if the variable has a type supported in our C formalization,
      and if the variable is known in scope."))
   (b* ((ident (ident-fix ident))
-       ((var-info info) (var-info-fix info))
+       ((var-vinfo info) (var-vinfo-fix info))
        ((gin gin) gin)
        (expr (make-expr-ident :ident ident :info info))
        (gout-no-thm (gout-no-thm gin))

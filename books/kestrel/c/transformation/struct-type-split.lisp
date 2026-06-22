@@ -507,7 +507,7 @@
         expr
         :ident
         (b* (((sts-split-state st) st)
-             ((var-info info) expr.info)
+             ((var-vinfo info) expr.info)
              (right-ident? (omap::assoc info.uid st.ident-map)))
           (retok (expr-fix expr)
                  (if right-ident?
