@@ -360,8 +360,8 @@
   <ul>
    <li>NaN + anything = NaN.</li>
    <li>(+inf) + (-inf) = NaN.</li>
-   <li>(+inf) + anything else = +inf.</li>
-   <li>(-inf) + anything else = -inf.</li>
+   <li>(+inf) + @('x') = +inf, where @('x') is a finite rational.</li>
+   <li>(-inf) + @('x') = -inf, where @('x') is a finite rational.</li>
    <li>(-0) + (-0) = -0; every other sum that is zero is +0.</li>
   </ul>"
   (b* (((ok f1) (check-expr-value-float val1))
@@ -405,8 +405,10 @@
   <ul>
    <li>NaN - anything = NaN; anything - NaN = NaN.</li>
    <li>(+inf) - (+inf) = NaN; (-inf) - (-inf) = NaN.</li>
-   <li>(+inf) - anything else = +inf; anything else - (-inf) = +inf.</li>
-   <li>(-inf) - anything else = -inf; anything else - (+inf) = -inf.</li>
+   <li>(+inf) - @('x') = +inf; @('x') - (-inf) = +inf, where @('x') is a finite
+  rational.</li>
+   <li>(-inf) - @('x') = -inf; @('x') - (+inf) = -inf, where @('x') is a finite
+  rational.</li>
    <li>(-0) - (+0) = -0; every other difference that is zero is +0.</li>
   </ul>"
   (b* (((ok f1) (check-expr-value-float val1))
@@ -454,8 +456,8 @@
   The special cases follow [impl]:</p>
   <ul>
    <li>NaN * anything = NaN.</li>
-   <li>0 * inf = NaN, in either order.</li>
-   <li>Otherwise, if either operand is infinite, the result is an infinity
+   <li>0 * inf = NaN.</li>
+   <li>If either operand is infinite, the result is an infinity
        with the exclusive-or sign.</li>
    <li>Otherwise the result is the rational product; a zero product is -0 when
        the operand signs differ and +0 when they agree.</li>
@@ -516,14 +518,15 @@
   :long "<p>Finite values are divided as exact rationals
   (see @(see primitives-evaluation) for the float model).
   Unlike integer division, division by zero is not an error: it follows
-  IEEE-754. The sign of an infinite or zero result is the exclusive-or of the
+  [impl]. The sign of an infinite or zero result is the exclusive-or of the
   operand signs (negative zero counts as negative).
   The special cases follow [impl]:</p>
   <ul>
    <li>NaN / anything = NaN; anything / NaN = NaN.</li>
    <li>0 / 0 = NaN; inf / inf = NaN.</li>
-   <li>anything else / 0 = inf; inf / anything else = inf.</li>
-   <li>anything else / inf = 0.</li>
+   <li>@('x') / 0 = inf; inf / @('x') = inf, where @('x') is a finite
+  rational.</li>
+   <li>@('x') / inf = 0, where @('x') is a finite rational.</li>
    <li>Otherwise the rational quotient; a zero quotient is -0 when the operand
        signs differ and +0 when they agree.</li>
   </ul>"
