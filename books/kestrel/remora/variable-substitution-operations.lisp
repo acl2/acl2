@@ -719,7 +719,19 @@
                                                shape-subst)
                  :expr (expr-subst-ispace-vars bind.expr
                                                dim-subst
-                                               shape-subst)))))
+                                               shape-subst))))
+   (bind-list
+    (b* (((when (endp bind-list)) nil)
+         (bind (car bind-list))
+         (new-bind (bind-subst-ispace-vars bind dim-subst shape-subst))
+         ((mv dim-subst shape-subst)
+          (dim/shape-subst-remove-bound (bind-bound-ispace-vars bind)
+                                        dim-subst
+                                        shape-subst)))
+      (cons new-bind
+            (bind-list-subst-ispace-vars (cdr bind-list)
+                                         dim-subst
+                                         shape-subst)))))
   :name ast-subst-ispace-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
