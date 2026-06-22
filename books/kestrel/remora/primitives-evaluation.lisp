@@ -284,3 +284,60 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        (bval (not (= i1.int 0))))
     (expr-value-base (base-value-bool bval))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-bool-not ((val1 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of boolean negation."
+  (b* (((ok b1) (check-expr-value-bool val1))
+       (bval (not b1)))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-bool-and ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of boolean conjunction."
+  (b* (((ok b1) (check-expr-value-bool val1))
+       ((ok b2) (check-expr-value-bool val2))
+       (bval (and b1 b2)))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-bool-or ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of boolean inclusive disjunction."
+  (b* (((ok b1) (check-expr-value-bool val1))
+       ((ok b2) (check-expr-value-bool val2))
+       (bval (or b1 b2)))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-bool-eq ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of boolean equality."
+  (b* (((ok b1) (check-expr-value-bool val1))
+       ((ok b2) (check-expr-value-bool val2))
+       (bval (iff b1 b2)))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-bool-neq ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of boolean inequality."
+  (b* (((ok b1) (check-expr-value-bool val1))
+       ((ok b2) (check-expr-value-bool val2))
+       (bval (not (iff b1 b2))))
+    (expr-value-base (base-value-bool bval))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-bool-to-int ((val1 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of boolean conversion to integer."
+  (b* (((ok b1) (check-expr-value-bool val1))
+       (ival (int-value (if b1 1 0))))
+    (expr-value-base (base-value-int ival))))
+
+(define prim-bool-float ((val1 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of boolean conversion to float."
+  (b* (((ok b1) (check-expr-value-bool val1))
+       (fval (float-value (if b1 1 0))))
+    (expr-value-base (base-value-float fval))))
