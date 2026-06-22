@@ -51,7 +51,64 @@
      when evaluating the application of a primitive AST.")
    (xdoc::p
     "The primitives are defined in [impl], as the Remora `prelude'.
-     This is work in progress."))
+     This is work in progress.")
+   (xdoc::p
+    "The integer primitives currently implemented are:")
+   (xdoc::ul
+    (xdoc::li "@(tsee prim-int-add), @(tsee prim-int-sub),
+               @(tsee prim-int-mul), @(tsee prim-int-div),
+               @(tsee prim-int-mod), @(tsee prim-int-max),
+               @(tsee prim-int-min).")
+    (xdoc::li "@(tsee prim-int-bit-and), @(tsee prim-int-bit-or),
+               @(tsee prim-int-bit-xor), @(tsee prim-int-bit-not),
+               @(tsee prim-int-shl), @(tsee prim-int-shr),
+               @(tsee prim-int-popc).")
+    (xdoc::li "@(tsee prim-int-eq), @(tsee prim-int-neq),
+               @(tsee prim-int-lt), @(tsee prim-int-gt),
+               @(tsee prim-int-leq), @(tsee prim-int-geq).")
+    (xdoc::li "@(tsee prim-int-to-float), @(tsee prim-int-to-bool)."))
+   (xdoc::p
+    "The boolean primitives currently implemented are
+     @(tsee prim-bool-not), @(tsee prim-bool-and), @(tsee prim-bool-or),
+     @(tsee prim-bool-eq), @(tsee prim-bool-neq),
+     @(tsee prim-bool-to-int), and @(tsee prim-bool-to-float).")
+   (xdoc::p
+    "The float primitives currently implemented are
+     @(tsee prim-float-add), @(tsee prim-float-sub), @(tsee prim-float-mul),
+     @(tsee prim-float-div), @(tsee prim-float-truncate),
+     @(tsee prim-float-round), @(tsee prim-float-ceiling),
+     and @(tsee prim-float-floor).")
+   (xdoc::p
+    "For integers, we currently model Remora integer values as unbounded
+     mathematical integers, matching ACL2's own integer type
+     (see @(tsee int-value)).
+     This keeps the integer primitives easy to define for now;
+     once Remora settles on a specific integer model
+     (e.g. a fixed-width type such as 64-bit integers),
+     the definitions can be updated accordingly.
+     Two consequences of the unbounded model are worth noting,
+     where our behavior differs from [impl]
+     (which uses Haskell's fixed-width @('Int')):")
+   (xdoc::ul
+    (xdoc::li "Arithmetic never overflows. In particular, the left shift
+               @(tsee prim-int-shl) never discards high-order bits, whereas a
+               bounded model would wrap around or truncate.")
+    (xdoc::li "Pop count @(tsee prim-int-popc) only accepts non-negative
+               inputs, erroring on negative ones, because the bit count of a
+               negative integer depends on a fixed two's-complement width,
+               which the unbounded model lacks."))
+   (xdoc::p
+    "For floats, we similarly model finite Remora float values as unbounded
+     ACL2 rationals, together with the special values negative zero, positive
+     and negative infinity, and NaN (see @(tsee float-value)).
+     Finite arithmetic is performed as exact rational arithmetic, and the
+     results of the special cases (those involving NaN, the infinities, or
+     negative zero) follow [impl]'s Haskell IEEE-754 semantics.
+     As with integers, this is a starting point for testing until Remora
+     decides on a specific float model.")
+   (xdoc::p
+    "The boolean primitives need no special modeling:
+     Remora boolean values are ACL2 booleans directly."))
   :order-subtopics t
   :default-parent t)
 
@@ -181,6 +238,12 @@
 (define prim-int-shl ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer left shift."
+  :long "<p>Left shift uses ACL2's @(tsee ash) with a non-negative shift
+  amount, erroring on a negative shift amount. Because integers are modeled as
+  unbounded (see @(see primitives-evaluation)), the shift never overflows: no
+  high-order bits are lost. This differs from [impl], which uses Haskell's
+  fixed-width @('shiftL'), where bits shifted past the word width are
+  discarded.</p>"
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (< i2.int 0)) (reserr nil)) ;; ERROR: shift by negative bits
@@ -205,16 +268,17 @@
        (ival (int-value (lognot i1.int))))
     (expr-value-base (base-value-int ival))))
 
-; TODO: prim-int-popc
-; NOTE: Haskell's popCount on a negative Int works by counting the
-; number  of 1's in the two's complement version of the number. Since Int has a
-; fixed width, the number of 1's is finite in this case. But ACL2's logcount on
-; a negative integer would count the number of 1's in it's absolute
-; value representation. Thus, there is a mismatch. We currently resolved this
-; by only accepting positive integers and errs on a negative input.
 (define prim-int-popc ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer pop count."
+  :long "<p>Pop count (the number of set bits) uses ACL2's @(tsee logcount).
+  Only non-negative inputs are accepted; a negative input is an error. On a
+  negative integer, [impl]'s Haskell @('popCount') counts the set bits of the
+  fixed-width two's-complement representation (a finite, width-dependent count),
+  whereas @(tsee logcount) counts the bits of the unbounded magnitude. Because
+  integers are modeled as unbounded (see @(see primitives-evaluation)), there is
+  no fixed width to match, so the behavior on negative inputs would differ from
+  [impl]; we therefore restrict to non-negative inputs for now.</p>"
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((when (< i1.int 0)) (reserr nil)) ;; ERROR: negative input
        (ival (int-value (logcount i1.int))))
@@ -285,6 +349,289 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        (bval (not (= i1.int 0))))
     (expr-value-base (base-value-bool bval))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-float-add ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float addition."
+  :long "<p>Finite values are added as exact rationals
+  (see @(see primitives-evaluation) for the float model).
+  The special cases follow [impl]:</p>
+  <ul>
+   <li>NaN + anything = NaN.</li>
+   <li>(+inf) + (-inf) = NaN.</li>
+   <li>(+inf) + anything else = +inf.</li>
+   <li>(-inf) + anything else = -inf.</li>
+   <li>(-0) + (-0) = -0; every other sum that is zero is +0.</li>
+  </ul>"
+  (b* (((ok f1) (check-expr-value-float val1))
+       ((ok f2) (check-expr-value-float val2))
+       (nan1 (float-value-case f1 :nan))
+       (nan2 (float-value-case f2 :nan))
+       (pinf1 (float-value-case f1 :posinf))
+       (pinf2 (float-value-case f2 :posinf))
+       (ninf1 (float-value-case f1 :neginf))
+       (ninf2 (float-value-case f2 :neginf))
+       (n0-1 (float-value-case f1 :neg0))
+       (n0-2 (float-value-case f2 :neg0))
+       (fval
+        (cond
+          ;; 1. NaN + anything = NaN
+          ((or nan1 nan2) (float-value-nan))
+          ;; 2. +inf + -inf = NaN
+          ((or (and pinf1 ninf2) (and ninf1 pinf2)) (float-value-nan))
+          ;; 3. +inf + anything else = +inf
+          ((or pinf1 pinf2) (float-value-posinf))
+          ;; 4. -inf + anything else = -inf
+          ((or ninf1 ninf2) (float-value-neginf))
+          ;; 5. -0 + -0 = -0
+          ((and n0-1 n0-2) (float-value-neg0))
+          ;; 6. standard rational addition with -0 = 0
+          (t (b* ((r1 (if n0-1
+                          0
+                        (float-value-ratio->ratio f1)))
+                  (r2 (if n0-2
+                          0
+                        (float-value-ratio->ratio f2))))
+               (float-value-ratio (+ r1 r2)))))))
+    (expr-value-base (base-value-float fval))))
+
+(define prim-float-sub ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float subtraction."
+  :long "<p>Finite values are subtracted as exact rationals
+  (see @(see primitives-evaluation) for the float model).
+  The special cases follow [impl]:</p>
+  <ul>
+   <li>NaN - anything = NaN; anything - NaN = NaN.</li>
+   <li>(+inf) - (+inf) = NaN; (-inf) - (-inf) = NaN.</li>
+   <li>(+inf) - anything else = +inf; anything else - (-inf) = +inf.</li>
+   <li>(-inf) - anything else = -inf; anything else - (+inf) = -inf.</li>
+   <li>(-0) - (+0) = -0; every other difference that is zero is +0.</li>
+  </ul>"
+  (b* (((ok f1) (check-expr-value-float val1))
+       ((ok f2) (check-expr-value-float val2))
+       (nan1 (float-value-case f1 :nan))
+       (nan2 (float-value-case f2 :nan))
+       (pinf1 (float-value-case f1 :posinf))
+       (pinf2 (float-value-case f2 :posinf))
+       (ninf1 (float-value-case f1 :neginf))
+       (ninf2 (float-value-case f2 :neginf))
+       (n0-1 (float-value-case f1 :neg0))
+       (n0-2 (float-value-case f2 :neg0))
+       (fval
+        (cond
+          ;; 1. NaN - anything = NaN and anything - NaN = NaN
+          ((or nan1 nan2) (float-value-nan))
+          ;; 2. +inf - +inf = NaN and -inf - -inf = NaN
+          ((or (and pinf1 pinf2) (and ninf1 ninf2)) (float-value-nan))
+          ;; 3. +inf - anything else = +inf and anything else - -inf = +inf
+          ((or pinf1 ninf2) (float-value-posinf))
+          ;; 4. -inf - anything else = -inf and anything else - +inf = -inf
+          ((or ninf1 pinf2) (float-value-neginf))
+          ;; 5. -0 - 0 = -0
+          ((and n0-1
+                (float-value-case f2 :ratio)
+                (= (float-value-ratio->ratio f2) 0))
+           (float-value-neg0))
+          ;; 6. standard rational addition with -0 = 0
+          (t (b* ((r1 (if n0-1
+                          0
+                        (float-value-ratio->ratio f1)))
+                  (r2 (if n0-2
+                          0
+                        (float-value-ratio->ratio f2))))
+               (float-value-ratio (- r1 r2)))))))
+    (expr-value-base (base-value-float fval))))
+
+(define prim-float-mul ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float multiplication."
+  :long "<p>Finite values are multiplied as exact rationals
+  (see @(see primitives-evaluation) for the float model).
+  The sign of an infinite or zero result is the exclusive-or of the operand
+  signs (negative zero counts as negative).
+  The special cases follow [impl]:</p>
+  <ul>
+   <li>NaN * anything = NaN.</li>
+   <li>0 * inf = NaN, in either order.</li>
+   <li>Otherwise, if either operand is infinite, the result is an infinity
+       with the exclusive-or sign.</li>
+   <li>Otherwise the result is the rational product; a zero product is -0 when
+       the operand signs differ and +0 when they agree.</li>
+  </ul>"
+  (b* (((ok f1) (check-expr-value-float val1))
+       ((ok f2) (check-expr-value-float val2))
+       (nan1 (float-value-case f1 :nan))
+       (nan2 (float-value-case f2 :nan))
+       (inf1 (or (float-value-case f1 :posinf)
+                 (float-value-case f1 :neginf)))
+       (inf2 (or (float-value-case f2 :posinf)
+                 (float-value-case f2 :neginf)))
+       (n0-1 (float-value-case f1 :neg0))
+       (n0-2 (float-value-case f2 :neg0))
+       (rat1 (float-value-case f1 :ratio))
+       (rat2 (float-value-case f2 :ratio))
+       (neg1 (or n0-1
+                 (float-value-case f1 :neginf)
+                 (and rat1 (< (float-value-ratio->ratio f1) 0))))
+       (neg2 (or n0-2
+                 (float-value-case f2 :neginf)
+                 (and rat2 (< (float-value-ratio->ratio f2) 0))))
+       (neg-res (xor neg1 neg2))
+       (zero1 (or n0-1
+                  (and rat1 (= (float-value-ratio->ratio f1) 0))))
+       (zero2 (or n0-2
+                  (and rat2 (= (float-value-ratio->ratio f2) 0))))
+       (fval
+        (cond
+          ;; 1. NaN * anything = NaN
+          ((or nan1 nan2) (float-value-nan))
+          ;; 2. 0 * inf = NaN
+          ((or (and zero1 inf2) (and inf1 zero2)) (float-value-nan))
+          ;; 3. inf * anything else = inf
+          ((or inf1 inf2) (if neg-res
+                              (float-value-neginf)
+                            (float-value-posinf)))
+          ;; 4. standard rational addition with -0 = 0
+          ;; NOTE: although -0 is treated like 0 in terms of computation, it's
+          ;; still considered to be a negative number, so for example (-0)*5=-0
+          ;; and (-0)*(-5)=0. Regardless, neg-res already handles the sign of
+          ;; the result so we can just treat it like 0.
+          (t (b* ((r1 (if n0-1
+                          0
+                        (float-value-ratio->ratio f1)))
+                  (r2 (if n0-2
+                          0
+                        (float-value-ratio->ratio f2)))
+                  (res (* r1 r2)))
+               (if (and (= res 0) neg-res)
+                   (float-value-neg0)
+                 (float-value-ratio res)))))))
+    (expr-value-base (base-value-float fval))))
+
+(define prim-float-div ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float division."
+  :long "<p>Finite values are divided as exact rationals
+  (see @(see primitives-evaluation) for the float model).
+  Unlike integer division, division by zero is not an error: it follows
+  IEEE-754. The sign of an infinite or zero result is the exclusive-or of the
+  operand signs (negative zero counts as negative).
+  The special cases follow [impl]:</p>
+  <ul>
+   <li>NaN / anything = NaN; anything / NaN = NaN.</li>
+   <li>0 / 0 = NaN; inf / inf = NaN.</li>
+   <li>anything else / 0 = inf; inf / anything else = inf.</li>
+   <li>anything else / inf = 0.</li>
+   <li>Otherwise the rational quotient; a zero quotient is -0 when the operand
+       signs differ and +0 when they agree.</li>
+  </ul>"
+  (b* (((ok f1) (check-expr-value-float val1))
+       ((ok f2) (check-expr-value-float val2))
+       (nan1 (float-value-case f1 :nan))
+       (nan2 (float-value-case f2 :nan))
+       (inf1 (or (float-value-case f1 :posinf)
+                 (float-value-case f1 :neginf)))
+       (inf2 (or (float-value-case f2 :posinf)
+                 (float-value-case f2 :neginf)))
+       (n0-1 (float-value-case f1 :neg0))
+       (n0-2 (float-value-case f2 :neg0))
+       (rat1 (float-value-case f1 :ratio))
+       (rat2 (float-value-case f2 :ratio))
+       (neg1 (or n0-1
+                 (float-value-case f1 :neginf)
+                 (and rat1 (< (float-value-ratio->ratio f1) 0))))
+       (neg2 (or n0-2
+                 (float-value-case f2 :neginf)
+                 (and rat2 (< (float-value-ratio->ratio f2) 0))))
+       (neg-res (xor neg1 neg2))
+       (zero1 (or n0-1
+                  (and rat1 (= (float-value-ratio->ratio f1) 0))))
+       (zero2 (or n0-2
+                  (and rat2 (= (float-value-ratio->ratio f2) 0))))
+       (fval
+        (cond
+          ;; 1. NaN / anything = NaN and anything / NaN = NaN
+          ((or nan1 nan2) (float-value-nan))
+          ;; 2. 0 / 0 = NaN and inf / inf = NaN
+          ((or (and zero1 zero2) (and inf1 inf2)) (float-value-nan))
+          ;; 3. anything else / 0 = inf and inf / anything else = inf
+          ((or zero2 inf1) (if neg-res
+                               (float-value-neginf)
+                             (float-value-posinf)))
+          ;; 4. anything else / inf = 0
+          (inf2 (if neg-res (float-value-neg0) (float-value-ratio 0)))
+          ;; 5. standard rational addition with -0 = 0
+          ;; NOTE: similar to prim-float-mul.
+          (t (b* ((r1 (if n0-1
+                          0
+                        (float-value-ratio->ratio f1)))
+                  (r2 (float-value-ratio->ratio f2))
+                  (res (/ r1 r2)))
+               (if (and (= res 0) neg-res)
+                   (float-value-neg0)
+                 (float-value-ratio res)))))))
+    (expr-value-base (base-value-float fval))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-float-truncate ((val1 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float truncation to integer."
+  :long "<p>Float-to-integer truncation uses ACL2's @(tsee truncate), which
+  rounds towards zero. This is consistent with [impl], which uses Haskell's
+  @('truncate')</p>"
+  (b* (((ok fval) (check-expr-value-float val1)))
+    (float-value-case fval
+      :ratio  (expr-value-base (base-value-int (int-value (truncate fval.ratio 1))))
+      :neg0   (expr-value-base (base-value-int (int-value 0)))
+      :posinf (reserr nil)
+      :neginf (reserr nil)
+      :nan    (reserr nil))))
+
+(define prim-float-round ((val1 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float rounding to integer."
+  :long "<p>Float-to-integer rounding uses ACL2's @(tsee round), which rounds
+  to the nearest integer, with ties going to the even integer. This is
+  consistent with [impl], which uses Haskell's @('round')</p>"
+  (b* (((ok fval) (check-expr-value-float val1)))
+    (float-value-case fval
+      :ratio  (expr-value-base (base-value-int (int-value (round fval.ratio 1))))
+      :neg0   (expr-value-base (base-value-int (int-value 0)))
+      :posinf (reserr nil)
+      :neginf (reserr nil)
+      :nan    (reserr nil))))
+
+(define prim-float-ceiling ((val1 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float ceiling to integer."
+  :long "<p>Float-to-integer ceiling uses ACL2's @(tsee ceiling), which rounds
+  towards positive infinity. This is consistent with [impl], which uses
+  Haskell's @('ceiling')</p>"
+  (b* (((ok fval) (check-expr-value-float val1)))
+    (float-value-case fval
+      :ratio  (expr-value-base (base-value-int (int-value (ceiling fval.ratio 1))))
+      :neg0   (expr-value-base (base-value-int (int-value 0)))
+      :posinf (reserr nil)
+      :neginf (reserr nil)
+      :nan    (reserr nil))))
+
+(define prim-float-floor ((val1 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float floor to integer."
+  :long "<p>Float-to-integer floor uses ACL2's @(tsee floor), which rounds
+  towards minus infinity. This is consistent with [impl], which uses Haskell's
+  @('floor')</p>"
+  (b* (((ok fval) (check-expr-value-float val1)))
+    (float-value-case fval
+      :ratio  (expr-value-base (base-value-int (int-value (floor fval.ratio 1))))
+      :neg0   (expr-value-base (base-value-int (int-value 0)))
+      :posinf (reserr nil)
+      :neginf (reserr nil)
+      :nan    (reserr nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
