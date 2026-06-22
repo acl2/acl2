@@ -12,6 +12,7 @@
 (in-package "REMORA")
 
 (include-book "values")
+(include-book "kestrel/fty/boolean-result" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
@@ -20,7 +21,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local (in-theory (enable int-valuep-when-result-not-error
-                          float-valuep-when-result-not-error)))
+                          float-valuep-when-result-not-error
+                          booleanp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -73,6 +75,17 @@
        ((unless (base-value-case bval :float)) (reserr nil))
        (fval (base-value-float->val bval)))
     fval))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-expr-value-bool ((val expr-valuep))
+  :returns (bval boolean-resultp)
+  :short "Check if an expression value is a boolean value, returning it if so."
+  (b* (((unless (expr-value-case val :base)) (reserr nil))
+       (bval (expr-value-base->val val))
+       ((unless (base-value-case bval :bool)) (reserr nil))
+       (b (base-value-bool->val bval)))
+    b))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
