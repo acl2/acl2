@@ -82,7 +82,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define prim-op-types ()
+(define primop-types ()
   :returns (term-vars string-type-mapp)
   :short "Association of primitive operations to their types."
   :long
@@ -142,7 +142,7 @@
      It only contains the primitive operations in scope."))
   (make-senv :ispace-vars nil
              :type-vars nil
-             :expr-vars (prim-op-types)))
+             :expr-vars (primop-types)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
