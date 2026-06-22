@@ -4,13 +4,16 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Quan Luu (quan.luu@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "REMORA")
 
 (include-book "values")
+
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -81,4 +84,190 @@
        (ival (int-value (+ i1.int i2.int))))
     (expr-value-base (base-value-int ival))))
 
-; TODO: add others
+(define prim-int-sub ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer subtraction."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       (ival (int-value (- i1.int i2.int))))
+    (expr-value-base (base-value-int ival))))
+
+(define prim-int-mul ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer multiplication."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       (ival (int-value (* i1.int i2.int))))
+    (expr-value-base (base-value-int ival))))
+
+(define prim-int-div ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer division."
+  :long "<p>Integer division uses ACL2's @(tsee floor), which rounds towards
+  minus infinity. This is consistent with [impl], which uses Haskell's
+  @('div')</p>"
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       ((when (= i2.int 0)) (reserr nil)) ;; ERROR: division by zero
+       (ival (int-value (floor i1.int i2.int))))
+    (expr-value-base (base-value-int ival))))
+
+(define prim-int-mod ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer modulo."
+  :long "<p>Integer modulo uses ACL2's @(tsee mod), whose result takes the sign
+  of the divisor. This is consistent with [impl], which uses Haskell's
+  @('mod')</p>"
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       ((when (= i2.int 0)) (reserr nil)) ;; ERROR: modulo zero
+       (ival (int-value (mod i1.int i2.int))))
+    (expr-value-base (base-value-int ival))))
+
+(define prim-int-max ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer maximum."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       (ival (int-value (max i1.int i2.int))))
+    (expr-value-base (base-value-int ival))))
+
+(define prim-int-min ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer minimum."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       (ival (int-value (min i1.int i2.int))))
+    (expr-value-base (base-value-int ival))))
+
+(define prim-int-bit-and ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer bitwise conjunction."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       (ival (int-value (logand i1.int i2.int))))
+    (expr-value-base (base-value-int ival))))
+
+(define prim-int-bit-or ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer bitwise inclusive disjunction."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       (ival (int-value (logior i1.int i2.int))))
+    (expr-value-base (base-value-int ival))))
+
+(define prim-int-bit-xor ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer bitwise exclusive disjunction."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       (ival (int-value (logxor i1.int i2.int))))
+    (expr-value-base (base-value-int ival))))
+
+(define prim-int-shl ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer left shift."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       ((when (< i2.int 0)) (reserr nil)) ;; ERROR: shift by negative bits
+       (ival (int-value (ash i1.int i2.int))))
+    (expr-value-base (base-value-int ival))))
+
+(define prim-int-shr ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer right shift."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       ((when (< i2.int 0)) (reserr nil)) ;; ERROR: shift by negative bits
+       (ival (int-value (ash i1.int (- i2.int)))))
+    (expr-value-base (base-value-int ival))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-int-bit-not ((val1 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer bitwise negation."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       (ival (int-value (lognot i1.int))))
+    (expr-value-base (base-value-int ival))))
+
+; TODO: prim-int-popc
+; NOTE: Haskell's popCount on a negative Int works by counting the
+; number  of 1's in the two's complement version of the number. Since Int has a
+; fixed width, the number of 1's is finite in this case. But ACL2's logcount on
+; a negative integer would count the number of 1's in it's absolute
+; value representation. Thus, there is a mismatch. We currently resolved this
+; by only accepting positive integers and errs on a negative input.
+(define prim-int-popc ((val1 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer pop count."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((when (< i1.int 0)) (reserr nil)) ;; ERROR: negative input
+       (ival (int-value (logcount i1.int))))
+    (expr-value-base (base-value-int ival))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-int-eq ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer equality."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       (bval (= i1.int i2.int)))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-int-neq ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer inequality."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       (bval (not (= i1.int i2.int))))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-int-lt ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer less-than comparison."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       (bval (< i1.int i2.int)))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-int-gt ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer greater-than comparison."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       (bval (> i1.int i2.int)))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-int-leq ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer less-than-or-equal-to comparison."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       (bval (<= i1.int i2.int)))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-int-geq ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer greater-than-or-equal-to comparison."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       (bval (>= i1.int i2.int)))
+    (expr-value-base (base-value-bool bval))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-int-to-float ((val1 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer conversion to float."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       (fval (float-value-ratio i1.int)))
+    (expr-value-base (base-value-float fval))))
+
+(define prim-int-to-bool ((val1 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer conversion to boolean."
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       (bval (not (= i1.int 0))))
+    (expr-value-base (base-value-bool bval))))
