@@ -335,9 +335,9 @@
        (ival (int-value (if b1 1 0))))
     (expr-value-base (base-value-int ival))))
 
-(define prim-bool-float ((val1 expr-valuep))
+(define prim-bool-to-float ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of boolean conversion to float."
   (b* (((ok b1) (check-expr-value-bool val1))
-       (fval (float-value (if b1 1 0))))
+       (fval (float-value-ratio (if b1 1 0))))
     (expr-value-base (base-value-float fval))))
