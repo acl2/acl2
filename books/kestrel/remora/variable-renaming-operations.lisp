@@ -828,7 +828,19 @@
                                               array-renam)
                  :expr (expr-rename-type-vars bind.expr
                                               atom-renam
-                                              array-renam)))))
+                                              array-renam))))
+   (bind-list
+    (b* (((when (endp bind-list)) nil)
+         (bind (car bind-list))
+         (new-bind (bind-rename-type-vars bind atom-renam array-renam))
+         ((mv & & atom-renam array-renam)
+          (atom/array-rename-remove-bound (bind-bound-type-vars bind)
+                                          atom-renam
+                                          array-renam)))
+      (cons new-bind
+            (bind-list-rename-type-vars (cdr bind-list)
+                                        atom-renam
+                                        array-renam)))))
   :name ast-rename-type-vars)
 
 ;;;;;;;;;;;;;;;;;;;;
