@@ -921,5 +921,13 @@
             :iparams? bind.iparams?
             :params bind.params
             :type bind.type
-            :expr (expr-rename-expr-vars bind.expr renam)))))
+            :expr (expr-rename-expr-vars bind.expr renam))))
+   (bind-list
+    (b* (((when (endp bind-list)) nil)
+         (bind (car bind-list))
+         (new-bind (bind-rename-expr-vars bind renam))
+         (bound (bind-bound-expr-vars bind))
+         (renam (omap::delete* bound (string-string-map-fix renam))))
+      (cons new-bind
+            (bind-list-rename-expr-vars (cdr bind-list) renam)))))
   :name ast-rename-expr-vars)
