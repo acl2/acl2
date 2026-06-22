@@ -365,6 +365,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum primop-value
+  :short "Fixtype of primitive operation values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In Remora, the primitive operations (i.e. built-in functions)
+     are denoted by certain variables implicitly in scope,
+     whose types are given by @(tsee primop-types).
+     This fixtype enumerates the operations themselves,
+     one summand per operation,
+     in correspondence with the entries of @(tsee primop-types).")
+   (xdoc::p
+    "A value of this fixtype represents a primitive operation
+     as a scalar (zero-rank array) function value,
+     analogously to how a lambda abstraction is a function value.
+     We will incorporate these into @(tsee expr-value),
+     and evaluate the operations they denote via
+     the ACL2 functions in @(see primitives-evaluation)."))
+  (:add ())
+  (:sub ())
+  (:mul ())
+  (:div ())
+  (:append ())
+  (:reduce ())
+  (:iota ())
+  :pred primop-valuep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftypes expr-values
   :short "Fixtypes of expression values and lists of expression values."
 
