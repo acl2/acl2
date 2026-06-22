@@ -109,6 +109,7 @@
 (include-book "symbol-pseudoterm-alist")
 (include-book "string-option")
 (include-book "ubyte32-option")
+(include-book "true-list-set")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
