@@ -626,7 +626,7 @@
                   (t (retmsg$ "The constant ~x0 is too large."
                               (iconst-fix iconst)))))
            (t (prog2$ (impossible) (retmsg$ ""))))))
-       (info (make-iconst-info :type type :value value))
+       (info (make-iconst-vinfo :type type :value value))
        (new-iconst (change-iconst iconst :info info)))
     (retok new-iconst type)))
 

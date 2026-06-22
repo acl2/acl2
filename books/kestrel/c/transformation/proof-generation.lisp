@@ -1145,7 +1145,7 @@
        (gout-no-thm (gout-no-thm gin))
        ((unless (const-case const :int)) (mv expr gout-no-thm))
        ((iconst iconst) (const-int->iconst const))
-       ((iconst-info info) iconst.info)
+       ((iconst-vinfo info) iconst.info)
        ((unless (or (and (type-case info.type :sint)
                          (<= info.value (c::sint-max)))
                     (and (type-case info.type :uint)

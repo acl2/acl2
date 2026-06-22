@@ -61,7 +61,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod iconst-info
+(fty::defprod iconst-vinfo
   :short "Fixtype of validation information for integer constants."
   :long
   (xdoc::topstring
@@ -74,7 +74,7 @@
      and the numeric value of the constant, as an ACL2 natural number."))
   ((type type)
    (value nat))
-  :pred iconst-infop)
+  :pred iconst-vinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -341,7 +341,7 @@
     :default t
     :combine and
     :override
-    ((iconst (iconst-infop (iconst->info iconst)))
+    ((iconst (iconst-vinfop (iconst->info iconst)))
      (expr :ident (var-infop expr.info))
      (expr :const (and (const-annop expr.const)
                        (type-vinfop expr.info)))
@@ -459,7 +459,7 @@
 
   (defruled iconst-annop-of-iconst
     (equal (iconst-annop (iconst core suffix? info))
-           (iconst-infop info))
+           (iconst-vinfop info))
     :enable iconst-annop)
 
   (defruled expr-annop-of-expr-ident
@@ -594,9 +594,9 @@
 
   ;; theorems about accessors:
 
-  (defruled iconst-infop-of-iconst->info
+  (defruled iconst-vinfop-of-iconst->info
     (implies (iconst-annop iconst)
-             (iconst-infop (iconst->info iconst)))
+             (iconst-vinfop (iconst->info iconst)))
     :enable iconst-annop)
 
   (defruled var-infop-of-expr-ident->info
@@ -887,7 +887,7 @@
      fundef-annop-of-fundef
      trans-unit-annop-of-trans-unit
      trans-ensemble-annop-of-trans-ensemble
-     iconst-infop-of-iconst->info
+     iconst-vinfop-of-iconst->info
      var-infop-of-expr-ident->info
      const-annop-of-expr-const->const
      type-vinfop-of-expr-const->info

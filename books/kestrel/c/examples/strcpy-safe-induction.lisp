@@ -70,7 +70,7 @@
        (const (c$::expr-const->const expr))
        (iconst (c$::const-int->iconst const))
        (info (c$::iconst->info iconst)))
-    (c$::iconst-info->value info)))
+    (c$::iconst-vinfo->value info)))
 
 ; The buffer size is not 0.
 (assert-event (/= *buffer-size* 0))

@@ -769,7 +769,7 @@
     type-to-value-kind
     type-integerp
 
-    iconst-info
+    iconst-vinfo
 
     var-info
     var-infop
