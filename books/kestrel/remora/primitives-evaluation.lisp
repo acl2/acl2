@@ -80,8 +80,7 @@
      and @(tsee prim-float-floor).")
    (xdoc::p
     "For integers, we currently model Remora integer values as unbounded
-     mathematical integers, matching ACL2's own integer type
-     (see @(tsee int-value)).
+     mathematical integers, matching ACL2's own integer type.
      This keeps the integer primitives easy to define for now;
      once Remora settles on a specific integer model
      (e.g. a fixed-width type such as 64-bit integers),
@@ -98,12 +97,12 @@
                negative integer depends on a fixed two's-complement width,
                which the unbounded model lacks."))
    (xdoc::p
-    "For floats, we similarly model finite Remora float values as unbounded
+    "For floats, we similarly model Remora float values as unbounded
      ACL2 rationals, together with the special values negative zero, positive
      and negative infinity, and NaN (see @(tsee float-value)).
      Finite arithmetic is performed as exact rational arithmetic, and the
      results of the special cases (those involving NaN, the infinities, or
-     negative zero) follow [impl]'s Haskell IEEE-754 semantics.
+     negative zero) follow [impl]'s Haskell semantics.
      As with integers, this is a starting point for testing until Remora
      decides on a specific float model.")
    (xdoc::p
