@@ -676,10 +676,10 @@
        @($\\tau_p$) corresponds to @('body-atom-type'),
        @($\\iota_p$) corresponds to @('body-shape'),
        and @($\\iota_f$) corresponds to @('fun-shape').
-       We check that the ispace arguments are valid.
-       We check all the ispace arguments
-       (@($\\iota\\ldots$) in [arxiv] and [thesis]),
-       ensuring that their sorts match the ones of
+       We check that the ispace arguments
+       (@($\\iota\\ldots$) in [arxiv] and [thesis])
+       are valid and
+       that their sorts match the ones of
        the bound variables in the product type.
        We obtain two ispace maps (for dimensions and shapes),
        which we substitute to the body atom type
