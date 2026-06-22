@@ -43,6 +43,8 @@
                all-fnnames
                any
                bool
+               character-setp
+               character-sfix
                check-and-call
                check-fn-call
                check-if-call
@@ -130,6 +132,7 @@
                mv-nth-of-cons
                nat
                nat-list-fix
+               nat-setp
                nats=>string
                nvariablep
                one-way-unify
