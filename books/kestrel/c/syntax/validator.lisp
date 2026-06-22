@@ -3679,7 +3679,7 @@
                                        :tag/members
                                        (type-struni-tag/members-tagged
                                         tyspec.spec.name?)))
-                                (info (type-spec-struct-info type)))
+                                (info (type-spec-struct-vinfo type)))
                              (retok (make-type-spec-struct :spec new-spec
                                                            :info info)
                                     type
@@ -3700,7 +3700,7 @@
                                  :tunit? (vstate->filepath vstate)
                                  :tag/members (type-struni-tag/members-tagged
                                                tyspec.spec.name?)))
-                          (info (type-spec-struct-info type)))
+                          (info (type-spec-struct-vinfo type)))
                        (retok (make-type-spec-struct :spec new-spec
                                                      :info info)
                               type
@@ -3755,7 +3755,7 @@
                                            uid
                                            type-struni-members
                                            (vstate->completions vstate))))
-                    (info (type-spec-struct-info type)))
+                    (info (type-spec-struct-vinfo type)))
                  (retok (make-type-spec-struct :spec new-spec
                                                :info info)
                         type
@@ -3964,7 +3964,7 @@
                                           uid
                                           nil
                                           (vstate->completions vstate))))
-                          (info (type-spec-struct-info type)))
+                          (info (type-spec-struct-vinfo type)))
                        (retok (make-type-spec-struct-empty
                                :attribs tyspec.attribs
                                :name? tyspec.name?
@@ -4814,7 +4814,7 @@
          ((vstate vstate) vstate)
          ((desiniter desiniter) desiniter)
          ;; (info
-         ;;  (desiniter-info
+         ;;  (desiniter-vinfo
          ;;    (if (and (endp desiniter.designors)
          ;;             (not (subobjects-stack-end-p subobjects-stack)))
          ;;        (subobjects-stack-to-designors subobjects-stack vstate.ienv)
@@ -4837,7 +4837,7 @@
                         1024))
          (new-subobjects-stack (initer-context-stack->stack ctx))
          (info
-          (desiniter-info
+          (desiniter-vinfo
            (if (and (endp desiniter.designors)
                     (not (subobjects-stack-end-p new-subobjects-stack)))
                (subobjects-stack-to-designors new-subobjects-stack vstate.ienv)
@@ -5462,7 +5462,7 @@
                               (not (param-declon->attribs
                                     (first dirdeclor.params)))))
                    (retok (list (change-param-declon (first dirdeclor.params)
-                                                     :info (make-param-declon-info :type nil)))
+                                                     :info (make-param-declon-vinfo :type nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -5727,7 +5727,7 @@
                               (not (param-declon->attribs
                                     (first dirabsdeclor.params)))))
                    (retok (list (change-param-declon (first dirabsdeclor.params)
-                                                     :info (make-param-declon-info :type nil)))
+                                                     :info (make-param-declon-vinfo :type nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -5845,7 +5845,7 @@
                 :array (make-type-pointer :to type.of)
                 :function (make-type-pointer :to type)
                 :otherwise type))
-         (info (param-declon-info type))
+         (info (param-declon-vinfo type))
          ((when (not ident?))
           (retok (make-param-declon :specs new-specs
                                     :declor new-decl
@@ -6636,9 +6636,9 @@
                                         :def type
                                         :uid uid)
                                        vstate))
-               (anno-info (make-init-declor-info :type type
-                                                 :typedefp t
-                                                 :uid uid)))
+               (anno-info (make-init-declor-vinfo :type type
+                                                  :typedefp t
+                                                  :uid uid)))
             (retok (make-init-declor :declor new-declor
                                      :asm? initdeclor.asm?
                                      :attribs initdeclor.attribs
@@ -6676,9 +6676,9 @@
                     :defstatus defstatus
                     :uid uid))
          (vstate (vstate-add-ord ident new-info vstate))
-         (anno-info (make-init-declor-info :type type
-                                           :typedefp nil
-                                           :uid uid))
+         (anno-info (make-init-declor-vinfo :type type
+                                            :typedefp nil
+                                            :uid uid))
          ((erp new-initer? more-types vstate)
           (valid-initer-option initdeclor.initer? type lifetime? vstate))
          ((when (and (linkage-case linkage :external)
@@ -8111,7 +8111,7 @@
        (vstate (vstate-add-built-in-vars (built-in-vars-for dialect) vstate))
        ((erp new-items vstate)
         (valid-trans-item-list (trans-unit->items tunit) vstate))
-       (info (make-trans-unit-info :table-end (vstate->table vstate))))
+       (info (make-trans-unit-vinfo :table-end (vstate->table vstate))))
     (retok (make-trans-unit :items new-items
                             :info info)
            vstate))
@@ -8219,7 +8219,7 @@
      Information that accumulates across translation units
      (external linkage identifiers, type completions, and the UID counter)
      is threaded through the validation of each unit
-     and collected into the @(tsee trans-ensemble-info) annotation
+     and collected into the @(tsee trans-ensemble-vinfo) annotation
      on the resulting ensemble."))
   (b* (((reterr) (irr-trans-ensemble))
        (tumap (trans-ensemble->units tuens))
@@ -8235,7 +8235,7 @@
                   (cw "Validated ~x0/~x1 translation units.~%"
                       len-new-tumap len-tumap)))
             nil))
-       (info (make-trans-ensemble-info
+       (info (make-trans-ensemble-vinfo
               :externals (vstate->externals vstate)
               :completions (vstate->completions vstate)
               :next-uid (vstate->next-uid vstate))))

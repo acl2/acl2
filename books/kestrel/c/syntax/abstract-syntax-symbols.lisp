@@ -785,9 +785,9 @@
     type+uid-vinfo->type
     type+uid-vinfo->uid
 
-    init-declor-info
-    init-declor-info->type
-    init-declor-info->typedefp
+    init-declor-vinfo
+    init-declor-vinfo->type
+    init-declor-vinfo->typedefp
 
     expr-type
     initer-type

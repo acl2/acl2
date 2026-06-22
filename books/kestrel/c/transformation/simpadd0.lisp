@@ -1659,10 +1659,10 @@
                                   (change-gin
                                    gin :vartys gout-declor.vartys)))
          ((gin gin) (gin-update gin gout-initer?))
-         (type (init-declor-info->type initdeclor.info))
+         (type (init-declor-vinfo->type initdeclor.info))
          (ident (declor->ident initdeclor.declor))
          (post-vartys
-          (if (and (not (init-declor-info->typedefp initdeclor.info))
+          (if (and (not (init-declor-vinfo->typedefp initdeclor.info))
                    (ident-formalp ident)
                    (type-formalp type)
                    (not (type-case type :void))

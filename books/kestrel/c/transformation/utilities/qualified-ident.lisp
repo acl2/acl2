@@ -112,9 +112,9 @@
         (retok nil))
        ((init-declor declor) (first declors))
        ((when (equal (declor->ident declor.declor) qual-ident.ident))
-        (b* (((unless (c$::init-declor-infop declor.info))
+        (b* (((unless (c$::init-declor-vinfop declor.info))
               (retmsg$ "Initializer declarator info is not well-formed."))
-             (uid? (c$::init-declor-info->uid declor.info))
+             (uid? (c$::init-declor-vinfo->uid declor.info))
              ((unless uid?)
               ;; TODO: should this be an error?
               (retok nil)))
@@ -223,7 +223,7 @@
   (b* (((reterr) (c$::irr-uid))
        ((qualified-ident qual-ident) qual-ident)
        ((unless qual-ident.filepath?)
-        (b* ((externals (c$::trans-ensemble-info->externals
+        (b* ((externals (c$::trans-ensemble-vinfo->externals
                           (c$::trans-ensemble->info ensemble)))
              (info? (omap::assoc qual-ident.ident externals))
              ((unless info?)

@@ -138,7 +138,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod type-spec-struct-info
+(fty::defprod type-spec-struct-vinfo
   :short "Fixtype of validation information for struct type specifiers."
   :long
   (xdoc::topstring
@@ -159,11 +159,11 @@
                         :tag/members (make-type-struni-tag/members-tagged
                                        :tag (irr-ident))))))
   :require (type-case type :struct)
-  :pred type-spec-struct-infop)
+  :pred type-spec-struct-vinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod desiniter-info
+(fty::defprod desiniter-vinfo
   :short "Fixtype of validation information for initializers with optional
           designations."
   :long
@@ -178,11 +178,11 @@
      the validator may add a designation here
      corresponding to the implicitly initialized subobject."))
   ((designors designor-list))
-  :pred desiniter-infop)
+  :pred desiniter-vinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod param-declon-info
+(fty::defprod param-declon-vinfo
   :short "Fixtype of validation information for parameter declarations."
   :long
   (xdoc::topstring
@@ -195,11 +195,11 @@
      where the single parameter declaration
      does not actually declare a parameter."))
   ((type type-option))
-  :pred param-declon-infop)
+  :pred param-declon-vinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod init-declor-info
+(fty::defprod init-declor-vinfo
   :short "Fixtype of validation information for initializer declarators."
   :long
   (xdoc::topstring
@@ -221,11 +221,11 @@
   ((type type)
    (typedefp bool)
    (uid uid))
-  :pred init-declor-infop)
+  :pred init-declor-vinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod trans-unit-info
+(fty::defprod trans-unit-vinfo
   :short "Fixtype of validation information for translation units."
   :long
   (xdoc::topstring
@@ -237,11 +237,11 @@
      The table @('scopes') is expected to be a singleton,
      representing the file-scope at the end of the translation unit."))
   ((table-end valid-table))
-  :pred trans-unit-infop)
+  :pred trans-unit-vinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod trans-ensemble-info
+(fty::defprod trans-ensemble-vinfo
   :short "Fixtype of validation information for translation ensembles."
   :long
   (xdoc::topstring
@@ -257,7 +257,7 @@
   ((externals valid-externals)
    (completions type-completions)
    (next-uid uidp))
-  :pred trans-ensemble-infop)
+  :pred trans-ensemble-vinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -377,12 +377,12 @@
                       (const-expr-vinfop (const-expr->info const-expr))))
      (desiniter (and (designor-list-annop (desiniter->designors desiniter))
                      (initer-annop (desiniter->initer desiniter))
-                     (desiniter-infop (desiniter->info desiniter))))
+                     (desiniter-vinfop (desiniter->info desiniter))))
      (type-spec :struct (and (struni-spec-annop type-spec.spec)
-                             (type-spec-struct-infop type-spec.info)))
+                             (type-spec-struct-vinfop type-spec.info)))
      (type-spec :typedef (type+uid-vinfop type-spec.info))
      (type-spec :struct-empty (and (attrib-spec-list-annop type-spec.attribs)
-                                   (type-spec-struct-infop type-spec.info)))
+                                   (type-spec-struct-vinfop type-spec.info)))
      (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
                                      (type-spec-fix type-spec)))
      (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
@@ -398,7 +398,7 @@
                         (param-declor-annop (param-declon->declor param-declon))
                         (attrib-spec-list-annop
                           (param-declon->attribs param-declon))
-                        (param-declon-infop (param-declon->info param-declon))))
+                        (param-declon-vinfop (param-declon->info param-declon))))
      (param-declor :nonabstract (and (declor-annop
                                       (param-declor-nonabstract->declor
                                        param-declor))
@@ -409,7 +409,7 @@
      (attrib-spec t)
      (init-declor (and (declor-annop (init-declor->declor init-declor))
                        (initer-option-annop (init-declor->initer? init-declor))
-                       (init-declor-infop (init-declor->info init-declor))))
+                       (init-declor-vinfop (init-declor->info init-declor))))
      (asm-output t)
      (asm-input t)
      (asm-stmt t)
@@ -430,10 +430,10 @@
                   (comp-stmt-annop (fundef->body fundef))
                   (type+uid-vinfop (fundef->info fundef))))
      (trans-unit (and (trans-item-list-annop (trans-unit->items trans-unit))
-                      (trans-unit-infop (trans-unit->info trans-unit))))
+                      (trans-unit-vinfop (trans-unit->info trans-unit))))
      (trans-ensemble (and (filepath-trans-unit-map-annop
                            (trans-ensemble->units trans-ensemble))
-                          (trans-ensemble-infop
+                          (trans-ensemble-vinfop
                            (trans-ensemble->info
                             trans-ensemble)))))
     :name abstract-syntax-annop))
@@ -515,14 +515,14 @@
     (equal (desiniter-annop (desiniter designors initer info))
            (and (designor-list-annop designors)
                 (initer-annop initer)
-                (desiniter-infop info)))
+                (desiniter-vinfop info)))
     :expand (desiniter-annop (desiniter designors initer info))
     :enable identity)
 
   (defrule type-spec-annop-of-type-spec-struct
     (equal (type-spec-annop (type-spec-struct spec info))
            (and (struni-spec-annop spec)
-                (type-spec-struct-infop info)))
+                (type-spec-struct-vinfop info)))
     :expand (type-spec-annop (type-spec-struct spec info))
     :enable identity)
 
@@ -535,7 +535,7 @@
   (defrule type-spec-annop-of-type-spec-struct-empty
     (equal (type-spec-annop (type-spec-struct-empty attribs name? info))
            (and (attrib-spec-list-annop attribs)
-                (type-spec-struct-infop info)))
+                (type-spec-struct-vinfop info)))
     :expand (type-spec-annop (type-spec-struct-empty attribs name? info))
     :enable identity)
 
@@ -551,7 +551,7 @@
            (and (decl-spec-list-annop specs)
                 (param-declor-annop declor)
                 (attrib-spec-list-annop attribs)
-                (param-declon-infop info)))
+                (param-declon-vinfop info)))
     :expand (param-declon-annop (param-declon specs declor attribs info)))
 
   (defruled param-declor-annop-of-param-declor-nonabstract
@@ -564,7 +564,7 @@
     (equal (init-declor-annop (init-declor declor asm? attribs initer? info))
            (and (declor-annop declor)
                 (initer-option-annop initer?)
-                (init-declor-infop info)))
+                (init-declor-vinfop info)))
     :expand (init-declor-annop (init-declor declor asm? attribs initer? info)))
 
   (defruled fundef-annop-of-fundef
@@ -581,14 +581,14 @@
   (defruled trans-unit-annop-of-trans-unit
     (equal (trans-unit-annop (trans-unit items info))
            (and (trans-item-list-annop items)
-                (trans-unit-infop info)))
+                (trans-unit-vinfop info)))
     :expand (trans-unit-annop (trans-unit items info)))
 
   (defruled trans-ensemble-annop-of-trans-ensemble
     (equal (trans-ensemble-annop
             (trans-ensemble units resolved-includes info))
            (and (filepath-trans-unit-map-annop units)
-                (trans-ensemble-infop info)))
+                (trans-ensemble-vinfop info)))
     :expand (trans-ensemble-annop
              (trans-ensemble units resolved-includes info)))
 
@@ -709,9 +709,9 @@
              (initer-annop (desiniter->initer desiniter)))
     :enable desiniter-annop)
 
-  (defruled desiniter-infop-of-desiniter->info
+  (defruled desiniter-vinfop-of-desiniter->info
     (implies (desiniter-annop desiniter)
-             (desiniter-infop (desiniter->info desiniter)))
+             (desiniter-vinfop (desiniter->info desiniter)))
     :enable desiniter-annop)
 
   (defrule struni-spec-annop-of-type-spec-struct->spec
@@ -720,10 +720,10 @@
              (struni-spec-annop (type-spec-struct->spec type-spec)))
     :enable type-spec-annop)
 
-  (defrule type-spec-struct-infop-of-type-spec-struct->info
+  (defrule type-spec-struct-vinfop-of-type-spec-struct->info
     (implies (and (type-spec-annop type-spec)
                   (type-spec-case type-spec :struct))
-             (type-spec-struct-infop (type-spec-struct->info type-spec)))
+             (type-spec-struct-vinfop (type-spec-struct->info type-spec)))
     :enable type-spec-annop)
 
   (defrule type+uid-vinfop-of-type-spec-typedef->info
@@ -739,10 +739,10 @@
                (type-spec-struct-empty->attribs type-spec)))
     :enable type-spec-annop)
 
-  (defrule type-spec-struct-infop-of-type-spec-struct-empty->info
+  (defrule type-spec-struct-vinfop-of-type-spec-struct-empty->info
     (implies (and (type-spec-annop type-spec)
                   (type-spec-case type-spec :struct-empty))
-             (type-spec-struct-infop (type-spec-struct-empty->info type-spec)))
+             (type-spec-struct-vinfop (type-spec-struct-empty->info type-spec)))
     :enable type-spec-annop)
 
   (defruled declor-annop-of-init-declor->declor
@@ -755,9 +755,9 @@
              (initer-option-annop (init-declor->initer? init-declor)))
     :enable init-declor-annop)
 
-  (defruled init-declor-infop-of-init-declor->info
+  (defruled init-declor-vinfop-of-init-declor->info
     (implies (init-declor-annop init-declor)
-             (init-declor-infop (init-declor->info init-declor)))
+             (init-declor-vinfop (init-declor->info init-declor)))
     :enable init-declor-annop)
 
   (defruled spec/qual-list-annop-of-tyname->specquals
@@ -790,9 +790,9 @@
              (attrib-spec-list-annop (param-declon->attribs param-declon)))
     :enable param-declon-annop)
 
-  (defruled param-declon-infop-of-param-declon->info
+  (defruled param-declon-vinfop-of-param-declon->info
     (implies (param-declon-annop param-declon)
-             (param-declon-infop (param-declon->info param-declon)))
+             (param-declon-vinfop (param-declon->info param-declon)))
     :enable param-declon-annop)
 
   (defruled declor-annop-of-param-declor-nonabstract->declor
@@ -847,9 +847,9 @@
     :enable (omap::assoc
              filepath-trans-unit-map-annop))
 
-  (defruled trans-unit-infop-of-trans-unit->info
+  (defruled trans-unit-vinfop-of-trans-unit->info
     (implies (trans-unit-annop trans-unit)
-             (trans-unit-infop (trans-unit->info trans-unit)))
+             (trans-unit-vinfop (trans-unit->info trans-unit)))
     :enable trans-unit-annop)
 
   (defruled filepath-trans-unit-map-annop-of-trans-ensemble->units
@@ -857,9 +857,9 @@
              (filepath-trans-unit-map-annop (trans-ensemble->units ensemble)))
     :enable trans-ensemble-annop)
 
-  (defruled trans-ensemble-infop-of-trans-ensemble->info
+  (defruled trans-ensemble-vinfop-of-trans-ensemble->info
     (implies (trans-ensemble-annop ensemble)
-             (trans-ensemble-infop (trans-ensemble->info ensemble)))
+             (trans-ensemble-vinfop (trans-ensemble->info ensemble)))
     :enable trans-ensemble-annop)
 
   ;; Add the above theorems to the rule set.
@@ -907,15 +907,15 @@
      const-expr-vinfop-of-const-expr->info
      designor-list-annop-of-desiniter->designors
      initer-annop-of-desiniter->initer
-     desiniter-infop-of-desiniter->info
+     desiniter-vinfop-of-desiniter->info
      struni-spec-annop-of-type-spec-struct->spec
-     type-spec-struct-infop-of-type-spec-struct->info
+     type-spec-struct-vinfop-of-type-spec-struct->info
      type+uid-vinfop-of-type-spec-typedef->info
      attrib-spec-list-annop-of-type-spec-struct-empty->attribs
-     type-spec-struct-infop-of-type-spec-struct-empty->info
+     type-spec-struct-vinfop-of-type-spec-struct-empty->info
      declor-annop-of-init-declor->declor
      initer-option-annop-of-init-declor->initer?
-     init-declor-infop-of-init-declor->info
+     init-declor-vinfop-of-init-declor->info
      spec/qual-list-annop-of-tyname->specquals
      absdeclor-option-annop-of-tyname->declor?
      type-vinfop-of-tyname->info
@@ -923,7 +923,7 @@
      decl-spec-list-annop-of-param-declon->specs
      param-declor-annop-of-param-declon->declor
      attrib-spec-list-annop-of-param-declon->attribs
-     param-declon-infop-of-param-declon->info
+     param-declon-vinfop-of-param-declon->info
      decl-spec-list-annop-of-fundef->specs
      declor-annop-of-fundef->declor
      declon-list-annop-of-fundef->declons
@@ -931,9 +931,9 @@
      type+uid-vinfop-of-fundef->info
      trans-item-list-annop-of-trans-unit->items
      trans-unit-annop-of-cdr-assoc
-     trans-unit-infop-of-trans-unit->info
+     trans-unit-vinfop-of-trans-unit->info
      filepath-trans-unit-map-annop-of-trans-ensemble->units
-     trans-ensemble-infop-of-trans-ensemble->info)))
+     trans-ensemble-vinfop-of-trans-ensemble->info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

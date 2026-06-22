@@ -390,7 +390,7 @@
     when the member is in the right member set.")
   (b* (((reterr) nil)
        ((desiniter desiniter) desiniter)
-       ((c$::desiniter-info info) desiniter.info)
+       ((c$::desiniter-vinfo info) desiniter.info)
        (designors (or desiniter.designors info.designors))
        ((unless (and (consp designors)
                      (designor-case (car designors) :dot)))
@@ -1087,7 +1087,7 @@
                    nil)
                  st))
         :struct
-        (b* (((c$::type-spec-struct-info info) type-spec.info)
+        (b* (((c$::type-spec-struct-vinfo info) type-spec.info)
              (uid (c$::type-struct->uid info.type))
              (splitp (c$::uid-equal uid (sts-split-state->struct-uid st)))
              ((erp left-spec right-spec st)
@@ -1156,7 +1156,7 @@
         :builtin-va-list
         (retok (type-spec-fix type-spec) nil st)
         :struct-empty
-        (b* (((c$::type-spec-struct-info info) type-spec.info)
+        (b* (((c$::type-spec-struct-vinfo info) type-spec.info)
              (uid (c$::type-struct->uid info.type))
              (splitp (c$::uid-equal uid (sts-split-state->struct-uid st)))
              ((erp attribs st)
@@ -1560,7 +1560,7 @@
                new-desiniter
              (c$::change-desiniter
                new-desiniter
-               :designors (c$::desiniter-info->designors desiniter.info)))))
+               :designors (c$::desiniter-vinfo->designors desiniter.info)))))
       (retok rightp new-desiniter new-desiniter st))
     :measure (desiniter-count desiniter))
 
@@ -2115,7 +2115,7 @@
           (param-declon-fix param-declon)
           st)
          ((param-declon param-declon) param-declon)
-         ((c$::param-declon-info info) param-declon.info)
+         ((c$::param-declon-vinfo info) param-declon.info)
          ((mv erp splitp)
           (if info.type
               (sts-check-type info.type st)
@@ -2705,7 +2705,7 @@
           (init-declor-fix init-declor)
           st)
          ((init-declor init-declor) init-declor)
-         ((c$::init-declor-info info) init-declor.info)
+         ((c$::init-declor-vinfo info) init-declor.info)
          ((mv erp type-splitp)
           (sts-check-type info.type st))
          ((when erp)
@@ -3409,7 +3409,7 @@
        ((erp info?)
         (sts-find-tag-info-in-valid-table
           tag
-          (c$::trans-unit-info->table-end (c$::trans-unit->info tunit))))
+          (c$::trans-unit-vinfo->table-end (c$::trans-unit->info tunit))))
        ((when (and info?
                    (c$::tag-kind-case (c$::valid-tag-info->kind info?)
                                       :struct)))
@@ -3445,7 +3445,7 @@
        ((erp info?)
         (sts-find-tag-info-in-valid-table
           tag
-          (c$::trans-unit-info->table-end (c$::trans-unit->info tunit))))
+          (c$::trans-unit-vinfo->table-end (c$::trans-unit->info tunit))))
        ((unless info?)
         (retmsg$ "The struct tag ~x0 was not found at file scope."
                  (c$::ident-fix tag)))
@@ -3510,7 +3510,7 @@
        ((erp info?)
         (sts-find-tag-info-in-valid-table
           tag
-          (c$::trans-unit-info->table-end (c$::trans-unit->info tunit))))
+          (c$::trans-unit-vinfo->table-end (c$::trans-unit->info tunit))))
        (structp (and info?
                      (c$::tag-kind-case (c$::valid-tag-info->kind info?)
                                         :struct)))
@@ -3602,7 +3602,7 @@
        ;; type-compatible-p accesses the completions with hons-get,
        ;; so they must be a fast alist.
        (completions (make-fast-alist
-                      (c$::trans-ensemble-info->completions info)))
+                      (c$::trans-ensemble-vinfo->completions info)))
        (primary-type
          (c$::make-type-struct
            :uid primary-uid

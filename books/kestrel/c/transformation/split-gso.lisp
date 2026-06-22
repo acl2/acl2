@@ -118,7 +118,7 @@
        ((mv erp linkage tag?)
         (get-gso-linkage-from-valid-table
           ident
-          (c$::trans-unit-info->table-end (c$::trans-unit->info tunit))))
+          (c$::trans-unit-vinfo->table-end (c$::trans-unit->info tunit))))
        ((unless erp)
         (retok filepath linkage tag?)))
     (get-gso-filepath-linkage-search ident (omap::tail tunits)))
@@ -157,15 +157,15 @@
        ((erp linkage tag?)
         (get-gso-linkage-from-valid-table
           ident
-          (c$::trans-unit-info->table-end (c$::trans-unit->info tunit)))))
+          (c$::trans-unit-vinfo->table-end (c$::trans-unit->info tunit)))))
     (retok filepath? linkage tag?))
   :guard-hints (("Goal" :in-theory (enable c$::trans-ensemble-annop)))
   :prepwork
-  ((defrulel trans-unit-infop-of-assoc-tunits
+  ((defrulel trans-unit-vinfop-of-assoc-tunits
      (implies (and (filepath-trans-unit-mapp tunits)
                    (c$::filepath-trans-unit-map-annop tunits)
                    (omap::assoc filepath tunits))
-              (c$::trans-unit-infop
+              (c$::trans-unit-vinfop
                 (c$::trans-unit->info
                   (cdr (omap::assoc filepath tunits)))))
      :induct t
@@ -606,7 +606,7 @@
        ((unless (desiniter-annop desiniter))
         (retmsg$ "Cannot infer designation from initializer: ~x0"
                  (desiniter-fix desiniter)))
-       ((c$::desiniter-info info) desiniter.info)
+       ((c$::desiniter-vinfo info) desiniter.info)
        ((when (endp info.designors))
         (retmsg$ "Cannot infer designation from initializer: ~x0"
                  (desiniter-fix desiniter))))

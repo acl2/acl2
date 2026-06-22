@@ -188,10 +188,10 @@
         nil)
        (attrs (uid-attrib-spec-list-mfix attrs))
        ((init-declor declor) (first declors))
-       ((unless (c$::init-declor-infop declor.info))
+       ((unless (c$::init-declor-vinfop declor.info))
         (er hard? 'add-attributes
             "Initializer declarator info is not well-formed."))
-       (uid? (c$::init-declor-info->uid declor.info))
+       (uid? (c$::init-declor-vinfo->uid declor.info))
        (attribs (if uid? (cdr (omap::assoc uid? attrs)) nil))
        (rest-attribs+declors
          (init-declor-list-add-attrib-split (rest declors) attrs))
