@@ -44,6 +44,7 @@
                any
                bool
                character-setp
+               character-sfix
                check-and-call
                check-fn-call
                check-if-call
