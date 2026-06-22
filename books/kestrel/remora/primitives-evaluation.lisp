@@ -198,11 +198,11 @@
 ; a negative integer would count the number of 1's in it's absolute
 ; value representation. Thus, there is a mismatch. We currently resolved this
 ; by only accepting positive integers and errs on a negative input.
-(define prim-int-popc ((val 1 expr-valuep))
+(define prim-int-popc ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer pop count."
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
-       ((when (< i2.int 0)) (reserr nil)) ;; ERROR: negative input
+       ((when (< i1.int 0)) (reserr nil)) ;; ERROR: negative input
        (ival (int-value (logcount i1.int))))
     (expr-value-base (base-value-int ival))))
 
