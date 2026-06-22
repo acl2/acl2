@@ -225,24 +225,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod fundef-info
-  :short "Fixtype of validation information for function definitions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of the annotations that
-     the validator adds to function definitions.
-     The information consists of
-     the type of the function (not just the result; the function type),
-     and a "
-    (xdoc::seetopic "uid" "unique identifier")
-    "."))
-  ((type type)
-   (uid uid))
-  :pred fundef-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod trans-unit-info
   :short "Fixtype of validation information for translation units."
   :long
@@ -330,7 +312,12 @@
        (see @(tsee valid-type-spec)).")
      (xdoc::p
       "Non-abstract parameter declarators are annotated with
-       their types and their UIDs."))
+       their types and their UIDs.")
+     (xdoc::p
+      "Function definitions are annotated with
+       the type of the function
+       (the whole function type, not just the return type)
+       and the UID."))
     :types (ident
             ident-list
             ident-option
@@ -441,7 +428,7 @@
                   (declor-annop (fundef->declor fundef))
                   (declon-list-annop (fundef->declons fundef))
                   (comp-stmt-annop (fundef->body fundef))
-                  (fundef-infop (fundef->info fundef))))
+                  (type+uid-vinfop (fundef->info fundef))))
      (trans-unit (and (trans-item-list-annop (trans-unit->items trans-unit))
                       (trans-unit-infop (trans-unit->info trans-unit))))
      (trans-ensemble (and (filepath-trans-unit-map-annop
@@ -587,7 +574,7 @@
                 (declor-annop declor)
                 (declon-list-annop declons)
                 (comp-stmt-annop body)
-                (fundef-infop info)))
+                (type+uid-vinfop info)))
     :expand (fundef-annop
              (fundef extension specs declor asm? attribs declons body info)))
 
@@ -841,9 +828,9 @@
              (comp-stmt-annop (fundef->body fundef)))
     :enable fundef-annop)
 
-  (defruled fundef-infop-of-fundef->info
+  (defruled type+uid-vinfop-of-fundef->info
     (implies (fundef-annop fundef)
-             (fundef-infop (fundef->info fundef)))
+             (type+uid-vinfop (fundef->info fundef)))
     :enable fundef-annop)
 
   (defruled trans-item-list-annop-of-trans-unit->items
@@ -941,7 +928,7 @@
      declor-annop-of-fundef->declor
      declon-list-annop-of-fundef->declons
      comp-stmt-annop-of-fundef->body
-     fundef-infop-of-fundef->info
+     type+uid-vinfop-of-fundef->info
      trans-item-list-annop-of-trans-unit->items
      trans-unit-annop-of-cdr-assoc
      trans-unit-infop-of-trans-unit->info

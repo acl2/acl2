@@ -3326,7 +3326,7 @@
                     (body comp-stmtp)
                     (body-new comp-stmtp)
                     (body-thm-name symbolp)
-                    (info fundef-infop)
+                    (info type+uid-vinfop)
                     (gin ginp))
   :guard (and (decl-spec-list-unambp specs)
               (decl-spec-list-annop specs)
@@ -3408,7 +3408,7 @@
                                 :declons declons-new
                                 :body body-new
                                 :info info))
-       (type (fundef-info->type info))
+       (type (type+uid-vinfo->type info))
        (ident (declor->ident declor))
        (vartys-after-fundef (if (and (ident-formalp ident)
                                      (type-formalp type)
@@ -3586,7 +3586,7 @@
               (declor-annop declor-new)
               (declon-list-annop declons-new)
               (comp-stmt-annop body-new)
-              (fundef-infop info)))
+              (type+uid-vinfop info)))
 
   (defret fundef-aidentp-of-xeq-fundef
     (fundef-aidentp fundef gcc)

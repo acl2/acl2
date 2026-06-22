@@ -383,14 +383,14 @@
        (table (change-valid-table table :scopes new-scopes))
        (vstate (change-vstate vstate :table table))
        (vstate
-         (valid-ord-info-case
-          info
-          :objfun (linkage-case
-                   info.linkage
-                   :external
-                   (vstate-update-ext ident info.type info.uid vstate)
-                   :otherwise vstate)
-          :otherwise vstate)))
+        (valid-ord-info-case
+         info
+         :objfun (linkage-case
+                  info.linkage
+                  :external
+                  (vstate-update-ext ident info.type info.uid vstate)
+                  :otherwise vstate)
+         :otherwise vstate)))
     vstate)
   :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
   :no-function nil)
@@ -428,14 +428,14 @@
        (table (change-valid-table table :scopes new-scopes))
        (vstate (change-vstate vstate :table table))
        (vstate
-         (valid-ord-info-case
-          info
-          :objfun (linkage-case
-                   info.linkage
-                   :external
-                   (vstate-update-ext ident info.type info.uid vstate)
-                   :otherwise vstate)
-          :otherwise vstate)))
+        (valid-ord-info-case
+         info
+         :objfun (linkage-case
+                  info.linkage
+                  :external
+                  (vstate-update-ext ident info.type info.uid vstate)
+                  :otherwise vstate)
+         :otherwise vstate)))
     vstate)
   :guard-hints (("Goal" :in-theory (enable acons)))
   :no-function nil)
@@ -512,9 +512,9 @@
         (type-composite x y vstate.completions vstate.next-uid vstate.ienv)))
     (mv composite
         (change-vstate
-          vstate
-          :completions completions
-          :next-uid next-uid))))
+         vstate
+         :completions completions
+         :next-uid next-uid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2264,12 +2264,12 @@
           (retok composite vstate)))
        ((when (and (type-case type2 :pointer)
                    (expr-null-pointer-constp
-                     (expr-cond->else expr) type3 ienv)))
+                    (expr-cond->else expr) type3 ienv)))
         (retok (type-fix type2) (vstate-fix vstate)))
        ((when (and (type-case type3 :pointer)
                    (expr-cond->then expr)
                    (expr-null-pointer-constp
-                     (expr-cond->then expr) type2 ienv)))
+                    (expr-cond->then expr) type2 ienv)))
         (retok (type-fix type3) (vstate-fix vstate)))
        ((when (and (type-case type2 :pointer)
                    (type-case type3 :pointer)
@@ -3674,11 +3674,11 @@
                                           tyspec.spec.name?
                                           (type-spec-fix tyspec)))
                                 (type (make-type-struct
-                                        :uid (valid-tag-info->uid info?)
-                                        :tunit? (vstate->filepath vstate)
-                                        :tag/members
-                                        (type-struni-tag/members-tagged
-                                          tyspec.spec.name?)))
+                                       :uid (valid-tag-info->uid info?)
+                                       :tunit? (vstate->filepath vstate)
+                                       :tag/members
+                                       (type-struni-tag/members-tagged
+                                        tyspec.spec.name?)))
                                 (info (type-spec-struct-info type)))
                              (retok (make-type-spec-struct :spec new-spec
                                                            :info info)
@@ -3688,18 +3688,18 @@
                                     vstate)))
                           (uid (vstate->next-uid vstate))
                           (vstate (change-vstate
-                                    vstate
-                                    :next-uid (uid-increment uid)))
+                                   vstate
+                                   :next-uid (uid-increment uid)))
                           (vstate (vstate-add-tag tyspec.spec.name?
                                                   (make-valid-tag-info
                                                    :kind (tag-kind-struct)
                                                    :uid uid)
                                                   vstate))
                           (type (make-type-struct
-                                  :uid uid
-                                  :tunit? (vstate->filepath vstate)
-                                  :tag/members (type-struni-tag/members-tagged
-                                                 tyspec.spec.name?)))
+                                 :uid uid
+                                 :tunit? (vstate->filepath vstate)
+                                 :tag/members (type-struni-tag/members-tagged
+                                               tyspec.spec.name?)))
                           (info (type-spec-struct-info type)))
                        (retok (make-type-spec-struct :spec new-spec
                                                      :info info)
@@ -3729,8 +3729,8 @@
                            (mv current-uid? vstate))
                           (uid (vstate->next-uid vstate))
                           (vstate (change-vstate
-                                    vstate
-                                    :next-uid (uid-increment uid))))
+                                   vstate
+                                   :next-uid (uid-increment uid))))
                        (mv uid
                            (if tyspec.spec.name?
                                (vstate-add-tag tyspec.spec.name?
@@ -3750,11 +3750,11 @@
                                           (type-struni-tag/members-untagged
                                            type-struni-members))))
                     (vstate (change-vstate
-                              vstate
-                              :completions (hons-acons
-                                             uid
-                                             type-struni-members
-                                             (vstate->completions vstate))))
+                             vstate
+                             :completions (hons-acons
+                                           uid
+                                           type-struni-members
+                                           (vstate->completions vstate))))
                     (info (type-spec-struct-info type)))
                  (retok (make-type-spec-struct :spec new-spec
                                                :info info)
@@ -3794,8 +3794,8 @@
                                      (type-spec-fix tyspec))))
                          (uid (vstate->next-uid vstate))
                          (vstate (change-vstate
-                                   vstate
-                                   :next-uid (uid-increment uid)))
+                                  vstate
+                                  :next-uid (uid-increment uid)))
                          (vstate (vstate-add-tag tyspec.spec.name?
                                                  (make-valid-tag-info
                                                   :kind (tag-kind-union)
@@ -3832,8 +3832,8 @@
                           (mv current-uid? vstate))
                          (uid (vstate->next-uid vstate))
                          (vstate (change-vstate
-                                   vstate
-                                   :next-uid (uid-increment uid))))
+                                  vstate
+                                  :next-uid (uid-increment uid))))
                       (mv uid
                           (if tyspec.spec.name?
                               (vstate-add-tag tyspec.spec.name?
@@ -3853,11 +3853,11 @@
                                          (type-struni-tag/members-untagged
                                           type-struni-members))))
                    (vstate (change-vstate
-                              vstate
-                              :completions (hons-acons
-                                             uid
-                                             type-struni-members
-                                             (vstate->completions vstate)))))
+                            vstate
+                            :completions (hons-acons
+                                          uid
+                                          type-struni-members
+                                          (vstate->completions vstate)))))
                 (retok (type-spec-union new-spec)
                        type
                        nil
@@ -3938,8 +3938,8 @@
                                  (mv current-uid? vstate))
                                 (uid (vstate->next-uid vstate))
                                 (vstate (change-vstate
-                                          vstate
-                                          :next-uid (uid-increment uid))))
+                                         vstate
+                                         :next-uid (uid-increment uid))))
                              (mv uid
                                  (if tyspec.name?
                                      (vstate-add-tag tyspec.name?
@@ -3958,12 +3958,12 @@
                                    (type-struni-tag/members-untagged
                                     nil))))
                           (vstate
-                            (change-vstate
-                              vstate
-                              :completions (hons-acons
-                                             uid
-                                             nil
-                                             (vstate->completions vstate))))
+                           (change-vstate
+                            vstate
+                            :completions (hons-acons
+                                          uid
+                                          nil
+                                          (vstate->completions vstate))))
                           (info (type-spec-struct-info type)))
                        (retok (make-type-spec-struct-empty
                                :attribs tyspec.attribs
@@ -4838,10 +4838,10 @@
          (new-subobjects-stack (initer-context-stack->stack ctx))
          (info
           (desiniter-info
-            (if (and (endp desiniter.designors)
-                     (not (subobjects-stack-end-p new-subobjects-stack)))
-                (subobjects-stack-to-designors new-subobjects-stack vstate.ienv)
-              nil)))
+           (if (and (endp desiniter.designors)
+                    (not (subobjects-stack-end-p new-subobjects-stack)))
+               (subobjects-stack-to-designors new-subobjects-stack vstate.ienv)
+             nil)))
          (new-subobjects-stack
           (if (subobjects-stack-end-p new-subobjects-stack)
               ;; TODO: this case is impossible.
@@ -5453,16 +5453,16 @@
                   ((when (and (not (endp dirdeclor.params))
                               (endp (rest dirdeclor.params))
                               (equal (param-declon->specs
-                                       (first dirdeclor.params))
+                                      (first dirdeclor.params))
                                      (list (decl-spec-typespec
-                                             (type-spec-void))))
+                                            (type-spec-void))))
                               (equal (param-declon->declor
-                                       (first dirdeclor.params))
+                                      (first dirdeclor.params))
                                      (param-declor-none))
                               (not (param-declon->attribs
-                                     (first dirdeclor.params)))))
+                                    (first dirdeclor.params)))))
                    (retok (list (change-param-declon (first dirdeclor.params)
-                                                    :info (make-param-declon-info :type nil)))
+                                                     :info (make-param-declon-info :type nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -5478,8 +5478,8 @@
                       return-types
                       vstate)))
             (vstate (if outermost-fundef-params-p
-                       vstate
-                     (vstate-pop-scope vstate)))
+                        vstate
+                      (vstate-pop-scope vstate)))
             (type (make-type-function :ret type :params type-params))
             ((erp new-dirdeclor type ident return-types1 vstate)
              (valid-dirdeclor
@@ -5718,16 +5718,16 @@
                   ((when (and (not (endp dirabsdeclor.params))
                               (endp (rest dirabsdeclor.params))
                               (equal (param-declon->specs
-                                       (first dirabsdeclor.params))
+                                      (first dirabsdeclor.params))
                                      (list (decl-spec-typespec
-                                             (type-spec-void))))
+                                            (type-spec-void))))
                               (equal (param-declon->declor
-                                       (first dirabsdeclor.params))
+                                      (first dirabsdeclor.params))
                                      (param-declor-none))
                               (not (param-declon->attribs
-                                     (first dirabsdeclor.params)))))
+                                    (first dirabsdeclor.params)))))
                    (retok (list (change-param-declon (first dirabsdeclor.params)
-                                                    :info (make-param-declon-info :type nil)))
+                                                     :info (make-param-declon-info :type nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -7865,39 +7865,39 @@
                  (fundef-fix fundef)))
        ((mv uid vstate) (vstate-get-fresh-uid ident (linkage-none) vstate))
        (vstate (vstate-add-ord (ident "__func__")
-                              (make-valid-ord-info-objfun
-                               :type (make-type-array :of (type-char)
-                                                      :size nil) ; TODO: size
-                               :linkage (linkage-none)
-                               :defstatus (valid-defstatus-defined)
-                               :uid uid)
-                              vstate))
+                               (make-valid-ord-info-objfun
+                                :type (make-type-array :of (type-char)
+                                                       :size nil) ; TODO: size
+                                :linkage (linkage-none)
+                                :defstatus (valid-defstatus-defined)
+                                :uid uid)
+                               vstate))
        ((mv uid vstate) (vstate-get-fresh-uid ident (linkage-none) vstate))
        (vstate (if (ienv->gcc/clang ienv)
-                  (vstate-add-ord (ident "__FUNCTION__")
-                                  (make-valid-ord-info-objfun
-                                   :type (make-type-array :of (type-char)
-                                                          :size nil) ; TODO: size
-                                   :linkage (linkage-none)
-                                   :defstatus (valid-defstatus-defined)
-                                   :uid uid)
-                                  vstate)
-                vstate))
+                   (vstate-add-ord (ident "__FUNCTION__")
+                                   (make-valid-ord-info-objfun
+                                    :type (make-type-array :of (type-char)
+                                                           :size nil) ; TODO: size
+                                    :linkage (linkage-none)
+                                    :defstatus (valid-defstatus-defined)
+                                    :uid uid)
+                                   vstate)
+                 vstate))
        ((mv uid vstate) (vstate-get-fresh-uid ident (linkage-none) vstate))
        (vstate (if (ienv->gcc/clang ienv)
-                  (vstate-add-ord (ident "__PRETTY_FUNCTION__")
-                                  (make-valid-ord-info-objfun
-                                   :type (make-type-array :of (type-char)
-                                                          :size nil) ; TODO: size
-                                   :linkage (linkage-none)
-                                   :defstatus (valid-defstatus-defined)
-                                   :uid uid)
-                                  vstate)
-                vstate))
+                   (vstate-add-ord (ident "__PRETTY_FUNCTION__")
+                                   (make-valid-ord-info-objfun
+                                    :type (make-type-array :of (type-char)
+                                                           :size nil) ; TODO: size
+                                    :linkage (linkage-none)
+                                    :defstatus (valid-defstatus-defined)
+                                    :uid uid)
+                                   vstate)
+                 vstate))
        ((erp new-body & & vstate) (valid-comp-stmt fundef.body t vstate))
        (vstate (vstate-pop-scope vstate))
-       (info (make-fundef-info :type type
-                               :uid fundef-uid)))
+       (info (make-type+uid-vinfo :type type
+                                  :uid fundef-uid)))
     (retok (make-fundef :extension fundef.extension
                         :specs new-specs
                         :declor new-declor
@@ -8007,10 +8007,10 @@
                    (reterr "irrelevant"))
                   ((when erp) (mv erp nil (irr-vstate)))
                   (vstate (change-vstate
-                            vstate
-                            :table (change-valid-table
-                                     table
-                                     :macros new-macros))))
+                           vstate
+                           :table (change-valid-table
+                                   table
+                                   :macros new-macros))))
                (retok (list (trans-item-fix item)) vstate))
      :undef (b* ((name (ident->unwrap item.macro))
                  ((unless (stringp name))
@@ -8024,11 +8024,11 @@
                   (reterr "irrelevant"))
                  ((when erp) (mv erp nil (irr-vstate)))
                  (vstate (change-vstate
-                           vstate
-                           :table
-                           (change-valid-table
-                             table
-                             :macros new-macros))))
+                          vstate
+                          :table
+                          (change-valid-table
+                           table
+                           :macros new-macros))))
               (retok (list (trans-item-fix item)) vstate))
      :cond (reterr
             (msg "Validator does not support conditional directives yet."))
@@ -8236,9 +8236,9 @@
                       len-new-tumap len-tumap)))
             nil))
        (info (make-trans-ensemble-info
-               :externals (vstate->externals vstate)
-               :completions (vstate->completions vstate)
-               :next-uid (vstate->next-uid vstate))))
+              :externals (vstate->externals vstate)
+              :completions (vstate->completions vstate)
+              :next-uid (vstate->next-uid vstate))))
     (retok (make-trans-ensemble
             :units new-tumap
             :resolved-includes nil

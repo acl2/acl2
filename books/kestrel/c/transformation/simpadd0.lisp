@@ -2952,7 +2952,7 @@
        ((mv new-declor & (gout gout-declor))
         (simpadd0-declor fundef.declor t gin))
        (gin (gin-update gin gout-declor))
-       (type (fundef-info->type fundef.info))
+       (type (type+uid-vinfo->type fundef.info))
        (ident (declor->ident fundef.declor))
        (vartys-with-fun (if (and (ident-formalp ident)
                                  (type-formalp type)

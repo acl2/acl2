@@ -293,7 +293,7 @@
                (block-item-list-add-attributes (rest c$::block-item-list) attrs))))
    (c$::fundef
      (b* (((fundef fundef) c$::fundef)
-          ((unless (fundef-infop fundef.info))
+          ((unless (type+uid-vinfop fundef.info))
            (er hard? 'add-attributes
                "Function definition info is not well-formed.")
            (fundef-fix c$::fundef))
@@ -305,7 +305,7 @@
              :attribs (attrib-spec-list-add-attributes fundef.attribs attrs)
              :declons (declon-list-add-attributes fundef.declons attrs)
              :body (comp-stmt-add-attributes fundef.body attrs)))
-          (uid (c$::fundef-info->uid fundef.info))
+          (uid (c$::type+uid-vinfo->uid fundef.info))
           (attrib-specs?
             (omap::assoc uid (uid-attrib-spec-list-mfix attrs)))
           ((unless attrib-specs?)

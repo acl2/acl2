@@ -79,7 +79,7 @@
   :returns (fundef? fundef-optionp)
   (b* (((fundef fundef) fundef)
        ((declor fundef.declor) fundef.declor)
-       ((fundef-info info) fundef.info))
+       ((type+uid-vinfo info) fundef.info))
     (dirdeclor-case
       fundef.declor.direct
       :function-params

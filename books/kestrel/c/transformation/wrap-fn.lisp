@@ -481,11 +481,11 @@
         (b* (((reterr) nil)
              ((unless foundp)
               (retok nil))
-             ((unless (fundef-infop (c$::fundef->info fundef)))
+             ((unless (type+uid-vinfop (c$::fundef->info fundef)))
               (retmsg$ "Function definition does not have ~
-                        fundef-info metadata: ~x0"
+                        type+uid-vinfo metadata: ~x0"
                        (fundef-fix fundef))))
-          (retok (c$::fundef-info->uid (c$::fundef->info fundef))))))
+          (retok (c$::type+uid-vinfo->uid (c$::fundef->info fundef))))))
     (retok uid?
            wrapper?
            wrapper-name?))

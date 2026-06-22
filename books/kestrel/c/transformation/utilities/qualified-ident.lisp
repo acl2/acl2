@@ -137,9 +137,9 @@
       (b* (((fundef declon.fundef) declon.fundef)
            ((unless (equal (declor->ident declon.fundef.declor) qual-ident.ident))
             (retok nil))
-           ((unless (fundef-infop declon.fundef.info))
+           ((unless (type+uid-vinfop declon.fundef.info))
             (retmsg$ "Function definition info is not well-formed.")))
-        (retok (c$::fundef-info->uid declon.fundef.info)))
+        (retok (type+uid-vinfo->uid declon.fundef.info)))
       :declon
       (declon-case
         declon.declon

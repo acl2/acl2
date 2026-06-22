@@ -780,16 +780,13 @@
     type-vinfo-fix
 
     type+uid-vinfo
+    type+uid-vinfop
     type+uid-vinfo->type
+    type+uid-vinfo->uid
 
     init-declor-info
     init-declor-info->type
     init-declor-info->typedefp
-
-    fundef-info
-    fundef-infop
-    fundef-info->type
-    fundef-info->table-body-start
 
     expr-type
     initer-type
