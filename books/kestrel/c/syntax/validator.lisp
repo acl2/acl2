@@ -5945,7 +5945,7 @@
        (b* (((erp new-declor type ident types vstate)
              (valid-declor paramdeclor.declor nil type vstate))
             ((mv uid vstate) (vstate-get-fresh-uid ident (linkage-none) vstate))
-            (info (make-param-declor-nonabstract-info :type type :uid uid)))
+            (info (make-type+uid-vinfo :type type :uid uid)))
          (retok (make-param-declor-nonabstract :declor new-declor
                                                :info info)
                 type

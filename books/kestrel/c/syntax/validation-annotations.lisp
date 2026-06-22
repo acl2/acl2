@@ -199,24 +199,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod param-declor-nonabstract-info
-  :short "Fixtype of validation information for
-          non-abstract parameter declarators."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of the annotations that
-     the validator adds to non-abstract parameter declarators,
-     i.e. the @(tsee param-declor) fixtype with kind @(':nonabstract').
-     The information consists of the type of the declared identifier and a "
-    (xdoc::seetopic "uid" "unique identifier")
-    "."))
-  ((type type)
-   (uid uid))
-  :pred param-declor-nonabstract-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod init-declor-info
   :short "Fixtype of validation information for initializer declarators."
   :long
@@ -345,7 +327,10 @@
        since the @(tsee type) fixtype has no case for @('typedef') names,
        the validator expands @('typedef') names to
        their @('typedef')-name-free types
-       (see @(tsee valid-type-spec))."))
+       (see @(tsee valid-type-spec)).")
+     (xdoc::p
+      "Non-abstract parameter declarators are annotated with
+       their types and their UIDs."))
     :types (ident
             ident-list
             ident-option
@@ -430,7 +415,7 @@
      (param-declor :nonabstract (and (declor-annop
                                       (param-declor-nonabstract->declor
                                        param-declor))
-                                     (param-declor-nonabstract-infop
+                                     (type+uid-vinfop
                                       (param-declor-nonabstract->info
                                        param-declor))))
      (attrib t)
@@ -585,7 +570,7 @@
   (defruled param-declor-annop-of-param-declor-nonabstract
     (equal (param-declor-annop (param-declor-nonabstract declor info))
            (and (declor-annop declor)
-                (param-declor-nonabstract-infop info)))
+                (type+uid-vinfop info)))
     :expand (param-declor-annop (param-declor-nonabstract declor info)))
 
   (defruled init-declor-annop-of-init-declor
@@ -829,10 +814,10 @@
              (declor-annop (param-declor-nonabstract->declor param-declor)))
     :enable param-declor-annop)
 
-  (defruled param-declor-nonabstract-infop-of-param-declor-nonabstract->info
+  (defruled type+uid-vinfop-of-param-declor-nonabstract->info
     (implies (and (param-declor-annop param-declor)
                   (param-declor-case param-declor :nonabstract))
-             (param-declor-nonabstract-infop
+             (type+uid-vinfop
               (param-declor-nonabstract->info param-declor)))
     :enable param-declor-annop)
 
@@ -910,7 +895,7 @@
      tyname-annop-of-tyname
      param-declon-annop-of-param-declon
      param-declor-annop-of-param-declor-nonabstract
-     param-declor-nonabstract-infop-of-param-declor-nonabstract->info
+     type+uid-vinfop-of-param-declor-nonabstract->info
      init-declor-annop-of-init-declor
      fundef-annop-of-fundef
      trans-unit-annop-of-trans-unit

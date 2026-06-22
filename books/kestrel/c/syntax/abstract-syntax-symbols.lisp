@@ -780,9 +780,7 @@
     type-vinfo-fix
 
     type+uid-vinfo
-
-    param-declor-nonabstract-info
-    param-declor-nonabstract-info->type
+    type+uid-vinfo->type
 
     init-declor-info
     init-declor-info->type

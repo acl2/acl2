@@ -2200,7 +2200,7 @@
       (param-declor-case
         param-declor
         :nonabstract
-        (b* (((c$::param-declor-nonabstract-info info) param-declor.info)
+        (b* (((type+uid-vinfo info) param-declor.info)
              ((erp left-declor right-declor? st)
               (declor-sts-split param-declor.declor
                                 splitp

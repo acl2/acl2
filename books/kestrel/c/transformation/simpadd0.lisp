@@ -1381,7 +1381,7 @@
        (b* (((mv new-declor & (gout gout-declor))
              (simpadd0-declor paramdeclor.declor nil gin))
             (gin (gin-update gin gout-declor))
-            (type (param-declor-nonabstract-info->type paramdeclor.info))
+            (type (type+uid-vinfo->type paramdeclor.info))
             (ident (declor->ident paramdeclor.declor))
             (post-vartys
              (if (and (ident-formalp ident)
