@@ -34,9 +34,11 @@
                     boolean-resultp
                     booleanp-when-result-not-error
                     change-string-string-map-quadruple
+                    chars=>nats
                     defmacro+
                     defxdoc+
                     enable*
+                    explode
                     impossible
                     int
                     integer-resultp
@@ -66,6 +68,10 @@
                     string-string-map-pair-resultp
                     string-string-map-quadruple
                     string-string-map-quadruple-resultp
+                    unsigned-byte-listp
+                    ustring?
+                    ustring=>utf8
+                    utf8=>ustring
                     fty::ok
                     fty::okf
                     fty::patbind-ok
