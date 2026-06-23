@@ -173,7 +173,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (define type-list-sts-safep ((types type-listp) (nested booleanp) (struct identp))
+  (define type-list-sts-safep ((types type-listp)
+                               (nested booleanp)
+                               (struct identp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a list of types are safe for the STS transformation."
@@ -206,7 +208,8 @@
     (type-struni-tag/members-case
      tystr-tag/mems
      :tagged t
-     :untagged (type-struni-member-list-sts-safep tystr-tag/mems.members struct))
+     :untagged (type-struni-member-list-sts-safep tystr-tag/mems.members
+                                                  struct))
     :measure (type-struni-tag/members-count tystr-tag/mems))
 
   ;;;;;;;;;;;;;;;;;;;;
