@@ -61,10 +61,7 @@
    (xdoc::p
     "This type checker is not designed for efficiency
      or to provide informative error messages.
-     It is designed for simplicity.")
-   (xdoc::p
-    "Not all expressions are currently covered;
-     uncovered expressions return a @(':todo') error."))
+     It is designed for simplicity."))
   :order-subtopics t
   :default-parent t)
 
