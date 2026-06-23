@@ -1012,14 +1012,7 @@
                (expr-value-first-fun (car val.elems))
              (reserr nil))
    :vector-empty (reserr nil))
-  :measure (expr-value-count val)
-
-  ///
-
-  (defret expr-valuep-of-expr-value-first-fun
-    (implies (not (reserrp fval))
-             (expr-valuep fval))
-    :hints (("Goal" :induct t))))
+  :measure (expr-value-count val))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1061,6 +1054,7 @@
                (type-value-array-list->dims tvals))
      :primop (repeat (primop-value-arity (expr-value-primop->val fval)) nil)
      :otherwise (reserr nil)))
+  :guard-hints (("Goal" :in-theory (enable expr-valuep-when-result-not-error)))
   :prepwork
   ((local
     (defrule nat-list-listp-of-repeat-when-nat-listp
