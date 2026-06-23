@@ -417,6 +417,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define primop-value-arity ((op primop-valuep))
+  :returns (arity natp)
+  :short "Arity of a primitive operation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the number of expression arguments that the operation takes,
+     matching the @('prim-...') function that defines its semantics
+     in @(see primitives-evaluation):
+     1 for the unary operations, 2 for the binary ones.")
+   (xdoc::p
+    "Every current operation has a fixed arity;
+     if variadic operations are added later,
+     this will need to be generalized.
+     Moreover, every argument of every current operation is a scalar,
+     so the expected argument cell ranks are all zero;
+     this, together with the arity,
+     determines the frames over which application is lifted."))
+  (primop-value-case
+   op
+   :int-add 2
+   :int-sub 2
+   :int-mul 2
+   :int-div 2
+   :int-mod 2
+   :int-max 2
+   :int-min 2
+   :int-bit-and 2
+   :int-bit-or 2
+   :int-bit-xor 2
+   :int-shl 2
+   :int-shr 2
+   :int-bit-not 1
+   :int-popc 1
+   :int-eq 2
+   :int-neq 2
+   :int-lt 2
+   :int-gt 2
+   :int-leq 2
+   :int-geq 2
+   :int-to-float 1
+   :int-to-bool 1
+   :bool-not 1
+   :bool-and 2
+   :bool-or 2
+   :bool-eq 2
+   :bool-neq 2
+   :bool-to-int 1
+   :bool-to-float 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftypes expr-values
   :short "Fixtypes of expression values and lists of expression values."
 
