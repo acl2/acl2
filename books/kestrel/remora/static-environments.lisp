@@ -108,7 +108,15 @@
        (int-to-float-type
         (t[] (t-> (:int) :float) (shp)))
        (int-to-bool-type
-        (t[] (t-> (:int) :bool) (shp))))
+        (t[] (t-> (:int) :bool) (shp)))
+       (bool-unop-type
+        (t[] (t-> (:bool) :bool) (shp)))
+       (bool-binop-type
+        (t[] (t-> (:bool :bool) :bool) (shp)))
+       (bool-to-int-type
+        (t[] (t-> (:bool) :int) (shp)))
+       (bool-to-float-type
+        (t[] (t-> (:bool) :float) (shp))))
     (omap::from-alist
      (list (cons "+" int-binop-type)
            (cons "-" int-binop-type)
@@ -131,7 +139,14 @@
            (cons "<=" int-relop-type)
            (cons ">=" int-relop-type)
            (cons "i->f" int-to-float-type)
-           (cons "i->bool" int-to-bool-type)))))
+           (cons "i->bool" int-to-bool-type)
+           (cons "not" bool-unop-type)
+           (cons "and" bool-binop-type)
+           (cons "or" bool-binop-type)
+           (cons "bool.==" bool-binop-type)
+           (cons "bool.!=" bool-binop-type)
+           (cons "bool->i" bool-to-int-type)
+           (cons "bool->f" bool-to-float-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

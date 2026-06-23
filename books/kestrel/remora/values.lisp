@@ -405,6 +405,13 @@
   (:int-geq ())
   (:int-to-float ())
   (:int-to-bool ())
+  (:bool-not ())
+  (:bool-and ())
+  (:bool-or ())
+  (:bool-eq ())
+  (:bool-neq ())
+  (:bool-to-int ())
+  (:bool-to-float ())
   :pred primop-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
