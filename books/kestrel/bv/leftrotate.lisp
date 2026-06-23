@@ -310,3 +310,14 @@
            (equal (leftrotate width amt x)
                   (leftrotate width k x)))
   :hints (("Goal" :in-theory (enable leftrotate BVCHOP))))
+
+(defthm leftrotate-normalize-amt
+  (implies (and (syntaxp (and (quotep amt)
+                              (quotep width)))
+                (not (and (<= 0 amt)
+                          (< amt width)))
+                (posp width) ; disallows 0 to prevent loop
+                )
+           (equal (leftrotate width amt val)
+                  (leftrotate width (mod amt width) val)))
+  :hints (("Goal" :in-theory (enable leftrotate))))
