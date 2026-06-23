@@ -551,6 +551,88 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-app ((fun-type typep) (arg-types type-listp))
+  :returns (type type-resultp)
+  :short "Check a term application,
+          given the type of the function sub-expression
+          and the types of the argument sub-expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The type of the function sub-expression
+     must be an explicit array type of a function type,
+     whose input and output types are all explicit array types.
+     The atom input and output types
+     are denoted @($\\tau\\ldots$) and @($\\tau'$),
+     and their shapes are denoted @($\\iota\\ldots$) and @($\\iota'$),
+     in [arxiv] and [thesis];
+     our code uses
+     @('in-atom-types'), @('out-atom-type'),
+     @('in-shape'), and @('out-shape').
+     The shape of the array type of the function expression
+     is denoted @($\\iota_f$) in [arxiv] and [thesis];
+     our code uses @('fun-shape').
+     The argument types must all be array types,
+     whose atom types must be equal to
+     the input atom types of the function expression.
+     The shapes of the argument types,
+     for which our code uses @('arg-shapes'),
+     are denoted @($(\\mathtt{++}\\ \\iota_a\\ \\iota)\\ldots$),
+     which means that the shapes @($\\iota\\ldots$)
+     of the corresponding inputs types must be suffixes,
+     and that we need to extract the prefixes @($\\iota_a\\ldots$);
+     we do that via @(tsee check-shape-suffixes) (see its documentation).
+     Then we take the join of all those prefixes and the function shape
+     (see documentation of @(tsee join-shapes)):
+     that is the principal shape (ispace), in Remora's terminology,
+     denoted @($\\iota_p$) in [arxiv] and [thesis].
+     Finally we return the type of the term application expression,
+     which is the array type consisting of
+     the function output atom type
+     and the concatenation of the principal shape
+     with the function output shape."))
+  (b* (((ok fun-type+ispace) (type-match-array fun-type))
+       (fun-type (type+ispace->type fun-type+ispace))
+       (fun-ispace (type+ispace->ispace fun-type+ispace))
+       (fun-shape (shape-from-ispace fun-ispace))
+       ((ok fun-types+type) (type-match-fun fun-type))
+       (in-types (typelist+type->types fun-types+type))
+       (out-type (typelist+type->type fun-types+type))
+       ((ok in-types+ispaces) (type-list-match-array in-types))
+       (in-atom-types (type+ispace-list->type in-types+ispaces))
+       (in-ispaces (type+ispace-list->ispace in-types+ispaces))
+       (in-shapes (shape-list-from-ispace-list in-ispaces))
+       ((ok out-type+ispace) (type-match-array out-type))
+       (out-atom-type (type+ispace->type out-type+ispace))
+       (out-ispace (type+ispace->ispace out-type+ispace))
+       (out-shape (shape-from-ispace out-ispace))
+       ((ok arg-types+ispaces) (type-list-match-array arg-types))
+       (arg-atom-types (type+ispace-list->type arg-types+ispaces))
+       (arg-ispaces (type+ispace-list->ispace arg-types+ispaces))
+       (arg-shapes (shape-list-from-ispace-list arg-ispaces))
+       ((unless (type-list-equivp arg-atom-types in-atom-types))
+        (reserr nil))
+       ((ok prefix-shapes) (check-shape-suffixes arg-shapes in-shapes))
+       ((ok principal-shape) (join-shapes (cons fun-shape prefix-shapes))))
+    (make-type-array
+     :elem out-atom-type
+     :ispace (ispace-shape
+              (shape-append (list principal-shape out-shape)))))
+  :verify-guards :after-returns
+  :guard-hints
+  (("Goal"
+    :use (:instance same-len-when-type-list-equivp
+                    (types1 (type+ispace-list->type
+                             (type-list-match-array arg-types)))
+                    (types2 (type+ispace-list->type
+                             (type-list-match-array
+                              (typelist+type->types
+                               (type-match-fun
+                                (type+ispace->type
+                                 (type-match-array fun-type)))))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines check-exprs/atoms
   :short "Check expressions, atoms, and lists thereof."
   :long
@@ -611,38 +693,10 @@
        where the size is the number of character literals.")
      (xdoc::p
       "For a term application,
-       first we check the function expression,
-       which must have an explicit array type of a function type,
-       whose input and output types are all explicit array types.
-       The atom input and output types
-       are denoted @($\\tau\\ldots$) and @($\\tau'$),
-       and their shapes are denoted @($\\iota\\ldots$) and @($\\iota'$),
-       in [arxiv] and [thesis];
-       our code uses
-       @('in-atom-types'), @('out-atom-type'),
-       @('in-shape'), and @('out-shape').
-       The shape of the array type of the function expression
-       is denoted @($\\iota_f$) in [arxiv] and [thesis];
-       our code uses @('fun-shape').
-       The argument expressions must all have array types,
-       whose atom types must be equal to
-       the input atom types of the function expression.
-       The shapes of the argument expressions,
-       for which our code uses @('arg-shapes'),
-       are denoted @($(\\mathtt{++}\\ \\iota_a\\ \\iota)\\ldots$),
-       which means that the shapes @($\\iota\\ldots$)
-       of the corresponding inputs types must be suffixes,
-       and that we need to extract the prefixes @($\\iota_a\\ldots$);
-       we do that via a separate function (see its documentation).
-       Then we take the join of all those prefixes and the function shape
-       (see documentation of @(tsee join-shapes)):
-       that is the principal shape (ispace), in Remora's terminology,
-       denoted @($\\iota_p$) in [arxiv] and [thesis].
-       Finally we return the type of the term application expression,
-       which is the array type consisting of
-       the function output atom type
-       and the concatenation of the principal shape
-       with the function output shape.")
+       first we check the function and argument expressions,
+       and then we use @(tsee check-app) to check
+       the argument types against the function type,
+       and to obtain the type of the application expression.")
      (xdoc::p
       "For a type application,
        first we check the function expression,
@@ -786,35 +840,9 @@
                                (shape-dims
                                 (list (dim-const (len expr.chars))))))
      :app
-     (b* (((ok fun-arr-type) (check-expr expr.fun senv))
-          ((ok fun-arr-type+ispace) (type-match-array fun-arr-type))
-          (fun-type (type+ispace->type fun-arr-type+ispace))
-          (fun-ispace (type+ispace->ispace fun-arr-type+ispace))
-          (fun-shape (shape-from-ispace fun-ispace))
-          ((ok fun-types+type) (type-match-fun fun-type))
-          (in-types (typelist+type->types fun-types+type))
-          (out-type (typelist+type->type fun-types+type))
-          ((ok in-types+ispaces) (type-list-match-array in-types))
-          (in-atom-types (type+ispace-list->type in-types+ispaces))
-          (in-ispaces (type+ispace-list->ispace in-types+ispaces))
-          (in-shapes (shape-list-from-ispace-list in-ispaces))
-          ((ok out-type+ispace) (type-match-array out-type))
-          (out-atom-type (type+ispace->type out-type+ispace))
-          (out-ispace (type+ispace->ispace out-type+ispace))
-          (out-shape (shape-from-ispace out-ispace))
-          ((ok arg-types) (check-expr-list expr.args senv))
-          ((ok arg-types+ispaces) (type-list-match-array arg-types))
-          (arg-atom-types (type+ispace-list->type arg-types+ispaces))
-          (arg-ispaces (type+ispace-list->ispace arg-types+ispaces))
-          (arg-shapes (shape-list-from-ispace-list arg-ispaces))
-          ((unless (type-list-equivp arg-atom-types in-atom-types))
-           (reserr nil))
-          ((ok prefix-shapes) (check-shape-suffixes arg-shapes in-shapes))
-          ((ok principal-shape) (join-shapes (cons fun-shape prefix-shapes))))
-       (make-type-array
-        :elem out-atom-type
-        :ispace (ispace-shape
-                 (shape-append (list principal-shape out-shape)))))
+     (b* (((ok fun-type) (check-expr expr.fun senv))
+          ((ok arg-types) (check-expr-list expr.args senv)))
+       (check-app fun-type arg-types))
      :tapp
      (b* (((ok fun-arr-type) (check-expr expr.fun senv))
           ((ok fun-arr-type+ispace) (type-match-array fun-arr-type))
@@ -1098,31 +1126,6 @@
   :verify-guards nil ; done below
 
   ///
-
-  (defruledl len-lemma
-    (implies (equal x y)
-             (equal (len x) (len y))))
-
-  (defrulel lemma
-    (implies (and (not (reserrp (check-expr-list exprs senv)))
-                  (not (reserrp
-                        (type-list-match-array
-                         (check-expr-list exprs senv))))
-                  (not (reserrp (type-list-match-array x)))
-                  (type-list-equivp
-                   (type+ispace-list->type
-                    (type-list-match-array
-                     (check-expr-list exprs senv)))
-                   (type+ispace-list->type
-                    (type-list-match-array x))))
-             (equal (len x)
-                    (len exprs)))
-    :use ((:instance same-len-when-type-list-equivp
-                     (types1 (type+ispace-list->type
-                              (type-list-match-array
-                               (check-expr-list exprs senv))))
-                     (types2 (type+ispace-list->type
-                              (type-list-match-array x))))))
 
   (verify-guards check-expr)
 
