@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc/top" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -18,72 +18,109 @@
   :parents (kestrel-books)
   :short "A lightweight library for ACL2 pseudo-terms."
   :long
-  "<p>This library provides logic-mode, guard-verified utilities for
-   inspecting, constructing, and transforming
-   <see topic='@(url pseudo-termp)'>pseudo-terms</see>.  The functions are
-   intended as small reusable building blocks for tools that operate on
-   already-translated ACL2 terms — APT-style transformations, verified
-   rewriters, code generators (e.g., @(see c::atc)), and term-walking
-   utilities in general.</p>
+  (xdoc::topstring
 
-   <p>The library is intentionally minimal: each book introduces a focused
-   utility plus its basic correctness theorems, with as few dependencies as
-   practical.  This makes it easy to include only what you need without
-   pulling in larger libraries.</p>
+   (xdoc::p
+    "This library provides logic-mode, guard-verified utilities for
+     inspecting, constructing, and transforming "
+    (xdoc::seetopic "pseudo-termp" "pseudo-terms")
+    ".  The functions are
+     intended as small reusable building blocks for tools that operate on
+     already-translated ACL2 terms &mdash; APT-style transformations, verified
+     rewriters, code generators (e.g., "
+    (xdoc::seetopic "c::atc" "atc")
+    "), and term-walking utilities in general.")
 
-   <h3>What the library covers</h3>
+   (xdoc::p
+    "The library is intentionally minimal: each book introduces a focused
+     utility plus its basic correctness theorems, with as few dependencies as
+     practical.  This makes it easy to include only what you need without
+     pulling in larger libraries.")
 
-   <ul>
+   (xdoc::h3 "What the library covers")
 
-   <li><b>Recognizers for term shape</b> — @(see pseudo-termp),
-   @('lambda-free-termp'), @('lambdas-closed-in-termp'),
-   @('all-lambdas-serialized-in-termp'),
-   @('no-duplicate-lambda-formals-in-termp'),
-   @('no-nils-in-termp').</li>
+   (xdoc::ul
 
-   <li><b>Free-variable and bound-variable analysis</b> —
-   @('free-vars-in-term'), @('bound-vars-in-term'), @('let-vars-in-term'),
-   @('all-vars1'), @('count-vars'), @('count-occurrences-in-term').</li>
+    (xdoc::li
+     (xdoc::b "Recognizers for term shape")
+     " &mdash; @('lambda-free-termp'), @('lambdas-closed-in-termp'),
+      @('all-lambdas-serialized-in-termp'),
+      @('no-duplicate-lambda-formals-in-termp'),
+      @('no-nils-in-termp').")
 
-   <li><b>Substitution and rewriting</b> — @('sublis-var-simple'),
-   @('subst-var-alt'), @('subst-var-deep'), @('rename-vars-in-term'),
-   @('replace-term-with-term'), @('replace-corresponding-arg'),
-   @('substitute-constants-in-lambdas'), @('substitute-lambda-formals'),
-   @('substitute-unnecessary-lambda-vars'),
-   @('substitute-unnecessary-lambda-vars2').</li>
+    ;; Note: COUNT-OCCURENCES-IN-TERM is spelled with one 'r', matching
+    ;; the function name, even though the file is count-occurrences-in-term.lisp
+    ;; (two 'r's).
+    (xdoc::li
+     (xdoc::b "Free-variable and bound-variable analysis")
+     " &mdash;
+      @('free-vars-in-term'), @('bound-vars-in-term'), @('let-vars-in-term'),
+      @('count-occurences-in-term'), and multiple utilities for counting
+      variable occurrences in @('count-vars.lisp').")
 
-   <li><b>Lambda construction</b> — @('make-lambda-nest'),
-   @('make-lambda-application-simple'), @('make-lambda-term-simple'),
-   @('make-lambda-terms-simple'), @('make-lambda-with-hint').</li>
+    (xdoc::li
+     (xdoc::b "Substitution and rewriting")
+     " &mdash; @('sublis-var-simple'),
+      @('subst-var-alt'), @('subst-var-deep'), @('rename-vars-in-term'),
+      @('replace-term-with-term'), @('replace-corresponding-arg'),
+      @('substitute-constants-in-lambdas'), and utilities for substituting
+      lambda formals and unnecessary lambda variables in
+      @('substitute-lambda-formals.lisp'),
+      @('substitute-unnecessary-lambda-vars.lisp'), and
+      @('substitute-unnecessary-lambda-vars2.lisp').")
 
-   <li><b>Lambda elimination and cleanup</b> —
-   @('expand-lambdas-in-term') (full beta-reduction),
-   @('drop-trivial-lambdas') (remove lambdas binding formals to themselves),
-   @('drop-unused-lambda-bindings'),
-   @('serialize-lambdas-in-term').</li>
+    (xdoc::li
+     (xdoc::b "Lambda construction")
+     " &mdash; @('make-lambda-nest'),
+      @('make-lambda-application-simple'),
+      @('make-lambda-term-simple'),
+      @('make-lambda-terms-simple'), @('make-lambda-with-hint').")
 
-   <li><b>Reverse direction: lambdas back to LET / LET* / MV-LET</b> —
-   @(see reconstruct-lets-in-term), @('restore-mv-lets-in-term'),
-   @(see simple-untranslate-in-term),
-   @(see reconstruct-and-untranslate-term).</li>
+    (xdoc::li
+     (xdoc::b "Lambda elimination and cleanup")
+     " &mdash;
+      @('expand-lambdas-in-term') (full beta-reduction),
+      @('drop-trivial-lambdas') (remove lambdas binding formals to themselves),
+      @('drop-unused-lambda-bindings'),
+      @('serialize-lambdas-in-term').")
 
-   <li><b>Term constructors</b> — @('make-if-term') (an iff-preserving IF
-   builder with built-in simplifications), @('negate-term'),
-   @('negate-terms').</li>
+    (xdoc::li
+     (xdoc::b "Reverse direction: lambdas back to LET / LET* / MV-LET")
+     " &mdash;
+      @(see reconstruct-lets-in-term),
+      @('restore-mv-lets-in-term'), @('restore-mv-in-branches'),
+      @(see simple-untranslate-in-term),
+      @(see reconstruct-and-untranslate-term).")
 
-   <li><b>Conjunction / disjunction structure</b> — @('get-conjuncts'),
-   @('get-hyps-and-conc'), @('term-is-conjunctionp'),
-   @('term-is-disjunctionp'), @('drop-clearly-implied-conjuncts'),
-   @('strengthen-conjuncts'), @('simplify-ors').</li>
+    (xdoc::li
+     (xdoc::b "Term constructors")
+     " &mdash; @('make-if-term') (an iff-preserving IF
+      builder with built-in simplifications), @('negate-term').")
 
-   <li><b>Function-call inspection</b> — @('function-call-subterms'),
-   @('expr-calls-fn'), @('all-fnnames1').</li>
+    (xdoc::li
+     (xdoc::b "IF-shape inspection and simplification")
+     " &mdash; @('count-ifs-in-term'),
+      @('count-ifs-in-then-and-else-branches'),
+      @('combine-ifs-in-then-and-else-branches'), @('pre-simplify-term').")
 
-   </ul>
+    (xdoc::li
+     (xdoc::b "Conjunction / disjunction structure")
+     " &mdash; @('get-conjuncts'),
+      @('get-hyps-and-conc'), @('term-is-conjunctionp'),
+      @('term-is-disjunctionp'), @('drop-clearly-implied-conjuncts'),
+      @('simplify-ors'), and utilities for strengthening conjuncts in
+      @('strengthen-conjuncts.lisp').")
 
-   <p>See the individual books under @('kestrel/terms-light/') for
-   per-utility details, theorems, and tests.  Functions in this library are
-   logic-mode and have verified guards unless specifically noted.</p>")
+    (xdoc::li
+     (xdoc::b "Function-call inspection")
+     " &mdash; @('expr-calls-fn'), utilities for finding function-call
+      subterms in @('function-call-subterms.lisp'), and rules about the
+      built-in @(tsee all-fnnames1) in @('all-fnnames1.lisp')."))
+
+   (xdoc::p
+    "See the individual books under @('kestrel/terms-light/') for
+     per-utility details, theorems, and tests.  Functions in this library are
+     logic-mode and have verified guards unless specifically noted.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -92,69 +129,77 @@
   :short "Convert lambda applications in a pseudo-term back into surface-level
           @(tsee let), @(tsee let*), and @(tsee mv-let) forms."
   :long
-  "<p>Operates on a @(tsee pseudo-termp) and returns a Lisp form that is
-   semantically equivalent but is no longer a @(tsee pseudo-termp): it
-   contains user-level @(tsee let), @(tsee let*), and/or @(tsee mv-let)
-   special forms.  This is useful for producing readable output from APT
-   transformations and other tools that work on translated terms.</p>
+  (xdoc::topstring
 
-   <p>The recognizer for the translated form of @(tsee mv-let) is built in:
-   @('translated-mv-letp') matches the two-lambda nest that ACL2's
-   translator emits.  When the recognizer fires, the form is rebuilt as a
-   user-level @(tsee mv-let); otherwise lambda applications become
-   @(tsee let) bindings, with trivially-bound formals (those bound to
-   themselves) elided and ignored variables surfaced via
-   @('(declare (ignore ...))').</p>
+   (xdoc::p
+    "Operates on a @(tsee pseudo-termp) and returns a Lisp form that is
+     semantically equivalent but is no longer a @(tsee pseudo-termp): it
+     contains user-level @(tsee let), @(tsee let*), and/or @(tsee mv-let)
+     special forms.  This is useful for producing readable output from APT
+     transformations and other tools that work on translated terms.")
 
-   @({
-   General Form:
-   (reconstruct-lets-in-term term)
-   })
+   (xdoc::p
+    "The recognizer for the translated form of @(tsee mv-let) is built in:
+     @('translated-mv-letp') matches the two-lambda nest that ACL2's
+     translator emits.  When the recognizer fires, the form is rebuilt as a
+     user-level @(tsee mv-let); otherwise lambda applications become
+     @(tsee let) bindings, with trivially-bound formals (those bound to
+     themselves) elided and ignored variables surfaced via
+     @('(declare (ignore ...))').")
 
-   <p>where:</p>
+   (xdoc::codeblock
+    "General Form:"
+    "(reconstruct-lets-in-term term)")
 
-   <ul>
-   <li>@('term') is a @(tsee pseudo-termp).</li>
-   </ul>
+   (xdoc::p "where:")
 
-   <p>The result is usually NOT a @(tsee pseudo-termp), because it contains
-   @(tsee let) and/or @(tsee mv-let) special forms.</p>
+   (xdoc::ul
+    (xdoc::li "@('term') is a @(tsee pseudo-termp)."))
 
-   <h3>Notes</h3>
+   (xdoc::p
+    "The result is usually NOT a @(tsee pseudo-termp), because it contains
+     @(tsee let) and/or @(tsee mv-let) special forms.")
 
-   <ul>
-   <li>Function-call subterms remain in their translated form: arithmetic
-   abbreviations such as @('binary-+') are not rewritten to @('+'), and
-   self-quoting constants such as @(''3') are not unquoted.  Apply
-   @(see simple-untranslate-in-term) on the result for those readability
-   passes, or use @(see reconstruct-and-untranslate-term) to do both at
-   once.</li>
+   (xdoc::h3 "Notes")
 
-   <li>The translated @(tsee mv) constructor @('(cons '3 (cons '4 'nil))')
-   is not currently rewritten back to @('(mv 3 4)') by this function;
-   see @('restore-mv-lets-in-term') for an in-progress companion that
-   does so.</li>
-   </ul>
+   (xdoc::ul
+    (xdoc::li
+     "Function-call subterms remain in their translated form: arithmetic
+      abbreviations such as @(tsee binary-+) are not rewritten to @(tsee +),
+      and self-quoting constants such as "
+     (xdoc::tt "'3")
+     " are not unquoted.  Apply
+      @(see simple-untranslate-in-term) on the result for those readability
+      passes, or use @(see reconstruct-and-untranslate-term) to do both at
+      once.")
 
-   <h3>Examples</h3>
+    (xdoc::li
+     "The translated @(tsee mv) constructor "
+     (xdoc::tt "(cons '3 (cons '4 'nil))")
+     " is not rewritten back to @('(mv 3 4)') by this function;
+      see @('restore-mv-in-branches') for the companion that does so.
+      A separate (in-progress) utility, @('restore-mv-lets-in-term'),
+      rewrites @('(mv-nth ''0 (mv-list ...))') nests into @(tsee mv-let)."))
 
-   @({
-   ; :trans (let ((x (+ y z))) (+ 1 x))
-   (reconstruct-lets-in-term '((lambda (x) (binary-+ '1 x))
-                               (binary-+ y z)))
-   ; => (let ((x (binary-+ y z))) (binary-+ '1 x))
+   (xdoc::h3 "Examples")
 
-   ; :trans (mv-let (x y) (mv 3 4) (+ x y))
-   (reconstruct-lets-in-term '((lambda (mv)
-                                 ((lambda (x y) (binary-+ x y))
-                                  (mv-nth '0 mv)
-                                  (mv-nth '1 mv)))
-                               (cons '3 (cons '4 'nil))))
-   ; => (mv-let (x y) (cons '3 (cons '4 'nil)) (binary-+ x y))
-   })
+   (xdoc::codeblock
+    "; :trans (let ((x (+ y z))) (+ 1 x))"
+    "(reconstruct-lets-in-term '((lambda (x) (binary-+ '1 x))"
+    "                            (binary-+ y z)))"
+    "; => (let ((x (binary-+ y z))) (binary-+ '1 x))"
+    ""
+    "; :trans (mv-let (x y) (mv 3 4) (+ x y))"
+    "(reconstruct-lets-in-term '((lambda (mv)"
+    "                              ((lambda (x y) (binary-+ x y))"
+    "                               (mv-nth '0 mv)"
+    "                               (mv-nth '1 mv)))"
+    "                            (cons '3 (cons '4 'nil))))"
+    "; => (mv-let (x y) (cons '3 (cons '4 'nil)) (binary-+ x y))")
 
-   <p>See also @(see simple-untranslate-in-term) and
-   @(see reconstruct-and-untranslate-term).</p>")
+   (xdoc::p
+    "See also @(see simple-untranslate-in-term) and
+     @(see reconstruct-and-untranslate-term).")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -163,70 +208,76 @@
   :short "A small readability pass that unquotes self-quoting constants and
           replaces translated arithmetic aliases with their surface forms."
   :long
-  "<p>Intended to run on the output of @(see reconstruct-lets-in-term).  Two
-   passes are applied:</p>
+  (xdoc::topstring
 
-   <ol>
-   <li><b>Unquote self-quoting constants.</b>  @('(quote v)') becomes
-   @('v') whenever @('v') is a number, character, string, keyword, @('t'),
-   or @('nil').  Other quoted values (notably non-keyword symbols and
-   conses) are left as @('(quote v)').</li>
+   (xdoc::p
+    "Intended to run on the output of @(see reconstruct-lets-in-term).  Two
+     passes are applied:")
 
-   <li><b>Arithmetic alias replacement.</b>
-   <ul>
-   <li>@('(binary-+ a b)') becomes @('(+ a b)')</li>
-   <li>@('(binary-* a b)') becomes @('(* a b)')</li>
-   <li>@('(unary-- a)') becomes @('(- a)')</li>
-   <li>@('(unary-/ a)') becomes @('(/ a)')</li>
-   </ul></li>
-   </ol>
+   (xdoc::ol
+    (xdoc::li
+     (xdoc::b "Unquote self-quoting constants.")
+     "  @('(quote v)') becomes
+      @('v') whenever @('v') is a number, character, string, keyword, @('t'),
+      or @('nil').  Other quoted values (notably non-keyword symbols and
+      conses) are left as @('(quote v)').")
 
-   <p>Other forms pass through structurally.  @(tsee let), @(tsee let*),
-   and @(tsee mv-let) special forms are recognized so that bindings'
-   values and bodies are untranslated while binding-variable names and
-   @('declare') forms are preserved verbatim.</p>
+    (xdoc::li
+     (xdoc::b "Arithmetic alias replacement.")
+     (xdoc::ul
+      (xdoc::li "@('(binary-+ a b)') becomes @('(+ a b)')")
+      (xdoc::li "@('(binary-* a b)') becomes @('(* a b)')")
+      (xdoc::li "@('(unary-- a)') becomes @('(- a)')")
+      (xdoc::li "@('(unary-/ a)') becomes @('(/ a)')"))))
 
-   <p>The input is assumed to be the surface-style form produced by
-   @(see reconstruct-lets-in-term) (which may contain
-   @(tsee let)/@(tsee let*)/@(tsee mv-let)/@('declare') alongside ordinary
-   function calls); it is NOT in general a @(tsee pseudo-termp).  The
-   output is also a surface-style form.</p>
+   (xdoc::p
+    "Other forms pass through structurally.  @(tsee let), @(tsee let*),
+     and @(tsee mv-let) special forms are recognized so that bindings'
+     values and bodies are untranslated while binding-variable names and
+     @(tsee declare) forms are preserved verbatim.")
 
-   @({
-   General Form:
-   (simple-untranslate-in-term term)
-   })
+   (xdoc::p
+    "The input is assumed to be the surface-style form produced by
+     @(see reconstruct-lets-in-term) (which may contain
+     @(tsee let)/@(tsee let*)/@(tsee mv-let)/@(tsee declare) alongside
+     ordinary function calls); it is NOT in general a @(tsee pseudo-termp).
+     The output is also a surface-style form.")
 
-   <h3>Examples</h3>
+   (xdoc::codeblock
+    "General Form:"
+    "(simple-untranslate-in-term term)")
 
-   @({
-   (simple-untranslate-in-term '(binary-+ '1 x))
-   ; => (+ 1 x)
+   (xdoc::h3 "Examples")
 
-   (simple-untranslate-in-term '(let ((x (binary-+ y z)))
-                                  (binary-+ '1 x)))
-   ; => (let ((x (+ y z))) (+ 1 x))
+   (xdoc::codeblock
+    "(simple-untranslate-in-term '(binary-+ '1 x))"
+    "; => (+ 1 x)"
+    ""
+    "(simple-untranslate-in-term '(let ((x (binary-+ y z)))"
+    "                               (binary-+ '1 x)))"
+    "; => (let ((x (+ y z))) (+ 1 x))"
+    ""
+    "(simple-untranslate-in-term '(mv-let (x y)"
+    "                               (cons '3 (cons '4 'nil))"
+    "                               (binary-+ x y)))"
+    "; => (mv-let (x y) (cons 3 (cons 4 nil)) (+ x y))")
 
-   (simple-untranslate-in-term '(mv-let (x y)
-                                  (cons '3 (cons '4 'nil))
-                                  (binary-+ x y)))
-   ; => (mv-let (x y) (cons 3 (cons 4 nil)) (+ x y))
-   })
+   (xdoc::h3 "Limitations")
 
-   <h3>Limitations</h3>
+   (xdoc::ul
+    (xdoc::li
+     "Only the four arithmetic aliases above are rewritten.  Other
+      translated forms (e.g., @('(if a a b)') for @(tsee or), nested
+      @(tsee let)s for @(tsee let*), @('(cons ... 'nil)') for @(tsee list) or
+      @(tsee mv)) are left alone.")
 
-   <ul>
-   <li>Only the four arithmetic aliases above are rewritten.  Other
-   translated forms (e.g., @('(if a a b)') for @(tsee or), nested
-   @(tsee let)s for @(tsee let*), @('(cons … 'nil)') for @(tsee list) or
-   @(tsee mv)) are left alone.</li>
+    (xdoc::li
+     "The pass is purely structural &mdash; no world is consulted."))
 
-   <li>The pass is purely structural — no world is consulted.</li>
-   </ul>
-
-   <p>For the combined operation of reconstructing @(tsee let)/@(tsee mv-let)
-   and applying these readability passes, see
-   @(see reconstruct-and-untranslate-term).</p>")
+   (xdoc::p
+    "For the combined operation of reconstructing @(tsee let)/@(tsee mv-let)
+     and applying these readability passes, see
+     @(see reconstruct-and-untranslate-term).")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -235,14 +286,17 @@
   :short "Composition of @(see reconstruct-lets-in-term) followed by
           @(see simple-untranslate-in-term)."
   :long
-  "<p>Convenience function: takes a @(tsee pseudo-termp), reconstructs
-   @(tsee let) / @(tsee mv-let) forms, and then applies the small
-   readability passes (constant unquoting and arithmetic alias
-   replacement).</p>
+  (xdoc::topstring
 
-   @({
-   (reconstruct-and-untranslate-term term)
-   = (simple-untranslate-in-term (reconstruct-lets-in-term term))
-   })
+   (xdoc::p
+    "Convenience function: takes a @(tsee pseudo-termp), reconstructs
+     @(tsee let) / @(tsee mv-let) forms, and then applies the small
+     readability passes (constant unquoting and arithmetic alias
+     replacement).")
 
-   <p>The result is usually not a @(tsee pseudo-termp).</p>")
+   (xdoc::codeblock
+    "(reconstruct-and-untranslate-term term)"
+    "= (simple-untranslate-in-term (reconstruct-lets-in-term term))")
+
+   (xdoc::p
+    "The result is usually not a @(tsee pseudo-termp).")))
