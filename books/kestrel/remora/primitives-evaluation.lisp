@@ -15,6 +15,7 @@
 (include-book "kestrel/fty/boolean-result" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/abs" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
 (acl2::controlled-configuration)
@@ -576,6 +577,313 @@
                    (float-value-neg0)
                  (float-value-ratio res)))))))
     (expr-value-base (base-value-float fval))))
+
+(define prim-float-expt ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float exponentiation."
+  :long "<p>Exponentiation @('base ** exponent'). The base may be any float
+  value and the exponent may be any float value except a non-integer rational:
+  ACL2's @(tsee expt) supports only integer exponents and returns an exact
+  rational, and a non-integer rational exponent would generally yield an
+  irrational result that the rational model (see @(see primitives-evaluation))
+  cannot represent, so that single case errors.</p>
+  <p>Every other case, including the special values, follows [impl]'s Haskell
+  @('**')):</p>
+  <ul>
+   <li>x ** 0 = 1 for any x, including NaN and the infinities (a zero exponent
+       being the integer 0 or negative zero).</li>
+   <li>1 ** y = 1 for any y; (-1) ** inf = 1.</li>
+   <li>NaN in the base or exponent otherwise yields NaN.</li>
+   <li>x ** (+inf) is +inf when the base magnitude exceeds 1 and +0 when it is
+       below 1; x ** (-inf) is the reverse.</li>
+   <li>For a nonzero integer exponent, signed zeros and infinities follow the
+       parity rules (e.g. (-0) ** 3 = -0, (-inf) ** (-3) = -0), and a finite
+       nonzero rational base is raised exactly with @(tsee expt).</li>
+  </ul>"
+  (b* (((ok f1) (check-expr-value-float val1))
+       ((ok f2) (check-expr-value-float val2))
+       ((when (and (float-value-case f2 :ratio)
+                   (not (integerp (float-value-ratio->ratio f2)))))
+        (reserr nil)) ;; ERROR: non-integer rational
+       (nan1 (float-value-case f1 :nan))
+       (nan2 (float-value-case f2 :nan))
+       (pinf1 (float-value-case f1 :posinf))
+       (pinf2 (float-value-case f2 :posinf))
+       (ninf1 (float-value-case f1 :neginf))
+       (ninf2 (float-value-case f2 :neginf))
+       (n0-1 (float-value-case f1 :neg0))
+       (n0-2 (float-value-case f2 :neg0))
+       (rat1 (float-value-case f1 :ratio))
+       (rat2 (float-value-case f2 :ratio))
+       (r1 (if rat1 (float-value-ratio->ratio f1) 0))
+       (r2 (if rat2 (float-value-ratio->ratio f2) 0))
+       (exp-zero (or n0-2 (and rat2 (= r2 0))))
+       (abs-base-gt-1 (or pinf1 ninf1 (and rat1 (> (abs r1) 1))))
+       (fval
+        (cond
+          ;; 1. x ** 0 = 1, for any x (including NaN and infinities).
+          (exp-zero (float-value-ratio 1))
+          ;; 2. 1 ** y = 1, for any y.
+          ((and rat1 (= r1 1)) (float-value-ratio 1))
+          ;; 3. (-1) ** inf = 1.
+          ((and rat1 (= r1 -1) (or pinf2 ninf2)) (float-value-ratio 1))
+          ;; 4. NaN otherwise propagates.
+          ((or nan1 nan2) (float-value-nan))
+          ;; 5. x ** +inf = +inf if |x| > 1 otherwise 0.
+          (pinf2 (if abs-base-gt-1 (float-value-posinf) (float-value-ratio 0)))
+          ;; 6. x ** -inf = 0 if |x| > 1 otherwise +inf.
+          (ninf2 (if abs-base-gt-1 (float-value-ratio 0) (float-value-posinf)))
+          ;; 7. y is a nonzero integer:
+          ;; 7a. +0 ** y = 0 if y > 0 otherwise +inf.
+          ((and rat1 (= r1 0))
+           (if (> r2 0) (float-value-ratio 0) (float-value-posinf)))
+          ;; 7b. -0 ** y =
+          ;;  -> -0 if y > 0 and y is odd,
+          ;;  -> 0 if y > 0 and y is even,
+          ;;  -> -inf if y < 0 and y is odd, and
+          ;;  -> +inf if y < 0 and y is even.
+          (n0-1
+           (cond ((and (> r2 0) (oddp r2)) (float-value-neg0))
+                 ((> r2 0) (float-value-ratio 0))
+                 ((oddp r2) (float-value-neginf))
+                 (t (float-value-posinf))))
+          ;; 7c. +inf ** y = +inf if y > 0 otherwise 0.
+          (pinf1 (if (> r2 0) (float-value-posinf) (float-value-ratio 0)))
+          ;; 7d. -inf ** y =
+          ;;  -> -inf if y > 0 and y is odd,
+          ;;  -> +inf if y > 0 and y is even,
+          ;;  -> -0 if y < 0 and y is odd, and
+          ;;  -> +0 if y < 0 and y is even.
+          (ninf1
+           (cond ((and (> r2 0) (oddp r2)) (float-value-neginf))
+                 ((> r2 0) (float-value-posinf))
+                 ((oddp r2) (float-value-neg0))
+                 (t (float-value-ratio 0))))
+          ;; 7e. standard case.
+          (t (float-value-ratio (expt r1 r2))))))
+    (expr-value-base (base-value-float fval))))
+
+(define prim-float-max ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float maximum."
+  :long "<p>Follows [impl]'s Haskell @('max'):
+  @('max x y = if x <= y then y else x'), where @('<=') is the IEEE comparison
+  in which any comparison with NaN is false. The result is therefore
+  order-dependent on NaN: @('max NaN y') is NaN but @('max x NaN') is x. Since
+  negative and positive zero compare equal, a tie returns the second
+  operand.</p>"
+  (b* (((ok f1) (check-expr-value-float val1))
+       ((ok f2) (check-expr-value-float val2))
+       (fval
+        (cond
+          ;; 1. max x y = x when either x or y is NaN
+          ((or (float-value-case f1 :nan) (float-value-case f2 :nan)) f1)
+          ;; 2. max +inf y = +inf and max x -inf = x
+          ((or (float-value-case f1 :posinf) (float-value-case f2 :neginf)) f1)
+          ;; 3. max -inf y = y and max x +inf = +inf
+          ((or (float-value-case f1 :neginf) (float-value-case f2 :posinf)) f2)
+          ;; 4. standard case
+          (t (b* ((r1 (if (float-value-case f1 :neg0)
+                          0
+                        (float-value-ratio->ratio f1)))
+                  (r2 (if (float-value-case f2 :neg0)
+                          0
+                        (float-value-ratio->ratio f2)))
+                  (res (<= r1 r2)))
+               (if res f2 f1))))))
+    (expr-value-base (base-value-float fval))))
+
+(define prim-float-min ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float minimum."
+  :long "<p>Follows [impl]'s Haskell @('min'):
+  @('min x y = if x <= y then x else y'), where @('<=') is the IEEE comparison
+  in which any comparison with NaN is false. The result is therefore
+  order-dependent on NaN: @('min NaN y') is y but @('min x NaN') is NaN. Since
+  negative and positive zero compare equal, a tie returns the first
+  operand.</p>"
+  (b* (((ok f1) (check-expr-value-float val1))
+       ((ok f2) (check-expr-value-float val2))
+       (fval
+        (cond
+          ;; 1. min x y = y when either x or y is NaN
+          ((or (float-value-case f1 :nan) (float-value-case f2 :nan)) f2)
+          ;; 2. min +inf y = y and min x -inf = -inf
+          ((or (float-value-case f1 :posinf) (float-value-case f2 :neginf)) f2)
+          ;; 3. min -inf y = -inf and min x +inf = x
+          ((or (float-value-case f1 :neginf) (float-value-case f2 :posinf)) f1)
+          ;; 4. standard case
+          (t (b* ((r1 (if (float-value-case f1 :neg0)
+                          0
+                        (float-value-ratio->ratio f1)))
+                  (r2 (if (float-value-case f2 :neg0)
+                          0
+                        (float-value-ratio->ratio f2)))
+                  (res (<= r1 r2)))
+               (if res f1 f2))))))
+    (expr-value-base (base-value-float fval))))
+
+(define prim-float-sqrt ((val1 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float square root."
+  :long "<p>Square root is currently a stub that always errors.</p>
+  <p>The difficulty is that our float model represents finite values as exact
+  rationals (see @(see primitives-evaluation)), but the square root of a
+  rational is in general irrational. So the exact result is not representable as a
+  @(tsee float-value).</p>
+  <p>[impl] computes square roots with Haskell's @('sqrt'), which maps onto the
+  IEEE-754 hardware/library square root: it returns the correctly-rounded
+  single-precision float nearest the true result. That is possible only because
+  Haskell's @('Float') is finite-precision floating point, which accepts
+  rounding; the irrational answer is approximated by the nearest representable
+  float. Our exact-rational model has no notion of a nearest representable value
+  to round to, so we cannot reproduce this without first committing to a
+  concrete float format and rounding rule, a decision Remora has not yet made.
+  We therefore defer the implementation and error for now.</p>"
+  (b* (((ok &) (check-expr-value-float val1)))
+    (reserr nil)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-float-eq ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float equality."
+  :long "<p>Follows [impl]'s IEEE-754 equality, which is not reflexive: NaN is
+  equal to nothing, including itself, so @('NaN == NaN') is false. Negative zero
+  and positive zero compare equal.</p>"
+  (b* (((ok f1) (check-expr-value-float val1))
+       ((ok f2) (check-expr-value-float val2))
+       (bval
+        (float-value-case f1
+          :nan nil
+          :posinf (float-value-case f2 :posinf)
+          :neginf (float-value-case f2 :neginf)
+          :neg0 (or (float-value-case f2 :neg0)
+                    (and (float-value-case f2 :ratio)
+                         (= (float-value-ratio->ratio f2) 0)))
+          :ratio (or (and (float-value-case f2 :neg0)
+                          (= f1.ratio 0))
+                     (and (float-value-case f2 :ratio)
+                          (= f1.ratio (float-value-ratio->ratio f2)))))))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-float-neq ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float equality."
+  :long "<p>Follows [impl]'s IEEE-754 equality, which is not reflexive: NaN is
+  equal to nothing, including itself, so @('NaN != NaN') is true. Negative zero
+  and positive zero compare equal.</p>"
+  (b* (((ok f1) (check-expr-value-float val1))
+       ((ok f2) (check-expr-value-float val2))
+       (bval
+        (not (float-value-case f1
+               :nan nil
+               :posinf (float-value-case f2 :posinf)
+               :neginf (float-value-case f2 :neginf)
+               :neg0 (or (float-value-case f2 :neg0)
+                         (and (float-value-case f2 :ratio)
+                              (= (float-value-ratio->ratio f2) 0)))
+               :ratio (or (and (float-value-case f2 :neg0)
+                               (= f1.ratio 0))
+                          (and (float-value-case f2 :ratio)
+                               (= f1.ratio (float-value-ratio->ratio f2))))))))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-float-lt ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float less-than comparison."
+  :long "<p>Follows [impl]'s IEEE-754 less-than comparison: NaN is unordered, so
+  any comparison involving NaN is false. Negative zero and positive zero compare
+  equal, so @('-0 < +0') is false.</p>"
+  (b* (((ok f1) (check-expr-value-float val1))
+       ((ok f2) (check-expr-value-float val2))
+       (bval
+        (float-value-case f1
+          :nan    nil
+          :posinf nil
+          :neginf (not (or (float-value-case f2 :neginf) 
+                           (float-value-case f2 :nan)))
+          :neg0 (or (float-value-case f2 :posinf)
+                    (and (float-value-case f2 :ratio) 
+                         (< 0 (float-value-ratio->ratio f2))))
+          :ratio (or (float-value-case f2 :posinf)
+                     (and (float-value-case f2 :neg0) 
+                          (< f1.ratio 0))
+                     (and (float-value-case f2 :ratio) 
+                          (< f1.ratio (float-value-ratio->ratio f2)))))))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-float-gt ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float greater-than comparison."
+  :long "<p>Follows [impl]'s IEEE-754 greater-than comparison: NaN is unordered,
+  so any comparison involving NaN is false. Negative zero and positive zero
+  compare equal, so @('+0 > -0') is false.</p>"
+  (b* (((ok f1) (check-expr-value-float val1))
+       ((ok f2) (check-expr-value-float val2))
+       (bval
+        (float-value-case f1
+          :nan    nil
+          :posinf (not (or (float-value-case f2 :posinf) (float-value-case f2 :nan)))
+          :neginf nil
+          :neg0 (or (float-value-case f2 :neginf)
+                    (and (float-value-case f2 :ratio) 
+                         (> 0 (float-value-ratio->ratio f2))))
+          :ratio (or (float-value-case f2 :neginf)
+                     (and (float-value-case f2 :neg0) 
+                          (> f1.ratio 0))
+                     (and (float-value-case f2 :ratio) 
+                          (> f1.ratio (float-value-ratio->ratio f2)))))))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-float-leq ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float less-than-or-equal-to comparison."
+  :long "<p>Follows [impl]'s IEEE-754 less-than-or-equal comparison: NaN is
+  unordered, so any comparison involving NaN is false. Negative zero and
+  positive zero compare equal, so @('-0 <= +0') and @('+0 <= -0') are both
+  true.</p>"
+  (b* (((ok f1) (check-expr-value-float val1))
+       ((ok f2) (check-expr-value-float val2))
+       (bval
+        (float-value-case f1
+          :nan    nil
+          :posinf (float-value-case f2 :posinf)
+          :neginf (not (float-value-case f2 :nan))
+          :neg0 (or (float-value-case f2 :posinf)
+                    (float-value-case f2 :neg0)
+                    (and (float-value-case f2 :ratio) 
+                         (<= 0 (float-value-ratio->ratio f2))))
+          :ratio (or (float-value-case f2 :posinf)
+                     (and (float-value-case f2 :neg0) 
+                          (<= f1.ratio 0))
+                     (and (float-value-case f2 :ratio) 
+                          (<= f1.ratio (float-value-ratio->ratio f2)))))))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-float-geq ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of float greater-than-or-equal-to comparison."
+  :long "<p>Follows [impl]'s IEEE-754 greater-than-or-equal comparison: NaN is
+  unordered, so any comparison involving NaN is false. Negative zero and
+  positive zero compare equal, so @('-0 >= +0') and @('+0 >= -0') are both
+  true.</p>"
+  (b* (((ok f1) (check-expr-value-float val1))
+       ((ok f2) (check-expr-value-float val2))
+       (bval
+        (float-value-case f1
+          :nan    nil
+          :posinf (not (float-value-case f2 :nan))
+          :neginf (float-value-case f2 :neginf)
+          :neg0 (or (float-value-case f2 :neginf)
+                    (float-value-case f2 :neg0)
+                    (and (float-value-case f2 :ratio) 
+                         (>= 0 (float-value-ratio->ratio f2))))
+          :ratio (or (float-value-case f2 :neginf)
+                     (and (float-value-case f2 :neg0) 
+                          (>= f1.ratio 0))
+                     (and (float-value-case f2 :ratio) 
+                          (>= f1.ratio (float-value-ratio->ratio f2)))))))
+    (expr-value-base (base-value-bool bval))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
