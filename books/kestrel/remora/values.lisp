@@ -1054,14 +1054,7 @@
                (type-value-array-list->dims tvals))
      :primop (repeat (primop-value-arity (expr-value-primop->val fval)) nil)
      :otherwise (reserr nil)))
-  :guard-hints (("Goal" :in-theory (enable expr-valuep-when-result-not-error)))
-  :prepwork
-  ((local
-    (defrule nat-list-listp-of-repeat-when-nat-listp
-      (implies (nat-listp x)
-               (nat-list-listp (repeat n x)))
-      :induct (repeat n x)
-      :enable (repeat nat-list-listp)))))
+  :guard-hints (("Goal" :in-theory (enable expr-valuep-when-result-not-error))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
