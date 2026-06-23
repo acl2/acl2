@@ -91,45 +91,47 @@
     "In Remora, the primitive operations (i.e. built-in functions)
      are syntactically variables of (zero-rank array type of) a function type.
      These variables are implicitly in scope,
-     and thus part of the initial static environment."))
-  (b* ((add/sub/mul/div-type
+     and thus part of the initial static environment.")
+   (xdoc::p
+    "Each operation's name (the map key) is its surface name
+     in [impl]'s prelude (the file @('RemoraPrelude.hs'));
+     the dynamic semantics of these operations
+     is formalized in @(see primitives-evaluation).
+     This is an initial selection of primitive operations;
+     more will be added as the formalization grows."))
+  (b* ((int-binop-type
         (t[] (t-> (:int :int) :int) (shp)))
-       (append-type
-        (t[] (tforall ("&t")
-                      (tpi ("$n" "$m" "@s")
-                           (t-> ((t[] "&t" (shape++ (shp "$m")
-                                                    "@s"))
-                                 (t[] "&t" (shape++ (shp "$n")
-                                                    "@s")))
-                                (t[] "&t" (shape++ (shp (dim+ "$m"
-                                                                "$n"))
-                                                   "@s")))))
-             (shp)))
-       (reduce-type
-        (t[] (tforall ("&t")
-                      (tpi ("@s" "$d")
-                           (t-> ((t[] (t-> ((t[] "&t" "@s")
-                                            (t[] "&t" "@s"))
-                                           (t[] "&t" "@s"))
-                                      (shp))
-                                 (t[] "&t" (shape++ (shp (dim+ 1
-                                                                 "$d"))
-                                                    "@s")))
-                                (t[] "&t" "@s"))))
-             (shp)))
-       (iota-type
-        (t[] (tpi ("$d")
-                  (t-> ((t[] :int (shp "$d")))
-                       (tsigma ("@s") (t[] :int "@s"))))
-             (shp))))
+       (int-unop-type
+        (t[] (t-> (:int) :int) (shp)))
+       (int-relop-type
+        (t[] (t-> (:int :int) :bool) (shp)))
+       (int-to-float-type
+        (t[] (t-> (:int) :float) (shp)))
+       (int-to-bool-type
+        (t[] (t-> (:int) :bool) (shp))))
     (omap::from-alist
-     (list (cons "add" add/sub/mul/div-type)
-           (cons "sub" add/sub/mul/div-type)
-           (cons "mul" add/sub/mul/div-type)
-           (cons "div" add/sub/mul/div-type)
-           (cons "append" append-type)
-           (cons "reduce" reduce-type)
-           (cons "iota" iota-type)))))
+     (list (cons "+" int-binop-type)
+           (cons "-" int-binop-type)
+           (cons "*" int-binop-type)
+           (cons "div" int-binop-type)
+           (cons "mod" int-binop-type)
+           (cons "max" int-binop-type)
+           (cons "min" int-binop-type)
+           (cons "bit-and" int-binop-type)
+           (cons "bit-or" int-binop-type)
+           (cons "bit-xor" int-binop-type)
+           (cons "shl" int-binop-type)
+           (cons "shr" int-binop-type)
+           (cons "bit-not" int-unop-type)
+           (cons "popc" int-unop-type)
+           (cons "==" int-relop-type)
+           (cons "!=" int-relop-type)
+           (cons "<" int-relop-type)
+           (cons ">" int-relop-type)
+           (cons "<=" int-relop-type)
+           (cons ">=" int-relop-type)
+           (cons "i->f" int-to-float-type)
+           (cons "i->bool" int-to-bool-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
