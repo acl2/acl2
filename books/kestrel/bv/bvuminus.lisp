@@ -294,3 +294,13 @@
            (equal (equal (bvuminus size x) (bvplus size y z))
                   (equal (bvchop size x) (bvplus size (bvuminus size y) (bvuminus size z)))))
   :hints (("Goal" :use (:instance equal-of-bvuminus (y (bvplus size y z))))))
+
+(defthm bvplus-of-bvuminus-known
+  (implies (and (syntaxp (quotep size))
+                (equal x (bvplus size free y))
+                (syntaxp (quotep free))
+                (unsigned-byte-p size x))
+           (equal (bvplus size x (bvuminus size y))
+                  (bvchop size free) ;gets computed
+                  ))
+  :hints (("Goal" :in-theory (enable bvplus-becomes-+))))

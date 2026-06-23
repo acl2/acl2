@@ -4878,6 +4878,7 @@
   :hints (("Goal" :in-theory (enable bvlt))))
 
 ;hope the case split is okay.. (see no-split version below)
+;disable?
 (DEFTHM BVPLUS-OF-1-TIGHTEN
   (IMPLIES (AND (UNSIGNED-BYTE-P free X)
                 (< free SIZE)
@@ -4955,14 +4956,7 @@
                   (bvplus free (+ -1 (expt 2 free)) x)))
   :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases))))
 
-(defthm bvplus-of-bvminus-known
-  (implies (and (EQUAL x (BVPLUS 32 free y))
-                (syntaxp (quotep free))
-                (unsigned-byte-p 32 x)
-                )
-           (equal (BVPLUS 32 x (bvuminus 32 y))
-                  (bvchop 32 free))) ;gets computed
-  :hints (("Goal" :in-theory (e/d (bvplus-becomes-+) (BVPLUS-OF-1-TIGHTEN)))))
+
 
 (defthm rewrite-bv-equality-when-sizes-dont-match-1
   (implies (and (bind-free (bind-var-to-bv-term-size 'x-size x) (x-size))
