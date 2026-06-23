@@ -168,6 +168,76 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define primop-values ()
+  :returns (expr-vars string-expr-value-mapp)
+  :short "Association of primitive operations to their values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the dynamic counterpart of @(tsee primop-types):
+     it associates each variable that denotes a primitive operation
+     to the value of that variable,
+     which is a scalar @(':primop') expression value
+     (see @(tsee primop-value)).
+     These variables are implicitly in scope,
+     and thus part of the initial dynamic environment
+     (see @(tsee init-denv)).")
+   (xdoc::p
+    "The names (the map keys) are the surface names [impl],
+     exactly as in @(tsee primop-types)."))
+  (omap::from-alist
+   (list (cons "+" (expr-value-primop (primop-value-int-add)))
+         (cons "-" (expr-value-primop (primop-value-int-sub)))
+         (cons "*" (expr-value-primop (primop-value-int-mul)))
+         (cons "div" (expr-value-primop (primop-value-int-div)))
+         (cons "mod" (expr-value-primop (primop-value-int-mod)))
+         (cons "max" (expr-value-primop (primop-value-int-max)))
+         (cons "min" (expr-value-primop (primop-value-int-min)))
+         (cons "bit-and" (expr-value-primop (primop-value-int-bit-and)))
+         (cons "bit-or" (expr-value-primop (primop-value-int-bit-or)))
+         (cons "bit-xor" (expr-value-primop (primop-value-int-bit-xor)))
+         (cons "shl" (expr-value-primop (primop-value-int-shl)))
+         (cons "shr" (expr-value-primop (primop-value-int-shr)))
+         (cons "bit-not" (expr-value-primop (primop-value-int-bit-not)))
+         (cons "popc" (expr-value-primop (primop-value-int-popc)))
+         (cons "==" (expr-value-primop (primop-value-int-eq)))
+         (cons "!=" (expr-value-primop (primop-value-int-neq)))
+         (cons "<" (expr-value-primop (primop-value-int-lt)))
+         (cons ">" (expr-value-primop (primop-value-int-gt)))
+         (cons "<=" (expr-value-primop (primop-value-int-leq)))
+         (cons ">=" (expr-value-primop (primop-value-int-geq)))
+         (cons "i->f" (expr-value-primop (primop-value-int-to-float)))
+         (cons "i->bool" (expr-value-primop (primop-value-int-to-bool)))
+         (cons "not" (expr-value-primop (primop-value-bool-not)))
+         (cons "and" (expr-value-primop (primop-value-bool-and)))
+         (cons "or" (expr-value-primop (primop-value-bool-or)))
+         (cons "bool.==" (expr-value-primop (primop-value-bool-eq)))
+         (cons "bool.!=" (expr-value-primop (primop-value-bool-neq)))
+         (cons "bool->i" (expr-value-primop (primop-value-bool-to-int)))
+         (cons "bool->f" (expr-value-primop (primop-value-bool-to-float))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define init-denv ()
+  :returns (denv denvp)
+  :short "Initial dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the initial, i.e. top-level, dynamic environment.
+     It only contains the primitive operations in scope.
+     It is the dynamic counterpart of @(tsee init-senv)."))
+  (make-denv :ispace-vars nil
+             :type-vars nil
+             :expr-vars (primop-values))
+
+  ///
+
+  (defret denv-wfp-of-init-denv
+    (denv-wfp denv)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define denv-add-ispace-var ((var ispace-varp) (ival ispace-valuep) (denv denvp))
   :returns (new-denv denvp)
   :short "Add an ispace variable, with an associated ispace value,
