@@ -618,7 +618,6 @@
      :elem out-atom-type
      :ispace (ispace-shape
               (shape-append (list principal-shape out-shape)))))
-  :verify-guards :after-returns
   :guard-hints
   (("Goal"
     :use (:instance same-len-when-type-list-equivp
@@ -685,8 +684,7 @@
                               type-maps.2nd)))
     (make-type-array
      :elem body-atom-type-subst
-     :ispace (ispace-shape (shape-append (list fun-shape body-shape)))))
-  :verify-guards :after-returns)
+     :ispace (ispace-shape (shape-append (list fun-shape body-shape))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -746,8 +744,7 @@
                                                   ispace-maps.shape-map)))
     (make-type-array
      :elem body-atom-type-subst
-     :ispace (ispace-shape (shape-append (list fun-shape body-shape-subst)))))
-  :verify-guards :after-returns)
+     :ispace (ispace-shape (shape-append (list fun-shape body-shape-subst))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
