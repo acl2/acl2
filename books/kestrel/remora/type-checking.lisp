@@ -688,6 +688,67 @@
      :ispace (ispace-shape (shape-append (list fun-shape body-shape)))))
   :verify-guards :after-returns)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-iapp ((fun-type typep) (args ispace-listp) (senv senvp))
+  :returns (type type-resultp)
+  :short "Check an ispace application,
+          given the type of the function and the ispace arguments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The type of the function must be
+     an array type of a product type,
+     whose body type is an explicit array type.
+     In [arxiv] and [thesis],
+     @($(x\\ \\gamma)\\ldots$) corresponds to @('vars') in our code,
+     @($\\tau_p$) corresponds to @('body-atom-type'),
+     @($\\iota_p$) corresponds to @('body-shape'),
+     and @($\\iota_f$) corresponds to @('fun-shape').
+     We check that the ispace arguments
+     (@($\\iota\\ldots$) in [arxiv] and [thesis])
+     are valid and
+     that their sorts match the ones of
+     the bound variables in the product type.
+     We obtain two ispace maps (for dimensions and shapes),
+     which we substitute to the body atom type
+     to obtain the atom type of the resulting array type,
+     whose shape is obtained by concatenating
+     the function shape to
+     the result of applying the same substitution to the body shape.
+     We check that the substitution cannot result in variable capture:
+     type checking fails if that check fails;
+     we should instead rename the bound variables to avoid the capture."))
+  (b* (((ok fun-type+ispace) (type-match-array fun-type))
+       (fun-type (type+ispace->type fun-type+ispace))
+       (fun-ispace (type+ispace->ispace fun-type+ispace))
+       (fun-shape (shape-from-ispace fun-ispace))
+       ((ok fun-vars+type) (type-match-product fun-type))
+       (vars (ispacevarlist+type->vars fun-vars+type))
+       (body-arr-type (ispacevarlist+type->type fun-vars+type))
+       ((ok body-type+ispace) (type-match-array body-arr-type))
+       (body-atom-type (type+ispace->type body-type+ispace))
+       (body-ispace (type+ispace->ispace body-type+ispace))
+       (body-shape (shape-from-ispace body-ispace))
+       ((unless (check-ispace-list args senv)) (reserr nil))
+       ((ok (stringdimmap+stringshapemap ispace-maps))
+        (check-ispace-params-and-args vars args))
+       ((unless (type-subst-ispace-vars-no-capture-p body-atom-type
+                                                     ispace-maps.dim-map
+                                                     ispace-maps.shape-map))
+        (reserr nil))
+       (body-atom-type-subst
+        (type-subst-ispace-vars body-atom-type
+                                ispace-maps.dim-map
+                                ispace-maps.shape-map))
+       (body-shape-subst (shape-subst-ispace-vars body-shape
+                                                  ispace-maps.dim-map
+                                                  ispace-maps.shape-map)))
+    (make-type-array
+     :elem body-atom-type-subst
+     :ispace (ispace-shape (shape-append (list fun-shape body-shape-subst)))))
+  :verify-guards :after-returns)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines check-exprs/atoms
@@ -763,27 +824,9 @@
      (xdoc::p
       "For an ispace application,
        first we check the function expression,
-       which must have an array type of a product type,
-       whose body type is an explicit array type.
-       In [arxiv] and [thesis],
-       @($(x\\ \\gamma)\\ldots$) corresponds to @('vars') in our code,
-       @($\\tau_p$) corresponds to @('body-atom-type'),
-       @($\\iota_p$) corresponds to @('body-shape'),
-       and @($\\iota_f$) corresponds to @('fun-shape').
-       We check that the ispace arguments
-       (@($\\iota\\ldots$) in [arxiv] and [thesis])
-       are valid and
-       that their sorts match the ones of
-       the bound variables in the product type.
-       We obtain two ispace maps (for dimensions and shapes),
-       which we substitute to the body atom type
-       to obtain the atom type of the resulting array type,
-       whose shape is obtained by concatenating
-       the function shape to
-       the result of applying the same substitution to the body shape.
-       We check that the substitution cannot result in variable capture:
-       type checking fails if that check fails;
-       we should instead rename the bound variables to avoid the capture.")
+       and then we use @(tsee check-iapp) to check
+       the ispace arguments against the function type,
+       and to obtain the type of the application expression.")
      (xdoc::p
       "For an unboxing expression,
        first we check that the ispace variables have no duplicates;
@@ -887,36 +930,8 @@
      (b* (((ok fun-type) (check-expr expr.fun senv)))
        (check-tapp fun-type expr.args senv))
      :iapp
-     (b* (((ok fun-arr-type) (check-expr expr.fun senv))
-          ((ok fun-arr-type+ispace) (type-match-array fun-arr-type))
-          (fun-type (type+ispace->type fun-arr-type+ispace))
-          (fun-ispace (type+ispace->ispace fun-arr-type+ispace))
-          (fun-shape (shape-from-ispace fun-ispace))
-          ((ok fun-vars+type) (type-match-product fun-type))
-          (vars (ispacevarlist+type->vars fun-vars+type))
-          (body-arr-type (ispacevarlist+type->type fun-vars+type))
-          ((ok body-type+ispace) (type-match-array body-arr-type))
-          (body-atom-type (type+ispace->type body-type+ispace))
-          (body-ispace (type+ispace->ispace body-type+ispace))
-          (body-shape (shape-from-ispace body-ispace))
-          ((unless (check-ispace-list expr.args senv)) (reserr nil))
-          ((ok (stringdimmap+stringshapemap ispace-maps))
-           (check-ispace-params-and-args vars expr.args))
-          ((unless (type-subst-ispace-vars-no-capture-p body-atom-type
-                                                        ispace-maps.dim-map
-                                                        ispace-maps.shape-map))
-           (reserr nil))
-          (body-atom-type-subst
-           (type-subst-ispace-vars body-atom-type
-                                   ispace-maps.dim-map
-                                   ispace-maps.shape-map))
-          (body-shape-subst (shape-subst-ispace-vars body-shape
-                                                     ispace-maps.dim-map
-                                                     ispace-maps.shape-map)))
-       (make-type-array
-        :elem body-atom-type-subst
-        :ispace (ispace-shape
-                 (shape-append (list fun-shape body-shape-subst)))))
+     (b* (((ok fun-type) (check-expr expr.fun senv)))
+       (check-iapp fun-type expr.args senv))
      :capp (reserr :todo)
      :unbox
      (b* (((unless (no-duplicatesp-equal expr.ispaces))
