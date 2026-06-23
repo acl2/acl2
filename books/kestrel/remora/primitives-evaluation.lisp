@@ -368,7 +368,7 @@
      because each @('prim-...') function returns
      a scalar base value on success."))
   (b* ((args (expr-value-list-fix args))
-       ((unless (equal (len args) (primop-value-arity op))) (reserr nil)))
+       ((unless (equal (len args) (primop-arity op))) (reserr nil)))
     (primop-value-case
      op
      :int-add (prim-int-add (first args) (second args))
@@ -400,7 +400,7 @@
      :bool-neq (prim-bool-neq (first args) (second args))
      :bool-to-int (prim-bool-to-int (first args))
      :bool-to-float (prim-bool-to-float (first args))))
-  :guard-hints (("Goal" :in-theory (enable primop-value-arity)))
+  :guard-hints (("Goal" :in-theory (enable primop-arity)))
 
   ///
 

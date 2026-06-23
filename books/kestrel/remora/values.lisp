@@ -417,7 +417,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define primop-value-arity ((op primop-valuep))
+(define primop-arity ((op primop-valuep))
   :returns (arity natp)
   :short "Arity of a primitive operation."
   :long
@@ -1040,7 +1040,7 @@
      For a primitive operation,
      every argument is a scalar,
      so we return as many empty lists of dimensions
-     as the operation's arity (see @(tsee primop-value-arity)).
+     as the operation's arity (see @(tsee primop-arity)).
      It is an error if the value is not a function value,
      or if a lambda abstraction's parameters
      do not all have array types."))
@@ -1052,7 +1052,7 @@
                           (expr-value-lambda->params fval)))
                   ((unless (type-value-list-case-array tvals)) (reserr nil)))
                (type-value-array-list->dims tvals))
-     :primop (repeat (primop-value-arity (expr-value-primop->val fval)) nil)
+     :primop (repeat (primop-arity (expr-value-primop->val fval)) nil)
      :otherwise (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable expr-valuep-when-result-not-error))))
 
