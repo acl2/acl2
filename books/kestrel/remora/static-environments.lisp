@@ -83,7 +83,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define primop-types ()
-  :returns (term-vars string-type-mapp)
+  :returns (expr-vars string-type-mapp)
   :short "Association of primitive operations to their types."
   :long
   (xdoc::topstring
