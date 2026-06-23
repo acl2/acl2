@@ -1870,6 +1870,15 @@
        any other lambda abstraction in @('funval').)
        The number of arguments must match the number of parameters.")
      (xdoc::p
+      "We do not handle yet the case in which the function value
+       contains not all lambda abstraction but (any) primitive operations:
+       @(tsee expr-value-first-lambda) yields @('(reserr :todo)') on it,
+       so this function does too.
+       Handling it will require reading the operation's signature
+       (its arity and expected argument cell ranks)
+       from the primitive operation rather than from a lambda's parameters.
+       We plan to do that soon.")
+     (xdoc::p
       "Following the rank-polymorphic application semantics of Remora,
        each argument array is split into a frame and a cell,
        where the cell dimensions are
@@ -2004,7 +2013,13 @@
        to associate the arguments with the parameters
        (which may override existing associations,
        which is intended hiding behavior),
-       and we evaluate the body of the lambda abstraction."))
+       and we evaluate the body of the lambda abstraction.")
+     (xdoc::p
+      "If the function cell is a primitive operation,
+       it should be applied to the argument cells
+       via the corresponding ACL2 function in @(see primitives-evaluation)
+       (e.g. @(tsee prim-int-add) for @(':int-add'));
+       this is not handled yet, and currently yields @('(reserr :todo)')."))
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-value-case
        funcell
@@ -2018,6 +2033,10 @@
                    argcells
                    denv)))
          (eval-expr funcell.body denv (1- limit)))
+       ;; TODO: dispatch primitive operations to the ACL2 functions in
+       ;; primitives-evaluation (e.g. prim-int-add for :int-add), applying
+       ;; the operation to the (scalar) argument cells.
+       :primop (reserr :todo)
        :otherwise (reserr nil)))
     :measure (nfix limit))
 

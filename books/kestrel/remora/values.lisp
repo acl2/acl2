@@ -380,8 +380,9 @@
     "A value of this fixtype represents a primitive operation
      as a scalar (zero-rank array) function value,
      analogously to how a lambda abstraction is a function value.
-     We will incorporate these into @(tsee expr-value),
-     and evaluate the operations they denote via
+     These are incorporated into @(tsee expr-value)
+     as its @(':primop') summand;
+     the operations they denote will be evaluated via
      the ACL2 functions in @(see primitives-evaluation)."))
   (:int-add ())
   (:int-sub ())
@@ -430,7 +431,7 @@
       "In Remora, every value that an expression may evaluate to is an array.
        Scalar values are zero-rank arrays, consisting of single atom values,
        but we do not define a distinct notion of atom value,
-       folding them into the first five summands of
+       folding them into the first six summands of
        this fixtype of expression values
        (described in more detail below).
        Non-scalar values are positive-rank arrays,
@@ -454,13 +455,17 @@
      (xdoc::p
       "The atoms that form scalar values are
        base values,
+       primitive operations,
        lambda abstractions,
        and boxed values.
-       Scalar values correspond to atom values @($\\mathit{Atval}$) in [thesis],
-       with the difference that we do not have @($\\mathfrak{o}$) here,
-       because in our ASTs, as in [impl],
-       primitive operations are represented as variables
-       (whose values are predefined).
+       Scalar values correspond to atom values @($\\mathit{Atval}$) in [thesis].
+       The primitive operations
+       (the @(':primop') summand, see @(tsee primop-value))
+       correspond to @($\\mathfrak{o}$) in [thesis];
+       the difference is that, in our ASTs, as in [impl],
+       primitive operations are not a dedicated kind of atom,
+       but are represented as variables
+       whose predefined values are these @(':primop') expression values.
        However, as already noted,
        we fold atom values into (array) expression values.
        Our fixtype of expression values loosely corresponds
@@ -479,6 +484,7 @@
        and the dimension and type consistency of the elements of a @(':vector').
        These constraints are captured separately."))
     (:base ((val base-value)))
+    (:primop ((val primop-value)))
     (:lambda ((params var+typevalue-list)
               (body expr)))
     (:tlambda ((params type-var-list)
@@ -631,6 +637,7 @@
     (expr-value-case
      val
      :base nil
+     :primop nil
      :lambda nil
      :tlambda nil
      :ilambda nil
@@ -926,6 +933,16 @@
     "It is an error if a non-lambda leaf is reached,
      or if an empty vector is reached, which has no lambda to return.")
    (xdoc::p
+    "A primitive operation value is also a function value,
+     but it is not a lambda abstraction,
+     so this function does not return it:
+     it currently yields @('(reserr :todo)'),
+     because term application of primitive operations is not handled yet.
+     When it is, the operation's signature
+     (its arity and expected argument cell ranks)
+     will come from the primitive operation,
+     not from a lambda's parameters.")
+   (xdoc::p
     "It should be an invariant that, in a well-formed expression value,
      all elements (if the expression value is not scalar) have equivalent types,
      which implies that it makes no difference that this function
@@ -939,6 +956,9 @@
   (expr-value-case
    val
    :base (reserr nil)
+   ;; TODO: a primop is a function value too, but not a lambda;
+   ;; handle its term application when primops are evaluated (see :long).
+   :primop (reserr :todo)
    :lambda (expr-value-fix val)
    :tlambda (reserr nil)
    :ilambda (reserr nil)
@@ -1016,6 +1036,7 @@
       (expr-value-case
        val
        :base (reserr nil)
+       :primop (reserr nil)
        :lambda (reserr nil)
        :tlambda (reserr nil)
        :ilambda (reserr nil)
