@@ -164,7 +164,8 @@
 (define ascii-string=>codepoints ((s stringp))
   :returns (cps nat-listp)
   :short "Map an ASCII string to the nat-list of its char-codes.
-          Caller must ensure @('s') contains only ASCII (codes < 128)."
+          Caller must ensure @('s') contains only ASCII (codes
+          @('< 128'))."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -174,11 +175,29 @@
      in the printer (call sites use the macro)."))
   (chars=>nats (explode s)))
 
-(defmacro pdoc-ascii (s)
-  ;; Read-time conversion of an ASCII string literal to a constant
-  ;; nat-list of code points, wrapped in pdoc-text.  Signals a hard
-  ;; error if S is not a string literal or contains a non-ASCII char.
-  ;; The literal is computed once at admission time, not at every call.
+(defmacro+ pdoc-ascii (s)
+  :parents (printer)
+  :short "Wrap an ASCII string literal as a @(tsee pdoc-text) leaf
+          whose code-point list is computed at admission time."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "@('(pdoc-ascii \"Bool\")') expands at read time to
+     @('(pdoc-text \\='(66 111 111 108))'), so the code-point list is
+     a compile-time constant rather than something rebuilt on every
+     call.  The expansion happens by calling @(tsee
+     ascii-string=>codepoints) on the literal string.")
+   (xdoc::p
+    "The macro signals a hard error at admission time if its argument
+     is not a string literal, or if the string contains any character
+     with code @('>= 128').  This prevents silently emitting bogus
+     code points (which the previous string-leaved printer's
+     byte-counting would have hidden).")
+   (xdoc::p
+    "For non-ASCII literal text, write the code points explicitly:
+     @('(pdoc-text \\='(#x3A0))') for @('Π').  For runtime
+     UTF-8-byte-string input (e.g., identifier names from the AST),
+     use @(tsee utf8-string=>codepoints)."))
   (cond ((not (stringp s))
          (er hard 'pdoc-ascii
              "Expected a string literal, got ~x0." s))
