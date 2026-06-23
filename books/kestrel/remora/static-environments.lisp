@@ -80,6 +80,13 @@
    (expr-vars string-type-map))
   :pred senvp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult senv-result
+  :short "Fixtype of static environments and errors."
+  :ok senv
+  :pred senv-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define prim-op-types ()
