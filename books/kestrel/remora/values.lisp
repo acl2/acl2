@@ -965,35 +965,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-value-first-lambda ((val expr-valuep))
-  :returns (lval expr-value-resultp)
-  :short "First lambda leaf expression value of an expression value,
-          in row-major order."
+(define expr-value-first-fun ((val expr-valuep))
+  :returns (fval expr-value-resultp)
+  :short "First function leaf expression value
+          (lambda abstraction or primitive operation)
+          of an expression value, in row-major order."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A term function value is an array, of any rank,
-     whose elements are (term) lambda abstractions,
-     all with equivalent types if the expression value is well-formed.
-     This descends into the first element of each vector
-     until it reaches a scalar lambda abstraction, which it returns.
-     A representative lambda is used by term application (see @(tsee eval-expr))
-     to read the function's parameter type values,
-     which determine the expected cell shapes of the arguments
+    "A function value is an array, of any rank,
+     whose elements are lambda abstractions or primitive operations,
+     all with equivalent function types if the expression value is well-formed.
+     This ACL2 function descends into the first element of each vector
+     until it reaches a scalar lambda abstraction or primitive operation,
+     which it returns.
+     A representative function leaf is used by term application
+     (see @(tsee fun-value-param-dims) and @(tsee eval-expr))
+     to read the function's signature
+     (the parameter type values of a lambda abstraction,
+     or the arity of a primitive operation),
+     which determines the expected cell shapes of the arguments
      and hence the frames over which the application is lifted.")
    (xdoc::p
-    "It is an error if a non-lambda leaf is reached,
-     or if an empty vector is reached, which has no lambda to return.")
-   (xdoc::p
-    "A primitive operation value is also a function value,
-     but it is not a lambda abstraction,
-     so this function does not return it:
-     it currently yields @('(reserr :todo)'),
-     because term application of primitive operations is not handled yet.
-     When it is, the operation's signature
-     (its arity and expected argument cell ranks)
-     will come from the primitive operation,
-     not from a lambda's parameters.")
+    "It is an error if a non-function leaf is reached,
+     or if an empty vector is reached, which has no function to return.")
    (xdoc::p
     "It should be an invariant that, in a well-formed expression value,
      all elements (if the expression value is not scalar) have equivalent types,
@@ -1008,25 +1003,71 @@
   (expr-value-case
    val
    :base (reserr nil)
-   ;; TODO: a primop is a function value too, but not a lambda;
-   ;; handle its term application when primops are evaluated (see :long).
-   :primop (reserr :todo)
+   :primop (expr-value-fix val)
    :lambda (expr-value-fix val)
    :tlambda (reserr nil)
    :ilambda (reserr nil)
    :box (reserr nil)
    :vector (if (consp val.elems)
-               (expr-value-first-lambda (car val.elems))
+               (expr-value-first-fun (car val.elems))
              (reserr nil))
    :vector-empty (reserr nil))
   :measure (expr-value-count val)
 
   ///
 
-  (defret expr-value-kind-of-expr-value-first-lambda
-    (implies (not (reserrp lval))
-             (equal (expr-value-kind lval) :lambda))
+  (defret expr-valuep-of-expr-value-first-fun
+    (implies (not (reserrp fval))
+             (expr-valuep fval))
     :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fun-value-param-dims ((funval expr-valuep))
+  :returns (param-dims nat-list-list-resultp)
+  :short "Expected argument cell dimensions of a function value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In term application (see @(tsee eval-expr)),
+     this ACL2 function is used to return
+     the dimensions of the cells
+     expected for each argument of a function value,
+     one list of dimensions per argument.
+     These determine how each argument array
+     is split into a frame and cells,
+     and hence the frames over which the application is lifted.")
+   (xdoc::p
+    "We obtain a representative function leaf
+     (see @(tsee expr-value-first-fun)),
+     and read its signature.
+     For a lambda abstraction,
+     the parameters must all have array types,
+     whose dimensions are returned.
+     For a primitive operation,
+     every argument is a scalar,
+     so we return as many empty lists of dimensions
+     as the operation's arity (see @(tsee primop-value-arity)).
+     It is an error if the value is not a function value,
+     or if a lambda abstraction's parameters
+     do not all have array types."))
+  (b* ((fval (expr-value-first-fun funval))
+       ((when (reserrp fval)) (reserr nil)))
+    (expr-value-case
+     fval
+     :lambda (b* ((tvals (var+typevalue-list->type
+                          (expr-value-lambda->params fval)))
+                  ((unless (type-value-list-case-array tvals)) (reserr nil)))
+               (type-value-array-list->dims tvals))
+     :primop (repeat (primop-value-arity (expr-value-primop->val fval)) nil)
+     :otherwise (reserr nil)))
+  :prepwork
+  ((local
+    (defrule nat-list-listp-of-repeat-when-nat-listp
+      (implies (nat-listp x)
+               (nat-list-listp (repeat n x)))
+      :induct (repeat n x)
+      :enable (repeat nat-list-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

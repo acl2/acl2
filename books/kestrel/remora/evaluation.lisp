@@ -1857,27 +1857,16 @@
        and @('argvals') are the expression values of the arguments.")
      (xdoc::p
       "The function value must be an array, of any rank,
-       whose elements are lambda abstractions,
-       all with the same number of parameters
-       and equivalent parameter type values;
-       we obtain the parameters from the first such lambda abstraction
-       (via @(tsee expr-value-first-lambda)),
-       we check that they all have array types,
-       and we obtain their dimensions.
-       (As noted in @(tsee expr-value-first-lambda),
-       given suitable well-formedness invariants,
-       it would not matter if we picked
-       any other lambda abstraction in @('funval').)
-       The number of arguments must match the number of parameters.")
-     (xdoc::p
-      "We do not handle yet the case in which the function value
-       contains not all lambda abstraction but (any) primitive operations:
-       @(tsee expr-value-first-lambda) yields @('(reserr :todo)') on it,
-       so this function does too.
-       Handling it will require reading the operation's signature
-       (its arity and expected argument cell ranks)
-       from the primitive operation rather than from a lambda's parameters.
-       We plan to do that soon.")
+       whose elements are all lambda abstractions or primitive operations,
+       with the same number of arguments and equivalent argument types.
+       Via @(tsee fun-value-param-dims) we obtain
+       the dimensions of the cells expected for each argument,
+       reading the signature of a representative function leaf
+       (a lambda abstraction's parameter types,
+       or a primitive operation's arity;
+       see @(tsee expr-value-first-fun)).
+       The number of arguments must match
+       the function's number of parameters.")
      (xdoc::p
       "Following the rank-polymorphic application semantics of Remora,
        each argument array is split into a frame and a cell,
@@ -1924,10 +1913,7 @@
        and perform the necessary replication in the framework of that structure.
        We plan to explore this alternative approach."))
     (b* (((when (zp limit)) (reserr :limit))
-         ((ok lval) (expr-value-first-lambda funval))
-         (tvals (var+typevalue-list->type (expr-value-lambda->params lval)))
-         ((unless (type-value-list-case-array tvals)) (reserr nil))
-         (param-dims (type-value-array-list->dims tvals))
+         ((ok param-dims) (fun-value-param-dims funval))
          ((unless (equal (len argvals) (len param-dims))) (reserr nil))
          (arg-dims (dims-of-expr-value-list argvals))
          ((mv suffixesp arg-frames) (check-list-suffixes arg-dims param-dims))
