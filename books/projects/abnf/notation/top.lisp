@@ -115,5 +115,6 @@
                     concrete-syntax-rules
                     concrete-syntax-rules-validation
                     concrete-syntax
+                    concrete-syntax-validation
                     syntax-abstraction
                     meta-circular-validation))
