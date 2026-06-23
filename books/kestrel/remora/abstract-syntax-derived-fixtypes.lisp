@@ -382,6 +382,22 @@
   :val-type expr
   :pred string-expr-mapp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap ispace-var-ispace-option-map
+  :short "Fixtype of maps from ispace variables to optional ispaces."
+  :key-type ispace-var
+  :val-type ispace-option
+  :pred ispace-var-ispace-option-mapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap type-var-type-option-map
+  :short "Fixtype of maps from type variables to optional types."
+  :key-type type-var
+  :val-type type-option
+  :pred type-var-type-option-mapp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod string-type-map-pair
