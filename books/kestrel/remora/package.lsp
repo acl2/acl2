@@ -31,6 +31,8 @@
                                        values))
                   '(all-equalp
                     bool
+                    boolean-resultp
+                    booleanp-when-result-not-error
                     change-string-string-map-quadruple
                     defmacro+
                     defxdoc+
