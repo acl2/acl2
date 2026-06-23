@@ -2125,11 +2125,13 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove eventually
-
   :verify-guards nil ; done below
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   ///
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deffixequiv-mutual eval-exprs/atoms/binds
     :hints (("Goal"
@@ -2210,6 +2212,8 @@
                       (eval-unbox-list targets ispaces var body
                                        (denv-fix denv) limit))
              :in-theory (enable nfix zp))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual expr-value-wfp-of-eval-exprs/atoms/binds
     (defret expr-value-wfp-of-eval-expr
@@ -2312,6 +2316,8 @@
                (eval-app-cell funcell argcells denv limit)
                (eval-unbox target ispaces var body denv limit)
                (eval-unbox-list targets ispaces var body denv limit)))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (verify-guards eval-expr
     :hints
