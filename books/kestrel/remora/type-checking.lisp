@@ -716,7 +716,19 @@
        which correspond to @('body-atom-type') and @('body-ispace') in our code.
        The type of the unboxing expression is the array type consisting of
        the @($\\tau_b$) type as atom
-       and the concatenation of @($\\iota_s$) and @($\\iota_b$) as ispace."))
+       and the concatenation of @($\\iota_s$) and @($\\iota_b$) as ispace.")
+     (xdoc::p
+      "A bracket expression is syntactic sugar for a (non-empty) frame
+       whose dimensions consist of a single dimension,
+       namely the number of sub-expressions (see @(tsee expr));
+       so we check it like a (non-empty) frame.
+       There must be at least one sub-expression;
+       bracket expressions cannot be empty.
+       The sub-expressions must have all equivalent array types,
+       and the shape of the resulting array type is
+       the single dimension, given by the number of sub-expressions,
+       concatenated with the shape of the array type of the sub-expressions
+       (we pick the first one)."))
     (expr-case
      expr
      :var
@@ -894,7 +906,18 @@
        (make-type-array :elem body-atom-type
                         :ispace (ispace-shape
                                  (shape-append (list sum-shape body-shape)))))
-     :bracket (reserr :todo)
+     :bracket
+     (b* (((unless (consp expr.exprs)) (reserr nil))
+          ((ok types) (check-expr-list expr.exprs senv))
+          ((unless (type-list-all-equivp types)) (reserr nil))
+          (type (car types))
+          ((ok (type+ispace array)) (type-match-array type)))
+       (make-type-array
+        :elem array.type
+        :ispace (ispace-shape
+                 (shape-append
+                  (list (shape-dims (dim-const-list (list (len expr.exprs))))
+                        (shape-from-ispace array.ispace))))))
      :let (reserr :todo))
     :measure (expr-count expr))
 
