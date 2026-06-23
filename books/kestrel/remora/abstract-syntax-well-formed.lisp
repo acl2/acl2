@@ -34,7 +34,7 @@
      (when implemented) and serves as a precondition for
      downstream passes such as type checking.")
    (xdoc::p
-    "Three classes of invariants are enforced:")
+    "Two classes of invariants are enforced:")
    (xdoc::ul
     (xdoc::li
      "Identifier strings stored inside AST nodes pass
@@ -42,10 +42,6 @@
       UTF-8, start with an @(tsee id-startp) code point, continue with
       @(tsee id-continuep) code points, and are not in
       @(tsee *remora-keywords-as-natlists*).")
-    (xdoc::li
-     "AST cases that the parser cannot produce are rejected.  Currently
-      these are @(':array-empty') and @(':frame-empty') of @(tsee expr)
-      (until those are added to the abstractor).")
     (xdoc::li
      "Grammar non-emptiness requirements that the AST does not encode
       via @(':require'): @(':array') atom lists, @(':frame') and
@@ -120,9 +116,6 @@
                      (valid-identifier-string-p (expr-unbox->var expr))
                      (expr-wf-ast-p (expr-unbox->target expr))
                      (expr-wf-ast-p (expr-unbox->body expr))))
-   ;; Cases not produced by the parser.
-   (expr :array-empty nil)
-   (expr :frame-empty nil)
    ;; Grammar non-emptiness requirements (1*( ws ... )).
    (expr :array (and (consp (expr-array->atoms expr))
                      (atom-list-wf-ast-p (expr-array->atoms expr))))
