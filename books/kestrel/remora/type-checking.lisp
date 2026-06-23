@@ -825,6 +825,17 @@
        the ispace arguments against the function type,
        and to obtain the type of the application expression.")
      (xdoc::p
+      "A combined application combines, in order,
+       a type application (if type arguments are present),
+       an ispace application (if ispace arguments are present),
+       and a term application (see @(tsee expr)).
+       So, after checking the function expression,
+       we thread the type of the function
+       through @(tsee check-tapp), @(tsee check-iapp), and @(tsee check-app),
+       in this order,
+       skipping the type and ispace applications
+       when the respective arguments are absent.")
+     (xdoc::p
       "For an unboxing expression,
        first we check that the ispace variables have no duplicates;
        two variables with the same name but different sorts
@@ -929,7 +940,20 @@
      :iapp
      (b* (((ok fun-type) (check-expr expr.fun senv)))
        (check-iapp fun-type expr.args senv))
-     :capp (reserr :todo)
+     :capp
+     (b* (((ok fun-type) (check-expr expr.fun senv))
+          ((ok fun-type)
+           (type-list-option-case
+            expr.targs
+            :some (check-tapp fun-type expr.targs.val senv)
+            :none fun-type))
+          ((ok fun-type)
+           (ispace-list-option-case
+            expr.iargs
+            :some (check-iapp fun-type expr.iargs.val senv)
+            :none fun-type))
+          ((ok arg-types) (check-expr-list expr.args senv)))
+       (check-app fun-type arg-types))
      :unbox
      (b* (((unless (no-duplicatesp-equal expr.ispaces))
            (reserr nil))
