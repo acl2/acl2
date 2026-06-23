@@ -922,5 +922,13 @@
             :iparams? bind.iparams?
             :params bind.params
             :type bind.type
-            :expr (expr-subst-expr-vars bind.expr subst)))))
+            :expr (expr-subst-expr-vars bind.expr subst))))
+   (bind-list
+    (b* (((when (endp bind-list)) nil)
+         (bind (car bind-list))
+         (new-bind (bind-subst-expr-vars bind subst))
+         (bound (bind-bound-expr-vars bind))
+         (subst (omap::delete* bound (string-expr-map-fix subst))))
+      (cons new-bind
+            (bind-list-subst-expr-vars (cdr bind-list) subst)))))
   :name ast-subst-expr-vars)
