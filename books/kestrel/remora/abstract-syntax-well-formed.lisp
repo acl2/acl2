@@ -43,9 +43,10 @@
       @(tsee id-continuep) code points, and are not in
       @(tsee *remora-keywords-as-natlists*).")
     (xdoc::li
-     "Grammar non-emptiness requirements that the AST does not encode
-      via @(':require'): @(':array') atom lists, @(':frame') and
-      @(':bracket') expression lists.")))
+     "Grammar non-emptiness requirement that the AST does not encode
+      via @(':require'): @(':bracket') expression lists
+      (grammar: @('\"[\" ws exp *( ws exp ) ws \"]\"'), requiring at
+      least one @('exp')).")))
   :order-subtopics t
   :default-parent t)
 
@@ -116,11 +117,7 @@
                      (valid-identifier-string-p (expr-unbox->var expr))
                      (expr-wf-ast-p (expr-unbox->target expr))
                      (expr-wf-ast-p (expr-unbox->body expr))))
-   ;; Grammar non-emptiness requirements (1*( ws ... )).
-   (expr :array (and (consp (expr-array->atoms expr))
-                     (atom-list-wf-ast-p (expr-array->atoms expr))))
-   (expr :frame (and (consp (expr-frame->exprs expr))
-                     (expr-list-wf-ast-p (expr-frame->exprs expr))))
+   ;; Grammar non-emptiness requirement (bracket-frame = "[" ws exp *( ws exp ) ws "]").
    (expr :bracket (and (consp (expr-bracket->exprs expr))
                        (expr-list-wf-ast-p (expr-bracket->exprs expr)))))
   :name abstract-syntax-wf-ast-p)
