@@ -151,6 +151,7 @@
                 (retok (c::make-type-pointer :to refd-type)))
      :function (reterr (msg "Type ~x0 not supported." (type-fix type)))
      :unknown (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :unknown-builtin (reterr (msg "Type ~x0 not supported." (type-fix type)))
      :unknown-scalar (reterr (msg "Type ~x0 not supported." (type-fix type)))
      :unknown-arithmetic (reterr (msg "Type ~x0 not supported."
                                       (type-fix type)))))
