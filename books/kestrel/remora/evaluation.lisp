@@ -1519,7 +1519,8 @@
                                 :dims nil
                                 :atoms (list (make-atom-lambda
                                               :params bind.params
-                                              :body bind.expr))))
+                                              :body bind.expr
+                                              :type? bind.type))))
                   (lambda-type (make-type-fun
                                 :in (var+type-list->type bind.params)
                                 :out bind.type))

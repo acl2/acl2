@@ -1265,6 +1265,8 @@
     :returns (out pdocp)
     (atom-case a
       :base (base-lit-to-pdoc a.lit)
+      ;; We do not print the optional body type (a.type?):
+      ;; it has no concrete syntax (it is computed by type checking).
       :lambda (pdoc-prefix-form
                "fn"
                (pdoc-concat (pdoc-paren (pat-list-to-pdoc a.params))
