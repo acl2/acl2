@@ -44,7 +44,8 @@
           typevarlist+type-p-when-result-not-error
           stringdimmap+stringshapemap-p-when-result-not-error
           string-type-mapp-when-result-not-error
-          string-type-map-pairp-when-result-not-error)))
+          string-type-map-pairp-when-result-not-error
+          senvp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -870,7 +871,12 @@
        and the shape of the resulting array type is
        the single dimension, given by the number of sub-expressions,
        concatenated with the shape of the array type of the sub-expressions
-       (we pick the first one)."))
+       (we pick the first one).")
+     (xdoc::p
+      "For a @('let') expression,
+       we check the bindings,
+       which extend the static environment (see @(tsee check-bind-list)),
+       and then we check the body in the extended static environment."))
     (expr-case
      expr
      :var
@@ -995,7 +1001,9 @@
                  (shape-append
                   (list (shape-dims (dim-const-list (list (len expr.exprs))))
                         (shape-from-ispace array.ispace))))))
-     :let (reserr :todo))
+     :let
+     (b* (((ok senv) (check-bind-list expr.binds senv)))
+       (check-expr expr.body senv)))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1169,6 +1177,166 @@
     (defret check-atom-list-iff-not-zp-len-atoms
       (iff types (not (zp (len atoms))))
       :hints (("Goal" :induct (len atoms) :in-theory (enable len)))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-bind ((bind bindp) (senv senvp))
+    :returns (new-senv senv-resultp)
+    :parents (type-checking check-exprs/atoms)
+    :short "Check a binding,
+            extending the static environment if successful."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is used for @('let') expressions; see @(tsee check-expr).
+       If the binding is valid,
+       we return the static environment extended according to the binding.")
+     (xdoc::p
+      "For a value binding,
+       we check the bound expression, obtaining its type,
+       and we extend the static environment
+       to associate that type to the bound variable.
+       If the optional type is present,
+       we check that it is valid
+       and equivalent to the type of the bound expression.")
+     (xdoc::p
+      "For a function binding,
+       which is syntactic sugar for binding the variable
+       to a term abstraction (see @(tsee expr)),
+       we check it like a term abstraction (see @(tsee check-atom)),
+       obtaining a function type,
+       and we extend the static environment
+       to associate that function type to the bound variable.
+       If the optional result type is present,
+       we check that it is valid and equivalent to
+       the type of the body of the abstraction.")
+     (xdoc::p
+      "A type function binding and an ispace function binding
+       are treated similarly to a function binding,
+       but as syntactic sugar for binding the variable
+       to a type abstraction or an ispace abstraction,
+       so their types are a universal type or a product type.")
+     (xdoc::p
+      "A combined function binding
+       is syntactic sugar for binding the variable
+       to a term abstraction,
+       nested in an ispace abstraction if there are ispace parameters,
+       nested in a type abstraction if there are type parameters;
+       its type is the corresponding nesting of
+       a function type, a product type, and a universal type.
+       We check the body in the static environment
+       extended with all the parameters,
+       and we check that its type is equivalent to the declared result type.")
+     (xdoc::p
+      "Ispace bindings and type bindings are not yet supported,
+       because they would require the static environment
+       to record the bound ispaces and types,
+       so that ispace and type equivalence can take them into account;
+       these bindings return a @(':todo') error for now."))
+    (bind-case
+     bind
+     :ispace (reserr :todo)
+     :type (reserr :todo)
+     :val
+     (b* (((ok type) (check-expr bind.expr senv))
+          ((unless (type-option-case
+                    bind.type?
+                    :some (and (check-type bind.type?.val senv)
+                               (type-equivp type bind.type?.val))
+                    :none t))
+           (reserr nil)))
+       (senv-add-var+type bind.var type senv))
+     :fun
+     (b* (((unless (no-duplicatesp-equal (var+type-list->var bind.params)))
+           (reserr nil))
+          (types (var+type-list->type bind.params))
+          ((unless (check-type-list types senv)) (reserr nil))
+          (senv-body (senv-add-vars+types bind.params senv))
+          ((ok out-type) (check-expr bind.expr senv-body))
+          ((unless (type-option-case
+                    bind.type?
+                    :some (and (check-type bind.type?.val senv)
+                               (type-equivp out-type bind.type?.val))
+                    :none t))
+           (reserr nil)))
+       (senv-add-var+type bind.var
+                          (make-type-fun :in types :out out-type)
+                          senv))
+     :tfun
+     (b* (((unless (no-duplicatesp-equal bind.params)) (reserr nil))
+          (senv-body (senv-add-type-vars bind.params senv))
+          ((ok body-type) (check-expr bind.expr senv-body))
+          ((unless (type-option-case
+                    bind.type?
+                    :some (and (check-type bind.type?.val senv-body)
+                               (type-equivp body-type bind.type?.val))
+                    :none t))
+           (reserr nil)))
+       (senv-add-var+type bind.var
+                          (make-type-forall :params bind.params
+                                            :body body-type)
+                          senv))
+     :ifun
+     (b* (((unless (no-duplicatesp-equal bind.params)) (reserr nil))
+          (senv-body (senv-add-ispace-vars bind.params senv))
+          ((ok body-type) (check-expr bind.expr senv-body))
+          ((unless (type-option-case
+                    bind.type?
+                    :some (and (check-type bind.type?.val senv-body)
+                               (type-equivp body-type bind.type?.val))
+                    :none t))
+           (reserr nil)))
+       (senv-add-var+type bind.var
+                          (make-type-pi :params bind.params :body body-type)
+                          senv))
+     :cfun
+     (b* ((tparams (type-var-list-option-case
+                    bind.tparams? :some bind.tparams?.val :none nil))
+          (iparams (ispace-var-list-option-case
+                    bind.iparams? :some bind.iparams?.val :none nil))
+          ((unless (no-duplicatesp-equal tparams)) (reserr nil))
+          ((unless (no-duplicatesp-equal iparams)) (reserr nil))
+          ((unless (no-duplicatesp-equal (var+type-list->var bind.params)))
+           (reserr nil))
+          (senv-tparams (senv-add-type-vars tparams senv))
+          (senv-iparams (senv-add-ispace-vars iparams senv-tparams))
+          (types (var+type-list->type bind.params))
+          ((unless (check-type-list types senv-iparams)) (reserr nil))
+          ((unless (check-type bind.type senv-iparams)) (reserr nil))
+          (senv-body (senv-add-vars+types bind.params senv-iparams))
+          ((ok out-type) (check-expr bind.expr senv-body))
+          ((unless (type-equivp out-type bind.type)) (reserr nil))
+          (fun-type (make-type-fun :in types :out bind.type))
+          (fun-type (ispace-var-list-option-case
+                     bind.iparams?
+                     :some (make-type-pi :params bind.iparams?.val
+                                         :body fun-type)
+                     :none fun-type))
+          (fun-type (type-var-list-option-case
+                     bind.tparams?
+                     :some (make-type-forall :params bind.tparams?.val
+                                             :body fun-type)
+                     :none fun-type)))
+       (senv-add-var+type bind.var fun-type senv)))
+    :measure (bind-count bind))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-bind-list ((binds bind-listp) (senv senvp))
+    :returns (new-senv senv-resultp)
+    :parents (type-checking check-exprs/atoms)
+    :short "Check a list of bindings,
+            threading the static environment through them."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check each binding in turn,
+       extending the static environment as we go,
+       and we return the final environment."))
+    (b* (((when (endp binds)) (senv-fix senv))
+         ((ok senv) (check-bind (car binds) senv)))
+      (check-bind-list (cdr binds) senv))
+    :measure (bind-list-count binds))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
