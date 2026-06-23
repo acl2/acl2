@@ -86,26 +86,28 @@
 
 ;; TODO: Other sizes.
 (defthm ror-spec-64-alt-def
-  (equal (ror-spec-64 x n rflags)
-         (let* ((chopped-n (bvchop 6 n))
-                (result-value (rightrotate 64 n x)) ; note the unchopped n here
+  (equal (ror-spec-64 dst src input-rflags)
+         (let* ((chopped-src (bvchop 6 src))
+                (result-value (rightrotate 64 src dst)) ; note the unchopped n here
                 )
            (mv result-value
                ;; output flags:
-               (if (equal chopped-n 0)
-                   (bvchop 32 rflags)
-                 (if (equal chopped-n 1)
-                     ;; nicer than what the naive definition does?:
-                     (!rflagsbits->cf
-                       (getbit 0 x) ;(getbit 63 (rightrotate 64 1 x))
-                       (!rflagsbits->of
-                         (bitxor (getbit 0 x) ; (getbit 63 (rightrotate 64 1 x))
-                                 (getbit 63 x) ; (getbit 62 (rightrotate 64 1 x))
-                                 )
-                         rflags))
-                   (!rflagsbits->cf (getbit 63 result-value) rflags)))
+               (if (equal chopped-src 0)
+                   (bvchop 32 input-rflags)
+                 (if (equal chopped-src 1)
+                     (let ((cf (getbit 0 dst)) ; (getbit 63 (rightrotate 64 1 x))
+                           (of (bitxor (getbit 0 dst) ; (getbit 63 (rightrotate 64 1 x))
+                                       (getbit 63 dst) ; (getbit 62 (rightrotate 64 1 x))
+                                       )))
+                       (!rflagsbits->cf cf
+                                        (!rflagsbits->of of input-rflags)))
+                   (!rflagsbits->cf (getbit 63 result-value) input-rflags)))
                ;; undefined flags:
-               (if (equal chopped-n 1) 0 2048))))
+               (if (equal chopped-src 0)
+                   0
+                 (if (equal chopped-src 1)
+                     0
+                   (!rflagsbits->of 1 0))))))
   :hints (("Goal" :in-theory (e/d (acl2::logapp-becomes-bvcat-when-bv
                                    x86isa::ror-spec-64
                                    !rflagsbits->cf
