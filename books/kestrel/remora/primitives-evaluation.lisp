@@ -742,6 +742,7 @@
   We therefore defer the implementation and error for now.</p>"
   (b* (((ok &) (check-expr-value-float val1)))
     (reserr nil)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-eq ((val1 expr-valuep) (val2 expr-valuep))
@@ -895,7 +896,8 @@
   @('truncate')</p>"
   (b* (((ok fval) (check-expr-value-float val1)))
     (float-value-case fval
-      :ratio  (expr-value-base (base-value-int (int-value (truncate fval.ratio 1))))
+      :ratio  (expr-value-base (base-value-int 
+                                (int-value (truncate fval.ratio 1))))
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
       :neginf (reserr nil)
@@ -909,7 +911,8 @@
   consistent with [impl], which uses Haskell's @('round')</p>"
   (b* (((ok fval) (check-expr-value-float val1)))
     (float-value-case fval
-      :ratio  (expr-value-base (base-value-int (int-value (round fval.ratio 1))))
+      :ratio  (expr-value-base (base-value-int 
+                                (int-value (round fval.ratio 1))))
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
       :neginf (reserr nil)
@@ -923,7 +926,8 @@
   Haskell's @('ceiling')</p>"
   (b* (((ok fval) (check-expr-value-float val1)))
     (float-value-case fval
-      :ratio  (expr-value-base (base-value-int (int-value (ceiling fval.ratio 1))))
+      :ratio  (expr-value-base (base-value-int 
+                                (int-value (ceiling fval.ratio 1))))
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
       :neginf (reserr nil)
@@ -937,7 +941,8 @@
   @('floor')</p>"
   (b* (((ok fval) (check-expr-value-float val1)))
     (float-value-case fval
-      :ratio  (expr-value-base (base-value-int (int-value (floor fval.ratio 1))))
+      :ratio  (expr-value-base (base-value-int 
+                                (int-value (floor fval.ratio 1))))
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
       :neginf (reserr nil)
@@ -1050,6 +1055,24 @@
      :int-geq (prim-int-geq (first args) (second args))
      :int-to-float (prim-int-to-float (first args))
      :int-to-bool (prim-int-to-bool (first args))
+     :float-add (prim-float-add (first args) (second args))
+     :float-sub (prim-float-sub (first args) (second args))
+     :float-mul (prim-float-mul (first args) (second args))
+     :float-div (prim-float-div (first args) (second args))
+     :float-expt (prim-float-expt (first args) (second args))
+     :float-max (prim-float-max (first args) (second args))
+     :float-min (prim-float-min (first args) (second args))
+     :float-sqrt (prim-float-sqrt (first args))
+     :float-eq (prim-float-eq (first args) (second args))
+     :float-neq (prim-float-neq (first args) (second args))
+     :float-lt (prim-float-lt (first args) (second args))
+     :float-gt (prim-float-gt (first args) (second args))
+     :float-leq (prim-float-leq (first args) (second args))
+     :float-geq (prim-float-geq (first args) (second args))
+     :float-truncate (prim-float-truncate (first args))
+     :float-round (prim-float-round (first args))
+     :float-ceiling (prim-float-ceiling (first args))
+     :float-floor (prim-float-floor (first args))
      :bool-not (prim-bool-not (first args))
      :bool-and (prim-bool-and (first args) (second args))
      :bool-or (prim-bool-or (first args) (second args))
@@ -1087,6 +1110,24 @@
                                        prim-int-geq
                                        prim-int-to-float
                                        prim-int-to-bool
+                                       prim-float-add
+                                       prim-float-sub
+                                       prim-float-mul
+                                       prim-float-div
+                                       prim-float-expt
+                                       prim-float-max
+                                       prim-float-min
+                                       prim-float-sqrt
+                                       prim-float-eq
+                                       prim-float-neq
+                                       prim-float-lt
+                                       prim-float-gt
+                                       prim-float-leq
+                                       prim-float-geq
+                                       prim-float-truncate
+                                       prim-float-round
+                                       prim-float-ceiling
+                                       prim-float-floor
                                        prim-bool-not
                                        prim-bool-and
                                        prim-bool-or
