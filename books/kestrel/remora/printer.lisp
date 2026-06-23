@@ -183,8 +183,8 @@
   (xdoc::topstring
    (xdoc::p
     "@('(pdoc-ascii \"Bool\")') expands at read time to
-     @('(pdoc-text \\='(66 111 111 108))'), so the code-point list is
-     a compile-time constant rather than something rebuilt on every
+     @('(pdoc-text (quote (66 111 111 108)))'), so the code-point list
+     is a compile-time constant rather than something rebuilt on every
      call.  The expansion happens by calling @(tsee
      ascii-string=>codepoints) on the literal string.")
    (xdoc::p
@@ -194,10 +194,10 @@
      code points (which the previous string-leaved printer's
      byte-counting would have hidden).")
    (xdoc::p
-    "For non-ASCII literal text, write the code points explicitly:
-     @('(pdoc-text \\='(#x3A0))') for @('Π').  For runtime
-     UTF-8-byte-string input (e.g., identifier names from the AST),
-     use @(tsee utf8-string=>codepoints)."))
+    "For non-ASCII literal text, write the code points explicitly,
+     e.g. @('(pdoc-text (quote (#x3A0)))') for capital pi.  For
+     runtime UTF-8-byte-string input (e.g., identifier names from
+     the AST), use @(tsee utf8-string=>codepoints)."))
   (cond ((not (stringp s))
          (er hard 'pdoc-ascii
              "Expected a string literal, got ~x0." s))
