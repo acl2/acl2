@@ -365,6 +365,110 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum primop-value
+  :short "Fixtype of primitive operation values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In Remora, the primitive operations (i.e. built-in functions)
+     are denoted by certain variables implicitly in scope,
+     whose types are given by @(tsee primop-types).
+     This fixtype enumerates the operations themselves,
+     one summand per operation,
+     in correspondence with the entries of @(tsee primop-types).")
+   (xdoc::p
+    "A value of this fixtype represents a primitive operation
+     as a scalar (zero-rank array) function value,
+     analogously to how a lambda abstraction is a function value.
+     These are incorporated into @(tsee expr-value)
+     as its @(':primop') summand;
+     the operations they denote will be evaluated via
+     the ACL2 functions in @(see primitives-evaluation)."))
+  (:int-add ())
+  (:int-sub ())
+  (:int-mul ())
+  (:int-div ())
+  (:int-mod ())
+  (:int-max ())
+  (:int-min ())
+  (:int-bit-and ())
+  (:int-bit-or ())
+  (:int-bit-xor ())
+  (:int-shl ())
+  (:int-shr ())
+  (:int-bit-not ())
+  (:int-popc ())
+  (:int-eq ())
+  (:int-neq ())
+  (:int-lt ())
+  (:int-gt ())
+  (:int-leq ())
+  (:int-geq ())
+  (:int-to-float ())
+  (:int-to-bool ())
+  (:bool-not ())
+  (:bool-and ())
+  (:bool-or ())
+  (:bool-eq ())
+  (:bool-neq ())
+  (:bool-to-int ())
+  (:bool-to-float ())
+  :pred primop-valuep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primop-arity ((op primop-valuep))
+  :returns (arity natp)
+  :short "Arity of a primitive operation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the number of expression arguments that the operation takes,
+     matching the @('prim-...') function that defines its semantics
+     in @(see primitives-evaluation):
+     1 for the unary operations, 2 for the binary ones.")
+   (xdoc::p
+    "Every current operation has a fixed arity;
+     if variadic operations are added later,
+     this will need to be generalized.
+     Moreover, every argument of every current operation is a scalar,
+     so the expected argument cell ranks are all zero;
+     this, together with the arity,
+     determines the frames over which application is lifted."))
+  (primop-value-case
+   op
+   :int-add 2
+   :int-sub 2
+   :int-mul 2
+   :int-div 2
+   :int-mod 2
+   :int-max 2
+   :int-min 2
+   :int-bit-and 2
+   :int-bit-or 2
+   :int-bit-xor 2
+   :int-shl 2
+   :int-shr 2
+   :int-bit-not 1
+   :int-popc 1
+   :int-eq 2
+   :int-neq 2
+   :int-lt 2
+   :int-gt 2
+   :int-leq 2
+   :int-geq 2
+   :int-to-float 1
+   :int-to-bool 1
+   :bool-not 1
+   :bool-and 2
+   :bool-or 2
+   :bool-eq 2
+   :bool-neq 2
+   :bool-to-int 1
+   :bool-to-float 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftypes expr-values
   :short "Fixtypes of expression values and lists of expression values."
 
@@ -379,7 +483,7 @@
       "In Remora, every value that an expression may evaluate to is an array.
        Scalar values are zero-rank arrays, consisting of single atom values,
        but we do not define a distinct notion of atom value,
-       folding them into the first five summands of
+       folding them into the first six summands of
        this fixtype of expression values
        (described in more detail below).
        Non-scalar values are positive-rank arrays,
@@ -403,13 +507,17 @@
      (xdoc::p
       "The atoms that form scalar values are
        base values,
+       primitive operations,
        lambda abstractions,
        and boxed values.
-       Scalar values correspond to atom values @($\\mathit{Atval}$) in [thesis],
-       with the difference that we do not have @($\\mathfrak{o}$) here,
-       because in our ASTs, as in [impl],
-       primitive operations are represented as variables
-       (whose values are predefined).
+       Scalar values correspond to atom values @($\\mathit{Atval}$) in [thesis].
+       The primitive operations
+       (the @(':primop') summand, see @(tsee primop-value))
+       correspond to @($\\mathfrak{o}$) in [thesis];
+       the difference is that, in our ASTs, as in [impl],
+       primitive operations are not a dedicated kind of atom,
+       but are represented as variables
+       whose predefined values are these @(':primop') expression values.
        However, as already noted,
        we fold atom values into (array) expression values.
        Our fixtype of expression values loosely corresponds
@@ -428,6 +536,7 @@
        and the dimension and type consistency of the elements of a @(':vector').
        These constraints are captured separately."))
     (:base ((val base-value)))
+    (:primop ((val primop-value)))
     (:lambda ((params var+typevalue-list)
               (body expr)))
     (:tlambda ((params type-var-list)
@@ -580,6 +689,7 @@
     (expr-value-case
      val
      :base nil
+     :primop nil
      :lambda nil
      :tlambda nil
      :ilambda nil
@@ -855,25 +965,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-value-first-lambda ((val expr-valuep))
-  :returns (lval expr-value-resultp)
-  :short "First lambda leaf expression value of an expression value,
-          in row-major order."
+(define expr-value-first-fun ((val expr-valuep))
+  :returns (fval expr-value-resultp)
+  :short "First function leaf expression value
+          (lambda abstraction or primitive operation)
+          of an expression value, in row-major order."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A term function value is an array, of any rank,
-     whose elements are (term) lambda abstractions,
-     all with equivalent types if the expression value is well-formed.
-     This descends into the first element of each vector
-     until it reaches a scalar lambda abstraction, which it returns.
-     A representative lambda is used by term application (see @(tsee eval-expr))
-     to read the function's parameter type values,
-     which determine the expected cell shapes of the arguments
+    "A function value is an array, of any rank,
+     whose elements are lambda abstractions or primitive operations,
+     all with equivalent function types if the expression value is well-formed.
+     This ACL2 function descends into the first element of each vector
+     until it reaches a scalar lambda abstraction or primitive operation,
+     which it returns.
+     A representative function leaf is used by term application
+     (see @(tsee fun-value-param-dims) and @(tsee eval-expr))
+     to read the function's signature
+     (the parameter type values of a lambda abstraction,
+     or the arity of a primitive operation),
+     which determines the expected cell shapes of the arguments
      and hence the frames over which the application is lifted.")
    (xdoc::p
-    "It is an error if a non-lambda leaf is reached,
-     or if an empty vector is reached, which has no lambda to return.")
+    "It is an error if a non-function leaf is reached,
+     or if an empty vector is reached, which has no function to return.")
    (xdoc::p
     "It should be an invariant that, in a well-formed expression value,
      all elements (if the expression value is not scalar) have equivalent types,
@@ -888,22 +1003,58 @@
   (expr-value-case
    val
    :base (reserr nil)
+   :primop (expr-value-fix val)
    :lambda (expr-value-fix val)
    :tlambda (reserr nil)
    :ilambda (reserr nil)
    :box (reserr nil)
    :vector (if (consp val.elems)
-               (expr-value-first-lambda (car val.elems))
+               (expr-value-first-fun (car val.elems))
              (reserr nil))
    :vector-empty (reserr nil))
-  :measure (expr-value-count val)
+  :measure (expr-value-count val))
 
-  ///
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret expr-value-kind-of-expr-value-first-lambda
-    (implies (not (reserrp lval))
-             (equal (expr-value-kind lval) :lambda))
-    :hints (("Goal" :induct t))))
+(define fun-value-param-dims ((funval expr-valuep))
+  :returns (param-dims nat-list-list-resultp)
+  :short "Expected argument cell dimensions of a function value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In term application (see @(tsee eval-expr)),
+     this ACL2 function is used to return
+     the dimensions of the cells
+     expected for each argument of a function value,
+     one list of dimensions per argument.
+     These determine how each argument array
+     is split into a frame and cells,
+     and hence the frames over which the application is lifted.")
+   (xdoc::p
+    "We obtain a representative function leaf
+     (see @(tsee expr-value-first-fun)),
+     and read its signature.
+     For a lambda abstraction,
+     the parameters must all have array types,
+     whose dimensions are returned.
+     For a primitive operation,
+     every argument is a scalar,
+     so we return as many empty lists of dimensions
+     as the operation's arity (see @(tsee primop-arity)).
+     It is an error if the value is not a function value,
+     or if a lambda abstraction's parameters
+     do not all have array types."))
+  (b* ((fval (expr-value-first-fun funval))
+       ((when (reserrp fval)) (reserr nil)))
+    (expr-value-case
+     fval
+     :lambda (b* ((tvals (var+typevalue-list->type
+                          (expr-value-lambda->params fval)))
+                  ((unless (type-value-list-case-array tvals)) (reserr nil)))
+               (type-value-array-list->dims tvals))
+     :primop (repeat (primop-arity (expr-value-primop->val fval)) nil)
+     :otherwise (reserr nil)))
+  :guard-hints (("Goal" :in-theory (enable expr-valuep-when-result-not-error))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -965,6 +1116,7 @@
       (expr-value-case
        val
        :base (reserr nil)
+       :primop (reserr nil)
        :lambda (reserr nil)
        :tlambda (reserr nil)
        :ilambda (reserr nil)

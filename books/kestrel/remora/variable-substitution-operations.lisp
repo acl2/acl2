@@ -719,7 +719,19 @@
                                                shape-subst)
                  :expr (expr-subst-ispace-vars bind.expr
                                                dim-subst
-                                               shape-subst)))))
+                                               shape-subst))))
+   (bind-list
+    (b* (((when (endp bind-list)) nil)
+         (bind (car bind-list))
+         (new-bind (bind-subst-ispace-vars bind dim-subst shape-subst))
+         ((mv dim-subst shape-subst)
+          (dim/shape-subst-remove-bound (bind-bound-ispace-vars bind)
+                                        dim-subst
+                                        shape-subst)))
+      (cons new-bind
+            (bind-list-subst-ispace-vars (cdr bind-list)
+                                         dim-subst
+                                         shape-subst)))))
   :name ast-subst-ispace-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -837,7 +849,19 @@
                                              array-subst)
                  :expr (expr-subst-type-vars bind.expr
                                              atom-subst
-                                             array-subst)))))
+                                             array-subst))))
+   (bind-list
+    (b* (((when (endp bind-list)) nil)
+         (bind (car bind-list))
+         (new-bind (bind-subst-type-vars bind atom-subst array-subst))
+         ((mv atom-subst array-subst)
+          (atom/array-subst-remove-bound (bind-bound-type-vars bind)
+                                         atom-subst
+                                         array-subst)))
+      (cons new-bind
+            (bind-list-subst-type-vars (cdr bind-list)
+                                       atom-subst
+                                       array-subst)))))
   :name ast-subst-type-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -898,5 +922,13 @@
             :iparams? bind.iparams?
             :params bind.params
             :type bind.type
-            :expr (expr-subst-expr-vars bind.expr subst)))))
+            :expr (expr-subst-expr-vars bind.expr subst))))
+   (bind-list
+    (b* (((when (endp bind-list)) nil)
+         (bind (car bind-list))
+         (new-bind (bind-subst-expr-vars bind subst))
+         (bound (bind-bound-expr-vars bind))
+         (subst (omap::delete* bound (string-expr-map-fix subst))))
+      (cons new-bind
+            (bind-list-subst-expr-vars (cdr bind-list) subst)))))
   :name ast-subst-expr-vars)

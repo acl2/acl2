@@ -80,10 +80,17 @@
    (expr-vars string-type-map))
   :pred senvp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult senv-result
+  :short "Fixtype of static environments and errors."
+  :ok senv
+  :pred senv-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define prim-op-types ()
-  :returns (term-vars string-type-mapp)
+(define primop-types ()
+  :returns (expr-vars string-type-mapp)
   :short "Association of primitive operations to their types."
   :long
   (xdoc::topstring
@@ -91,45 +98,62 @@
     "In Remora, the primitive operations (i.e. built-in functions)
      are syntactically variables of (zero-rank array type of) a function type.
      These variables are implicitly in scope,
-     and thus part of the initial static environment."))
-  (b* ((add/sub/mul/div-type
+     and thus part of the initial static environment.")
+   (xdoc::p
+    "Each operation's name (the map key) is its surface name
+     in [impl]'s prelude (the file @('RemoraPrelude.hs'));
+     the dynamic semantics of these operations
+     is formalized in @(see primitives-evaluation).
+     This is an initial selection of primitive operations;
+     more will be added as the formalization grows."))
+  (b* ((int-binop-type
         (t[] (t-> (:int :int) :int) (shp)))
-       (append-type
-        (t[] (tforall ("&t")
-                      (tpi ("$n" "$m" "@s")
-                           (t-> ((t[] "&t" (shape++ (shp "$m")
-                                                    "@s"))
-                                 (t[] "&t" (shape++ (shp "$n")
-                                                    "@s")))
-                                (t[] "&t" (shape++ (shp (dim+ "$m"
-                                                                "$n"))
-                                                   "@s")))))
-             (shp)))
-       (reduce-type
-        (t[] (tforall ("&t")
-                      (tpi ("@s" "$d")
-                           (t-> ((t[] (t-> ((t[] "&t" "@s")
-                                            (t[] "&t" "@s"))
-                                           (t[] "&t" "@s"))
-                                      (shp))
-                                 (t[] "&t" (shape++ (shp (dim+ 1
-                                                                 "$d"))
-                                                    "@s")))
-                                (t[] "&t" "@s"))))
-             (shp)))
-       (iota-type
-        (t[] (tpi ("$d")
-                  (t-> ((t[] :int (shp "$d")))
-                       (tsigma ("@s") (t[] :int "@s"))))
-             (shp))))
+       (int-unop-type
+        (t[] (t-> (:int) :int) (shp)))
+       (int-relop-type
+        (t[] (t-> (:int :int) :bool) (shp)))
+       (int-to-float-type
+        (t[] (t-> (:int) :float) (shp)))
+       (int-to-bool-type
+        (t[] (t-> (:int) :bool) (shp)))
+       (bool-unop-type
+        (t[] (t-> (:bool) :bool) (shp)))
+       (bool-binop-type
+        (t[] (t-> (:bool :bool) :bool) (shp)))
+       (bool-to-int-type
+        (t[] (t-> (:bool) :int) (shp)))
+       (bool-to-float-type
+        (t[] (t-> (:bool) :float) (shp))))
     (omap::from-alist
-     (list (cons "add" add/sub/mul/div-type)
-           (cons "sub" add/sub/mul/div-type)
-           (cons "mul" add/sub/mul/div-type)
-           (cons "div" add/sub/mul/div-type)
-           (cons "append" append-type)
-           (cons "reduce" reduce-type)
-           (cons "iota" iota-type)))))
+     (list (cons "+" int-binop-type)
+           (cons "-" int-binop-type)
+           (cons "*" int-binop-type)
+           (cons "div" int-binop-type)
+           (cons "mod" int-binop-type)
+           (cons "max" int-binop-type)
+           (cons "min" int-binop-type)
+           (cons "bit-and" int-binop-type)
+           (cons "bit-or" int-binop-type)
+           (cons "bit-xor" int-binop-type)
+           (cons "shl" int-binop-type)
+           (cons "shr" int-binop-type)
+           (cons "bit-not" int-unop-type)
+           (cons "popc" int-unop-type)
+           (cons "==" int-relop-type)
+           (cons "!=" int-relop-type)
+           (cons "<" int-relop-type)
+           (cons ">" int-relop-type)
+           (cons "<=" int-relop-type)
+           (cons ">=" int-relop-type)
+           (cons "i->f" int-to-float-type)
+           (cons "i->bool" int-to-bool-type)
+           (cons "not" bool-unop-type)
+           (cons "and" bool-binop-type)
+           (cons "or" bool-binop-type)
+           (cons "bool.==" bool-binop-type)
+           (cons "bool.!=" bool-binop-type)
+           (cons "bool->i" bool-to-int-type)
+           (cons "bool->f" bool-to-float-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -142,7 +166,7 @@
      It only contains the primitive operations in scope."))
   (make-senv :ispace-vars nil
              :type-vars nil
-             :expr-vars (prim-op-types)))
+             :expr-vars (primop-types)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

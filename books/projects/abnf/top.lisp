@@ -12,18 +12,14 @@
 (in-package "ABNF")
 
 (include-book "notation/top")
-(include-book "syntax-operations/top")
 (include-book "grammar-parser/top")
 (include-book "grammar-printer/top")
-(include-book "grammar-definer/top")
+(include-book "syntax-operations/top")
 (include-book "grammar-operations/top")
+(include-book "tree-operations/top")
+(include-book "grammar-definer/top")
 (include-book "parsing-tools/top")
 (include-book "examples/top")
-(include-book "tree-operations/top")
-;; These packages are mentioned in the doc below:
-(include-book "kestrel/c/portcullis" :dir :system)
-(include-book "kestrel/java/portcullis" :dir :system)
-(include-book "kestrel/yul/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -69,24 +65,43 @@
       into a formal representation suitable for formal specification
       (e.g. for HTTP parsing).")
     (xdoc::li
-     "Executable "
-     (xdoc::seetopic "grammar-operations" "operations")
-     " on ABNF grammars,
-      e.g. to check their well-formedness and to compose them.")
+     "A "
+     (xdoc::seetopic "grammar-printer" "printer")
+     " that turns ABNF abstract syntax into concrete syntax,
+      essentially inverse of the aforementioned parser.
+      The printer is not verified currently.")
     (xdoc::li
-     "A @(tsee defgrammar) tool
+     "Some "
+     (xdoc::seetopic "syntax-operations" "operations on ABNF abstract syntax")
+     ", e.g. to build constructs in a readable way.")
+    (xdoc::li
+     "Some "
+     (xdoc::seetopic "grammar-operations" "operations on ABNF grammars")
+     ", e.g. to check their well-formedness and to compose them.")
+    (xdoc::li
+     "Some "
+     (xdoc::seetopic "tree-operations" "operations on ABNF trees")
+     ", e.g. to check that trees have certain form,
+      as well as a tool, @(tsee deftreeops),
+      to generate operations on ABNF trees that are grammar-specific.")
+    (xdoc::li
+     "A "
+     (xdoc::seetopic "grammar-definer" "tools to define ABNF grammars")
+     ", specifically a @(tsee defgrammar) tool
       for building ACL2 representations of grammar from files,
       using the aforementioned verified parser,
       and for automatically proving
       certain properties such as well-formedness.")
     (xdoc::li
-     "Some basic "
+     "Some "
+     (xdoc::seetopic "parsing-tools" "tools to build parsers")
+     " for languages defined in ABNF:
+      some basic "
      (xdoc::seetopic "parsing-primitives-defresult" "parsing primitives")
      ", also available in "
      (xdoc::seetopic "parsing-primitives-seq" "another variant")
-     ", usable as part of larger parsers.")
-    (xdoc::li
-     "A @(tsee defdefparse) tool
+     ", usable as part of larger parsers;
+      and a @(tsee defdefparse) tool
       for generating some very preliminary tools to generate
       parsing functions from grammar rules.")
     (xdoc::li
@@ -98,17 +113,8 @@
 
    (xdoc::p
     "Besides the aforementioned examples,
-     @(tsee defgrammar) and some "
-    (xdoc::seetopic "grammar-operations" "grammar operations")
-    " have been used on "
-    (xdoc::seetopic "java::grammar" "an ABNF grammar of Java")
-    ", "
-    (xdoc::seetopic "yul::concrete-syntax" "two ABNF grammars of Yul")
-    ", and "
-    (xdoc::seetopic "c::grammar" "an ABNF grammar of a subset of C")
-    ". The @(tsee defdefparse) tool has been used to generate part of "
-    (xdoc::seetopic "yul::lexer" "a Yul lexer")
-    ".")
+     the tools in this ABNF library have been used in
+     several other libraries in the community books.")
 
    (xdoc::p
     "In the documentation of this library,
@@ -133,12 +139,21 @@
      of the parsing primitives,
      of the parsing generation tools,
      or of the real-world examples).
-     The differences between the paper and the ABNF library
+     Differences between the paper and the ABNF library
      are described "
     (xdoc::seetopic "differences-with-paper" "here")
     "."))
 
-  :order-subtopics t)
+  :order-subtopics (notation
+                    grammar-parser
+                    grammar-printer
+                    syntax-operations
+                    grammar-operations
+                    tree-operations
+                    grammar-definer
+                    parsing-tools
+                    examples
+                    differences-with-paper))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

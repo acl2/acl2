@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "dynamic-environments")
+(include-book "primitives-evaluation")
 (include-book "nat-lists")
 (include-book "integer-lists")
 (include-book "character-literal-codes")
@@ -1857,18 +1858,16 @@
        and @('argvals') are the expression values of the arguments.")
      (xdoc::p
       "The function value must be an array, of any rank,
-       whose elements are lambda abstractions,
-       all with the same number of parameters
-       and equivalent parameter type values;
-       we obtain the parameters from the first such lambda abstraction
-       (via @(tsee expr-value-first-lambda)),
-       we check that they all have array types,
-       and we obtain their dimensions.
-       (As noted in @(tsee expr-value-first-lambda),
-       given suitable well-formedness invariants,
-       it would not matter if we picked
-       any other lambda abstraction in @('funval').)
-       The number of arguments must match the number of parameters.")
+       whose elements are all lambda abstractions or primitive operations,
+       with the same number of arguments and equivalent argument types.
+       Via @(tsee fun-value-param-dims) we obtain
+       the dimensions of the cells expected for each argument,
+       reading the signature of a representative function leaf
+       (a lambda abstraction's parameter types,
+       or a primitive operation's arity;
+       see @(tsee expr-value-first-fun)).
+       The number of arguments must match
+       the function's number of parameters.")
      (xdoc::p
       "Following the rank-polymorphic application semantics of Remora,
        each argument array is split into a frame and a cell,
@@ -1915,10 +1914,7 @@
        and perform the necessary replication in the framework of that structure.
        We plan to explore this alternative approach."))
     (b* (((when (zp limit)) (reserr :limit))
-         ((ok lval) (expr-value-first-lambda funval))
-         (tvals (var+typevalue-list->type (expr-value-lambda->params lval)))
-         ((unless (type-value-list-case-array tvals)) (reserr nil))
-         (param-dims (type-value-array-list->dims tvals))
+         ((ok param-dims) (fun-value-param-dims funval))
          ((unless (equal (len argvals) (len param-dims))) (reserr nil))
          (arg-dims (dims-of-expr-value-list argvals))
          ((mv suffixesp arg-frames) (check-list-suffixes arg-dims param-dims))
@@ -2004,7 +2000,12 @@
        to associate the arguments with the parameters
        (which may override existing associations,
        which is intended hiding behavior),
-       and we evaluate the body of the lambda abstraction."))
+       and we evaluate the body of the lambda abstraction.")
+     (xdoc::p
+      "If the function cell is a primitive operation,
+       it is applied to the argument cells via @(tsee eval-primop),
+       which dispatches to the corresponding ACL2 function
+       in @(see primitives-evaluation)."))
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-value-case
        funcell
@@ -2018,6 +2019,7 @@
                    argcells
                    denv)))
          (eval-expr funcell.body denv (1- limit)))
+       :primop (eval-primop funcell.val argcells)
        :otherwise (reserr nil)))
     :measure (nfix limit))
 
@@ -2123,11 +2125,13 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove eventually
-
   :verify-guards nil ; done below
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   ///
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deffixequiv-mutual eval-exprs/atoms/binds
     :hints (("Goal"
@@ -2208,6 +2212,8 @@
                       (eval-unbox-list targets ispaces var body
                                        (denv-fix denv) limit))
              :in-theory (enable nfix zp))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual expr-value-wfp-of-eval-exprs/atoms/binds
     (defret expr-value-wfp-of-eval-expr
@@ -2310,6 +2316,8 @@
                (eval-app-cell funcell argcells denv limit)
                (eval-unbox target ispaces var body denv limit)
                (eval-unbox-list targets ispaces var body denv limit)))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (verify-guards eval-expr
     :hints

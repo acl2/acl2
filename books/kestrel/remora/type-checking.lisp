@@ -44,7 +44,8 @@
           typevarlist+type-p-when-result-not-error
           stringdimmap+stringshapemap-p-when-result-not-error
           string-type-mapp-when-result-not-error
-          string-type-map-pairp-when-result-not-error)))
+          string-type-map-pairp-when-result-not-error
+          senvp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -61,10 +62,7 @@
    (xdoc::p
     "This type checker is not designed for efficiency
      or to provide informative error messages.
-     It is designed for simplicity.")
-   (xdoc::p
-    "Not all expressions are currently covered;
-     uncovered expressions return a @(':todo') error."))
+     It is designed for simplicity."))
   :order-subtopics t
   :default-parent t)
 
@@ -551,6 +549,203 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-app ((fun-type typep) (arg-types type-listp))
+  :returns (type type-resultp)
+  :short "Check a term application,
+          given the type of the function sub-expression
+          and the types of the argument sub-expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The type of the function sub-expression
+     must be an explicit array type of a function type,
+     whose input and output types are all explicit array types.
+     The atom input and output types
+     are denoted @($\\tau\\ldots$) and @($\\tau'$),
+     and their shapes are denoted @($\\iota\\ldots$) and @($\\iota'$),
+     in [arxiv] and [thesis];
+     our code uses
+     @('in-atom-types'), @('out-atom-type'),
+     @('in-shape'), and @('out-shape').
+     The shape of the array type of the function expression
+     is denoted @($\\iota_f$) in [arxiv] and [thesis];
+     our code uses @('fun-shape').
+     The argument types must all be array types,
+     whose atom types must be equal to
+     the input atom types of the function expression.
+     The shapes of the argument types,
+     for which our code uses @('arg-shapes'),
+     are denoted @($(\\mathtt{++}\\ \\iota_a\\ \\iota)\\ldots$),
+     which means that the shapes @($\\iota\\ldots$)
+     of the corresponding inputs types must be suffixes,
+     and that we need to extract the prefixes @($\\iota_a\\ldots$);
+     we do that via @(tsee check-shape-suffixes) (see its documentation).
+     Then we take the join of all those prefixes and the function shape
+     (see documentation of @(tsee join-shapes)):
+     that is the principal shape (ispace), in Remora's terminology,
+     denoted @($\\iota_p$) in [arxiv] and [thesis].
+     Finally we return the type of the term application expression,
+     which is the array type consisting of
+     the function output atom type
+     and the concatenation of the principal shape
+     with the function output shape."))
+  (b* (((ok fun-type+ispace) (type-match-array fun-type))
+       (fun-type (type+ispace->type fun-type+ispace))
+       (fun-ispace (type+ispace->ispace fun-type+ispace))
+       (fun-shape (shape-from-ispace fun-ispace))
+       ((ok fun-types+type) (type-match-fun fun-type))
+       (in-types (typelist+type->types fun-types+type))
+       (out-type (typelist+type->type fun-types+type))
+       ((ok in-types+ispaces) (type-list-match-array in-types))
+       (in-atom-types (type+ispace-list->type in-types+ispaces))
+       (in-ispaces (type+ispace-list->ispace in-types+ispaces))
+       (in-shapes (shape-list-from-ispace-list in-ispaces))
+       ((ok out-type+ispace) (type-match-array out-type))
+       (out-atom-type (type+ispace->type out-type+ispace))
+       (out-ispace (type+ispace->ispace out-type+ispace))
+       (out-shape (shape-from-ispace out-ispace))
+       ((ok arg-types+ispaces) (type-list-match-array arg-types))
+       (arg-atom-types (type+ispace-list->type arg-types+ispaces))
+       (arg-ispaces (type+ispace-list->ispace arg-types+ispaces))
+       (arg-shapes (shape-list-from-ispace-list arg-ispaces))
+       ((unless (type-list-equivp arg-atom-types in-atom-types))
+        (reserr nil))
+       ((ok prefix-shapes) (check-shape-suffixes arg-shapes in-shapes))
+       ((ok principal-shape) (join-shapes (cons fun-shape prefix-shapes))))
+    (make-type-array
+     :elem out-atom-type
+     :ispace (ispace-shape
+              (shape-append (list principal-shape out-shape)))))
+  :guard-hints
+  (("Goal"
+    :use (:instance same-len-when-type-list-equivp
+                    (types1 (type+ispace-list->type
+                             (type-list-match-array arg-types)))
+                    (types2 (type+ispace-list->type
+                             (type-list-match-array
+                              (typelist+type->types
+                               (type-match-fun
+                                (type+ispace->type
+                                 (type-match-array fun-type)))))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-tapp ((fun-type typep) (args type-listp) (senv senvp))
+  :returns (type type-resultp)
+  :short "Check a type application,
+          given the type of the function and the type arguments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The type of the function must be
+     an array type of a universal type,
+     whose body type is an explicit array type.
+     In [arxiv] and [thesis],
+     @($(x\\ k)\\ldots$) corresponds to @('vars') in our code,
+     @($\\tau_u$) corresponds to @('body-atom-type'),
+     @($\\iota_u$) corresponds to @('body-shape'),
+     and @($\\iota_f$) corresponds to @('fun-shape').
+     We check that the type arguments
+     (@($\\tau\\ldots$) in [arxiv] and [thesis])
+     are valid and
+     that their kinds match the ones of
+     the variables in the universal type.
+     We form a substitution from the bound variables to the argument types,
+     and we apply it to the body atom type
+     to obtain the atom type of the resulting array type,
+     whose shape is obtained by concatenating
+     the function shape to the body shape.
+     We check that the substitution cannot result in variable capture:
+     type checking fails if that check fails;
+     we should instead rename the bound variables to avoid the capture."))
+  (b* (((ok fun-type+ispace) (type-match-array fun-type))
+       (fun-type (type+ispace->type fun-type+ispace))
+       (fun-ispace (type+ispace->ispace fun-type+ispace))
+       (fun-shape (shape-from-ispace fun-ispace))
+       ((ok fun-vars+type) (type-match-forall fun-type))
+       (vars (typevarlist+type->vars fun-vars+type))
+       (body-arr-type (typevarlist+type->type fun-vars+type))
+       ((ok body-type+ispace) (type-match-array body-arr-type))
+       (body-atom-type (type+ispace->type body-type+ispace))
+       (body-ispace (type+ispace->ispace body-type+ispace))
+       (body-shape (shape-from-ispace body-ispace))
+       ((unless (check-type-list args senv)) (reserr nil))
+       ((ok (string-type-map-pair type-maps))
+        (check-type-params-and-args vars args))
+       ((unless (type-subst-type-vars-no-capture-p body-atom-type
+                                                   type-maps.1st
+                                                   type-maps.2nd))
+        (reserr nil))
+       (body-atom-type-subst
+        (type-subst-type-vars body-atom-type
+                              type-maps.1st
+                              type-maps.2nd)))
+    (make-type-array
+     :elem body-atom-type-subst
+     :ispace (ispace-shape (shape-append (list fun-shape body-shape))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-iapp ((fun-type typep) (args ispace-listp) (senv senvp))
+  :returns (type type-resultp)
+  :short "Check an ispace application,
+          given the type of the function and the ispace arguments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The type of the function must be
+     an array type of a product type,
+     whose body type is an explicit array type.
+     In [arxiv] and [thesis],
+     @($(x\\ \\gamma)\\ldots$) corresponds to @('vars') in our code,
+     @($\\tau_p$) corresponds to @('body-atom-type'),
+     @($\\iota_p$) corresponds to @('body-shape'),
+     and @($\\iota_f$) corresponds to @('fun-shape').
+     We check that the ispace arguments
+     (@($\\iota\\ldots$) in [arxiv] and [thesis])
+     are valid and
+     that their sorts match the ones of
+     the bound variables in the product type.
+     We obtain two ispace maps (for dimensions and shapes),
+     which we substitute to the body atom type
+     to obtain the atom type of the resulting array type,
+     whose shape is obtained by concatenating
+     the function shape to
+     the result of applying the same substitution to the body shape.
+     We check that the substitution cannot result in variable capture:
+     type checking fails if that check fails;
+     we should instead rename the bound variables to avoid the capture."))
+  (b* (((ok fun-type+ispace) (type-match-array fun-type))
+       (fun-type (type+ispace->type fun-type+ispace))
+       (fun-ispace (type+ispace->ispace fun-type+ispace))
+       (fun-shape (shape-from-ispace fun-ispace))
+       ((ok fun-vars+type) (type-match-product fun-type))
+       (vars (ispacevarlist+type->vars fun-vars+type))
+       (body-arr-type (ispacevarlist+type->type fun-vars+type))
+       ((ok body-type+ispace) (type-match-array body-arr-type))
+       (body-atom-type (type+ispace->type body-type+ispace))
+       (body-ispace (type+ispace->ispace body-type+ispace))
+       (body-shape (shape-from-ispace body-ispace))
+       ((unless (check-ispace-list args senv)) (reserr nil))
+       ((ok (stringdimmap+stringshapemap ispace-maps))
+        (check-ispace-params-and-args vars args))
+       ((unless (type-subst-ispace-vars-no-capture-p body-atom-type
+                                                     ispace-maps.dim-map
+                                                     ispace-maps.shape-map))
+        (reserr nil))
+       (body-atom-type-subst
+        (type-subst-ispace-vars body-atom-type
+                                ispace-maps.dim-map
+                                ispace-maps.shape-map))
+       (body-shape-subst (shape-subst-ispace-vars body-shape
+                                                  ispace-maps.dim-map
+                                                  ispace-maps.shape-map)))
+    (make-type-array
+     :elem body-atom-type-subst
+     :ispace (ispace-shape (shape-append (list fun-shape body-shape-subst))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines check-exprs/atoms
   :short "Check expressions, atoms, and lists thereof."
   :long
@@ -611,85 +806,33 @@
        where the size is the number of character literals.")
      (xdoc::p
       "For a term application,
-       first we check the function expression,
-       which must have an explicit array type of a function type,
-       whose input and output types are all explicit array types.
-       The atom input and output types
-       are denoted @($\\tau\\ldots$) and @($\\tau'$),
-       and their shapes are denoted @($\\iota\\ldots$) and @($\\iota'$),
-       in [arxiv] and [thesis];
-       our code uses
-       @('in-atom-types'), @('out-atom-type'),
-       @('in-shape'), and @('out-shape').
-       The shape of the array type of the function expression
-       is denoted @($\\iota_f$) in [arxiv] and [thesis];
-       our code uses @('fun-shape').
-       The argument expressions must all have array types,
-       whose atom types must be equal to
-       the input atom types of the function expression.
-       The shapes of the argument expressions,
-       for which our code uses @('arg-shapes'),
-       are denoted @($(\\mathtt{++}\\ \\iota_a\\ \\iota)\\ldots$),
-       which means that the shapes @($\\iota\\ldots$)
-       of the corresponding inputs types must be suffixes,
-       and that we need to extract the prefixes @($\\iota_a\\ldots$);
-       we do that via a separate function (see its documentation).
-       Then we take the join of all those prefixes and the function shape
-       (see documentation of @(tsee join-shapes)):
-       that is the principal shape (ispace), in Remora's terminology,
-       denoted @($\\iota_p$) in [arxiv] and [thesis].
-       Finally we return the type of the term application expression,
-       which is the array type consisting of
-       the function output atom type
-       and the concatenation of the principal shape
-       with the function output shape.")
+       first we check the function and argument expressions,
+       and then we use @(tsee check-app) to check
+       the argument types against the function type,
+       and to obtain the type of the application expression.")
      (xdoc::p
       "For a type application,
        first we check the function expression,
-       which must have an array type of a universal type,
-       whose body type is an explicit array type.
-       In [arxiv] and [thesis],
-       @($(x\\ k)\\ldots$) corresponds to @('vars') in our code,
-       @($\\tau_u$) corresponds to @('body-atom-type'),
-       @($\\iota_u$) corresponds to @('body-shape'),
-       and @($\\iota_f$) corresponds to @('fun-shape').
-       We check that the type arguments
-       (@($\\tau\\ldots$) in [arxiv] and [thesis])
-       are valid and
-       that their kinds match the ones of
-       the variables in the universal type.
-       We form a substitution from the bound variables to the argument types,
-       and we apply it to the body atom type
-       to obtain the atom type of the resulting array type,
-       whose shape is obtained by concatenating
-       the function shape to the body shape.
-       We check that the substitution cannot result in variable capture:
-       type checking fails if that check fails;
-       we should instead rename the bound variables to avoid the capture.")
+       and then we use @(tsee check-tapp) to check
+       the type arguments against the function type,
+       and to obtain the type of the application expression.")
      (xdoc::p
       "For an ispace application,
        first we check the function expression,
-       which must have an array type of a product type,
-       whose body type is an explicit array type.
-       In [arxiv] and [thesis],
-       @($(x\\ \\gamma)\\ldots$) corresponds to @('vars') in our code,
-       @($\\tau_p$) corresponds to @('body-atom-type'),
-       @($\\iota_p$) corresponds to @('body-shape'),
-       and @($\\iota_f$) corresponds to @('fun-shape').
-       We check that the ispace arguments are valid.
-       We check all the ispace arguments
-       (@($\\iota\\ldots$) in [arxiv] and [thesis]),
-       ensuring that their sorts match the ones of
-       the bound variables in the product type.
-       We obtain two ispace maps (for dimensions and shapes),
-       which we substitute to the body atom type
-       to obtain the atom type of the resulting array type,
-       whose shape is obtained by concatenating
-       the function shape to
-       the result of applying the same substitution to the body shape.
-       We check that the substitution cannot result in variable capture:
-       type checking fails if that check fails;
-       we should instead rename the bound variables to avoid the capture.")
+       and then we use @(tsee check-iapp) to check
+       the ispace arguments against the function type,
+       and to obtain the type of the application expression.")
+     (xdoc::p
+      "A combined application combines, in order,
+       a type application (if type arguments are present),
+       an ispace application (if ispace arguments are present),
+       and a term application (see @(tsee expr)).
+       So, after checking the function expression,
+       we thread the type of the function
+       through @(tsee check-tapp), @(tsee check-iapp), and @(tsee check-app),
+       in this order,
+       skipping the type and ispace applications
+       when the respective arguments are absent.")
      (xdoc::p
       "For an unboxing expression,
        first we check that the ispace variables have no duplicates;
@@ -716,7 +859,24 @@
        which correspond to @('body-atom-type') and @('body-ispace') in our code.
        The type of the unboxing expression is the array type consisting of
        the @($\\tau_b$) type as atom
-       and the concatenation of @($\\iota_s$) and @($\\iota_b$) as ispace."))
+       and the concatenation of @($\\iota_s$) and @($\\iota_b$) as ispace.")
+     (xdoc::p
+      "A bracket expression is syntactic sugar for a (non-empty) frame
+       whose dimensions consist of a single dimension,
+       namely the number of sub-expressions (see @(tsee expr));
+       so we check it like a (non-empty) frame.
+       There must be at least one sub-expression;
+       bracket expressions cannot be empty.
+       The sub-expressions must have all equivalent array types,
+       and the shape of the resulting array type is
+       the single dimension, given by the number of sub-expressions,
+       concatenated with the shape of the array type of the sub-expressions
+       (we pick the first one).")
+     (xdoc::p
+      "For a @('let') expression,
+       we check the bindings,
+       which extend the static environment (see @(tsee check-bind-list)),
+       and then we check the body in the extended static environment."))
     (expr-case
      expr
      :var
@@ -774,94 +934,29 @@
                                (shape-dims
                                 (list (dim-const (len expr.chars))))))
      :app
-     (b* (((ok fun-arr-type) (check-expr expr.fun senv))
-          ((ok fun-arr-type+ispace) (type-match-array fun-arr-type))
-          (fun-type (type+ispace->type fun-arr-type+ispace))
-          (fun-ispace (type+ispace->ispace fun-arr-type+ispace))
-          (fun-shape (shape-from-ispace fun-ispace))
-          ((ok fun-types+type) (type-match-fun fun-type))
-          (in-types (typelist+type->types fun-types+type))
-          (out-type (typelist+type->type fun-types+type))
-          ((ok in-types+ispaces) (type-list-match-array in-types))
-          (in-atom-types (type+ispace-list->type in-types+ispaces))
-          (in-ispaces (type+ispace-list->ispace in-types+ispaces))
-          (in-shapes (shape-list-from-ispace-list in-ispaces))
-          ((ok out-type+ispace) (type-match-array out-type))
-          (out-atom-type (type+ispace->type out-type+ispace))
-          (out-ispace (type+ispace->ispace out-type+ispace))
-          (out-shape (shape-from-ispace out-ispace))
-          ((ok arg-types) (check-expr-list expr.args senv))
-          ((ok arg-types+ispaces) (type-list-match-array arg-types))
-          (arg-atom-types (type+ispace-list->type arg-types+ispaces))
-          (arg-ispaces (type+ispace-list->ispace arg-types+ispaces))
-          (arg-shapes (shape-list-from-ispace-list arg-ispaces))
-          ((unless (type-list-equivp arg-atom-types in-atom-types))
-           (reserr nil))
-          ((ok prefix-shapes) (check-shape-suffixes arg-shapes in-shapes))
-          ((ok principal-shape) (join-shapes (cons fun-shape prefix-shapes))))
-       (make-type-array
-        :elem out-atom-type
-        :ispace (ispace-shape
-                 (shape-append (list principal-shape out-shape)))))
+     (b* (((ok fun-type) (check-expr expr.fun senv))
+          ((ok arg-types) (check-expr-list expr.args senv)))
+       (check-app fun-type arg-types))
      :tapp
-     (b* (((ok fun-arr-type) (check-expr expr.fun senv))
-          ((ok fun-arr-type+ispace) (type-match-array fun-arr-type))
-          (fun-type (type+ispace->type fun-arr-type+ispace))
-          (fun-ispace (type+ispace->ispace fun-arr-type+ispace))
-          (fun-shape (shape-from-ispace fun-ispace))
-          ((ok fun-vars+type) (type-match-forall fun-type))
-          (vars (typevarlist+type->vars fun-vars+type))
-          (body-arr-type (typevarlist+type->type fun-vars+type))
-          ((ok body-type+ispace) (type-match-array body-arr-type))
-          (body-atom-type (type+ispace->type body-type+ispace))
-          (body-ispace (type+ispace->ispace body-type+ispace))
-          (body-shape (shape-from-ispace body-ispace))
-          ((unless (check-type-list expr.args senv)) (reserr nil))
-          ((ok (string-type-map-pair type-maps))
-           (check-type-params-and-args vars expr.args))
-          ((unless (type-subst-type-vars-no-capture-p body-atom-type
-                                                      type-maps.1st
-                                                      type-maps.2nd))
-           (reserr nil))
-          (body-atom-type-subst
-           (type-subst-type-vars body-atom-type
-                                 type-maps.1st
-                                 type-maps.2nd)))
-       (make-type-array
-        :elem body-atom-type-subst
-        :ispace (ispace-shape (shape-append (list fun-shape body-shape)))))
+     (b* (((ok fun-type) (check-expr expr.fun senv)))
+       (check-tapp fun-type expr.args senv))
      :iapp
-     (b* (((ok fun-arr-type) (check-expr expr.fun senv))
-          ((ok fun-arr-type+ispace) (type-match-array fun-arr-type))
-          (fun-type (type+ispace->type fun-arr-type+ispace))
-          (fun-ispace (type+ispace->ispace fun-arr-type+ispace))
-          (fun-shape (shape-from-ispace fun-ispace))
-          ((ok fun-vars+type) (type-match-product fun-type))
-          (vars (ispacevarlist+type->vars fun-vars+type))
-          (body-arr-type (ispacevarlist+type->type fun-vars+type))
-          ((ok body-type+ispace) (type-match-array body-arr-type))
-          (body-atom-type (type+ispace->type body-type+ispace))
-          (body-ispace (type+ispace->ispace body-type+ispace))
-          (body-shape (shape-from-ispace body-ispace))
-          ((unless (check-ispace-list expr.args senv)) (reserr nil))
-          ((ok (stringdimmap+stringshapemap ispace-maps))
-           (check-ispace-params-and-args vars expr.args))
-          ((unless (type-subst-ispace-vars-no-capture-p body-atom-type
-                                                        ispace-maps.dim-map
-                                                        ispace-maps.shape-map))
-           (reserr nil))
-          (body-atom-type-subst
-           (type-subst-ispace-vars body-atom-type
-                                   ispace-maps.dim-map
-                                   ispace-maps.shape-map))
-          (body-shape-subst (shape-subst-ispace-vars body-shape
-                                                     ispace-maps.dim-map
-                                                     ispace-maps.shape-map)))
-       (make-type-array
-        :elem body-atom-type-subst
-        :ispace (ispace-shape
-                 (shape-append (list fun-shape body-shape-subst)))))
-     :capp (reserr :todo)
+     (b* (((ok fun-type) (check-expr expr.fun senv)))
+       (check-iapp fun-type expr.args senv))
+     :capp
+     (b* (((ok fun-type) (check-expr expr.fun senv))
+          ((ok fun-type)
+           (type-list-option-case
+            expr.targs
+            :some (check-tapp fun-type expr.targs.val senv)
+            :none fun-type))
+          ((ok fun-type)
+           (ispace-list-option-case
+            expr.iargs
+            :some (check-iapp fun-type expr.iargs.val senv)
+            :none fun-type))
+          ((ok arg-types) (check-expr-list expr.args senv)))
+       (check-app fun-type arg-types))
      :unbox
      (b* (((unless (no-duplicatesp-equal expr.ispaces))
            (reserr nil))
@@ -894,8 +989,21 @@
        (make-type-array :elem body-atom-type
                         :ispace (ispace-shape
                                  (shape-append (list sum-shape body-shape)))))
-     :bracket (reserr :todo)
-     :let (reserr :todo))
+     :bracket
+     (b* (((unless (consp expr.exprs)) (reserr nil))
+          ((ok types) (check-expr-list expr.exprs senv))
+          ((unless (type-list-all-equivp types)) (reserr nil))
+          (type (car types))
+          ((ok (type+ispace array)) (type-match-array type)))
+       (make-type-array
+        :elem array.type
+        :ispace (ispace-shape
+                 (shape-append
+                  (list (shape-dims (dim-const-list (list (len expr.exprs))))
+                        (shape-from-ispace array.ispace))))))
+     :let
+     (b* (((ok senv) (check-bind-list expr.binds senv)))
+       (check-expr expr.body senv)))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1072,34 +1180,169 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define check-bind ((bind bindp) (senv senvp))
+    :returns (new-senv senv-resultp)
+    :parents (type-checking check-exprs/atoms)
+    :short "Check a binding,
+            extending the static environment if successful."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is used for @('let') expressions; see @(tsee check-expr).
+       If the binding is valid,
+       we return the static environment extended according to the binding.")
+     (xdoc::p
+      "For a value binding,
+       we check the bound expression, obtaining its type,
+       and we extend the static environment
+       to associate that type to the bound variable.
+       If the optional type is present,
+       we check that it is valid
+       and equivalent to the type of the bound expression.")
+     (xdoc::p
+      "For a function binding,
+       which is syntactic sugar for binding the variable
+       to a term abstraction (see @(tsee expr)),
+       we check it like a term abstraction (see @(tsee check-atom)),
+       obtaining a function type,
+       and we extend the static environment
+       to associate that function type to the bound variable.
+       If the optional result type is present,
+       we check that it is valid and equivalent to
+       the type of the body of the abstraction.")
+     (xdoc::p
+      "A type function binding and an ispace function binding
+       are treated similarly to a function binding,
+       but as syntactic sugar for binding the variable
+       to a type abstraction or an ispace abstraction,
+       so their types are a universal type or a product type.")
+     (xdoc::p
+      "A combined function binding
+       is syntactic sugar for binding the variable
+       to a term abstraction,
+       nested in an ispace abstraction if there are ispace parameters,
+       nested in a type abstraction if there are type parameters;
+       its type is the corresponding nesting of
+       a function type, a product type, and a universal type.
+       We check the body in the static environment
+       extended with all the parameters,
+       and we check that its type is equivalent to the declared result type.")
+     (xdoc::p
+      "Ispace bindings and type bindings are not yet supported,
+       because they would require the static environment
+       to record the bound ispaces and types,
+       so that ispace and type equivalence can take them into account;
+       these bindings return a @(':todo') error for now."))
+    (bind-case
+     bind
+     :ispace (reserr :todo)
+     :type (reserr :todo)
+     :val
+     (b* (((ok type) (check-expr bind.expr senv))
+          ((unless (type-option-case
+                    bind.type?
+                    :some (and (check-type bind.type?.val senv)
+                               (type-equivp type bind.type?.val))
+                    :none t))
+           (reserr nil)))
+       (senv-add-var+type bind.var type senv))
+     :fun
+     (b* (((unless (no-duplicatesp-equal (var+type-list->var bind.params)))
+           (reserr nil))
+          (types (var+type-list->type bind.params))
+          ((unless (check-type-list types senv)) (reserr nil))
+          (senv-body (senv-add-vars+types bind.params senv))
+          ((ok out-type) (check-expr bind.expr senv-body))
+          ((unless (type-option-case
+                    bind.type?
+                    :some (and (check-type bind.type?.val senv)
+                               (type-equivp out-type bind.type?.val))
+                    :none t))
+           (reserr nil)))
+       (senv-add-var+type bind.var
+                          (make-type-fun :in types :out out-type)
+                          senv))
+     :tfun
+     (b* (((unless (no-duplicatesp-equal bind.params)) (reserr nil))
+          (senv-body (senv-add-type-vars bind.params senv))
+          ((ok body-type) (check-expr bind.expr senv-body))
+          ((unless (type-option-case
+                    bind.type?
+                    :some (and (check-type bind.type?.val senv-body)
+                               (type-equivp body-type bind.type?.val))
+                    :none t))
+           (reserr nil)))
+       (senv-add-var+type bind.var
+                          (make-type-forall :params bind.params
+                                            :body body-type)
+                          senv))
+     :ifun
+     (b* (((unless (no-duplicatesp-equal bind.params)) (reserr nil))
+          (senv-body (senv-add-ispace-vars bind.params senv))
+          ((ok body-type) (check-expr bind.expr senv-body))
+          ((unless (type-option-case
+                    bind.type?
+                    :some (and (check-type bind.type?.val senv-body)
+                               (type-equivp body-type bind.type?.val))
+                    :none t))
+           (reserr nil)))
+       (senv-add-var+type bind.var
+                          (make-type-pi :params bind.params :body body-type)
+                          senv))
+     :cfun
+     (b* ((tparams (type-var-list-option-case
+                    bind.tparams? :some bind.tparams?.val :none nil))
+          (iparams (ispace-var-list-option-case
+                    bind.iparams? :some bind.iparams?.val :none nil))
+          ((unless (no-duplicatesp-equal tparams)) (reserr nil))
+          ((unless (no-duplicatesp-equal iparams)) (reserr nil))
+          ((unless (no-duplicatesp-equal (var+type-list->var bind.params)))
+           (reserr nil))
+          (senv-tparams (senv-add-type-vars tparams senv))
+          (senv-iparams (senv-add-ispace-vars iparams senv-tparams))
+          (types (var+type-list->type bind.params))
+          ((unless (check-type-list types senv-iparams)) (reserr nil))
+          ((unless (check-type bind.type senv-iparams)) (reserr nil))
+          (senv-body (senv-add-vars+types bind.params senv-iparams))
+          ((ok out-type) (check-expr bind.expr senv-body))
+          ((unless (type-equivp out-type bind.type)) (reserr nil))
+          (fun-type (make-type-fun :in types :out bind.type))
+          (fun-type (ispace-var-list-option-case
+                     bind.iparams?
+                     :some (make-type-pi :params bind.iparams?.val
+                                         :body fun-type)
+                     :none fun-type))
+          (fun-type (type-var-list-option-case
+                     bind.tparams?
+                     :some (make-type-forall :params bind.tparams?.val
+                                             :body fun-type)
+                     :none fun-type)))
+       (senv-add-var+type bind.var fun-type senv)))
+    :measure (bind-count bind))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-bind-list ((binds bind-listp) (senv senvp))
+    :returns (new-senv senv-resultp)
+    :parents (type-checking check-exprs/atoms)
+    :short "Check a list of bindings,
+            threading the static environment through them."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check each binding in turn,
+       extending the static environment as we go,
+       and we return the final environment."))
+    (b* (((when (endp binds)) (senv-fix senv))
+         ((ok senv) (check-bind (car binds) senv)))
+      (check-bind-list (cdr binds) senv))
+    :measure (bind-list-count binds))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :verify-guards nil ; done below
 
   ///
-
-  (defruledl len-lemma
-    (implies (equal x y)
-             (equal (len x) (len y))))
-
-  (defrulel lemma
-    (implies (and (not (reserrp (check-expr-list exprs senv)))
-                  (not (reserrp
-                        (type-list-match-array
-                         (check-expr-list exprs senv))))
-                  (not (reserrp (type-list-match-array x)))
-                  (type-list-equivp
-                   (type+ispace-list->type
-                    (type-list-match-array
-                     (check-expr-list exprs senv)))
-                   (type+ispace-list->type
-                    (type-list-match-array x))))
-             (equal (len x)
-                    (len exprs)))
-    :use ((:instance same-len-when-type-list-equivp
-                     (types1 (type+ispace-list->type
-                              (type-list-match-array
-                               (check-expr-list exprs senv))))
-                     (types2 (type+ispace-list->type
-                              (type-list-match-array x))))))
 
   (verify-guards check-expr)
 

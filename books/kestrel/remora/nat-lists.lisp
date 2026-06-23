@@ -142,3 +142,11 @@
            (nat-listp (mv-nth 1 (list-prefix-join lists))))
   :induct t
   :enable list-prefix-join)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule nat-list-listp-of-repeat-when-nat-listp
+  (implies (nat-listp x)
+           (nat-list-listp (repeat n x)))
+  :induct (repeat n x)
+  :enable (repeat nat-list-listp))

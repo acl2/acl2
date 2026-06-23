@@ -678,7 +678,19 @@
                                                 shape-renam)
                  :expr (expr-rename-ispace-vars bind.expr
                                                 dim-renam
-                                                shape-renam)))))
+                                                shape-renam))))
+   (bind-list
+    (b* (((when (endp bind-list)) nil)
+         (bind (car bind-list))
+         (new-bind (bind-rename-ispace-vars bind dim-renam shape-renam))
+         ((mv & & dim-renam shape-renam)
+          (dim/shape-rename-remove-bound (bind-bound-ispace-vars bind)
+                                         dim-renam
+                                         shape-renam)))
+      (cons new-bind
+            (bind-list-rename-ispace-vars (cdr bind-list)
+                                          dim-renam
+                                          shape-renam)))))
   :name ast-rename-ispace-vars)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -816,7 +828,19 @@
                                               array-renam)
                  :expr (expr-rename-type-vars bind.expr
                                               atom-renam
-                                              array-renam)))))
+                                              array-renam))))
+   (bind-list
+    (b* (((when (endp bind-list)) nil)
+         (bind (car bind-list))
+         (new-bind (bind-rename-type-vars bind atom-renam array-renam))
+         ((mv & & atom-renam array-renam)
+          (atom/array-rename-remove-bound (bind-bound-type-vars bind)
+                                          atom-renam
+                                          array-renam)))
+      (cons new-bind
+            (bind-list-rename-type-vars (cdr bind-list)
+                                        atom-renam
+                                        array-renam)))))
   :name ast-rename-type-vars)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -897,5 +921,13 @@
             :iparams? bind.iparams?
             :params bind.params
             :type bind.type
-            :expr (expr-rename-expr-vars bind.expr renam)))))
+            :expr (expr-rename-expr-vars bind.expr renam))))
+   (bind-list
+    (b* (((when (endp bind-list)) nil)
+         (bind (car bind-list))
+         (new-bind (bind-rename-expr-vars bind renam))
+         (bound (bind-bound-expr-vars bind))
+         (renam (omap::delete* bound (string-string-map-fix renam))))
+      (cons new-bind
+            (bind-list-rename-expr-vars (cdr bind-list) renam)))))
   :name ast-rename-expr-vars)

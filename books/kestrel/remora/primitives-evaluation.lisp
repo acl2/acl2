@@ -12,15 +12,18 @@
 (in-package "REMORA")
 
 (include-book "values")
+(include-book "kestrel/fty/boolean-result" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local (in-theory (enable int-valuep-when-result-not-error
-                          float-valuep-when-result-not-error)))
+                          float-valuep-when-result-not-error
+                          booleanp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -73,6 +76,17 @@
        ((unless (base-value-case bval :float)) (reserr nil))
        (fval (base-value-float->val bval)))
     fval))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-expr-value-bool ((val expr-valuep))
+  :returns (bval boolean-resultp)
+  :short "Check if an expression value is a boolean value, returning it if so."
+  (b* (((unless (expr-value-case val :base)) (reserr nil))
+       (bval (expr-value-base->val val))
+       ((unless (base-value-case bval :bool)) (reserr nil))
+       (b (base-value-bool->val bval)))
+    b))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -271,3 +285,155 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        (bval (not (= i1.int 0))))
     (expr-value-base (base-value-bool bval))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-bool-not ((val1 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of boolean negation."
+  (b* (((ok b1) (check-expr-value-bool val1))
+       (bval (not b1)))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-bool-and ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of boolean conjunction."
+  (b* (((ok b1) (check-expr-value-bool val1))
+       ((ok b2) (check-expr-value-bool val2))
+       (bval (and b1 b2)))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-bool-or ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of boolean inclusive disjunction."
+  (b* (((ok b1) (check-expr-value-bool val1))
+       ((ok b2) (check-expr-value-bool val2))
+       (bval (or b1 b2)))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-bool-eq ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of boolean equality."
+  (b* (((ok b1) (check-expr-value-bool val1))
+       ((ok b2) (check-expr-value-bool val2))
+       (bval (iff b1 b2)))
+    (expr-value-base (base-value-bool bval))))
+
+(define prim-bool-neq ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of boolean inequality."
+  (b* (((ok b1) (check-expr-value-bool val1))
+       ((ok b2) (check-expr-value-bool val2))
+       (bval (not (iff b1 b2))))
+    (expr-value-base (base-value-bool bval))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-bool-to-int ((val1 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of boolean conversion to integer."
+  (b* (((ok b1) (check-expr-value-bool val1))
+       (ival (int-value (if b1 1 0))))
+    (expr-value-base (base-value-int ival))))
+
+(define prim-bool-to-float ((val1 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of boolean conversion to float."
+  (b* (((ok b1) (check-expr-value-bool val1))
+       (fval (float-value-ratio (if b1 1 0))))
+    (expr-value-base (base-value-float fval))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-primop ((op primop-valuep) (args expr-value-listp))
+  :returns (val expr-value-resultp)
+  :short "Evaluate the application of a primitive operation
+          to its argument cells."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the dynamic counterpart, for primitive operations,
+     of evaluating the body of a lambda abstraction:
+     it will be called by @(tsee eval-app-cell)
+     on a scalar primitive operation and its scalar argument cells,
+     after the rank-polymorphic lifting.")
+   (xdoc::p
+    "We dispatch on the operation,
+     check that it is applied to the right number of argument cells,
+     and call the @('prim-...') function
+     that defines the operation's semantics.
+     Anything else is an error.")
+   (xdoc::p
+    "The result is well-formed when it is not an error,
+     because each @('prim-...') function returns
+     a scalar base value on success."))
+  (b* ((args (expr-value-list-fix args))
+       ((unless (equal (len args) (primop-arity op))) (reserr nil)))
+    (primop-value-case
+     op
+     :int-add (prim-int-add (first args) (second args))
+     :int-sub (prim-int-sub (first args) (second args))
+     :int-mul (prim-int-mul (first args) (second args))
+     :int-div (prim-int-div (first args) (second args))
+     :int-mod (prim-int-mod (first args) (second args))
+     :int-max (prim-int-max (first args) (second args))
+     :int-min (prim-int-min (first args) (second args))
+     :int-bit-and (prim-int-bit-and (first args) (second args))
+     :int-bit-or (prim-int-bit-or (first args) (second args))
+     :int-bit-xor (prim-int-bit-xor (first args) (second args))
+     :int-shl (prim-int-shl (first args) (second args))
+     :int-shr (prim-int-shr (first args) (second args))
+     :int-bit-not (prim-int-bit-not (first args))
+     :int-popc (prim-int-popc (first args))
+     :int-eq (prim-int-eq (first args) (second args))
+     :int-neq (prim-int-neq (first args) (second args))
+     :int-lt (prim-int-lt (first args) (second args))
+     :int-gt (prim-int-gt (first args) (second args))
+     :int-leq (prim-int-leq (first args) (second args))
+     :int-geq (prim-int-geq (first args) (second args))
+     :int-to-float (prim-int-to-float (first args))
+     :int-to-bool (prim-int-to-bool (first args))
+     :bool-not (prim-bool-not (first args))
+     :bool-and (prim-bool-and (first args) (second args))
+     :bool-or (prim-bool-or (first args) (second args))
+     :bool-eq (prim-bool-eq (first args) (second args))
+     :bool-neq (prim-bool-neq (first args) (second args))
+     :bool-to-int (prim-bool-to-int (first args))
+     :bool-to-float (prim-bool-to-float (first args))))
+  :guard-hints (("Goal" :in-theory (enable primop-arity)))
+
+  ///
+
+  (defret expr-value-wfp-of-eval-primop
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hints (("Goal" :in-theory (enable eval-primop
+                                       prim-int-add
+                                       prim-int-sub
+                                       prim-int-mul
+                                       prim-int-div
+                                       prim-int-mod
+                                       prim-int-max
+                                       prim-int-min
+                                       prim-int-bit-and
+                                       prim-int-bit-or
+                                       prim-int-bit-xor
+                                       prim-int-shl
+                                       prim-int-shr
+                                       prim-int-bit-not
+                                       prim-int-popc
+                                       prim-int-eq
+                                       prim-int-neq
+                                       prim-int-lt
+                                       prim-int-gt
+                                       prim-int-leq
+                                       prim-int-geq
+                                       prim-int-to-float
+                                       prim-int-to-bool
+                                       prim-bool-not
+                                       prim-bool-and
+                                       prim-bool-or
+                                       prim-bool-eq
+                                       prim-bool-neq
+                                       prim-bool-to-int
+                                       prim-bool-to-float)))))
