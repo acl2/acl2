@@ -93,7 +93,8 @@
       "Any non-empty subtraction of valid dimensions is valid."))
     (dim-case
      dim
-     :var (set::in (ispace-var-dim dim.name) (senv->ispace-vars senv))
+     :var (consp (omap::assoc (ispace-var-dim dim.name)
+                              (senv->ispace-vars senv)))
      :const t
      :add (check-dim-list dim.dims senv)
      :mul (check-dim-list dim.dims senv)
@@ -151,7 +152,8 @@
        iff all the ispaces are valid."))
     (shape-case
      shape
-     :var (set::in (ispace-var-shape shape.name) (senv->ispace-vars senv))
+     :var (consp (omap::assoc (ispace-var-shape shape.name)
+                              (senv->ispace-vars senv)))
      :dims (check-dim-list shape.dims senv)
      :append (check-shape-list shape.shapes senv)
      :splice (check-ispace-list shape.ispaces senv))
@@ -263,7 +265,7 @@
        in the environment extended with the bound ispace variables."))
     (type-case
      type
-     :var (set::in type.var (senv->type-vars senv))
+     :var (consp (omap::assoc type.var (senv->type-vars senv)))
      :base t
      :array (and (check-type type.elem senv)
                  (type-atomp type.elem)
