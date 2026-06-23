@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "dynamic-environments")
+(include-book "primitives-evaluation")
 (include-book "nat-lists")
 (include-book "integer-lists")
 (include-book "character-literal-codes")
@@ -2002,10 +2003,9 @@
        and we evaluate the body of the lambda abstraction.")
      (xdoc::p
       "If the function cell is a primitive operation,
-       it should be applied to the argument cells
-       via the corresponding ACL2 function in @(see primitives-evaluation)
-       (e.g. @(tsee prim-int-add) for @(':int-add'));
-       this is not handled yet, and currently yields @('(reserr :todo)')."))
+       it is applied to the argument cells via @(tsee eval-primop),
+       which dispatches to the corresponding ACL2 function
+       in @(see primitives-evaluation)."))
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-value-case
        funcell
@@ -2019,10 +2019,7 @@
                    argcells
                    denv)))
          (eval-expr funcell.body denv (1- limit)))
-       ;; TODO: dispatch primitive operations to the ACL2 functions in
-       ;; primitives-evaluation (e.g. prim-int-add for :int-add), applying
-       ;; the operation to the (scalar) argument cells.
-       :primop (reserr :todo)
+       :primop (eval-primop funcell.val argcells)
        :otherwise (reserr nil)))
     :measure (nfix limit))
 
