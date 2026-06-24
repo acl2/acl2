@@ -1003,7 +1003,35 @@
      e.g. the type of an argument against the type of a parameter.
      This approach should be equivalent to the typing rules,
      which may assign multiple equivalent types to an expression or an atom;
-     but we should formally prove all of this."))
+     but we should formally prove all of this.")
+   (xdoc::p
+    "These functions maintain the invariant that
+     every type they return is fully expanded
+     with respect to the definitions in the static environment
+     (see @(tsee senv-expand-type)):
+     that is, every ispace or type variable
+     that a @('let') binds to a definition
+     has been replaced with that definition.
+     The invariant is established by
+     expanding every syntactic type or ispace as it enters the checker
+     (in the empty array and frame expressions,
+     the lambda and box atoms,
+     the type and ispace application arguments,
+     the combined function binding type,
+     and the binding type annotations),
+     and by expanding the type associated to a variable when it is looked up;
+     every other case builds its result from
+     already-checked, and thus already-expanded, sub-results
+     (possibly combined with the expanded syntactic pieces just mentioned),
+     which preserves the invariant.
+     Thanks to this invariant,
+     the operations that match the structure of a type
+     (@(tsee type-match-array) and similar)
+     and that test type equivalence (@(tsee type-equivp) and similar)
+     never need to expand their inputs,
+     because those inputs are always results of these checking functions.
+     We should prove this invariant as a theorem,
+     saying that type expansion is a no-op on the results of these functions."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
