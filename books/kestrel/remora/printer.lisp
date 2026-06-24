@@ -1226,6 +1226,8 @@
       :unbox
       ;; Surface form (grammar unbox-spec):
       ;;   *( ispace-var ws ) identifier ws exp
+      ;; The optional result type (e.type?) has no concrete syntax,
+      ;; so it is not printed.
       ;; Suppress the leading pdoc-line / ispaces-doc when there are
       ;; zero ispace-vars; otherwise we get a stray space inside the
       ;; spec paren ("(unbox ( v target) body)").

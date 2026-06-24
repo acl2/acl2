@@ -1964,7 +1964,8 @@
       (make-expr-unbox :ispaces (unbox-spec-info->ispaces info)
                        :var (unbox-spec-info->var info)
                        :target (unbox-spec-info->target info)
-                       :body body))
+                       :body body
+                       :type? nil))
     :measure (abnf::tree-count tree))
 
   ;; unbox-spec = *( ispace-var ws ) identifier ws exp

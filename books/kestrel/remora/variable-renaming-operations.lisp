@@ -596,6 +596,11 @@
          (b* ((target (expr-rename-ispace-vars expr.target
                                                dim-renam
                                                shape-renam))
+              ;; The result type is outside the scope of the unboxed ispaces,
+              ;; so we rename it under the original (unreduced) maps.
+              (type? (type-option-rename-ispace-vars expr.type?
+                                                     dim-renam
+                                                     shape-renam))
               ((mv & & dim-renam shape-renam)
                (dim/shape-rename-remove-bound (set::mergesort expr.ispaces)
                                               dim-renam
@@ -606,7 +611,8 @@
             :target target
             :body (expr-rename-ispace-vars expr.body
                                            dim-renam
-                                           shape-renam))))
+                                           shape-renam)
+            :type? type?)))
    (expr :let
          (b* ((binds (bind-list-rename-ispace-vars expr.binds
                                                    dim-renam
@@ -890,7 +896,9 @@
             :ispaces expr.ispaces
             :var expr.var
             :target target
-            :body (expr-rename-expr-vars expr.body renam))))
+            :body (expr-rename-expr-vars expr.body renam)
+            ;; the result type has no expression variables, so we carry it
+            :type? expr.type?)))
    (expr :let
          (b* ((binds (bind-list-rename-expr-vars expr.binds renam))
               (bound (bind-list-bound-expr-vars expr.binds))

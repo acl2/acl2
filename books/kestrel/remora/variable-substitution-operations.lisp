@@ -637,6 +637,11 @@
          (b* ((target (expr-subst-ispace-vars expr.target
                                               dim-subst
                                               shape-subst))
+              ;; The result type is outside the scope of the unboxed ispaces,
+              ;; so we substitute it under the original (unreduced) maps.
+              (type? (type-option-subst-ispace-vars expr.type?
+                                                    dim-subst
+                                                    shape-subst))
               ((mv dim-subst shape-subst)
                (dim/shape-subst-remove-bound (set::mergesort expr.ispaces)
                                              dim-subst
@@ -647,7 +652,8 @@
             :target target
             :body (expr-subst-ispace-vars expr.body
                                           dim-subst
-                                          shape-subst))))
+                                          shape-subst)
+            :type? type?)))
    (expr :let
          (b* ((binds (bind-list-subst-ispace-vars expr.binds
                                                   dim-subst
@@ -891,7 +897,9 @@
             :ispaces expr.ispaces
             :var expr.var
             :target target
-            :body (expr-subst-expr-vars expr.body subst))))
+            :body (expr-subst-expr-vars expr.body subst)
+            ;; the result type has no expression variables, so we carry it
+            :type? expr.type?)))
    (expr :let
          (b* ((binds (bind-list-subst-expr-vars expr.binds subst))
               (bound (bind-list-bound-expr-vars expr.binds))

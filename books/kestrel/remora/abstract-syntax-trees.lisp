@@ -796,7 +796,9 @@
        An unboxing expression
        binds zero or more variables to ispaces,
        binds a variable to the boxed expression,
-       and returns the body expression.")
+       and returns the body expression;
+       it is optionally annotated by its type
+       (the type of the whole unboxing expression).")
      (xdoc::p
       "The non-emptiness of the atom list in @(':array')
        and of the expression list in @(':frame')
@@ -806,7 +808,12 @@
        We can enforce this non-emptiness in the static semantics.
        [thesis] enforces non-emptiness with the patterns
        @($\\mathfrak{a}\\ \\mathfrak{a}\\ldots$) and @($e\\ e\\ldots$),
-       while [arxiv] paper does not."))
+       while [arxiv] paper does not.")
+     (xdoc::p
+      "The optional type of the body of an unbox expression
+       (i.e. the result type of the unboxing)
+       will be calculated and stored by the type checker.
+       It is absent after parsing."))
     (:var ((name string)))
     (:atom ((atom atom)))
     (:array ((dims nat-list)
@@ -831,7 +838,8 @@
     (:unbox ((ispaces ispace-var-list)
              (var string)
              (target expr)
-             (body expr)))
+             (body expr)
+             (type? type-option)))
     (:bracket ((exprs expr-list)))
     (:let ((binds bind-list)
            (body expr)))
