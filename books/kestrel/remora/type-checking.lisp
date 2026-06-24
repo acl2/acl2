@@ -884,6 +884,7 @@
        (body-ispace (type+ispace->ispace body-type+ispace))
        (body-shape (shape-from-ispace body-ispace))
        ((unless (check-type-list args senv)) (reserr nil))
+       ((ok args) (senv-expand-type-list args senv))
        ((ok (string-type-map-pair type-maps))
         (check-type-params-and-args vars args))
        ((unless (type-subst-type-vars-no-capture-p body-atom-type
@@ -941,6 +942,7 @@
        (body-ispace (type+ispace->ispace body-type+ispace))
        (body-shape (shape-from-ispace body-ispace))
        ((unless (check-ispace-list args senv)) (reserr nil))
+       (args (senv-expand-ispace-list args senv))
        ((ok (stringdimmap+stringshapemap ispace-maps))
         (check-ispace-params-and-args vars args))
        ((unless (type-subst-ispace-vars-no-capture-p body-atom-type
