@@ -279,7 +279,7 @@
   (xdoc::topstring
    (xdoc::p
     "Since @('let') bindings are sequential,
-     @(tsee ast-subst-type-vars-alpha) processes a list of bindings
+     @(tsee ast-subst-type-vars-alpha-aux) processes a list of bindings
      by threading the substitution through the bindings,
      alpha-renaming the type variable bound by each @(':type') binding
      (using @(tsee atom/array-subst-alpha-bound) on the singleton list
@@ -328,11 +328,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deffold-map subst-type-vars-alpha
-  :short "Substitute type variables in ASTs,
+(fty::deffold-map subst-type-vars-alpha-aux
+  :short "Auxiliary functions to substitute type variables in ASTs,
           with automatic alpha renaming to avoid capture."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "These are auxiliary functions because they all take
+     a set of type variables to avoid.
+     After these, we provide wrappers for some AST types,
+     which are meant to be used to apply substitutions in ASTs
+     (whether they are sub-ASTs of others or not).")
    (xdoc::p
     "The substitution consists of two maps,
      one for atom-kind type variables and one for array-kind type variables,
@@ -430,19 +436,19 @@
                                              (type-free-type-vars type.body))))
            (make-type-forall
             :params fresh-params
-            :body (type-subst-type-vars-alpha type.body
-                                              atom-subst
-                                              array-subst
-                                              avoid))))
+            :body (type-subst-type-vars-alpha-aux type.body
+                                                  atom-subst
+                                                  array-subst
+                                                  avoid))))
    (expr :let
          (b* ((avoid2 (set::union
                        (type-var-set-fix avoid)
                        (set::union (bind-list-all-type-vars expr.binds)
                                    (expr-all-type-vars expr.body))))
-              (binds (bind-list-subst-type-vars-alpha expr.binds
-                                                      atom-subst
-                                                      array-subst
-                                                      avoid2))
+              (binds (bind-list-subst-type-vars-alpha-aux expr.binds
+                                                          atom-subst
+                                                          array-subst
+                                                          avoid2))
               ((mv atom-subst array-subst)
                (bind-list-type-alpha-extend expr.binds
                                             atom-subst
@@ -450,10 +456,10 @@
                                             avoid2)))
            (make-expr-let
             :binds binds
-            :body (expr-subst-type-vars-alpha expr.body
-                                              atom-subst
-                                              array-subst
-                                              avoid))))
+            :body (expr-subst-type-vars-alpha-aux expr.body
+                                                  atom-subst
+                                                  array-subst
+                                                  avoid))))
    (atom :tlambda
          (b* (((mv fresh-params atom-subst array-subst)
                (atom/array-subst-alpha-bound atom.params
@@ -462,10 +468,10 @@
                                              (expr-free-type-vars atom.body))))
            (make-atom-tlambda
             :params fresh-params
-            :body (expr-subst-type-vars-alpha atom.body
-                                              atom-subst
-                                              array-subst
-                                              avoid))))
+            :body (expr-subst-type-vars-alpha-aux atom.body
+                                                  atom-subst
+                                                  array-subst
+                                                  avoid))))
    (bind :tfun
          (b* (((mv fresh-params atom-subst array-subst)
                (atom/array-subst-alpha-bound
@@ -477,14 +483,14 @@
            (make-bind-tfun
             :var bind.var
             :params fresh-params
-            :type? (type-option-subst-type-vars-alpha bind.type?
-                                                      atom-subst
-                                                      array-subst
-                                                      avoid)
-            :expr (expr-subst-type-vars-alpha bind.expr
-                                              atom-subst
-                                              array-subst
-                                              avoid))))
+            :type? (type-option-subst-type-vars-alpha-aux bind.type?
+                                                          atom-subst
+                                                          array-subst
+                                                          avoid)
+            :expr (expr-subst-type-vars-alpha-aux bind.expr
+                                                  atom-subst
+                                                  array-subst
+                                                  avoid))))
    (bind :cfun
          (type-var-list-option-case
           bind.tparams?
@@ -501,44 +507,44 @@
                    :var bind.var
                    :tparams? (type-var-list-option-some fresh-tparams)
                    :iparams? bind.iparams?
-                   :params (var+type-list-subst-type-vars-alpha bind.params
-                                                                atom-subst
-                                                                array-subst
-                                                                avoid)
-                   :type (type-subst-type-vars-alpha bind.type
-                                                     atom-subst
-                                                     array-subst
-                                                     avoid)
-                   :expr (expr-subst-type-vars-alpha bind.expr
-                                                     atom-subst
-                                                     array-subst
-                                                     avoid)))
+                   :params (var+type-list-subst-type-vars-alpha-aux bind.params
+                                                                    atom-subst
+                                                                    array-subst
+                                                                    avoid)
+                   :type (type-subst-type-vars-alpha-aux bind.type
+                                                         atom-subst
+                                                         array-subst
+                                                         avoid)
+                   :expr (expr-subst-type-vars-alpha-aux bind.expr
+                                                         atom-subst
+                                                         array-subst
+                                                         avoid)))
           :none (make-bind-cfun
                  :var bind.var
                  :tparams? bind.tparams?
                  :iparams? bind.iparams?
-                 :params (var+type-list-subst-type-vars-alpha bind.params
-                                                              atom-subst
-                                                              array-subst
-                                                              avoid)
-                 :type (type-subst-type-vars-alpha bind.type
-                                                   atom-subst
-                                                   array-subst
-                                                   avoid)
-                 :expr (expr-subst-type-vars-alpha bind.expr
-                                                   atom-subst
-                                                   array-subst
-                                                   avoid))))
+                 :params (var+type-list-subst-type-vars-alpha-aux bind.params
+                                                                  atom-subst
+                                                                  array-subst
+                                                                  avoid)
+                 :type (type-subst-type-vars-alpha-aux bind.type
+                                                       atom-subst
+                                                       array-subst
+                                                       avoid)
+                 :expr (expr-subst-type-vars-alpha-aux bind.expr
+                                                       atom-subst
+                                                       array-subst
+                                                       avoid))))
    (bind-list
     (b* (((when (endp bind-list)) nil)
          (bind (car bind-list))
          ((mv new-bind atom-subst array-subst)
           (bind-case
            bind
-           :type (b* ((type (type-subst-type-vars-alpha bind.type
-                                                        atom-subst
-                                                        array-subst
-                                                        avoid))
+           :type (b* ((type (type-subst-type-vars-alpha-aux bind.type
+                                                            atom-subst
+                                                            array-subst
+                                                            avoid))
                       ((mv fresh atom-subst array-subst)
                        (atom/array-subst-alpha-bound (list bind.var)
                                                      atom-subst
@@ -547,15 +553,92 @@
                    (mv (make-bind-type :var (car fresh) :type type)
                        atom-subst
                        array-subst))
-           :otherwise (mv (bind-subst-type-vars-alpha bind
-                                                      atom-subst
-                                                      array-subst
-                                                      avoid)
+           :otherwise (mv (bind-subst-type-vars-alpha-aux bind
+                                                          atom-subst
+                                                          array-subst
+                                                          avoid)
                           atom-subst
                           array-subst))))
       (cons new-bind
-            (bind-list-subst-type-vars-alpha (cdr bind-list)
-                                             atom-subst
-                                             array-subst
-                                             avoid)))))
-  :name ast-subst-type-vars-alpha)
+            (bind-list-subst-type-vars-alpha-aux (cdr bind-list)
+                                                 atom-subst
+                                                 array-subst
+                                                 avoid)))))
+  :name ast-subst-type-vars-alpha-aux)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-subst-type-vars-alpha ((type typep)
+                                    (atom-subst string-type-mapp)
+                                    (array-subst string-type-mapp))
+  :returns (new-type typep)
+  :short "Substitute type variables in a type,
+          with automatic alpha renaming to avoid capture."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the top-level entry point for types.
+     It calls @(tsee type-subst-type-vars-alpha-aux)
+     with an empty set of additional type variables to avoid.")
+   (xdoc::p
+    "As explained in @(see ast-subst-type-vars-alpha-aux),
+     the @('avoid') set is needed only to thread,
+     into the bindings of a @('let'),
+     the type variables of the @('let') that the bindings cannot see;
+     it is internal plumbing, not a channel for surrounding-scope variables.
+     So it is correct to start with an empty @('avoid') set here,
+     even when substituting in a subterm of a larger construct:
+     the renaming is correct regardless of the surrounding context,
+     because at each binder the fresh variables avoid
+     the free variables of the binder's body
+     (which already include any surrounding variables that occur free in it)
+     and the free variables of the substitution's range."))
+  (type-subst-type-vars-alpha-aux type atom-subst array-subst nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-subst-type-vars-alpha ((expr exprp)
+                                    (atom-subst string-type-mapp)
+                                    (array-subst string-type-mapp))
+  :returns (new-expr exprp)
+  :short "Substitute type variables in an expression,
+          with automatic alpha renaming to avoid capture."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the top-level entry point for expressions;
+     see @(tsee type-subst-type-vars-alpha) for why the @('avoid') set
+     can be started empty here."))
+  (expr-subst-type-vars-alpha-aux expr atom-subst array-subst nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atom-subst-type-vars-alpha ((atom atomp)
+                                    (atom-subst string-type-mapp)
+                                    (array-subst string-type-mapp))
+  :returns (new-atom atomp)
+  :short "Substitute type variables in an atom,
+          with automatic alpha renaming to avoid capture."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the top-level entry point for atoms;
+     see @(tsee type-subst-type-vars-alpha) for why the @('avoid') set
+     can be started empty here."))
+  (atom-subst-type-vars-alpha-aux atom atom-subst array-subst nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prog-subst-type-vars-alpha ((prog progp)
+                                    (atom-subst string-type-mapp)
+                                    (array-subst string-type-mapp))
+  :returns (new-prog progp)
+  :short "Substitute type variables in a program,
+          with automatic alpha renaming to avoid capture."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the top-level entry point for programs;
+     see @(tsee type-subst-type-vars-alpha) for why the @('avoid') set
+     can be started empty here."))
+  (prog-subst-type-vars-alpha-aux prog atom-subst array-subst nil))
