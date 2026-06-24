@@ -60,6 +60,7 @@
    (include-book "solidity/top")
    (include-book "strings-light/doc")
    (include-book "syntheto/top")
+   (include-book "terms-light/doc")
    (include-book "typed-lists-light/doc")
    (include-book "utilities/top")
    (include-book "utilities/doc")

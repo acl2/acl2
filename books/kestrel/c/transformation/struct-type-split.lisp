@@ -157,6 +157,7 @@
   (type-case
     type
     :unknown :unknown
+    :unknown-builtin nil
     :unknown-scalar :unknown
     :unknown-arithmetic nil
     :struct (c$::uid-equal struct-uid type.uid)
@@ -208,6 +209,7 @@
     (type-case
       type
       :unknown :unknown
+      :unknown-builtin nil
       :unknown-scalar :unknown
       :unknown-arithmetic nil
       :struct (if (c$::uid-equal struct-uid type.uid)

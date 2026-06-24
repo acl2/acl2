@@ -46,6 +46,7 @@
   (type-case
    type
    :unknown t
+   :unknown-builtin t
    :unknown-scalar t
    :unknown-arithmetic t
    :pointer (b* (((unless (or (type-case type.to :void)

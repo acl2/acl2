@@ -167,6 +167,7 @@
      :function (and (type-sts-safep type.ret nested struct)
                     (type-params-sts-safep type.params nested struct))
      :unknown nil
+     :unknown-builtin t
      :unknown-scalar nil
      :unknown-arithmetic t)
     :measure (type-count type))

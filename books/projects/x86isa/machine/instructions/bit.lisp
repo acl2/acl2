@@ -1158,7 +1158,7 @@
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       (result (lzcnt (ash operand-size 3) 0 source))
+      (result (lzcnt (ash operand-size 3) (ash operand-size 3) source))
 
        ;; Update the x86 state.
        ;; ZF and CF affected; PF, AF, SF, and OF undefined.
