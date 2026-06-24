@@ -27,9 +27,7 @@
   (xdoc::topstring
    (xdoc::p
     "The substitutions are represented
-     as in @(see variable-substitution-operations).")
-   (xdoc::p
-    "This is work in progress."))
+     as in @(see variable-substitution-operations)."))
   :order-subtopics t
   :default-parent t)
 
