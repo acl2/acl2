@@ -960,6 +960,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-bind-type-annotation ((type? type-optionp)
+                                    (type typep)
+                                    (senv senvp))
+  :returns (yes/no booleanp)
+  :short "Check the optional type annotation of a binding."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Several kinds of bindings have an optional type annotation
+     (see @(tsee bind)).
+     If the annotation is absent, there is nothing to check.
+     If it is present, it must be a valid type
+     equivalent to the inferred type passed as argument."))
+  (type-option-case
+   type?
+   :none t
+   :some (and (check-type type?.val senv)
+              (type-equivp type type?.val))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines check-exprs/atoms
   :short "Check expressions, atoms, and lists thereof."
   :long
@@ -1453,11 +1474,7 @@
      :type (reserr :todo)
      :val
      (b* (((ok type) (check-expr bind.expr senv))
-          ((unless (type-option-case
-                    bind.type?
-                    :some (and (check-type bind.type?.val senv)
-                               (type-equivp type bind.type?.val))
-                    :none t))
+          ((unless (check-bind-type-annotation bind.type? type senv))
            (reserr nil)))
        (senv-add-var+type bind.var type senv))
      :fun
@@ -1467,11 +1484,7 @@
           ((unless (check-type-list types senv)) (reserr nil))
           (senv-body (senv-add-vars+types bind.params senv))
           ((ok out-type) (check-expr bind.expr senv-body))
-          ((unless (type-option-case
-                    bind.type?
-                    :some (and (check-type bind.type?.val senv)
-                               (type-equivp out-type bind.type?.val))
-                    :none t))
+          ((unless (check-bind-type-annotation bind.type? out-type senv))
            (reserr nil)))
        (senv-add-var+type bind.var
                           (make-type-fun :in types :out out-type)
@@ -1480,11 +1493,7 @@
      (b* (((unless (no-duplicatesp-equal bind.params)) (reserr nil))
           (senv-body (senv-add-type-vars bind.params senv))
           ((ok body-type) (check-expr bind.expr senv-body))
-          ((unless (type-option-case
-                    bind.type?
-                    :some (and (check-type bind.type?.val senv-body)
-                               (type-equivp body-type bind.type?.val))
-                    :none t))
+          ((unless (check-bind-type-annotation bind.type? body-type senv-body))
            (reserr nil)))
        (senv-add-var+type bind.var
                           (make-type-forall :params bind.params
@@ -1494,11 +1503,7 @@
      (b* (((unless (no-duplicatesp-equal bind.params)) (reserr nil))
           (senv-body (senv-add-ispace-vars bind.params senv))
           ((ok body-type) (check-expr bind.expr senv-body))
-          ((unless (type-option-case
-                    bind.type?
-                    :some (and (check-type bind.type?.val senv-body)
-                               (type-equivp body-type bind.type?.val))
-                    :none t))
+          ((unless (check-bind-type-annotation bind.type? body-type senv-body))
            (reserr nil)))
        (senv-add-var+type bind.var
                           (make-type-pi :params bind.params :body body-type)
