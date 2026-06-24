@@ -98,7 +98,7 @@
   :short "Collection of data used by @(see sts-split)."
   :long
   (xdoc::topstring-p
-   "The @('right-set'), @('right-name'), and @('dialect') fields
+   "The @('right-set'), @('right-name'), @('dialect'), and @('ienv') fields
     are expected to remain constant.
     The @('struct-uid') field is constant
     within a single translation unit,
@@ -113,14 +113,22 @@
     The @('warnings') field collects warning messages,
     in reverse chronological order;
     they are printed at the end of the transformation
-    (see @(tsee sts-print-warnings)).")
+    (see @(tsee sts-print-warnings)).
+    The @('filepath') field is the file path
+    of the translation unit currently being transformed;
+    it is updated for each translation unit
+    (see @(tsee sts-split-trans-units)),
+    and is used only to provide context in error messages
+    (see @(tsee sts-error-in-translation-unit)).")
   ((struct-uid c$::uid)
    (right-set ident-set)
    (right-name ident)
    (dialect c::dialect)
+   (ienv c$::ienv)
    (blacklist ident-set)
    (ident-map uid-ident-map)
-   (warnings acl2::msg-list))
+   (warnings acl2::msg-list)
+   (filepath c$::filepath))
   :pred sts-split-statep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -134,6 +142,24 @@
     st
     :warnings (cons (acl2::msg-fix warning)
                     (sts-split-state->warnings st))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sts-error-in-translation-unit
+  ((msg maybe-msgp)
+   (st sts-split-statep))
+  :returns (msg$ msgp)
+  :short "Augment an error message with the file path
+          of the translation unit currently being transformed."
+  :long
+  (xdoc::topstring-p
+   "The file path is taken from the @('filepath') field
+    of the @(tsee sts-split-state),
+    which is set for each translation unit
+    in @(tsee sts-split-trans-units).")
+  (msg$ "In translation unit ~x0:~%~@1"
+        (c$::filepath->string (sts-split-state->filepath st))
+        msg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -327,22 +353,26 @@
     the split struct type occurs in them.")
   (b* (((reterr) nil)
        (struct-uid (sts-split-state->struct-uid st))
+       (dialect (sts-split-state->dialect st))
+       (ienv (sts-split-state->ienv st))
        (splittablep (sts-splittablep type struct-uid))
        ((when (eq splittablep :unknown))
-        (retmsg$ "The type ~x0 is unknown." (c$::type-fix type)))
+        (retmsg$ "The type is unknown, ~
+                  so it cannot be determined whether it is splittable.~%~@0"
+                 (context-msg-type type ienv dialect)))
        ((when (eq splittablep t))
         (retok t))
        (occurs (type-struct-occurs-unsupported-p type struct-uid))
        ((when (eq occurs :unknown))
         (retmsg$ "It cannot be determined whether ~
-                  the split struct type occurs in the type ~x0."
-                 (c$::type-fix type)))
+                  the split struct type occurs in the type.~%~@0"
+                 (context-msg-type type ienv dialect)))
        ((when (eq occurs t))
         (retmsg$ "The split struct type may appear in a type ~
                   only as the struct type itself, ~
-                  possibly behind pointers; ~
-                  it appears in the type ~x0."
-                 (c$::type-fix type))))
+                  possibly behind pointers, ~
+                  but it occurs in an unsupported context.~%~@0"
+                 (context-msg-type type ienv dialect))))
     (retok nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3538,12 +3568,15 @@
                 tag primary-type completions ienv (omap::tail tunits) st)))
           (retok (omap::update filepath (c$::trans-unit-fix tunit) rest)
                  st)))
+       (st (change-sts-split-state st :filepath filepath))
        (msg? (sts-check-completions completions uid))
        ((when msg?)
-        (reterr msg?))
-       ((erp tunit st)
+        (reterr (sts-error-in-translation-unit msg? st)))
+       ((mv erp tunit st)
         (trans-unit-sts-split tunit
                               (change-sts-split-state st :struct-uid uid)))
+       ((when erp)
+        (reterr (sts-error-in-translation-unit erp st)))
        ((erp rest st)
         (sts-split-trans-units
           tag primary-type completions ienv (omap::tail tunits) st)))
@@ -3618,9 +3651,11 @@
              :right-set (mergesort right-members)
              :right-name right-name
              :dialect (c$::ienv->dialect code.ienv)
+             :ienv code.ienv
              :blacklist (insert right-name blacklist)
              :ident-map nil
-             :warnings nil))
+             :warnings nil
+             :filepath (c$::irr-filepath)))
        ((erp map st)
         (sts-split-trans-units tag primary-type completions code.ienv map st))
        (- (fast-alist-free completions))
