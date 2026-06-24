@@ -904,7 +904,8 @@
               (subst (omap::delete* bound (string-expr-map-fix subst))))
            (make-atom-lambda
             :params atom.params
-            :body (expr-subst-expr-vars atom.body subst))))
+            :body (expr-subst-expr-vars atom.body subst)
+            :type? atom.type?)))
    (bind :fun
          (b* ((bound (set::mergesort (var+type-list->var bind.params)))
               (subst (omap::delete* bound (string-expr-map-fix subst))))
