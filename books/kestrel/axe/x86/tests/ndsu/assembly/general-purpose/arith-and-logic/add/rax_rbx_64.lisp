@@ -127,8 +127,6 @@
   (equal (memi address (rax_rbx_64 x86))
          (memi address x86)))
 
-(defconst *standard-flags* '(:cf :pf :af :zf :sf :of))
-
 (defthm rax_rbx_64-other-flags
   (implies (and (member-equal flag *flags*)
                 (not (member-eq flag *standard-flags*)))

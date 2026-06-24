@@ -138,8 +138,6 @@
   (equal (memi address (eax_ebx_32 x86))
          (memi address x86)))
 
-(defconst *standard-flags* '(:cf :pf :af :zf :sf :of))
-
 (defthm eax_ebx_32-other-flags
   (implies (and (member-equal flag *flags*)
                 (not (member-eq flag *standard-flags*)))

@@ -138,8 +138,6 @@
   (equal (memi address (ax_bx_16 x86))
          (memi address x86)))
 
-(defconst *standard-flags* '(:cf :pf :af :zf :sf :of))
-
 (defthm ax_bx_16-other-flags
   (implies (and (member-equal flag *flags*)
                 (not (member-eq flag *standard-flags*)))
