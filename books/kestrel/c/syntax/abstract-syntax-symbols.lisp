@@ -729,7 +729,9 @@
 
     ;; validation information:
 
+    uid
     uidp
+    uid-fix
 
     typep
     type-case
@@ -753,6 +755,7 @@
     type-struni-member-p
     type-struni-member-count
 
+    type-struni-member-list
     type-struni-member-listp
     type-struni-member-list-count
     type-struni-member->type
