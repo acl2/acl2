@@ -1119,7 +1119,7 @@
      :var
      (b* ((name+type (omap::assoc expr.name (senv->expr-vars senv)))
           ((unless name+type) (reserr nil)))
-       (cdr name+type))
+       (senv-expand-type (cdr name+type) senv))
      :atom
      (b* (((ok type) (check-atom expr.atom senv)))
        (make-type-array :elem type
