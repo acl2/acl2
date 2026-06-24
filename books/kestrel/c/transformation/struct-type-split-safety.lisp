@@ -32,7 +32,7 @@
      (currently they are just very preliminary and conservative).")
    (xdoc::p
     "The STS (= Struct Type Split) transformation is safe,
-     in the sense that it suitabley preserves code functionality,
+     in the sense that it suitably preserves code functionality,
      only provided that the struct type is not used in certain ways.
      For instance, if a pointer to the struct type is cast to @('void*'),
      the resulting pointer may manipulate the bytes that form the struct
@@ -45,7 +45,7 @@
      These checkers operate on ASTs annotated by validation.")
    (xdoc::p
     "It is possible that these checkers may be useful
-     for other kinds of transformationa as well,
+     for other kinds of transformations as well,
      e.g. to add or remove struct members.
      If that turns out to be the case,
      we will suitably generalize their naming and role.")
@@ -55,7 +55,7 @@
      the tag (name) of a file-scope struct declaration
      in one of the translation units of the ensemble.
      But the transformation also splits
-     all the compatible file-scope struct type in other translation units.
+     all the compatible file-scope struct types in other translation units.
      More explicitly, each translation unit in the ensemble
      either has or does not have a file-scope struct type
      with the tag specified to the STS transformation.
@@ -185,7 +185,7 @@
        For function types,
        we disallow the struct anywhere in the return type,
        passing @('t') as the nested flag;
-       while the pass the nested flag as is for parameters.
+       while we pass the nested flag as is for parameters.
        We regard an unknown type as unsafe, because it could be anything.
        The same goes for an unknown scalar type,
        because it could be a pointer to an unsafe type
@@ -372,7 +372,7 @@
      all the ASTs in @(see c$::abstract-syntax-trees) before that clique
      do not contain anything directly related to structs.
      As a simple example, an identifier,
-     although it could a struct name,
+     although it could be a struct name,
      or the name of a variable that contains a struct,
      in isolation it cannot be deemed unsafe;
      it is only when used in a larger context (e.g. an expression)
@@ -395,7 +395,7 @@
      The reason for excluding the @('auto') storage specifier
      is that, in C23, it does type inference,
      which might resolve to the struct type being split,
-     and so we exlude that for now.")
+     and so we exclude that for now.")
    (xdoc::p
     "The predicates end at the @(tsee trans-ensemble) type.
      We could extend this to @(tsee code-ensemble) if needed.")
@@ -558,7 +558,7 @@
      because they may affect the struct being split.")
    (xdoc::p
     "Initializers with optional designations are only reachable
-     from listt initializers, which are excluded (see above).")
+     from list initializers, which are excluded (see above).")
    (xdoc::p
     "We exclude declarators and abstract declarators,
      because in combination with type specifiers
