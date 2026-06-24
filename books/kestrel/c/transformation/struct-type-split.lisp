@@ -596,8 +596,8 @@
         (b* (((erp left-arg right-arg? st)
               (expr-sts-split expr.arg st))
              ((unless right-arg?)
-              (retok (make-expr-member :arg left-arg
-                                       :name expr.name)
+              (retok (make-expr-memberp :arg left-arg
+                                        :name expr.name)
                      nil
                      st))
              (rightp (in expr.name (sts-split-state->right-set st)))
