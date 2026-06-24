@@ -1891,9 +1891,16 @@
        it exists only if the frames form a chain,
        and each frame is then a prefix of the principal one.")
      (xdoc::p
-      "The case of an empty principal frame,
-       i.e. one with some zero dimension,
-       is not handled yet.")
+      "If the principal frame is empty (it has some zero dimension),
+       there are no positions at which to apply the function,
+       and hence no result cells to assemble.
+       Instead we build an empty result array directly:
+       its dimensions are the principal frame
+       followed by the result cell dimensions,
+       and its element type is the atom type of the codomain
+       (see @(tsee fun-value-result-type)),
+       analogously to how empty frame expressions are evaluated
+       (see @(tsee expr-value-with-empty-dim)).")
      (xdoc::p
       "We lift the function and every argument to the principal frame
        (see @(tsee lift-expr-value-to-frame)
@@ -1933,7 +1940,16 @@
          (fun-frame (dims-of-expr-value funval))
          ((mv joinp pframe) (list-prefix-join (cons fun-frame arg-frames)))
          ((unless joinp) (reserr nil))
-         ((when (member-equal 0 pframe)) (reserr :todo))
+         ((when (member-equal 0 pframe))
+          (b* (((ok tval) (fun-value-result-type funval))
+               ((mv elem cell-dims)
+                (type-value-case
+                 tval
+                 :array (mv tval.elem tval.dims)
+                 :otherwise (mv tval nil)))
+               ((when (type-value-case elem :array)) (reserr nil))
+               (dims (append pframe cell-dims)))
+            (expr-value-with-empty-dim dims elem)))
          ((ok fun-cells) (lift-expr-value-to-frame funval fun-frame pframe))
          ((ok arg-cell-lists)
           (lift-expr-value-list-to-frame argvals arg-frames pframe))
