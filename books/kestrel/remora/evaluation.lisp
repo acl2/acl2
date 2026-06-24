@@ -1337,7 +1337,9 @@
       "A lambda abstraction evaluates to a lambda value
        with the same parameter variables,
        whose associated types are evaluated to type values;
-       the body is not evaluated here,
+       the optional body type, if present,
+       is likewise evaluated to a type value;
+       the body itself is not evaluated here,
        but only when the abstraction is applied.")
      (xdoc::p
       "A type lambda abstraction or an ispace lambda abstraction
@@ -1354,10 +1356,14 @@
       (atom-case
        atom
        :base (expr-value-base (eval-base-lit atom.lit))
-       :lambda (b* (((ok params) (eval-var+type-list atom.params denv)))
+       :lambda (b* (((ok params) (eval-var+type-list atom.params denv))
+                    ((ok type?) (type-option-case
+                                 atom.type?
+                                 :none nil
+                                 :some (eval-type atom.type?.val denv))))
                  (make-expr-value-lambda :params params
                                          :body atom.body
-                                         :type? nil))
+                                         :type? type?))
        :tlambda (make-expr-value-tlambda :params atom.params :body atom.body)
        :ilambda (make-expr-value-ilambda :params atom.params :body atom.body)
        :box (b* (((ok ivals) (eval-ispace-list atom.ispaces denv))
