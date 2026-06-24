@@ -366,7 +366,7 @@
      which the fresh variables generated for the bound variables must avoid;
      it is otherwise threaded unchanged.")
    (xdoc::p
-    "The @('avoid') set is threaded through the bindings unchanged:
+    "The @('avoid') set is threaded through a list of bindings unchanged:
      it is not augmented with the fresh variables
      generated for the preceding bindings.
      This is correct because those fresh variables are already avoided
