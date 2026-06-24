@@ -257,6 +257,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption ispace-option
+  ispace
+  :short "Fixtype of optional ispaces."
+  :pred ispace-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum ispace-list-option
   :short "Fixtype of optional lists of ispaces."
   (:some ((val ispace-list)))

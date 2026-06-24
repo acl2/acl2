@@ -51,15 +51,29 @@
     "A static environment consists of:")
    (xdoc::ul
     (xdoc::li
-     "The set of ispace variables in scope.
-      This corresponds to @($\\Theta$),
-      but since our ispace variables include their own sort,
-      a set suffices, as opposed to a map from variables to sorts.")
+     "A map from the ispace variables in scope to optional ispaces.
+      This corresponds to @($\\Theta$);
+      since our ispace variables include their own sort,
+      the keys suffice to capture the sorts,
+      as opposed to a map from variables to sorts.
+      The optional ispace associated to a variable is absent
+      when the variable is bound by an abstraction,
+      i.e. it does not stand for any specific ispace;
+      it is present when the variable is bound by a @('let')
+      to a specific ispace, which is then its definition.
+      The definitions are taken into account
+      by ispace and type equivalence.
+      (Currently the optional ispace is always absent,
+      because @('let') bindings of ispace variables
+      are not yet type-checked.)")
     (xdoc::li
-     "The set of type variables in scope.
-      This corresponds to @($\\Delta$),
-      but since our type variables include their own kind,
-      a set suffices, as opposed to a map from variables to kinds.")
+     "A map from the type variables in scope to optional types.
+      This corresponds to @($\\Delta$);
+      since our type variables include their own kind,
+      the keys suffice to capture the kinds,
+      as opposed to a map from variables to kinds.
+      The optional type is absent or present,
+      and is used analogously to the ispace variables described above.")
     (xdoc::li
      "A map from the expression variables in scope to their types.
       This corresponds to @($\\Gamma$)."))
@@ -75,8 +89,8 @@
      indeed, they are distinguished by the prefixes.
      The variables in a static environment are similarly separated,
      in the three components and via fixtype sum tags."))
-  ((ispace-vars ispace-var-set)
-   (type-vars type-var-set)
+  ((ispace-vars ispace-var-ispace-option-map)
+   (type-vars type-var-type-option-map)
    (expr-vars string-type-map))
   :pred senvp)
 
@@ -176,11 +190,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Variables already present have no effect."))
-  (b* ((ispace-vars (senv->ispace-vars senv))
-       (new-ispace-vars (set::union (set::mergesort (ispace-var-list-fix vars))
-                                    ispace-vars)))
-    (change-senv senv :ispace-vars new-ispace-vars)))
+    "The variables are added with an absent associated ispace,
+     because they do not stand for any specific ispace;
+     this is the case for variables bound by abstractions.
+     A variable already present is overwritten,
+     which realizes the intended shadowing."))
+  (b* (((when (endp vars)) (senv-fix senv))
+       (new-ispace-vars (omap::update (ispace-var-fix (car vars))
+                                      nil
+                                      (senv->ispace-vars senv)))
+       (senv (change-senv senv :ispace-vars new-ispace-vars)))
+    (senv-add-ispace-vars (cdr vars) senv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -190,11 +210,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Variables already present have no effect."))
-  (b* ((type-vars (senv->type-vars senv))
-       (new-type-vars (set::union (set::mergesort (type-var-list-fix vars))
-                                  type-vars)))
-    (change-senv senv :type-vars new-type-vars)))
+    "The variables are added with an absent associated type,
+     because they do not stand for any specific type;
+     this is the case for variables bound by abstractions.
+     A variable already present is overwritten,
+     which realizes the intended shadowing."))
+  (b* (((when (endp vars)) (senv-fix senv))
+       (new-type-vars (omap::update (type-var-fix (car vars))
+                                    nil
+                                    (senv->type-vars senv)))
+       (senv (change-senv senv :type-vars new-type-vars)))
+    (senv-add-type-vars (cdr vars) senv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
