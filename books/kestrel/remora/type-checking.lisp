@@ -1343,6 +1343,7 @@
            (reserr nil))
           (types (var+type-list->type atom.params))
           ((unless (check-type-list types senv)) (reserr nil))
+          ((ok types) (senv-expand-type-list types senv))
           (senv (senv-add-vars+types atom.params senv))
           ((ok type) (check-expr atom.body senv)))
        (make-type-fun :in types :out type))
