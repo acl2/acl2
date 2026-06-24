@@ -1189,7 +1189,7 @@
                (type-value-option-case
                 type?
                 :some type?.val
-                :none (reserr :todo)))
+                :none (reserr nil)))
      :otherwise (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable expr-valuep-when-result-not-error))))
 
