@@ -275,7 +275,20 @@
                                         (set::insert fresh-var
                                                      (string-sfix avoid)))))
        (mv (cons fresh-var fresh-vars) subst))
-     :verify-guards :after-returns)))
+     :verify-guards :after-returns
+
+     ///
+
+     (defret consp-of-fresh-vars-of-expr-subst-alpha-bound-loop
+       (equal (consp fresh-vars)
+              (consp bound-vars))
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret consp-of-fresh-vars-of-expr-subst-alpha-bound
+    (equal (consp fresh-vars)
+           (consp bound-vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -382,6 +395,52 @@
          :otherwise (mv (string-type-map-fix atom-subst)
                         (string-type-map-fix array-subst)))))
     (bind-list-type-alpha-extend (cdr binds) atom-subst array-subst avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bind-list-expr-alpha-extend ((binds bind-listp)
+                                     (subst string-expr-mapp)
+                                     (avoid string-setp))
+  :returns (new-subst string-expr-mapp)
+  :short "Extend an expression substitution
+          with the renamings introduced by alpha-renaming
+          the expression variables bound in a list of @('let') bindings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since @('let') bindings are sequential,
+     @(tsee ast-subst-expr-vars-alpha-aux) processes a list of bindings
+     by threading the substitution through the bindings,
+     alpha-renaming the expression variable bound by each binding
+     (using @(tsee expr-subst-alpha-bound) on the variable)
+     and extending the substitution accordingly.
+     The body of the @('let') must be substituted
+     with the substitution extended with all those renamings;
+     but the @(tsee fty::deffold-map) traversal of the bindings
+     returns only the new bindings, not the extended substitution.
+     So this operation recomputes just the extended substitution,
+     mirroring the threading performed on the bindings,
+     for use in substituting the body of the @('let').
+     The @('avoid') argument carries the expression variables to avoid
+     when generating fresh variables; it is the same value passed to
+     the bindings traversal, so that the fresh variables generated here
+     coincide with the ones used to rename the bindings.")
+   (xdoc::p
+    "The value,
+     function,
+     type-function,
+     ispace-function,
+     and combined-function
+     bindings each bind an expression variable;
+     the ispace and type bindings do not,
+     and so they leave the substitution unchanged here.
+     This is handled uniformly via @(tsee bind-bound-expr-vars),
+     which returns the (at most one) expression variable bound by a binding."))
+  (b* (((when (endp binds)) (string-expr-map-fix subst))
+       (bind (car binds))
+       ((mv & subst)
+        (expr-subst-alpha-bound (bind-bound-expr-var-list bind) subst avoid)))
+    (bind-list-expr-alpha-extend (cdr binds) subst avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1040,3 +1099,260 @@
   (prog-subst-type-vars-alpha-aux prog atom-subst array-subst nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define var+type-list-set-vars ((vars string-listp) (var+types var+type-listp))
+  :returns (new-var+types var+type-listp)
+  :short "Replace, in a list of variables with types,
+          the variables with given ones, keeping the types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to rebuild the parameter list of
+     a lambda abstraction or function binding
+     after alpha-renaming its bound expression variables:
+     the fresh variables replace the original ones,
+     while the associated types are unchanged
+     (types contain no expression variables).
+     The two lists are expected to have the same length."))
+  (b* (((when (endp var+types)) nil)
+       ((when (endp vars)) (var+type-list-fix var+types))
+       (vt (car var+types)))
+    (cons (make-var+type :var (car vars) :type (var+type->type vt))
+          (var+type-list-set-vars (cdr vars) (cdr var+types)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-map subst-expr-vars-alpha-aux
+  :short "Auxiliary functions to substitute expression variables in ASTs,
+          with automatic alpha renaming to avoid capture."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are auxiliary functions because they all take
+     a set of type variables to avoid.
+     After these, we provide wrappers for some AST types,
+     which are meant to be used to apply substitutions in ASTs
+     (whether they are sub-ASTs of others or not).")
+   (xdoc::p
+    "The substitution consists of one map,
+     as in @(tsee ast-subst-expr-vars).")
+   (xdoc::p
+    "Unlike @(tsee ast-subst-expr-vars),
+     this does not require a separate no-capture check:
+     at each expression-binding construct,
+     instead of merely removing the bound variables from the substitution,
+     we alpha-rename them to fresh variables
+     (via @(tsee expr-subst-alpha-bound)),
+     extending the substitution with the renamings,
+     and rebuild the binder with the fresh variables.
+     The fresh variables are chosen to avoid
+     the free expression variables of the (restricted) substitution
+     and the expression variables of the body of the binder,
+     so that no capture occurs and binding structure is preserved.")
+   (xdoc::p
+    "The parameters of a lambda abstraction and of a function binding
+     are variables with types;
+     since types contain no expression variables,
+     we rename only the variables (keeping the types),
+     rebuilding the parameter list via @(tsee var+type-list-set-vars).")
+   (xdoc::p
+    "Since @('let') bindings are sequential,
+     we override the function for @(tsee bind-list)
+     so that, for a non-empty list of bindings,
+     we substitute and alpha-rename the @(tsee car) of the list,
+     extend the substitution with the renaming,
+     and proceed to the @(tsee cdr) of the list.
+     For the body of a @('let'),
+     we substitute with the substitution extended with
+     all the renamings of the bindings,
+     recomputed via @(tsee bind-list-expr-alpha-extend).
+     The @('avoid') extra argument conveys, into the bindings traversal,
+     the expression variables of the @('let') (its bindings and body),
+     which the fresh variables generated for the bound variables must avoid;
+     it is otherwise threaded unchanged.")
+   (xdoc::p
+    "The @('avoid') set is threaded through a list of bindings unchanged:
+     it is not augmented with the fresh variables
+     generated for the preceding bindings.
+     This is correct because those fresh variables are already avoided
+     via the substitution, which is threaded through the bindings.
+     Each bound variable is mapped, in the substitution,
+     to an expression consisting of its fresh variable,
+     so the fresh variable occurs among the free expression variables
+     of the substitution,
+     which @(tsee expr-subst-alpha-bound) includes
+     in the variables to avoid when generating subsequent fresh variables.
+     Thus the bound variables are renamed to mutually distinct fresh variables
+     without growing @('avoid').
+     The @('avoid') set only needs to additionally cover
+     the expression variables that are not in the substitution,
+     namely the other expression variables of the @('let');
+     since it conservatively includes all of them
+     (an over-approximation of the scope of each binding),
+     it needs no per-binding augmentation.")
+   (xdoc::p
+    "There is a subtle case when a binding shadows an earlier one
+     that binds the same expression variable name:
+     extending the substitution replaces the earlier renaming,
+     so the earlier fresh variable no longer occurs
+     among the free expression variables of the substitution,
+     and could in principle be reused for a later binding.
+     This is still correct:
+     once its renaming has been removed from the substitution,
+     that fresh variable can no longer be introduced
+     into any remaining binding or into the body of the @('let')
+     (nothing in the substitution maps to it any more,
+     and, being fresh, it does not occur in the original ASTs),
+     so reusing it cannot cause capture."))
+  :types (exprs/atoms/binds
+          prog)
+  :extra-args ((subst string-expr-mapp)
+               (avoid string-setp))
+  :override
+  ((expr :var (b* ((subst (string-expr-map-fix subst))
+                   (var+expr (omap::assoc expr.name subst)))
+                (if var+expr
+                    (cdr var+expr)
+                  (expr-var expr.name))))
+   (expr :unbox
+         (b* ((target (expr-subst-expr-vars-alpha-aux expr.target subst avoid))
+              ((mv fresh subst)
+               (expr-subst-alpha-bound (list expr.var)
+                                       subst
+                                       (expr-free-expr-vars expr.body))))
+           (make-expr-unbox
+            :ispaces expr.ispaces
+            :var (car fresh)
+            :target target
+            :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid))))
+   (expr :let
+         (b* ((avoid2 (set::union
+                       (string-sfix avoid)
+                       (set::union (bind-list-all-expr-vars expr.binds)
+                                   (expr-all-expr-vars expr.body))))
+              (binds (bind-list-subst-expr-vars-alpha-aux expr.binds
+                                                          subst
+                                                          avoid2))
+              (subst (bind-list-expr-alpha-extend expr.binds subst avoid2)))
+           (make-expr-let
+            :binds binds
+            :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid))))
+   (atom :lambda
+         (b* (((mv fresh subst)
+               (expr-subst-alpha-bound (var+type-list->var atom.params)
+                                       subst
+                                       (expr-free-expr-vars atom.body)))
+              (params (var+type-list-set-vars fresh atom.params)))
+           (make-atom-lambda
+            :params params
+            :body (expr-subst-expr-vars-alpha-aux atom.body subst avoid)
+            :type? atom.type?)))
+   (bind :fun
+         (b* (((mv fresh subst)
+               (expr-subst-alpha-bound (var+type-list->var bind.params)
+                                       subst
+                                       (expr-free-expr-vars bind.expr)))
+              (params (var+type-list-set-vars fresh bind.params)))
+           (make-bind-fun
+            :var bind.var
+            :params params
+            :type? bind.type?
+            :expr (expr-subst-expr-vars-alpha-aux bind.expr subst avoid))))
+   (bind :cfun
+         (b* (((mv fresh subst)
+               (expr-subst-alpha-bound (var+type-list->var bind.params)
+                                       subst
+                                       (expr-free-expr-vars bind.expr)))
+              (params (var+type-list-set-vars fresh bind.params)))
+           (make-bind-cfun
+            :var bind.var
+            :tparams? bind.tparams?
+            :iparams? bind.iparams?
+            :params params
+            :type bind.type
+            :expr (expr-subst-expr-vars-alpha-aux bind.expr subst avoid))))
+   (bind-list
+    (b* (((when (endp bind-list)) nil)
+         (bind (car bind-list))
+         (new-bind (bind-subst-expr-vars-alpha-aux bind subst avoid))
+         ((mv fresh subst)
+          (expr-subst-alpha-bound (bind-bound-expr-var-list bind) subst avoid))
+         (new-bind
+          (bind-case
+           new-bind
+           :val (if (consp fresh)
+                    (change-bind-val new-bind :var (car fresh))
+                  new-bind)
+           :fun (if (consp fresh)
+                    (change-bind-fun new-bind :var (car fresh))
+                  new-bind)
+           :tfun (if (consp fresh)
+                     (change-bind-tfun new-bind :var (car fresh))
+                   new-bind)
+           :ifun (if (consp fresh)
+                     (change-bind-ifun new-bind :var (car fresh))
+                   new-bind)
+           :cfun (if (consp fresh)
+                     (change-bind-cfun new-bind :var (car fresh))
+                   new-bind)
+           :otherwise new-bind)))
+      (cons new-bind
+            (bind-list-subst-expr-vars-alpha-aux (cdr bind-list)
+                                                 subst
+                                                 avoid)))))
+  :name ast-subst-expr-vars-alpha-aux)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-subst-expr-vars-alpha ((expr exprp) (subst string-expr-mapp))
+  :returns (new-expr exprp)
+  :short "Substitute expression variables in an expression,
+          with automatic alpha renaming to avoid capture."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the top-level entry point for expressions.
+     It calls @(tsee expr-subst-expr-vars-alpha-aux)
+     with an empty set of additional expression variables to avoid.")
+   (xdoc::p
+    "As explained in @(see ast-subst-expr-vars-alpha-aux),
+     the @('avoid') set is needed only to thread,
+     into the bindings of a @('let'),
+     the expression variables of the @('let') that the bindings cannot see;
+     it is internal plumbing, not a channel for surrounding-scope variables.
+     So it is correct to start with an empty @('avoid') set here,
+     even when substituting in a subterm of a larger construct:
+     the renaming is correct regardless of the surrounding context,
+     because at each binder the fresh variables avoid
+     the free variables of the binder's body
+     (which already include any surrounding variables that occur free in it)
+     and the free variables of the substitution's range."))
+  (expr-subst-expr-vars-alpha-aux expr subst nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atom-subst-expr-vars-alpha ((atom atomp) (subst string-expr-mapp))
+  :returns (new-atom atomp)
+  :short "Substitute expression variables in an atom,
+          with automatic alpha renaming to avoid capture."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the top-level entry point for atoms;
+     see @(tsee expr-subst-expr-vars-alpha) for why the @('avoid') set
+     can be started empty here."))
+  (atom-subst-expr-vars-alpha-aux atom subst nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prog-subst-expr-vars-alpha ((prog progp) (subst string-expr-mapp))
+  :returns (new-prog progp)
+  :short "Substitute expression variables in a program,
+          with automatic alpha renaming to avoid capture."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the top-level entry point for programs;
+     see @(tsee expr-subst-expr-vars-alpha) for why the @('avoid') set
+     can be started empty here."))
+  (prog-subst-expr-vars-alpha-aux prog subst nil))
