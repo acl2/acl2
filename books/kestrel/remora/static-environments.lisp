@@ -130,6 +130,14 @@
         (t[] (t-> (:int) :float) (shp)))
        (int-to-bool-type
         (t[] (t-> (:int) :bool) (shp)))
+       (float-binop-type
+        (t[] (t-> (:float :float) :float) (shp)))
+       (float-unop-type
+        (t[] (t-> (:float) :float) (shp)))
+       (float-relop-type
+        (t[] (t-> (:float :float) :bool) (shp)))
+       (float-to-int-type
+        (t[] (t-> (:float) :int) (shp)))
        (bool-unop-type
         (t[] (t-> (:bool) :bool) (shp)))
        (bool-binop-type
@@ -161,6 +169,24 @@
            (cons ">=" int-relop-type)
            (cons "i->f" int-to-float-type)
            (cons "i->bool" int-to-bool-type)
+           (cons "f.+" float-binop-type)
+           (cons "f.-" float-binop-type)
+           (cons "f.*" float-binop-type)
+           (cons "f./" float-binop-type)
+           (cons "f.^" float-binop-type)
+           (cons "f.max" float-binop-type)
+           (cons "f.min" float-binop-type)
+           (cons "sqrt" float-unop-type)
+           (cons "f.==" float-relop-type)
+           (cons "f.!=" float-relop-type)
+           (cons "f.<" float-relop-type)
+           (cons "f.>" float-relop-type)
+           (cons "f.<=" float-relop-type)
+           (cons "f.>=" float-relop-type)
+           (cons "truncate" float-to-int-type)
+           (cons "round" float-to-int-type)
+           (cons "ceiling" float-to-int-type)
+           (cons "floor" float-to-int-type)
            (cons "not" bool-unop-type)
            (cons "and" bool-binop-type)
            (cons "or" bool-binop-type)
@@ -221,6 +247,44 @@
                                     (senv->type-vars senv)))
        (senv (change-senv senv :type-vars new-type-vars)))
     (senv-add-type-vars (cdr vars) senv)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-ispace-def ((var ispace-varp) (ispace ispacep) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add an ispace variable with its ispace definition
+          to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variable is added with a present associated ispace,
+     namely its definition;
+     this is the case for variables bound by @('let')s.
+     A variable already present is overwritten,
+     which realizes the intended shadowing."))
+  (b* ((new-ispace-vars (omap::update (ispace-var-fix var)
+                                      (ispace-fix ispace)
+                                      (senv->ispace-vars senv))))
+    (change-senv senv :ispace-vars new-ispace-vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-type-def ((var type-varp) (type typep) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add a type variable with its type definition
+          to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variable is added with a present associated type,
+     namely its definition;
+     this is the case for variables bound by @('let')s.
+     A variable already present is overwritten,
+     which realizes the intended shadowing."))
+  (b* ((new-type-vars (omap::update (type-var-fix var)
+                                    (type-fix type)
+                                    (senv->type-vars senv))))
+    (change-senv senv :type-vars new-type-vars)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

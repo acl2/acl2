@@ -30,6 +30,7 @@
 (include-book "../syntax/purity")
 (include-book "../syntax/unambiguity")
 (include-book "../syntax/validation-annotations")
+(include-book "../syntax/validator")
 (include-book "utilities/context-msg")
 (include-book "utilities/fresh-ident")
 
@@ -97,7 +98,7 @@
   :short "Collection of data used by @(see sts-split)."
   :long
   (xdoc::topstring-p
-   "The @('right-set'), @('right-name'), and @('dialect') fields
+   "The @('right-set'), @('right-name'), @('dialect'), and @('ienv') fields
     are expected to remain constant.
     The @('struct-uid') field is constant
     within a single translation unit,
@@ -112,14 +113,22 @@
     The @('warnings') field collects warning messages,
     in reverse chronological order;
     they are printed at the end of the transformation
-    (see @(tsee sts-print-warnings)).")
+    (see @(tsee sts-print-warnings)).
+    The @('filepath') field is the file path
+    of the translation unit currently being transformed;
+    it is updated for each translation unit
+    (see @(tsee sts-split-trans-units)),
+    and is used only to provide context in error messages
+    (see @(tsee sts-error-in-translation-unit)).")
   ((struct-uid c$::uid)
    (right-set ident-set)
    (right-name ident)
    (dialect c::dialect)
+   (ienv c$::ienv)
    (blacklist ident-set)
    (ident-map uid-ident-map)
-   (warnings acl2::msg-list))
+   (warnings acl2::msg-list)
+   (filepath c$::filepath))
   :pred sts-split-statep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -133,6 +142,24 @@
     st
     :warnings (cons (acl2::msg-fix warning)
                     (sts-split-state->warnings st))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sts-error-in-translation-unit
+  ((msg maybe-msgp)
+   (st sts-split-statep))
+  :returns (msg$ msgp)
+  :short "Augment an error message with the file path
+          of the translation unit currently being transformed."
+  :long
+  (xdoc::topstring-p
+   "The file path is taken from the @('filepath') field
+    of the @(tsee sts-split-state),
+    which is set for each translation unit
+    in @(tsee sts-split-trans-units).")
+  (msg$ "In translation unit ~x0:~%~@1"
+        (c$::filepath->string (sts-split-state->filepath st))
+        msg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -326,22 +353,26 @@
     the split struct type occurs in them.")
   (b* (((reterr) nil)
        (struct-uid (sts-split-state->struct-uid st))
+       (dialect (sts-split-state->dialect st))
+       (ienv (sts-split-state->ienv st))
        (splittablep (sts-splittablep type struct-uid))
        ((when (eq splittablep :unknown))
-        (retmsg$ "The type ~x0 is unknown." (c$::type-fix type)))
+        (retmsg$ "The type is unknown, ~
+                  so it cannot be determined whether it is splittable.~%~@0"
+                 (context-msg-type type ienv dialect)))
        ((when (eq splittablep t))
         (retok t))
        (occurs (type-struct-occurs-unsupported-p type struct-uid))
        ((when (eq occurs :unknown))
         (retmsg$ "It cannot be determined whether ~
-                  the split struct type occurs in the type ~x0."
-                 (c$::type-fix type)))
+                  the split struct type occurs in the type.~%~@0"
+                 (context-msg-type type ienv dialect)))
        ((when (eq occurs t))
         (retmsg$ "The split struct type may appear in a type ~
                   only as the struct type itself, ~
-                  possibly behind pointers; ~
-                  it appears in the type ~x0."
-                 (c$::type-fix type))))
+                  possibly behind pointers, ~
+                  but it occurs in an unsupported context.~%~@0"
+                 (context-msg-type type ienv dialect))))
     (retok nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -596,8 +627,8 @@
         (b* (((erp left-arg right-arg? st)
               (expr-sts-split expr.arg st))
              ((unless right-arg?)
-              (retok (make-expr-member :arg left-arg
-                                       :name expr.name)
+              (retok (make-expr-memberp :arg left-arg
+                                        :name expr.name)
                      nil
                      st))
              (rightp (in expr.name (sts-split-state->right-set st)))
@@ -3537,12 +3568,15 @@
                 tag primary-type completions ienv (omap::tail tunits) st)))
           (retok (omap::update filepath (c$::trans-unit-fix tunit) rest)
                  st)))
+       (st (change-sts-split-state st :filepath filepath))
        (msg? (sts-check-completions completions uid))
        ((when msg?)
-        (reterr msg?))
-       ((erp tunit st)
+        (reterr (sts-error-in-translation-unit msg? st)))
+       ((mv erp tunit st)
         (trans-unit-sts-split tunit
                               (change-sts-split-state st :struct-uid uid)))
+       ((when erp)
+        (reterr (sts-error-in-translation-unit erp st)))
        ((erp rest st)
         (sts-split-trans-units
           tag primary-type completions ienv (omap::tail tunits) st)))
@@ -3583,10 +3617,9 @@
     The code ensemble must use the C17 standard,
     since the transformation assumes the C17 rules
     for struct type compatibility.
-    The validation information of the resulting ensemble
-    is not updated by the transformation;
-    the result should be re-validated
-    before further use of its annotations.
+    After transforming, we re-validate the resulting translation units,
+    refreshing their validation annotations
+    so that they may be used further.
     We also return the accumulated warnings,
     in reverse chronological order.")
   (b* (((reterr) (c$::irr-code-ensemble) nil)
@@ -3618,17 +3651,29 @@
              :right-set (mergesort right-members)
              :right-name right-name
              :dialect (c$::ienv->dialect code.ienv)
+             :ienv code.ienv
              :blacklist (insert right-name blacklist)
              :ident-map nil
-             :warnings nil))
+             :warnings nil
+             :filepath (c$::irr-filepath)))
        ((erp map st)
         (sts-split-trans-units tag primary-type completions code.ienv map st))
-       (- (fast-alist-free completions)))
-    (retok (change-code-ensemble
-             code
-             :trans-units (c$::change-trans-ensemble code.trans-units
-                                                     :units map))
-           (sts-split-state->warnings st))))
+       (- (fast-alist-free completions))
+       (warnings (sts-split-state->warnings st))
+       (new-trans-units (c$::change-trans-ensemble code.trans-units
+                                                   :units map))
+       ;; Re-validate the transformed translation units,
+       ;; refreshing their validation annotations for further use.
+       ((unless (c$::trans-ensemble-unambp new-trans-units))
+        (retmsg$ "Internal error: the transformed code is ambiguous."))
+       ((erp new-trans-units)
+        (c$::valid-trans-ensemble new-trans-units code.ienv nil))
+       ;; TODO: remove once it is proved that validation produces
+       ;; an annotated term.
+       ((unless (c$::trans-ensemble-annop new-trans-units))
+        (retmsg$ "Internal error: the transformed code is invalid.")))
+    (retok (change-code-ensemble code :trans-units new-trans-units)
+           warnings)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3695,17 +3740,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define sts-print-warnings-loop ((warnings acl2::msg-listp))
+  :short "Print warnings in list order."
+  (b* (((when (endp warnings)) nil)
+       (- (cw "WARNING: ~@0~%" (first warnings))))
+    (sts-print-warnings-loop (rest warnings))))
+
 (define sts-print-warnings ((warnings acl2::msg-listp))
-  :returns (nothing null)
   :short "Print a list of warning messages."
   :long
   (xdoc::topstring-p
    "The warnings are expected in reverse chronological order,
     as accumulated in the @('warnings') field of @(tsee sts-split-state);
     they are printed in chronological order.")
-  (b* (((when (endp warnings)) nil)
-       (- (sts-print-warnings (rest warnings))))
-    (cw "WARNING: ~@0~%" (first warnings))))
+  (sts-print-warnings-loop (reverse warnings)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
