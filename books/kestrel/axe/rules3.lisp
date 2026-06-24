@@ -3042,11 +3042,11 @@
                                      slice-of-bvplus-cases))))
 
 ;gen the 4
-(defthm times-of-bvmult-4
- (implies (natp size)
-          (equal (* 4 (BVPLUS size x y))
-                 (bvmult (+ 2 size) 4 (BVPLUS size x y))))
- :hints (("Goal" :in-theory (enable bvmult))))
+(defthmd times-of-bvmult-4
+  (implies (natp size)
+           (equal (* 4 (BVPLUS size x y))
+                  (bvmult (+ 2 size) 4 (BVPLUS size x y))))
+  :hints (("Goal" :in-theory (enable bvmult))))
 
 ;apply this in a bvplus context - fixme
 (defthmd bvuminus-when-bvchop-gen-for-5

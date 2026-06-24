@@ -12,6 +12,8 @@
 
 (include-book "grammar")
 
+(include-book "projects/abnf/tree-operations/subtree-operations" :dir :system)
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

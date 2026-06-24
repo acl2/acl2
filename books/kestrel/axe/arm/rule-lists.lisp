@@ -449,6 +449,7 @@
      arm::loadwritepc
      arm::bxwritepc
      arm::branchwritepc
+     arm::aluwritepc
 
      arm::and32 ; exposes bvand
      arm::or32 ; exposes bvor

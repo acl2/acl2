@@ -532,9 +532,13 @@
        ;; The left (PSLLDQ) vs. right (PSRLDQ)
        ;; is determined by the Reg byte, which is an opcode extension.
        ;; Note that the count is in bytes, not bits.
-       (count (if (>= count 16) ; = 128 bits
-                  0
-                count))
+      ;; Per Intel SDM: if the value specified by the count operand is
+      ;; greater than 15, the destination operand is set to all 0s.
+      ;; The SDM's pseudocode sets TEMP := 16 in this case, so the shift
+      ;; becomes a 128-bit shift that produces zero.
+      (count (if (>= count 16)
+                 16
+               count))
        ((the (unsigned-byte 128) result)
         (case reg
           (7 (logand (1- (expt 2 128)) (ash operand (* 8 count))))

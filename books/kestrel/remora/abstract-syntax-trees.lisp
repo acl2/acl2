@@ -51,9 +51,13 @@
    (xdoc::p
     "These ASTs preserve much of the concrete syntax information,
      so they include both core and non-core constructs.
-     We plan to define a characterization of core ASTs
+     We have defines a characterization of core ASTs
      and a desugaring transformation from all ASTs to core ASTs.
      The ASTs in [impl] are slightly more abstracted than ours.")
+   (xdoc::p
+    "Our ASTs contain some information absent from the concrete syntax,
+     such as certain type annotations.
+     These are meant to be calculated by type checking/inference.")
    (xdoc::p
     "As a general remark that applies to multiple fixtypes defined here,
      we use ACL2 strings for variable names.
@@ -855,17 +859,23 @@
      (xdoc::p
       "There are
        base literals,
-       lambda abstractions of expressions over variables with types,
+       lambda abstractions of expressions over variables with types
+       with an optional type of the body (not of the abstraction),
        lambda abstractions of expressions over type variables,
        lambda abstractions of expressions over ispace variables,
        and boxed arrays with given ispaces and type.
        Since the type in a boxing construct must be a sum type,
        we could enforce this syntactically,
        but we follow [arxiv], [thesis], and [impl],
-       which all use a generic type."))
+       which all use a generic type.")
+     (xdoc::p
+      "The optional type of the body of a lambda abstraction
+       will be calculated and stored by the type checker.
+       It is absent after parsing."))
     (:base ((lit base-lit)))
     (:lambda ((params var+type-list)
-              (body expr)))
+              (body expr)
+              (type? type-option)))
     (:tlambda ((params type-var-list)
                (body expr)))
     (:ilambda ((params ispace-var-list)

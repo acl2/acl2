@@ -190,6 +190,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption type-value-option
+  type-value
+  :short "Fixtype of optional type values."
+  :pred type-value-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult type-value-result
   :short "Fixtype of type values and errors."
   :ok type-value
@@ -415,7 +422,118 @@
   (:bool-to-float ())
   :pred primop-valuep)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primop-type ((op primop-valuep))
+  :returns (type type-valuep)
+  :short "Type of a primitive operation, as a type value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type value form of the type that
+     @(tsee primop-types) associates to the operation's surface name.
+     We keep this consistent with @(tsee primop-types) by construction;
+     a theorem relating the two could be added later.")
+   (xdoc::p
+    "Curerntly this type is always
+     a zero-rank array of the operation's function type,
+     whose inputs and output are themselves
+     zero-rank arrays of base types.
+     From this type value we can obtain,
+     for an operation used as a function value,
+     both the expected cell dimensions of its arguments
+     and the type of its result,
+     uniformly with how the same information
+     is obtained for lambda abstractions.")
+   (xdoc::p
+    "Not all primitive operations in Remora have types of this form.
+     Those primitive operations will be handled later."))
+  (b* ((int-tv (make-type-value-array
+                :elem (type-value-base (base-type-int))
+                :dims nil))
+       (bool-tv (make-type-value-array
+                 :elem (type-value-base (base-type-bool))
+                 :dims nil))
+       (float-tv (make-type-value-array
+                  :elem (type-value-base (base-type-float))
+                  :dims nil))
+       (int-binop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list int-tv int-tv) :out int-tv)
+         :dims nil))
+       (int-unop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list int-tv) :out int-tv)
+         :dims nil))
+       (int-relop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list int-tv int-tv) :out bool-tv)
+         :dims nil))
+       (int-to-float-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list int-tv) :out float-tv)
+         :dims nil))
+       (int-to-bool-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list int-tv) :out bool-tv)
+         :dims nil))
+       (bool-unop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list bool-tv) :out bool-tv)
+         :dims nil))
+       (bool-binop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list bool-tv bool-tv) :out bool-tv)
+         :dims nil))
+       (bool-to-int-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list bool-tv) :out int-tv)
+         :dims nil))
+       (bool-to-float-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list bool-tv) :out float-tv)
+         :dims nil)))
+    (primop-value-case
+     op
+     :int-add int-binop-tv
+     :int-sub int-binop-tv
+     :int-mul int-binop-tv
+     :int-div int-binop-tv
+     :int-mod int-binop-tv
+     :int-max int-binop-tv
+     :int-min int-binop-tv
+     :int-bit-and int-binop-tv
+     :int-bit-or int-binop-tv
+     :int-bit-xor int-binop-tv
+     :int-shl int-binop-tv
+     :int-shr int-binop-tv
+     :int-bit-not int-unop-tv
+     :int-popc int-unop-tv
+     :int-eq int-relop-tv
+     :int-neq int-relop-tv
+     :int-lt int-relop-tv
+     :int-gt int-relop-tv
+     :int-leq int-relop-tv
+     :int-geq int-relop-tv
+     :int-to-float int-to-float-tv
+     :int-to-bool int-to-bool-tv
+     :bool-not bool-unop-tv
+     :bool-and bool-binop-tv
+     :bool-or bool-binop-tv
+     :bool-eq bool-binop-tv
+     :bool-neq bool-binop-tv
+     :bool-to-int bool-to-int-tv
+     :bool-to-float bool-to-float-tv))
+
+  ///
+
+  (defret type-value-kind-of-primop-type
+    (equal (type-value-kind type) :array))
+
+  (defret type-value-kind-of-elem-of-primop-type
+    (equal (type-value-kind (type-value-array->elem type)) :fun)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define primop-arity ((op primop-valuep))
   :returns (arity natp)
@@ -428,44 +546,10 @@
      in @(see primitives-evaluation):
      1 for the unary operations, 2 for the binary ones.")
    (xdoc::p
-    "Every current operation has a fixed arity;
-     if variadic operations are added later,
-     this will need to be generalized.
-     Moreover, every argument of every current operation is a scalar,
-     so the expected argument cell ranks are all zero;
-     this, together with the arity,
-     determines the frames over which application is lifted."))
-  (primop-value-case
-   op
-   :int-add 2
-   :int-sub 2
-   :int-mul 2
-   :int-div 2
-   :int-mod 2
-   :int-max 2
-   :int-min 2
-   :int-bit-and 2
-   :int-bit-or 2
-   :int-bit-xor 2
-   :int-shl 2
-   :int-shr 2
-   :int-bit-not 1
-   :int-popc 1
-   :int-eq 2
-   :int-neq 2
-   :int-lt 2
-   :int-gt 2
-   :int-leq 2
-   :int-geq 2
-   :int-to-float 1
-   :int-to-bool 1
-   :bool-not 1
-   :bool-and 2
-   :bool-or 2
-   :bool-eq 2
-   :bool-neq 2
-   :bool-to-int 1
-   :bool-to-float 1))
+    "We define this as the number of inputs
+     of the operation's function type (see @(tsee primop-type)),
+     so that the arity cannot diverge from the type."))
+  (len (type-value-fun->in (type-value-array->elem (primop-type op)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -529,7 +613,9 @@
        the parameter types are evaluated
        when the lambda abstraction is evaluated,
        while the body is evaluated
-       when the lambda abstraction is applied.")
+       when the lambda abstraction is applied.
+       The same goes for the optional type of the body of the lambda value,
+       which mirrors the one in the AST for lambda abstraction atoms.")
      (xdoc::p
       "This fixtype does not capture constraints like
        the non-emptiness of the expression value list in @(':vector'),
@@ -538,7 +624,8 @@
     (:base ((val base-value)))
     (:primop ((val primop-value)))
     (:lambda ((params var+typevalue-list)
-              (body expr)))
+              (body expr)
+              (type? type-value-option)))
     (:tlambda ((params type-var-list)
                (body expr)))
     (:ilambda ((params ispace-var-list)
@@ -901,7 +988,7 @@
     :enable (expr-value-wfp check-dims-of-expr-value))
 
   (defrule expr-value-wfp-of-expr-value-lambda
-    (expr-value-wfp (expr-value-lambda params body))
+    (expr-value-wfp (expr-value-lambda params body type?))
     :enable (expr-value-wfp check-dims-of-expr-value))
 
   (defrule expr-value-wfp-of-expr-value-tlambda

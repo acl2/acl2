@@ -223,7 +223,8 @@
                     (make-expr-array
                      :dims nil
                      :atoms (list (make-atom-lambda :params params
-                                                    :body expr)))))
+                                                    :body expr
+                                                    :type? type?)))))
                 (make-bind-val :var bind.var
                                :type? lambda-type?
                                :expr lambda-expr)))
@@ -269,7 +270,8 @@
                      (make-expr-array
                       :dims nil
                       :atoms (list (make-atom-lambda :params params
-                                                     :body expr))))
+                                                     :body expr
+                                                     :type? type))))
                     ((mv ilambda-lambda-type
                          ilambda-lambda-expr)
                      (ispace-var-list-option-case

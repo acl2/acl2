@@ -412,6 +412,7 @@
   :hints (("Goal" :in-theory (enable sbvlt logext-cases))))
 
 ;; In case we don't want to rewrite the sbvlt.
+;limit?
 (defthm getbit-when-not-sbvlt-of-0-cheap
   (implies (not (sbvlt 32 x 0))
            (equal (getbit 31 x)
@@ -420,6 +421,7 @@
   :hints (("Goal" :in-theory (enable sbvlt))))
 
 ;; In case we don't want to rewrite the sbvlt.
+;limit?
 (defthm getbit-when-sbvlt-of-0-cheap
   (implies (sbvlt 32 x 0)
            (equal (getbit 31 x)
