@@ -364,7 +364,40 @@
      The @('avoid') extra argument conveys, into the bindings traversal,
      the type variables of the @('let') (its bindings and body),
      which the fresh variables generated for the bound variables must avoid;
-     it is otherwise threaded unchanged."))
+     it is otherwise threaded unchanged.")
+   (xdoc::p
+    "The @('avoid') set is threaded through the bindings unchanged:
+     it is not augmented with the fresh variables
+     generated for the preceding bindings.
+     This is correct because those fresh variables are already avoided
+     via the substitution, which is threaded through the bindings.
+     Each bound variable is mapped, in the substitution,
+     to a type consisting of its fresh variable,
+     so the fresh variable occurs among the free type variables
+     of the substitution maps,
+     which @(tsee atom/array-subst-alpha-bound) includes
+     in the variables to avoid when generating subsequent fresh variables.
+     Thus the bound variables are renamed to mutually distinct fresh variables
+     without growing @('avoid').
+     The @('avoid') set only needs to additionally cover
+     the type variables that are not in the substitution,
+     namely the other type variables of the @('let');
+     since it conservatively includes all of them
+     (an over-approximation of the scope of each binding),
+     it needs no per-binding augmentation.")
+   (xdoc::p
+    "There is a subtle case when a binding shadows an earlier one
+     that binds the same type variable name:
+     extending the substitution replaces the earlier renaming,
+     so the earlier fresh variable no longer occurs
+     among the free type variables of the substitution,
+     and could in principle be reused for a later binding.
+     This is still correct: once its renaming has been removed
+     from the substitution, that fresh variable can no longer be introduced
+     into any remaining binding or into the body of the @('let')
+     (nothing in the substitution maps to it any more,
+     and, being fresh, it does not occur in the original ASTs),
+     so reusing it cannot cause capture."))
   :types (types
           type-option
           type-list-option
