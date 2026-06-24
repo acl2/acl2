@@ -98,7 +98,7 @@
   :short "Collection of data used by @(see sts-split)."
   :long
   (xdoc::topstring-p
-   "The @('right-set'), @('right-name'), and @('dialect') fields
+   "The @('right-set'), @('right-name'), @('dialect'), and @('ienv') fields
     are expected to remain constant.
     The @('struct-uid') field is constant
     within a single translation unit,
@@ -124,6 +124,7 @@
    (right-set ident-set)
    (right-name ident)
    (dialect c::dialect)
+   (ienv c$::ienv)
    (blacklist ident-set)
    (ident-map uid-ident-map)
    (warnings acl2::msg-list)
@@ -352,22 +353,26 @@
     the split struct type occurs in them.")
   (b* (((reterr) nil)
        (struct-uid (sts-split-state->struct-uid st))
+       (dialect (sts-split-state->dialect st))
+       (ienv (sts-split-state->ienv st))
        (splittablep (sts-splittablep type struct-uid))
        ((when (eq splittablep :unknown))
-        (retmsg$ "The type ~x0 is unknown." (c$::type-fix type)))
+        (retmsg$ "The type is unknown, ~
+                  so it cannot be determined whether it is splittable.~%~@0"
+                 (context-msg-type type ienv dialect)))
        ((when (eq splittablep t))
         (retok t))
        (occurs (type-struct-occurs-unsupported-p type struct-uid))
        ((when (eq occurs :unknown))
         (retmsg$ "It cannot be determined whether ~
-                  the split struct type occurs in the type ~x0."
-                 (c$::type-fix type)))
+                  the split struct type occurs in the type.~%~@0"
+                 (context-msg-type type ienv dialect)))
        ((when (eq occurs t))
         (retmsg$ "The split struct type may appear in a type ~
                   only as the struct type itself, ~
-                  possibly behind pointers; ~
-                  it appears in the type ~x0."
-                 (c$::type-fix type))))
+                  possibly behind pointers, ~
+                  but it occurs in an unsupported context.~%~@0"
+                 (context-msg-type type ienv dialect))))
     (retok nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3646,6 +3651,7 @@
              :right-set (mergesort right-members)
              :right-name right-name
              :dialect (c$::ienv->dialect code.ienv)
+             :ienv code.ienv
              :blacklist (insert right-name blacklist)
              :ident-map nil
              :warnings nil
