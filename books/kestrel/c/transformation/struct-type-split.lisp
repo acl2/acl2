@@ -3695,17 +3695,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define sts-print-warnings-loop ((warnings acl2::msg-listp))
+  :short "Print warnings in list order."
+  (b* (((when (endp warnings)) nil)
+       (- (cw "WARNING: ~@0~%" (first warnings))))
+    (sts-print-warnings-loop (rest warnings))))
+
 (define sts-print-warnings ((warnings acl2::msg-listp))
-  :returns (nothing null)
   :short "Print a list of warning messages."
   :long
   (xdoc::topstring-p
    "The warnings are expected in reverse chronological order,
     as accumulated in the @('warnings') field of @(tsee sts-split-state);
     they are printed in chronological order.")
-  (b* (((when (endp warnings)) nil)
-       (- (sts-print-warnings (rest warnings))))
-    (cw "WARNING: ~@0~%" (first warnings))))
+  (sts-print-warnings-loop (reverse warnings)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
