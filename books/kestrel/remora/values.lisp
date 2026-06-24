@@ -413,6 +413,24 @@
   (:int-geq ())
   (:int-to-float ())
   (:int-to-bool ())
+  (:float-add ())
+  (:float-sub ())
+  (:float-mul ())
+  (:float-div ())
+  (:float-expt ())
+  (:float-max ())
+  (:float-min ())
+  (:float-sqrt ())
+  (:float-eq ())
+  (:float-neq ())
+  (:float-lt ())
+  (:float-gt ())
+  (:float-leq ())
+  (:float-geq ())
+  (:float-truncate ())
+  (:float-round ())
+  (:float-ceiling ())
+  (:float-floor ())
   (:bool-not ())
   (:bool-and ())
   (:bool-or ())
@@ -477,6 +495,22 @@
         (make-type-value-array
          :elem (make-type-value-fun :in (list int-tv) :out bool-tv)
          :dims nil))
+       (float-binop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list float-tv float-tv) :out float-tv)
+         :dims nil))
+       (float-unop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list float-tv) :out float-tv)
+         :dims nil))
+       (float-relop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list float-tv float-tv) :out bool-tv)
+         :dims nil))
+       (float-to-int-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list float-tv) :out int-tv)
+         :dims nil))
        (bool-unop-tv
         (make-type-value-array
          :elem (make-type-value-fun :in (list bool-tv) :out bool-tv)
@@ -517,6 +551,24 @@
      :int-geq int-relop-tv
      :int-to-float int-to-float-tv
      :int-to-bool int-to-bool-tv
+     :float-add float-binop-tv
+     :float-sub float-binop-tv
+     :float-mul float-binop-tv
+     :float-div float-binop-tv
+     :float-expt float-binop-tv
+     :float-max float-binop-tv
+     :float-min float-binop-tv
+     :float-sqrt float-unop-tv
+     :float-eq float-relop-tv
+     :float-neq float-relop-tv
+     :float-lt float-relop-tv
+     :float-gt float-relop-tv
+     :float-leq float-relop-tv
+     :float-geq float-relop-tv
+     :float-truncate float-to-int-tv
+     :float-round float-to-int-tv
+     :float-ceiling float-to-int-tv
+     :float-floor float-to-int-tv
      :bool-not bool-unop-tv
      :bool-and bool-binop-tv
      :bool-or bool-binop-tv

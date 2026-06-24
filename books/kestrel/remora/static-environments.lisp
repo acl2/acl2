@@ -130,6 +130,14 @@
         (t[] (t-> (:int) :float) (shp)))
        (int-to-bool-type
         (t[] (t-> (:int) :bool) (shp)))
+       (float-binop-type
+        (t[] (t-> (:float :float) :float) (shp)))
+       (float-unop-type
+        (t[] (t-> (:float) :float) (shp)))
+       (float-relop-type
+        (t[] (t-> (:float :float) :bool) (shp)))
+       (float-to-int-type
+        (t[] (t-> (:float) :int) (shp)))
        (bool-unop-type
         (t[] (t-> (:bool) :bool) (shp)))
        (bool-binop-type
@@ -161,6 +169,24 @@
            (cons ">=" int-relop-type)
            (cons "i->f" int-to-float-type)
            (cons "i->bool" int-to-bool-type)
+           (cons "f.+" float-binop-type)
+           (cons "f.-" float-binop-type)
+           (cons "f.*" float-binop-type)
+           (cons "f./" float-binop-type)
+           (cons "f.^" float-binop-type)
+           (cons "f.max" float-binop-type)
+           (cons "f.min" float-binop-type)
+           (cons "sqrt" float-unop-type)
+           (cons "f.==" float-relop-type)
+           (cons "f.!=" float-relop-type)
+           (cons "f.<" float-relop-type)
+           (cons "f.>" float-relop-type)
+           (cons "f.<=" float-relop-type)
+           (cons "f.>=" float-relop-type)
+           (cons "truncate" float-to-int-type)
+           (cons "round" float-to-int-type)
+           (cons "ceiling" float-to-int-type)
+           (cons "floor" float-to-int-type)
            (cons "not" bool-unop-type)
            (cons "and" bool-binop-type)
            (cons "or" bool-binop-type)

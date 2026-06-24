@@ -77,10 +77,9 @@
      (xdoc::p
       "This must be a symbol that is valid name for a new ACL2 constant.")
      (xdoc::p
-      "Note that the validation information of the transformed code
-       is not updated by the transformation;
-       the code should be re-validated
-       before further use of its annotations."))
+      "The transformed code is re-validated by the transformation,
+       so its validation information is refreshed
+       and may be used further."))
     (xdoc::desc
      "@(':struct-tag') &mdash; no default"
      (xdoc::p
