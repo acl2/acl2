@@ -711,26 +711,37 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We replace every defined ispace variable and type variable in the type
+    "We replace every defined type variable and ispace variable in the type
      with its definition
-     (see @(tsee senv-ispace-subst) and @(tsee senv-type-subst)).
-     Because types contain binders (universal, product, and sum types),
+     (see @(tsee senv-type-subst) and @(tsee senv-ispace-subst)).
+     We substitute the type variables first, and the ispace variables second.
+     Since types may contain ispaces but not vice versa,
+     substituting the type definitions first may expose
+     additional ispace variables, occurring in those definitions,
+     which the subsequent ispace substitution then replaces.
+     Since the definitions in the static environment are fully expanded
+     (i.e. they contain no defined variables),
+     the result would be the same with the opposite order;
+     but this order does not rely on
+     the definitions in the static environment being fully expanded.")
+   (xdoc::p
+    "Because types contain binders (universal, product, and sum types),
      the substitution could result in variable capture:
      if that is the case, type checking fails;
      we should instead rename the bound variables to avoid the capture
      (as elsewhere; see e.g. @(tsee check-tapp))."))
-  (b* (((stringdimmap+stringshapemap isubst)
+  (b* (((string-type-map-pair tsubst)
+        (senv-type-subst (senv->type-vars senv)))
+       ((unless (type-subst-type-vars-no-capture-p type tsubst.1st tsubst.2nd))
+        (reserr nil))
+       (type (type-subst-type-vars type tsubst.1st tsubst.2nd))
+       ((stringdimmap+stringshapemap isubst)
         (senv-ispace-subst (senv->ispace-vars senv)))
        ((unless (type-subst-ispace-vars-no-capture-p type
                                                      isubst.dim-map
                                                      isubst.shape-map))
-        (reserr nil))
-       (type (type-subst-ispace-vars type isubst.dim-map isubst.shape-map))
-       ((string-type-map-pair tsubst)
-        (senv-type-subst (senv->type-vars senv)))
-       ((unless (type-subst-type-vars-no-capture-p type tsubst.1st tsubst.2nd))
         (reserr nil)))
-    (type-subst-type-vars type tsubst.1st tsubst.2nd)))
+    (type-subst-ispace-vars type isubst.dim-map isubst.shape-map)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
