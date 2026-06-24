@@ -422,7 +422,106 @@
   (:bool-to-float ())
   :pred primop-valuep)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primop-type ((op primop-valuep))
+  :returns (type type-valuep)
+  :short "Type of a primitive operation, as a type value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type value form of the type that
+     @(tsee primop-types) associates to the operation's surface name:
+     a zero-rank array of the operation's function type,
+     whose inputs and output are themselves
+     zero-rank arrays of base types.
+     We keep this consistent with @(tsee primop-types) by construction;
+     a theorem relating the two could be added later.")
+   (xdoc::p
+    "From this type value we can obtain,
+     for an operation used as a function value,
+     both the expected cell dimensions of its arguments
+     and the type of its result,
+     uniformly with how the same information
+     is obtained for lambda abstractions."))
+  (b* ((int-tv (make-type-value-array
+                :elem (type-value-base (base-type-int))
+                :dims nil))
+       (bool-tv (make-type-value-array
+                 :elem (type-value-base (base-type-bool))
+                 :dims nil))
+       (float-tv (make-type-value-array
+                  :elem (type-value-base (base-type-float))
+                  :dims nil))
+       (int-binop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list int-tv int-tv) :out int-tv)
+         :dims nil))
+       (int-unop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list int-tv) :out int-tv)
+         :dims nil))
+       (int-relop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list int-tv int-tv) :out bool-tv)
+         :dims nil))
+       (int-to-float-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list int-tv) :out float-tv)
+         :dims nil))
+       (int-to-bool-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list int-tv) :out bool-tv)
+         :dims nil))
+       (bool-unop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list bool-tv) :out bool-tv)
+         :dims nil))
+       (bool-binop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list bool-tv bool-tv) :out bool-tv)
+         :dims nil))
+       (bool-to-int-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list bool-tv) :out int-tv)
+         :dims nil))
+       (bool-to-float-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list bool-tv) :out float-tv)
+         :dims nil)))
+    (primop-value-case
+     op
+     :int-add int-binop-tv
+     :int-sub int-binop-tv
+     :int-mul int-binop-tv
+     :int-div int-binop-tv
+     :int-mod int-binop-tv
+     :int-max int-binop-tv
+     :int-min int-binop-tv
+     :int-bit-and int-binop-tv
+     :int-bit-or int-binop-tv
+     :int-bit-xor int-binop-tv
+     :int-shl int-binop-tv
+     :int-shr int-binop-tv
+     :int-bit-not int-unop-tv
+     :int-popc int-unop-tv
+     :int-eq int-relop-tv
+     :int-neq int-relop-tv
+     :int-lt int-relop-tv
+     :int-gt int-relop-tv
+     :int-leq int-relop-tv
+     :int-geq int-relop-tv
+     :int-to-float int-to-float-tv
+     :int-to-bool int-to-bool-tv
+     :bool-not bool-unop-tv
+     :bool-and bool-binop-tv
+     :bool-or bool-binop-tv
+     :bool-eq bool-binop-tv
+     :bool-neq bool-binop-tv
+     :bool-to-int bool-to-int-tv
+     :bool-to-float bool-to-float-tv)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define primop-arity ((op primop-valuep))
   :returns (arity natp)
