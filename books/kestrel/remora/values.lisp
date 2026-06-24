@@ -190,6 +190,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption type-value-option
+  type-value
+  :short "Fixtype of optional type values."
+  :pred type-value-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult type-value-result
   :short "Fixtype of type values and errors."
   :ok type-value
@@ -529,7 +536,9 @@
        the parameter types are evaluated
        when the lambda abstraction is evaluated,
        while the body is evaluated
-       when the lambda abstraction is applied.")
+       when the lambda abstraction is applied.
+       The same goes for the optional type of the body of the lambda value,
+       which mirrors the one in the AST for lambda abstraction atoms.")
      (xdoc::p
       "This fixtype does not capture constraints like
        the non-emptiness of the expression value list in @(':vector'),
@@ -538,7 +547,8 @@
     (:base ((val base-value)))
     (:primop ((val primop-value)))
     (:lambda ((params var+typevalue-list)
-              (body expr)))
+              (body expr)
+              (type? type-value-option)))
     (:tlambda ((params type-var-list)
                (body expr)))
     (:ilambda ((params ispace-var-list)
@@ -901,7 +911,7 @@
     :enable (expr-value-wfp check-dims-of-expr-value))
 
   (defrule expr-value-wfp-of-expr-value-lambda
-    (expr-value-wfp (expr-value-lambda params body))
+    (expr-value-wfp (expr-value-lambda params body type?))
     :enable (expr-value-wfp check-dims-of-expr-value))
 
   (defrule expr-value-wfp-of-expr-value-tlambda

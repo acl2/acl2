@@ -1355,7 +1355,9 @@
        atom
        :base (expr-value-base (eval-base-lit atom.lit))
        :lambda (b* (((ok params) (eval-var+type-list atom.params denv)))
-                 (make-expr-value-lambda :params params :body atom.body))
+                 (make-expr-value-lambda :params params
+                                         :body atom.body
+                                         :type? nil))
        :tlambda (make-expr-value-tlambda :params atom.params :body atom.body)
        :ilambda (make-expr-value-ilambda :params atom.params :body atom.body)
        :box (b* (((ok ivals) (eval-ispace-list atom.ispaces denv))
@@ -1489,7 +1491,9 @@
                           :none nil)))
               (denv-add-expr-var bind.var val denv))
        :fun (b* (((ok params) (eval-var+type-list bind.params denv))
-                 (val (make-expr-value-lambda :params params :body bind.expr))
+                 (val (make-expr-value-lambda :params params
+                                              :body bind.expr
+                                              :type? nil))
                  ((ok &) (type-option-case
                           bind.type?
                           :some (eval-type bind.type?.val denv)
