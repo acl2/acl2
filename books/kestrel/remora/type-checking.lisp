@@ -703,6 +703,13 @@
         (senv-ispace-subst (senv->ispace-vars senv))))
     (ispace-subst-ispace-vars ispace subst.dim-map subst.shape-map)))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection senv-expand-ispace-list ((x ispace-listp) (senv senvp))
+  :returns (new-ispaces ispace-listp)
+  :short "Lift @(tsee senv-expand-ispace) to lists of ispaces."
+  (senv-expand-ispace x senv))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define senv-expand-type ((type typep) (senv senvp))
@@ -742,6 +749,17 @@
                                                      isubst.shape-map))
         (reserr nil)))
     (type-subst-ispace-vars type isubst.dim-map isubst.shape-map)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define senv-expand-type-list ((types type-listp) (senv senvp))
+  :returns (new-types type-list-resultp)
+  :short "Lift @(tsee senv-expand-type) to lists."
+  (b* (((when (endp types)) nil)
+       ((ok type) (senv-expand-type (car types) senv))
+       ((ok types) (senv-expand-type-list (cdr types) senv)))
+    (cons type types))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
