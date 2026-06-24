@@ -74,11 +74,17 @@
      @(tsee prim-bool-eq), @(tsee prim-bool-neq),
      @(tsee prim-bool-to-int), and @(tsee prim-bool-to-float).")
    (xdoc::p
-    "The float primitives currently implemented are
-     @(tsee prim-float-add), @(tsee prim-float-sub), @(tsee prim-float-mul),
-     @(tsee prim-float-div), @(tsee prim-float-truncate),
-     @(tsee prim-float-round), @(tsee prim-float-ceiling),
-     and @(tsee prim-float-floor).")
+    "The float primitives currently implemented are:")
+   (xdoc::ul
+    (xdoc::li "@(tsee prim-float-add), @(tsee prim-float-sub),
+               @(tsee prim-float-mul), @(tsee prim-float-div),
+               @(tsee prim-float-expt), @(tsee prim-float-max),
+               @(tsee prim-float-min), @(tsee prim-float-sqrt).")
+    (xdoc::li "@(tsee prim-float-eq), @(tsee prim-float-neq),
+               @(tsee prim-float-lt), @(tsee prim-float-gt),
+               @(tsee prim-float-leq), @(tsee prim-float-geq).")
+    (xdoc::li "@(tsee prim-float-truncate), @(tsee prim-float-round),
+               @(tsee prim-float-ceiling), @(tsee prim-float-floor)."))
    (xdoc::p
     "For integers, we currently model Remora integer values as unbounded
      mathematical integers, matching ACL2's own integer type.
