@@ -1503,15 +1503,45 @@
        extended with all the parameters,
        and we check that its type is equivalent to the declared result type.")
      (xdoc::p
-      "Ispace bindings and type bindings are not yet supported,
-       because they would require the static environment
-       to record the bound ispaces and types,
-       so that ispace and type equivalence can take them into account;
-       these bindings return a @(':todo') error for now."))
+      "For an ispace binding,
+       we check that the bound ispace is valid,
+       and that its sort matches the bound variable
+       (a dimension variable is bound to a dimension,
+       a shape variable is bound to a shape).
+       We expand the ispace against the static environment's definitions
+       (see @(tsee senv-expand-ispace)),
+       so that the stored definition is itself fully expanded,
+       and we extend the static environment
+       to associate that definition to the bound variable.")
+     (xdoc::p
+      "A type binding is treated similarly,
+       checking instead that the kind of the bound type
+       matches the bound variable
+       (an atom-kind variable is bound to an atom-kind type,
+       an array-kind variable is bound to an array-kind type);
+       here the expansion may fail if it would result in variable capture.
+       These definitions are taken into account
+       by the expansion performed throughout @(tsee check-expr)."))
     (bind-case
      bind
-     :ispace (reserr :todo)
-     :type (reserr :todo)
+     :ispace
+     (b* (((unless (check-ispace bind.ispace senv)) (reserr nil))
+          ((unless (ispace-var-case
+                    bind.var
+                    :dim (ispace-case bind.ispace :dim)
+                    :shape (ispace-case bind.ispace :shape)))
+           (reserr nil))
+          (ispace (senv-expand-ispace bind.ispace senv)))
+       (senv-add-ispace-def bind.var ispace senv))
+     :type
+     (b* (((unless (check-type bind.type senv)) (reserr nil))
+          ((unless (type-var-case
+                    bind.var
+                    :atom (type-atomp bind.type)
+                    :array (not (type-atomp bind.type))))
+           (reserr nil))
+          ((ok type) (senv-expand-type bind.type senv)))
+       (senv-add-type-def bind.var type senv))
      :val
      (b* (((ok type) (check-expr bind.expr senv))
           ((unless (check-bind-type-annotation bind.type? type senv))
