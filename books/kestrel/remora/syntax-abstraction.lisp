@@ -2057,7 +2057,7 @@
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf params) (abs-*-ws-pat sub.4th))
          ((okf body) (abs-exp body-tree)))
-      (make-atom-lambda :params params :body body))
+      (make-atom-lambda :params params :body body :type? nil))
     :measure (abnf::tree-count tree))
 
   ;; type-lambda = ( "t-fn" / "tλ" ) ws "(" *( ws type-var ) ws ")" ws exp

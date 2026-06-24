@@ -325,3 +325,13 @@
   (equal (bvminus size x (ifix y))
          (bvminus size x y))
   :hints (("Goal" :in-theory (enable bvminus))))
+
+(defthm bvplus-of-bvminus-arg3-combine-constants
+  (implies (syntaxp (and (quotep k1)
+                         (quotep k2)
+                         (quotep size)))
+           (equal (bvplus size k1 (bvminus size k2 x))
+                  (bvminus size
+                           (bvplus size k1 k2) ; gets computed
+                           x)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))

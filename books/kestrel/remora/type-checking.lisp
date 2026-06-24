@@ -93,7 +93,8 @@
       "Any non-empty subtraction of valid dimensions is valid."))
     (dim-case
      dim
-     :var (set::in (ispace-var-dim dim.name) (senv->ispace-vars senv))
+     :var (consp (omap::assoc (ispace-var-dim dim.name)
+                              (senv->ispace-vars senv)))
      :const t
      :add (check-dim-list dim.dims senv)
      :mul (check-dim-list dim.dims senv)
@@ -151,7 +152,8 @@
        iff all the ispaces are valid."))
     (shape-case
      shape
-     :var (set::in (ispace-var-shape shape.name) (senv->ispace-vars senv))
+     :var (consp (omap::assoc (ispace-var-shape shape.name)
+                              (senv->ispace-vars senv)))
      :dims (check-dim-list shape.dims senv)
      :append (check-shape-list shape.shapes senv)
      :splice (check-ispace-list shape.ispaces senv))
@@ -263,7 +265,7 @@
        in the environment extended with the bound ispace variables."))
     (type-case
      type
-     :var (set::in type.var (senv->type-vars senv))
+     :var (consp (omap::assoc type.var (senv->type-vars senv)))
      :base t
      :array (and (check-type type.elem senv)
                  (type-atomp type.elem)
@@ -545,6 +547,218 @@
              :shape (make-string-string-map-pair
                      :1st maps.1st
                      :2nd (omap::update var1.name var2.name maps.2nd)))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-ispace-subst ((map ispace-var-ispace-option-mapp))
+  :returns (subst stringdimmap+stringshapemap-p)
+  :short "Turn a map from ispace variables to optional ispaces
+          into the ispace variable substitution
+          determined by the definitions in the map."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to turn
+     the @('ispace-vars') component of a static environment
+     into a dimension substitution and a shape substitution,
+     consisting of the variables that have a definition
+     (i.e. a present optional ispace);
+     variables without an ispace do not contribute.
+     A dimension variable maps to the dimension of its (dimension) ispace,
+     and a shape variable maps to the shape of its (shape) ispace.")
+   (xdoc::p
+    "It should never be the case that the map violates sorts,
+     i.e. associates a dimension variable to a shape ispace
+     or a shape variable to a dimension ispace.
+     But we do not have that static invariant yet,
+     so we defensively throw an error if that happens."))
+  (b* (((when (omap::emptyp (ispace-var-ispace-option-map-fix map)))
+        (make-stringdimmap+stringshapemap :dim-map nil :shape-map nil))
+       ((mv var ispace?) (omap::head map))
+       ((stringdimmap+stringshapemap subst-rest)
+        (senv-ispace-subst (omap::tail map))))
+    (ispace-option-case
+     ispace?
+     :none subst-rest
+     :some
+     (ispace-var-case
+      var
+      :dim (ispace-case
+            ispace?.val
+            :dim (change-stringdimmap+stringshapemap
+                  subst-rest
+                  :dim-map (omap::update var.name
+                                         ispace?.val.dim
+                                         subst-rest.dim-map))
+            :shape (prog2$ (raise "Internal error: ~
+                                   dimension variable ~x0 ~
+                                   is associated with ~
+                                   shape ispace ~x1."
+                                  var ispace?.val)
+                           subst-rest))
+      :shape (ispace-case
+              ispace?.val
+              :dim (prog2$ (raise "Internal error: ~
+                                   shape variable ~x0 ~
+                                   is associated with ~
+                                   dimension ispace ~x1."
+                                  var ispace?.val)
+                           subst-rest)
+              :shape (change-stringdimmap+stringshapemap
+                      subst-rest
+                      :shape-map (omap::update var.name
+                                               ispace?.val.shape
+                                               subst-rest.shape-map))))))
+  :no-function nil
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-type-subst ((map type-var-type-option-mapp))
+  :returns (subst string-type-map-pairp)
+  :short "Turn a map from type variables to optional types
+          into the type variable substitution
+          determined by the definitions in the map."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to turn
+     the @('type-vars') component of a static environment
+     into an atom-kind type substitution and an array-kind type substitution,
+     consisting of the variables that have a definition
+     (i.e. a present optional type);
+     variables without a type do not contribute.
+     An atom type variable maps to its (atom-kind) type,
+     and an array type variable maps to its (array-kind) type.")
+   (xdoc::p
+    "It should never be the case that the map violates kinds,
+     i.e. associates an atom type variable to an array-kind type
+     or an array type variable to an atom-kind type.
+     But we do not have that static invariant yet,
+     so we defensively throw an error if that happens."))
+  (b* (((when (omap::emptyp (type-var-type-option-map-fix map)))
+        (make-string-type-map-pair :1st nil :2nd nil))
+       ((mv var type?) (omap::head map))
+       ((string-type-map-pair subst-rest)
+        (senv-type-subst (omap::tail map))))
+    (type-option-case
+     type?
+     :none subst-rest
+     :some
+     (type-var-case
+      var
+      :atom (if (type-atomp type?.val)
+                (change-string-type-map-pair
+                 subst-rest
+                 :1st (omap::update var.name type?.val subst-rest.1st))
+              (prog2$ (raise "Internal error: ~
+                              atom type variable ~x0 ~
+                              is associated with ~
+                              array-kind type ~x1."
+                             var type?.val)
+                      subst-rest))
+      :array (if (type-atomp type?.val)
+                 (prog2$ (raise "Internal error: ~
+                                 array type variable ~x0 ~
+                                 is associated with ~
+                                 atom-kind type ~x1."
+                                var type?.val)
+                         subst-rest)
+               (change-string-type-map-pair
+                subst-rest
+                :2nd (omap::update var.name type?.val subst-rest.2nd))))))
+  :no-function nil
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-expand-shape ((shape shapep) (senv senvp))
+  :returns (new-shape shapep)
+  :short "Expand a shape using the ispace definitions
+          in the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We replace every defined ispace variable in the shape
+     with its definition (see @(tsee senv-ispace-subst)).
+     Since shapes contain no binders, this substitution cannot capture."))
+  (b* (((stringdimmap+stringshapemap subst)
+        (senv-ispace-subst (senv->ispace-vars senv))))
+    (shape-subst-ispace-vars shape subst.dim-map subst.shape-map)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-expand-ispace ((ispace ispacep) (senv senvp))
+  :returns (new-ispace ispacep)
+  :short "Expand an ispace using the ispace definitions
+          in the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We replace every defined ispace variable in the ispace
+     with its definition (see @(tsee senv-ispace-subst)).
+     Since ispaces contain no binders, this substitution cannot capture."))
+  (b* (((stringdimmap+stringshapemap subst)
+        (senv-ispace-subst (senv->ispace-vars senv))))
+    (ispace-subst-ispace-vars ispace subst.dim-map subst.shape-map)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection senv-expand-ispace-list ((x ispace-listp) (senv senvp))
+  :returns (new-ispaces ispace-listp)
+  :short "Lift @(tsee senv-expand-ispace) to lists of ispaces."
+  (senv-expand-ispace x senv))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-expand-type ((type typep) (senv senvp))
+  :returns (new-type type-resultp)
+  :short "Expand a type using the definitions in the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We replace every defined type variable and ispace variable in the type
+     with its definition
+     (see @(tsee senv-type-subst) and @(tsee senv-ispace-subst)).
+     We substitute the type variables first, and the ispace variables second.
+     Since types may contain ispaces but not vice versa,
+     substituting the type definitions first may expose
+     additional ispace variables, occurring in those definitions,
+     which the subsequent ispace substitution then replaces.
+     Since the definitions in the static environment are fully expanded
+     (i.e. they contain no defined variables),
+     the result would be the same with the opposite order;
+     but this order does not rely on
+     the definitions in the static environment being fully expanded.")
+   (xdoc::p
+    "Because types contain binders (universal, product, and sum types),
+     the substitution could result in variable capture:
+     if that is the case, type checking fails;
+     we should instead rename the bound variables to avoid the capture
+     (as elsewhere; see e.g. @(tsee check-tapp))."))
+  (b* (((string-type-map-pair tsubst)
+        (senv-type-subst (senv->type-vars senv)))
+       ((unless (type-subst-type-vars-no-capture-p type tsubst.1st tsubst.2nd))
+        (reserr nil))
+       (type (type-subst-type-vars type tsubst.1st tsubst.2nd))
+       ((stringdimmap+stringshapemap isubst)
+        (senv-ispace-subst (senv->ispace-vars senv)))
+       ((unless (type-subst-ispace-vars-no-capture-p type
+                                                     isubst.dim-map
+                                                     isubst.shape-map))
+        (reserr nil)))
+    (type-subst-ispace-vars type isubst.dim-map isubst.shape-map)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define senv-expand-type-list ((types type-listp) (senv senvp))
+  :returns (new-types type-list-resultp)
+  :short "Lift @(tsee senv-expand-type) to lists."
+  (b* (((when (endp types)) nil)
+       ((ok type) (senv-expand-type (car types) senv))
+       ((ok types) (senv-expand-type-list (cdr types) senv)))
+    (cons type types))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

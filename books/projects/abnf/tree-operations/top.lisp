@@ -10,6 +10,7 @@
 
 (in-package "ABNF")
 
+(include-book "subtree-operations")
 (include-book "tree-utilities")
 (include-book "deftreeops-doc")
 (include-book "deftreeops")
@@ -19,5 +20,6 @@
 (defxdoc+ tree-operations
   :parents (abnf)
   :short "Operations on ABNF trees."
-  :order-subtopics (tree-utilities
+  :order-subtopics (subtree-operations
+                    tree-utilities
                     deftreeops))

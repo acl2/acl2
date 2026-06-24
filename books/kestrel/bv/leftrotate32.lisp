@@ -1,7 +1,7 @@
 ; BV Library: leftrotate for size 32
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -216,3 +216,11 @@
                         (getbit (- n amt) x))
                     0)))
   :hints (("Goal" :in-theory (enable leftrotate32))))
+
+(defthm leftrotate32-normalize-amt
+  (implies (and (syntaxp (quotep amt))
+                (not (and (<= 0 amt)
+                          (< amt 32))))
+           (equal (leftrotate32 amt val)
+                  (leftrotate32 (mod amt 32) val)))
+  :hints (("Goal" :in-theory (enable leftrotate32 leftrotate))))

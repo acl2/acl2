@@ -227,6 +227,7 @@
      :function (and (type-sts-safep type.ret t spec)
                     (type-params-sts-safep type.params nested spec))
      :unknown nil
+     :unknown-builtin t
      :unknown-scalar nil
      :unknown-arithmetic t)
     :measure (type-count type))

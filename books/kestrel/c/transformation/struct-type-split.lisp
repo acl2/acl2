@@ -30,6 +30,7 @@
 (include-book "../syntax/purity")
 (include-book "../syntax/unambiguity")
 (include-book "../syntax/validation-annotations")
+(include-book "../syntax/validator")
 (include-book "utilities/context-msg")
 (include-book "utilities/fresh-ident")
 
@@ -157,6 +158,7 @@
   (type-case
     type
     :unknown :unknown
+    :unknown-builtin nil
     :unknown-scalar :unknown
     :unknown-arithmetic nil
     :struct (c$::uid-equal struct-uid type.uid)
@@ -208,6 +210,7 @@
     (type-case
       type
       :unknown :unknown
+      :unknown-builtin nil
       :unknown-scalar :unknown
       :unknown-arithmetic nil
       :struct (if (c$::uid-equal struct-uid type.uid)
@@ -594,8 +597,8 @@
         (b* (((erp left-arg right-arg? st)
               (expr-sts-split expr.arg st))
              ((unless right-arg?)
-              (retok (make-expr-member :arg left-arg
-                                       :name expr.name)
+              (retok (make-expr-memberp :arg left-arg
+                                        :name expr.name)
                      nil
                      st))
              (rightp (in expr.name (sts-split-state->right-set st)))
@@ -3581,10 +3584,9 @@
     The code ensemble must use the C17 standard,
     since the transformation assumes the C17 rules
     for struct type compatibility.
-    The validation information of the resulting ensemble
-    is not updated by the transformation;
-    the result should be re-validated
-    before further use of its annotations.
+    After transforming, we re-validate the resulting translation units,
+    refreshing their validation annotations
+    so that they may be used further.
     We also return the accumulated warnings,
     in reverse chronological order.")
   (b* (((reterr) (c$::irr-code-ensemble) nil)
@@ -3621,12 +3623,22 @@
              :warnings nil))
        ((erp map st)
         (sts-split-trans-units tag primary-type completions code.ienv map st))
-       (- (fast-alist-free completions)))
-    (retok (change-code-ensemble
-             code
-             :trans-units (c$::change-trans-ensemble code.trans-units
-                                                     :units map))
-           (sts-split-state->warnings st))))
+       (- (fast-alist-free completions))
+       (warnings (sts-split-state->warnings st))
+       (new-trans-units (c$::change-trans-ensemble code.trans-units
+                                                   :units map))
+       ;; Re-validate the transformed translation units,
+       ;; refreshing their validation annotations for further use.
+       ((unless (c$::trans-ensemble-unambp new-trans-units))
+        (retmsg$ "Internal error: the transformed code is ambiguous."))
+       ((erp new-trans-units)
+        (c$::valid-trans-ensemble new-trans-units code.ienv nil))
+       ;; TODO: remove once it is proved that validation produces
+       ;; an annotated term.
+       ((unless (c$::trans-ensemble-annop new-trans-units))
+        (retmsg$ "Internal error: the transformed code is invalid.")))
+    (retok (change-code-ensemble code :trans-units new-trans-units)
+           warnings)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3693,17 +3705,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define sts-print-warnings-loop ((warnings acl2::msg-listp))
+  :short "Print warnings in list order."
+  (b* (((when (endp warnings)) nil)
+       (- (cw "WARNING: ~@0~%" (first warnings))))
+    (sts-print-warnings-loop (rest warnings))))
+
 (define sts-print-warnings ((warnings acl2::msg-listp))
-  :returns (nothing null)
   :short "Print a list of warning messages."
   :long
   (xdoc::topstring-p
    "The warnings are expected in reverse chronological order,
     as accumulated in the @('warnings') field of @(tsee sts-split-state);
     they are printed in chronological order.")
-  (b* (((when (endp warnings)) nil)
-       (- (sts-print-warnings (rest warnings))))
-    (cw "WARNING: ~@0~%" (first warnings))))
+  (sts-print-warnings-loop (reverse warnings)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

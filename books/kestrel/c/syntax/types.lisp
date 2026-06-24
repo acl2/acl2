@@ -203,13 +203,18 @@
         Therefore, we give such character constants the unknown type,
         which is always acceptable.")
       (xdoc::li
+       "An ``unknown builtin'' type that restricts
+        the previously described unknown type to only involve built-in types.
+        I.e., the type cannot involve a user-defined
+        structure, union, or enumeration.")
+      (xdoc::li
        "An ``unknown scalar'' type that restricts
         the previously described unknown type to be at least scalar.")
       (xdoc::li
        "An ``unknown arithmetic'' type that restricts
         the previously described unknown type to be at least arithmetic."))
      (xdoc::p
-      "The unknown scalar and arithmetic types
+      "The unknown built-in, scalar, and arithmetic types
        are useful to improve the precision of our validation.")
      (xdoc::p
       "Besides the approximations noted above,
@@ -249,6 +254,7 @@
     (:pointer ((to type)))
     (:function ((ret type) (params type-params)))
     (:unknown ())
+    (:unknown-builtin ())
     (:unknown-scalar ())
     (:unknown-arithmetic ())
     :pred typep
@@ -693,6 +699,7 @@
   :returns (yes/no booleanp)
   :short "Check if a type is one of the unknown types."
   (or (type-case type :unknown)
+      (type-case type :unknown-builtin)
       (type-case type :unknown-scalar)
       (type-case type :unknown-arithmetic)))
 
@@ -1401,7 +1408,9 @@
       "See @(tsee type-compatible-p) for a description
        of what type compatibility means and how we check it."))
     (or (type-case x :unknown)
+        (type-case x :unknown-builtin)
         (type-case y :unknown)
+        (type-case y :unknown-builtin)
         (and (type-case x :unknown-scalar)
              (type-scalarp y))
         (and (type-case y :unknown-scalar)
@@ -1832,9 +1841,10 @@
      is established by the following cases:")
    (xdoc::ul
     (xdoc::li
-     "If any type is unknown, the types are compatible.")
+     "If any type is unknown, the types are compatible.
+      The same applies to unknown built-in types.")
     (xdoc::li
-     "If neither type is unknown,
+     "If neither type is unknown or built-in,
       and one of the types is unknown scalar,
       then the types are compatible iff
       the other type is scalar.")
@@ -2079,6 +2089,9 @@
           :unknown (mv (type-fix x)
                        (type-completions-fix completions)
                        (uid-fix next-uid))
+          :unknown-builtin (mv (type-fix x)
+                               (type-completions-fix completions)
+                               (uid-fix next-uid))
           :otherwise (mv (irr-type)
                          (type-completions-fix completions)
                          (uid-fix next-uid)))
@@ -2106,6 +2119,9 @@
           :unknown (mv (type-fix x)
                        (type-completions-fix completions)
                        (uid-fix next-uid))
+          :unknown-builtin (mv (type-fix x)
+                               (type-completions-fix completions)
+                               (uid-fix next-uid))
           :otherwise (mv (irr-type)
                          (type-completions-fix completions)
                          (uid-fix next-uid)))
@@ -2126,6 +2142,9 @@
           :unknown (mv (type-fix x)
                        (type-completions-fix completions)
                        (uid-fix next-uid))
+          :unknown-builtin (mv (type-fix x)
+                               (type-completions-fix completions)
+                               (uid-fix next-uid))
           :unknown-scalar (mv (type-fix x)
                               (type-completions-fix completions)
                               (uid-fix next-uid))
@@ -2158,16 +2177,30 @@
           :unknown (mv (type-fix x)
                        (type-completions-fix completions)
                        (uid-fix next-uid))
+          :unknown-builtin (mv (type-fix x)
+                               (type-completions-fix completions)
+                               (uid-fix next-uid))
           :otherwise (mv (irr-type)
                          (type-completions-fix completions)
                          (uid-fix next-uid)))
         :unknown (mv (type-fix y)
                      (type-completions-fix completions)
                      (uid-fix next-uid))
-        :unknown-scalar (mv (type-fix y)
+        :unknown-builtin (mv (if (type-case y :unknown)
+                                   (type-fix x)
+                                 (type-fix y))
+                               (type-completions-fix completions)
+                               (uid-fix next-uid))
+        :unknown-scalar (mv (if (type-case y '(:unknown :unknown-builtin))
+                                (type-fix x)
+                              (type-fix y))
                             (type-completions-fix completions)
                             (uid-fix next-uid))
-        :unknown-arithmetic (mv (type-fix y)
+        :unknown-arithmetic (mv (if (type-case y '(:unknown
+                                                   :unknown-builtin
+                                                   :unknown-scalar))
+                                (type-fix x)
+                              (type-fix y))
                                 (type-completions-fix completions)
                                 (uid-fix next-uid))
         :otherwise (mv (type-fix x)
@@ -2342,15 +2375,10 @@
      For function types, further constraints apply.
      See @(tsee type-params-composite-aux).")
    (xdoc::p
-    "When taking the composite of the unknown type with any other type,
-     we take the other type as the composite.
-     When taking the composite of the unknown scalar type with any other type
-     (not the unknown type, already covered by the previous sentence),
-     we take the other type as composite;
-     note that only the unknown scalar type and (known) scalar types
-     are compatible with the unknown scalar type.
-     Our choice to take the more specific of the two compatible types
-     is consistent with the general pattern
+    "When taking the composite of one of the unknown type variants
+     with any other type,
+     we take the more specific type as the composite.
+     This choice is consistent with the general pattern
      of constraints outlined by the standard
      (e.g., when taking the composite of two arrays,
      one with a length, and the other without,
@@ -2411,6 +2439,7 @@
       :pointer ienv.pointer-bytes
       :function nil
       :unknown nil
+      :unknown-builtin nil
       :unknown-scalar nil
       :unknown-arithmetic nil))
   :measure (type-count type))
