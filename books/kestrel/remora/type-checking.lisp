@@ -973,13 +973,19 @@
     "Several kinds of bindings have an optional type annotation
      (see @(tsee bind)).
      If the annotation is absent, there is nothing to check.
-     If it is present, it must be a valid type
-     equivalent to the inferred type passed as argument."))
+     If it is present, it must be a valid type that,
+     once expanded against the static environment's definitions
+     (see @(tsee senv-expand-type)),
+     is equivalent to the inferred type passed as argument
+     (which is assumed to be already expanded);
+     if the expansion would result in variable capture, the check fails."))
   (type-option-case
    type?
    :none t
-   :some (and (check-type type?.val senv)
-              (type-equivp type type?.val))))
+   :some (b* (((unless (check-type type?.val senv)) nil)
+              (expanded (senv-expand-type type?.val senv))
+              ((when (reserrp expanded)) nil))
+           (type-equivp type expanded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1138,8 +1144,9 @@
      :array-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
           ((unless (check-type expr.type senv)) (reserr nil))
-          ((unless (type-atomp expr.type)) (reserr nil)))
-       (make-type-array :elem expr.type
+          ((unless (type-atomp expr.type)) (reserr nil))
+          ((ok elem) (senv-expand-type expr.type senv)))
+       (make-type-array :elem elem
                         :ispace (ispace-shape
                                  (shape-dims (dim-const-list expr.dims)))))
      :frame
@@ -1159,7 +1166,8 @@
      :frame-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
           ((unless (check-type expr.type senv)) (reserr nil))
-          ((ok (type+ispace array)) (type-match-array expr.type)))
+          ((ok type) (senv-expand-type expr.type senv))
+          ((ok (type+ispace array)) (type-match-array type)))
        (make-type-array
         :elem array.type
         :ispace (ispace-shape
@@ -1361,14 +1369,15 @@
        (make-type-pi :params atom.params :body type))
      :box
      (b* (((unless (check-ispace-list atom.ispaces senv)) (reserr nil))
+          (ispaces (senv-expand-ispace-list atom.ispaces senv))
           ((unless (type-atomp atom.type)) (reserr nil))
-          (box-type atom.type)
-          ((unless (check-type box-type senv)) (reserr nil))
+          ((unless (check-type atom.type senv)) (reserr nil))
+          ((ok box-type) (senv-expand-type atom.type senv))
           ((ok vars+type) (type-match-sum box-type))
           (vars (ispacevarlist+type->vars vars+type))
           (body-type (ispacevarlist+type->type vars+type))
           ((ok (stringdimmap+stringshapemap maps))
-           (check-ispace-params-and-args vars atom.ispaces))
+           (check-ispace-params-and-args vars ispaces))
           ((unless (type-subst-ispace-vars-no-capture-p body-type
                                                         maps.dim-map
                                                         maps.shape-map))
@@ -1525,10 +1534,11 @@
           (types (var+type-list->type bind.params))
           ((unless (check-type-list types senv-iparams)) (reserr nil))
           ((unless (check-type bind.type senv-iparams)) (reserr nil))
+          ((ok btype) (senv-expand-type bind.type senv-iparams))
           (senv-body (senv-add-vars+types bind.params senv-iparams))
           ((ok out-type) (check-expr bind.expr senv-body))
-          ((unless (type-equivp out-type bind.type)) (reserr nil))
-          (fun-type (make-type-fun :in types :out bind.type))
+          ((unless (type-equivp out-type btype)) (reserr nil))
+          (fun-type (make-type-fun :in types :out btype))
           (fun-type (ispace-var-list-option-case
                      bind.iparams?
                      :some (make-type-pi :params bind.iparams?.val
