@@ -431,19 +431,23 @@
   (xdoc::topstring
    (xdoc::p
     "This is the type value form of the type that
-     @(tsee primop-types) associates to the operation's surface name:
-     a zero-rank array of the operation's function type,
-     whose inputs and output are themselves
-     zero-rank arrays of base types.
+     @(tsee primop-types) associates to the operation's surface name.
      We keep this consistent with @(tsee primop-types) by construction;
      a theorem relating the two could be added later.")
    (xdoc::p
-    "From this type value we can obtain,
+    "Curerntly this type is always
+     a zero-rank array of the operation's function type,
+     whose inputs and output are themselves
+     zero-rank arrays of base types.
+     From this type value we can obtain,
      for an operation used as a function value,
      both the expected cell dimensions of its arguments
      and the type of its result,
      uniformly with how the same information
-     is obtained for lambda abstractions."))
+     is obtained for lambda abstractions.")
+   (xdoc::p
+    "Not all primitive operations in Remora have types of this form.
+     Those primitive operations will be handled later."))
   (b* ((int-tv (make-type-value-array
                 :elem (type-value-base (base-type-int))
                 :dims nil))
