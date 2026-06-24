@@ -1125,9 +1125,10 @@
      the parameters must all have array types,
      whose dimensions are returned.
      For a primitive operation,
-     every argument is a scalar,
-     so we return as many empty lists of dimensions
-     as the operation's arity (see @(tsee primop-arity)).
+     we likewise read the input types of its function type
+     (see @(tsee primop-type)),
+     which are all array types,
+     and return their dimensions.
      It is an error if the value is not a function value,
      or if a lambda abstraction's parameters
      do not all have array types."))
@@ -1139,7 +1140,11 @@
                           (expr-value-lambda->params fval)))
                   ((unless (type-value-list-case-array tvals)) (reserr nil)))
                (type-value-array-list->dims tvals))
-     :primop (repeat (primop-arity (expr-value-primop->val fval)) nil)
+     :primop (b* ((tvals (type-value-fun->in
+                          (type-value-array->elem
+                           (primop-type (expr-value-primop->val fval)))))
+                  ((unless (type-value-list-case-array tvals)) (reserr nil)))
+               (type-value-array-list->dims tvals))
      :otherwise (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable expr-valuep-when-result-not-error))))
 
