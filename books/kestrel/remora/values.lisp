@@ -216,7 +216,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the dynamic counterpart of @(tsee var+type):
+    "This is the dynamic counterpart of @(tsee var+type?),
+     but with the type being present:
      a pair consisting of a variable name and an associated type value.
      In the name of this fixtype,
      we join `type' and `value' into `typevalue',

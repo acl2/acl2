@@ -216,8 +216,8 @@
           types
           type-option
           type-list-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog)
   :extra-args ((dim-subst string-dim-mapp)
@@ -314,7 +314,7 @@
                         (set::mergesort bind.iparams?.val)
                         dim-subst
                         shape-subst)
-                       (var+type-list-subst-ispace-vars-no-capture-p
+                       (var+type?-list-subst-ispace-vars-no-capture-p
                         bind.params
                         dim-subst
                         shape-subst)
@@ -324,9 +324,9 @@
                        (expr-subst-ispace-vars-no-capture-p bind.expr
                                                             dim-subst
                                                             shape-subst)))
-          :none (and (var+type-list-subst-ispace-vars-no-capture-p bind.params
-                                                                   dim-subst
-                                                                   shape-subst)
+          :none (and (var+type?-list-subst-ispace-vars-no-capture-p bind.params
+                                                                    dim-subst
+                                                                    shape-subst)
                      (type-subst-ispace-vars-no-capture-p bind.type
                                                           dim-subst
                                                           shape-subst)
@@ -383,8 +383,8 @@
   :types (types
           type-option
           type-list-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog)
   :extra-args ((atom-subst string-type-mapp)
@@ -456,7 +456,7 @@
                         (set::mergesort bind.tparams?.val)
                         atom-subst
                         array-subst)
-                       (var+type-list-subst-type-vars-no-capture-p
+                       (var+type?-list-subst-type-vars-no-capture-p
                         bind.params
                         atom-subst
                         array-subst)
@@ -466,9 +466,9 @@
                        (expr-subst-type-vars-no-capture-p bind.expr
                                                           atom-subst
                                                           array-subst)))
-          :none (and (var+type-list-subst-type-vars-no-capture-p bind.params
-                                                                 atom-subst
-                                                                 array-subst)
+          :none (and (var+type?-list-subst-type-vars-no-capture-p bind.params
+                                                                  atom-subst
+                                                                  array-subst)
                      (type-subst-type-vars-no-capture-p bind.type
                                                         atom-subst
                                                         array-subst)
@@ -540,17 +540,17 @@
                 (and (expr-subst-no-capture-p bound subst)
                      (expr-subst-expr-vars-no-capture-p expr.body subst)))))
    (atom :lambda
-         (b* ((bound (set::mergesort (var+type-list->var atom.params)))
+         (b* ((bound (set::mergesort (var+type?-list->var atom.params)))
               (subst (omap::delete* bound (string-expr-map-fix subst))))
            (and (expr-subst-no-capture-p bound subst)
                 (expr-subst-expr-vars-no-capture-p atom.body subst))))
    (bind :fun
-         (b* ((bound (set::mergesort (var+type-list->var bind.params)))
+         (b* ((bound (set::mergesort (var+type?-list->var bind.params)))
               (subst (omap::delete* bound (string-expr-map-fix subst))))
            (and (expr-subst-no-capture-p bound subst)
                 (expr-subst-expr-vars-no-capture-p bind.expr subst))))
    (bind :cfun
-         (b* ((bound (set::mergesort (var+type-list->var bind.params)))
+         (b* ((bound (set::mergesort (var+type?-list->var bind.params)))
               (subst (omap::delete* bound (string-expr-map-fix subst))))
            (and (expr-subst-no-capture-p bound subst)
                 (expr-subst-expr-vars-no-capture-p bind.expr subst))))
@@ -601,8 +601,8 @@
           types
           type-option
           type-list-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog)
   :extra-args ((dim-subst string-dim-mapp)
@@ -704,9 +704,9 @@
                    :var bind.var
                    :tparams? bind.tparams?
                    :iparams? bind.iparams?
-                   :params (var+type-list-subst-ispace-vars bind.params
-                                                            dim-subst
-                                                            shape-subst)
+                   :params (var+type?-list-subst-ispace-vars bind.params
+                                                             dim-subst
+                                                             shape-subst)
                    :type (type-subst-ispace-vars bind.type
                                                  dim-subst
                                                  shape-subst)
@@ -717,9 +717,9 @@
                  :var bind.var
                  :tparams? bind.tparams?
                  :iparams? bind.iparams?
-                 :params (var+type-list-subst-ispace-vars bind.params
-                                                          dim-subst
-                                                          shape-subst)
+                 :params (var+type?-list-subst-ispace-vars bind.params
+                                                           dim-subst
+                                                           shape-subst)
                  :type (type-subst-ispace-vars bind.type
                                                dim-subst
                                                shape-subst)
@@ -754,8 +754,8 @@
   :types (types
           type-option
           type-list-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog)
   :extra-args ((atom-subst string-type-mapp)
@@ -834,9 +834,9 @@
                    :var bind.var
                    :tparams? bind.tparams?
                    :iparams? bind.iparams?
-                   :params (var+type-list-subst-type-vars bind.params
-                                                          atom-subst
-                                                          array-subst)
+                   :params (var+type?-list-subst-type-vars bind.params
+                                                           atom-subst
+                                                           array-subst)
                    :type (type-subst-type-vars bind.type
                                                atom-subst
                                                array-subst)
@@ -847,9 +847,9 @@
                  :var bind.var
                  :tparams? bind.tparams?
                  :iparams? bind.iparams?
-                 :params (var+type-list-subst-type-vars bind.params
-                                                        atom-subst
-                                                        array-subst)
+                 :params (var+type?-list-subst-type-vars bind.params
+                                                         atom-subst
+                                                         array-subst)
                  :type (type-subst-type-vars bind.type
                                              atom-subst
                                              array-subst)
@@ -908,14 +908,14 @@
             :binds binds
             :body (expr-subst-expr-vars expr.body subst))))
    (atom :lambda
-         (b* ((bound (set::mergesort (var+type-list->var atom.params)))
+         (b* ((bound (set::mergesort (var+type?-list->var atom.params)))
               (subst (omap::delete* bound (string-expr-map-fix subst))))
            (make-atom-lambda
             :params atom.params
             :body (expr-subst-expr-vars atom.body subst)
             :type? atom.type?)))
    (bind :fun
-         (b* ((bound (set::mergesort (var+type-list->var bind.params)))
+         (b* ((bound (set::mergesort (var+type?-list->var bind.params)))
               (subst (omap::delete* bound (string-expr-map-fix subst))))
            (make-bind-fun
             :var bind.var
@@ -923,7 +923,7 @@
             :type? bind.type?
             :expr (expr-subst-expr-vars bind.expr subst))))
    (bind :cfun
-         (b* ((bound (set::mergesort (var+type-list->var bind.params)))
+         (b* ((bound (set::mergesort (var+type?-list->var bind.params)))
               (subst (omap::delete* bound (string-expr-map-fix subst))))
            (make-bind-cfun
             :var bind.var

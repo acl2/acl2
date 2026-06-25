@@ -474,28 +474,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod var+type
-  :short "Fixtype of variables with types."
+(fty::defprod var+type?
+  :short "Fixtype of variables with optional types."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to @('pat') in the ABNF grammar.")
+    "This corresponds to @('pat') in the ABNF grammar,
+     with the relaxation that we allow a type to be missing.
+     In fact, Remora concrete syntax may evolve in that direction,
+     with type inference inferring the missing types.")
    (xdoc::p
     "These are pairs consisting of a variable name and an associated type.
      The type is an array one because variables are expressions, not atoms.
      These variables are separate from ispace and type variables."))
   ((var string)
-   (type type))
-  :pred var+type-p)
+   (type? type-option))
+  :pred var+type?-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist var+type-list
-  :short "Fixtype of lists of variables with types."
-  :elt-type var+type
+(fty::deflist var+type?-list
+  :short "Fixtype of lists of variables with optional types."
+  :elt-type var+type?
   :true-listp t
   :elementp-of-nil nil
-  :pred var+type-listp)
+  :pred var+type?-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -881,7 +884,7 @@
        will be calculated and stored by the type checker.
        It is absent after parsing."))
     (:base ((lit base-lit)))
-    (:lambda ((params var+type-list)
+    (:lambda ((params var+type?-list)
               (body expr)
               (type? type-option)))
     (:tlambda ((params type-var-list)
@@ -930,7 +933,7 @@
            (type? type-option)
            (expr expr)))
     (:fun ((var string)
-           (params var+type-list)
+           (params var+type?-list)
            (type? type-option)
            (expr expr)))
     (:tfun ((var string)
@@ -944,7 +947,7 @@
     (:cfun ((var string)
             (tparams? type-var-list-option)
             (iparams? ispace-var-list-option)
-            (params var+type-list)
+            (params var+type?-list)
             (type type)
             (expr expr)))
     :pred bindp)

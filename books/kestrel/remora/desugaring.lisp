@@ -20,6 +20,9 @@
 
 (local (in-theory (enable* ast-corep-rules)))
 
+(local (in-theory (enable typep-when-result-not-error
+                          type-listp-when-result-not-error)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ desugaring
@@ -154,8 +157,8 @@
           ispace-list-option
           types
           type-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog)
   :override
@@ -210,14 +213,16 @@
    (expr :bracket (b* ((exprs (expr-list-desugar expr.exprs)))
                     (make-expr-frame :dims (list (len exprs))
                                      :exprs exprs)))
-   (bind :fun (b* ((params (var+type-list-desugar bind.params))
+   (bind :fun (b* ((params (var+type?-list-desugar bind.params))
                    (type? (type-option-desugar bind.type?))
                    (expr (expr-desugar bind.expr))
                    (lambda-type?
                     (type-option-case
                      type?
-                     :some (make-type-fun :in (var+type-list->type params)
-                                          :out type?.val)
+                     :some (b* ((in (var+type?-list->type-list-or-err params)))
+                             (if (reserrp in)
+                                 nil
+                               (make-type-fun :in in :out type?.val)))
                      :none nil))
                    (lambda-expr
                     (make-expr-array
@@ -260,46 +265,51 @@
                  (make-bind-val :var bind.var
                                 :type? lambda-type?
                                 :expr lambda-expr)))
-   (bind :cfun (b* ((params (var+type-list-desugar bind.params))
+   (bind :cfun (b* ((params (var+type?-list-desugar bind.params))
                     (type (type-desugar bind.type))
                     (expr (expr-desugar bind.expr))
-                    (lambda-type
-                     (make-type-fun :in (var+type-list->type params)
-                                    :out type))
                     (lambda-expr
                      (make-expr-array
                       :dims nil
                       :atoms (list (make-atom-lambda :params params
                                                      :body expr
                                                      :type? type))))
-                    ((mv ilambda-lambda-type
-                         ilambda-lambda-expr)
+                    (ilambda-lambda-expr
                      (ispace-var-list-option-case
                       bind.iparams?
-                      :some (mv (make-type-pi :params bind.iparams?.val
-                                              :body lambda-type)
-                                (make-expr-array
-                                 :dims nil
-                                 :atoms (list (make-atom-ilambda
-                                               :params bind.iparams?.val
-                                               :body lambda-expr))))
-                      :none (mv lambda-type
-                                lambda-expr)))
-                    ((mv tlambda-ilambda-lambda-type
-                         tlambda-ilambda-lambda-expr)
+                      :some (make-expr-array
+                             :dims nil
+                             :atoms (list (make-atom-ilambda
+                                           :params bind.iparams?.val
+                                           :body lambda-expr)))
+                      :none lambda-expr))
+                    (tlambda-ilambda-lambda-expr
                      (type-var-list-option-case
                       bind.tparams?
-                      :some (mv (make-type-forall :params bind.tparams?.val
+                      :some (make-expr-array
+                             :dims nil
+                             :atoms (list (make-atom-tlambda
+                                           :params bind.tparams?.val
+                                           :body ilambda-lambda-expr)))
+                      :none ilambda-lambda-expr))
+                    (in (var+type?-list->type-list-or-err params))
+                    (lambda-type?
+                     (if (reserrp in)
+                         nil
+                       (b* ((lambda-type (make-type-fun :in in :out type))
+                            (ilambda-lambda-type
+                             (ispace-var-list-option-case
+                              bind.iparams?
+                              :some (make-type-pi :params bind.iparams?.val
+                                                  :body lambda-type)
+                              :none lambda-type)))
+                         (type-var-list-option-case
+                          bind.tparams?
+                          :some (make-type-forall :params bind.tparams?.val
                                                   :body ilambda-lambda-type)
-                                (make-expr-array
-                                 :dims nil
-                                 :atoms (list (make-atom-tlambda
-                                               :params bind.tparams?.val
-                                               :body ilambda-lambda-expr))))
-                      :none (mv ilambda-lambda-type
-                                ilambda-lambda-expr))))
+                          :none ilambda-lambda-type)))))
                  (make-bind-val :var bind.var
-                                :type? tlambda-ilambda-lambda-type
+                                :type? lambda-type?
                                 :expr tlambda-ilambda-lambda-expr))))
   :name ast-desugar)
 
@@ -320,24 +330,9 @@
     :enable (type-option-desugar
              type-option-some->val))
 
-  (defruled var+type->type-of-var+type-desugar
-    (equal (var+type->type (var+type-desugar x))
-           (type-desugar (var+type->type x)))
-    :enable var+type-desugar)
-
-  (defruled var+type-list->type-of-var+type-list-desugar
-    (equal (var+type-list->type (var+type-list-desugar x))
-           (type-list-desugar (var+type-list->type x)))
-    :induct t
-    :enable (var+type-list->type
-             var+type->type-of-var+type-desugar
-             ast-desugar-rules))
-
   (add-to-ruleset ast-desugar-rules
                   '(type-option-desugar-iff
-                    type-option-desugar-to-type-desugar
-                    var+type->type-of-var+type-desugar
-                    var+type-list->type-of-var+type-list-desugar)))
+                    type-option-desugar-to-type-desugar)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -387,15 +382,15 @@
     :fn type-option-desugar
     :hints (("Goal" :in-theory (enable type-option-desugar))))
 
-  (defret var+type-corep-of-var+type-desugar
-    (var+type-corep result)
-    :fn var+type-desugar
-    :hints (("Goal" :in-theory (enable var+type-desugar))))
+  (defret var+type?-corep-of-var+type?-desugar
+    (var+type?-corep result)
+    :fn var+type?-desugar
+    :hints (("Goal" :in-theory (enable var+type?-desugar))))
 
-  (defret var+type-list-corep-of-var+type-list-desugar
-    (var+type-list-corep result)
-    :fn var+type-list-desugar
-    :hints (("Goal" :induct t :in-theory (enable var+type-list-desugar))))
+  (defret var+type?-list-corep-of-var+type?-list-desugar
+    (var+type?-list-corep result)
+    :fn var+type?-list-desugar
+    :hints (("Goal" :induct t :in-theory (enable var+type?-list-desugar))))
 
   (defret-mutual exprs/atoms/binds-corep-of-exprs/atoms/binds-desugar
     (defret expr-corep-of-expr-desugar
@@ -417,13 +412,16 @@
       (bind-list-corep result)
       :fn bind-list-desugar)
     :mutual-recursion exprs/atoms/binds-desugar
-    :hints (("Goal" :in-theory (enable* expr-desugar
-                                        expr-list-desugar
-                                        atom-desugar
-                                        atom-list-desugar
-                                        bind-desugar
-                                        bind-list-desugar
-                                        ast-desugar-rules))))
+    :hints
+    (("Goal"
+      :in-theory (enable* expr-desugar
+                          expr-list-desugar
+                          atom-desugar
+                          atom-list-desugar
+                          bind-desugar
+                          bind-list-desugar
+                          ast-desugar-rules
+                          type-list-corep-of-var+type?-list->type-list))))
 
   (defret prog-corep-of-prog-desugar
     (prog-corep result)
@@ -487,17 +485,17 @@
                                        type-option-some->val
                                        type-option-fix))))
 
-  (defret var+type-desugar-when-var+type-corep
-    (equal result (var+type-fix var+type))
-    :hyp (var+type-corep var+type)
-    :fn var+type-desugar
-    :hints (("Goal" :in-theory (enable var+type-desugar))))
+  (defret var+type?-desugar-when-var+type?-corep
+    (equal result (var+type?-fix var+type?))
+    :hyp (var+type?-corep var+type?)
+    :fn var+type?-desugar
+    :hints (("Goal" :in-theory (enable var+type?-desugar))))
 
-  (defret var+type-list-desugar-when-var+type-list-corep
-    (equal result (var+type-list-fix var+type-list))
-    :hyp (var+type-list-corep var+type-list)
-    :fn var+type-list-desugar
-    :hints (("Goal" :induct t :in-theory (enable var+type-list-desugar))))
+  (defret var+type?-list-desugar-when-var+type?-list-corep
+    (equal result (var+type?-list-fix var+type?-list))
+    :hyp (var+type?-list-corep var+type?-list)
+    :fn var+type?-list-desugar
+    :hints (("Goal" :induct t :in-theory (enable var+type?-list-desugar))))
 
   (defret-mutual exprs/atoms/binds-desugar-when-exprs/atoms/binds-corep
     (defret expr-desugar-when-expr-corep
@@ -582,13 +580,13 @@
     (equal (type-option-desugar (type-option-desugar type?))
            (type-option-desugar type?)))
 
-  (defrule var+type-desugar-idempotent
-    (equal (var+type-desugar (var+type-desugar var+type))
-           (var+type-desugar var+type)))
+  (defrule var+type?-desugar-idempotent
+    (equal (var+type?-desugar (var+type?-desugar var+type?))
+           (var+type?-desugar var+type?)))
 
-  (defrule var+type-list-desugar-idempotent
-    (equal (var+type-list-desugar (var+type-list-desugar var+types))
-           (var+type-list-desugar var+types)))
+  (defrule var+type?-list-desugar-idempotent
+    (equal (var+type?-list-desugar (var+type?-list-desugar var+type?s))
+           (var+type?-list-desugar var+type?s)))
 
   (defrule expr-desugar-idempotent
     (equal (expr-desugar (expr-desugar expr))

@@ -25,6 +25,9 @@
 
 (local (in-theory (enable* ast-corep-rules)))
 
+(local (in-theory (enable typep-when-result-not-error
+                          type-listp-when-result-not-error)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-structurals
@@ -194,17 +197,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection var+type-list->var ((x var+type-listp))
+(std::defprojection var+type?-list->var ((x var+type?-listp))
   :returns (strings string-listp)
-  :short "Lift @(tsee var+type->var) to lists."
-  (var+type->var x))
+  :short "Lift @(tsee var+type?->var) to lists."
+  (var+type?->var x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection var+type-list->type ((x var+type-listp))
-  :returns (types type-listp)
-  :short "Lift @(tsee var+type->type) to lists."
-  (var+type->type x))
+(define var+type?->type-or-err ((vt var+type?-p))
+  :returns (type type-resultp)
+  :short "Extract the type from a variable with an optional type,
+          returning an error if the type is absent."
+  (b* ((type? (var+type?->type? vt)))
+    (type-option-case
+     type?
+     :none (reserr nil)
+     :some type?.val))
+
+  ///
+
+  (defruled type-corep-of-var+type?->type-or-err
+    (implies (and (var+type?-corep x)
+                  (not (reserrp (var+type?->type-or-err x))))
+             (type-corep (var+type?->type-or-err x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define var+type?-list->type-list-or-err ((x var+type?-listp))
+  :returns (types type-list-resultp)
+  :short "Extract the types from a list of variables with optional types,
+          returning an error if any type is absent."
+  (b* (((when (endp x)) nil)
+       ((ok type) (var+type?->type-or-err (car x)))
+       ((ok types) (var+type?-list->type-list-or-err (cdr x))))
+    (cons type types))
+
+  ///
+
+  (defruled type-list-corep-of-var+type?-list->type-list
+    (implies (and (var+type?-list-corep x)
+                  (not (reserrp (var+type?-list->type-list-or-err x))))
+             (type-list-corep (var+type?-list->type-list-or-err x)))
+    :induct t
+    :enable (var+type?-list->type-list-or-err
+             type-corep-of-var+type?->type-or-err)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -327,20 +363,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var+type-list-set-vars ((vars string-listp) (var+types var+type-listp))
-  :returns (new-var+types var+type-listp)
-  :short "Replace, in a list of variables with types,
-          the variables with given ones, keeping the types."
+(define var+type?-list-set-vars ((vars string-listp) (var+types var+type?-listp))
+  :returns (new-var+types var+type?-listp)
+  :short "Replace, in a list of variables with optional types,
+          the variables with given ones, keeping the optional types."
   :long
   (xdoc::topstring
    (xdoc::p
     "The two lists are expected to have the same length.
      We should make this a guard."))
   (b* (((when (endp var+types)) nil)
-       ((when (endp vars)) (var+type-list-fix var+types))
+       ((when (endp vars)) (var+type?-list-fix var+types))
        (vt (car var+types)))
-    (cons (make-var+type :var (car vars) :type (var+type->type vt))
-          (var+type-list-set-vars (cdr vars) (cdr var+types)))))
+    (cons (make-var+type? :var (car vars) :type? (var+type?->type? vt))
+          (var+type?-list-set-vars (cdr vars) (cdr var+types)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

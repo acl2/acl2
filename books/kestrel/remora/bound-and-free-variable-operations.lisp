@@ -184,8 +184,8 @@
           types
           type-option
           type-list-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog
           string-dim-map
@@ -220,7 +220,7 @@
                           (set::mergesort bind.params)))
    (bind :cfun
          (set::difference (set::union
-                           (var+type-list-free-ispace-vars bind.params)
+                           (var+type?-list-free-ispace-vars bind.params)
                            (set::union (type-free-ispace-vars bind.type)
                                        (expr-free-ispace-vars bind.expr)))
                           (ispace-var-list-option-case
@@ -259,8 +259,8 @@
   :types (types
           type-option
           type-list-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog
           string-type-map)
@@ -284,7 +284,7 @@
                           (set::mergesort bind.params)))
    (bind :cfun
          (set::difference (set::union
-                           (var+type-list-free-type-vars bind.params)
+                           (var+type?-list-free-type-vars bind.params)
                            (set::union (type-free-type-vars bind.type)
                                        (expr-free-type-vars bind.expr)))
                           (type-var-list-option-case
@@ -339,13 +339,13 @@
                            (bind-list-bound-expr-vars expr.binds))))
    (atom :lambda
          (set::difference (expr-free-expr-vars atom.body)
-                          (set::mergesort (var+type-list->var atom.params))))
+                          (set::mergesort (var+type?-list->var atom.params))))
    (bind :fun
          (set::difference (expr-free-expr-vars bind.expr)
-                          (set::mergesort (var+type-list->var bind.params))))
+                          (set::mergesort (var+type?-list->var bind.params))))
    (bind :cfun
          (set::difference (expr-free-expr-vars bind.expr)
-                          (set::mergesort (var+type-list->var bind.params))))
+                          (set::mergesort (var+type?-list->var bind.params))))
    (bind-list (b* (((when (endp bind-list)) nil)
                    (bind (car bind-list)))
                 (set::union (bind-free-expr-vars bind)
@@ -370,8 +370,8 @@
           types
           type-option
           type-list-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog)
   :result ispace-var-setp
@@ -396,7 +396,7 @@
            bind.iparams?
            :some (set::mergesort bind.iparams?.val)
            :none nil)
-          (set::union (var+type-list-all-ispace-vars bind.params)
+          (set::union (var+type?-list-all-ispace-vars bind.params)
                       (set::union (type-all-ispace-vars bind.type)
                                   (expr-all-ispace-vars bind.expr))))))
   :name ast-all-ispace-vars)
@@ -414,8 +414,8 @@
   :types (types
           type-option
           type-list-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog)
   :result type-var-setp
@@ -437,7 +437,7 @@
                  bind.tparams?
                  :some (set::mergesort bind.tparams?.val)
                  :none nil)
-                (set::union (var+type-list-all-type-vars bind.params)
+                (set::union (var+type?-list-all-type-vars bind.params)
                             (set::union (type-all-type-vars bind.type)
                                         (expr-all-type-vars bind.expr))))))
   :name ast-all-type-vars)
@@ -466,7 +466,7 @@
                       (set::union (expr-all-expr-vars expr.target)
                                   (expr-all-expr-vars expr.body))))
    (atom :lambda
-         (set::union (set::mergesort (var+type-list->var atom.params))
+         (set::union (set::mergesort (var+type?-list->var atom.params))
                      (expr-all-expr-vars atom.body)))
    (bind :val
          (set::insert bind.var
@@ -474,7 +474,7 @@
    (bind :fun
          (set::insert bind.var
                       (set::union
-                       (set::mergesort (var+type-list->var bind.params))
+                       (set::mergesort (var+type?-list->var bind.params))
                        (expr-all-expr-vars bind.expr))))
    (bind :tfun
          (set::insert bind.var
@@ -485,6 +485,6 @@
    (bind :cfun
          (set::insert bind.var
                       (set::union
-                       (set::mergesort (var+type-list->var bind.params))
+                       (set::mergesort (var+type?-list->var bind.params))
                        (expr-all-expr-vars bind.expr)))))
   :name ast-all-expr-vars)

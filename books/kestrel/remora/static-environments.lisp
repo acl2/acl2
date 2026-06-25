@@ -18,6 +18,8 @@
 
 (acl2::controlled-configuration)
 
+(local (in-theory (enable typep-when-result-not-error)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ static-environments
@@ -304,16 +306,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define senv-add-vars+types ((vars+types var+type-listp) (senv senvp))
-  :guard (no-duplicatesp-equal (var+type-list->var vars+types))
-  :returns (new-senv senvp)
+(define senv-add-vars+types ((vars+types var+type?-listp) (senv senvp))
+  :guard (no-duplicatesp-equal (var+type?-list->var vars+types))
+  :returns (new-senv senv-resultp)
   :short "Add zero or more variables with types to the static environment."
   :long
   (xdoc::topstring
    (xdoc::p
+    "This function actually takes a list of variables with optional types,
+     but it fails if some type is missing.")
+   (xdoc::p
     "This repeatedly calls @(tsee senv-add-var+type).
-     The guard ensures that the order of the list does not matter."))
+     The guard ensures that the order of the list does not matter.")
+   (xdoc::p
+    "Since we do not perform type inference yet,
+     this fails if any of the variables has no type."))
   (b* (((when (endp vars+types)) (senv-fix senv))
-       ((var+type var+type) (car vars+types))
-       (senv (senv-add-var+type var+type.var var+type.type senv)))
+       (vt (car vars+types))
+       ((ok type) (var+type?->type-or-err vt))
+       (senv (senv-add-var+type (var+type?->var vt) type senv)))
     (senv-add-vars+types (cdr vars+types) senv)))

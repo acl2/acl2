@@ -44,6 +44,8 @@
                           expr-value-list-listp-when-result-not-error
                           var+typevalue-p-when-result-not-error
                           var+typevalue-listp-when-result-not-error
+                          typep-when-result-not-error
+                          type-listp-when-result-not-error
                           denvp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -371,24 +373,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-var+type ((var+type var+type-p) (denv denvp))
+(define eval-var+type? ((var+type? var+type?-p) (denv denvp))
   :returns (var+tval var+typevalue-resultp)
-  :short "Evaluate a variable with a type
+  :short "Evaluate a variable with an optional type
           to a variable with a type value."
   :long
   (xdoc::topstring
    (xdoc::p
     "The variable is unchanged;
-     its associated type is evaluated to a type value."))
-  (b* (((var+type var+type) var+type)
-       ((ok tval) (eval-type var+type.type denv)))
-    (make-var+typevalue :var var+type.var :type tval)))
+     its associated type must be present, and is evaluated to a type value."))
+  (b* (((ok type) (var+type?->type-or-err var+type?))
+       ((ok tval) (eval-type type denv)))
+    (make-var+typevalue :var (var+type?->var var+type?) :type tval)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-var+type-list ((var+types var+type-listp) (denv denvp))
+(define eval-var+type?-list ((var+types var+type?-listp) (denv denvp))
   :returns (var+tvals var+typevalue-list-resultp)
-  :short "Evaluate a list of variables with types
+  :short "Evaluate a list of variables with optional types
           to a list of variables with type values."
   :long
   (xdoc::topstring
@@ -396,13 +398,13 @@
     "We evaluate each element in turn
      and return the list of results in the same order."))
   (b* (((when (endp var+types)) nil)
-       ((ok var+tval) (eval-var+type (car var+types) denv))
-       ((ok var+tvals) (eval-var+type-list (cdr var+types) denv)))
+       ((ok var+tval) (eval-var+type? (car var+types) denv))
+       ((ok var+tvals) (eval-var+type?-list (cdr var+types) denv)))
     (cons var+tval var+tvals))
 
   ///
 
-  (defret len-of-eval-var+type-list
+  (defret len-of-eval-var+type?-list
     (implies (not (reserrp var+tvals))
              (equal (len var+tvals)
                     (len var+types)))
@@ -672,7 +674,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define expr-value-list-with-nonempty-dims ((dims nat-listp)
-                                         (valss expr-value-list-listp))
+                                              (valss expr-value-list-listp))
     :guard (and (not (member-equal 0 dims))
                 (all-of-len-p valss (nat-list-product dims))
                 (expr-value-list-list-wfp valss)
@@ -1364,7 +1366,7 @@
       (atom-case
        atom
        :base (expr-value-base (eval-base-lit atom.lit))
-       :lambda (b* (((ok params) (eval-var+type-list atom.params denv))
+       :lambda (b* (((ok params) (eval-var+type?-list atom.params denv))
                     ((ok type?) (type-option-case
                                  atom.type?
                                  :none nil
@@ -1504,7 +1506,7 @@
                           :some (eval-type bind.type?.val denv)
                           :none nil)))
               (denv-add-expr-var bind.var val denv))
-       :fun (b* (((ok params) (eval-var+type-list bind.params denv))
+       :fun (b* (((ok params) (eval-var+type?-list bind.params denv))
                  (val (make-expr-value-lambda :params params
                                               :body bind.expr
                                               :type? nil))
@@ -1539,8 +1541,9 @@
                                               :params bind.params
                                               :body bind.expr
                                               :type? bind.type))))
+                  ((ok in) (var+type?-list->type-list-or-err bind.params))
                   (lambda-type (make-type-fun
-                                :in (var+type-list->type bind.params)
+                                :in in
                                 :out bind.type))
                   ((mv iexpr itype)
                    (ispace-var-list-option-case
@@ -1682,7 +1685,7 @@
                :otherwise (mv tval nil)))
              ((when (type-value-case elem :array)) (reserr nil)))
           (make-expr-value-vector-empty :dims (append funval.dims body-dims)
-                                   :elem elem))
+                                        :elem elem))
         :otherwise (reserr nil))
        :otherwise (reserr nil)))
     :measure (nfix limit))
@@ -1816,7 +1819,7 @@
                :otherwise (mv tval nil)))
              ((when (type-value-case elem :array)) (reserr nil)))
           (make-expr-value-vector-empty :dims (append funval.dims body-dims)
-                                   :elem elem))
+                                        :elem elem))
         :otherwise (reserr nil))
        :otherwise (reserr nil)))
     :measure (nfix limit))

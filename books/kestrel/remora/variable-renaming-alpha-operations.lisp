@@ -412,8 +412,8 @@
           types
           type-option
           type-list-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog)
   :extra-args ((dim-renam string-string-mapp)
@@ -530,14 +530,14 @@
                        dim-renam
                        shape-renam
                        (set::union
-                        (var+type-list-free-ispace-vars bind.params)
+                        (var+type?-list-free-ispace-vars bind.params)
                         (set::union (type-free-ispace-vars bind.type)
                                     (expr-free-ispace-vars bind.expr))))))
                   (make-bind-cfun
                    :var bind.var
                    :tparams? bind.tparams?
                    :iparams? (ispace-var-list-option-some fresh-iparams)
-                   :params (var+type-list-rename-ispace-vars-alpha-aux
+                   :params (var+type?-list-rename-ispace-vars-alpha-aux
                             bind.params dim-renam shape-renam avoid)
                    :type (type-rename-ispace-vars-alpha-aux bind.type
                                                             dim-renam
@@ -551,7 +551,7 @@
                  :var bind.var
                  :tparams? bind.tparams?
                  :iparams? bind.iparams?
-                 :params (var+type-list-rename-ispace-vars-alpha-aux
+                 :params (var+type?-list-rename-ispace-vars-alpha-aux
                           bind.params dim-renam shape-renam avoid)
                  :type (type-rename-ispace-vars-alpha-aux bind.type
                                                           dim-renam
@@ -671,8 +671,8 @@
   :types (types
           type-option
           type-list-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog)
   :extra-args ((atom-renam string-string-mapp)
@@ -764,14 +764,14 @@
                        atom-renam
                        array-renam
                        (set::union
-                        (var+type-list-free-type-vars bind.params)
+                        (var+type?-list-free-type-vars bind.params)
                         (set::union (type-free-type-vars bind.type)
                                     (expr-free-type-vars bind.expr))))))
                   (make-bind-cfun
                    :var bind.var
                    :tparams? (type-var-list-option-some fresh-tparams)
                    :iparams? bind.iparams?
-                   :params (var+type-list-rename-type-vars-alpha-aux
+                   :params (var+type?-list-rename-type-vars-alpha-aux
                             bind.params atom-renam array-renam avoid)
                    :type (type-rename-type-vars-alpha-aux bind.type
                                                           atom-renam
@@ -785,7 +785,7 @@
                  :var bind.var
                  :tparams? bind.tparams?
                  :iparams? bind.iparams?
-                 :params (var+type-list-rename-type-vars-alpha-aux
+                 :params (var+type?-list-rename-type-vars-alpha-aux
                           bind.params atom-renam array-renam avoid)
                  :type (type-rename-type-vars-alpha-aux bind.type
                                                         atom-renam
@@ -897,8 +897,8 @@
    (xdoc::p
     "This is the capture-avoiding analogue of @(tsee ast-rename-expr-vars);
      see @(tsee ast-subst-expr-vars-alpha-aux) for the general scheme,
-     including the rebuilding of @('var+type-list') parameters
-     via @(tsee var+type-list-set-vars)."))
+     including the rebuilding of @('var+type?-list') parameters
+     via @(tsee var+type?-list-set-vars)."))
   :types (exprs/atoms/binds
           prog)
   :extra-args ((renam string-string-mapp)
@@ -936,20 +936,20 @@
             :body (expr-rename-expr-vars-alpha-aux expr.body renam avoid))))
    (atom :lambda
          (b* (((mv fresh renam)
-               (expr-rename-alpha-bound (var+type-list->var atom.params)
+               (expr-rename-alpha-bound (var+type?-list->var atom.params)
                                         renam
                                         (expr-free-expr-vars atom.body)))
-              (params (var+type-list-set-vars fresh atom.params)))
+              (params (var+type?-list-set-vars fresh atom.params)))
            (make-atom-lambda
             :params params
             :body (expr-rename-expr-vars-alpha-aux atom.body renam avoid)
             :type? atom.type?)))
    (bind :fun
          (b* (((mv fresh renam)
-               (expr-rename-alpha-bound (var+type-list->var bind.params)
+               (expr-rename-alpha-bound (var+type?-list->var bind.params)
                                         renam
                                         (expr-free-expr-vars bind.expr)))
-              (params (var+type-list-set-vars fresh bind.params)))
+              (params (var+type?-list-set-vars fresh bind.params)))
            (make-bind-fun
             :var bind.var
             :params params
@@ -957,10 +957,10 @@
             :expr (expr-rename-expr-vars-alpha-aux bind.expr renam avoid))))
    (bind :cfun
          (b* (((mv fresh renam)
-               (expr-rename-alpha-bound (var+type-list->var bind.params)
+               (expr-rename-alpha-bound (var+type?-list->var bind.params)
                                         renam
                                         (expr-free-expr-vars bind.expr)))
-              (params (var+type-list-set-vars fresh bind.params)))
+              (params (var+type?-list-set-vars fresh bind.params)))
            (make-bind-cfun
             :var bind.var
             :tparams? bind.tparams?

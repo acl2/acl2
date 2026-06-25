@@ -66,8 +66,8 @@
                     hex-digit-char-listp-when-result-not-error
                     str::oct-digit-char-p
                     str::hex-digit-char-p
-                    var+type-p-when-result-not-error
-                    var+type-listp-when-result-not-error
+                    var+type?-p-when-result-not-error
+                    var+type?-listp-when-result-not-error
                     type-optionp-when-result-not-error
                     type-list-optionp-when-result-not-error
                     ispace-list-optionp-when-result-not-error
@@ -1382,27 +1382,27 @@
 
 ;; pat = "(" ws identifier ws type-exp ws ")"
 (define abs-pat ((tree abnf::treep))
-  :returns (vt var+type-resultp)
-  :short "Abstract a @('pat') to a @(tsee var+type)."
+  :returns (vt var+type?-resultp)
+  :short "Abstract a @('pat') to a @(tsee var+type?)."
   (b* (((okf (abnf::tree-list-tuple7 sub))
         (abnf::check-tree-nonleaf-7 tree "pat"))
        ((okf id-tree) (abnf::check-tree-list-1 sub.3rd))
        ((okf te-tree) (abnf::check-tree-list-1 sub.5th))
        ((okf name) (abs-identifier id-tree))
        ((okf ty) (abs-type-exp te-tree)))
-    (make-var+type :var name :type ty)))
+    (make-var+type? :var name :type? ty)))
 
 (define abs-ws-pat ((tree abnf::treep))
-  :returns (vt var+type-resultp)
-  :short "Abstract a @('( ws pat )') wrapper to a @(tsee var+type)."
+  :returns (vt var+type?-resultp)
+  :short "Abstract a @('( ws pat )') wrapper to a @(tsee var+type?)."
   (b* (((okf (abnf::tree-list-tuple2 sub))
         (abnf::check-tree-nonleaf-2 tree nil))
        ((okf pat-tree) (abnf::check-tree-list-1 sub.2nd)))
     (abs-pat pat-tree)))
 
 (define abs-*-ws-pat ((trees abnf::tree-listp))
-  :returns (vts var+type-list-resultp)
-  :short "Abstract @('*( ws pat )') to a @(tsee var+type-list)."
+  :returns (vts var+type?-list-resultp)
+  :short "Abstract @('*( ws pat )') to a @(tsee var+type?-list)."
   (b* (((when (endp trees)) nil)
        ((okf vt) (abs-ws-pat (car trees)))
        ((okf rest) (abs-*-ws-pat (cdr trees))))
@@ -1562,7 +1562,7 @@
   :short "Abstractor-internal record holding the components of a @('fun-sig')
           CST: function name, value parameters, and optional return type."
   ((name string)
-   (params var+type-list)
+   (params var+type?-list)
    (ret-type type-option))
   :pred fun-sig-info-p)
 
@@ -1611,7 +1611,7 @@
   ((name string)
    (tparams type-var-list-option)
    (iparams ispace-var-list-option)
-   (params var+type-list)
+   (params var+type?-list)
    (ret-type type))
   :pred at-fun-sig-info-p)
 
@@ -1634,15 +1634,15 @@
 
 ;; val-typed-sig = identifier ws colon-type
 (define abs-val-typed-sig ((tree abnf::treep))
-  :returns (vt var+type-resultp)
-  :short "Abstract a @('val-typed-sig') to a @(tsee var+type)."
+  :returns (vt var+type?-resultp)
+  :short "Abstract a @('val-typed-sig') to a @(tsee var+type?)."
   (b* (((okf (abnf::tree-list-tuple3 sub))
         (abnf::check-tree-nonleaf-3 tree "val-typed-sig"))
        ((okf id-tree) (abnf::check-tree-list-1 sub.1st))
        ((okf ct-tree) (abnf::check-tree-list-1 sub.3rd))
        ((okf name) (abs-identifier id-tree))
        ((okf ty) (abs-colon-type ct-tree)))
-    (make-var+type :var name :type ty)))
+    (make-var+type? :var name :type? ty)))
 
 ;; fun-sig = identifier *( ws pat ) [ ws colon-type ]
 (define abs-fun-sig ((tree abnf::treep))
@@ -2151,8 +2151,8 @@
                 ((okf e-tree) (abnf::check-tree-list-1 sub.9th))
                 ((okf vt) (abs-val-typed-sig sig-tree))
                 ((okf e) (abs-exp e-tree)))
-             (make-bind-val :var (var+type->var vt)
-                            :type? (type-option-some (var+type->type vt))
+             (make-bind-val :var (var+type?->var vt)
+                            :type? (var+type?->type? vt)
                             :expr e)))
         (otherwise
          (reserrf (list :val-bind-shape (len treess))))))

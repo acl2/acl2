@@ -181,8 +181,8 @@
           types
           type-option
           type-list-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog)
   :extra-args ((dim-renam string-string-mapp)
@@ -271,7 +271,7 @@
                        shape-renam)))
                   (and (renaming-no-capture-p bound-dim-vars dim-renam)
                        (renaming-no-capture-p bound-shape-vars shape-renam)
-                       (var+type-list-rename-ispace-vars-no-capture-p
+                       (var+type?-list-rename-ispace-vars-no-capture-p
                         bind.params
                         dim-renam
                         shape-renam)
@@ -281,7 +281,7 @@
                        (expr-rename-ispace-vars-no-capture-p bind.expr
                                                              dim-renam
                                                              shape-renam)))
-          :none (and (var+type-list-rename-ispace-vars-no-capture-p
+          :none (and (var+type?-list-rename-ispace-vars-no-capture-p
                       bind.params
                       dim-renam
                       shape-renam)
@@ -342,8 +342,8 @@
   :types (types
           type-option
           type-list-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog)
   :extra-args ((atom-renam string-string-mapp)
@@ -410,7 +410,7 @@
                        array-renam)))
                   (and (renaming-no-capture-p bound-atom-vars atom-renam)
                        (renaming-no-capture-p bound-array-vars array-renam)
-                       (var+type-list-rename-type-vars-no-capture-p
+                       (var+type?-list-rename-type-vars-no-capture-p
                         bind.params
                         atom-renam
                         array-renam)
@@ -420,7 +420,7 @@
                        (expr-rename-type-vars-no-capture-p bind.expr
                                                            atom-renam
                                                            array-renam)))
-          :none (and (var+type-list-rename-type-vars-no-capture-p
+          :none (and (var+type?-list-rename-type-vars-no-capture-p
                       bind.params
                       atom-renam
                       array-renam)
@@ -497,17 +497,17 @@
                 (and (renaming-no-capture-p bound renam)
                      (expr-rename-expr-vars-no-capture-p expr.body renam)))))
    (atom :lambda
-         (b* ((bound (set::mergesort (var+type-list->var atom.params)))
+         (b* ((bound (set::mergesort (var+type?-list->var atom.params)))
               (renam (omap::delete* bound (string-string-map-fix renam))))
            (and (renaming-no-capture-p bound renam)
                 (expr-rename-expr-vars-no-capture-p atom.body renam))))
    (bind :fun
-         (b* ((bound (set::mergesort (var+type-list->var bind.params)))
+         (b* ((bound (set::mergesort (var+type?-list->var bind.params)))
               (renam (omap::delete* bound (string-string-map-fix renam))))
            (and (renaming-no-capture-p bound renam)
                 (expr-rename-expr-vars-no-capture-p bind.expr renam))))
    (bind :cfun
-         (b* ((bound (set::mergesort (var+type-list->var bind.params)))
+         (b* ((bound (set::mergesort (var+type?-list->var bind.params)))
               (renam (omap::delete* bound (string-string-map-fix renam))))
            (and (renaming-no-capture-p bound renam)
                 (expr-rename-expr-vars-no-capture-p bind.expr renam))))
@@ -558,8 +558,8 @@
           types
           type-option
           type-list-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog)
   :extra-args ((dim-renam string-string-mapp)
@@ -663,9 +663,9 @@
                    :var bind.var
                    :tparams? bind.tparams?
                    :iparams? bind.iparams?
-                   :params (var+type-list-rename-ispace-vars bind.params
-                                                             dim-renam
-                                                             shape-renam)
+                   :params (var+type?-list-rename-ispace-vars bind.params
+                                                              dim-renam
+                                                              shape-renam)
                    :type (type-rename-ispace-vars bind.type
                                                   dim-renam
                                                   shape-renam)
@@ -676,9 +676,9 @@
                  :var bind.var
                  :tparams? bind.tparams?
                  :iparams? bind.iparams?
-                 :params (var+type-list-rename-ispace-vars bind.params
-                                                           dim-renam
-                                                           shape-renam)
+                 :params (var+type?-list-rename-ispace-vars bind.params
+                                                            dim-renam
+                                                            shape-renam)
                  :type (type-rename-ispace-vars bind.type
                                                 dim-renam
                                                 shape-renam)
@@ -733,8 +733,8 @@
   :types (types
           type-option
           type-list-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog)
   :extra-args ((atom-renam string-string-mapp)
@@ -813,9 +813,9 @@
                    :var bind.var
                    :tparams? bind.tparams?
                    :iparams? bind.iparams?
-                   :params (var+type-list-rename-type-vars bind.params
-                                                           atom-renam
-                                                           array-renam)
+                   :params (var+type?-list-rename-type-vars bind.params
+                                                            atom-renam
+                                                            array-renam)
                    :type (type-rename-type-vars bind.type
                                                 atom-renam
                                                 array-renam)
@@ -826,9 +826,9 @@
                  :var bind.var
                  :tparams? bind.tparams?
                  :iparams? bind.iparams?
-                 :params (var+type-list-rename-type-vars bind.params
-                                                         atom-renam
-                                                         array-renam)
+                 :params (var+type?-list-rename-type-vars bind.params
+                                                          atom-renam
+                                                          array-renam)
                  :type (type-rename-type-vars bind.type
                                               atom-renam
                                               array-renam)
@@ -907,14 +907,14 @@
             :binds binds
             :body (expr-rename-expr-vars expr.body renam))))
    (atom :lambda
-         (b* ((bound (set::mergesort (var+type-list->var atom.params)))
+         (b* ((bound (set::mergesort (var+type?-list->var atom.params)))
               (renam (omap::delete* bound (string-string-map-fix renam))))
            (make-atom-lambda
             :params atom.params
             :body (expr-rename-expr-vars atom.body renam)
             :type? atom.type?)))
    (bind :fun
-         (b* ((bound (set::mergesort (var+type-list->var bind.params)))
+         (b* ((bound (set::mergesort (var+type?-list->var bind.params)))
               (renam (omap::delete* bound (string-string-map-fix renam))))
            (make-bind-fun
             :var bind.var
@@ -922,7 +922,7 @@
             :type? bind.type?
             :expr (expr-rename-expr-vars bind.expr renam))))
    (bind :cfun
-         (b* ((bound (set::mergesort (var+type-list->var bind.params)))
+         (b* ((bound (set::mergesort (var+type?-list->var bind.params)))
               (renam (omap::delete* bound (string-string-map-fix renam))))
            (make-bind-cfun
             :var bind.var
