@@ -62,10 +62,7 @@
       it is present when the variable is bound by a @('let')
       to a specific ispace, which is then its definition.
       The definitions are taken into account
-      by ispace and type equivalence.
-      (Currently the optional ispace is always absent,
-      because @('let') bindings of ispace variables
-      are not yet type-checked.)")
+      by ispace and type equivalence.")
     (xdoc::li
      "A map from the type variables in scope to optional types.
       This corresponds to @($\\Delta$);
