@@ -29,7 +29,7 @@
     "That transformation is work in progress,
      as are the safety checks provided here.
      The two will be connected once the safety checks are practical
-     (currently they are just very preliminary and conservative).")
+     (currently they are very preliminary and conservative).")
    (xdoc::p
     "The STS (= Struct Type Split) transformation is safe,
      in the sense that it suitably preserves code functionality,
@@ -133,7 +133,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define type-struct-is-struct-spec-p ((type typep) (spec sts-struct-specp))
+(define type-is-struct-spec-p ((type typep) (spec sts-struct-specp))
   :returns (yes/no booleanp)
   :short "Check if a type is the struct type being split."
   :long
