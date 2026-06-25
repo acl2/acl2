@@ -2963,8 +2963,11 @@
                     ((erp type)
                      (valid-member expr
                                    type-arg
-                                   (vstate->completions vstate))))
-                 (retok (make-expr-member :arg new-arg :name expr.name)
+                                   (vstate->completions vstate)))
+                    (info (make-type-vinfo :type type)))
+                 (retok (make-expr-member :arg new-arg
+                                          :name expr.name
+                                          :info info)
                         type
                         types-arg
                         vstate))
@@ -2973,8 +2976,11 @@
                      ((erp type)
                       (valid-memberp expr
                                      type-arg
-                                     (vstate->completions vstate))))
-                  (retok (make-expr-memberp :arg new-arg :name expr.name)
+                                     (vstate->completions vstate)))
+                     (info (make-type-vinfo :type type)))
+                  (retok (make-expr-memberp :arg new-arg
+                                            :name expr.name
+                                            :info info)
                          type
                          types-arg
                          vstate))
