@@ -1105,28 +1105,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var+type-list-set-vars ((vars string-listp) (var+types var+type-listp))
-  :returns (new-var+types var+type-listp)
-  :short "Replace, in a list of variables with types,
-          the variables with given ones, keeping the types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used to rebuild the parameter list of
-     a lambda abstraction or function binding
-     after alpha-renaming its bound expression variables:
-     the fresh variables replace the original ones,
-     while the associated types are unchanged
-     (types contain no expression variables).
-     The two lists are expected to have the same length."))
-  (b* (((when (endp var+types)) nil)
-       ((when (endp vars)) (var+type-list-fix var+types))
-       (vt (car var+types)))
-    (cons (make-var+type :var (car vars) :type (var+type->type vt))
-          (var+type-list-set-vars (cdr vars) (cdr var+types)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::deffold-map subst-expr-vars-alpha-aux
   :short "Auxiliary functions to substitute expression variables in ASTs,
           with automatic alpha renaming to avoid capture."

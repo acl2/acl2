@@ -327,6 +327,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define var+type-list-set-vars ((vars string-listp) (var+types var+type-listp))
+  :returns (new-var+types var+type-listp)
+  :short "Replace, in a list of variables with types,
+          the variables with given ones, keeping the types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two lists are expected to have the same length.
+     We should make this a guard."))
+  (b* (((when (endp var+types)) nil)
+       ((when (endp vars)) (var+type-list-fix var+types))
+       (vt (car var+types)))
+    (cons (make-var+type :var (car vars) :type (var+type->type vt))
+          (var+type-list-set-vars (cdr vars) (cdr var+types)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defrule expr-listp-of-append-all
   :short "Type of @(tsee append-all) applied to lists of lists of expressions."
   (implies (expr-list-listp lists)
