@@ -1105,7 +1105,9 @@
        The number of bound variables in the sum type must be the same as
        the number of the ispace variables in the unboxing expression.
        In the sum type body,
-       we rename the bound variables to the ispace variables:
+       we rename the bound variables to the ispace variables,
+       avoiding variable capture by alpha-renaming as needed
+       (see @(tsee type-rename-ispace-vars-alpha)):
        we associate the resulting type
        to the term variable of the unboxing expression,
        and we extend the static environment with that association.
@@ -1231,14 +1233,10 @@
           ((unless (= (len expr.ispaces) (len sum-vars))) (reserr nil))
           ((ok (string-string-map-pair renaming))
            (check-ispace-var-renaming sum-vars expr.ispaces))
-          ((unless (type-rename-ispace-vars-no-capture-p sum-body-type
-                                                         renaming.1st
-                                                         renaming.2nd))
-           (reserr nil))
           (sum-body-type-renam
-           (type-rename-ispace-vars sum-body-type
-                                    renaming.1st
-                                    renaming.2nd))
+           (type-rename-ispace-vars-alpha sum-body-type
+                                          renaming.1st
+                                          renaming.2nd))
           (senv (senv-add-ispace-vars expr.ispaces senv))
           (senv (senv-add-var+type expr.var sum-body-type-renam senv))
           ((ok arr-type) (check-expr expr.body senv))
