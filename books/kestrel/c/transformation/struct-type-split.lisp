@@ -147,7 +147,11 @@
     (see @(tsee sts-error-in-translation-unit)).
     The @('member-map') field records the right names
     of split members, in struct types that contain them
-    (see @(tsee member-map)); it accumulates.")
+    (see @(tsee member-map)); it accumulates.
+    The @('completions') field holds the struct/union type completions
+    of the code ensemble (constant);
+    it is used to look up the types of struct members
+    when transforming initializers.")
   ((target-struct-uid c$::uid)
    (right-set ident-set)
    (right-name ident)
@@ -157,7 +161,8 @@
    (ident-map uid-ident-map)
    (warnings acl2::msg-list)
    (filepath c$::filepath)
-   (member-map member-map))
+   (member-map member-map)
+   (completions c$::type-completions))
   :pred sts-split-statep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -207,6 +212,24 @@
                             (ident-fix right-name)
                             inner)))
     (omap::update struct-uid inner map)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sts-member-type
+  ((struct-type c$::typep)
+   (member identp)
+   (st sts-split-statep))
+  :returns (type? c$::type-optionp)
+  :short "Type of a member of a struct type,
+          from the type completions in the state."
+  (c$::type-case
+    struct-type
+    :struct (c$::type-struni-tag/members->lookup
+              struct-type.tag/members
+              member
+              struct-type.uid
+              (sts-split-state->completions st))
+    :otherwise nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -559,8 +582,120 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define sts-init-designors-split-point
+  ((designors designor-listp)
+   (target-type c$::typep)
+   (st sts-split-statep))
+  :returns (mv (er? maybe-msgp)
+               (action symbolp)
+               (left-designors designor-listp)
+               (right-designors designor-listp)
+               (type? c$::type-optionp))
+  :short "Scan an initializer's designators against the object type,
+          locating where the split struct type is initialized."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The designators are taken relative to @('target-type'),
+     the type of the object being initialized at this level.
+     We walk the designators, advancing the current type,
+     until we either reach a member of splittable type
+     or exhaust the designators.
+     The @('action') return classifies the outcome:")
+   (xdoc::ul
+    (xdoc::li
+     "@(':inplace') --- the designators reach a whole member of splittable type,
+      which must be split in place into a left and a right member.
+      @('left-designors') and @('right-designors') are the designators
+      of the resulting two initializers
+      (the right one with the member name replaced by its right name),
+      and @('type?') is the splittable member's type.")
+    (xdoc::li
+     "@(':route') --- the designators reach @emph{into} a member of
+      splittable type (e.g. @('.s.f')); the initializer is routed by
+      rewriting the splittable member's name to its right name when the
+      designated submember belongs to the right struct type.
+      @('left-designors') holds the rewritten designators.")
+    (xdoc::li
+     "@(':recurse') --- the designators do not cross any splittable member;
+      @('type?') is the type of the designated subobject,
+      with which the initializer's value is recursively transformed.")))
+  (b* (((reterr) :recurse nil nil nil)
+       (target-type (c$::type-fix target-type))
+       (target-uid (sts-split-state->target-struct-uid st))
+       ((when (endp designors))
+        (retok :recurse nil nil target-type))
+       (designor (designor-fix (car designors)))
+       (rest (designor-list-fix (cdr designors))))
+    (designor-case
+      designor
+      :dot
+      (b* (((unless (c$::type-case target-type :struct))
+            (retok :recurse nil nil nil))
+           (member-name designor.name)
+           (member-type (sts-member-type target-type member-name st))
+           ((unless member-type)
+            (retok :recurse nil nil nil))
+           ((when (eq (sts-splittablep member-type target-uid) t))
+            ;; Found a member of splittable type.
+            (b* ((struct-uid (c$::type-struct->uid target-type))
+                 (right-name?
+                   (member-map-lookup struct-uid
+                                      member-name
+                                      (sts-split-state->member-map st)))
+                 ((unless right-name?)
+                  (retmsg$ "INTERNAL ERROR. ~
+                            The split member ~x0 has no right name."
+                           member-name)))
+              (if (endp rest)
+                  ;; The whole member is initialized: split it in place.
+                  (retok :inplace
+                         (list (c$::make-designor-dot :name member-name))
+                         (list (c$::make-designor-dot :name right-name?))
+                         member-type)
+                ;; A submember is designated: route by the right member set.
+                (b* ((next (car rest))
+                     ((unless (designor-case next :dot))
+                      (retmsg$ "Unsupported designator into a split member."))
+                     (sub-name (c$::designor-dot->name next))
+                     (rightp (and (in sub-name (sts-split-state->right-set st))
+                                  t))
+                     (first-designor
+                       (if rightp
+                           (c$::make-designor-dot :name right-name?)
+                         (c$::make-designor-dot :name member-name))))
+                  (retok :route (cons first-designor rest) nil nil)))))
+           ;; Not splittable: descend into the member.
+           ((erp action left-designors right-designors type?)
+            (sts-init-designors-split-point rest member-type st)))
+        (cond ((eq action :inplace)
+               (retok :inplace
+                      (cons designor left-designors)
+                      (cons designor right-designors)
+                      type?))
+              ((eq action :route)
+               (retok :route (cons designor left-designors) nil nil))
+              (t (retok :recurse nil nil type?))))
+      :sub
+      (b* (((unless (c$::type-case target-type :array))
+            (retok :recurse nil nil nil))
+           (elem-type (c$::type-array->of target-type))
+           ((erp action left-designors right-designors type?)
+            (sts-init-designors-split-point rest elem-type st)))
+        (cond ((eq action :inplace)
+               (retok :inplace
+                      (cons designor left-designors)
+                      (cons designor right-designors)
+                      type?))
+              ((eq action :route)
+               (retok :route (cons designor left-designors) nil nil))
+              (t (retok :recurse nil nil type?))))))
+  :measure (designor-list-count designors)
+  :verify-guards :after-returns)
+
 (define desiniter-sts-rightp
   ((desiniter desiniterp)
+   (eff-designors designor-listp)
    (st sts-split-statep))
   :guard (desiniter-annop desiniter)
   :returns (mv (er? maybe-msgp)
@@ -569,22 +704,22 @@
           is routed to the right structure type."
   :long
   (xdoc::topstring-p
-   "The first designator determines the designated member,
-    falling back to the designators recorded by the validator
-    when there is no syntactic designation.
+   "The first effective designator determines the designated member.
+    The effective designators are the syntactic designators when present,
+    and otherwise the designators recorded by the validator,
+    rebased relative to the object being initialized
+    (see @(tsee desiniter-sts-split)).
     The initializer is routed right
     when the member is in the right member set.")
   (b* (((reterr) nil)
-       ((desiniter desiniter) desiniter)
-       ((c$::desiniter-vinfo info) desiniter.info)
-       (designors (or desiniter.designors info.designors))
-       ((unless (and (consp designors)
-                     (designor-case (car designors) :dot)))
+       (eff-designors (designor-list-fix eff-designors))
+       ((unless (and (consp eff-designors)
+                     (designor-case (car eff-designors) :dot)))
         (retmsg$ "Could not determine the member designated by an ~
                   initializer of a split structure type.~%~@0"
                  (context-msg-desiniter desiniter
                                         (sts-split-state->dialect st))))
-       (name (c$::designor-dot->name (car designors))))
+       (name (c$::designor-dot->name (car eff-designors))))
     (retok (and (in name (sts-split-state->right-set st)) t))))
 
 (define struct-declor-sts-rightp
@@ -937,8 +1072,10 @@
         :complit
         (b* (((erp splitp left-tyname right-tyname st)
               (tyname-sts-split expr.type st))
+             (complit-type
+               (c$::type-vinfo->type (c$::tyname->info expr.type)))
              ((erp left-elems right-elems st)
-              (desiniter-list-sts-split splitp expr.elems st)))
+              (desiniter-list-sts-split splitp complit-type expr.elems st)))
           (retok (make-expr-complit :type left-tyname
                                     :elems left-elems
                                     :final-comma expr.final-comma)
@@ -1772,6 +1909,7 @@
   (define initer-sts-split
     ((initer initerp)
      (splitp booleanp)
+     (target-type? c$::type-optionp)
      (st sts-split-statep))
     :guard (initer-annop initer)
     :returns (mv (er? maybe-msgp)
@@ -1780,6 +1918,10 @@
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform an initializer."
+    :long
+    (xdoc::topstring-p
+     "See @(tsee desiniter-sts-split) for the meaning of
+      @('splitp') and @('target-type?').")
     (b* ((st (sts-split-state-fix st))
          ((reterr) (initer-fix initer) nil st))
       (initer-case
@@ -1794,7 +1936,8 @@
                  st))
         :list
         (b* (((erp left-elems right-elems st)
-              (desiniter-list-sts-split splitp initer.elems st)))
+              (desiniter-list-sts-split splitp target-type?
+                                        initer.elems st)))
           (retok (c$::make-initer-list :elems left-elems
                                        :final-comma initer.final-comma)
                  (if splitp
@@ -1807,6 +1950,7 @@
   (define initer-option-sts-split
     ((initer? initer-optionp)
      (splitp booleanp)
+     (target-type? c$::type-optionp)
      (st sts-split-statep))
     :guard (initer-option-annop initer?)
     :returns (mv (er? maybe-msgp)
@@ -1822,70 +1966,156 @@
         :none (retok nil nil st)
         :some (initer-sts-split (c$::initer-option-some->val initer?)
                                 splitp
+                                target-type?
                                 st)))
     :measure (initer-option-count initer?))
 
   (define desiniter-sts-split
     ((desiniter desiniterp)
      (splitp booleanp)
+     (target-type? c$::type-optionp)
      (st sts-split-statep))
     :guard (desiniter-annop desiniter)
     :returns (mv (er? maybe-msgp)
                  (rightp booleanp)
+                 (inplacep booleanp)
                  (left-desiniter desiniterp)
                  (right-desiniter desiniterp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a designated initializer."
     :long
-    (xdoc::topstring-p
-     "When @('splitp') is @('t'),
-      the initializer is routed to either
-      @('left-desiniter') or @('right-desiniter')
-      based on the field it designates;
-      @('rightp') in the return indicates which.
-      Initializers which are split apart
-      are given explicit designations,
-      drawn from the validator annotations
-      when there is no syntactic designation,
-      since the implicit ordering is generally not preserved
-      by the partition into left and right initializer lists.
-      When @('splitp') is @('nil'), @('left-desiniter') holds the result.")
+    (xdoc::topstring
+     (xdoc::p
+      "When @('splitp') is @('t'),
+       this initializer initializes the split struct type itself,
+       and is routed to either @('left-desiniter') or @('right-desiniter')
+       based on the field it designates;
+       @('rightp') in the return indicates which.
+       Initializers which are split apart
+       are given explicit designations,
+       drawn from the validator annotations
+       when there is no syntactic designation,
+       since the implicit ordering is generally not preserved
+       by the partition into left and right initializer lists.")
+     (xdoc::p
+      "When @('splitp') is @('nil'),
+       @('target-type?') is the type of the object being initialized,
+       and the designators are scanned against it
+       (see @(tsee sts-init-designors-split-point))
+       to find where the split struct type is initialized.
+       When a whole member of splittable type is initialized here,
+       it is split in place: @('inplacep') is @('t') in the return,
+       and @('left-desiniter') and @('right-desiniter') hold
+       the two resulting initializers (for the left and right members),
+       which the caller splices into the single initializer list.
+       Otherwise @('inplacep') is @('nil'),
+       and @('left-desiniter') (= @('right-desiniter')) holds the result.")
+     (xdoc::p
+      "The designators recorded by the validator are relative to the
+       object being initialized at the current brace level
+       (see @(tsee c$::valid-desiniter)),
+       so we can use them directly when there is no syntactic designation."))
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil (desiniter-fix desiniter) (desiniter-fix desiniter) st)
+         ((reterr) nil nil
+          (desiniter-fix desiniter) (desiniter-fix desiniter) st)
          ((desiniter desiniter) desiniter)
+         ((c$::desiniter-vinfo info) desiniter.info)
+         (dialect (sts-split-state->dialect st))
          ((erp designors st)
           (designor-list-sts-split desiniter.designors st))
-         ((erp left-initer right-initer? st)
-          (initer-sts-split desiniter.initer nil st))
-         ((when right-initer?)
-          (retmsg$ "Splits are not supported ~
-                    within designated initializers.~%~@0"
-                   (context-msg-desiniter desiniter
-                                          (sts-split-state->dialect st))))
-         (new-desiniter (c$::make-desiniter :designors designors
-                                            :initer left-initer
-                                            :info desiniter.info))
-         ((unless splitp)
-          (retok nil new-desiniter new-desiniter st))
-         ((unless (c$::initer-purep left-initer))
-          (retmsg$ "Initializers must be pure when split apart.~%~@0"
-                   (context-msg-desiniter desiniter (sts-split-state->dialect st))))
-         ((erp rightp) (desiniter-sts-rightp desiniter st))
-         ;; Make implicit designations explicit,
-         ;; since the implicit ordering is generally not preserved
-         ;; by the partition into left and right initializer lists.
-         (new-desiniter
-           (if designors
-               new-desiniter
-             (c$::change-desiniter
-               new-desiniter
-               :designors (c$::desiniter-vinfo->designors desiniter.info)))))
-      (retok rightp new-desiniter new-desiniter st))
+         ;; Effective designators, relative to the object being initialized.
+         (eff-designors
+           (if (consp desiniter.designors)
+               designors
+             info.designors))
+         ;; Locate where the split struct type is initialized.
+         ((mv scan-er action scan-left scan-right sub-type?)
+          (if (and target-type? (consp eff-designors))
+              (sts-init-designors-split-point eff-designors target-type? st)
+            (mv nil :recurse nil nil nil)))
+         ((when scan-er)
+          (retmsg$ "~@0~%~@1"
+                   scan-er
+                   (context-msg-desiniter desiniter dialect))))
+      (cond
+        ;; A whole member of splittable type is initialized: split it in place.
+        ((eq action :inplace)
+         (b* (((when splitp)
+               (retmsg$ "INTERNAL ERROR. ~
+                         A member of splittable type is initialized within ~
+                         the initializer of the split struct type itself.~%~@0"
+                        (context-msg-desiniter desiniter dialect)))
+              (split-as-struct (and sub-type?
+                                    (c$::type-case sub-type? :struct)))
+              ((erp left-initer right-initer? st)
+               (initer-sts-split desiniter.initer split-as-struct
+                                 sub-type? st))
+              ((unless right-initer?)
+               (retmsg$ "Failed to split the initializer ~
+                         of a member of splittable type.~%~@0"
+                        (context-msg-desiniter desiniter dialect)))
+              ((unless (c$::initer-purep left-initer))
+               (retmsg$ "Initializers must be pure when split apart.~%~@0"
+                        (context-msg-desiniter desiniter dialect)))
+              (left-desiniter
+                (c$::make-desiniter :designors scan-left
+                                    :initer left-initer
+                                    :info desiniter.info))
+              (right-desiniter
+                (c$::make-desiniter :designors scan-right
+                                    :initer right-initer?
+                                    :info desiniter.info)))
+           (retok nil t left-desiniter right-desiniter st)))
+        ;; A submember of a member of splittable type is designated: route it.
+        ((eq action :route)
+         (b* (((when splitp)
+               (retmsg$ "INTERNAL ERROR. ~
+                         A member of splittable type is designated within ~
+                         the initializer of the split struct type itself.~%~@0"
+                        (context-msg-desiniter desiniter dialect)))
+              ((erp left-initer right-initer? st)
+               (initer-sts-split desiniter.initer nil nil st))
+              ((when right-initer?)
+               (retmsg$ "Splits are not supported ~
+                         within designated initializers.~%~@0"
+                        (context-msg-desiniter desiniter dialect)))
+              (new-desiniter
+                (c$::make-desiniter :designors scan-left
+                                    :initer left-initer
+                                    :info desiniter.info)))
+           (retok nil nil new-desiniter new-desiniter st)))
+        ;; Otherwise: recurse into the value with the designated subobject type.
+        (t
+         (b* (((erp left-initer right-initer? st)
+               (initer-sts-split desiniter.initer nil sub-type? st))
+              ((when right-initer?)
+               (retmsg$ "Splits are not supported ~
+                         within designated initializers.~%~@0"
+                        (context-msg-desiniter desiniter dialect)))
+              (new-desiniter (c$::make-desiniter :designors designors
+                                                 :initer left-initer
+                                                 :info desiniter.info))
+              ((unless splitp)
+               (retok nil nil new-desiniter new-desiniter st))
+              ((unless (c$::initer-purep left-initer))
+               (retmsg$ "Initializers must be pure when split apart.~%~@0"
+                        (context-msg-desiniter desiniter dialect)))
+              ((erp rightp) (desiniter-sts-rightp desiniter eff-designors st))
+              ;; Make implicit designations explicit,
+              ;; since the implicit ordering is generally not preserved
+              ;; by the partition into left and right initializer lists.
+              (new-desiniter
+                (if (consp desiniter.designors)
+                    new-desiniter
+                  (c$::change-desiniter new-desiniter
+                                        :designors eff-designors))))
+           (retok rightp nil new-desiniter new-desiniter st)))))
     :measure (desiniter-count desiniter))
 
   (define desiniter-list-sts-split
     ((splitp booleanp)
+     (target-type? c$::type-optionp)
      (desiniter-list desiniter-listp)
      (st sts-split-statep))
     :guard (desiniter-list-annop desiniter-list)
@@ -1901,19 +2131,24 @@
       each initializer is routed to either the left or right list
       based on the member it designates.
       When @('splitp') is @('nil'),
-      both lists hold the same transformed initializers.")
+      both returned lists hold the same transformed initializers,
+      with members of splittable type split in place
+      (see @(tsee desiniter-sts-split)).")
     (b* ((st (sts-split-state-fix st))
          ((reterr) nil nil st)
          ((when (endp desiniter-list))
           (retok nil nil st))
-         ((erp rightp left-desiniter right-desiniter st)
-          (desiniter-sts-split (car desiniter-list) splitp st))
+         ((erp rightp inplacep left-desiniter right-desiniter st)
+          (desiniter-sts-split (car desiniter-list)
+                               splitp target-type? st))
          ((erp left-rest right-rest st)
-          (desiniter-list-sts-split splitp (cdr desiniter-list) st))
+          (desiniter-list-sts-split splitp target-type?
+                                    (cdr desiniter-list) st))
          ((unless splitp)
-          (retok (cons left-desiniter left-rest)
-                 (cons right-desiniter right-rest)
-                 st)))
+          (b* ((left-list (if inplacep
+                              (list* left-desiniter right-desiniter left-rest)
+                            (cons left-desiniter left-rest))))
+            (retok left-list left-list st))))
       (if rightp
           (retok left-rest
                  (cons right-desiniter right-rest)
@@ -3133,7 +3368,7 @@
          ((erp attribs st)
           (attrib-spec-list-sts-split init-declor.attribs st))
          ((erp left-initer? right-initer? st)
-          (initer-option-sts-split init-declor.initer? splitp st))
+          (initer-option-sts-split init-declor.initer? splitp info.type st))
          ((when (and right-initer? (not splitp)))
           (retmsg$ "INTERNAL ERROR. ~
                     The initializer of an initializer declarator was split ~
@@ -4023,7 +4258,8 @@
              :ident-map nil
              :warnings nil
              :filepath (c$::irr-filepath)
-             :member-map nil))
+             :member-map nil
+             :completions completions))
        ((erp map st)
         (sts-split-trans-units tag primary-type completions code.ienv map st))
        (- (fast-alist-free completions))

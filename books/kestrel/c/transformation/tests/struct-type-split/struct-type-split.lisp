@@ -607,17 +607,133 @@ int main(void) {
   :with-output-off nil)
 
 (acl2::must-succeed*
-  ;; A pointer member of another struct type.
-  ;; This currently fails not because of the pointer member (which is split
-  ;; in place) but because of the initializer of the containing object,
-  ;; whose support is future work.
+  ;; A pointer member of another struct type is split in place,
+  ;; including in the initializer of the containing object.
   (c$::input-files :files '("ptr-member.c")
                    :const *old*)
-  (must-fail
-    (struct-type-split *old*
-                       *new*
-                       :struct-tag "point"
-                       :right-members ("z")))
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+  (c$::output-files :const *new*
+                    :base-dir "new")
+  (assert-file-contents
+    :file "new/ptr-member.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+struct node {
+  struct point *p;
+  struct point_right *p_0;
+};
+
+static struct point pt;
+
+static struct point_right pt_0;
+
+static struct node n = {.p = &pt, .p_0 = &pt_0};
+
+int main(void) {
+  return n.p->x;
+}
+")
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  ;; By-value members of splittable type are split in place,
+  ;; and their initializers are split accordingly.
+  ;; The braced, brace-elided (flat), and designated forms are all supported;
+  ;; in each case the split-apart member initializers are given explicit
+  ;; designations, and any trailing positional initializer (here of w)
+  ;; continues to designate the correct member.
+  (c$::input-files :files '("member-init.c")
+                   :const *old*)
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+  (c$::output-files :const *new*
+                    :base-dir "new")
+  (assert-file-contents
+    :file "new/member-init.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+struct outer {
+  struct point inner;
+  struct point_right inner_0;
+  int w;
+};
+
+static struct outer braced = {.inner = {.x = 1}, .inner_0 = {.z = 2}, 9};
+
+static struct outer flat = {.inner.x = 1, .inner_0.z = 2, 9};
+
+static struct outer desig = {.inner = {.x = 1}, .inner_0 = {.z = 2}, .w = 9};
+
+int main(void) {
+  return braced.inner.x + flat.w + desig.inner_0.z;
+}
+")
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  ;; A struct type that transitively contains the split struct type
+  ;; (here via a member of the directly containing struct type)
+  ;; is left unchanged; the split member is still split in place
+  ;; within the nested initializer, and member accesses are routed.
+  (c$::input-files :files '("nested-init.c")
+                   :const *old*)
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+  (c$::output-files :const *new*
+                    :base-dir "new")
+  (assert-file-contents
+    :file "new/nested-init.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+struct outer {
+  struct point inner;
+  struct point_right inner_0;
+  int w;
+};
+
+struct wrapper {
+  struct outer out;
+  int tag;
+};
+
+static struct wrapper w = {{.inner = {.x = 1}, .inner_0 = {.z = 2}, 9}, 7};
+
+int main(void) {
+  return w.out.inner.x + w.out.inner_0.z;
+}
+")
   :with-output-off nil)
 
 (acl2::must-succeed*
