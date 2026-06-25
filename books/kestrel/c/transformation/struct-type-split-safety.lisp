@@ -97,7 +97,7 @@
     "Here we define a data structure that specifies
      the struct type being split in a given translation unit.
      This will be created by the STS transformation for each translation unit.
-     Our checking tools take it and use to check the translation unit.")
+     Our checking tools take it and use it to check the translation unit.")
    (xdoc::p
     "This data structure consists of the UID, the tag, and the members.
      Although this is more than needed to identify the struct type,
@@ -123,7 +123,7 @@
      the fields of the @(':struct') summand of @(tsee type).
      The last input of this function specifies the struct type being split.
      We check whether the struct type consisting of the three fields
-     is a tagged one with the same tag and UID as the specified struct."))
+     is a tagged one with the same tag and UID as the struct being split."))
   (declare (ignore tunit?))
   (b* (((sts-struct-spec spec)))
     (and (type-struni-tag/members-case tag/members :tagged)
@@ -140,7 +140,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is true if the type is a struct type,
-     and @(tsee struct-type-is-the-struct-p) holds:
+     and @(tsee struct-type-is-struct-spec-p) holds:
      see the documentation of that function."))
   (and (type-case type :struct)
        (struct-type-is-struct-spec-p (type-struct->uid type)
@@ -184,8 +184,8 @@
        we also disallow nesting of pointers to the struct type being split.
        For function types,
        we disallow the struct anywhere in the return type,
-       passing @('t') as the nested flag;
-       while we pass the nested flag as is for parameters.
+       passing @('t') as the nested flag for the return type;
+       but we pass the nested flag as is for parameters.
        We regard an unknown type as unsafe, because it could be anything.
        The same goes for an unknown scalar type,
        because it could be a pointer to an unsafe type
@@ -262,6 +262,10 @@
     :long
     (xdoc::topstring
      (xdoc::p
+      "This function takes no nested flag because
+       structure or union members are always implicitly nested.
+       I.e. it is as if the flag were implicitly @('t').")
+     (xdoc::p
       "A tag alone is safe, because it does not contain types;
        checks on the definition of the type referred to by the tag
        are performed elsewhere.
@@ -284,9 +288,11 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "We check the type, passing @('t') as the @('nested') flag,
-       because we arrived here from a struct or union type,
-       so we are in a nested situation."))
+      "This function takes no nested flag because
+       structure or union members are always implicitly nested.
+       I.e. it is as if the flag were implicitly @('t').
+       This is why we pass @('t') as the nested flag
+       to @(tsee type-sts-safep)."))
     (type-sts-safep (type-struni-member->type mem) t spec)
     :measure (type-struni-member-count mem))
 
@@ -339,6 +345,10 @@
 (define top-type-sts-safep ((type typep) (spec sts-struct-specp))
   :returns (yes/no booleanp)
   :short "Check that a top-level type is safe for the STS transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We set the nested flag to @('nil'), since we are at the top level."))
   (type-sts-safep type nil spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -356,17 +366,10 @@
      the use of another @(tsee fty::deffold-reduce) as guards
      (we plan to add that feature soon).")
    (xdoc::p
-    "The @('struct') extra argument is the tag of the struct type being split.
-     This may need to evolve into something richer,
-     as the name alone may not uniquely identify a struct type,
-     but we start with this for simplicity.
-     There is also the issue of compatible struct types,
-     but we leave these elaborations for later as well.")
-   (xdoc::p
-    "These predicates check that the ASTs use that struct type
+    "The @('spec') extra argument specifies the struct type being split.
+     These predicates check that the ASTs use that struct type
      (and its values, and pointers to its values)
-     only in ways that are safe for transformations
-     that operate on the struct type, e.g. that split it.")
+     only in ways that are safe for the STS transformation.")
    (xdoc::p
     "The predicates should start at the @(tsee exprs/decls/stmts) clique.
      It is not hard to see that
@@ -380,7 +383,7 @@
      that we can detect unsafety.
      More concretely,
      all the ASTs that precede the @(tsee exprs/decls/stmts) clique
-     have to deemed safe when taken in isolation,
+     should be deemed safe when taken in isolation,
      and thus we do not need to define any predicates on them.")
    (xdoc::p
     "However, above we said `should' because, for now,
@@ -398,12 +401,10 @@
      which might resolve to the struct type being split,
      and so we exclude that for now.")
    (xdoc::p
-    "The predicates end at the @(tsee trans-ensemble) type.
-     We could extend this to @(tsee code-ensemble) if needed.")
+    "The predicates end at the @(tsee trans-unit) type,
+     because these checks operate on one translation unit at a time.")
    (xdoc::p
-    "Aside from the above-mentioned approximations about
-     the designation of the struct type being split,
-     our initial definition of these safety predicates is very conservative.
+    "Our initial definition of these safety predicates is very conservative.
      We will relax it gradually.")
    (xdoc::p
     "The default value of these predicates is @('t'),
@@ -418,7 +419,8 @@
      that would not play well (it generally does not, for predicates).
      The reason is that @('t') is the identity of @(tsee and),
      which is obviously the right combination operator for this fold.
-     Thus empty lists and absent sub-constructs would be deemed safe.")
+     Thus empty lists and absent sub-constructs would be deemed unsafe,
+     if we used @('nil') as the default instead of @('t').")
    (xdoc::p
     "Since we operate on validated (and thus disambiguated) ASTs,
      the ambiguous constructs do not occur,
@@ -581,7 +583,7 @@
           trans-items
           trans-unit
           filepath-trans-unit-map
-          trans-ensemble)
+          trans-unit)
   :result booleanp
   :default t
   :combine and
