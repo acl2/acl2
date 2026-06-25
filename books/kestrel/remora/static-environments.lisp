@@ -250,6 +250,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define senv-add-ispace-def ((var ispace-varp) (ispace ispacep) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add an ispace variable with its ispace definition
+          to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variable is added with a present associated ispace,
+     namely its definition;
+     this is the case for variables bound by @('let')s.
+     A variable already present is overwritten,
+     which realizes the intended shadowing."))
+  (b* ((new-ispace-vars (omap::update (ispace-var-fix var)
+                                      (ispace-fix ispace)
+                                      (senv->ispace-vars senv))))
+    (change-senv senv :ispace-vars new-ispace-vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-type-def ((var type-varp) (type typep) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add a type variable with its type definition
+          to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variable is added with a present associated type,
+     namely its definition;
+     this is the case for variables bound by @('let')s.
+     A variable already present is overwritten,
+     which realizes the intended shadowing."))
+  (b* ((new-type-vars (omap::update (type-var-fix var)
+                                    (type-fix type)
+                                    (senv->type-vars senv))))
+    (change-senv senv :type-vars new-type-vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define senv-add-var+type ((var stringp) (type typep) (senv senvp))
   :returns (new-senv senvp)
   :short "Add a variable with a type to the static environment."

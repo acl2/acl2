@@ -12,6 +12,8 @@
 
 (include-book "abstract-syntax-structurals")
 
+(local (include-book "std/typed-lists/string-listp" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -128,6 +130,32 @@
         (t (set::union (bind-bound-expr-vars (car binds))
                        (bind-list-bound-expr-vars (cdr binds)))))
   :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bind-bound-expr-var-list ((bind bindp))
+  :returns (vars string-listp)
+  :short "List of the (at most one) expression variables bound in a binding."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the list counterpart of @(tsee bind-bound-expr-vars),
+     for use with @(tsee expr-subst-alpha-bound),
+     which takes its bound variables as a list.
+     The value,
+     function,
+     type-function,
+     ispace-function,
+     and combined-function
+     bindings each bind an expression variable;
+     the ispace and type bindings do not."))
+  (bind-case bind
+             :val (list bind.var)
+             :fun (list bind.var)
+             :tfun (list bind.var)
+             :ifun (list bind.var)
+             :cfun (list bind.var)
+             :otherwise nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
