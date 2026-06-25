@@ -556,8 +556,10 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Safety checks: the split struct type may not appear in
-;; array types, function types, or the members of
-;; other struct or union types (including its own members).
+;; array types, function types, the members of a union type,
+;; or its own members (i.e. it may not be self-referential).
+;; A directly splittable member of another struct type is, however,
+;; supported: it is split in place (see the success tests further below).
 
 (acl2::must-succeed*
   ;; An array of the split struct type.
@@ -571,18 +573,44 @@ int main(void) {
   :with-output-off nil)
 
 (acl2::must-succeed*
-  ;; A member of another struct type.
+  ;; A member of another struct type is split in place.
   (c$::input-files :files '("member.c")
                    :const *old*)
-  (must-fail
-    (struct-type-split *old*
-                       *new*
-                       :struct-tag "point"
-                       :right-members ("z")))
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+  (c$::output-files :const *new*
+                    :base-dir "new")
+  (assert-file-contents
+    :file "new/member.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+struct outer {
+  struct point inner;
+  struct point_right inner_0;
+};
+
+static struct outer o;
+
+int main(void) {
+  return o.inner.x;
+}
+")
   :with-output-off nil)
 
 (acl2::must-succeed*
   ;; A pointer member of another struct type.
+  ;; This currently fails not because of the pointer member (which is split
+  ;; in place) but because of the initializer of the containing object,
+  ;; whose support is future work.
   (c$::input-files :files '("ptr-member.c")
                    :const *old*)
   (must-fail
