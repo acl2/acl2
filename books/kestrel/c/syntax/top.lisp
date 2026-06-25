@@ -18,6 +18,7 @@
 (include-book "parsing")
 (include-book "disambiguation")
 (include-book "validation")
+(include-book "types-to-tynames")
 (include-book "printing")
 (include-book "built-ins")
 (include-book "input-files")
