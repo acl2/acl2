@@ -733,22 +733,16 @@
      the definitions in the static environment being fully expanded.")
    (xdoc::p
     "Because types contain binders (universal, product, and sum types),
-     the substitution could result in variable capture:
-     if that is the case, type checking fails;
-     we should instead rename the bound variables to avoid the capture
-     (as elsewhere; see e.g. @(tsee check-tapp))."))
+     the substitution could result in variable capture;
+     the capture-avoiding substitutions
+     @(tsee type-subst-type-vars-alpha) and @(tsee type-subst-ispace-vars-alpha)
+     automatically alpha-rename the bound variables as needed to avoid it."))
   (b* (((string-type-map-pair tsubst)
         (senv-type-subst (senv->type-vars senv)))
-       ((unless (type-subst-type-vars-no-capture-p type tsubst.1st tsubst.2nd))
-        (reserr nil))
-       (type (type-subst-type-vars type tsubst.1st tsubst.2nd))
+       (type (type-subst-type-vars-alpha type tsubst.1st tsubst.2nd))
        ((stringdimmap+stringshapemap isubst)
-        (senv-ispace-subst (senv->ispace-vars senv)))
-       ((unless (type-subst-ispace-vars-no-capture-p type
-                                                     isubst.dim-map
-                                                     isubst.shape-map))
-        (reserr nil)))
-    (type-subst-ispace-vars type isubst.dim-map isubst.shape-map)))
+        (senv-ispace-subst (senv->ispace-vars senv))))
+    (type-subst-ispace-vars-alpha type isubst.dim-map isubst.shape-map)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -869,9 +863,9 @@
      to obtain the atom type of the resulting array type,
      whose shape is obtained by concatenating
      the function shape to the body shape.
-     We check that the substitution cannot result in variable capture:
-     type checking fails if that check fails;
-     we should instead rename the bound variables to avoid the capture."))
+     The substitution avoids variable capture
+     by automatically alpha-renaming bound variables as needed
+     (see @(tsee type-subst-type-vars-alpha))."))
   (b* (((ok fun-type+ispace) (type-match-array fun-type))
        (fun-type (type+ispace->type fun-type+ispace))
        (fun-ispace (type+ispace->ispace fun-type+ispace))
@@ -884,16 +878,13 @@
        (body-ispace (type+ispace->ispace body-type+ispace))
        (body-shape (shape-from-ispace body-ispace))
        ((unless (check-type-list args senv)) (reserr nil))
+       ((ok args) (senv-expand-type-list args senv))
        ((ok (string-type-map-pair type-maps))
         (check-type-params-and-args vars args))
-       ((unless (type-subst-type-vars-no-capture-p body-atom-type
-                                                   type-maps.1st
-                                                   type-maps.2nd))
-        (reserr nil))
        (body-atom-type-subst
-        (type-subst-type-vars body-atom-type
-                              type-maps.1st
-                              type-maps.2nd)))
+        (type-subst-type-vars-alpha body-atom-type
+                                    type-maps.1st
+                                    type-maps.2nd)))
     (make-type-array
      :elem body-atom-type-subst
      :ispace (ispace-shape (shape-append (list fun-shape body-shape))))))
@@ -926,9 +917,11 @@
      whose shape is obtained by concatenating
      the function shape to
      the result of applying the same substitution to the body shape.
-     We check that the substitution cannot result in variable capture:
-     type checking fails if that check fails;
-     we should instead rename the bound variables to avoid the capture."))
+     The substitution avoids variable capture
+     by automatically alpha-renaming bound variables as needed
+     (see @(tsee type-subst-ispace-vars-alpha));
+     the substitution into the body shape cannot capture,
+     because shapes contain no binders."))
   (b* (((ok fun-type+ispace) (type-match-array fun-type))
        (fun-type (type+ispace->type fun-type+ispace))
        (fun-ispace (type+ispace->ispace fun-type+ispace))
@@ -941,22 +934,45 @@
        (body-ispace (type+ispace->ispace body-type+ispace))
        (body-shape (shape-from-ispace body-ispace))
        ((unless (check-ispace-list args senv)) (reserr nil))
+       (args (senv-expand-ispace-list args senv))
        ((ok (stringdimmap+stringshapemap ispace-maps))
         (check-ispace-params-and-args vars args))
-       ((unless (type-subst-ispace-vars-no-capture-p body-atom-type
-                                                     ispace-maps.dim-map
-                                                     ispace-maps.shape-map))
-        (reserr nil))
        (body-atom-type-subst
-        (type-subst-ispace-vars body-atom-type
-                                ispace-maps.dim-map
-                                ispace-maps.shape-map))
+        (type-subst-ispace-vars-alpha body-atom-type
+                                      ispace-maps.dim-map
+                                      ispace-maps.shape-map))
        (body-shape-subst (shape-subst-ispace-vars body-shape
                                                   ispace-maps.dim-map
                                                   ispace-maps.shape-map)))
     (make-type-array
      :elem body-atom-type-subst
      :ispace (ispace-shape (shape-append (list fun-shape body-shape-subst))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-bind-type-annotation ((type? type-optionp)
+                                    (type typep)
+                                    (senv senvp))
+  :returns (yes/no booleanp)
+  :short "Check the optional type annotation of a binding."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Several kinds of bindings have an optional type annotation
+     (see @(tsee bind)).
+     If the annotation is absent, there is nothing to check.
+     If it is present, it must be a valid type that,
+     once expanded against the static environment's definitions
+     (see @(tsee senv-expand-type)),
+     is equivalent to the inferred type passed as argument
+     (which is assumed to be already expanded)."))
+  (type-option-case
+   type?
+   :none t
+   :some (b* (((unless (check-type type?.val senv)) nil)
+              (expanded (senv-expand-type type?.val senv))
+              ((when (reserrp expanded)) nil))
+           (type-equivp type expanded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -974,7 +990,35 @@
      e.g. the type of an argument against the type of a parameter.
      This approach should be equivalent to the typing rules,
      which may assign multiple equivalent types to an expression or an atom;
-     but we should formally prove all of this."))
+     but we should formally prove all of this.")
+   (xdoc::p
+    "These functions maintain the invariant that
+     every type they return is fully expanded
+     with respect to the definitions in the static environment
+     (see @(tsee senv-expand-type)):
+     that is, every ispace or type variable
+     that a @('let') binds to a definition
+     has been replaced with that definition.
+     The invariant is established by
+     expanding every syntactic type or ispace as it enters the checker
+     (in the empty array and frame expressions,
+     the lambda and box atoms,
+     the type and ispace application arguments,
+     the combined function binding type,
+     and the binding type annotations),
+     and by expanding the type associated to a variable when it is looked up;
+     every other case builds its result from
+     already-checked, and thus already-expanded, sub-results
+     (possibly combined with the expanded syntactic pieces just mentioned),
+     which preserves the invariant.
+     Thanks to this invariant,
+     the operations that match the structure of a type
+     (@(tsee type-match-array) and similar)
+     and that test type equivalence (@(tsee type-equivp) and similar)
+     never need to expand their inputs,
+     because those inputs are always results of these checking functions.
+     We should prove this invariant as a theorem,
+     saying that type expansion is a no-op on the results of these functions."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1061,7 +1105,9 @@
        The number of bound variables in the sum type must be the same as
        the number of the ispace variables in the unboxing expression.
        In the sum type body,
-       we rename the bound variables to the ispace variables:
+       we rename the bound variables to the ispace variables,
+       avoiding variable capture by alpha-renaming as needed
+       (see @(tsee type-rename-ispace-vars-alpha)):
        we associate the resulting type
        to the term variable of the unboxing expression,
        and we extend the static environment with that association.
@@ -1096,7 +1142,7 @@
      :var
      (b* ((name+type (omap::assoc expr.name (senv->expr-vars senv)))
           ((unless name+type) (reserr nil)))
-       (cdr name+type))
+       (senv-expand-type (cdr name+type) senv))
      :atom
      (b* (((ok type) (check-atom expr.atom senv)))
        (make-type-array :elem type
@@ -1115,8 +1161,9 @@
      :array-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
           ((unless (check-type expr.type senv)) (reserr nil))
-          ((unless (type-atomp expr.type)) (reserr nil)))
-       (make-type-array :elem expr.type
+          ((unless (type-atomp expr.type)) (reserr nil))
+          ((ok elem) (senv-expand-type expr.type senv)))
+       (make-type-array :elem elem
                         :ispace (ispace-shape
                                  (shape-dims (dim-const-list expr.dims)))))
      :frame
@@ -1136,7 +1183,8 @@
      :frame-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
           ((unless (check-type expr.type senv)) (reserr nil))
-          ((ok (type+ispace array)) (type-match-array expr.type)))
+          ((ok type) (senv-expand-type expr.type senv))
+          ((ok (type+ispace array)) (type-match-array type)))
        (make-type-array
         :elem array.type
         :ispace (ispace-shape
@@ -1185,14 +1233,10 @@
           ((unless (= (len expr.ispaces) (len sum-vars))) (reserr nil))
           ((ok (string-string-map-pair renaming))
            (check-ispace-var-renaming sum-vars expr.ispaces))
-          ((unless (type-rename-ispace-vars-no-capture-p sum-body-type
-                                                         renaming.1st
-                                                         renaming.2nd))
-           (reserr nil))
           (sum-body-type-renam
-           (type-rename-ispace-vars sum-body-type
-                                    renaming.1st
-                                    renaming.2nd))
+           (type-rename-ispace-vars-alpha sum-body-type
+                                          renaming.1st
+                                          renaming.2nd))
           (senv (senv-add-ispace-vars expr.ispaces senv))
           (senv (senv-add-var+type expr.var sum-body-type-renam senv))
           ((ok arr-type) (check-expr expr.body senv))
@@ -1308,9 +1352,9 @@
        the resulting type must be equivalent to
        the type of the body expression of the box.
        The type of the boxing atom is the sum type.
-       We check that the substitution cannot result in variable capture:
-       type checking fails if that check fails;
-       we should instead rename the bound variables to avoid the capture."))
+       The substitution avoids variable capture
+       by automatically alpha-renaming bound variables as needed
+       (see @(tsee type-subst-ispace-vars-alpha))."))
     (atom-case
      atom
      :base
@@ -1320,6 +1364,7 @@
            (reserr nil))
           (types (var+type-list->type atom.params))
           ((unless (check-type-list types senv)) (reserr nil))
+          ((ok types) (senv-expand-type-list types senv))
           (senv (senv-add-vars+types atom.params senv))
           ((ok type) (check-expr atom.body senv)))
        (make-type-fun :in types :out type))
@@ -1337,22 +1382,19 @@
        (make-type-pi :params atom.params :body type))
      :box
      (b* (((unless (check-ispace-list atom.ispaces senv)) (reserr nil))
+          (ispaces (senv-expand-ispace-list atom.ispaces senv))
           ((unless (type-atomp atom.type)) (reserr nil))
-          (box-type atom.type)
-          ((unless (check-type box-type senv)) (reserr nil))
+          ((unless (check-type atom.type senv)) (reserr nil))
+          ((ok box-type) (senv-expand-type atom.type senv))
           ((ok vars+type) (type-match-sum box-type))
           (vars (ispacevarlist+type->vars vars+type))
           (body-type (ispacevarlist+type->type vars+type))
           ((ok (stringdimmap+stringshapemap maps))
-           (check-ispace-params-and-args vars atom.ispaces))
-          ((unless (type-subst-ispace-vars-no-capture-p body-type
-                                                        maps.dim-map
-                                                        maps.shape-map))
-           (reserr nil))
+           (check-ispace-params-and-args vars ispaces))
           (body-type-subst
-           (type-subst-ispace-vars body-type
-                                   maps.dim-map
-                                   maps.shape-map))
+           (type-subst-ispace-vars-alpha body-type
+                                         maps.dim-map
+                                         maps.shape-map))
           ((ok type) (check-expr atom.array senv))
           ((unless (type-equivp type body-type-subst)) (reserr nil)))
        box-type))
@@ -1442,22 +1484,47 @@
        extended with all the parameters,
        and we check that its type is equivalent to the declared result type.")
      (xdoc::p
-      "Ispace bindings and type bindings are not yet supported,
-       because they would require the static environment
-       to record the bound ispaces and types,
-       so that ispace and type equivalence can take them into account;
-       these bindings return a @(':todo') error for now."))
+      "For an ispace binding,
+       we check that the bound ispace is valid,
+       and that its sort matches the bound variable
+       (a dimension variable is bound to a dimension,
+       a shape variable is bound to a shape).
+       We expand the ispace against the static environment's definitions
+       (see @(tsee senv-expand-ispace)),
+       so that the stored definition is itself fully expanded,
+       and we extend the static environment
+       to associate that definition to the bound variable.")
+     (xdoc::p
+      "A type binding is treated similarly,
+       checking instead that the kind of the bound type
+       matches the bound variable
+       (an atom-kind variable is bound to an atom-kind type,
+       an array-kind variable is bound to an array-kind type).
+       These definitions are taken into account
+       by the expansion performed throughout @(tsee check-expr)."))
     (bind-case
      bind
-     :ispace (reserr :todo)
-     :type (reserr :todo)
+     :ispace
+     (b* (((unless (check-ispace bind.ispace senv)) (reserr nil))
+          ((unless (ispace-var-case
+                    bind.var
+                    :dim (ispace-case bind.ispace :dim)
+                    :shape (ispace-case bind.ispace :shape)))
+           (reserr nil))
+          (ispace (senv-expand-ispace bind.ispace senv)))
+       (senv-add-ispace-def bind.var ispace senv))
+     :type
+     (b* (((unless (check-type bind.type senv)) (reserr nil))
+          ((unless (type-var-case
+                    bind.var
+                    :atom (type-atomp bind.type)
+                    :array (not (type-atomp bind.type))))
+           (reserr nil))
+          ((ok type) (senv-expand-type bind.type senv)))
+       (senv-add-type-def bind.var type senv))
      :val
      (b* (((ok type) (check-expr bind.expr senv))
-          ((unless (type-option-case
-                    bind.type?
-                    :some (and (check-type bind.type?.val senv)
-                               (type-equivp type bind.type?.val))
-                    :none t))
+          ((unless (check-bind-type-annotation bind.type? type senv))
            (reserr nil)))
        (senv-add-var+type bind.var type senv))
      :fun
@@ -1467,11 +1534,7 @@
           ((unless (check-type-list types senv)) (reserr nil))
           (senv-body (senv-add-vars+types bind.params senv))
           ((ok out-type) (check-expr bind.expr senv-body))
-          ((unless (type-option-case
-                    bind.type?
-                    :some (and (check-type bind.type?.val senv)
-                               (type-equivp out-type bind.type?.val))
-                    :none t))
+          ((unless (check-bind-type-annotation bind.type? out-type senv))
            (reserr nil)))
        (senv-add-var+type bind.var
                           (make-type-fun :in types :out out-type)
@@ -1480,11 +1543,7 @@
      (b* (((unless (no-duplicatesp-equal bind.params)) (reserr nil))
           (senv-body (senv-add-type-vars bind.params senv))
           ((ok body-type) (check-expr bind.expr senv-body))
-          ((unless (type-option-case
-                    bind.type?
-                    :some (and (check-type bind.type?.val senv-body)
-                               (type-equivp body-type bind.type?.val))
-                    :none t))
+          ((unless (check-bind-type-annotation bind.type? body-type senv-body))
            (reserr nil)))
        (senv-add-var+type bind.var
                           (make-type-forall :params bind.params
@@ -1494,11 +1553,7 @@
      (b* (((unless (no-duplicatesp-equal bind.params)) (reserr nil))
           (senv-body (senv-add-ispace-vars bind.params senv))
           ((ok body-type) (check-expr bind.expr senv-body))
-          ((unless (type-option-case
-                    bind.type?
-                    :some (and (check-type bind.type?.val senv-body)
-                               (type-equivp body-type bind.type?.val))
-                    :none t))
+          ((unless (check-bind-type-annotation bind.type? body-type senv-body))
            (reserr nil)))
        (senv-add-var+type bind.var
                           (make-type-pi :params bind.params :body body-type)
@@ -1517,10 +1572,11 @@
           (types (var+type-list->type bind.params))
           ((unless (check-type-list types senv-iparams)) (reserr nil))
           ((unless (check-type bind.type senv-iparams)) (reserr nil))
+          ((ok btype) (senv-expand-type bind.type senv-iparams))
           (senv-body (senv-add-vars+types bind.params senv-iparams))
           ((ok out-type) (check-expr bind.expr senv-body))
-          ((unless (type-equivp out-type bind.type)) (reserr nil))
-          (fun-type (make-type-fun :in types :out bind.type))
+          ((unless (type-equivp out-type btype)) (reserr nil))
+          (fun-type (make-type-fun :in types :out btype))
           (fun-type (ispace-var-list-option-case
                      bind.iparams?
                      :some (make-type-pi :params bind.iparams?.val

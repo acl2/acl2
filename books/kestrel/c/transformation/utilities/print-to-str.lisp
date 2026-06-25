@@ -19,6 +19,7 @@
 
 (include-book "../../syntax/unambiguity")
 (include-book "../../syntax/printer")
+(include-book "../../syntax/types-to-tynames")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (acl2::controlled-configuration)
@@ -391,6 +392,36 @@
        (pstate (c$::init-pristate options dialect))
        (pstate (c$::print-tyname tyname pstate)))
     (pristate->str pstate)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-type-to-str
+  ((type c$::typep)
+   (ienv c$::ienvp)
+   (dialect c::dialectp)
+   &key
+   ((options (or (c$::prioptp options)
+                 (not options)))
+    'nil))
+  :returns (mv erp (str stringp))
+  :short "Print a type to a string."
+  :long
+  (xdoc::topstring-p
+    "Unlike the other utilities here, the input is a validator @(see c$::type),
+     which is a semantic type rather than an abstract syntax node.
+     We convert it to a type name with @(tsee c$::type-to-tyname),
+     then print the type name.
+     The error flag is non-@('nil')
+     when the type has no source-level representation as a type name
+     (e.g. an enumeration type or an unknown type),
+     or when the resulting type name cannot be printed in the dialect;
+     in those cases the returned string is empty.")
+  (b* (((mv erp tyname) (c$::type-to-tyname type ienv))
+       ((when erp) (mv erp ""))
+       ((unless (and (tyname-unambp tyname)
+                     (tyname-aidentp tyname dialect)))
+        (mv t "")))
+    (mv nil (print-tyname-to-str tyname dialect :options options))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -327,6 +327,67 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define var+type-list-set-vars ((vars string-listp) (var+types var+type-listp))
+  :returns (new-var+types var+type-listp)
+  :short "Replace, in a list of variables with types,
+          the variables with given ones, keeping the types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two lists are expected to have the same length.
+     We should make this a guard."))
+  (b* (((when (endp var+types)) nil)
+       ((when (endp vars)) (var+type-list-fix var+types))
+       (vt (car var+types)))
+    (cons (make-var+type :var (car vars) :type (var+type->type vt))
+          (var+type-list-set-vars (cdr vars) (cdr var+types)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ispace-var-dims-from-names ((names string-setp))
+  :returns (vars ispace-var-setp)
+  :short "Set of dimension ispace variables with the given names."
+  (cond ((set::emptyp (string-sfix names)) nil)
+        (t (set::insert (ispace-var-dim (set::head names))
+                        (ispace-var-dims-from-names (set::tail names)))))
+  :prepwork ((local (in-theory (enable acl2::emptyp-of-string-sfix))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define ispace-var-shapes-from-names ((names string-setp))
+  :returns (vars ispace-var-setp)
+  :short "Set of shape ispace variables with the given names."
+  (cond ((set::emptyp (string-sfix names)) nil)
+        (t (set::insert (ispace-var-shape (set::head names))
+                        (ispace-var-shapes-from-names (set::tail names)))))
+  :prepwork ((local (in-theory (enable acl2::emptyp-of-string-sfix))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-var-atoms-from-names ((names string-setp))
+  :returns (vars type-var-setp)
+  :short "Set of atom-kind type variables with the given names."
+  (cond ((set::emptyp (string-sfix names)) nil)
+        (t (set::insert (type-var-atom (set::head names))
+                        (type-var-atoms-from-names (set::tail names)))))
+  :prepwork ((local (in-theory (enable acl2::emptyp-of-string-sfix))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-var-arrays-from-names ((names string-setp))
+  :returns (vars type-var-setp)
+  :short "Set of array-kind type variables with the given names."
+  (cond ((set::emptyp (string-sfix names)) nil)
+        (t (set::insert (type-var-array (set::head names))
+                        (type-var-arrays-from-names (set::tail names)))))
+  :prepwork ((local (in-theory (enable acl2::emptyp-of-string-sfix))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defrule expr-listp-of-append-all
   :short "Type of @(tsee append-all) applied to lists of lists of expressions."
   (implies (expr-list-listp lists)

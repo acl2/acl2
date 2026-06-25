@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+(include-book "string-set")
+
 (include-book "centaur/fty/top" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -29,4 +31,9 @@
                   (string-listp vals))
              (string-string-mapp (omap::from-lists keys vals)))
     :induct t
-    :enable (omap::from-lists string-listp)))
+    :enable (omap::from-lists string-listp))
+
+  (defruled string-setp-of-values-when-string-string-mapp
+    (implies (string-string-mapp map)
+             (string-setp (omap::values map)))
+    :enable omap::values))

@@ -651,6 +651,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define context-msg-type
+  ((type c$::typep)
+   (ienv c$::ienvp)
+   (dialect c::dialectp)
+   &key
+   ((prefix stringp) '"This occurred in")
+   ((options (or (c$::prioptp options)
+                 (not options)))
+    'nil))
+  :returns (msg msgp)
+  :short "Generate a context message for a type."
+  :long
+  (xdoc::topstring-p
+    "The input is a validator @(see c$::type), i.e. a semantic type.
+     We render it as a type name when possible;
+     otherwise (e.g. for enumeration or unknown types)
+     we include the raw type instead.")
+  (b* ((prefix (lstrfix prefix))
+       (type (c$::type-fix type))
+       (options (or options (c$::default-priopt)))
+       (indent-size (c$::priopt->indent-size options))
+       ((mv erp str) (print-type-to-str type ienv dialect :options options))
+       ((when erp)
+        (msg$ "~s1 type:~%~_0~x2" indent-size prefix type)))
+    (msg$ "~s1 type:~%~_0~s2" indent-size prefix str)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define context-msg-struni-spec
   ((struni-spec struni-specp)
    (dialect c::dialectp)
