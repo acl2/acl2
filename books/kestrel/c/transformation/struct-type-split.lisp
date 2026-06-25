@@ -100,8 +100,9 @@
   (xdoc::topstring-p
    "The @('right-set'), @('right-name'), @('dialect'), and @('ienv') fields
     are expected to remain constant.
-    The @('struct-uid') field is constant
-    within a single translation unit,
+    The @('target-struct-uid') field is the unique identifier
+    of the struct type being split (the ``target'').
+    It is constant within a single translation unit,
     but is updated for each translation unit
     (see @(tsee sts-split-trans-units)),
     since compatible struct types in different translation units
@@ -120,7 +121,7 @@
     (see @(tsee sts-split-trans-units)),
     and is used only to provide context in error messages
     (see @(tsee sts-error-in-translation-unit)).")
-  ((struct-uid c$::uid)
+  ((target-struct-uid c$::uid)
    (right-set ident-set)
    (right-name ident)
    (dialect c::dialect)
@@ -352,7 +353,7 @@
     since we cannot determine whether
     the split struct type occurs in them.")
   (b* (((reterr) nil)
-       (struct-uid (sts-split-state->struct-uid st))
+       (struct-uid (sts-split-state->target-struct-uid st))
        (dialect (sts-split-state->dialect st))
        (ienv (sts-split-state->ienv st))
        (splittablep (sts-splittablep type struct-uid))
@@ -1122,7 +1123,7 @@
         :struct
         (b* (((c$::type-spec-struct-vinfo info) type-spec.info)
              (uid (c$::type-struct->uid info.type))
-             (splitp (c$::uid-equal uid (sts-split-state->struct-uid st)))
+             (splitp (c$::uid-equal uid (sts-split-state->target-struct-uid st)))
              ((erp left-spec right-spec st)
               (struni-spec-sts-split type-spec.spec splitp st)))
           (retok (c$::make-type-spec-struct :spec left-spec)
@@ -1148,7 +1149,7 @@
         ;; processed before any use, populates the map.
         (b* (((type+uid-vinfo info) type-spec.info)
              ((unless (eq (sts-splittablep info.type
-                                           (sts-split-state->struct-uid st))
+                                           (sts-split-state->target-struct-uid st))
                           t))
               (retok (type-spec-fix type-spec) nil st))
              (right-ident? (omap::assoc info.uid
@@ -1191,7 +1192,7 @@
         :struct-empty
         (b* (((c$::type-spec-struct-vinfo info) type-spec.info)
              (uid (c$::type-struct->uid info.type))
-             (splitp (c$::uid-equal uid (sts-split-state->struct-uid st)))
+             (splitp (c$::uid-equal uid (sts-split-state->target-struct-uid st)))
              ((erp attribs st)
               (attrib-spec-list-sts-split type-spec.attribs st)))
           (retok (c$::make-type-spec-struct-empty :attribs attribs
@@ -3575,7 +3576,7 @@
         (reterr (sts-error-in-translation-unit msg? st)))
        ((mv erp tunit st)
         (trans-unit-sts-split tunit
-                              (change-sts-split-state st :struct-uid uid)))
+                              (change-sts-split-state st :target-struct-uid uid)))
        ((when erp)
         (reterr (sts-error-in-translation-unit erp st)))
        ((erp rest st)
@@ -3648,7 +3649,7 @@
        (blacklist (filepath-trans-unit-map-collect-idents map))
        (right-name (fresh-ident (or right-name? tag) blacklist))
        (st (make-sts-split-state
-             :struct-uid primary-uid
+             :target-struct-uid primary-uid
              :right-set (mergesort right-members)
              :right-name right-name
              :dialect (c$::ienv->dialect code.ienv)
