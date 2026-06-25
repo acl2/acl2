@@ -3008,6 +3008,27 @@
 
             write-to-segment-of-set-eip
             write-byte-to-segment-of-set-eip
+
+            al-becomes-eax
+            bl-becomes-ebx
+            cl-becomes-ecx
+            dl-becomes-edx
+            ;; sil-becomes-esi
+            ;; dil-becomes-edi
+            spl-becomes-esp
+            bpl-becomes-ebp
+            ah-becomes-eax
+            bh-becomes-ebx
+            ch-becomes-ecx
+            dh-becomes-edx
+            ax-becomes-eax
+            bx-becomes-ebx
+            cx-becomes-ecx
+            dx-becomes-edx
+            ;; si-becomes-esi
+            ;; di-becomes-edi
+            sp-becomes-esp
+            bp-becomes-ebp
             ))
    '(; caused loops with bvplus-of-constant-and-esp-when-overflow.  probably want to go to bvuminus anyway?:
      acl2::bvminus-of-+-arg2
@@ -4268,7 +4289,27 @@
             set-rip-of-bvif-split ; we must resolve the RIP to keep going
             set-rip-of-bv-array-read-split-cases-smt ; needs acl2::bv-array-read-cases-opener (just below)
             acl2::bv-array-read-cases-opener
-            )))
+
+            al-becomes-rax
+            bl-becomes-rbx
+            cl-becomes-rcx
+            dl-becomes-rdx
+            ;; sil-becomes-rsi
+            ;; dil-becomes-rdi
+            spl-becomes-rsp
+            bpl-becomes-rbp
+            ah-becomes-rax
+            bh-becomes-rbx
+            ch-becomes-rcx
+            dh-becomes-rdx
+            ax-becomes-rax
+            bx-becomes-rbx
+            cx-becomes-rcx
+            dx-becomes-rdx
+            ;; si-becomes-rsi
+            ;; di-becomes-rdi
+            sp-becomes-rsp
+            bp-becomes-rbp)))
 
 (defund new-normal-form-rules64-intro ()
   (declare (xargs :guard t))
