@@ -324,7 +324,10 @@
                    (mv dim-subst shape-subst))
          :otherwise (mv (string-dim-map-fix dim-subst)
                         (string-shape-map-fix shape-subst)))))
-    (bind-list-ispace-subst-alpha-extend (cdr binds) dim-subst shape-subst avoid)))
+    (bind-list-ispace-subst-alpha-extend (cdr binds)
+                                         dim-subst
+                                         shape-subst
+                                         avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -377,7 +380,10 @@
                  (mv atom-subst array-subst))
          :otherwise (mv (string-type-map-fix atom-subst)
                         (string-type-map-fix array-subst)))))
-    (bind-list-type-subst-alpha-extend (cdr binds) atom-subst array-subst avoid)))
+    (bind-list-type-subst-alpha-extend (cdr binds)
+                                       atom-subst
+                                       array-subst
+                                       avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
