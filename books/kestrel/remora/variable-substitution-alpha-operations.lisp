@@ -275,10 +275,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define bind-list-ispace-alpha-extend ((binds bind-listp)
-                                       (dim-subst string-dim-mapp)
-                                       (shape-subst string-shape-mapp)
-                                       (avoid ispace-var-setp))
+(define bind-list-ispace-subst-alpha-extend ((binds bind-listp)
+                                             (dim-subst string-dim-mapp)
+                                             (shape-subst string-shape-mapp)
+                                             (avoid ispace-var-setp))
   :returns (mv (new-dim-subst string-dim-mapp)
                (new-shape-subst string-shape-mapp))
   :short "Extend a dimension and a shape substitution
@@ -324,14 +324,14 @@
                    (mv dim-subst shape-subst))
          :otherwise (mv (string-dim-map-fix dim-subst)
                         (string-shape-map-fix shape-subst)))))
-    (bind-list-ispace-alpha-extend (cdr binds) dim-subst shape-subst avoid)))
+    (bind-list-ispace-subst-alpha-extend (cdr binds) dim-subst shape-subst avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define bind-list-type-alpha-extend ((binds bind-listp)
-                                     (atom-subst string-type-mapp)
-                                     (array-subst string-type-mapp)
-                                     (avoid type-var-setp))
+(define bind-list-type-subst-alpha-extend ((binds bind-listp)
+                                           (atom-subst string-type-mapp)
+                                           (array-subst string-type-mapp)
+                                           (avoid type-var-setp))
   :returns (mv (new-atom-subst string-type-mapp)
                (new-array-subst string-type-mapp))
   :short "Extend an atom-kind and an array-kind type substitution
@@ -377,13 +377,13 @@
                  (mv atom-subst array-subst))
          :otherwise (mv (string-type-map-fix atom-subst)
                         (string-type-map-fix array-subst)))))
-    (bind-list-type-alpha-extend (cdr binds) atom-subst array-subst avoid)))
+    (bind-list-type-subst-alpha-extend (cdr binds) atom-subst array-subst avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define bind-list-expr-alpha-extend ((binds bind-listp)
-                                     (subst string-expr-mapp)
-                                     (avoid string-setp))
+(define bind-list-expr-subst-alpha-extend ((binds bind-listp)
+                                           (subst string-expr-mapp)
+                                           (avoid string-setp))
   :returns (new-subst string-expr-mapp)
   :short "Extend an expression substitution
           with the renamings introduced by alpha-renaming
@@ -423,7 +423,7 @@
        (bind (car binds))
        ((mv & subst)
         (expr-subst-alpha-bound (bind-bound-expr-var-list bind) subst avoid)))
-    (bind-list-expr-alpha-extend (cdr binds) subst avoid)))
+    (bind-list-expr-subst-alpha-extend (cdr binds) subst avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -465,7 +465,7 @@
      For the body of a @('let'),
      we substitute with the substitution extended with
      all the renamings of the bindings,
-     recomputed via @(tsee bind-list-ispace-alpha-extend).
+     recomputed via @(tsee bind-list-ispace-subst-alpha-extend).
      The @('avoid') extra argument conveys, into the bindings traversal,
      the ispace variables of the @('let') (its bindings and body),
      which the fresh variables generated for the bound variables must avoid;
@@ -575,10 +575,10 @@
                                                             shape-subst
                                                             avoid2))
               ((mv dim-subst shape-subst)
-               (bind-list-ispace-alpha-extend expr.binds
-                                              dim-subst
-                                              shape-subst
-                                              avoid2)))
+               (bind-list-ispace-subst-alpha-extend expr.binds
+                                                    dim-subst
+                                                    shape-subst
+                                                    avoid2)))
            (make-expr-let
             :binds binds
             :body (expr-subst-ispace-vars-alpha-aux expr.body
@@ -804,7 +804,7 @@
      For the body of a @('let'),
      we substitute with the substitution extended with
      all the renamings of the bindings,
-     recomputed via @(tsee bind-list-type-alpha-extend).
+     recomputed via @(tsee bind-list-type-subst-alpha-extend).
      The @('avoid') extra argument conveys, into the bindings traversal,
      the type variables of the @('let') (its bindings and body),
      which the fresh variables generated for the bound variables must avoid;
@@ -888,10 +888,10 @@
                                                           array-subst
                                                           avoid2))
               ((mv atom-subst array-subst)
-               (bind-list-type-alpha-extend expr.binds
-                                            atom-subst
-                                            array-subst
-                                            avoid2)))
+               (bind-list-type-subst-alpha-extend expr.binds
+                                                  atom-subst
+                                                  array-subst
+                                                  avoid2)))
            (make-expr-let
             :binds binds
             :body (expr-subst-type-vars-alpha-aux expr.body
@@ -1126,7 +1126,7 @@
      For the body of a @('let'),
      we substitute with the substitution extended with
      all the renamings of the bindings,
-     recomputed via @(tsee bind-list-expr-alpha-extend).
+     recomputed via @(tsee bind-list-expr-subst-alpha-extend).
      The @('avoid') extra argument conveys, into the bindings traversal,
      the expression variables of the @('let') (its bindings and body),
      which the fresh variables generated for the bound variables must avoid;
@@ -1194,7 +1194,7 @@
               (binds (bind-list-subst-expr-vars-alpha-aux expr.binds
                                                           subst
                                                           avoid2))
-              (subst (bind-list-expr-alpha-extend expr.binds subst avoid2)))
+              (subst (bind-list-expr-subst-alpha-extend expr.binds subst avoid2)))
            (make-expr-let
             :binds binds
             :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid))))
