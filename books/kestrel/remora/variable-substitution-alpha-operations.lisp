@@ -148,20 +148,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This supports the capture-avoiding substitution of type variables.
-     When the substitution descends under a construct
-     that binds the type variables @('bound-vars'),
-     instead of merely removing them from the substitution maps
-     (which could capture variables),
-     we rename them to fresh variables, on the fly,
-     by extending the (restricted) substitution maps to send
-     each bound variable to the type consisting of a fresh variable.
-     The fresh variables avoid
-     the free type variables of the restricted substitution maps
-     and the type variables @('body-vars') of the body of the binder,
-     so that no capture occurs and binding structure is preserved.
-     We return the fresh variables (to rebuild the binder)
-     and the extended substitution maps (to recurse into the body)."))
+    "This is the type-variable analogue of
+     @(tsee dim/shape-subst-alpha-bound)."))
   (b* (((mv atom-subst array-subst)
         (atom/array-subst-remove-bound
          (set::mergesort (type-var-list-fix bound-vars))
@@ -241,20 +229,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This supports the capture-avoiding substitution of expression variables.
-     When the substitution descends under a construct
-     that binds the expression variables @('bound-vars'),
-     instead of merely removing them from the substitution
-     (which could capture variables),
-     we rename them to fresh variables, on the fly,
-     by extending the (restricted) substitution to send
-     each bound variable to the expression consisting of a fresh variable.
-     The fresh variables avoid
-     the free expression variables of the restricted substitution
-     and the expression variables @('body-vars') of the body of the binder,
-     so that no capture occurs and binding structure is preserved.
-     We return the fresh variables (to rebuild the binder)
-     and the extended substitution (to recurse into the body)."))
+    "This is the expression-variable analogue of
+     @(tsee dim/shape-subst-alpha-bound).
+     Since expression variables form a single namespace,
+     the substitution is a single map."))
   (b* ((subst (omap::delete* (set::mergesort (string-list-fix bound-vars))
                              (string-expr-map-fix subst)))
        (avoid (set::union (string-sfix body-vars)
