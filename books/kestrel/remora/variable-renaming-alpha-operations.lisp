@@ -376,7 +376,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is the renaming analogue of
-     @(tsee bind-list-expr-alpha-extend);
+     @(tsee bind-list-expr-subst-alpha-extend);
      see that operation for an explanation."))
   (b* (((when (endp binds)) (string-string-map-fix renam))
        (bind (car binds))
@@ -606,7 +606,7 @@
     "This is the top-level entry point for types.
      It calls @(tsee type-rename-ispace-vars-alpha-aux)
      with an empty set of additional ispace variables to avoid.
-     As explained in @(tsee ast-subst-type-vars-alpha) for substitutions,
+     As explained in @(tsee ast-subst-type-vars-alpha-aux) for substitutions,
      the @('avoid') set is internal plumbing,
      so it is correct to start empty here,
      even when renaming in a subterm of a larger construct."))
