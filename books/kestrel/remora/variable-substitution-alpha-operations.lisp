@@ -27,7 +27,14 @@
   (xdoc::topstring
    (xdoc::p
     "The substitutions are represented
-     as in @(see variable-substitution-operations)."))
+     as in @(see variable-substitution-operations).")
+   (xdoc::p
+    "These are the capture-avoiding counterparts of
+     the operations in @(see variable-substitution-operations).
+     Instead of requiring a separate no-capture check,
+     at each binder these operations alpha-rename the bound variables
+     to fresh ones, extending the susbstitution with the renamings,
+     and rebuild the binder with the fresh variables."))
   :order-subtopics t
   :default-parent t)
 
