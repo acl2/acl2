@@ -1,3 +1,5 @@
+; ACL2 Quicklisp Interface
+
 ; License: (An MIT/X11-style license)
 ;
 ;   Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,4 +23,4 @@
 
 (in-package "ACL2")
 
-(asdf:load-system "dexador")
+(asdf:load-system "usocket")

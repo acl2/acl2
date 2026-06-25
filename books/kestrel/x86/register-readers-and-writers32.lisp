@@ -20,9 +20,10 @@
 
 (include-book "projects/x86isa/machine/state" :dir :system) ;for xr
 (include-book "projects/x86isa/portcullis/sharp-dot-constants" :dir :system)
-(include-book "kestrel/bv/bvchop-def" :dir :system)
+(include-book "register-readers-and-writers-8-16")
+;(include-book "kestrel/bv/bvchop-def" :dir :system)
 (include-book "kestrel/bv/bvcat-def" :dir :system)
-(include-book "kestrel/bv/slice-def" :dir :system)
+;(include-book "kestrel/bv/slice-def" :dir :system)
 (local (include-book "kestrel/bv/rules" :dir :system)) ; for bvcat-of-logext-arg4
 (local (include-book "kestrel/bv/logext" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
@@ -871,3 +872,30 @@
 (defthm set-rdx-high-of-set-eip (equal (set-rdx-high val (set-eip eip x86)) (set-eip eip (set-rdx-high val x86))) :hints (("Goal" :in-theory (enable set-rdx-high set-eip rdx-high))))
 (defthm set-rsp-high-of-set-eip (equal (set-rsp-high val (set-eip eip x86)) (set-eip eip (set-rsp-high val x86))) :hints (("Goal" :in-theory (enable set-rsp-high set-eip rsp-high))))
 (defthm set-rbp-high-of-set-eip (equal (set-rbp-high val (set-eip eip x86)) (set-eip eip (set-rbp-high val x86))) :hints (("Goal" :in-theory (enable set-rbp-high set-eip rbp-high))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; We regard AL, etc. as just abbreviations, rather than proving rules about them.
+
+(defthmd al-becomes-eax (equal (al x86) (bvchop 8 (eax x86))) :hints (("Goal" :in-theory (enable al eax))))
+(defthmd bl-becomes-ebx (equal (bl x86) (bvchop 8 (ebx x86))) :hints (("Goal" :in-theory (enable bl ebx))))
+(defthmd cl-becomes-ecx (equal (cl x86) (bvchop 8 (ecx x86))) :hints (("Goal" :in-theory (enable cl ecx))))
+(defthmd dl-becomes-edx (equal (dl x86) (bvchop 8 (edx x86))) :hints (("Goal" :in-theory (enable dl edx))))
+;; (defthmd sil-becomes-esi (equal (sil x86) (bvchop 8 (esi x86))) :hints (("Goal" :in-theory (enable sil esi))))
+;; (defthmd dil-becomes-edi (equal (dil x86) (bvchop 8 (edi x86))) :hints (("Goal" :in-theory (enable dil edi))))
+(defthmd spl-becomes-esp (equal (spl x86) (bvchop 8 (esp x86))) :hints (("Goal" :in-theory (enable spl esp))))
+(defthmd bpl-becomes-ebp (equal (bpl x86) (bvchop 8 (ebp x86))) :hints (("Goal" :in-theory (enable bpl ebp))))
+
+(defthmd ah-becomes-eax (equal (ah x86) (slice 15 8 (eax x86))) :hints (("Goal" :in-theory (enable ah eax))))
+(defthmd bh-becomes-ebx (equal (bh x86) (slice 15 8 (ebx x86))) :hints (("Goal" :in-theory (enable bh ebx))))
+(defthmd ch-becomes-ecx (equal (ch x86) (slice 15 8 (ecx x86))) :hints (("Goal" :in-theory (enable ch ecx))))
+(defthmd dh-becomes-edx (equal (dh x86) (slice 15 8 (edx x86))) :hints (("Goal" :in-theory (enable dh edx))))
+
+(defthmd ax-becomes-eax (equal (ax x86) (bvchop 16 (eax x86))) :hints (("Goal" :in-theory (enable ax eax))))
+(defthmd bx-becomes-ebx (equal (bx x86) (bvchop 16 (ebx x86))) :hints (("Goal" :in-theory (enable bx ebx))))
+(defthmd cx-becomes-ecx (equal (cx x86) (bvchop 16 (ecx x86))) :hints (("Goal" :in-theory (enable cx ecx))))
+(defthmd dx-becomes-edx (equal (dx x86) (bvchop 16 (edx x86))) :hints (("Goal" :in-theory (enable dx edx))))
+;; (defthmd si-becomes-esi (equal (si x86) (bvchop 16 (esi x86))) :hints (("Goal" :in-theory (enable si esi))))
+;; (defthmd di-becomes-edi (equal (di x86) (bvchop 16 (edi x86))) :hints (("Goal" :in-theory (enable di edi))))
+(defthmd sp-becomes-esp (equal (sp x86) (bvchop 16 (esp x86))) :hints (("Goal" :in-theory (enable sp esp))))
+(defthmd bp-becomes-ebp (equal (bp x86) (bvchop 16 (ebp x86))) :hints (("Goal" :in-theory (enable bp ebp))))
