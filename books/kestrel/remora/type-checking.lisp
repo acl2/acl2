@@ -733,22 +733,16 @@
      the definitions in the static environment being fully expanded.")
    (xdoc::p
     "Because types contain binders (universal, product, and sum types),
-     the substitution could result in variable capture:
-     if that is the case, type checking fails;
-     we should instead rename the bound variables to avoid the capture
-     (as elsewhere; see e.g. @(tsee check-tapp))."))
+     the substitution could result in variable capture;
+     the capture-avoiding substitutions
+     @(tsee type-subst-type-vars-alpha) and @(tsee type-subst-ispace-vars-alpha)
+     automatically alpha-rename the bound variables as needed to avoid it."))
   (b* (((string-type-map-pair tsubst)
         (senv-type-subst (senv->type-vars senv)))
-       ((unless (type-subst-type-vars-no-capture-p type tsubst.1st tsubst.2nd))
-        (reserr nil))
-       (type (type-subst-type-vars type tsubst.1st tsubst.2nd))
+       (type (type-subst-type-vars-alpha type tsubst.1st tsubst.2nd))
        ((stringdimmap+stringshapemap isubst)
-        (senv-ispace-subst (senv->ispace-vars senv)))
-       ((unless (type-subst-ispace-vars-no-capture-p type
-                                                     isubst.dim-map
-                                                     isubst.shape-map))
-        (reserr nil)))
-    (type-subst-ispace-vars type isubst.dim-map isubst.shape-map)))
+        (senv-ispace-subst (senv->ispace-vars senv))))
+    (type-subst-ispace-vars-alpha type isubst.dim-map isubst.shape-map)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -869,9 +863,9 @@
      to obtain the atom type of the resulting array type,
      whose shape is obtained by concatenating
      the function shape to the body shape.
-     We check that the substitution cannot result in variable capture:
-     type checking fails if that check fails;
-     we should instead rename the bound variables to avoid the capture."))
+     The substitution avoids variable capture
+     by automatically alpha-renaming bound variables as needed
+     (see @(tsee type-subst-type-vars-alpha))."))
   (b* (((ok fun-type+ispace) (type-match-array fun-type))
        (fun-type (type+ispace->type fun-type+ispace))
        (fun-ispace (type+ispace->ispace fun-type+ispace))
@@ -887,14 +881,10 @@
        ((ok args) (senv-expand-type-list args senv))
        ((ok (string-type-map-pair type-maps))
         (check-type-params-and-args vars args))
-       ((unless (type-subst-type-vars-no-capture-p body-atom-type
-                                                   type-maps.1st
-                                                   type-maps.2nd))
-        (reserr nil))
        (body-atom-type-subst
-        (type-subst-type-vars body-atom-type
-                              type-maps.1st
-                              type-maps.2nd)))
+        (type-subst-type-vars-alpha body-atom-type
+                                    type-maps.1st
+                                    type-maps.2nd)))
     (make-type-array
      :elem body-atom-type-subst
      :ispace (ispace-shape (shape-append (list fun-shape body-shape))))))
@@ -927,9 +917,11 @@
      whose shape is obtained by concatenating
      the function shape to
      the result of applying the same substitution to the body shape.
-     We check that the substitution cannot result in variable capture:
-     type checking fails if that check fails;
-     we should instead rename the bound variables to avoid the capture."))
+     The substitution avoids variable capture
+     by automatically alpha-renaming bound variables as needed
+     (see @(tsee type-subst-ispace-vars-alpha));
+     the substitution into the body shape cannot capture,
+     because shapes contain no binders."))
   (b* (((ok fun-type+ispace) (type-match-array fun-type))
        (fun-type (type+ispace->type fun-type+ispace))
        (fun-ispace (type+ispace->ispace fun-type+ispace))
@@ -945,14 +937,10 @@
        (args (senv-expand-ispace-list args senv))
        ((ok (stringdimmap+stringshapemap ispace-maps))
         (check-ispace-params-and-args vars args))
-       ((unless (type-subst-ispace-vars-no-capture-p body-atom-type
-                                                     ispace-maps.dim-map
-                                                     ispace-maps.shape-map))
-        (reserr nil))
        (body-atom-type-subst
-        (type-subst-ispace-vars body-atom-type
-                                ispace-maps.dim-map
-                                ispace-maps.shape-map))
+        (type-subst-ispace-vars-alpha body-atom-type
+                                      ispace-maps.dim-map
+                                      ispace-maps.shape-map))
        (body-shape-subst (shape-subst-ispace-vars body-shape
                                                   ispace-maps.dim-map
                                                   ispace-maps.shape-map)))
@@ -977,8 +965,7 @@
      once expanded against the static environment's definitions
      (see @(tsee senv-expand-type)),
      is equivalent to the inferred type passed as argument
-     (which is assumed to be already expanded);
-     if the expansion would result in variable capture, the check fails."))
+     (which is assumed to be already expanded)."))
   (type-option-case
    type?
    :none t
@@ -1367,9 +1354,9 @@
        the resulting type must be equivalent to
        the type of the body expression of the box.
        The type of the boxing atom is the sum type.
-       We check that the substitution cannot result in variable capture:
-       type checking fails if that check fails;
-       we should instead rename the bound variables to avoid the capture."))
+       The substitution avoids variable capture
+       by automatically alpha-renaming bound variables as needed
+       (see @(tsee type-subst-ispace-vars-alpha))."))
     (atom-case
      atom
      :base
@@ -1406,14 +1393,10 @@
           (body-type (ispacevarlist+type->type vars+type))
           ((ok (stringdimmap+stringshapemap maps))
            (check-ispace-params-and-args vars ispaces))
-          ((unless (type-subst-ispace-vars-no-capture-p body-type
-                                                        maps.dim-map
-                                                        maps.shape-map))
-           (reserr nil))
           (body-type-subst
-           (type-subst-ispace-vars body-type
-                                   maps.dim-map
-                                   maps.shape-map))
+           (type-subst-ispace-vars-alpha body-type
+                                         maps.dim-map
+                                         maps.shape-map))
           ((ok type) (check-expr atom.array senv))
           ((unless (type-equivp type body-type-subst)) (reserr nil)))
        box-type))
@@ -1518,8 +1501,7 @@
        checking instead that the kind of the bound type
        matches the bound variable
        (an atom-kind variable is bound to an atom-kind type,
-       an array-kind variable is bound to an array-kind type);
-       here the expansion may fail if it would result in variable capture.
+       an array-kind variable is bound to an array-kind type).
        These definitions are taken into account
        by the expansion performed throughout @(tsee check-expr)."))
     (bind-case
