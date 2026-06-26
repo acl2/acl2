@@ -24,6 +24,7 @@
 (defpkg "C2C" (append
                (set-difference-eq *std-pkg-symbols*
                                   '(block
+                                    type
                                     typep))
                c$::*abstract-syntax-symbols*
                '(bool
