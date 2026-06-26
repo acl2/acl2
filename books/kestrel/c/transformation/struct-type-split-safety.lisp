@@ -800,8 +800,11 @@
      The non-nesting of the struct being split
      is checked elsewhere, via @(tsee type-sts-safep).")
    (xdoc::p
-    "We reject @('typedef'), since it could be the struct type being split.
-     Clearly we should relax this.")
+    "We allow all @('typedef') type specifiers.
+     They may stand for the struct type being split,
+     but that in itself is harmless.
+     In fact, the validator expands all @('typedef')s;
+     @(tsee type) does not have a summand for @('typedef')s.")
    (xdoc::p
     "We reject @('typeof') and spelling variants,
      in C23 or in GCC/Clang-extended C17.
@@ -873,7 +876,6 @@
    (expr :va-arg (sts-reject (expr-fix expr)))
    (type-spec :atomic (and (tyname-sts-safep type-spec.type spec)
                            (type-spec-atomic-sts-safep type-spec.type spec)))
-   (type-spec :typedef (sts-reject (type-spec-fix type-spec)))
    (type-spec :typeof-expr (sts-reject (type-spec-fix type-spec)))
    (type-spec :typeof-type (sts-reject (type-spec-fix type-spec)))
    (type-spec :auto-type (sts-reject (type-spec-fix type-spec)))
