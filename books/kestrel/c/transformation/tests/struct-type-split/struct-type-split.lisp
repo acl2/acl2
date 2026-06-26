@@ -832,9 +832,45 @@ int main(void) {
   :with-output-off nil)
 
 (acl2::must-succeed*
-  ;; A splittable member nested in an anonymous (promoted) struct member
-  ;; is not yet supported.
+  ;; A splittable member of an anonymous (promoted) struct member is split
+  ;; in place; the split members are registered under, and promoted into,
+  ;; the enclosing struct type, so the promoted accesses are routed.
   (c$::input-files :files '("anon-struct.c")
+                   :const *old*)
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+  (c$::output-files :const *new*
+                    :base-dir "new")
+  (assert-file-contents
+    :file "new/anon-struct.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+struct outer {
+  struct { struct point inner; struct point_right inner_0; };
+  int w;
+};
+
+static struct outer o;
+
+int main(void) {
+  return o.inner.x + o.inner_0.z;
+}
+")
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; A splittable member of an anonymous union member is not supported,
+  ;; since it is effectively a member of a union.
+  (c$::input-files :files '("anon-union.c")
                    :const *old*)
   (must-fail
     (struct-type-split *old*

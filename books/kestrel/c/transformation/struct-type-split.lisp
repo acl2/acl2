@@ -332,8 +332,10 @@
        so that a directly splittable member can be split in place.
        It is @('t') for the type of an object, parameter, or type name
        (and through pointers to it),
-       and stays @('t') through struct types and their named members,
-       but becomes @('nil') through unions, arrays, and anonymous members,
+       and stays @('t') through struct types and their members
+       (including anonymous struct members,
+       whose members are promoted into the containing struct type),
+       but becomes @('nil') through unions and arrays,
        whose splittable members are not supported."))
     (type-case
       type
@@ -422,10 +424,13 @@
      "A directly splittable member of a struct type
       (@('in-chain') is @('t')) is supported:
       it is split in place, so it is not an unsupported occurrence.
-      For other members, we descend into the member type;
-      the @('in-chain') flag stays @('t') only through named members,
-      since the splittable members of an anonymous member
-      (which are promoted into the containing type) are not yet supported.")
+      For other members, we descend into the member type,
+      propagating @('in-chain'):
+      it stays @('t') through named members and anonymous struct members
+      (whose splittable members are promoted into,
+      and registered under, the containing struct type),
+      and is cleared through unions and arrays
+      (see @(tsee type-struct-occurs-unsupported-p)).")
     (if (endp members)
         nil
       (b* (((c$::type-struni-member member) (first members)))
@@ -437,7 +442,7 @@
             (type-struct-occurs-unsupported-p
               member.type
               struct-uid
-              (and in-chain (and member.name? t)))
+              in-chain)
             (type-member-list-struct-occurs-unsupported-p
               (rest members) struct-uid in-chain)))))
     :measure (c$::type-struni-member-list-count members))
@@ -514,8 +519,10 @@
     The exception is when the enclosing type is the split struct type
     itself (@('entry-uid') equals @('struct-uid')),
     i.e. a self-referential struct type, which is not supported.
-    Any other occurrence of the split struct type within a member
-    (e.g. in an array, or nested in an anonymous struct or union) is rejected.")
+    A directly splittable member of an anonymous struct member
+    is also supported (split in place, registered under the enclosing
+    struct type); other occurrences of the split struct type within a member
+    (e.g. in an array, or in a union) are rejected.")
   (b* (((when (endp members)) nil)
        ((c$::type-struni-member member) (first members))
        ((when (eq (sts-splittablep member.type struct-uid) t))
@@ -523,8 +530,7 @@
             (msg$ "The split struct type may not contain itself as a member; ~
                    self-referential struct types are not supported.")
           (sts-check-completion-members (rest members) struct-uid entry-uid)))
-       (occurs (type-struct-occurs-unsupported-p
-                 member.type struct-uid (and member.name? t)))
+       (occurs (type-struct-occurs-unsupported-p member.type struct-uid t))
        ((when (eq occurs :unknown))
         (msg$ "It cannot be determined whether the split struct type ~
                occurs in a member of a struct or union type."))
@@ -532,7 +538,7 @@
         (msg$ "The split struct type may appear in a member ~
                of a struct or union type only directly ~
                (possibly behind pointers) as a member of a struct type, ~
-               not e.g. in an array or nested in an anonymous struct or union.")))
+               not e.g. in an array or in a union.")))
     (sts-check-completion-members (rest members) struct-uid entry-uid)))
 
 (define sts-check-completions
@@ -871,6 +877,25 @@
            st))
   :measure (struct-declor-list-count struct-declors)
   :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sts-member-host-override
+  ((declors c$::struct-declor-listp)
+   (enclosing-uid? c$::uid-optionp))
+  :returns (host? c$::uid-optionp)
+  :short "The host struct type under which to register the split members
+          of a struct declaration, when it is an anonymous member."
+  :long
+  (xdoc::topstring-p
+   "A struct declaration with no declarators is an anonymous struct or union
+    member, whose members are promoted into the enclosing struct type;
+    its split members are registered under the enclosing struct type
+    (see @(tsee type-spec-sts-split)).
+    Otherwise this is @('nil') and the struct's own unique identifier is used.")
+  (if (endp declors)
+      (c$::uid-option-fix enclosing-uid?)
+    nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1535,6 +1560,7 @@
 
   (define type-spec-sts-split
     ((type-spec type-specp)
+     (host-override? c$::uid-optionp)
      (st sts-split-statep))
     :guard (type-spec-annop type-spec)
     :returns (mv (er? maybe-msgp)
@@ -1543,6 +1569,14 @@
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a type specifier."
+    :long
+    (xdoc::topstring-p
+     "When this type specifier is a struct definition
+      that is an anonymous member of another struct type,
+      @('host-override?') is the unique identifier of the struct type
+      into which its members are promoted, and under which split members
+      are registered; otherwise it is @('nil') and the struct's own
+      unique identifier is used (see @(tsee struct-declon-sts-split)).")
     (b* ((st (sts-split-state-fix st))
          ((reterr) (type-spec-fix type-spec) nil st))
       (type-spec-case
@@ -1582,7 +1616,9 @@
              (uid (c$::type-struct->uid info.type))
              (splitp (c$::uid-equal uid (sts-split-state->target-struct-uid st)))
              ((erp left-spec right-spec st)
-              (struni-spec-sts-split type-spec.spec splitp uid st)))
+              (struni-spec-sts-split type-spec.spec splitp
+                                     (or host-override? uid)
+                                     st)))
           (retok (c$::make-type-spec-struct :spec left-spec)
                  (if splitp
                      (c$::make-type-spec-struct :spec right-spec)
@@ -1689,6 +1725,7 @@
 
   (define spec/qual-sts-split
     ((specqual spec/qual-p)
+     (host-override? c$::uid-optionp)
      (st sts-split-statep))
     :guard (spec/qual-annop specqual)
     :returns (mv (er? maybe-msgp)
@@ -1698,13 +1735,16 @@
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a specifier or qualifier."
+    :long
+    (xdoc::topstring-p
+     "See @(tsee type-spec-sts-split) for @('host-override?').")
     (b* ((st (sts-split-state-fix st))
          ((reterr) nil (spec/qual-fix specqual) (spec/qual-fix specqual) st))
       (spec/qual-case
         specqual
         :typespec
         (b* (((erp left-spec right-spec? st)
-              (type-spec-sts-split specqual.spec st)))
+              (type-spec-sts-split specqual.spec host-override? st)))
           (retok (if right-spec? t nil)
                  (c$::make-spec/qual-typespec :spec left-spec)
                  (if right-spec?
@@ -1729,6 +1769,7 @@
 
   (define spec/qual-list-sts-split
     ((specquals spec/qual-listp)
+     (host-override? c$::uid-optionp)
      (st sts-split-statep))
     :guard (spec/qual-list-annop specquals)
     :returns (mv (er? maybe-msgp)
@@ -1746,15 +1787,16 @@
       a type specifier denoting the target struct type.
       The right list is only meaningful in that case;
       elements which do not split
-      contribute their left transformation to both lists.")
+      contribute their left transformation to both lists.
+      See @(tsee type-spec-sts-split) for @('host-override?').")
     (b* ((st (sts-split-state-fix st))
          ((reterr) nil nil nil st)
          ((when (endp specquals))
           (retok nil nil nil st))
         ((erp first-splitp left-specqual right-specqual st)
-         (spec/qual-sts-split (car specquals) st))
+         (spec/qual-sts-split (car specquals) host-override? st))
         ((erp rest-splitp left-rest right-rest st)
-         (spec/qual-list-sts-split (cdr specquals) st)))
+         (spec/qual-list-sts-split (cdr specquals) host-override? st)))
       (retok (or first-splitp rest-splitp)
              (cons left-specqual left-rest)
              (cons (if first-splitp right-specqual left-specqual)
@@ -1815,7 +1857,7 @@
         (retok nil (decl-spec-fix decl-spec) (decl-spec-fix decl-spec) st)
         :typespec
         (b* (((erp left-spec right-spec? st)
-              (type-spec-sts-split decl-spec.spec st)))
+              (type-spec-sts-split decl-spec.spec nil st)))
           (retok (if right-spec? t nil)
                  (c$::make-decl-spec-typespec :spec left-spec)
                  (if right-spec?
@@ -2852,7 +2894,7 @@
                    erp
                    (context-msg-tyname tyname (sts-split-state->dialect st))))
          ((erp - left-specquals right-specquals st)
-          (spec/qual-list-sts-split tyname.specquals st))
+          (spec/qual-list-sts-split tyname.specquals nil st))
          ((erp left-declor? right-declor? st)
           (absdeclor-option-sts-split tyname.declor? splitp st)))
       (retok splitp
@@ -2981,8 +3023,15 @@
       (struct-declon-case
         struct-declon
         :member
-        (b* (((erp specquals-splitp left-specquals right-specquals st)
-              (spec/qual-list-sts-split struct-declon.specquals st))
+        (b* ( ;; An anonymous struct/union member (one with no declarators)
+             ;; promotes its members into the enclosing struct type;
+             ;; split members within it are registered under the enclosing
+             ;; struct's unique identifier, not the anonymous struct's own.
+             ((erp specquals-splitp left-specquals right-specquals st)
+              (spec/qual-list-sts-split
+                struct-declon.specquals
+                (sts-member-host-override struct-declon.declors enclosing-uid?)
+                st))
              ((when specquals-splitp)
               ;; The member has the split struct type (possibly behind
               ;; pointers); split it in place.

@@ -4,8 +4,9 @@ struct point {
 };
 
 struct outer {
-  struct {
-    struct point inner;
+  union {
+    struct point p;
+    int tag;
   };
   int w;
 };
@@ -13,5 +14,5 @@ struct outer {
 static struct outer o;
 
 int main(void) {
-  return o.inner.x + o.inner.z;
+  return o.p.x;
 }
