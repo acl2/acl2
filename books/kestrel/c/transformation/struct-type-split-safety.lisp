@@ -782,6 +782,20 @@
    (xdoc::p
     "We allow all the type specifiers that do not contain other types.")
    (xdoc::p
+    "We allow all @('struct') type specifiers.
+     We expect there to be at least one in the translation unit,
+     the one for the struct type being split,
+     as explained in @(see struct-type-split-safety).
+     There may be others.
+     The validator annotates all of them with their struct type,
+     which has either a tag without members or no tag with members.
+     Whether that is the same struct type being split,
+     can be seen from the UID, but we do not seem to need any check here.
+     If it is the same UID, then presumably the validator has checked
+     that the tag is the same and the members are compatible.
+     The non-nesting of the struct type being split in other struct
+     is checked elsewhere, via @(tsee type-sts-safep).")
+   (xdoc::p
     "We reject @('typedef'), since it could be the struct type being split.
      Clearly we should relax this.")
    (xdoc::p
@@ -792,10 +806,6 @@
    (xdoc::p
     "@('__auto_type') is excluded for the same reason as
      the storage specifier @('auto') explained earlier.")
-   (xdoc::p
-    "Since @('struct') specifiers are allowed,
-     we need to reject constructs that nest
-     the struct being split in other aggregate data types.")
    (xdoc::p
     "We reject all alignment specifiers,
      because they may apply to the struct being split.")

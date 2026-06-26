@@ -787,6 +787,9 @@
     var-vinfo->uid
     coerce-var-vinfo
 
+    type-spec-struct-vinfop
+    type-spec-struct-vinfo->type
+
     type-vinfop
     type-vinfo-fix
     type-vinfo->type
