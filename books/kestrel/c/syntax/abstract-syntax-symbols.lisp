@@ -55,6 +55,8 @@
 
     typequal/attribspec-list-listp
 
+    keyword-uscores-p
+
     unopp
     unop-case
     unop-kind
@@ -64,8 +66,10 @@
     binop-kind
 
     stor-spec
+    stor-spec-fix
 
     type-qual
+    type-qual-fix
 
     asm-name-spec-optionp
 
@@ -410,6 +414,7 @@
     make-label-casexpr
 
     asm-stmt
+    asm-stmt-fix
 
     stmtp
     stmt-fix
@@ -734,6 +739,7 @@
     uid-fix
 
     typep
+    type-fix
     type-case
     type-kind
     type-count
