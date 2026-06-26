@@ -20,6 +20,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local (in-theory (enable* c$::abstract-syntax-annop-rules)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ struct-type-split-safety
   :parents (transformation-tools)
   :short "Safety checks for the @(tsee struct-type-split) transformation."
@@ -29,10 +33,10 @@
     "That transformation is work in progress,
      as are the safety checks provided here.
      The two will be connected once the safety checks are practical
-     (currently they are just very preliminary and conservative).")
+     (currently they are very preliminary and conservative).")
    (xdoc::p
     "The STS (= Struct Type Split) transformation is safe,
-     in the sense that it suitabley preserves code functionality,
+     in the sense that it suitably preserves code functionality,
      only provided that the struct type is not used in certain ways.
      For instance, if a pointer to the struct type is cast to @('void*'),
      the resulting pointer may manipulate the bytes that form the struct
@@ -40,58 +44,156 @@
      making it unsafe to split the struct type.")
    (xdoc::p
     "Here we provide checkers that
-     code uses (values of) a given struct type
+     code uses (values of) the struct type being split
      only in safe ways with respect to the STS transformation.
      These checkers operate on ASTs annotated by validation.")
    (xdoc::p
     "It is possible that these checkers may be useful
-     for other kinds of transformationa as well,
+     for other kinds of transformations as well,
      e.g. to add or remove struct members.
      If that turns out to be the case,
-     we will suitably generalize their naming and role."))
+     we will suitably generalize their naming and role.")
+   (xdoc::p
+    "The STS transformation operates on a translation ensemble.
+     The struct type to split is specified as
+     the tag (name) of a file-scope struct declaration
+     in one of the translation units of the ensemble.
+     But the transformation also splits
+     all the compatible file-scope struct types in other translation units.
+     More explicitly, each translation unit in the ensemble
+     either has or does not have a file-scope struct type
+     with the tag specified to the STS transformation.
+     The translation units that do not have it undergo no transformation.
+     For each translation unit that has it,
+     it either is compatible with the one to split or it is not;
+     in the latter case, the translation unit undergoes no transformation.
+     So only the translation units with
+     either exactly the struct type, or one compatible with it,
+     undergo transformation.
+     This is orchestrated by the STS transformation,
+     which will call these checking tools on
+     each translation unit being transformed,
+     to ensure that the transformation is applicable."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define struct-type-is-the-struct-p ((uid uidp)
-                                     (tunit? filepath-optionp)
-                                     (tag/members type-struni-tag/members-p)
-                                     (the-struct identp))
+(fty::defprod sts-struct-spec
+  :short "Fixtype of specifications of the struct type to split."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(see struct-type-split-safety),
+     the safety checks are applied to each translation unit
+     that needs transformation.
+     This translation unit contains, at the file scope,
+     either the exact struct type specified to the STS transformation
+     (as the tag name and optionally the translation unit file path,
+     where the latter defaults to the first translation unit),
+     or one compatible with it.
+     Compatibility means that [C17:6.2.7/1]
+     the struct types have the same tag, members with compatible types, etc.
+     Since struct tags have no linkage [C17:6.2.2/6],
+     struct types with the same tag in different translation units
+     have different UIDs.")
+   (xdoc::p
+    "Here we define a data structure that specifies
+     the struct type being split in a given translation unit.
+     This will be created by the STS transformation for each translation unit.
+     Our checking tools take it and use it to check the translation unit.")
+   (xdoc::p
+    "This data structure consists of the UID, the tag, and the members.
+     Although this is more than needed to identify the struct type,
+     we use all this information to check that
+     there are no other similar struct declarations (e.g. in a block scope)."))
+  ((uid uid)
+   (tag ident)
+   (members type-struni-member-list))
+  :pred sts-struct-specp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define struct-type-is-struct-spec-p ((uid uidp)
+                                      (tunit? filepath-optionp)
+                                      (tag/members type-struni-tag/members-p)
+                                      (spec sts-struct-specp))
   :returns (yes/no booleanp)
-  :short "Check if a struct type is the one to split."
+  :short "Check if a struct type is the one being split."
   :long
   (xdoc::topstring
    (xdoc::p
     "The first three inputs of this function are
      the fields of the @(':struct') summand of @(tsee type).
-     The last input of this function is the tag of the struct being split.
+     The last input of this function specifies the struct type being split.
      We check whether the struct type consisting of the three fields
-     is a tagged one with the same tag as the struct of interest.
-     We will need to elaborate this check,
-     because in general a tag alone may not uniquely identify a struct type,
-     and we may also need to take into account type compatibility."))
-  (declare (ignore uid tunit?))
-  (and (type-struni-tag/members-case tag/members :tagged)
-       (b* ((tag (type-struni-tag/members-tagged->tag tag/members)))
-         (equal tag (ident-fix the-struct)))))
+     is a tagged one with the same tag and UID as the struct being split."))
+  (declare (ignore tunit?))
+  (b* (((sts-struct-spec spec)))
+    (and (type-struni-tag/members-case tag/members :tagged)
+         (b* ((tag (type-struni-tag/members-tagged->tag tag/members)))
+           (and (equal tag spec.tag)
+                (equal (uid-fix uid) spec.uid))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define type-is-the-struct-p ((type typep) (the-struct identp))
+(define type-is-struct-spec-p ((type typep) (spec sts-struct-specp))
   :returns (yes/no booleanp)
-  :short "Check if a type is the struct type to split."
+  :short "Check if a type is the struct type being split."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is true if the type is a struct type,
-     and @(tsee struct-type-is-the-struct-p) holds:
+     and @(tsee struct-type-is-struct-spec-p) holds:
      see the documentation of that function."))
   (and (type-case type :struct)
-       (struct-type-is-the-struct-p (type-struct->uid type)
-                                    (type-struct->tunit? type)
-                                    (type-struct->tag/members type)
-                                    the-struct)))
+       (struct-type-is-struct-spec-p (type-struct->uid type)
+                                     (type-struct->tunit? type)
+                                     (type-struct->tag/members type)
+                                     spec)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-is-pointer-to-struct-spec-p ((type typep) (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a pointer to the struct type being split."
+  (and (type-case type :pointer)
+       (type-is-struct-spec-p (type-pointer->to type) spec)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-may-be-struct-spec-p ((type typep) (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a type may be the struct type being split."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case when @(tsee type-is-struct-spec-p) holds,
+     or when the type is unknown,
+     because it could be the struct type being split.
+     The unknown scalar and unknown arithmetic types cannot be struct types.
+     We assume that the struct that we split is not a built-in one,
+     which is why we do not include the unknown built-in type here."))
+  (or (type-is-struct-spec-p type spec)
+      (type-case type :unknown)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-may-be-pointer-to-struct-spec-p ((type typep)
+                                              (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a type may be a pointer to the struct type being split."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case when @(tsee type-is-pointer-to-struct-spec-p) holds,
+     or when the type is unknown or an unknown scalar.
+     The unknown arithmetic type cannot be a pointer.
+     An unknown built-in type may be a pointer (to a built-in type),
+     but we assume that the struct type being splie is not a built-in one."))
+  (or (type-is-pointer-to-struct-spec-p type spec)
+      (type-case type :unknown)
+      (type-case type :unknown-scalar)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -100,12 +202,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check that the struct type of interest
+    "We check that the struct type being split
      is not nested in array, union, or (other) struct types."))
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (define type-sts-safep ((type typep) (nested booleanp) (struct identp))
+  (define type-sts-safep ((type typep)
+                          (nested booleanp)
+                          (spec sts-struct-specp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a type is safe for the STS transformation."
@@ -116,22 +220,25 @@
        is nested under some array or union or struct type.")
      (xdoc::p
       "Most types are safe because they do not contain other types.
-       When we reach a struct type, we compare it with the one of interest:
+       When we reach a struct type, we compare it with the one being split:
        if they are the same, and we are nested under some type,
        the safety check fails, otherwise it succeeds.
        We use separate functions to check the content of struct and union types.
        For array types, we check the element type,
        setting the @('nested') flag to @('t') since the element type is nested.
-       For pointer and function types, we leave the @('nested') flag as is;
-       although the struct type of interest cannot be nested as such in them,
-       we also disallow nesting of pointers to the struct type of interest,
-       at least for now.
+       For pointer types, we leave the @('nested') flag as is;
+       although the struct type being split cannot be nested as such in them,
+       we also disallow nesting of pointers to the struct type being split.
+       For function types,
+       we disallow the struct anywhere in the return type,
+       passing @('t') as the nested flag for the return type;
+       but we pass the nested flag as is for parameters.
        We regard an unknown type as unsafe, because it could be anything.
        The same goes for an unknown scalar type,
        because it could be a pointer to an unsafe type
-       (e.g. structs that contain the struct of interest).
+       (e.g. structs that contain the struct being split).
        An unknown arithmetic type is safe,
-       because it can never contain the struct of interest."))
+       because it can never contain the struct being split."))
     (type-case
      type
      :void t
@@ -154,18 +261,18 @@
      :ldoublec t
      :bool t
      :struct (if (and nested
-                      (struct-type-is-the-struct-p type.uid
-                                                   type.tunit?
-                                                   type.tag/members
-                                                   struct))
+                      (struct-type-is-struct-spec-p type.uid
+                                                    type.tunit?
+                                                    type.tag/members
+                                                    spec))
                  nil
-               (type-struni-tag/members-sts-safep type.tag/members struct))
-     :union (type-struni-tag/members-sts-safep type.tag/members struct)
+               (type-struni-tag/members-sts-safep type.tag/members spec))
+     :union (type-struni-tag/members-sts-safep type.tag/members spec)
      :enum t
-     :array (type-sts-safep type.of t struct)
-     :pointer (type-sts-safep type.to nested struct)
-     :function (and (type-sts-safep type.ret nested struct)
-                    (type-params-sts-safep type.params nested struct))
+     :array (type-sts-safep type.of t spec)
+     :pointer (type-sts-safep type.to nested spec)
+     :function (and (type-sts-safep type.ret t spec)
+                    (type-params-sts-safep type.params nested spec))
      :unknown nil
      :unknown-builtin t
      :unknown-scalar nil
@@ -174,7 +281,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (define type-list-sts-safep ((types type-listp) (nested booleanp) (struct identp))
+  (define type-list-sts-safep ((types type-listp)
+                               (nested booleanp)
+                               (spec sts-struct-specp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a list of types are safe for the STS transformation."
@@ -183,15 +292,15 @@
      (xdoc::p
       "We check every type in turn."))
     (or (endp types)
-        (and (type-sts-safep (car types) nested struct)
-             (type-list-sts-safep (cdr types) nested struct)))
+        (and (type-sts-safep (car types) nested spec)
+             (type-list-sts-safep (cdr types) nested spec)))
     :measure (type-list-count types))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define type-struni-tag/members-sts-safep ((tystr-tag/mems
                                               type-struni-tag/members-p)
-                                             (struct identp))
+                                             (spec sts-struct-specp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that the portion of a struct/union type
@@ -200,6 +309,10 @@
     :long
     (xdoc::topstring
      (xdoc::p
+      "This function takes no nested flag because
+       structure or union members are always implicitly nested.
+       I.e. it is as if the flag were implicitly @('t').")
+     (xdoc::p
       "A tag alone is safe, because it does not contain types;
        checks on the definition of the type referred to by the tag
        are performed elsewhere.
@@ -207,13 +320,14 @@
     (type-struni-tag/members-case
      tystr-tag/mems
      :tagged t
-     :untagged (type-struni-member-list-sts-safep tystr-tag/mems.members struct))
+     :untagged (type-struni-member-list-sts-safep tystr-tag/mems.members
+                                                  spec))
     :measure (type-struni-tag/members-count tystr-tag/mems))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define type-struni-member-sts-safep ((mem type-struni-member-p)
-                                        (struct identp))
+                                        (spec sts-struct-specp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a struct/union member
@@ -221,16 +335,18 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "We check the type, passing @('t') as the @('nested') flag,
-       because we arrived here from a struct or union type,
-       so we are in a nested situation."))
-    (type-sts-safep (type-struni-member->type mem) t struct)
+      "This function takes no nested flag because
+       structure or union members are always implicitly nested.
+       I.e. it is as if the flag were implicitly @('t').
+       This is why we pass @('t') as the nested flag
+       to @(tsee type-sts-safep)."))
+    (type-sts-safep (type-struni-member->type mem) t spec)
     :measure (type-struni-member-count mem))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define type-struni-member-list-sts-safep ((mems type-struni-member-listp)
-                                             (struct identp))
+                                             (spec sts-struct-specp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a list of struct/union members
@@ -240,15 +356,15 @@
      (xdoc::p
       "We check every member in turn."))
     (or (endp mems)
-        (and (type-struni-member-sts-safep (car mems) struct)
-             (type-struni-member-list-sts-safep (cdr mems) struct)))
+        (and (type-struni-member-sts-safep (car mems) spec)
+             (type-struni-member-list-sts-safep (cdr mems) spec)))
     :measure (type-struni-member-list-count mems))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define type-params-sts-safep ((params type-params-p)
                                  (nested booleanp)
-                                 (struct identp))
+                                 (spec sts-struct-specp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that the portion of a function type
@@ -260,8 +376,8 @@
       "We check all the types."))
     (type-params-case
      params
-     :prototype (type-list-sts-safep params.params nested struct)
-     :old-style (type-list-sts-safep params.params nested struct)
+     :prototype (type-list-sts-safep params.params nested spec)
+     :old-style (type-list-sts-safep params.params nested spec)
      :unspecified t)
     :measure (type-params-count params))
 
@@ -273,10 +389,158 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define top-type-sts-safep ((type typep) (struct identp))
+(define top-type-sts-safep ((type typep) (spec sts-struct-specp))
   :returns (yes/no booleanp)
   :short "Check that a top-level type is safe for the STS transformation."
-  (type-sts-safep type nil struct))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We set the nested flag to @('nil'), since we are at the top level."))
+  (type-sts-safep type nil spec))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-unamb/anno-p ((expr exprp))
+  :returns (yes/no booleanp)
+  :short "Check that an expression
+          is unambiguous and has validation annotations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Throw an error, but logically just return @('nil'), if not.
+     This is enabled because we use it as an abbreviation,
+     until @(tsee fty::deffold-map) supports fold guards."))
+  (and (or (expr-unambp expr)
+           (raise "Internal error: ~x0 is ambiguous." (expr-fix expr)))
+       (or (expr-annop expr)
+           (raise "Internal error: ~x0 is not validated." (expr-fix expr))))
+  :no-function nil
+  :enabled t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tyname-unamb/anno-p ((tyname tynamep))
+  :returns (yes/no booleanp)
+  :short "Check that a type name
+          is unambiguous and has validation annotations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Throw an error, but logically just return @('nil'), if not.
+     This is enabled because we use it as an abbreviation,
+     until @(tsee fty::deffold-map) supports fold guards."))
+  (and (or (tyname-unambp tyname)
+           (raise "Internal error: ~x0 is ambiguous." (tyname-fix tyname)))
+       (or (tyname-annop tyname)
+           (raise "Internal error: ~x0 is not validated." (tyname-fix tyname))))
+  :no-function nil
+  :enabled t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-unary-sts-safep ((op unopp) (arg exprp) (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a unary expression is safe for the STS transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Most unary operators are always safe:
+     some never operate on structs;
+     others may perform arithmetic on struct pointers, which is safe;
+     taking the address of, or dereferencing, a struct of the type being split
+     is also safe, it does not break the struct abstraction.
+     The only operators that may be unsafe are @('sizeof') and @('alignof'),
+     but only if the type of the argument expression
+     may be the struct type being split;
+     they expose the size and alignment, which may change under splitting.")
+   (xdoc::p
+    "We may need to refine these checks to prohibit
+     taking the address of a member of the struct being split,
+     i.e. @('&s.m') where @('s') is the struct and @('m') the members.
+     Once that pointer is taken, its type is the one of @('m'),
+     and it has lost its connection to the type of @('s')."))
+  (or (not (unop-case op '(:sizeof :alignof)))
+      (and (expr-unamb/anno-p arg)
+           (not (type-may-be-struct-spec-p (expr-type arg) spec)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-sizeof/alignof-sts-safep ((tyname tynamep) (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a @('sizeof') or @('alignof') expression on a type name
+          is safe for the STS transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case exactly when the type denoted by the type name
+     may not be the struct type being split.
+     The reason is that same as explained in @(tsee expr-unary-sts-safep)."))
+  (and (tyname-unamb/anno-p tyname)
+       (not (type-may-be-struct-spec-p (type-vinfo->type (tyname->info tyname))
+                                       spec))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-cast-sts-safep ((tyname tynamep)
+                             (arg exprp)
+                             (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a cast expression is safe for the STS transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case exactly when
+     neither the source nor the destination type
+     is the struct being split or a pointer type to it."))
+  (and (tyname-unamb/anno-p tyname)
+       (expr-unamb/anno-p arg)
+       (b* ((src-type (expr-type arg))
+            (dst-type (type-vinfo->type (tyname->info tyname))))
+         (and (not (type-may-be-struct-spec-p src-type spec))
+              (not (type-may-be-pointer-to-struct-spec-p src-type spec))
+              (not (type-may-be-struct-spec-p dst-type spec))
+              (not (type-may-be-pointer-to-struct-spec-p dst-type spec))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-binary-sts-safep ((op binopp)
+                               (arg1 exprp)
+                               (arg2 exprp)
+                               (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a binary expression is safe for the STS transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Most binary operators are safe.
+     Only plain assignment can operates directly on struct types,
+     but it needs a cast to break the abstraction.
+     Several operators can operate on pointers to structs;
+     arithmetic is safe, but assignments need to be checked.
+     [C17] and [C23] allow automatic conversions with @('void *'),
+     but experiments with Clang show that other pointer types
+     may only generate warnings.
+     Thus, we check that there are no possible automatic conversions
+     between pointers to the struct being split
+     and pointers to any other types."))
+  (or (and (binop-case op '(:mul :div :rem :add :sub :shl :shr
+                            :lt :gt :le :ge :eq :ne
+                            :bitand :bitxor :bitior
+                            :logand :logor))
+           t)
+      (and (expr-unamb/anno-p arg1)
+           (expr-unamb/anno-p arg2)
+           (b* ((type1 (expr-type arg1))
+                (type2 (expr-type arg2)))
+             (or (and (type-is-struct-spec-p type1 spec)
+                      (type-is-struct-spec-p type2 spec))
+                 (and (type-is-pointer-to-struct-spec-p type1 spec)
+                      (type-is-pointer-to-struct-spec-p type2 spec))
+                 (and (not (type-may-be-struct-spec-p type1 spec))
+                      (not (type-may-be-struct-spec-p type2 spec))
+                      (not (type-may-be-pointer-to-struct-spec-p type1 spec))
+                      (not (type-may-be-pointer-to-struct-spec-p type2
+                                                                 spec))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -293,31 +557,24 @@
      the use of another @(tsee fty::deffold-reduce) as guards
      (we plan to add that feature soon).")
    (xdoc::p
-    "The @('struct') extra argument is the tag of the struct type of interest.
-     This may need to evolve into something richer,
-     as the name alone may not uniquely identify a struct type,
-     but we start with this for simplicity.
-     There is also the issue of compatible struct types,
-     but we leave these elaborations for later as well.")
-   (xdoc::p
-    "These predicates check that the ASTs use that struct type
+    "The @('spec') extra argument specifies the struct type being split.
+     These predicates check that the ASTs use that struct type
      (and its values, and pointers to its values)
-     only in ways that are safe for transformations
-     that operate on the struct type, e.g. that split it.")
+     only in ways that are safe for the STS transformation.")
    (xdoc::p
     "The predicates should start at the @(tsee exprs/decls/stmts) clique.
      It is not hard to see that
      all the ASTs in @(see c$::abstract-syntax-trees) before that clique
      do not contain anything directly related to structs.
      As a simple example, an identifier,
-     although it could a struct name,
+     although it could be a struct name,
      or the name of a variable that contains a struct,
      in isolation it cannot be deemed unsafe;
      it is only when used in a larger context (e.g. an expression)
      that we can detect unsafety.
      More concretely,
      all the ASTs that precede the @(tsee exprs/decls/stmts) clique
-     have to deemed safe when taken in isolation,
+     should be deemed safe when taken in isolation,
      and thus we do not need to define any predicates on them.")
    (xdoc::p
     "However, above we said `should' because, for now,
@@ -332,15 +589,13 @@
      so we just forbid that type qualifier.
      The reason for excluding the @('auto') storage specifier
      is that, in C23, it does type inference,
-     which might resolve to the struct type of interest,
-     and so we exlude that for now.")
+     which might resolve to the struct type being split,
+     and so we exclude that for now.")
    (xdoc::p
-    "The predicates end at the @(tsee trans-ensemble) type.
-     We could extend this to @(tsee code-ensemble) if needed.")
+    "The predicates end at the @(tsee trans-unit) type,
+     because these checks operate on one translation unit at a time.")
    (xdoc::p
-    "Aside from the above-mentioned approximations about
-     the designation of the struct type of interest,
-     our initial definition of these safety predicates is very conservative.
+    "Our initial definition of these safety predicates is very conservative.
      We will relax it gradually.")
    (xdoc::p
     "The default value of these predicates is @('t'),
@@ -355,7 +610,8 @@
      that would not play well (it generally does not, for predicates).
      The reason is that @('t') is the identity of @(tsee and),
      which is obviously the right combination operator for this fold.
-     Thus empty lists and absent sub-constructs would be deemed safe.")
+     Thus empty lists and absent sub-constructs would be deemed unsafe,
+     if we used @('nil') as the default instead of @('t').")
    (xdoc::p
     "Since we operate on validated (and thus disambiguated) ASTs,
      the ambiguous constructs do not occur,
@@ -385,56 +641,46 @@
       The controlling expression may have struct type;
       we need to think of the safety.")
     (xdoc::li
-     "We reject array subscripting for now.
-      This should be safe for structs,
-      in the sense that it does not break their abstraction;
-      it is, after all, just pointer addition and dereferencing.
-      But a transformation may not handle arrays of structs yet.
-      These checks should be refined to look at the type of the array,
-      and also to make checks on declarations for types.")
+     "We allow subscripting expressions.
+      Subscripting is equivalent to pointer addition and dereferencing,
+      which are safe operations with respect to struct splitting.
+      Note that pointer addition takes the size of the struct into account
+      (if the pointer is one to a struct),
+      but so long as the resulting pointer is not cast to an integer or similar,
+      it does not expose the exact size of the struct.
+      However, note also that currently @(tsee type-sts-safep) prohibits
+      arrays of the struct type being split (or nested in general),
+      so normally we would not encounter array subscripting
+      involving the struct being split
+      (unless one writes @('s[0]') instead of @('*s')).")
     (xdoc::li
-     "Although member access is safe for structs,
-      for now we want to reject access to possibly nested structs,
-      or structs inside union,
-      in the same spirit as the rejection of array subscripting,
-      as explained just above.")
+     "We reject function calls for now,
+      because we need to make sure that those are safe too,
+      and that may include some built-in functions
+      which need to be examined case by case.")
+    (xdoc::li
+     "We allow member access, by value or by pointer.
+      This is the normal safe way to access structs.
+      Note that the nesting of the struct type being split
+      in other structs or in unions is excluded via @(tsee type-sts-safep).")
     (xdoc::li
      "We reject compound literals out of initial caution.
       We need to think through them.")
     (xdoc::li
-     "While some unary operators are safe,
-      we reject all unary expressions for now.
-      We will refine this soon.")
+     "We use a dedicated ACL2 function for unary expressions.")
+    (xdoc::li
+     "We use a dedicated ACL2 function for
+      @('sizeof') and @('alignof') applied to type names.")
     (xdoc::li
      "Taking the address of a label (a GCC/Clang extension) is safe;
       it does not involve structs.")
     (xdoc::li
-     "We reject all the @('sizeof') and @('alignof') operators on type names.
-      This must be refined to only do that for the struct type of interest.")
+     "We use a dedicated ACL2 function for cast expressions.")
     (xdoc::li
-     "Casts are rejected initially,
-      but they should be accepted unless they cast
-      a struct of interest, or a pointer to it,
-      to some other type that breaks the abstraction.")
-    (xdoc::li
-     "We accept all binary expressions.
-      The only binary operator that may operate on struct values
-      is plain assignment @('='),
-      but it involves no automatic conversion that may break abstraction,
-      so this should be always safe,
-      even when it assigns a struct of interest to a variable,
-      which must have the same type.
-      But we plan to do some experiments to confirm this;
-      we might compare the type of the left and right sides to be sure.
-      Pointers to the structs of interest may be involved in arithmetic,
-      but this is always safe according to the standard;
-      although the exact values may vary with the size of the struct,
-      this is handled automatically,
-      e.g. adding 1 to a pointer to the struct
-      actually adds the size of the struct to the pointer;
-      but the only way to see the difference is
-      to cast the resulting pointer to an integer,
-      which would trigger a safety violation.")
+     "We accept all binary expressions,
+      but we should probably reject assignments
+      involving pointers to the struct type being split
+      and different types (e.g. pointers to @('void')).")
     (xdoc::li
      "Ternary expressions are safe iff their components are,
       which is the default definition of the predicate.")
@@ -468,12 +714,12 @@
      "@('_Atomic'), for the same reason as the homonymous type qualifier,
       as explained earlier.")
     (xdoc::li
-     "@('typedef'), since it could be the struct type of interest.
+     "@('typedef'), since it could be the struct type being split.
       Clearly we should relax this.")
     (xdoc::li
      "@('typeof') and spelling variants,
       in C23 or in GCC/Clang-extended C17.
-      This is because the type may denote the struct type of interest,
+      This is because the type may denote the struct type being split,
       without that being immediately syntactically apparent.")
     (xdoc::li
      "@('__auto_type') is excluded for the same reason as
@@ -481,10 +727,10 @@
    (xdoc::p
     "Since @('struct') specifiers are allowed,
      we need to reject constructs that nest
-     the struct of interest in other aggregate data types.")
+     the struct being split in other aggregate data types.")
    (xdoc::p
     "We reject all alignment specifiers,
-     because they may apply to the struct of interest.")
+     because they may apply to the struct being split.")
    (xdoc::p
     "Certain GCC/Clang attributes might need to be rejected,
      but we need to examine them in more detail.")
@@ -493,21 +739,21 @@
      out of caution.")
    (xdoc::p
     "We reject list initializers for now,
-     because they may affect the struct of interest.")
+     because they may affect the struct being split.")
    (xdoc::p
     "Initializers with optional designations are only reachable
-     from listt initializers, which are excluded (see above).")
+     from list initializers, which are excluded (see above).")
    (xdoc::p
     "We exclude declarators and abstract declarators,
      because in combination with type specifiers
-     they may give rise to arrays of the struct of interest.
+     they may give rise to arrays of the struct being split.
      We may need to look at types added by the validator
      to make this kind of checks more easily.")
    (xdoc::p
     "The exclusion of declarators and abstract declarators
      implies the exclusion of many constructs,
      e.g. most parameter and structure declarations;
-     the latter prevent the nesting of the struct of interest.")
+     the latter prevent the nesting of the struct being split.")
    (xdoc::p
     "We exclude assembly, because we do not know what it does exactly."))
   :types (stor-spec
@@ -516,26 +762,29 @@
           fundef
           ext-declon
           trans-items
-          trans-unit
-          filepath-trans-unit-map
-          trans-ensemble)
+          trans-unit)
   :result booleanp
   :default t
   :combine and
-  :extra-args ((struct identp))
+  :extra-args ((spec sts-struct-specp))
   :override
   ((stor-spec :auto nil)
    (type-qual :atomic nil)
    (expr :gensel nil)
-   (expr :arrsub nil)
    (expr :funcall nil)
-   (expr :member nil)
-   (expr :memberp nil)
    (expr :complit nil)
-   (expr :unary nil)
-   (expr :sizeof nil)
-   (expr :alignof nil)
-   (expr :cast nil)
+   (expr :unary (and (expr-sts-safep expr.arg spec)
+                     (expr-unary-sts-safep expr.op expr.arg spec)))
+   (expr :sizeof (and (tyname-sts-safep expr.type spec)
+                      (expr-sizeof/alignof-sts-safep expr.type spec)))
+   (expr :alignof (and (tyname-sts-safep expr.type spec)
+                       (expr-sizeof/alignof-sts-safep expr.type spec)))
+   (expr :cast (and (tyname-sts-safep expr.type spec)
+                    (expr-sts-safep expr.arg spec)
+                    (expr-cast-sts-safep expr.type expr.arg spec)))
+   (expr :binary (and (expr-sts-safep expr.arg1 spec)
+                      (expr-sts-safep expr.arg2 spec)
+                      (expr-binary-sts-safep expr.op expr.arg1 expr.arg2 spec)))
    (expr :tycompat nil)
    (expr :offsetof nil)
    (expr :va-arg nil)

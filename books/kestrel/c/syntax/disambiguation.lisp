@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "unambiguity")
+(include-book "built-ins")
 (include-book "disambiguator")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -33,6 +34,10 @@
     "We provide a disambiguator that transforms ASTs
      by resolving the ambiguous constructs in favor of unambiguous ones.
      We prove that the output of the disambiguator, if successful,
-     satisfies the unambiguity predicates."))
+     satisfies the unambiguity predicates.")
+   (xdoc::p
+    "When non-standard C extensions are enabled,
+     the disambiguator uses information about built-in functions and objects."))
   :order-subtopics (unambiguity
+                    built-ins
                     disambiguator))

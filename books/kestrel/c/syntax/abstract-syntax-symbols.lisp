@@ -729,7 +729,9 @@
 
     ;; validation information:
 
+    uid
     uidp
+    uid-fix
 
     typep
     type-case
@@ -737,6 +739,7 @@
     type-count
     type-void
     type-sint
+    type-pointer->to
 
     type-listp
     type-list-count
@@ -753,6 +756,7 @@
     type-struni-member-p
     type-struni-member-count
 
+    type-struni-member-list
     type-struni-member-listp
     type-struni-member-list-count
     type-struni-member->type
@@ -779,6 +783,7 @@
 
     type-vinfop
     type-vinfo-fix
+    type-vinfo->type
 
     type+uid-vinfo
     type+uid-vinfop
