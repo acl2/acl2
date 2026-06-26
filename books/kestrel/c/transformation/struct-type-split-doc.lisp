@@ -138,12 +138,17 @@
        each such member is split in place into a left and a right member,
        in the definition of the containing struct type
        and in its initializers and member access expressions.
+       The containing struct type may be tagged or untagged
+       (e.g. defined via a typedef),
+       and the member may be promoted from an anonymous struct member,
+       in which case the split members are registered under,
+       and promoted into, the enclosing struct type.
        A struct type that contains the split struct type only transitively,
        through a member of another struct type,
        is left unchanged.
        The struct type may not, however,
-       be a member of a union type,
-       be nested within an anonymous struct or union member,
+       be a member of a union type
+       (whether directly or as an anonymous union member),
        or be a member of itself (i.e. be self-referential);
        such occurrences are detected and reported as errors.")
      (xdoc::li
