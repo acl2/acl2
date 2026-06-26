@@ -759,6 +759,91 @@ int main(void) {
   :with-output-off nil)
 
 (acl2::must-succeed*
+  ;; A splittable member of an untagged (e.g. typedef'd) struct type
+  ;; is split in place, like a member of a tagged struct type.
+  (c$::input-files :files '("untagged-member.c")
+                   :const *old*)
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+  (c$::output-files :const *new*
+                    :base-dir "new")
+  (assert-file-contents
+    :file "new/untagged-member.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+typedef struct {
+  struct point inner;
+  struct point_right inner_0;
+  int w;
+} container;
+
+static container c = {.inner = {.x = 1}, .inner_0 = {.z = 2}, 9};
+
+int main(void) {
+  return c.inner.x + c.inner_0.z;
+}
+")
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; A splittable member of an untagged struct type, accessed via a pointer.
+  (c$::input-files :files '("untagged-ptr.c")
+                   :const *old*)
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+  (c$::output-files :const *new*
+                    :base-dir "new")
+  (assert-file-contents
+    :file "new/untagged-ptr.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+typedef struct {
+  struct point inner;
+  struct point_right inner_0;
+  int w;
+} container;
+
+static container c;
+
+static container *p = &c;
+
+int main(void) {
+  return p->inner.x + p->inner_0.z;
+}
+")
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; A splittable member nested in an anonymous (promoted) struct member
+  ;; is not yet supported.
+  (c$::input-files :files '("anon-struct.c")
+                   :const *old*)
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")))
+  :with-output-off nil)
+
+(acl2::must-succeed*
   ;; A function prototype returning a pointer to the split struct type.
   (c$::input-files :files '("fn-proto.c")
                    :const *old*)
