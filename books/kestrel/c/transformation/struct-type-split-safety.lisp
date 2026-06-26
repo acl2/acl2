@@ -388,7 +388,13 @@
      The only operators that may be unsafe are @('sizeof') and @('alignof'),
      but only if the type of the argument expression
      may be the struct type being split;
-     they expose the size and alignment, which may change under splitting."))
+     they expose the size and alignment, which may change under splitting.")
+   (xdoc::p
+    "We may need to refine these checks to prohibit
+     taking the address of a member of the struct being split,
+     i.e. @('&s.m') where @('s') is the struct and @('m') the members.
+     Once that pointer is taken, its type is the one of @('m'),
+     and it has lost its connection to the type of @('s')."))
   (b* (((unless (unop-case op '(:sizeof :alignof))) t)
        ((unless (expr-unambp arg))
         (raise "Internal error: ambiguous expression ~x0." (expr-fix arg)))
