@@ -693,7 +693,9 @@
    (xdoc::p
     "Since we operate on validated (and thus disambiguated) ASTs,
      the ambiguous constructs do not occur,
-     so for now we do not handle them specially.")
+     so for now we just ignore them,
+     i.e. we let them be treated in the default way
+     by @(tsee fty::deffold-reduce).")
    (xdoc::p
     "Option and list AST types are safe iff their components are.
      This is the default generated definition of the predicates.")
@@ -703,79 +705,71 @@
      are allowed iff their wrapped ASTs are,
      which is the default definition.")
    (xdoc::p
-    "Consider expressions:")
-   (xdoc::ul
-    (xdoc::li
-     "Identifiers, constants, and strings are safe leaves.
-      Although an identifier may be a variable of struct type,
-      this is safe in isolation;
+    "Some constructs are handled via separate ACL2 functions,
+     whose documentation explains the rationale.
+     See those functions for details,
+     which we do not repeat here.
+     Here we only discuss the rationale for the constructs
+     whose handling is handled directly in the @(tsee fty::deffold-reduce).")
+   (xdoc::p
+    "Identifiers, constants, and strings are safe leaves.
+     Although an identifier may be a variable of struct type,
+     this is safe in isolation;
       unsafety can only come from a larger construct containing the variable.
-      So we keep the default for these.")
-    (xdoc::li
-     "A parenthesized expression is safe iff its inner expression is,
-      which is what the default does.")
-    (xdoc::li
-     "We reject generic selections out of caution.
-      The controlling expression may have struct type;
-      we need to think of the safety.")
-    (xdoc::li
-     "We allow subscripting expressions.
-      Subscripting is equivalent to pointer addition and dereferencing,
-      which are safe operations with respect to struct splitting.
-      Note that pointer addition takes the size of the struct into account
-      (if the pointer is one to a struct),
-      but so long as the resulting pointer is not cast to an integer or similar,
-      it does not expose the exact size of the struct.
-      However, note also that currently @(tsee type-sts-safep) prohibits
-      arrays of the struct type being split (or nested in general),
-      so normally we would not encounter array subscripting
-      involving the struct being split
-      (unless one writes @('s[0]') instead of @('*s')).")
-    (xdoc::li
-     "We reject function calls for now,
-      because we need to make sure that those are safe too,
-      and that may include some built-in functions
-      which need to be examined case by case.")
-    (xdoc::li
-     "We allow member access, by value or by pointer.
-      This is the normal safe way to access structs.
-      Note that the nesting of the struct type being split
-      in other structs or in unions is excluded via @(tsee type-sts-safep).")
-    (xdoc::li
-     "We reject compound literals out of initial caution.
-      We need to think through them.")
-    (xdoc::li
-     "We use a dedicated ACL2 function for unary expressions.")
-    (xdoc::li
-     "We use a dedicated ACL2 function for
-      @('sizeof') and @('alignof') applied to type names.")
-    (xdoc::li
-     "Taking the address of a label (a GCC/Clang extension) is safe;
-      it does not involve structs.")
-    (xdoc::li
-     "We use a dedicated ACL2 function for cast expressions.")
-    (xdoc::li
-     "We accept all binary expressions,
-      but we should probably reject assignments
-      involving pointers to the struct type being split
-      and different types (e.g. pointers to @('void')).")
-    (xdoc::li
-     "Ternary expressions are safe iff their components are,
-      which is the default definition of the predicate.")
-    (xdoc::li
-     "A statement expression (GCC/Clang extension)
-      is safe iff the compound statement is,
-      which is the default definition of the predicate.")
-    (xdoc::li
-     "We reject
-      @('__builtin_types_compatible_p'),
-      @('__builtin_offsetof'), and
-      @('__builtin_va_arg')
-      out of caution for now.")
-    (xdoc::li
-     "An expression preceded by @('__extension__') is safe iff
-      the expression itself is,
-      so we leave it as default."))
+     So we keep the default for these.")
+   (xdoc::p
+    "A parenthesized expression is safe iff its inner expression is,
+     which is what the default does.")
+   (xdoc::p
+    "We reject generic selections out of caution.
+     The controlling expression may have struct type;
+     we need to think of the safety.")
+   (xdoc::p
+    "We allow subscripting expressions.
+     Subscripting is equivalent to pointer addition and dereferencing,
+     which are safe operations with respect to struct splitting.
+     Note that pointer addition takes the size of the struct into account
+     (if the pointer is one to a struct),
+     but so long as the resulting pointer is not cast to an integer or similar,
+     it does not expose the exact size of the struct.
+     However, note also that currently @(tsee type-sts-safep) prohibits
+     arrays of the struct type being split (or nested in general),
+     so normally we would not encounter array subscripting
+     involving the struct being split
+     (unless one writes @('s[0]') instead of @('*s')).")
+   (xdoc::p
+    "We reject function calls for now,
+     because we need to make sure that those are safe too,
+     and that may include some built-in functions
+     which need to be examined case by case.")
+   (xdoc::p
+    "We allow member access, by value or by pointer.
+     This is the normal safe way to access structs.
+     Note that the nesting of the struct type being split
+     in other structs or in unions is excluded via @(tsee type-sts-safep).")
+   (xdoc::p
+    "We reject compound literals out of initial caution.
+     We need to think through them.")
+   (xdoc::p
+    "Taking the address of a label (a GCC/Clang extension) is safe;
+     it does not involve structs.")
+   (xdoc::p
+    "Ternary expressions are safe iff their components are,
+     which is the default definition of the predicate.")
+   (xdoc::p
+    "A statement expression (GCC/Clang extension)
+     is safe iff the compound statement is,
+     which is the default definition of the predicate.")
+   (xdoc::p
+    "We reject
+     @('__builtin_types_compatible_p'),
+     @('__builtin_offsetof'), and
+     @('__builtin_va_arg')
+     out of caution for now.")
+   (xdoc::p
+    "An expression preceded by @('__extension__') is safe iff
+     the expression itself is,
+     so we leave it as default.")
    (xdoc::p
     "We do not need to override @(tsee genassoc)
      because it is only reachable from @(':genassoc') expressions,
@@ -786,22 +780,18 @@
      @(':genassoc') and @(':offsetof') expressions,
      which we currently reject.")
    (xdoc::p
-    "We allow most type specifiers, except the following:")
-   (xdoc::ul
-    (xdoc::li
-     "@('_Atomic'), for the same reason as the homonymous type qualifier,
-      as explained earlier.")
-    (xdoc::li
-     "@('typedef'), since it could be the struct type being split.
-      Clearly we should relax this.")
-    (xdoc::li
-     "@('typeof') and spelling variants,
-      in C23 or in GCC/Clang-extended C17.
-      This is because the type may denote the struct type being split,
-      without that being immediately syntactically apparent.")
-    (xdoc::li
-     "@('__auto_type') is excluded for the same reason as
-      the storage specifier @('auto') explained earlier."))
+    "We allow all the type specifiers that do not contain other types.")
+   (xdoc::p
+    "We reject @('typedef'), since it could be the struct type being split.
+     Clearly we should relax this.")
+   (xdoc::p
+    "We reject @('typeof') and spelling variants,
+     in C23 or in GCC/Clang-extended C17.
+     This is because the type may denote the struct type being split,
+     without that being immediately syntactically apparent.")
+   (xdoc::p
+    "@('__auto_type') is excluded for the same reason as
+     the storage specifier @('auto') explained earlier.")
    (xdoc::p
     "Since @('struct') specifiers are allowed,
      we need to reject constructs that nest
