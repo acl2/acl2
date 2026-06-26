@@ -37,12 +37,7 @@
      (xdoc::seetopic "disambiguation" "disambiguate")
      " and "
      (xdoc::seetopic "validation" "validate")
-     " C programs written in those dialects.")
-   (xdoc::p
-     "Currently, the only information we track about built-ins
-      is the identifier and whether it is a function or an object.
-      Eventually, we may wish to add more information,
-      such as the precise type of each built-in."))
+     " C programs written in those dialects."))
   :order-subtopics t
   :default-parent t)
 
