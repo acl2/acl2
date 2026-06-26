@@ -782,6 +782,7 @@
 
     type-vinfop
     type-vinfo-fix
+    type-vinfo->type
 
     type+uid-vinfo
     type+uid-vinfop

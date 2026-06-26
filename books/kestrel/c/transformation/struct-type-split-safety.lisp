@@ -20,6 +20,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local (in-theory (enable* c$::abstract-syntax-annop-rules)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ struct-type-split-safety
   :parents (transformation-tools)
   :short "Safety checks for the @(tsee struct-type-split) transformation."
@@ -404,6 +408,28 @@
     (not (type-may-be-struct-spec-p type spec)))
   :no-function nil)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-sizeof/alignof-sts-safep ((tyname tynamep) (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a @('sizeof') or @('alignof') expression on a type name
+          is safe for the STS transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case exactly when the type denoted by the type name
+     may not be the struct type being split.
+     The reason is that same as explained in @(tsee expr-unary-sts-safep)."))
+  (b* (((unless (tyname-unambp tyname))
+        (raise "Internal error: ambiguous type name ~x0."
+               (tyname-fix tyname)))
+       ((unless (tyname-annop tyname))
+        (raise "Internal error: unannotated type name ~x0."
+               (tyname-fix tyname)))
+       (type (type-vinfo->type (tyname->info tyname))))
+    (not (type-may-be-struct-spec-p type spec)))
+  :no-function nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce sts-safep
@@ -654,8 +680,10 @@
    (expr :complit nil)
    (expr :unary (and (expr-sts-safep expr.arg spec)
                      (expr-unary-sts-safep expr.op expr.arg spec)))
-   (expr :sizeof nil)
-   (expr :alignof nil)
+   (expr :sizeof (and (tyname-sts-safep expr.type spec)
+                      (expr-sizeof/alignof-sts-safep expr.type spec)))
+   (expr :alignof (and (tyname-sts-safep expr.type spec)
+                       (expr-sizeof/alignof-sts-safep expr.type spec)))
    (expr :cast nil)
    (expr :tycompat nil)
    (expr :offsetof nil)
