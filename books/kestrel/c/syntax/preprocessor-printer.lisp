@@ -33,14 +33,6 @@
   :enable (str::letter/uscore-char-p
            grammar-character-p))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled unichar-listp-when-unsigned-byte-listp
-  (implies (unsigned-byte-listp 8 x)
-           (unichar-listp x))
-  :induct t
-  :enable (unichar-listp unicharp-when-unsigned-byte-p))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ preprocessor-printer
@@ -172,7 +164,8 @@
      and therefore are not ASCII.
      But we always call this printing function with ASCII strings."))
   (pprint-unichars (acl2::string=>nats string) bytes)
-  :guard-hints (("Goal" :in-theory (enable unichar-listp-when-unsigned-byte-listp))))
+  :guard-hints
+  (("Goal" :in-theory (enable unichar-listp-when-unsigned-byte-listp-8))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -201,7 +194,8 @@
   :returns (new-bytes byte-listp)
   :short "Print one or more spaces after preprocessing."
   (pprint-unichars (repeat count 32) bytes)
-  :guard-hints (("Goal" :in-theory (enable unichar-listp-when-unsigned-byte-listp))))
+  :guard-hints
+  (("Goal" :in-theory (enable unichar-listp-when-unsigned-byte-listp-8))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -266,8 +260,9 @@
        ((unless (grammar-character-listp chars))
         (raise "Internal error: bad punctuator ~x0." (str-fix punctuator))))
     (pprint-unichars chars bytes))
-  :guard-hints (("Goal" :in-theory (enable unichar-listp-when-unsigned-byte-listp)))
-  :no-function nil)
+  :no-function nil
+  :guard-hints
+  (("Goal" :in-theory (enable unichar-listp-when-unsigned-byte-listp-8))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -627,8 +622,9 @@
        ((unless (grammar-character-listp chars))
         (raise "Internal error: bad identifier characters ~x0." chars)))
     (pprint-unichars chars bytes))
-  :guard-hints (("Goal" :in-theory (enable unichar-listp-when-unsigned-byte-listp)))
-  :no-function nil)
+  :no-function nil
+  :guard-hints
+  (("Goal" :in-theory (enable unichar-listp-when-unsigned-byte-listp-8))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
