@@ -2516,6 +2516,20 @@
      (xdoc::p
       "This corresponds to @('type-name') in the ABNF grammar.")
      (xdoc::p
+      "The short, one-word-like @('tyname') name of this fixtype
+       may seem at odds with other AST fixtypes names,
+       particularly @(tsee type-spec) and @(tsee type-qual).
+       But it is intentional:
+       in C, a type name is a ``fundamental'' notion,
+       like an expression or a statement;
+       it is, essentially, a ``type''
+       (although in our ACL2 development we give
+       a more semantic definition of `type' in @(tsee type)).
+       So we prefer the shorter name.
+       Note that we also combine it in other fixtype names,
+       e.g. in @(tsee amb-expr/tyname),
+       where the shorter name pays off in readability.")
+     (xdoc::p
       "Type names may be accompanied by some additional information,
        such as the type calculated during validation."))
     ((specquals spec/qual-list)
