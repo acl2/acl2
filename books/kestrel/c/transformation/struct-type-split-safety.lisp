@@ -479,6 +479,54 @@
                         (type-may-be-struct-spec-p (type-pointer->to dst-type)
                                                    spec)))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-binary-sts-safep ((op binopp)
+                               (arg1 exprp)
+                               (arg2 exprp)
+                               (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a binary expression is safe for the STS transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Most binary operators are safe.
+     Only plain assignment can operates directly on struct types,
+     but it needs a cast to break the abstraction.
+     Several operators can operate on pointers to structs;
+     arithmetic is safe, but assignments need to be checked.
+     [C17] and [C23] allow automatic conversions with @('void *'),
+     but experiments with Clang show that other pointer types
+     may only generate warnings.
+     Thus, we check that there are no possible automatic conversions
+     between pointers to the struct being split
+     and pointers to any other types."))
+  (or (and (binop-case op '(:mul :div :rem :add :sub :shl :shr
+                            :lt :gt :le :ge :eq :ne
+                            :bitand :bitxor :bitior
+                            :logand :logor))
+           t)
+      (and (expr-unamb/anno-p arg1)
+           (expr-unamb/anno-p arg2)
+           (b* ((type1 (expr-type arg1))
+                (type2 (expr-type arg2)))
+             (or (and (type-may-be-struct-spec-p type1 spec)
+                      (type-may-be-struct-spec-p type2 spec))
+                 (and (type-case type1 :pointer)
+                      (type-may-be-struct-spec-p (type-pointer->to type1)
+                                                 spec)
+                      (type-case type2 :pointer)
+                      (type-may-be-struct-spec-p (type-pointer->to type2)
+                                                 spec))
+                 (and (not (type-may-be-struct-spec-p type1 spec))
+                      (not (type-may-be-struct-spec-p type2 spec))
+                      (or (not (type-case type1 :pointer))
+                          (not (type-may-be-struct-spec-p
+                                (type-pointer->to type1) spec)))
+                      (or (not (type-case type2 :pointer))
+                          (not (type-may-be-struct-spec-p
+                                (type-pointer->to type2) spec)))))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce sts-safep
@@ -719,6 +767,9 @@
    (expr :cast (and (tyname-sts-safep expr.type spec)
                     (expr-sts-safep expr.arg spec)
                     (expr-cast-sts-safep expr.type expr.arg spec)))
+   (expr :binary (and (expr-sts-safep expr.arg1 spec)
+                      (expr-sts-safep expr.arg2 spec)
+                      (expr-binary-sts-safep expr.op expr.arg1 expr.arg2 spec)))
    (expr :tycompat nil)
    (expr :offsetof nil)
    (expr :va-arg nil)
