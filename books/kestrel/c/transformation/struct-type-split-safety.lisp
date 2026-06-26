@@ -814,8 +814,8 @@
     "@('__auto_type') is excluded for the same reason as
      the storage specifier @('auto') explained earlier.")
    (xdoc::p
-    "We reject all alignment specifiers,
-     because they may apply to the struct being split.")
+    "We allow all alignment specifiers,
+     because they do not seem related to the struct type being split.")
    (xdoc::p
     "Certain GCC/Clang attributes might need to be rejected,
      but we need to examine them in more detail.")
@@ -823,8 +823,8 @@
     "We reject the @('__stdcall') and @('__declspec') declaration specifiers,
      out of caution.")
    (xdoc::p
-    "We reject list initializers for now,
-     because they may affect the struct being split.")
+    "We reject initializers with optional designations for now,
+     because they may affect the struct type being split.")
    (xdoc::p
     "Initializers with optional designations are only reachable
      from list initializers, which are excluded (see above).")
@@ -879,10 +879,9 @@
    (type-spec :typeof-expr (sts-reject (type-spec-fix type-spec)))
    (type-spec :typeof-type (sts-reject (type-spec-fix type-spec)))
    (type-spec :auto-type (sts-reject (type-spec-fix type-spec)))
-   (align-spec (sts-reject (align-spec-fix align-spec)))
    (decl-spec :stdcall (sts-reject (decl-spec-fix decl-spec)))
    (decl-spec :declspec (sts-reject (decl-spec-fix decl-spec)))
-   (initer :list (sts-reject (initer-fix initer)))
+   (desiniter (sts-reject (desiniter-fix desiniter)))
    (declor (sts-reject (declor-fix declor)))
    (absdeclor (sts-reject (absdeclor-fix absdeclor)))
    (asm-stmt (sts-reject (asm-stmt-fix asm-stmt))))
