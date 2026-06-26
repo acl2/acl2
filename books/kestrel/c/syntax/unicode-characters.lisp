@@ -91,7 +91,12 @@
   (defruled unicharp-upper-bound
     (implies (unicharp x)
              (<= x #x10ffff))
-    :rule-classes :forward-chaining))
+    :rule-classes :forward-chaining)
+
+  (defruled unicharp-when-unsigned-byte-p
+    (implies (unsigned-byte-p 8 x)
+             (unicharp x))
+    :enable unsigned-byte-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

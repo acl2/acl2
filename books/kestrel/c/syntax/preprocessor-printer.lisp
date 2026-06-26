@@ -35,13 +35,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled unicharp-when-unsigned-byte-p
-  (implies (unsigned-byte-p 8 x)
-           (unicharp x))
-  :enable (unicharp unsigned-byte-p integer-range-p))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defruled unichar-listp-when-unsigned-byte-listp
   (implies (unsigned-byte-listp 8 x)
            (unichar-listp x))
