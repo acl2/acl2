@@ -11,7 +11,7 @@
 (in-package "JSONRPC")
 
 (include-book "tools/include-raw" :dir :system)
-(include-book "quicklisp/hunchentoot" :dir :system)
+(include-book "quicklisp/usocket" :dir :system)
 
 (include-book "process-rpc")
 
