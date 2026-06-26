@@ -94,7 +94,7 @@
              (<= x #x10ffff))
     :rule-classes :forward-chaining)
 
-  (defruled unicharp-when-unsigned-byte-p
+  (defruled unicharp-when-unsigned-byte-p-8
     (implies (unsigned-byte-p 8 x)
              (unicharp x))
     :enable unsigned-byte-p))
@@ -158,4 +158,4 @@
     (implies (unsigned-byte-listp 8 x)
              (unichar-listp x))
     :induct t
-    :enable (unichar-listp unicharp-when-unsigned-byte-p)))
+    :enable (unichar-listp unicharp-when-unsigned-byte-p-8)))
