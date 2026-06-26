@@ -353,6 +353,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define expr-unary-sts-safep ((op unopp) (arg exprp) (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a unary expression is safe for the STS transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This function takes as input the fields of @(':unary') @(tsee expr),
+     except for the @('info') field, which is not needed.
+     The argument expression is checked separately, recursively.")
+   (xdoc::p
+    "Most unary operators are always safe:
+     some never operate on structs;
+     others may perform arithmetic on struct pointers, which is safe;
+     taking the address of, or dereferencing, a struct of the type being split
+     is also safe, it does not break the struct abstraction.
+     The only operators that may be unsafe are @('sizeof') and @('alignof'),
+     but only if the type of the argument expression is
+     the struct type being split;
+     they expose the size and alignment, which may change under splitting.
+     We need the case of an unknown type,
+     which might be the struct type being split."))
+  (b* (((unless (unop-case op '(:sizeof :alignof))) t)
+       ((unless (expr-unambp arg))
+        (raise "Internal error: ambiguous expression ~x0." (expr-fix arg)))
+       ((unless (expr-annop arg))
+        (raise "Internal error: unannotated expression ~x0." (expr-fix arg)))
+       (type (expr-type arg)))
+    (and (not (type-case type :unknown))
+         (not (type-is-struct-spec-p type spec))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deffold-reduce sts-safep
   :short "Check that ASTs are safe for the STS transformation."
   :long
@@ -476,9 +509,7 @@
      "We reject compound literals out of initial caution.
       We need to think through them.")
     (xdoc::li
-     "While some unary operators are safe,
-      we reject all unary expressions for now.
-      We will refine this soon.")
+     "We allow most unary expressions: see @(tsee expr-unary-sts-safep).")
     (xdoc::li
      "Taking the address of a label (a GCC/Clang extension) is safe;
       it does not involve structs.")
@@ -601,7 +632,8 @@
    (expr :gensel nil)
    (expr :funcall nil)
    (expr :complit nil)
-   (expr :unary nil)
+   (expr :unary (and (expr-sts-safep expr.arg spec)
+                     (expr-unary-sts-safep expr.op expr.arg spec)))
    (expr :sizeof nil)
    (expr :alignof nil)
    (expr :cast nil)
