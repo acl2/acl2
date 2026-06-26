@@ -20,7 +20,6 @@
 (include-book "validation")
 (include-book "types-to-tynames")
 (include-book "printing")
-(include-book "built-ins")
 (include-book "input-files")
 (include-book "input-files-doc")
 (include-book "output-files")

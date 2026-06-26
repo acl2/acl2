@@ -24,7 +24,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ built-ins
-  :parents (syntax-for-tools)
+  :parents (disambiguation validation)
   :short "Built-in functions and objects in C dialects."
   :long
   (xdoc::topstring
