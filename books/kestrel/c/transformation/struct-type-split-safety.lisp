@@ -470,21 +470,36 @@
      some never operate on structs;
      others may perform arithmetic on struct pointers, which is safe;
      taking the address of, or dereferencing, a struct of the type being split
-     is also safe, it does not break the struct abstraction.
-     The only operators that may be unsafe are @('sizeof') and @('alignof'),
-     but only if the type of the argument expression
-     may be the struct type being split;
-     they expose the size and alignment, which may change under splitting.")
+     is also safe, it does not break the struct abstraction,
+     with the exception described below.")
    (xdoc::p
-    "We may need to refine these checks to prohibit
-     taking the address of a member of the struct being split,
-     i.e. @('&s.m') where @('s') is the struct and @('m') the members.
-     Once that pointer is taken, its type is the one of @('m'),
-     and it has lost its connection to the type of @('s')."))
-  (or (not (unop-case op '(:sizeof :alignof)))
-      (and (expr-unamb/anno-p arg)
-           (not (type-may-be-struct-spec-p (expr-type arg) spec)))
-      (sts-reject (expr-unary op arg info))))
+    "The @('sizeof') and @('alignof') operators may be unsafe,
+     but only if the type of the argument expression
+     may be the struct type being split.
+     They expose the size and alignment, which may change under splitting.")
+   (xdoc::p
+    "Another potentially unsafe case is taking
+     the address of a member of the struct whose type is being split,
+     because for example it could be involved in some pointer arithmetic,
+     but we would lose information that the pointer came
+     from the struct whose type is being split
+     (more elaborate analyses are needed to retain that information)."))
+  (case (unop-kind op)
+    ((:sizeof :alignof)
+     (or (and (expr-unamb/anno-p arg)
+              (not (type-may-be-struct-spec-p (expr-type arg) spec)))
+         (sts-reject (expr-unary op arg info))))
+    (:address
+     (and (expr-unamb/anno-p arg)
+          (expr-case
+           arg
+           :member (or (not (type-may-be-struct-spec-p (expr-type arg) spec))
+                       (sts-reject (expr-unary op arg info)))
+           :memberp (or (not (type-may-be-pointer-to-struct-spec-p
+                              (expr-type arg) spec))
+                        (sts-reject (expr-unary op arg info)))
+           :otherwise t)))
+    (t t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
