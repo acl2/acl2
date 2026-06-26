@@ -1224,20 +1224,20 @@
 
 (defines abs-types
 
-  (define abs-type-exp ((tree abnf::treep))
+  (define abs-type ((tree abnf::treep))
     :returns (ty type-resultp)
-    :short "Abstract a @('type-exp') to a @(tsee type)."
+    :short "Abstract a @('type') to a @(tsee type)."
     :long
     (xdoc::topstring
      (xdoc::p
-      "@('type-exp') has either 1 tree-list (for the non-paren
+      "@('type') has either 1 tree-list (for the non-paren
        alternatives @('type-var')/@('base-type')/
        @('bracket-type'), with the inner subtree giving the specific
-       alternative) or 5 tree-lists (for the @('( ws type-exp-paren ws )')
+       alternative) or 5 tree-lists (for the @('( ws type-paren ws )')
        alternative)."))
-    (b* (((okf treess) (abnf::check-tree-nonleaf tree "type-exp")))
+    (b* (((okf treess) (abnf::check-tree-nonleaf tree "type")))
       (case (len treess)
-        (1 (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "type-exp"))
+        (1 (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "type"))
                 ((okf rulename?) (abnf::check-tree-nonleaf? inner)))
              (cond ((equal rulename? "type-var")
                     (b* (((okf tv) (abs-type-var inner)))
@@ -1247,43 +1247,43 @@
                       (make-type-base :type bt)))
                    ((equal rulename? "bracket-type")
                     (abs-bracket-type inner))
-                   (t (reserrf (list :unexpected-type-exp-body
+                   (t (reserrf (list :unexpected-type-body
                                      (abnf::tree-info-for-error inner)))))))
         (5 (b* (((okf (abnf::tree-list-tuple5 sub))
                  (abnf::check-tree-list-list-5 treess))
                 ((okf body-tree) (abnf::check-tree-list-1 sub.3rd)))
-             (abs-type-exp-paren body-tree)))
+             (abs-type-paren body-tree)))
         (otherwise
-         (reserrf (list :type-exp-shape (len treess))))))
+         (reserrf (list :type-shape (len treess))))))
     :measure (abnf::tree-count tree))
 
-  (define abs-type-exp-paren ((tree abnf::treep))
+  (define abs-type-paren ((tree abnf::treep))
     :returns (ty type-resultp)
-    :short "Abstract a @('type-exp-paren') to a @(tsee type)."
-    (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "type-exp-paren"))
+    :short "Abstract a @('type-paren') to a @(tsee type)."
+    (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "type-paren"))
          ((okf rulename?) (abnf::check-tree-nonleaf? inner)))
       (cond ((equal rulename? "array-type") (abs-array-type inner))
             ((equal rulename? "arrow-type") (abs-arrow-type inner))
             ((equal rulename? "forall-type") (abs-forall-type inner))
             ((equal rulename? "pi-type") (abs-pi-type inner))
             ((equal rulename? "sigma-type") (abs-sigma-type inner))
-            (t (reserrf (list :unexpected-type-exp-paren-body
+            (t (reserrf (list :unexpected-type-paren-body
                               (abnf::tree-info-for-error inner))))))
     :measure (abnf::tree-count tree))
 
-  ;; bracket-type = "[" ws type-exp *( ws ispace ) ws "]"
+  ;; bracket-type = "[" ws type *( ws ispace ) ws "]"
   (define abs-bracket-type ((tree abnf::treep))
     :returns (ty type-resultp)
     :short "Abstract a @('bracket-type') to a @(tsee type) @(':bracket')."
     (b* (((okf (abnf::tree-list-tuple6 sub))
           (abnf::check-tree-nonleaf-6 tree "bracket-type"))
          ((okf te-tree) (abnf::check-tree-list-1 sub.3rd))
-         ((okf elem) (abs-type-exp te-tree))
+         ((okf elem) (abs-type te-tree))
          ((okf ispaces) (abs-*-ws-ispace sub.4th)))
       (make-type-bracket :elem elem :ispaces ispaces))
     :measure (abnf::tree-count tree))
 
-  ;; array-type = "A" ws type-exp ws ispace
+  ;; array-type = "A" ws type ws ispace
   (define abs-array-type ((tree abnf::treep))
     :returns (ty type-resultp)
     :short "Abstract an @('array-type') to a @(tsee type) @(':array')."
@@ -1291,25 +1291,25 @@
           (abnf::check-tree-nonleaf-5 tree "array-type"))
          ((okf te-tree) (abnf::check-tree-list-1 sub.3rd))
          ((okf ispace-tree) (abnf::check-tree-list-1 sub.5th))
-         ((okf elem) (abs-type-exp te-tree))
+         ((okf elem) (abs-type te-tree))
          ((okf ispace) (abs-ispace ispace-tree)))
       (make-type-array :elem elem :ispace ispace))
     :measure (abnf::tree-count tree))
 
-  ;; arrow-type = ( "->" / %x2192 ) ws "(" *( ws type-exp ) ws ")" ws type-exp
+  ;; arrow-type = ( "->" / %x2192 ) ws "(" *( ws type ) ws ")" ws type
   (define abs-arrow-type ((tree abnf::treep))
     :returns (ty type-resultp)
     :short "Abstract an @('arrow-type') to a @(tsee type) @(':fun')."
     (b* (((okf (abnf::tree-list-tuple8 sub))
           (abnf::check-tree-nonleaf-8 tree "arrow-type"))
-         ((okf in) (abs-*-ws-type-exp sub.4th))
+         ((okf in) (abs-*-ws-type sub.4th))
          ((okf out-tree) (abnf::check-tree-list-1 sub.8th))
-         ((okf out) (abs-type-exp out-tree)))
+         ((okf out) (abs-type out-tree)))
       (make-type-fun :in in :out out))
     :measure (abnf::tree-count tree))
 
   ;; forall-type = ( "Forall" / %x2200 ) ws "(" *( ws type-var ) ws ")"
-  ;;               ws type-exp
+  ;;               ws type
   (define abs-forall-type ((tree abnf::treep))
     :returns (ty type-resultp)
     :short "Abstract a @('forall-type') to a @(tsee type) @(':forall')."
@@ -1317,12 +1317,12 @@
           (abnf::check-tree-nonleaf-8 tree "forall-type"))
          ((okf params) (abs-*-ws-type-var sub.4th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
-         ((okf body) (abs-type-exp body-tree)))
+         ((okf body) (abs-type body-tree)))
       (make-type-forall :params params :body body))
     :measure (abnf::tree-count tree))
 
   ;; pi-type = ( "Pi" / %x03A0 ) ws "(" *( ws ispace-var ) ws ")"
-  ;;           ws type-exp
+  ;;           ws type
   (define abs-pi-type ((tree abnf::treep))
     :returns (ty type-resultp)
     :short "Abstract a @('pi-type') to a @(tsee type) @(':pi')."
@@ -1330,12 +1330,12 @@
           (abnf::check-tree-nonleaf-8 tree "pi-type"))
          ((okf params) (abs-*-ws-ispace-var sub.4th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
-         ((okf body) (abs-type-exp body-tree)))
+         ((okf body) (abs-type body-tree)))
       (make-type-pi :params params :body body))
     :measure (abnf::tree-count tree))
 
   ;; sigma-type = ( "Sigma" / %x03A3 ) ws "(" *( ws ispace-var ) ws ")"
-  ;;              ws type-exp
+  ;;              ws type
   (define abs-sigma-type ((tree abnf::treep))
     :returns (ty type-resultp)
     :short "Abstract a @('sigma-type') to a @(tsee type) @(':sigma')."
@@ -1343,25 +1343,25 @@
           (abnf::check-tree-nonleaf-8 tree "sigma-type"))
          ((okf params) (abs-*-ws-ispace-var sub.4th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
-         ((okf body) (abs-type-exp body-tree)))
+         ((okf body) (abs-type body-tree)))
       (make-type-sigma :params params :body body))
     :measure (abnf::tree-count tree))
 
-  (define abs-ws-type-exp ((tree abnf::treep))
+  (define abs-ws-type ((tree abnf::treep))
     :returns (ty type-resultp)
-    :short "Abstract a @('( ws type-exp )') wrapper to a @(tsee type)."
+    :short "Abstract a @('( ws type )') wrapper to a @(tsee type)."
     (b* (((okf (abnf::tree-list-tuple2 sub))
           (abnf::check-tree-nonleaf-2 tree nil))
          ((okf te-tree) (abnf::check-tree-list-1 sub.2nd)))
-      (abs-type-exp te-tree))
+      (abs-type te-tree))
     :measure (abnf::tree-count tree))
 
-  (define abs-*-ws-type-exp ((trees abnf::tree-listp))
+  (define abs-*-ws-type ((trees abnf::tree-listp))
     :returns (tys type-list-resultp)
-    :short "Abstract @('*( ws type-exp )') to a list of @(tsee type)s."
+    :short "Abstract @('*( ws type )') to a list of @(tsee type)s."
     (b* (((when (endp trees)) nil)
-         ((okf ty) (abs-ws-type-exp (car trees)))
-         ((okf rest) (abs-*-ws-type-exp (cdr trees))))
+         ((okf ty) (abs-ws-type (car trees)))
+         ((okf rest) (abs-*-ws-type (cdr trees))))
       (cons ty rest))
     :measure (abnf::tree-list-count trees))
 
@@ -1370,7 +1370,7 @@
 
   ///
 
-  (verify-guards abs-type-exp)
+  (verify-guards abs-type)
 
   (fty::deffixequiv-mutual abs-types))
 
@@ -1380,7 +1380,7 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; pat = "(" ws identifier ws type-exp ws ")"
+;; pat = "(" ws identifier ws type ws ")"
 (define abs-pat ((tree abnf::treep))
   :returns (vt var+type?-resultp)
   :short "Abstract a @('pat') to a @(tsee var+type?)."
@@ -1389,7 +1389,7 @@
        ((okf id-tree) (abnf::check-tree-list-1 sub.3rd))
        ((okf te-tree) (abnf::check-tree-list-1 sub.5th))
        ((okf name) (abs-identifier id-tree))
-       ((okf ty) (abs-type-exp te-tree)))
+       ((okf ty) (abs-type te-tree)))
     (make-var+type? :var name :type? ty)))
 
 (define abs-ws-pat ((tree abnf::treep))
@@ -1425,7 +1425,7 @@
     (case (len treess)
       (4 (b* (((okf (abnf::tree-list-tuple4 sub))
                (abnf::check-tree-list-list-4 treess))
-              ((okf tys) (abs-*-ws-type-exp sub.2nd)))
+              ((okf tys) (abs-*-ws-type sub.2nd)))
            (make-type-list-option-some :val tys)))
       (1 (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "type-args"))
               (us-pass (abnf::check-tree-ichars inner "_"))
@@ -1496,14 +1496,14 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; colon-type = ":" ws type-exp
+;; colon-type = ":" ws type
 (define abs-colon-type ((tree abnf::treep))
   :returns (ty type-resultp)
   :short "Abstract a @('colon-type') to a @(tsee type)."
   (b* (((okf (abnf::tree-list-tuple3 sub))
         (abnf::check-tree-nonleaf-3 tree "colon-type"))
        ((okf te-tree) (abnf::check-tree-list-1 sub.3rd)))
-    (abs-type-exp te-tree)))
+    (abs-type te-tree)))
 
 ;; The inline option [ ws colon-type ] used in fun-sig/tfun-sig/ifun-sig.
 ;; The CST is an anonymous nonleaf whose branches are either
@@ -1711,7 +1711,7 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; type-bind = "type" ws type-var ws type-exp
+;; type-bind = "type" ws type-var ws type
 (define abs-type-bind ((tree abnf::treep))
   :returns (b bind-resultp)
   :short "Abstract a @('type-bind') to a @(tsee bind) @(':type')."
@@ -1720,7 +1720,7 @@
        ((okf tv-tree) (abnf::check-tree-list-1 sub.3rd))
        ((okf te-tree) (abnf::check-tree-list-1 sub.5th))
        ((okf tv) (abs-type-var tv-tree))
-       ((okf ty) (abs-type-exp te-tree)))
+       ((okf ty) (abs-type te-tree)))
     (make-bind-type :var tv :type ty)))
 
 ;; ispace-bind = "extent" ws ispace-var ws ispace
@@ -1861,7 +1861,7 @@
     :measure (abnf::tree-count tree))
 
   ;; array-exp = "array" ws shape-lit *( ws atom )
-  ;;           / "array" ws shape-lit ws type-exp
+  ;;           / "array" ws shape-lit ws type
   (define abs-array-exp ((tree abnf::treep))
     :returns (e expr-resultp)
     :short "Abstract an @('array-exp') to an @(tsee expr)
@@ -1873,9 +1873,9 @@
        (@('array'), @('ws'), @('shape-lit'), @('*( ws atom )')) and
        abstracts to @(':array').
        The empty alternative has 5 branches
-       (@('array'), @('ws'), @('shape-lit'), @('ws'), @('type-exp')) and
+       (@('array'), @('ws'), @('shape-lit'), @('ws'), @('type')) and
        abstracts to @(':array-empty'), with the element type taken from the
-       @('type-exp')."))
+       @('type')."))
     (b* (((okf treess) (abnf::check-tree-nonleaf tree "array-exp")))
       (case (len treess)
         (4 (b* (((okf (abnf::tree-list-tuple4 sub))
@@ -1889,14 +1889,14 @@
                 ((okf sl-tree) (abnf::check-tree-list-1 sub.3rd))
                 ((okf dims) (abs-shape-lit sl-tree))
                 ((okf te-tree) (abnf::check-tree-list-1 sub.5th))
-                ((okf type) (abs-type-exp te-tree)))
+                ((okf type) (abs-type te-tree)))
              (make-expr-array-empty :dims dims :type type)))
         (otherwise
          (reserrf (list :array-exp-shape (len treess))))))
     :measure (abnf::tree-count tree))
 
   ;; frame-exp = "frame" ws shape-lit *( ws exp )
-  ;;           / "frame" ws shape-lit ws type-exp
+  ;;           / "frame" ws shape-lit ws type
   (define abs-frame-exp ((tree abnf::treep))
     :returns (e expr-resultp)
     :short "Abstract a @('frame-exp') to an @(tsee expr)
@@ -1907,7 +1907,7 @@
       "The non-empty alternative has 4 branches and abstracts to
        @(':frame'); the empty alternative has 5 branches and abstracts to
        @(':frame-empty'), with the element type taken from the
-       @('type-exp').  See @(tsee abs-array-exp)."))
+       @('type').  See @(tsee abs-array-exp)."))
     (b* (((okf treess) (abnf::check-tree-nonleaf tree "frame-exp")))
       (case (len treess)
         (4 (b* (((okf (abnf::tree-list-tuple4 sub))
@@ -1921,13 +1921,13 @@
                 ((okf sl-tree) (abnf::check-tree-list-1 sub.3rd))
                 ((okf dims) (abs-shape-lit sl-tree))
                 ((okf te-tree) (abnf::check-tree-list-1 sub.5th))
-                ((okf type) (abs-type-exp te-tree)))
+                ((okf type) (abs-type te-tree)))
              (make-expr-frame-empty :dims dims :type type)))
         (otherwise
          (reserrf (list :frame-exp-shape (len treess))))))
     :measure (abnf::tree-count tree))
 
-  ;; tapp-exp = "t-app" ws exp *( ws type-exp )
+  ;; tapp-exp = "t-app" ws exp *( ws type )
   (define abs-tapp-exp ((tree abnf::treep))
     :returns (e expr-resultp)
     :short "Abstract a @('tapp-exp') to an @(tsee expr) @(':tapp')."
@@ -1935,7 +1935,7 @@
           (abnf::check-tree-nonleaf-4 tree "tapp-exp"))
          ((okf fun-tree) (abnf::check-tree-list-1 sub.3rd))
          ((okf fun) (abs-exp fun-tree))
-         ((okf args) (abs-*-ws-type-exp sub.4th)))
+         ((okf args) (abs-*-ws-type sub.4th)))
       (make-expr-tapp :fun fun :args args))
     :measure (abnf::tree-count tree))
 
@@ -2085,7 +2085,7 @@
       (make-atom-ilambda :params params :body body))
     :measure (abnf::tree-count tree))
 
-  ;; box-expr = "box" ws "(" *( ws ispace ) ws ")" ws exp ws type-exp
+  ;; box-expr = "box" ws "(" *( ws ispace ) ws ")" ws exp ws type
   (define abs-box-expr ((tree abnf::treep))
     :returns (a atom-resultp)
     :short "Abstract a @('box-expr') to an @(tsee atom) @(':box')."
@@ -2095,7 +2095,7 @@
          ((okf te-tree) (abnf::check-tree-list-1 sub.10th))
          ((okf ispaces) (abs-*-ws-ispace sub.4th))
          ((okf array) (abs-exp e-tree))
-         ((okf ty) (abs-type-exp te-tree)))
+         ((okf ty) (abs-type te-tree)))
       (make-atom-box :ispaces ispaces :array array :type ty))
     :measure (abnf::tree-count tree))
 

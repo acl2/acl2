@@ -418,7 +418,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to @('type-exp') in the ABNF grammar.")
+      "This corresponds to @('type') in the ABNF grammar.")
      (xdoc::p
       "There are
        variables (of two kinds),
