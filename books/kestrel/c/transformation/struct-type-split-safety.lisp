@@ -614,24 +614,10 @@
     (xdoc::li
      "We use a dedicated ACL2 function for cast expressions.")
     (xdoc::li
-     "We accept all binary expressions.
-      The only binary operator that may operate on struct values
-      is plain assignment @('='),
-      but it involves no automatic conversion that may break abstraction,
-      so this should be always safe,
-      even when it assigns a struct being split to a variable,
-      which must have the same type.
-      But we plan to do some experiments to confirm this;
-      we might compare the type of the left and right sides to be sure.
-      Pointers to the structs being split may be involved in arithmetic,
-      but this is always safe according to the standard;
-      although the exact values may vary with the size of the struct,
-      this is handled automatically,
-      e.g. adding 1 to a pointer to the struct
-      actually adds the size of the struct to the pointer;
-      but the only way to see the difference is
-      to cast the resulting pointer to an integer,
-      which would trigger a safety violation.")
+     "We accept all binary expressions,
+      but we should probably reject assignments
+      involving pointers to the struct type being split
+      and different types (e.g. pointers to @('void')).")
     (xdoc::li
      "Ternary expressions are safe iff their components are,
       which is the default definition of the predicate.")
