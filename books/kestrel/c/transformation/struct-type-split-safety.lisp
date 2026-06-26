@@ -450,19 +450,28 @@
       The controlling expression may have struct type;
       we need to think of the safety.")
     (xdoc::li
-     "We reject array subscripting for now.
-      This should be safe for structs,
-      in the sense that it does not break their abstraction;
-      it is, after all, just pointer addition and dereferencing.
-      But a transformation may not handle arrays of structs yet.
-      These checks should be refined to look at the type of the array,
-      and also to make checks on declarations for types.")
+     "We allow subscripting expressions.
+      Subscripting is equivalent to pointer addition and dereferencing,
+      which are safe operations with respect to struct splitting.
+      Note that pointer addition takes the size of the struct into account
+      (if the pointer is one to a struct),
+      but so long as the resulting pointer is not cast to an integer or similar,
+      it does not expose the exact size of the struct.
+      However, note also that currently @(tsee type-sts-safep) prohibits
+      arrays of the struct type being split (or nested in general),
+      so normally we would not encounter array subscripting
+      involving the struct being split
+      (unless one writes @('s[0]') instead of @('*s')).")
     (xdoc::li
-     "Although member access is safe for structs,
-      for now we want to reject access to possibly nested structs,
-      or structs inside union,
-      in the same spirit as the rejection of array subscripting,
-      as explained just above.")
+     "We reject function calls for now,
+      because we need to make sure that those are safe too,
+      and that may include some built-in functions
+      which need to be examined case by case.")
+    (xdoc::li
+     "We allow member access, by value or by pointer.
+      This is the normal safe way to access structs.
+      Note that the nesting of the struct type being split
+      in other structs or in unions is excluded via @(tsee type-sts-safep).")
     (xdoc::li
      "We reject compound literals out of initial caution.
       We need to think through them.")
@@ -581,8 +590,6 @@
           fundef
           ext-declon
           trans-items
-          trans-unit
-          filepath-trans-unit-map
           trans-unit)
   :result booleanp
   :default t
@@ -592,10 +599,7 @@
   ((stor-spec :auto nil)
    (type-qual :atomic nil)
    (expr :gensel nil)
-   (expr :arrsub nil)
    (expr :funcall nil)
-   (expr :member nil)
-   (expr :memberp nil)
    (expr :complit nil)
    (expr :unary nil)
    (expr :sizeof nil)
