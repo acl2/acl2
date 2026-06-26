@@ -880,6 +880,43 @@ int main(void) {
   :with-output-off nil)
 
 (acl2::must-succeed*
+  ;; A fresh right member name avoids the enclosing struct type's full
+  ;; member namespace, including members promoted from anonymous members.
+  ;; Here the right member of the promoted inner is named inner_1,
+  ;; since inner_0 already names a member of outer.
+  (c$::input-files :files '("blacklist.c")
+                   :const *old*)
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+  (c$::output-files :const *new*
+                    :base-dir "new")
+  (assert-file-contents
+    :file "new/blacklist.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+struct outer {
+  struct { struct point inner; struct point_right inner_1; };
+  int inner_0;
+};
+
+static struct outer o;
+
+int main(void) {
+  return o.inner.x + o.inner_1.z + o.inner_0;
+}
+")
+  :with-output-off nil)
+
+(acl2::must-succeed*
   ;; A function prototype returning a pointer to the split struct type.
   (c$::input-files :files '("fn-proto.c")
                    :const *old*)

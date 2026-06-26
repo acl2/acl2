@@ -820,6 +820,69 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-struni-member-list-collect-names
+  ((members c$::type-struni-member-listp)
+   (acc ident-setp))
+  :returns (names ident-setp)
+  :short "Collect the names of struct/union members,
+          including those promoted from anonymous members,
+          into an accumulator."
+  :long
+  (xdoc::topstring-p
+   "The members of an anonymous struct or union member
+    are members of the containing struct or union type [C17:6.7.2.1/13],
+    so we recurse into them,
+    mirroring @(tsee c$::type-struni-member-list-lookup).
+    This is used to obtain the full member namespace of a struct type,
+    so that a fresh right member name does not collide with a member
+    promoted from an anonymous member (see @(tsee sts-host-member-names)).")
+  (b* ((acc (ident-set-fix acc))
+       ((when (endp members)) acc)
+       ((c$::type-struni-member member) (first members))
+       (acc (if member.name?
+                (insert (ident-fix member.name?) acc)
+              (type-case
+                member.type
+                :struct (c$::type-struni-tag/members-case
+                          member.type.tag/members
+                          :tagged acc
+                          :untagged (type-struni-member-list-collect-names
+                                      member.type.tag/members.members acc))
+                :union (c$::type-struni-tag/members-case
+                         member.type.tag/members
+                         :tagged acc
+                         :untagged (type-struni-member-list-collect-names
+                                     member.type.tag/members.members acc))
+                :otherwise acc))))
+    (type-struni-member-list-collect-names (rest members) acc))
+  :measure (c$::type-struni-member-list-count members)
+  :ruler-extenders :all
+  :verify-guards :after-returns)
+
+(define sts-host-member-names
+  ((host-uid c$::uidp)
+   (st sts-split-statep))
+  :returns (names ident-setp)
+  :short "The full member namespace of a struct type,
+          from the type completions."
+  :long
+  (xdoc::topstring-p
+   "This is the set of all member names of the struct type with the given
+    @(see UID), including those promoted from anonymous members,
+    used as the blacklist for fresh right member names
+    (see @(tsee struni-spec-sts-split)).
+    It returns @('nil') (the empty set) when the struct type is not in the
+    completions, e.g. an untagged struct type,
+    whose members are instead collected syntactically.")
+  (b* ((completions (sts-split-state->completions st))
+       (pair (hons-assoc-equal (c$::uid-fix host-uid) completions))
+       ((unless pair) nil))
+    (type-struni-member-list-collect-names
+      (c$::type-struni-member-list-fix (cdr pair))
+      nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define sts-split-inplace-member-declors
   ((struct-declors struct-declor-listp)
    (enclosing-uid c$::uidp)
@@ -2945,8 +3008,19 @@
          ((struni-spec struni-spec) struni-spec)
          ((erp attribs st)
           (attrib-spec-list-sts-split struni-spec.attribs st))
+         ;; Blacklist for fresh right member names.
+         ;; A split member is registered under, and promoted into,
+         ;; the enclosing struct type identified by @('enclosing-uid?'),
+         ;; so its fresh right name must avoid that struct type's full
+         ;; member namespace (including promoted members).
+         ;; We take it from the type completions when available;
+         ;; otherwise (e.g. an untagged struct type, not in the completions)
+         ;; we collect this specifier's own member names syntactically.
          (member-names
-           (struct-declon-list-collect-member-names struni-spec.members nil))
+           (or (and enclosing-uid?
+                    (sts-host-member-names enclosing-uid? st))
+               (struct-declon-list-collect-member-names
+                 struni-spec.members nil)))
          ((erp left-members right-members st)
           (struct-declon-list-sts-split splitp
                                         enclosing-uid?
