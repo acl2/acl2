@@ -42,6 +42,9 @@
              '(alist-to-doublets
                all-fnnames
                any
+               any-nat-map
+               any-nat-mapp
+               any-nat-mfix
                bool
                character-setp
                character-sfix
@@ -201,6 +204,9 @@
                termination-theorem$
                theorem-symbolp
                true-list
+               true-list-set
+               true-list-setp
+               true-list-set-fix
                tuple
                ubody+
                uguard+
