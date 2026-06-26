@@ -362,7 +362,7 @@
       :array (type-struct-occurs-unsupported-p type.of struct-uid nil)
       :pointer (type-struct-occurs-unsupported-p type.to struct-uid in-chain)
       :function (acl2::3or
-                  (type-struct-occurs-unsupported-p type.ret struct-uid nil)
+                  (type-struct-occurs-unsupported-p type.ret struct-uid t)
                   (type-params-struct-occurs-unsupported-p type.params struct-uid))
       :otherwise nil)
     :measure (c$::type-count type))
@@ -399,14 +399,19 @@
       are not unsupported occurrences,
       because such parameters are supported:
       they are split in place,
-      in function definitions, function declarations, and call sites.")
+      in function definitions, function declarations, and call sites.
+      A parameter of any other type is checked like an object type
+      (with @('in-chain') @('t')),
+      so the split struct type may occur within it as a member,
+      since such an occurrence is split in the member's struct type
+      and leaves the parameter type unchanged.")
     (if (endp types)
         nil
       (acl2::3or
         (b* ((type (first types)))
           (if (eq (sts-splittablep type struct-uid) t)
               nil
-            (type-struct-occurs-unsupported-p type struct-uid nil)))
+            (type-struct-occurs-unsupported-p type struct-uid t)))
         (type-param-list-struct-occurs-unsupported-p (rest types) struct-uid)))
     :measure (c$::type-list-count types))
 

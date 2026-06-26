@@ -979,3 +979,51 @@ int main(void) {
 ")
 
   :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The split struct type may occur as a member, possibly behind pointers,
+;; within a function parameter type.  The parameter type is left unchanged
+;; (the occurrence is split in the member's struct type),
+;; and the accesses in the function body are routed.
+
+(acl2::must-succeed*
+  (c$::input-files :files '("fn-param-member.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/fn-param-member.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+typedef struct {
+  struct point inner;
+  struct point_right inner_0;
+  int w;
+} container;
+
+int get(container *c) {
+  return c->inner.x + c->inner_0.z;
+}
+
+int main(void) {
+  container c;
+  return get(&c);
+}
+")
+
+  :with-output-off nil)
