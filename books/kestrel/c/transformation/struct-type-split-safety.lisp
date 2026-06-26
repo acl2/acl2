@@ -374,6 +374,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define expr-unamb/anno-p ((expr exprp))
+  :returns (yes/no booleanp)
+  :short "Check that an expression
+          is unambiguous and has validation annotations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Throw an error, but logically just return @('nil'), if not.
+     This is enabled because we use it as an abbreviation,
+     until @(tsee fty::deffold-map) supports fold guards."))
+  (and (or (expr-unambp expr)
+           (raise "Internal error: ~x0 is ambiguous." (expr-fix expr)))
+       (or (expr-annop expr)
+           (raise "Internal error: ~x0 is not validated." (expr-fix expr))))
+  :no-function nil
+  :enabled t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tyname-unamb/anno-p ((tyname tynamep))
+  :returns (yes/no booleanp)
+  :short "Check that a type name
+          is unambiguous and has validation annotations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Throw an error, but logically just return @('nil'), if not.
+     This is enabled because we use it as an abbreviation,
+     until @(tsee fty::deffold-map) supports fold guards."))
+  (and (or (tyname-unambp tyname)
+           (raise "Internal error: ~x0 is ambiguous." (tyname-fix tyname)))
+       (or (tyname-annop tyname)
+           (raise "Internal error: ~x0 is not validated." (tyname-fix tyname))))
+  :no-function nil
+  :enabled t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define expr-unary-sts-safep ((op unopp) (arg exprp) (spec sts-struct-specp))
   :returns (yes/no booleanp)
   :short "Check if a unary expression is safe for the STS transformation."
@@ -395,14 +433,9 @@
      i.e. @('&s.m') where @('s') is the struct and @('m') the members.
      Once that pointer is taken, its type is the one of @('m'),
      and it has lost its connection to the type of @('s')."))
-  (b* (((unless (unop-case op '(:sizeof :alignof))) t)
-       ((unless (expr-unambp arg))
-        (raise "Internal error: ambiguous expression ~x0." (expr-fix arg)))
-       ((unless (expr-annop arg))
-        (raise "Internal error: unannotated expression ~x0." (expr-fix arg)))
-       (type (expr-type arg)))
-    (not (type-may-be-struct-spec-p type spec)))
-  :no-function nil)
+  (or (not (unop-case op '(:sizeof :alignof)))
+      (and (expr-unamb/anno-p arg)
+           (not (type-may-be-struct-spec-p (expr-type arg) spec)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -416,15 +449,9 @@
     "This is the case exactly when the type denoted by the type name
      may not be the struct type being split.
      The reason is that same as explained in @(tsee expr-unary-sts-safep)."))
-  (b* (((unless (tyname-unambp tyname))
-        (raise "Internal error: ambiguous type name ~x0."
-               (tyname-fix tyname)))
-       ((unless (tyname-annop tyname))
-        (raise "Internal error: unannotated type name ~x0."
-               (tyname-fix tyname)))
-       (type (type-vinfo->type (tyname->info tyname))))
-    (not (type-may-be-struct-spec-p type spec)))
-  :no-function nil)
+  (and (tyname-unamb/anno-p tyname)
+       (not (type-may-be-struct-spec-p (type-vinfo->type (tyname->info tyname))
+                                       spec))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -439,25 +466,18 @@
     "This is the case exactly when
      neither the source nor the destination type
      is the struct being split or a pointer type to it."))
-  (b* (((unless (and (tyname-unambp tyname)
-                     (tyname-annop tyname)))
-        (raise "Internal error: ambiguous or non-annotated type name."
-               (tyname-fix tyname)))
-       ((unless (and (expr-unambp arg)
-                     (expr-annop arg)))
-        (raise "Internal error: ambiguous or non-annotated expression."
-               (expr-fix arg)))
-       (src-type (expr-type arg))
-       (dst-type (type-vinfo->type (tyname->info tyname))))
-    (and (not (type-may-be-struct-spec-p src-type spec))
-         (not (and (type-case src-type :pointer)
-                   (type-may-be-struct-spec-p (type-pointer->to src-type)
-                                              spec)))
-         (not (type-may-be-struct-spec-p dst-type spec))
-         (not (and (type-case dst-type :pointer)
-                   (type-may-be-struct-spec-p (type-pointer->to dst-type)
-                                              spec)))))
-  :no-function nil)
+  (and (tyname-unamb/anno-p tyname)
+       (expr-unamb/anno-p arg)
+       (b* ((src-type (expr-type arg))
+            (dst-type (type-vinfo->type (tyname->info tyname))))
+         (and (not (type-may-be-struct-spec-p src-type spec))
+              (not (and (type-case src-type :pointer)
+                        (type-may-be-struct-spec-p (type-pointer->to src-type)
+                                                   spec)))
+              (not (type-may-be-struct-spec-p dst-type spec))
+              (not (and (type-case dst-type :pointer)
+                        (type-may-be-struct-spec-p (type-pointer->to dst-type)
+                                                   spec)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -584,18 +604,15 @@
      "We reject compound literals out of initial caution.
       We need to think through them.")
     (xdoc::li
-     "We allow most unary expressions: see @(tsee expr-unary-sts-safep).")
+     "We use a dedicated ACL2 function for unary expressions.")
+    (xdoc::li
+     "We use a dedicated ACL2 function for
+      @('sizeof') and @('alignof') applied to type names.")
     (xdoc::li
      "Taking the address of a label (a GCC/Clang extension) is safe;
       it does not involve structs.")
     (xdoc::li
-     "We reject all the @('sizeof') and @('alignof') operators on type names.
-      This must be refined to only do that for the struct type being split.")
-    (xdoc::li
-     "Casts are rejected initially,
-      but they should be accepted unless they cast
-      a struct being split, or a pointer to it,
-      to some other type that breaks the abstraction.")
+     "We use a dedicated ACL2 function for cast expressions.")
     (xdoc::li
      "We accept all binary expressions.
       The only binary operator that may operate on struct values
