@@ -154,6 +154,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(define type-is-pointer-to-struct-spec-p ((type typep) (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a pointer to the struct type being split."
+  (and (type-case type :pointer)
+       (type-is-struct-spec-p (type-pointer->to type) spec)))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define type-may-be-struct-spec-p ((type typep) (spec sts-struct-specp))
   :returns (yes/no booleanp)
   :short "Check if a type may be the struct type being split."
@@ -168,6 +176,24 @@
      which is why we do not include the unknown built-in type here."))
   (or (type-is-struct-spec-p type spec)
       (type-case type :unknown)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-may-be-pointer-to-struct-spec-p ((type typep)
+                                              (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a type may be a pointer to the struct type being split."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case when @(tsee type-is-pointer-to-struct-spec-p) holds,
+     or when the type is unknown or an unknown scalar.
+     The unknown arithmetic type cannot be a pointer.
+     An unknown built-in type may be a pointer (to a built-in type),
+     but we assume that the struct type being splie is not a built-in one."))
+  (or (type-is-pointer-to-struct-spec-p type spec)
+      (type-case type :unknown)
+      (type-case type :unknown-scalar)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -471,13 +497,9 @@
        (b* ((src-type (expr-type arg))
             (dst-type (type-vinfo->type (tyname->info tyname))))
          (and (not (type-may-be-struct-spec-p src-type spec))
-              (not (and (type-case src-type :pointer)
-                        (type-may-be-struct-spec-p (type-pointer->to src-type)
-                                                   spec)))
+              (not (type-may-be-pointer-to-struct-spec-p src-type spec))
               (not (type-may-be-struct-spec-p dst-type spec))
-              (not (and (type-case dst-type :pointer)
-                        (type-may-be-struct-spec-p (type-pointer->to dst-type)
-                                                   spec)))))))
+              (not (type-may-be-pointer-to-struct-spec-p dst-type spec))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -510,22 +532,15 @@
            (expr-unamb/anno-p arg2)
            (b* ((type1 (expr-type arg1))
                 (type2 (expr-type arg2)))
-             (or (and (type-may-be-struct-spec-p type1 spec)
-                      (type-may-be-struct-spec-p type2 spec))
-                 (and (type-case type1 :pointer)
-                      (type-may-be-struct-spec-p (type-pointer->to type1)
-                                                 spec)
-                      (type-case type2 :pointer)
-                      (type-may-be-struct-spec-p (type-pointer->to type2)
-                                                 spec))
+             (or (and (type-is-struct-spec-p type1 spec)
+                      (type-is-struct-spec-p type2 spec))
+                 (and (type-is-pointer-to-struct-spec-p type1 spec)
+                      (type-is-pointer-to-struct-spec-p type2 spec))
                  (and (not (type-may-be-struct-spec-p type1 spec))
                       (not (type-may-be-struct-spec-p type2 spec))
-                      (or (not (type-case type1 :pointer))
-                          (not (type-may-be-struct-spec-p
-                                (type-pointer->to type1) spec)))
-                      (or (not (type-case type2 :pointer))
-                          (not (type-may-be-struct-spec-p
-                                (type-pointer->to type2) spec)))))))))
+                      (not (type-may-be-pointer-to-struct-spec-p type1 spec))
+                      (not (type-may-be-pointer-to-struct-spec-p type2
+                                                                 spec))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
