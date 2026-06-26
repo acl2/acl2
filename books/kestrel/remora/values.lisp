@@ -216,7 +216,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the dynamic counterpart of @(tsee var+type):
+    "This is the dynamic counterpart of @(tsee var+type?),
+     but with the type being present:
      a pair consisting of a variable name and an associated type value.
      In the name of this fixtype,
      we join `type' and `value' into `typevalue',
@@ -1177,9 +1178,10 @@
      the parameters must all have array types,
      whose dimensions are returned.
      For a primitive operation,
-     every argument is a scalar,
-     so we return as many empty lists of dimensions
-     as the operation's arity (see @(tsee primop-arity)).
+     we likewise read the input types of its function type
+     (see @(tsee primop-type)),
+     which are all array types,
+     and return their dimensions.
      It is an error if the value is not a function value,
      or if a lambda abstraction's parameters
      do not all have array types."))
@@ -1191,7 +1193,56 @@
                           (expr-value-lambda->params fval)))
                   ((unless (type-value-list-case-array tvals)) (reserr nil)))
                (type-value-array-list->dims tvals))
-     :primop (repeat (primop-arity (expr-value-primop->val fval)) nil)
+     :primop (b* ((tvals (type-value-fun->in
+                          (type-value-array->elem
+                           (primop-type (expr-value-primop->val fval)))))
+                  ((unless (type-value-list-case-array tvals)) (reserr nil)))
+               (type-value-array-list->dims tvals))
+     :otherwise (reserr nil)))
+  :guard-hints (("Goal" :in-theory (enable expr-valuep-when-result-not-error))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fun-value-result-type ((funval expr-valuep))
+  :returns (type type-value-resultp)
+  :short "Result type (codomain) of a function value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the companion of @(tsee fun-value-param-dims):
+     it returns the type of each result cell of applying the function value
+     (its codomain).
+     It is used to build the result of an application
+     over an empty principal frame (see @(tsee eval-app)),
+     where there are no cells to compute a result from.")
+   (xdoc::p
+    "We read the codomain from a representative function leaf
+     (see @(tsee expr-value-first-fun)):
+     for a primitive operation, it is the output of its function type
+     (see @(tsee primop-type));
+     for a lambda abstraction, it is the body type stored in the value,
+     which must be present,
+     because evaluation is only meaningful on
+     type-checked-and-annotated Remora code,
+     and we will explicate this as an invariant,
+     but for now we return an error if there is no type.
+     If instead the function value is an empty array,
+     there is no leaf, but its element type value is the function type,
+     whose output type we return."))
+  (b* (((when (expr-value-case funval :vector-empty))
+        (b* ((elem (expr-value-vector-empty->elem funval))
+             ((unless (type-value-case elem :fun)) (reserr nil)))
+          (type-value-fun->out elem)))
+       ((ok fval) (expr-value-first-fun funval)))
+    (expr-value-case
+     fval
+     :primop (type-value-fun->out
+              (type-value-array->elem (primop-type fval.val)))
+     :lambda (b* ((type? (expr-value-lambda->type? fval)))
+               (type-value-option-case
+                type?
+                :some type?.val
+                :none (reserr nil)))
      :otherwise (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable expr-valuep-when-result-not-error))))
 

@@ -233,11 +233,7 @@
   :pred escape-resultp
   :prepwork ((local (in-theory (enable escape-kind)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; Slice 4-6 result types
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult expr-result
   :short "Fixtype of expressions and errors."
@@ -284,17 +280,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult var+type-result
-  :short "Fixtype of variables-with-types and errors."
-  :ok var+type
-  :pred var+type-resultp)
+(fty::defresult var+type?-result
+  :short "Fixtype of (i) variables with optional types and (ii) errors."
+  :ok var+type?
+  :pred var+type?-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult var+type-list-result
-  :short "Fixtype of lists of variables-with-types and errors."
-  :ok var+type-list
-  :pred var+type-list-resultp)
+(fty::defresult var+type?-list-result
+  :short "Fixtype of
+          (i) lists of variables with optional types and (ii) errors."
+  :ok var+type?-list
+  :pred var+type?-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

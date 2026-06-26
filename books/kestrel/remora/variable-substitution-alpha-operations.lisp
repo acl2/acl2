@@ -514,8 +514,8 @@
           types
           type-option
           type-list-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog)
   :extra-args ((dim-subst string-dim-mapp)
@@ -631,14 +631,14 @@
                        dim-subst
                        shape-subst
                        (set::union
-                        (var+type-list-free-ispace-vars bind.params)
+                        (var+type?-list-free-ispace-vars bind.params)
                         (set::union (type-free-ispace-vars bind.type)
                                     (expr-free-ispace-vars bind.expr))))))
                   (make-bind-cfun
                    :var bind.var
                    :tparams? bind.tparams?
                    :iparams? (ispace-var-list-option-some fresh-iparams)
-                   :params (var+type-list-subst-ispace-vars-alpha-aux
+                   :params (var+type?-list-subst-ispace-vars-alpha-aux
                             bind.params dim-subst shape-subst avoid)
                    :type (type-subst-ispace-vars-alpha-aux bind.type
                                                            dim-subst
@@ -652,7 +652,7 @@
                  :var bind.var
                  :tparams? bind.tparams?
                  :iparams? bind.iparams?
-                 :params (var+type-list-subst-ispace-vars-alpha-aux
+                 :params (var+type?-list-subst-ispace-vars-alpha-aux
                           bind.params dim-subst shape-subst avoid)
                  :type (type-subst-ispace-vars-alpha-aux bind.type
                                                          dim-subst
@@ -851,8 +851,8 @@
   :types (types
           type-option
           type-list-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog)
   :extra-args ((atom-subst string-type-mapp)
@@ -944,17 +944,17 @@
                        atom-subst
                        array-subst
                        (set::union
-                        (var+type-list-free-type-vars bind.params)
+                        (var+type?-list-free-type-vars bind.params)
                         (set::union (type-free-type-vars bind.type)
                                     (expr-free-type-vars bind.expr))))))
                   (make-bind-cfun
                    :var bind.var
                    :tparams? (type-var-list-option-some fresh-tparams)
                    :iparams? bind.iparams?
-                   :params (var+type-list-subst-type-vars-alpha-aux bind.params
-                                                                    atom-subst
-                                                                    array-subst
-                                                                    avoid)
+                   :params (var+type?-list-subst-type-vars-alpha-aux bind.params
+                                                                     atom-subst
+                                                                     array-subst
+                                                                     avoid)
                    :type (type-subst-type-vars-alpha-aux bind.type
                                                          atom-subst
                                                          array-subst
@@ -967,10 +967,10 @@
                  :var bind.var
                  :tparams? bind.tparams?
                  :iparams? bind.iparams?
-                 :params (var+type-list-subst-type-vars-alpha-aux bind.params
-                                                                  atom-subst
-                                                                  array-subst
-                                                                  avoid)
+                 :params (var+type?-list-subst-type-vars-alpha-aux bind.params
+                                                                   atom-subst
+                                                                   array-subst
+                                                                   avoid)
                  :type (type-subst-type-vars-alpha-aux bind.type
                                                        atom-subst
                                                        array-subst
@@ -1121,7 +1121,7 @@
      are variables with types;
      since types contain no expression variables,
      we rename only the variables (keeping the types),
-     rebuilding the parameter list via @(tsee var+type-list-set-vars).")
+     rebuilding the parameter list via @(tsee var+type?-list-set-vars).")
    (xdoc::p
     "Since @('let') bindings are sequential,
      we override the function for @(tsee bind-list)
@@ -1206,20 +1206,20 @@
             :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid))))
    (atom :lambda
          (b* (((mv fresh subst)
-               (expr-subst-alpha-bound (var+type-list->var atom.params)
+               (expr-subst-alpha-bound (var+type?-list->var atom.params)
                                        subst
                                        (expr-free-expr-vars atom.body)))
-              (params (var+type-list-set-vars fresh atom.params)))
+              (params (var+type?-list-set-vars fresh atom.params)))
            (make-atom-lambda
             :params params
             :body (expr-subst-expr-vars-alpha-aux atom.body subst avoid)
             :type? atom.type?)))
    (bind :fun
          (b* (((mv fresh subst)
-               (expr-subst-alpha-bound (var+type-list->var bind.params)
+               (expr-subst-alpha-bound (var+type?-list->var bind.params)
                                        subst
                                        (expr-free-expr-vars bind.expr)))
-              (params (var+type-list-set-vars fresh bind.params)))
+              (params (var+type?-list-set-vars fresh bind.params)))
            (make-bind-fun
             :var bind.var
             :params params
@@ -1227,10 +1227,10 @@
             :expr (expr-subst-expr-vars-alpha-aux bind.expr subst avoid))))
    (bind :cfun
          (b* (((mv fresh subst)
-               (expr-subst-alpha-bound (var+type-list->var bind.params)
+               (expr-subst-alpha-bound (var+type?-list->var bind.params)
                                        subst
                                        (expr-free-expr-vars bind.expr)))
-              (params (var+type-list-set-vars fresh bind.params)))
+              (params (var+type?-list-set-vars fresh bind.params)))
            (make-bind-cfun
             :var bind.var
             :tparams? bind.tparams?

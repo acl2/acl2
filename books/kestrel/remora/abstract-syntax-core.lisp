@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-trees")
+
 (include-book "lists")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
@@ -129,8 +130,8 @@
           ispace-list-option
           types
           type-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           expr-list-list
           atom-list-list

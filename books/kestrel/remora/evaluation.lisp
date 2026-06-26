@@ -44,6 +44,8 @@
                           expr-value-list-listp-when-result-not-error
                           var+typevalue-p-when-result-not-error
                           var+typevalue-listp-when-result-not-error
+                          typep-when-result-not-error
+                          type-listp-when-result-not-error
                           denvp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -371,24 +373,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-var+type ((var+type var+type-p) (denv denvp))
+(define eval-var+type? ((var+type? var+type?-p) (denv denvp))
   :returns (var+tval var+typevalue-resultp)
-  :short "Evaluate a variable with a type
+  :short "Evaluate a variable with an optional type
           to a variable with a type value."
   :long
   (xdoc::topstring
    (xdoc::p
     "The variable is unchanged;
-     its associated type is evaluated to a type value."))
-  (b* (((var+type var+type) var+type)
-       ((ok tval) (eval-type var+type.type denv)))
-    (make-var+typevalue :var var+type.var :type tval)))
+     its associated type must be present, and is evaluated to a type value."))
+  (b* (((ok type) (var+type?->type-or-err var+type?))
+       ((ok tval) (eval-type type denv)))
+    (make-var+typevalue :var (var+type?->var var+type?) :type tval)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-var+type-list ((var+types var+type-listp) (denv denvp))
+(define eval-var+type?-list ((var+types var+type?-listp) (denv denvp))
   :returns (var+tvals var+typevalue-list-resultp)
-  :short "Evaluate a list of variables with types
+  :short "Evaluate a list of variables with optional types
           to a list of variables with type values."
   :long
   (xdoc::topstring
@@ -396,13 +398,13 @@
     "We evaluate each element in turn
      and return the list of results in the same order."))
   (b* (((when (endp var+types)) nil)
-       ((ok var+tval) (eval-var+type (car var+types) denv))
-       ((ok var+tvals) (eval-var+type-list (cdr var+types) denv)))
+       ((ok var+tval) (eval-var+type? (car var+types) denv))
+       ((ok var+tvals) (eval-var+type?-list (cdr var+types) denv)))
     (cons var+tval var+tvals))
 
   ///
 
-  (defret len-of-eval-var+type-list
+  (defret len-of-eval-var+type?-list
     (implies (not (reserrp var+tvals))
              (equal (len var+tvals)
                     (len var+types)))
@@ -672,7 +674,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define expr-value-list-with-nonempty-dims ((dims nat-listp)
-                                         (valss expr-value-list-listp))
+                                              (valss expr-value-list-listp))
     :guard (and (not (member-equal 0 dims))
                 (all-of-len-p valss (nat-list-product dims))
                 (expr-value-list-list-wfp valss)
@@ -1195,7 +1197,10 @@
       "For an unboxing expression,
        we evaluate the target expression,
        and then we evaluate the unboxing over the resulting value
-       via a separate ACL2 function (see @(tsee eval-unbox)).")
+       via a separate ACL2 function (see @(tsee eval-unbox)).
+       The optional type must be present:
+       evaluation is only meaningful on type-checked, type-annotated ASTs.
+       Our type checker will annotate the ASTs appropriately.")
      (xdoc::p
       "For a bracket expression,
        we evaluate the sub-expressions,
@@ -1276,11 +1281,16 @@
                     :none funval))
                   ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
                (eval-app funval argvals denv (1- limit)))
-       :unbox (b* (((ok targetval) (eval-expr expr.target denv (1- limit))))
+       :unbox (b* (((ok targetval) (eval-expr expr.target denv (1- limit)))
+                   ((ok tval) (type-option-case
+                               expr.type?
+                               :some (eval-type expr.type?.val denv)
+                               :none (reserr nil))))
                 (eval-unbox targetval
                             expr.ispaces
                             expr.var
                             expr.body
+                            tval
                             denv
                             (1- limit)))
        :bracket (b* (((ok vals) (eval-expr-list expr.exprs denv (1- limit)))
@@ -1356,7 +1366,7 @@
       (atom-case
        atom
        :base (expr-value-base (eval-base-lit atom.lit))
-       :lambda (b* (((ok params) (eval-var+type-list atom.params denv))
+       :lambda (b* (((ok params) (eval-var+type?-list atom.params denv))
                     ((ok type?) (type-option-case
                                  atom.type?
                                  :none nil
@@ -1496,7 +1506,7 @@
                           :some (eval-type bind.type?.val denv)
                           :none nil)))
               (denv-add-expr-var bind.var val denv))
-       :fun (b* (((ok params) (eval-var+type-list bind.params denv))
+       :fun (b* (((ok params) (eval-var+type?-list bind.params denv))
                  (val (make-expr-value-lambda :params params
                                               :body bind.expr
                                               :type? nil))
@@ -1531,8 +1541,9 @@
                                               :params bind.params
                                               :body bind.expr
                                               :type? bind.type))))
+                  ((ok in) (var+type?-list->type-list-or-err bind.params))
                   (lambda-type (make-type-fun
-                                :in (var+type-list->type bind.params)
+                                :in in
                                 :out bind.type))
                   ((mv iexpr itype)
                    (ispace-var-list-option-case
@@ -1674,7 +1685,7 @@
                :otherwise (mv tval nil)))
              ((when (type-value-case elem :array)) (reserr nil)))
           (make-expr-value-vector-empty :dims (append funval.dims body-dims)
-                                   :elem elem))
+                                        :elem elem))
         :otherwise (reserr nil))
        :otherwise (reserr nil)))
     :measure (nfix limit))
@@ -1808,7 +1819,7 @@
                :otherwise (mv tval nil)))
              ((when (type-value-case elem :array)) (reserr nil)))
           (make-expr-value-vector-empty :dims (append funval.dims body-dims)
-                                   :elem elem))
+                                        :elem elem))
         :otherwise (reserr nil))
        :otherwise (reserr nil)))
     :measure (nfix limit))
@@ -1891,9 +1902,16 @@
        it exists only if the frames form a chain,
        and each frame is then a prefix of the principal one.")
      (xdoc::p
-      "The case of an empty principal frame,
-       i.e. one with some zero dimension,
-       is not handled yet.")
+      "If the principal frame is empty (it has some zero dimension),
+       there are no positions at which to apply the function,
+       and hence no result cells to assemble.
+       Instead we build an empty result array directly:
+       its dimensions are the principal frame
+       followed by the result cell dimensions,
+       and its element type is the atom type of the codomain
+       (see @(tsee fun-value-result-type)),
+       analogously to how empty frame expressions are evaluated
+       (see @(tsee expr-value-with-empty-dim)).")
      (xdoc::p
       "We lift the function and every argument to the principal frame
        (see @(tsee lift-expr-value-to-frame)
@@ -1933,7 +1951,16 @@
          (fun-frame (dims-of-expr-value funval))
          ((mv joinp pframe) (list-prefix-join (cons fun-frame arg-frames)))
          ((unless joinp) (reserr nil))
-         ((when (member-equal 0 pframe)) (reserr :todo))
+         ((when (member-equal 0 pframe))
+          (b* (((ok tval) (fun-value-result-type funval))
+               ((mv elem cell-dims)
+                (type-value-case
+                 tval
+                 :array (mv tval.elem tval.dims)
+                 :otherwise (mv tval nil)))
+               ((when (type-value-case elem :array)) (reserr nil))
+               (dims (append pframe cell-dims)))
+            (expr-value-with-empty-dim dims elem)))
          ((ok fun-cells) (lift-expr-value-to-frame funval fun-frame pframe))
          ((ok arg-cell-lists)
           (lift-expr-value-list-to-frame argvals arg-frames pframe))
@@ -2040,6 +2067,7 @@
                       (ispaces ispace-var-listp)
                       (var stringp)
                       (body exprp)
+                      (type type-valuep)
                       (denv denvp)
                       (limit natp))
     :guard (and (expr-value-wfp target)
@@ -2054,7 +2082,11 @@
        after the target expression has been evaluated to @('target');
        @('ispaces'), @('var'), and @('body') are
        the ispace variables, the term variable, and the body
-       of the unboxing expression.")
+       of the unboxing expression,
+       while @('type') is the result type of the body,
+       already evaluated to a type value.
+       The type checker is required to have annotated this type;
+       @(tsee eval-expr) returns an error if it is absent.")
      (xdoc::p
       "If the target is a scalar box value,
        we check that its ispace values match,
@@ -2071,11 +2103,15 @@
        via a separate ACL2 function,
        and we form a vector value with the results.")
      (xdoc::p
-      "The case of an empty vector,
+      "If the target is an empty vector,
        i.e. an empty array of boxes,
-       is not handled yet:
-       it requires type information
-       to determine the dimensions of the result."))
+       there are no boxes to unbox and hence no results to assemble.
+       We instead build an empty result array directly:
+       its dimensions are the target's dimensions
+       followed by the result cell dimensions,
+       and its element type is the atom type of @('type'),
+       analogously to @(tsee eval-app) over an empty principal frame
+       (see @(tsee expr-value-with-empty-dim))."))
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-value-case
        target
@@ -2087,12 +2123,20 @@
          (eval-expr body denv (1- limit)))
        :vector
        (b* (((ok vals)
-             (eval-unbox-list target.elems ispaces var body denv (1- limit)))
+             (eval-unbox-list target.elems ispaces var body type denv (1- limit)))
             ;; TODO: eliminate the next two checks via proof
             ((unless (consp vals)) (reserr nil))
             ((unless (list-repeatp (dims-of-expr-value-list vals))) (reserr nil)))
          (expr-value-vector vals))
-       :vector-empty (reserr :todo)
+       :vector-empty
+       (b* (((unless (member-equal 0 target.dims)) (reserr nil))
+            ((mv elem cell-dims)
+             (type-value-case type
+                              :array (mv type.elem type.dims)
+                              :otherwise (mv type nil)))
+            ((when (type-value-case elem :array)) (reserr nil))
+            (dims (append target.dims cell-dims)))
+         (expr-value-with-empty-dim dims elem))
        :otherwise (reserr nil)))
     :measure (nfix limit))
 
@@ -2102,6 +2146,7 @@
                            (ispaces ispace-var-listp)
                            (var stringp)
                            (body exprp)
+                           (type type-valuep)
                            (denv denvp)
                            (limit natp))
     :guard (and (expr-value-list-wfp targets)
@@ -2118,9 +2163,9 @@
        a non-empty array of boxes (see @(tsee eval-unbox))."))
     (b* (((when (zp limit)) (reserr :limit))
          ((when (endp targets)) nil)
-         ((ok val) (eval-unbox (car targets) ispaces var body denv (1- limit)))
+         ((ok val) (eval-unbox (car targets) ispaces var body type denv (1- limit)))
          ((ok vals)
-          (eval-unbox-list (cdr targets) ispaces var body denv (1- limit))))
+          (eval-unbox-list (cdr targets) ispaces var body type denv (1- limit))))
       (cons val vals))
     :measure (nfix limit)
 
@@ -2202,26 +2247,32 @@
                       (eval-app-cell funcell (expr-value-list-fix argcells)
                                      denv limit)
                       (eval-app-cell funcell argcells (denv-fix denv) limit)
-                      (eval-unbox target ispaces var body denv limit)
+                      (eval-unbox target ispaces var body type denv limit)
                       (eval-unbox (expr-value-fix target)
-                                  ispaces var body denv limit)
+                                  ispaces var body type denv limit)
                       (eval-unbox target (ispace-var-list-fix ispaces)
-                                  var body denv limit)
+                                  var body type denv limit)
                       (eval-unbox target ispaces (str::str-fix var)
-                                  body denv limit)
-                      (eval-unbox target ispaces var (expr-fix body) denv limit)
-                      (eval-unbox target ispaces var body (denv-fix denv) limit)
-                      (eval-unbox-list targets ispaces var body denv limit)
+                                  body type denv limit)
+                      (eval-unbox target ispaces var (expr-fix body)
+                                  type denv limit)
+                      (eval-unbox target ispaces var body
+                                  (type-value-fix type) denv limit)
+                      (eval-unbox target ispaces var body
+                                  type (denv-fix denv) limit)
+                      (eval-unbox-list targets ispaces var body type denv limit)
                       (eval-unbox-list (expr-value-list-fix targets)
-                                       ispaces var body denv limit)
+                                       ispaces var body type denv limit)
                       (eval-unbox-list targets (ispace-var-list-fix ispaces)
-                                       var body denv limit)
+                                       var body type denv limit)
                       (eval-unbox-list targets ispaces (str::str-fix var)
-                                       body denv limit)
+                                       body type denv limit)
                       (eval-unbox-list targets ispaces var (expr-fix body)
-                                       denv limit)
+                                       type denv limit)
                       (eval-unbox-list targets ispaces var body
-                                       (denv-fix denv) limit))
+                                       (type-value-fix type) denv limit)
+                      (eval-unbox-list targets ispaces var body
+                                       type (denv-fix denv) limit))
              :in-theory (enable nfix zp))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2325,8 +2376,8 @@
                (eval-app funval argvals denv limit)
                (eval-app-list funcells argcell-lists denv limit)
                (eval-app-cell funcell argcells denv limit)
-               (eval-unbox target ispaces var body denv limit)
-               (eval-unbox-list targets ispaces var body denv limit)))))
+               (eval-unbox target ispaces var body type denv limit)
+               (eval-unbox-list targets ispaces var body type denv limit)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

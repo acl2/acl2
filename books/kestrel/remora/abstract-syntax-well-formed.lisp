@@ -67,8 +67,8 @@
           types
           type-option
           type-list-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           prog)
   :result booleanp
@@ -86,14 +86,14 @@
                     (type-var-atom->name type-var)))
    (type-var :array (valid-identifier-string-p
                      (type-var-array->name type-var)))
-   (var+type (and (valid-identifier-string-p (var+type->var var+type))
-                  (type-wf-ast-p (var+type->type var+type))))
+   (var+type? (and (valid-identifier-string-p (var+type?->var var+type?))
+                   (type-option-wf-ast-p (var+type?->type? var+type?))))
    (expr :var (valid-identifier-string-p (expr-var->name expr)))
    (bind :val (and (valid-identifier-string-p (bind-val->var bind))
                    (type-option-wf-ast-p (bind-val->type? bind))
                    (expr-wf-ast-p (bind-val->expr bind))))
    (bind :fun (and (valid-identifier-string-p (bind-fun->var bind))
-                   (var+type-list-wf-ast-p (bind-fun->params bind))
+                   (var+type?-list-wf-ast-p (bind-fun->params bind))
                    (type-option-wf-ast-p (bind-fun->type? bind))
                    (expr-wf-ast-p (bind-fun->expr bind))))
    (bind :tfun (and (valid-identifier-string-p (bind-tfun->var bind))
@@ -109,7 +109,7 @@
                      (bind-cfun->tparams? bind))
                     (ispace-var-list-option-wf-ast-p
                      (bind-cfun->iparams? bind))
-                    (var+type-list-wf-ast-p (bind-cfun->params bind))
+                    (var+type?-list-wf-ast-p (bind-cfun->params bind))
                     (type-wf-ast-p (bind-cfun->type bind))
                     (expr-wf-ast-p (bind-cfun->expr bind))))
    ;; Unbox binds a string variable; check it.
