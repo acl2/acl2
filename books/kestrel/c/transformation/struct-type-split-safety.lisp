@@ -840,7 +840,11 @@
      e.g. most parameter and structure declarations;
      the latter prevent the nesting of the struct being split.")
    (xdoc::p
-    "We exclude assembly, because we do not know what it does exactly."))
+    "We exclude assembly, because we do not know what it does exactly.")
+   (xdoc::p
+    "We reject translation items that are
+     preprocessing constructs preserved by our preprocessor.
+     We do not have transformations working on those yet."))
   :types (stor-spec
           type-qual
           exprs/decls/stmts
@@ -884,5 +888,9 @@
    (desiniter (sts-reject (desiniter-fix desiniter)))
    (declor (sts-reject (declor-fix declor)))
    (absdeclor (sts-reject (absdeclor-fix absdeclor)))
-   (asm-stmt (sts-reject (asm-stmt-fix asm-stmt))))
+   (asm-stmt (sts-reject (asm-stmt-fix asm-stmt)))
+   (trans-item :include nil)
+   (trans-item :define nil)
+   (trans-item :undef nil)
+   (trans-item :cond nil))
   :name abstract-syntax-sts-safep)

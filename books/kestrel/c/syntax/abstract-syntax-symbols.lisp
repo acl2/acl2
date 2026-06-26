@@ -489,6 +489,7 @@
 
     trans-items
 
+    trans-item
     trans-itemp
     trans-item-fix
     trans-item-case
