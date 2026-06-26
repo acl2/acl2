@@ -796,6 +796,10 @@
      The non-nesting of the struct type being split in other struct
      is checked elsewhere, via @(tsee type-sts-safep).")
    (xdoc::p
+    "We allow all @('union') type specifiers.
+     The non-nesting of the struct being split
+     is checked elsewhere, via @(tsee type-sts-safep).")
+   (xdoc::p
     "We reject @('typedef'), since it could be the struct type being split.
      Clearly we should relax this.")
    (xdoc::p
