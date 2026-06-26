@@ -738,6 +738,7 @@
     uidp
     uid-fix
 
+    type
     typep
     type-fix
     type-case
