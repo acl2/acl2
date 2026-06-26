@@ -380,10 +380,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This function takes as input the fields of @(':unary') @(tsee expr),
-     except for the @('info') field, which is not needed.
-     The argument expression is checked separately, recursively.")
-   (xdoc::p
     "Most unary operators are always safe:
      some never operate on structs;
      others may perform arithmetic on struct pointers, which is safe;
@@ -428,6 +424,39 @@
                (tyname-fix tyname)))
        (type (type-vinfo->type (tyname->info tyname))))
     (not (type-may-be-struct-spec-p type spec)))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-cast-sts-safep ((tyname tynamep)
+                             (arg exprp)
+                             (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a cast expression is safe for the STS transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case exactly when
+     neither the source nor the destination type
+     is the struct being split or a pointer type to it."))
+  (b* (((unless (and (tyname-unambp tyname)
+                     (tyname-annop tyname)))
+        (raise "Internal error: ambiguous or non-annotated type name."
+               (tyname-fix tyname)))
+       ((unless (and (expr-unambp arg)
+                     (expr-annop arg)))
+        (raise "Internal error: ambiguous or non-annotated expression."
+               (expr-fix arg)))
+       (src-type (expr-type arg))
+       (dst-type (type-vinfo->type (tyname->info tyname))))
+    (and (not (type-may-be-struct-spec-p src-type spec))
+         (not (and (type-case src-type :pointer)
+                   (type-may-be-struct-spec-p (type-pointer->to src-type)
+                                              spec)))
+         (not (type-may-be-struct-spec-p dst-type spec))
+         (not (and (type-case dst-type :pointer)
+                   (type-may-be-struct-spec-p (type-pointer->to dst-type)
+                                              spec)))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -684,7 +713,9 @@
                       (expr-sizeof/alignof-sts-safep expr.type spec)))
    (expr :alignof (and (tyname-sts-safep expr.type spec)
                        (expr-sizeof/alignof-sts-safep expr.type spec)))
-   (expr :cast nil)
+   (expr :cast (and (tyname-sts-safep expr.type spec)
+                    (expr-sts-safep expr.arg spec)
+                    (expr-cast-sts-safep expr.type expr.arg spec)))
    (expr :tycompat nil)
    (expr :offsetof nil)
    (expr :va-arg nil)

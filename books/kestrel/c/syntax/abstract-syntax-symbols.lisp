@@ -739,6 +739,7 @@
     type-count
     type-void
     type-sint
+    type-pointer->to
 
     type-listp
     type-list-count
