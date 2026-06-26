@@ -18,7 +18,7 @@
 ;; cert_param: (uses-stp)
 
 (include-book "kestrel/axe/x86/unroller" :dir :system)
-(include-book "kestrel/x86/register-readers-and-writers16" :dir :system)
+(include-book "kestrel/x86/register-readers-and-writers-8-16" :dir :system)
 
 ;; Bridge: connect ax to bvchop-of-rax so Axe proofs reduce to the rax form.
 (local (defthm ax-rewrite

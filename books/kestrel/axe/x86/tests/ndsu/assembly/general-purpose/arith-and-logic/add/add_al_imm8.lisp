@@ -18,7 +18,7 @@
 ;; cert_param: (uses-stp)
 
 (include-book "kestrel/axe/x86/unroller" :dir :system)
-(include-book "kestrel/x86/register-readers-and-writers8" :dir :system)
+(include-book "kestrel/x86/register-readers-and-writers-8-16" :dir :system)
 
 ;; Rewrite al to bvchop-of-rax so proofs reduce to the rax form.
 (local (defthm al-rewrite
