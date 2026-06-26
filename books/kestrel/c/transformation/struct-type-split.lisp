@@ -3674,7 +3674,16 @@
        ((unless (c$::trans-ensemble-annop new-trans-units))
         (retmsg$ "Internal error: the transformed code is invalid.")))
     (retok (change-code-ensemble code :trans-units new-trans-units)
-           warnings)))
+           warnings))
+  ///
+
+  (more-returns
+   (warnings true-listp
+             :rule-classes :type-prescription
+             :hints (("Goal"
+                      :use msg-listp-of-sts-split-code-ensemble.warnings
+                      :in-theory
+                      '(acl2::true-listp-when-msg-listp-compound-recognizer))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
