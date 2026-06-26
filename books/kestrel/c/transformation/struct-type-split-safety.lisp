@@ -148,6 +148,23 @@
                                      (type-struct->tag/members type)
                                      spec)))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-may-be-struct-spec-p ((type typep) (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a type may be the struct type being split."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case when @(tsee type-is-struct-spec-p) holds,
+     or when the type is unknown,
+     because it could be the struct type being split.
+     The unknown scalar and unknown arithmetic types cannot be struct types.
+     We assume that the struct that we split is not a built-in one,
+     which is why we do not include the unknown built-in type here."))
+  (or (type-is-struct-spec-p type spec)
+      (type-case type :unknown)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines type/type-list-sts-safep
@@ -369,19 +386,16 @@
      taking the address of, or dereferencing, a struct of the type being split
      is also safe, it does not break the struct abstraction.
      The only operators that may be unsafe are @('sizeof') and @('alignof'),
-     but only if the type of the argument expression is
-     the struct type being split;
-     they expose the size and alignment, which may change under splitting.
-     We need the case of an unknown type,
-     which might be the struct type being split."))
+     but only if the type of the argument expression
+     may be the struct type being split;
+     they expose the size and alignment, which may change under splitting."))
   (b* (((unless (unop-case op '(:sizeof :alignof))) t)
        ((unless (expr-unambp arg))
         (raise "Internal error: ambiguous expression ~x0." (expr-fix arg)))
        ((unless (expr-annop arg))
         (raise "Internal error: unannotated expression ~x0." (expr-fix arg)))
        (type (expr-type arg)))
-    (and (not (type-case type :unknown))
-         (not (type-is-struct-spec-p type spec))))
+    (not (type-may-be-struct-spec-p type spec)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
