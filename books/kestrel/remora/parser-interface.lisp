@@ -44,7 +44,7 @@
      entries are retained for ongoing development and debugging, since they
      are useful for testing fragments of source in isolation.
      The per-rule entries currently cover @('ispace'), @('base-val'),
-     @('base-type'), @('type-var'), @('ispace-var'), @('type-exp'),
+     @('base-type'), @('type-var'), @('ispace-var'), @('type'),
      @('char-lit'), @('string-lit'), @('exp'), @('atom'), and @('bind').")
    (xdoc::p
     "All entry points require the entire input to be consumed by the parse,
@@ -256,7 +256,7 @@
 (defparse-from-string base-type   base-type-resultp)
 (defparse-from-string type-var    type-var-resultp)
 (defparse-from-string ispace-var  ispace-var-resultp)
-(defparse-from-string type-exp    type-resultp)
+(defparse-from-string type    type-resultp)
 (defparse-from-string char-lit    char-lit-resultp)
 (defparse-from-string string-lit  char-lit-list-resultp)
 (defparse-from-string exp         expr-resultp)
@@ -289,7 +289,7 @@
    (xdoc::p
     "Dispatches on @('rule-name'), which must be one of
      @('\"ispace\"'), @('\"base-val\"'), @('\"base-type\"'),
-     @('\"type-var\"'), @('\"ispace-var\"'), @('\"type-exp\"'),
+     @('\"type-var\"'), @('\"ispace-var\"'), @('\"type\"'),
      @('\"char-lit\"'), @('\"string-lit\"'), @('\"exp\"'),
      @('\"atom\"'), or @('\"bind\"').
      Other rule names produce a @(see reserr).")
@@ -307,8 +307,8 @@
          (parse-to-ast-and-check type-var   source-code))
         ((equal rule-name "ispace-var")
          (parse-to-ast-and-check ispace-var source-code))
-        ((equal rule-name "type-exp")
-         (parse-to-ast-and-check type-exp   source-code))
+        ((equal rule-name "type")
+         (parse-to-ast-and-check type   source-code))
         ((equal rule-name "char-lit")
          (parse-to-ast-and-check char-lit   source-code))
         ((equal rule-name "string-lit")

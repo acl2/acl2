@@ -936,14 +936,14 @@
      lists and (potentially) other binders.  In every case where it
      appears in our AST, the corresponding concrete syntax is the
      @('pat') rule of @('grammar.abnf'), namely @('\"(\" ws identifier
-     ws type-exp ws \")\"') &mdash; with no separating colon.")
+     ws type ws \")\"') &mdash; with no separating colon.")
    (xdoc::p
     "The type is optional in the AST, but the @('pat') grammar rule
      requires it, and we do not perform type inference yet.
      So, when the type is absent, we fail:
      there is no concrete syntax that renders it.")
    (xdoc::p
-    "The colon-style @('name : type-exp') form (@('val-typed-sig'),
+    "The colon-style @('name : type') form (@('val-typed-sig'),
      @('colon-type') in the grammar) is used in @(tsee bind-val) for
      the variable+type signature and in fun-style binders for the
      optional return type.  Both store the type as a separate
