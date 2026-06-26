@@ -79,6 +79,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defmacro+ sts-reject (x)
+  :short "Reject an entity that does not satisfy the safety checks,
+          printing it in the comment window."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Our safety checks are predicates that return @('t') or @('nil').
+     But when a check fails, just @('nil') does not covery much information,
+     when the checks are applied to non-trivial amounts of code.
+     This macro is a simple way to provide more information:
+     instead of returning @('nil'),
+     our checking predicates can return a call of this macro
+     on the entity that failed the checks,
+     which logically is @('nil'),
+     but prints the entity to the comment window as a side effect."))
+  `(cw "STS safety failure: ~x0~%" ,x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod sts-struct-spec
   :short "Fixtype of specifications of the struct type to split."
   :long
@@ -265,7 +284,7 @@
                                                     type.tunit?
                                                     type.tag/members
                                                     spec))
-                 nil
+                 (sts-reject `(:nested ,(type-fix type)))
                (type-struni-tag/members-sts-safep type.tag/members spec))
      :union (type-struni-tag/members-sts-safep type.tag/members spec)
      :enum t
@@ -273,9 +292,9 @@
      :pointer (type-sts-safep type.to nested spec)
      :function (and (type-sts-safep type.ret t spec)
                     (type-params-sts-safep type.params nested spec))
-     :unknown nil
+     :unknown (sts-reject (type-fix type))
      :unknown-builtin t
-     :unknown-scalar nil
+     :unknown-scalar (sts-reject (type-fix type))
      :unknown-arithmetic t)
     :measure (type-count type))
 
@@ -438,7 +457,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-unary-sts-safep ((op unopp) (arg exprp) (spec sts-struct-specp))
+(define expr-unary-sts-safep ((op unopp)
+                              (arg exprp)
+                              info
+                              (spec sts-struct-specp))
   :returns (yes/no booleanp)
   :short "Check if a unary expression is safe for the STS transformation."
   :long
@@ -461,7 +483,8 @@
      and it has lost its connection to the type of @('s')."))
   (or (not (unop-case op '(:sizeof :alignof)))
       (and (expr-unamb/anno-p arg)
-           (not (type-may-be-struct-spec-p (expr-type arg) spec)))))
+           (not (type-may-be-struct-spec-p (expr-type arg) spec)))
+      (sts-reject (expr-unary op arg info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -479,6 +502,26 @@
        (not (type-may-be-struct-spec-p (type-vinfo->type (tyname->info tyname))
                                        spec))))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define expr-sizeof-sts-safep ((tyname tynamep) (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a @('sizeof') expression on a type name
+          is safe for the STS transformation."
+  (or (expr-sizeof/alignof-sts-safep tyname spec)
+      (sts-reject (expr-sizeof tyname))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define expr-alignof-sts-safep ((tyname tynamep)
+                                (uscores keyword-uscores-p)
+                                (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if an @('alignof') expression on a type name
+          is safe for the STS transformation."
+  (or (expr-sizeof/alignof-sts-safep tyname spec)
+      (sts-reject (expr-alignof tyname uscores))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-cast-sts-safep ((tyname tynamep)
@@ -492,20 +535,22 @@
     "This is the case exactly when
      neither the source nor the destination type
      is the struct being split or a pointer type to it."))
-  (and (tyname-unamb/anno-p tyname)
-       (expr-unamb/anno-p arg)
-       (b* ((src-type (expr-type arg))
-            (dst-type (type-vinfo->type (tyname->info tyname))))
-         (and (not (type-may-be-struct-spec-p src-type spec))
-              (not (type-may-be-pointer-to-struct-spec-p src-type spec))
-              (not (type-may-be-struct-spec-p dst-type spec))
-              (not (type-may-be-pointer-to-struct-spec-p dst-type spec))))))
+  (or (and (tyname-unamb/anno-p tyname)
+           (expr-unamb/anno-p arg)
+           (b* ((src-type (expr-type arg))
+                (dst-type (type-vinfo->type (tyname->info tyname))))
+             (and (not (type-may-be-struct-spec-p src-type spec))
+                  (not (type-may-be-pointer-to-struct-spec-p src-type spec))
+                  (not (type-may-be-struct-spec-p dst-type spec))
+                  (not (type-may-be-pointer-to-struct-spec-p dst-type spec)))))
+      (sts-reject (expr-cast tyname arg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-binary-sts-safep ((op binopp)
                                (arg1 exprp)
                                (arg2 exprp)
+                               info
                                (spec sts-struct-specp))
   :returns (yes/no booleanp)
   :short "Check if a binary expression is safe for the STS transformation."
@@ -523,24 +568,25 @@
      Thus, we check that there are no possible automatic conversions
      between pointers to the struct being split
      and pointers to any other types."))
-  (or (and (binop-case op '(:mul :div :rem :add :sub :shl :shr
-                            :lt :gt :le :ge :eq :ne
-                            :bitand :bitxor :bitior
-                            :logand :logor))
-           t)
-      (and (expr-unamb/anno-p arg1)
-           (expr-unamb/anno-p arg2)
-           (b* ((type1 (expr-type arg1))
-                (type2 (expr-type arg2)))
-             (or (and (type-is-struct-spec-p type1 spec)
-                      (type-is-struct-spec-p type2 spec))
-                 (and (type-is-pointer-to-struct-spec-p type1 spec)
-                      (type-is-pointer-to-struct-spec-p type2 spec))
-                 (and (not (type-may-be-struct-spec-p type1 spec))
-                      (not (type-may-be-struct-spec-p type2 spec))
-                      (not (type-may-be-pointer-to-struct-spec-p type1 spec))
-                      (not (type-may-be-pointer-to-struct-spec-p type2
-                                                                 spec))))))))
+  (or
+   (and (binop-case op '(:mul :div :rem :add :sub :shl :shr
+                         :lt :gt :le :ge :eq :ne
+                         :bitand :bitxor :bitior
+                         :logand :logor))
+        t)
+   (and (expr-unamb/anno-p arg1)
+        (expr-unamb/anno-p arg2)
+        (b* ((type1 (expr-type arg1))
+             (type2 (expr-type arg2)))
+          (or (and (type-is-struct-spec-p type1 spec)
+                   (type-is-struct-spec-p type2 spec))
+              (and (type-is-pointer-to-struct-spec-p type1 spec)
+                   (type-is-pointer-to-struct-spec-p type2 spec))
+              (and (not (type-may-be-struct-spec-p type1 spec))
+                   (not (type-may-be-struct-spec-p type2 spec))
+                   (not (type-may-be-pointer-to-struct-spec-p type1 spec))
+                   (not (type-may-be-pointer-to-struct-spec-p type2 spec))))))
+   (sts-reject (expr-binary op arg1 arg2 info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -768,36 +814,37 @@
   :combine and
   :extra-args ((spec sts-struct-specp))
   :override
-  ((stor-spec :auto nil)
-   (type-qual :atomic nil)
-   (expr :gensel nil)
-   (expr :funcall nil)
-   (expr :complit nil)
+  ((stor-spec :auto (sts-reject (stor-spec-fix stor-spec)))
+   (type-qual :atomic (sts-reject (type-qual-fix type-qual)))
+   (expr :gensel (sts-reject (expr-fix expr)))
+   (expr :funcall (sts-reject (expr-fix expr)))
+   (expr :complit (sts-reject (expr-fix expr)))
    (expr :unary (and (expr-sts-safep expr.arg spec)
-                     (expr-unary-sts-safep expr.op expr.arg spec)))
+                     (expr-unary-sts-safep expr.op expr.arg expr.info spec)))
    (expr :sizeof (and (tyname-sts-safep expr.type spec)
-                      (expr-sizeof/alignof-sts-safep expr.type spec)))
+                      (expr-sizeof-sts-safep expr.type spec)))
    (expr :alignof (and (tyname-sts-safep expr.type spec)
-                       (expr-sizeof/alignof-sts-safep expr.type spec)))
+                       (expr-alignof-sts-safep expr.type expr.uscores spec)))
    (expr :cast (and (tyname-sts-safep expr.type spec)
                     (expr-sts-safep expr.arg spec)
                     (expr-cast-sts-safep expr.type expr.arg spec)))
    (expr :binary (and (expr-sts-safep expr.arg1 spec)
                       (expr-sts-safep expr.arg2 spec)
-                      (expr-binary-sts-safep expr.op expr.arg1 expr.arg2 spec)))
-   (expr :tycompat nil)
-   (expr :offsetof nil)
-   (expr :va-arg nil)
-   (type-spec :atomic nil)
-   (type-spec :typedef nil)
-   (type-spec :typeof-expr nil)
-   (type-spec :typeof-type nil)
-   (type-spec :auto-type nil)
-   (align-spec nil)
-   (decl-spec :stdcall nil)
-   (decl-spec :declspec nil)
-   (initer :list nil)
-   (declor nil)
-   (absdeclor nil)
-   (asm-stmt nil))
+                      (expr-binary-sts-safep
+                       expr.op expr.arg1 expr.arg2 expr.info spec)))
+   (expr :tycompat (sts-reject (expr-fix expr)))
+   (expr :offsetof (sts-reject (expr-fix expr)))
+   (expr :va-arg (sts-reject (expr-fix expr)))
+   (type-spec :atomic (sts-reject (type-spec-fix type-spec)))
+   (type-spec :typedef (sts-reject (type-spec-fix type-spec)))
+   (type-spec :typeof-expr (sts-reject (type-spec-fix type-spec)))
+   (type-spec :typeof-type (sts-reject (type-spec-fix type-spec)))
+   (type-spec :auto-type (sts-reject (type-spec-fix type-spec)))
+   (align-spec (sts-reject (align-spec-fix align-spec)))
+   (decl-spec :stdcall (sts-reject (decl-spec-fix decl-spec)))
+   (decl-spec :declspec (sts-reject (decl-spec-fix decl-spec)))
+   (initer :list (sts-reject (initer-fix initer)))
+   (declor (sts-reject (declor-fix declor)))
+   (absdeclor (sts-reject (absdeclor-fix absdeclor)))
+   (asm-stmt (sts-reject (asm-stmt-fix asm-stmt))))
   :name abstract-syntax-sts-safep)
