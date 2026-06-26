@@ -603,6 +603,23 @@
                    (not (type-may-be-pointer-to-struct-spec-p type2 spec))))))
    (sts-reject (expr-binary op arg1 arg2 info))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-atomic-sts-safep ((tyname tynamep) (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if an atomic type specifier is safe for the STS transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is rejected when the type denoted by the type name
+     is the struct type being split,
+     because it is not clear how atomicity interacts with splitting."))
+  (and (tyname-unamb/anno-p tyname)
+       (or (not (type-may-be-pointer-to-struct-spec-p
+                 (type-vinfo->type (tyname->info tyname))
+                 spec))
+           (sts-reject (type-spec-atomic tyname)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce sts-safep
@@ -850,7 +867,8 @@
    (expr :tycompat (sts-reject (expr-fix expr)))
    (expr :offsetof (sts-reject (expr-fix expr)))
    (expr :va-arg (sts-reject (expr-fix expr)))
-   (type-spec :atomic (sts-reject (type-spec-fix type-spec)))
+   (type-spec :atomic (and (tyname-sts-safep type-spec.type spec)
+                           (type-spec-atomic-sts-safep type-spec.type spec)))
    (type-spec :typedef (sts-reject (type-spec-fix type-spec)))
    (type-spec :typeof-expr (sts-reject (type-spec-fix type-spec)))
    (type-spec :typeof-type (sts-reject (type-spec-fix type-spec)))
