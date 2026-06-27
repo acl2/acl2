@@ -44,6 +44,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::deflist dim-list-case-const (x)
+  :short "Check if all the dimensions in a list
+          are in the @(':const') summand."
+  :guard (dim-listp x)
+  (dim-case x :const))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::deflist shape-list-case-append (x)
   :short "Check if all the shapes in a list
           are in the @(':append') summand."
@@ -124,6 +132,14 @@
     :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection dim-const-list->val ((x dim-listp))
+  :guard (dim-list-case-const x)
+  :returns (vals nat-listp)
+  :short "Lift @(tsee dim-const->val) to lists."
+  (dim-const->val x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection expr-array-list->dims ((x expr-listp))
   :guard (expr-list-case-array x)
