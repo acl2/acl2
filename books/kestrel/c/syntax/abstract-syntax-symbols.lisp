@@ -55,6 +55,8 @@
 
     typequal/attribspec-list-listp
 
+    keyword-uscores-p
+
     unopp
     unop-case
     unop-kind
@@ -64,8 +66,10 @@
     binop-kind
 
     stor-spec
+    stor-spec-fix
 
     type-qual
+    type-qual-fix
 
     asm-name-spec-optionp
 
@@ -90,7 +94,9 @@
     make-expr-arrsub
     make-expr-funcall
     make-expr-member
+    expr-member->arg
     make-expr-memberp
+    expr-memberp->arg
     make-expr-complit
     expr-unary
     make-expr-unary
@@ -410,6 +416,7 @@
     make-label-casexpr
 
     asm-stmt
+    asm-stmt-fix
 
     stmtp
     stmt-fix
@@ -484,6 +491,7 @@
 
     trans-items
 
+    trans-item
     trans-itemp
     trans-item-fix
     trans-item-case
@@ -733,7 +741,9 @@
     uidp
     uid-fix
 
+    type
     typep
+    type-fix
     type-case
     type-kind
     type-count
@@ -780,6 +790,9 @@
     var-vinfo-fix
     var-vinfo->uid
     coerce-var-vinfo
+
+    type-spec-struct-vinfop
+    type-spec-struct-vinfo->type
 
     type-vinfop
     type-vinfo-fix

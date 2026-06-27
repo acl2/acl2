@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 (include-book "std/util/deffixer" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system)) ; for more DEFLIST theorems
@@ -91,7 +92,12 @@
   (defruled unicharp-upper-bound
     (implies (unicharp x)
              (<= x #x10ffff))
-    :rule-classes :forward-chaining))
+    :rule-classes :forward-chaining)
+
+  (defruled unicharp-when-unsigned-byte-p-8
+    (implies (unsigned-byte-p 8 x)
+             (unicharp x))
+    :enable unsigned-byte-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -146,4 +152,10 @@
     (implies (unichar-listp x)
              (nat-listp x))
     :induct t
-    :enable (unichar-listp nat-listp natp-when-unicharp)))
+    :enable (unichar-listp nat-listp natp-when-unicharp))
+
+  (defruled unichar-listp-when-unsigned-byte-listp-8
+    (implies (unsigned-byte-listp 8 x)
+             (unichar-listp x))
+    :induct t
+    :enable (unichar-listp unicharp-when-unsigned-byte-p-8)))
