@@ -490,15 +490,18 @@
               (not (type-may-be-struct-spec-p (expr-type arg) spec)))
          (sts-reject (expr-unary op arg info))))
     (:address
-     (and (expr-unamb/anno-p arg)
-          (expr-case
-           arg
-           :member (or (not (type-may-be-struct-spec-p (expr-type arg) spec))
-                       (sts-reject (expr-unary op arg info)))
-           :memberp (or (not (type-may-be-pointer-to-struct-spec-p
-                              (expr-type arg) spec))
-                        (sts-reject (expr-unary op arg info)))
-           :otherwise t)))
+     (expr-case
+      arg
+      :member (b* ((base (expr-member->arg arg)))
+                (and (expr-unamb/anno-p base)
+                     (or (not (type-may-be-struct-spec-p (expr-type base) spec))
+                         (sts-reject (expr-unary op arg info)))))
+      :memberp (b* ((base (expr-memberp->arg arg)))
+                 (and (expr-unamb/anno-p base)
+                      (or (not (type-may-be-pointer-to-struct-spec-p
+                                (expr-type base) spec))
+                          (sts-reject (expr-unary op arg info)))))
+      :otherwise t))
     (t t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

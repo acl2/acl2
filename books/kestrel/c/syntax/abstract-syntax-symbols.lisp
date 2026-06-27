@@ -94,7 +94,9 @@
     make-expr-arrsub
     make-expr-funcall
     make-expr-member
+    expr-member->arg
     make-expr-memberp
+    expr-memberp->arg
     make-expr-complit
     expr-unary
     make-expr-unary
