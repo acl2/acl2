@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax-trees")
 (include-book "integer-lists")
+(include-book "nat-lists")
 (include-book "variable-substitution-operations")
 (include-book "utility-transforms")
 
@@ -201,28 +202,6 @@
                              (omap::update name val
                                            (acl2::string-nat-map-fix dim-var-map))))))
 
-
-(define nat-sum-list ((nats nat-listp))
-  :returns (sum natp)
-  :short "Sum a list of natural numbers."
-  (if (endp nats)
-      0
-    (+ (nfix (car nats)) (nat-sum-list (cdr nats)))))
-
-(define nat-product-list ((nats nat-listp))
-  :returns (prod natp)
-  :short "Multiply a list of natural numbers."
-  (if (endp nats)
-      1
-    (* (nfix (car nats)) (nat-product-list (cdr nats)))))
-
-(define nat-sub-list ((nats nat-listp))
-  :returns (result integerp)
-  :short "CL-style subtraction on a nat-list: negate a singleton, subtract rest from first."
-  (cond ((endp nats) 0)
-        ((endp (cdr nats)) (- (nfix (car nats))))
-        (t (- (nfix (car nats)) (nat-sum-list (cdr nats))))))
-
 ; Disable the tau system to speed up certification (matching the house style of
 ; the sibling abstract-syntax books, which call (acl2::controlled-configuration)).
 (local (in-theory (disable (:e tau-system))))
@@ -330,7 +309,12 @@
   (if (endp dims)
       nil
     (cons (dim-const-val* (car dims))
-          (dim-list-const-vals (cdr dims)))))
+          (dim-list-const-vals (cdr dims))))
+  ///
+  ; Needed to discharge the (consp nats) guard of NAT-LIST-SUBTRACTION at the
+  ; :sub case of the fold below, where (consp new-dims) is known.
+  (defret consp-of-dim-list-const-vals
+    (equal (consp vals) (consp dims))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -370,15 +354,15 @@
                (dim-const (nfix (cdr pair)))))
    (dim :add (b* ((new-dims (dim-list-partial-eval-dims dim.dims dim-var-map))
                   ((unless (all-dim-const-p new-dims)) (dim-add new-dims)))
-               (dim-const (nat-sum-list (dim-list-const-vals new-dims)))))
+               (dim-const (nat-list-sum (dim-list-const-vals new-dims)))))
    (dim :mul (b* ((new-dims (dim-list-partial-eval-dims dim.dims dim-var-map))
                   ((unless (all-dim-const-p new-dims)) (dim-mul new-dims)))
-               (dim-const (nat-product-list (dim-list-const-vals new-dims)))))
+               (dim-const (nat-list-product (dim-list-const-vals new-dims)))))
    (dim :sub (b* ((new-dims (dim-list-partial-eval-dims dim.dims dim-var-map))
                   ((unless (and (consp new-dims)
                                 (all-dim-const-p new-dims)))
                    (dim-sub new-dims))
-                  (result (nat-sub-list (dim-list-const-vals new-dims)))
+                  (result (nat-list-subtraction (dim-list-const-vals new-dims)))
                   ((unless (natp result)) (dim-sub new-dims)))
                (dim-const (nfix result)))))
   :name ast-partial-eval-dims)
