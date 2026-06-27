@@ -1216,53 +1216,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define restrict ((keys set::setp) (map mapp))
-  :returns (map1 mapp)
-  :short "Restrict an omap to a set of keys."
-  :long
-  (xdoc::topstring-p
-   "This drops all the keys of the omap
-    that are not in the given set of keys.")
-  (cond ((emptyp map) nil)
-        (t (mv-let (key val)
-             (head map)
-             (if (set::in key keys)
-                 (update key val (restrict keys (tail map)))
-               (restrict keys (tail map))))))
-  :verify-guards :after-returns
-
-  ///
-
-  (defcong mequiv equal (restrict keys map) 2
-    :hints (("Goal" :induct t
-                    :in-theory (e/d (restrict) (mequiv)))))
-
-  (defrule restrict-when-left-emptyp
-    (implies (set::emptyp keys)
-             (equal (restrict keys map) nil))
-    :rule-classes (:rewrite :type-prescription)
-    :induct t
-    :enable set::emptyp)
-
-  (defrule restrict-when-right-emptyp
-    (implies (emptyp map)
-             (equal (restrict keys map) nil))
-    :rule-classes (:rewrite :type-prescription))
-
-  (defruled assoc-of-restrict
-    (equal (assoc key (restrict keys map))
-           (and (set::in key keys)
-                (assoc key map)))
-    :induct t)
-
-  (defruled assoc-of-restrict-when-in-keys
-    (implies (set::in key keys)
-             (equal (assoc key (restrict keys map))
-                    (assoc key map)))
-    :induct t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define keys ((map mapp))
   :returns (keys set::setp
                  :hints (("Goal"
@@ -1366,6 +1319,58 @@
     :induct t
     :enable update*)
 
+  (defrule head-key-not-in-keys-of-tail
+    (not (set::in (mv-nth 0 (head map))
+                  (keys (tail map))))
+    :enable in-of-keys-to-assoc))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define restrict ((keys set::setp) (map mapp))
+  :returns (map1 mapp)
+  :short "Restrict an omap to a set of keys."
+  :long
+  (xdoc::topstring-p
+   "This drops all the keys of the omap
+    that are not in the given set of keys.")
+  (cond ((emptyp map) nil)
+        (t (mv-let (key val)
+             (head map)
+             (if (set::in key keys)
+                 (update key val (restrict keys (tail map)))
+               (restrict keys (tail map))))))
+  :verify-guards :after-returns
+
+  ///
+
+  (defcong mequiv equal (restrict keys map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (restrict) (mequiv)))))
+
+  (defrule restrict-when-left-emptyp
+    (implies (set::emptyp keys)
+             (equal (restrict keys map) nil))
+    :rule-classes (:rewrite :type-prescription)
+    :induct t
+    :enable set::emptyp)
+
+  (defrule restrict-when-right-emptyp
+    (implies (emptyp map)
+             (equal (restrict keys map) nil))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defruled assoc-of-restrict
+    (equal (assoc key (restrict keys map))
+           (and (set::in key keys)
+                (assoc key map)))
+    :induct t)
+
+  (defruled assoc-of-restrict-when-in-keys
+    (implies (set::in key keys)
+             (equal (assoc key (restrict keys map))
+                    (assoc key map)))
+    :induct t)
+
   (defrule keys-of-restrict
     (equal (keys (restrict keys map))
            (set::intersect keys (keys map)))
@@ -1376,23 +1381,18 @@
        (implies (set::in x (keys (restrict keys map)))
                 (set::in x (keys map)))
        :induct t
-       :enable restrict)
+       :enable keys)
      (defrule lemma2
        (implies (set::in x (keys (restrict keys map)))
                 (set::in x keys))
        :induct t
-       :enable restrict)
+       :enable keys)
      (defrule lemma3
        (implies (and (set::in x (keys map))
                      (set::in x keys))
                 (set::in x (keys (restrict keys map))))
        :induct t
-       :enable restrict)))
-
-  (defrule head-key-not-in-keys-of-tail
-    (not (set::in (mv-nth 0 (head map))
-                  (keys (tail map))))
-    :enable in-of-keys-to-assoc))
+       :enable keys))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
