@@ -352,6 +352,7 @@
   ;; the two-byte forms:
 
   (define vex->x ((vex-prefixes vex-prefixes-p))
+    :returns (x (unsigned-byte-p 1 x))
     :short "Get the @('X') field of @('vex-prefixes') for the three-byte form,
             or return 1 for the two-byte form."
     :long "<p>Although the two-byte form has no @('X') bit,
@@ -366,6 +367,7 @@
       (otherwise 1)))
 
   (define vex->b ((vex-prefixes vex-prefixes-p))
+    :returns (b (unsigned-byte-p 1 b))
     :short "Get the @('B') field of @('vex-prefixes') for the three-byte form,
             or return 1 for the two-byte form."
     :long "<p>Although the two-byte form has no @('B') bit,
