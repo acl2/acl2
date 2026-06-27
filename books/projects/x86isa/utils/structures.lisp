@@ -767,7 +767,7 @@
    (res2 7bits) ;; 0 (Reserved)
    (tileconfig-state bitp)
    (tiledata-state bitp)
-   (res4 45bits))
+   (res3 45bits))
   :msb-first nil
   :inline t)
 
