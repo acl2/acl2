@@ -68,8 +68,7 @@
                 (hpp x hta1))
            (hpp x hta2))
   :hints
-  (("Goal" :in-theory (enable hol-type-eval-monotone-for-alist-subsetp)))
-  :props (zfc diff$prop))
+  (("Goal" :in-theory (enable hol-type-eval-monotone-for-alist-subsetp))))
 
 ; The following were developed in support of
 ; ../examples/eval-poly-proof.lisp.  Many are generally applicable.  Others
@@ -165,8 +164,7 @@
                 (force (natp x)))
            (hpp (cons x :num)
                 hta))
-  :hints (("Goal" :in-theory (enable hpp hol-valuep hol-type-eval)))
-  :props (zfc diff$prop))
+  :hints (("Goal" :in-theory (enable hpp hol-valuep hol-type-eval))))
 
 (defthmz list-type-implies-funp-with-natp-domain
   (implies (and (hpp x hta)
@@ -523,7 +521,7 @@
                       (hol-type-eval y-typ hta)))
          :hints (("Goal"
                   :expand ((hol-type-eval (list :list x-typ) hta))))
-         :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop diff$prop)))
+         :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop)))
 
 (defthmz hpp-hp-cons
   (implies (and (hpp x hta)
@@ -532,7 +530,7 @@
                        (list :list (hp-type x))))
            (hpp (hp-cons x y) hta))
   :hints (("Goal" :in-theory (enable hpp hp-cons hol-valuep)))
-  :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop diff$prop))
+  :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop))
 )
 
 (defthmz car-hp-cons
@@ -672,7 +670,7 @@
                 hta))
   :hints (("Goal"
            :in-theory (enable hpp hol-valuep hol-typep hol-type-eval)))
-  :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop diff$prop))
+  :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop))
 
 (defthm cdr-hp-hash-cdr-cons
   (equal (cdr (hp-hash-cdr (cons x (list :hash t1 t2))))
@@ -695,7 +693,7 @@
                 hta))
   :hints (("Goal" :in-theory (enable hpp hol-valuep hol-typep hol-type-eval
                                      hp-hash-cdr)))
-  :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop diff$prop))
+  :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop))
 
 (defthmz natp-cdr-apply-for-finseq
 

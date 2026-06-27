@@ -51,7 +51,7 @@
     (implies (and (closed c1 tp)
                   (closed c2 tp)
                   (equal (int2 c1 c2) 0))
-             (point-set-separable c1 c2 tp)))
+             (set-set-separable c1 c2 tp)))
   :rewrite :direct)
 
 (in-theory (disable hausdorff regular normal

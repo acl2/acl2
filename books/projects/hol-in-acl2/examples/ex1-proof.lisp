@@ -106,7 +106,7 @@
   (equal (hpp (hp-comma x y) hta)
          (and (hpp x hta)
               (hpp y hta)))
-  :props (zfc prod2$prop diff$prop)
+  :props (zfc prod2$prop)
   :hints (("Goal" :in-theory (enable hpp hol-valuep hol-type-eval))))
 
 (defthmz hpp-hash-car

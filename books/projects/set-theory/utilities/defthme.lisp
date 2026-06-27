@@ -112,14 +112,14 @@
                    "Unrecognized shape for defthme!")
                nil nil)))
       (let* ((forward
-              `(zf::defthmz ,namef
+              `(zf::defthmdz ,namef
                             ,(make-implies (append hyps
                                                    `((zf::in ,var ,lhs)))
                                            `(zf::in ,var ,rhs))
                             ,@forward
                             :props ,props))
              (backward
-              `(zf::defthmz ,nameb
+              `(zf::defthmdz ,nameb
                             ,(make-implies (append hyps
                                                    `((zf::in ,var ,rhs)))
                                            `(zf::in ,var ,lhs))
