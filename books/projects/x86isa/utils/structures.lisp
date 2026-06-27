@@ -126,10 +126,10 @@
      :rule-classes nil))
 
   (define vex-prefixes-byte0-p ((vex-prefixes vex-prefixes-p))
+    :returns (ok booleanp)
     :short "Returns @('t') if byte0 of the @('vex-prefixes') structure is
             either @('*vex2-byte0*') (i.e. C5H) or @('*vex3-byte0*') (i.e. C4H);
             returns @('nil') otherwise."
-    :returns (ok booleanp)
     (let ((byte0 (vex-prefixes->byte0 vex-prefixes)))
       (or (equal byte0 #.*vex2-byte0*) (equal byte0 #.*vex3-byte0*))))
 
@@ -268,12 +268,12 @@
   ;; that are common to both the two- and three-byte forms:
 
   (define vex->vvvv ((vex-prefixes vex-prefixes-p))
-    :short "Get the @('vvvv') field of @('vex-prefixes');
-            cognizant of the two- or three-byte VEX prefixes form."
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (vvvv (unsigned-byte-p 4 vvvv)
                    :hyp (vex-prefixes-byte0-p vex-prefixes)
                    :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+    :short "Get the @('vvvv') field of @('vex-prefixes');
+            cognizant of the two- or three-byte VEX prefixes form."
     (case (vex-prefixes->byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1->vvvv (vex-prefixes->byte1 vex-prefixes)))
@@ -282,12 +282,12 @@
       (otherwise -1)))
 
   (define vex->l ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
-    :short "Get the @('L') field of @('vex-prefixes');
-            cognizant of the two- or three-byte VEX prefixes form."
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (l (unsigned-byte-p 1 l)
                 :hyp (vex-prefixes-byte0-p vex-prefixes)
                 :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+    :short "Get the @('L') field of @('vex-prefixes');
+            cognizant of the two- or three-byte VEX prefixes form."
     (case (vex-prefixes->byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1->l (vex-prefixes->byte1 vex-prefixes)))
@@ -296,12 +296,12 @@
       (otherwise -1)))
 
   (define vex->pp ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
-    :short "Get the @('pp') field of @('vex-prefixes');
-            cognizant of the two- or three-byte VEX prefixes form."
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (pp (unsigned-byte-p 2 pp)
                  :hyp (vex-prefixes-byte0-p vex-prefixes)
                  :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+    :short "Get the @('pp') field of @('vex-prefixes');
+            cognizant of the two- or three-byte VEX prefixes form."
     (case (vex-prefixes->byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1->pp (vex-prefixes->byte1 vex-prefixes)))
@@ -310,12 +310,12 @@
       (otherwise -1)))
 
   (define vex->r ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
-    :short "Get the @('R') field of @('vex-prefixes');
-            cognizant of the two- or three-byte VEX prefixes form."
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (r (unsigned-byte-p 1 r)
                 :hyp (vex-prefixes-byte0-p vex-prefixes)
                 :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+    :short "Get the @('R') field of @('vex-prefixes');
+            cognizant of the two- or three-byte VEX prefixes form."
     (case (vex-prefixes->byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1->r (vex-prefixes->byte1 vex-prefixes)))
@@ -324,12 +324,12 @@
       (otherwise -1)))
 
   (define vex->w ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
-    :short "Get the @('W') field of @('vex-prefixes');
-            cognizant of the two- or three-byte VEX prefixes form."
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (w (unsigned-byte-p 1 w)
                 :hyp (vex-prefixes-byte0-p vex-prefixes)
                 :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+    :short "Get the @('W') field of @('vex-prefixes');
+            cognizant of the two- or three-byte VEX prefixes form."
     (case (vex-prefixes->byte0 vex-prefixes)
       (#.*vex3-byte0*
        (vex3-byte2->w (vex-prefixes->byte2 vex-prefixes)))
@@ -461,38 +461,38 @@
   ;; functions' guard proofs simpler:
 
   (define evex->aaa ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('aaa') field of @('evex-prefixes')."
     :returns (aaa (unsigned-byte-p 3 aaa) :hyp :guard)
+    :short "Get the @('aaa') field of @('evex-prefixes')."
     (evex-byte3->aaa (evex-prefixes->byte3 evex-prefixes)))
 
   (define evex->z ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('z') field of @('evex-prefixes')."
     :returns (z (unsigned-byte-p 1 z) :hyp :guard)
+    :short "Get the @('z') field of @('evex-prefixes')."
     (evex-byte3->z (evex-prefixes->byte3 evex-prefixes)))
 
   (define evex->vvvv ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('vvvv') field of @('evex-prefixes')."
     :returns (vvvv (unsigned-byte-p 4 vvvv) :hyp :guard)
+    :short "Get the @('vvvv') field of @('evex-prefixes')."
     (evex-byte2->vvvv (evex-prefixes->byte2 evex-prefixes)))
 
   (define evex->v-prime ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('v-prime') field of @('evex-prefixes')."
     :returns (v-prime (unsigned-byte-p 1 v-prime) :hyp :guard)
+    :short "Get the @('v-prime') field of @('evex-prefixes')."
     (evex-byte3->v-prime (evex-prefixes->byte3 evex-prefixes)))
 
   (define evex->vl/rc ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('vl/rc') field of @('evex-prefixes')."
     :returns (vl/rc (unsigned-byte-p 2 vl/rc) :hyp :guard)
+    :short "Get the @('vl/rc') field of @('evex-prefixes')."
     (evex-byte3->vl/rc (evex-prefixes->byte3 evex-prefixes)))
 
   (define evex->pp ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('pp') field of @('evex-prefixes')."
     :returns (pp (unsigned-byte-p 2 pp) :hyp :guard)
+    :short "Get the @('pp') field of @('evex-prefixes')."
     (evex-byte2->pp (evex-prefixes->byte2 evex-prefixes)))
 
   (define evex->w ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('W') field of @('evex-prefixes')."
     :returns (w (unsigned-byte-p 1 w) :hyp :guard)
+    :short "Get the @('W') field of @('evex-prefixes')."
     (evex-byte2->w (evex-prefixes->byte2 evex-prefixes))))
 
 (defsection ModR/M-structures
