@@ -61,15 +61,15 @@ paren-exp-body  = array-exp
                 / app-exp            ; [SC3] must be last
 
 array-exp       = %s"array" ws shape-lit *( ws atom )
-                / %s"array" ws shape-lit ws type-exp
+                / %s"array" ws shape-lit ws type
 
 frame-exp       = %s"frame" ws shape-lit *( ws exp )
-                / %s"frame" ws shape-lit ws type-exp
+                / %s"frame" ws shape-lit ws type
 
 app-exp         = exp *( ws exp )      ; [SC1]
                   ; (f e1 ... en): first exp is the function
 
-tapp-exp        = %s"t-app" ws exp *( ws type-exp )
+tapp-exp        = %s"t-app" ws exp *( ws type )
 
 iapp-exp        = %s"i-app" ws exp *( ws ispace )
 
@@ -83,7 +83,7 @@ let-exp         = %s"let" ws "(" *( ws bind ) ws ")" ws exp
 
 at-app-exp      = "@" ws exp ws type-args ws ispace-args *( ws exp )
 
-type-args       = "(" *( ws type-exp ) ws ")"
+type-args       = "(" *( ws type ) ws ")"
                 / "_"
 
 ispace-args     = "(" *( ws ispace ) ws ")"
@@ -113,13 +113,13 @@ ispace-lambda   = ( %s"i-fn" / ( %s"i" %x03BB ) ) ws  ; i-fn or i<lambda>
                   "(" *( ws ispace-var ) ws ")" ws
                   exp
 
-box-expr        = %s"box" ws "(" *( ws ispace ) ws ")" ws exp ws type-exp
+box-expr        = %s"box" ws "(" *( ws ispace ) ws ")" ws exp ws type
 
 ; -------------------------------------------------------------------------
 ; Patterns (used in lambda parameters)
 ; -------------------------------------------------------------------------
 
-pat             = "(" ws identifier ws type-exp ws ")"
+pat             = "(" ws identifier ws type ws ")"
 
 ; -------------------------------------------------------------------------
 ; Bindings (in let expressions)
@@ -160,7 +160,7 @@ ifun-sig        = identifier ws "(" *( ws ispace-var ) ws ")"
                   ; inner of ifun-bind: name, ispace parameters, optional
                   ; return type
 
-type-bind       = %s"type" ws type-var ws type-exp
+type-bind       = %s"type" ws type-var ws type
 
 ispace-bind     = %s"extent" ws ispace-var ws ispace
                  ; NOTE: the surface keyword "extent" comes from the
@@ -180,7 +180,7 @@ type-vars       = "(" *( ws type-var ) ws ")"
 ispace-vars     = "(" *( ws ispace-var ) ws ")"
                 / "_"
 
-colon-type      = ":" ws type-exp
+colon-type      = ":" ws type
                   ; reusable form for type ascriptions; the inline option
                   ; [ ws colon-type ] used in fun-sig/tfun-sig/ifun-sig
                   ; expresses an absent-or-present return-type annotation
@@ -189,35 +189,35 @@ colon-type      = ":" ws type-exp
 ; Types (source-level type expressions)
 ; -------------------------------------------------------------------------
 
-type-exp        = type-var           ; &name (atom) or *name (array)
+type            = type-var           ; &name (atom) or *name (array)
                 / base-type          ; Int, Bool, Float
                 / bracket-type       ; [T d1 d2 ...] sugar
-                / "(" ws type-exp-paren ws ")"
+                / "(" ws type-paren ws ")"
 
 base-type       = %s"Bool" / %s"Int" / %s"Float"
 
-bracket-type    = "[" ws type-exp *( ws ispace ) ws "]"
+bracket-type    = "[" ws type *( ws ispace ) ws "]"
                   ; sugar for (A type ispace) with the ispaces spliced
 
-type-exp-paren  = array-type
+type-paren      = array-type
                 / arrow-type
                 / forall-type
                 / pi-type
                 / sigma-type
 
-array-type      = %s"A" ws type-exp ws ispace
+array-type      = %s"A" ws type ws ispace
 
 arrow-type      = ( "->" / %x2192 ) ws       ; -> or <arrow>
-                  "(" *( ws type-exp ) ws ")" ws type-exp
+                  "(" *( ws type ) ws ")" ws type
 
 forall-type     = ( %s"Forall" / %x2200 ) ws   ; Forall or <forall>
-                  "(" *( ws type-var ) ws ")" ws type-exp
+                  "(" *( ws type-var ) ws ")" ws type
 
 pi-type         = ( %s"Pi" / %x03A0 ) ws        ; Pi or <Pi>
-                  "(" *( ws ispace-var ) ws ")" ws type-exp
+                  "(" *( ws ispace-var ) ws ")" ws type
 
 sigma-type      = ( %s"Sigma" / %x03A3 ) ws     ; Sigma or <sigma>
-                  "(" *( ws ispace-var ) ws ")" ws type-exp
+                  "(" *( ws ispace-var ) ws ")" ws type
 
 ; -------------------------------------------------------------------------
 ; Type parameters

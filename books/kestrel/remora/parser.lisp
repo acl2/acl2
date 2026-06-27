@@ -173,7 +173,7 @@
 
     ;; ---- Groups for ws-separated repetitions ----
     "( ws exp )" group-ws-exp
-    "( ws type-exp )" group-ws-type-exp
+    "( ws type )" group-ws-type
     "( ws ispace )" group-ws-ispace
     "( ws atom )" group-ws-atom
     "( ws pat )" group-ws-pat
@@ -241,7 +241,7 @@
 
     ;; ---- Repetitions for ws-separated lists ----
     "*( ws exp )" repetition-*-ws-exp
-    "*( ws type-exp )" repetition-*-ws-type-exp
+    "*( ws type )" repetition-*-ws-type
     "*( ws ispace )" repetition-*-ws-ispace
     "*( ws atom )" repetition-*-ws-atom
     "*( ws pat )" repetition-*-ws-pat
@@ -1118,29 +1118,29 @@
 (defparse-remora-group "( ws ispace-var )")
 (defparse-remora-*-group "( ws ispace-var )")
 
-;; Type rules are self-recursive: type-exp → bracket-type/array-type/etc → type-exp.
+;; Type rules are self-recursive: type → bracket-type/array-type/etc → type.
 ;; Hand-written using defines.
 
 (defines parse-types
 
-  (define parse-type-exp ((input nat-listp))
+  (define parse-type ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp) (rest-input nat-listp))
-    :short "Parse a @('type-exp')."
+    :short "Parse a @('type')."
     (b* (;; Try non-recursive alternatives
          ((mv tree input1)
           (b* (((try tree input1) (parse-type-var input))
                ((try tree input1) (parse-base-type input)))
             (parse-bracket-type input)))
          ((unless (reserrp tree))
-          (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "type-exp")
+          (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "type")
                :branches (list (list tree))) input1))
-         ;; Try "(" ws type-exp-paren ws ")"
+         ;; Try "(" ws type-paren ws ")"
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((pok tree-ws1) (parse-ws input))
-         ((pok< tree-body) (parse-type-exp-paren input))
+         ((pok< tree-body) (parse-type-paren input))
          ((pok tree-ws2) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input)))
-      (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "type-exp")
+      (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "type")
            :branches (list (list tree-open)
                            (list tree-ws1)
                            (list tree-body)
@@ -1154,7 +1154,7 @@
     :short "Parse a @('bracket-type')."
     (b* (((pok< tree-open) (abnf::parse-ichars "[" input))
          ((pok tree-ws1) (parse-ws input))
-         ((pok< tree-te) (parse-type-exp input))
+         ((pok< tree-te) (parse-type input))
          ((mv trees-exts input) (parse-*-ws-ispace input))
          ((pok tree-ws2) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars "]" input)))
@@ -1168,16 +1168,16 @@
           input))
     :measure (two-nats-measure (len input) 2))
 
-  (define parse-type-exp-paren ((input nat-listp))
+  (define parse-type-paren ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp) (rest-input nat-listp))
-    :short "Parse a @('type-exp-paren')."
+    :short "Parse a @('type-paren')."
     (b* (((pok tree)
           (b* (((try tree rest) (parse-array-type input))
                ((try tree rest) (parse-arrow-type input))
                ((try tree rest) (parse-forall-type input))
                ((try tree rest) (parse-pi-type input)))
             (parse-sigma-type input))))
-      (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "type-exp-paren")
+      (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "type-paren")
            :branches (list (list tree))) input))
     :measure (two-nats-measure (len input) 1))
 
@@ -1186,7 +1186,7 @@
     :short "Parse an @('array-type')."
     (b* (((pok< tree-a) (abnf::parse-schars "A" input))
          ((pok tree-ws1) (parse-ws input))
-         ((pok< tree-te) (parse-type-exp input))
+         ((pok< tree-te) (parse-type input))
          ((pok tree-ws2) (parse-ws input))
          ((pok< tree-is) (parse-ispace input)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "array-type")
@@ -1205,13 +1205,13 @@
          ((pok< tree-kw) (parse-group-arrow input))
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
-         ((pok trees-tes) (parse-*-ws-type-exp input))
+         ((pok trees-tes) (parse-*-ws-type input))
          ((pok tree-ws2) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
          ((pok tree-ws3) (parse-ws input))
          ((unless (mbt (< (len input) (len orig-input))))
           (mv (reserrf :impossible) (nat-list-fix orig-input)))
-         ((pok< tree-te) (parse-type-exp input)))
+         ((pok< tree-te) (parse-type input)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "arrow-type")
            :branches (list (list tree-kw)
                            (list tree-ws1)
@@ -1234,7 +1234,7 @@
          ((pok tree-ws2) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
          ((pok tree-ws3) (parse-ws input))
-         ((pok< tree-te) (parse-type-exp input)))
+         ((pok< tree-te) (parse-type input)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "forall-type")
            :branches (list (list tree-kw)
                            (list tree-ws1)
@@ -1257,7 +1257,7 @@
          ((pok tree-ws2) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
          ((pok tree-ws3) (parse-ws input))
-         ((pok< tree-te) (parse-type-exp input)))
+         ((pok< tree-te) (parse-type input)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "pi-type")
            :branches (list (list tree-kw)
                            (list tree-ws1)
@@ -1280,7 +1280,7 @@
          ((pok tree-ws2) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
          ((pok tree-ws3) (parse-ws input))
-         ((pok< tree-te) (parse-type-exp input)))
+         ((pok< tree-te) (parse-type input)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "sigma-type")
            :branches (list (list tree-kw)
                            (list tree-ws1)
@@ -1293,16 +1293,16 @@
           input))
     :measure (two-nats-measure (len input) 0))
 
-  (define parse-*-ws-type-exp ((input nat-listp))
+  (define parse-*-ws-type ((input nat-listp))
     :returns (mv (trees abnf::tree-list-resultp) (rest-input nat-listp))
-    :short "Parse @('*( ws type-exp )')."
+    :short "Parse @('*( ws type )')."
     (b* ((start-input input)
          ((mv trees input)
           (b* (((pok tree-ws) (parse-ws input))
-               ((pok< tree-te) (parse-type-exp input))
+               ((pok< tree-te) (parse-type input))
                ((unless (mbt (< (len input) (len start-input))))
                 (mv (reserrf :impossible) (nat-list-fix start-input)))
-               ((pok trees) (parse-*-ws-type-exp input)))
+               ((pok trees) (parse-*-ws-type input)))
             (mv (cons (abnf::make-tree-nonleaf :rulename? nil
                        :branches (list (list tree-ws) (list tree-te)))
                       trees)
@@ -1321,15 +1321,15 @@
     :in-theory
     (e/d (abnf::treep-when-result-not-error
           abnf::tree-listp-when-result-not-error)
-         (parse-type-exp parse-bracket-type parse-type-exp-paren
+         (parse-type parse-bracket-type parse-type-paren
           parse-array-type parse-arrow-type parse-forall-type
-          parse-pi-type parse-sigma-type parse-*-ws-type-exp)))
-   (and (acl2::occur-lst '(acl2::flag-is 'parse-type-exp) clause)
-        '(:expand (parse-type-exp input)))
+          parse-pi-type parse-sigma-type parse-*-ws-type)))
+   (and (acl2::occur-lst '(acl2::flag-is 'parse-type) clause)
+        '(:expand (parse-type input)))
    (and (acl2::occur-lst '(acl2::flag-is 'parse-bracket-type) clause)
         '(:expand (parse-bracket-type input)))
-   (and (acl2::occur-lst '(acl2::flag-is 'parse-type-exp-paren) clause)
-        '(:expand (parse-type-exp-paren input)))
+   (and (acl2::occur-lst '(acl2::flag-is 'parse-type-paren) clause)
+        '(:expand (parse-type-paren input)))
    (and (acl2::occur-lst '(acl2::flag-is 'parse-array-type) clause)
         '(:expand (parse-array-type input)))
    (and (acl2::occur-lst '(acl2::flag-is 'parse-arrow-type) clause)
@@ -1340,19 +1340,19 @@
         '(:expand (parse-pi-type input)))
    (and (acl2::occur-lst '(acl2::flag-is 'parse-sigma-type) clause)
         '(:expand (parse-sigma-type input)))
-   (and (acl2::occur-lst '(acl2::flag-is 'parse-*-ws-type-exp) clause)
-        '(:expand (parse-*-ws-type-exp input))))
+   (and (acl2::occur-lst '(acl2::flag-is 'parse-*-ws-type) clause)
+        '(:expand (parse-*-ws-type input))))
 
   ///
 
   (defret-mutual len-of-parse-types
-    (defret len-of-parse-type-exp-<=
+    (defret len-of-parse-type-<=
       (<= (len rest-input) (len input))
-      :rule-classes :linear :fn parse-type-exp)
-    (defret len-of-parse-type-exp-<
+      :rule-classes :linear :fn parse-type)
+    (defret len-of-parse-type-<
       (implies (not (reserrp tree))
                (< (len rest-input) (len input)))
-      :rule-classes :linear :fn parse-type-exp)
+      :rule-classes :linear :fn parse-type)
     (defret len-of-parse-bracket-type-<=
       (<= (len rest-input) (len input))
       :rule-classes :linear :fn parse-bracket-type)
@@ -1360,13 +1360,13 @@
       (implies (not (reserrp tree))
                (< (len rest-input) (len input)))
       :rule-classes :linear :fn parse-bracket-type)
-    (defret len-of-parse-type-exp-paren-<=
+    (defret len-of-parse-type-paren-<=
       (<= (len rest-input) (len input))
-      :rule-classes :linear :fn parse-type-exp-paren)
-    (defret len-of-parse-type-exp-paren-<
+      :rule-classes :linear :fn parse-type-paren)
+    (defret len-of-parse-type-paren-<
       (implies (not (reserrp tree))
                (< (len rest-input) (len input)))
-      :rule-classes :linear :fn parse-type-exp-paren)
+      :rule-classes :linear :fn parse-type-paren)
     (defret len-of-parse-array-type-<=
       (<= (len rest-input) (len input))
       :rule-classes :linear :fn parse-array-type)
@@ -1402,22 +1402,22 @@
       (implies (not (reserrp tree))
                (< (len rest-input) (len input)))
       :rule-classes :linear :fn parse-sigma-type)
-    (defret len-of-parse-*-ws-type-exp-<=
+    (defret len-of-parse-*-ws-type-<=
       (<= (len rest-input) (len input))
-      :rule-classes :linear :fn parse-*-ws-type-exp)
-    (defret len-of-parse-*-ws-type-exp-<
+      :rule-classes :linear :fn parse-*-ws-type)
+    (defret len-of-parse-*-ws-type-<
       t
-      :rule-classes nil :fn parse-*-ws-type-exp)
+      :rule-classes nil :fn parse-*-ws-type)
     :hints (("Goal" :in-theory
-             (disable parse-type-exp parse-bracket-type parse-type-exp-paren
+             (disable parse-type parse-bracket-type parse-type-paren
                       parse-array-type parse-arrow-type parse-forall-type
-                      parse-pi-type parse-sigma-type parse-*-ws-type-exp))
-            (and (acl2::occur-lst '(acl2::flag-is 'parse-type-exp) clause)
-                 '(:expand (parse-type-exp input)))
+                      parse-pi-type parse-sigma-type parse-*-ws-type))
+            (and (acl2::occur-lst '(acl2::flag-is 'parse-type) clause)
+                 '(:expand (parse-type input)))
             (and (acl2::occur-lst '(acl2::flag-is 'parse-bracket-type) clause)
                  '(:expand (parse-bracket-type input)))
-            (and (acl2::occur-lst '(acl2::flag-is 'parse-type-exp-paren) clause)
-                 '(:expand (parse-type-exp-paren input)))
+            (and (acl2::occur-lst '(acl2::flag-is 'parse-type-paren) clause)
+                 '(:expand (parse-type-paren input)))
             (and (acl2::occur-lst '(acl2::flag-is 'parse-array-type) clause)
                  '(:expand (parse-array-type input)))
             (and (acl2::occur-lst '(acl2::flag-is 'parse-arrow-type) clause)
@@ -1428,14 +1428,14 @@
                  '(:expand (parse-pi-type input)))
             (and (acl2::occur-lst '(acl2::flag-is 'parse-sigma-type) clause)
                  '(:expand (parse-sigma-type input)))
-            (and (acl2::occur-lst '(acl2::flag-is 'parse-*-ws-type-exp) clause)
-                 '(:expand (parse-*-ws-type-exp input)))))
+            (and (acl2::occur-lst '(acl2::flag-is 'parse-*-ws-type) clause)
+                 '(:expand (parse-*-ws-type input)))))
 
-  (verify-guards parse-type-exp
+  (verify-guards parse-type
     :hints (("Goal" :in-theory
-             (disable parse-type-exp parse-bracket-type parse-type-exp-paren
+             (disable parse-type parse-bracket-type parse-type-paren
                       parse-array-type parse-arrow-type parse-forall-type
-                      parse-pi-type parse-sigma-type parse-*-ws-type-exp)))))
+                      parse-pi-type parse-sigma-type parse-*-ws-type)))))
 
 ;; ---- Patterns ----
 
@@ -1445,9 +1445,9 @@
 
 ;; ---- Non-recursive rules (bindings/params that don't reference exp) ----
 
-;; Generate groups/reps now that type-exp and ispace are defined.
-(defparse-remora-group "( ws type-exp )")
-(defparse-remora-*-group "( ws type-exp )")
+;; Generate groups/reps now that type and ispace are defined.
+(defparse-remora-group "( ws type )")
+(defparse-remora-*-group "( ws type )")
 (defparse-remora-group "( ws ispace )")
 (defparse-remora-*-group "( ws ispace )")
 ;; *( ispace-var ws ) for unbox-spec is hand-written inside the defines
@@ -1587,9 +1587,9 @@
     (xdoc::topstring
      (xdoc::p
       "There are two alternatives that share the @('array ws shape-lit')
-       prefix.  We first try the empty-array alternative @('ws type-exp'),
+       prefix.  We first try the empty-array alternative @('ws type'),
        which gives the element type explicitly (since there are no atoms
-       to carry it); if the @('type-exp') does not parse, we fall back to
+       to carry it); if the @('type') does not parse, we fall back to
        the @('*( ws atom )') alternative.  The two produce CSTs with
        distinct branch counts (5 vs. 4), which the abstractor dispatches
        on."))
@@ -1599,10 +1599,10 @@
          ;; remember the input just after the shared prefix, for the
          ;; fallback to alternative 1 (which begins its own `ws`)
          (input-after-prefix input)
-         ;; Alternative 2 (empty array): ws type-exp
+         ;; Alternative 2 (empty array): ws type
          ;; parse-ws never errors, so `pok` here is always taken
          ((pok tree-ws2) (parse-ws input))
-         ((mv tree-te input-b) (parse-type-exp input))
+         ((mv tree-te input-b) (parse-type input))
          ((unless (reserrp tree-te))
           (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "array-exp")
                :branches (list (list tree-kw)
@@ -1630,7 +1630,7 @@
      (xdoc::p
       "Like @(tsee parse-array-exp), there are two alternatives sharing the
        @('frame ws shape-lit') prefix.  We first try the empty-frame
-       alternative @('ws type-exp'); if @('type-exp') does not parse, we
+       alternative @('ws type'); if @('type') does not parse, we
        fall back to @('*( ws exp )').  The CSTs have distinct branch counts
        (5 vs. 4)."))
     (b* (((pok< tree-kw) (abnf::parse-schars "frame" input))
@@ -1639,10 +1639,10 @@
          ;; remember the input just after the shared prefix, for the
          ;; fallback to alternative 1 (which begins its own `ws`)
          (input-after-prefix input)
-         ;; Alternative 2 (empty frame): ws type-exp
+         ;; Alternative 2 (empty frame): ws type
          ;; parse-ws never errors, so `pok` here is always taken
          ((pok tree-ws2) (parse-ws input))
-         ((mv tree-te input-b) (parse-type-exp input))
+         ((mv tree-te input-b) (parse-type input))
          ((unless (reserrp tree-te))
           (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "frame-exp")
                :branches (list (list tree-kw)
@@ -1668,7 +1668,7 @@
     (b* (((pok< tree-kw) (abnf::parse-schars "t-app" input))
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-e) (parse-exp input))
-         ((mv trees-tes input) (parse-repetition-*-ws-type-exp input)))
+         ((mv trees-tes input) (parse-repetition-*-ws-type input)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "tapp-exp")
            :branches (list (list tree-kw)
                            (list tree-ws1)
@@ -1908,7 +1908,7 @@
          ((pok tree-ws3) (parse-ws input))
          ((pok< tree-e) (parse-exp input))
          ((pok tree-ws4) (parse-ws input))
-         ((pok< tree-te) (parse-type-exp input)))
+         ((pok< tree-te) (parse-type input)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "box-expr")
            :branches (list (list tree-kw)
                            (list tree-ws1)
