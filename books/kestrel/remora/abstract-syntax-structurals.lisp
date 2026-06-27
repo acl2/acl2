@@ -44,6 +44,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::deflist dim-list-case-const (x)
+  :short "Check if all the dimensions in a list
+          are in the @(':const') summand."
+  :guard (dim-listp x)
+  (dim-case x :const))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::deflist shape-list-case-append (x)
   :short "Check if all the shapes in a list
           are in the @(':append') summand."
