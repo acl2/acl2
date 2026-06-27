@@ -6,6 +6,7 @@
 
 ; Some of the following are redundant with others.
 (include-book "base")
+(include-book "bijection")
 (include-book "cantor")
 (include-book "defthmz-plus")
 ; (include-book "change-pkg") ; not used and kind of a hack.
@@ -27,6 +28,7 @@
 (include-book "schroeder-bernstein")
 (include-book "set-algebra")
 (include-book "skolem")
+(include-book "swap")
 (include-book "tc")
 (include-book "zfns")
 (include-book "zify")
