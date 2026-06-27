@@ -613,9 +613,10 @@
    (xdoc::p
     "This is rejected when the type denoted by the type name
      is the struct type being split,
-     because it is not clear how atomicity interacts with splitting."))
+     because it is not clear how atomicity interacts with splitting.
+     It is instead fine for a pointer to the struct type to be atomic."))
   (and (tyname-unamb/anno-p tyname)
-       (or (not (type-may-be-pointer-to-struct-spec-p
+       (or (not (type-may-be-struct-spec-p
                  (type-vinfo->type (tyname->info tyname))
                  spec))
            (sts-reject (type-spec-atomic tyname)))))
