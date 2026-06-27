@@ -125,7 +125,7 @@
           (unsigned-byte-p *vex-width* x))
      :rule-classes nil))
 
-  (define vex-prefixes-byte0-p ((vex-prefixes vex-prefixes-p))
+  (define vex-prefixes-byte0-p ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :returns (ok booleanp)
     :short "Returns @('t') if byte0 of the @('vex-prefixes') structure is
             either @('*vex2-byte0*') (i.e. C5H) or @('*vex3-byte0*') (i.e. C4H);
@@ -239,7 +239,7 @@
     :inline t)
 
   (define vex-prefixes-map-p ((bytes :type (unsigned-byte 16))
-                              (vex-prefixes vex-prefixes-p))
+                              (vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :guard (and (vex-prefixes-byte0-p vex-prefixes)
                 (or (equal bytes #ux0F)
                     (equal bytes #ux0F38)
@@ -267,7 +267,7 @@
   ;; Some convenient accessor functions for those fields of the VEX prefixes
   ;; that are common to both the two- and three-byte forms:
 
-  (define vex->vvvv ((vex-prefixes vex-prefixes-p))
+  (define vex->vvvv ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (vvvv (unsigned-byte-p 4 vvvv)
                    :hyp (vex-prefixes-byte0-p vex-prefixes)
@@ -282,7 +282,7 @@
       (otherwise (prog2$ (acl2::impossible) 0)))
     :guard-hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
 
-  (define vex->l ((vex-prefixes vex-prefixes-p))
+  (define vex->l ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (l (unsigned-byte-p 1 l)
                 :hyp (vex-prefixes-byte0-p vex-prefixes)
@@ -297,7 +297,7 @@
       (otherwise (prog2$ (acl2::impossible) 0)))
     :guard-hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
 
-  (define vex->pp ((vex-prefixes vex-prefixes-p))
+  (define vex->pp ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (pp (unsigned-byte-p 2 pp)
                  :hyp (vex-prefixes-byte0-p vex-prefixes)
@@ -312,7 +312,7 @@
       (otherwise (prog2$ (acl2::impossible) 0)))
     :guard-hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
 
-  (define vex->r ((vex-prefixes vex-prefixes-p))
+  (define vex->r ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (r (unsigned-byte-p 1 r)
                 :hyp (vex-prefixes-byte0-p vex-prefixes)
@@ -327,7 +327,7 @@
       (otherwise (prog2$ (acl2::impossible) 0)))
     :guard-hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
 
-  (define vex->w ((vex-prefixes vex-prefixes-p))
+  (define vex->w ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (w (unsigned-byte-p 1 w)
                 :hyp (vex-prefixes-byte0-p vex-prefixes)
@@ -355,7 +355,7 @@
   ;; that only apply to the three-byte forms, but that can be extended to
   ;; the two-byte forms:
 
-  (define vex->x ((vex-prefixes vex-prefixes-p))
+  (define vex->x ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :returns (x (unsigned-byte-p 1 x))
     :short "Get the @('X') field of @('vex-prefixes') for the three-byte form,
             or return 1 for the two-byte form."
@@ -370,7 +370,7 @@
       (#.*vex3-byte0* (vex3-byte1->x (vex-prefixes->byte1 vex-prefixes)))
       (otherwise 1)))
 
-  (define vex->b ((vex-prefixes vex-prefixes-p))
+  (define vex->b ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :returns (b (unsigned-byte-p 1 b))
     :short "Get the @('B') field of @('vex-prefixes') for the three-byte form,
             or return 1 for the two-byte form."
