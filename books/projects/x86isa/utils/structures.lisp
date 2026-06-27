@@ -271,7 +271,7 @@
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (vvvv (unsigned-byte-p 4 vvvv)
                    :hyp (vex-prefixes-byte0-p vex-prefixes)
-                   :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+                   :hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
     :short "Get the @('vvvv') field of @('vex-prefixes');
             cognizant of the two- or three-byte VEX prefixes form."
     (case (vex-prefixes->byte0 vex-prefixes)
@@ -285,7 +285,7 @@
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (l (unsigned-byte-p 1 l)
                 :hyp (vex-prefixes-byte0-p vex-prefixes)
-                :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+                :hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
     :short "Get the @('L') field of @('vex-prefixes');
             cognizant of the two- or three-byte VEX prefixes form."
     (case (vex-prefixes->byte0 vex-prefixes)
@@ -299,7 +299,7 @@
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (pp (unsigned-byte-p 2 pp)
                  :hyp (vex-prefixes-byte0-p vex-prefixes)
-                 :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+                 :hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
     :short "Get the @('pp') field of @('vex-prefixes');
             cognizant of the two- or three-byte VEX prefixes form."
     (case (vex-prefixes->byte0 vex-prefixes)
@@ -313,7 +313,7 @@
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (r (unsigned-byte-p 1 r)
                 :hyp (vex-prefixes-byte0-p vex-prefixes)
-                :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+                :hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
     :short "Get the @('R') field of @('vex-prefixes');
             cognizant of the two- or three-byte VEX prefixes form."
     (case (vex-prefixes->byte0 vex-prefixes)
@@ -327,7 +327,7 @@
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (w (unsigned-byte-p 1 w)
                 :hyp (vex-prefixes-byte0-p vex-prefixes)
-                :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+                :hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
     :short "Get the @('W') field of @('vex-prefixes');
             cognizant of the two- or three-byte VEX prefixes form."
     (case (vex-prefixes->byte0 vex-prefixes)
