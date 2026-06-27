@@ -48,6 +48,9 @@
                bool
                character-setp
                character-sfix
+               character-any-map
+               character-any-mapp
+               character-any-mfix
                check-and-call
                check-fn-call
                check-if-call
