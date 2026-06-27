@@ -109,7 +109,7 @@
           VEX prefix bytes in an x86 instruction."
   :long
   "<p>The VEX prefix is described in
-   Intel manual, Mar 2026, Vol. 2, Section 2.3."
+   Intel manual, Mar 2026, Vol. 2, Section 2.3.</p>"
 
   (defbitstruct vex-prefixes
     :short "VEX prefixes."
@@ -155,7 +155,7 @@
   ;; 32-bit and 16-bit modes.
 
   ;; Source for VEX layout constants:
-  ;; Intel Vol. 2 (Dec 2023), Figure 2-9 (VEX bit fields)
+  ;; Intel Vol. 2 (Mar 2026), Figure 2-9 (VEX bit fields)
 
   ;; Note that the 2-byte VEX implies a leading 0F opcode byte, and
   ;; the 3-byte VEX implies leading 0F, 0F 38, or 0F 3A bytes.
@@ -387,11 +387,11 @@
 
 (defsection evex-prefixes-layout-structures
 
-  :short "Functions to decode and structures collect
+  :short "Functions to decode and structures to collect
           EVEX prefix bytes in an x86 instruction."
   :long
   "<p>The EVEX prefix is described in
-   Intel manual, Mar 2026, Vol. 2, Section 2.7."
+   Intel manual, Mar 2026, Vol. 2, Section 2.7.</p>"
 
   ;; Sources: - Intel Vol. 2, Section 2.7
   ;;          - Sandpile, under "byte encodings" section:
@@ -723,7 +723,7 @@
         (unsigned-byte-p 33 x))
    :rule-classes nil))
 
-; Intel manual, Dec'23, Vol. 3A, Section 11.8.6
+; Intel manual, Mar 2026, Vol. 3A, Section 13.8.6
 (defbitstruct cr8Bits
   :short "CR8 register."
   :long "<p>Intel Manual, Mar 2026, Vol. 3A, Section 2.5.</p>"
