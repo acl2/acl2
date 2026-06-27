@@ -13,9 +13,11 @@
 (include-book "abstract-syntax-trees")
 (include-book "integer-lists")
 (include-book "variable-substitution-operations")
+(include-book "utility-transforms")
 
 (include-book "kestrel/fty/deffold-map" :dir :system)
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
+(include-book "kestrel/fty/string-nat-map" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/alists/put-assoc-equal" :dir :system)
 
@@ -29,7 +31,8 @@
 
 (defxdoc+ monomorphize
   :parents (remora)
-  :short "Monomorphize a Remora program by instantiating @(':cfun') definitions."
+  :short "Monomorphize a Remora program by instantiating
+          @(':cfun') and @(':ifun') definitions."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -40,22 +43,30 @@
      the evaluated nat values and partially evaluating dimensions throughout the
      type and body.")
    (xdoc::p
+    "Index-function definitions are handled the same way: every @(':iapp')
+     call to a known @(':ifun') with non-empty ispace arguments is replaced by
+     a reference to a freshly generated, fully-instantiated @(':val') definition
+     (an @(':ifun') abstracts only ispace parameters, so the instance has no
+     value parameters and is a @(':val') rather than a @(':fun')).")
+   (xdoc::p
     "The two main maps are:")
    (xdoc::ul
     (xdoc::li
      "@('fn-info-map'): a @(tsee fn-info-map), i.e. an alist from @(':cfun')
-      name strings to @(tsee bind+bind-map) pairs, where the @('bind-map')
-      component (a @(tsee bind-map)) maps instance-name strings to the
-      corresponding @(':fun') @(tsee bind) nodes.")
+      and @(':ifun') name strings to @(tsee bind+bind-map) pairs, where the
+      @('bind') component is the definition (:cfun or :ifun) and the
+      @('bind-map') component (a @(tsee bind-map)) maps instance-name strings
+      to the corresponding @(':fun') (for a @(':cfun')) or @(':val') (for an
+      @(':ifun')) @(tsee bind) nodes.")
     (xdoc::li
-     "@('dim-var-map'): a @(tsee string-nat-map), i.e. an alist from ispace
+     "@('dim-var-map'): a @(tsee acl2::string-nat-map), i.e. an omap from ispace
       dimension-variable name strings to their nat values, used to evaluate
       @(':dim') ispace arguments."))
    (xdoc::p
     "A termination fuel parameter bounds how many levels of nested cfun
      instantiation are performed.  When the fuel reaches zero the body of a
      new instance is obtained by dimension-substitution only (via
-     @(tsee partial-eval-dims)) rather than full recursive monomorphization.
+     @(tsee ast-partial-eval-dims)) rather than full recursive monomorphization.
      The top-level entry point @(tsee monomorphize-prog) supplies
      @('(* 10 (expr-count (prog->expr prog)))') as the initial fuel: a margin
      above the expression size, since each cfun instantiation grows the tree
@@ -66,7 +77,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Fixtypes for the maps used to accumulate cfun/instance information.
+; Fixtypes for the maps used to accumulate cfun/instance and ifun/instance information.
 
 (fty::defalist bind-map
   :short "Fixtype of alists from instance-name strings to @(tsee bind) nodes."
@@ -91,15 +102,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Extract the string name from a type variable (works for both :atom and :array).
-
-(define type-var-name ((v type-varp))
-  :returns (name stringp)
-  :short "Extract the name string from a type variable."
-  (type-var-case v :atom v.name :array v.name))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Map from type-variable name strings to types, used to resolve type arguments.
 ; We use the library @(tsee string-type-map) omap so that the type-variable
 ; substitution operations from @(see variable-substitution-operations) can be
@@ -112,7 +114,7 @@
   :short "Extend @('type-map') with @('tvars[i] -> tys[i]') for each index."
   (if (or (endp tvars) (endp tys))
       (string-type-map-fix type-map)
-    (b* ((name (type-var-name (car tvars)))
+    (b* ((name (type-var->name (car tvars)))
          (ty   (type-fix (car tys))))
       (extend-type-var-map (cdr tvars) (cdr tys)
                            (omap::update name ty
@@ -135,7 +137,7 @@
              :int   "i"
              :float "f")
      :var (b* ((type-map (string-type-map-fix type-map))
-               (name (type-var-name ty.var))
+               (name (type-var->name ty.var))
                (v-ty-pr (omap::assoc name type-map))
                ((unless v-ty-pr) "unbound"))
             (short-name-for-type (cdr v-ty-pr)
@@ -182,36 +184,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Extract the string name from an ispace variable (works for both :dim and :shape).
-
-(define ispace-var-name ((v ispace-varp))
-  :returns (name stringp)
-  :short "Extract the name string from an ispace variable."
-  (ispace-var-case v :dim v.name :shape v.name))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Extend ispace-value-map by pairing up ispace vars with nat values.
-
-(fty::defalist string-nat-map
-  :short "Fixtype of alists from strings to nats."
-  :key-type string
-  :val-type natp
-  :pred string-nat-mapp
-  :true-listp t)
+; Extend dim-var-map by pairing up ispace vars with nat values.  We use the
+; library acl2::string-nat-map omap so that this map is handled the same way
+; as the string-type-map used for type arguments.
 
 (define extend-ispace-val-map ((ivars ispace-var-listp)
                                (nats nat-listp)
-                               (dim-var-map string-nat-mapp))
-  :returns (new-dim-var-map string-nat-mapp)
+                               (dim-var-map acl2::string-nat-mapp))
+  :returns (new-dim-var-map acl2::string-nat-mapp)
   :short "Extend @('dim-var-map') with @('ivars[i] -> nats[i]') for each index."
   (if (or (endp ivars) (endp nats))
-      (string-nat-map-fix dim-var-map)
-    (b* ((name (ispace-var-name (car ivars)))
-         (val  (nfix (car nats)))
-         (dim-var-map  (string-nat-map-fix dim-var-map)))
+      (acl2::string-nat-map-fix dim-var-map)
+    (b* ((name (ispace-var->name (car ivars)))
+         (val  (nfix (car nats))))
       (extend-ispace-val-map (cdr ivars) (cdr nats)
-                             (cons (cons name val) dim-var-map)))))
+                             (omap::update name val
+                                           (acl2::string-nat-map-fix dim-var-map))))))
 
 
 (define nat-sum-list ((nats nat-listp))
@@ -272,19 +260,14 @@
    (shape :var (list (dim-var (shape-var->name shape)))))
   :name ast-leaf-dims)
 
-(local
- (defthm consp-of-assoc-equal-when-string-nat-mapp
-   (implies (and (string-nat-mapp x) (assoc-equal k x))
-            (consp (assoc-equal k x)))))
-
-(define eval-var-nat ((name stringp) (dim-var-map string-nat-mapp))
+(define eval-var-nat ((name stringp) (dim-var-map acl2::string-nat-mapp))
   :returns (mv (err booleanp) (val natp))
   :short "Look up @('name') in @('dim-var-map'); fail if it is absent."
-  (b* ((pair (assoc-equal (str-fix name) (string-nat-map-fix dim-var-map)))
+  (b* ((pair (omap::assoc (str-fix name) (acl2::string-nat-map-fix dim-var-map)))
        ((unless pair) (mv t 0)))
     (mv nil (nfix (cdr pair)))))
 
-(define eval-leaf-dim ((d dimp) (dim-var-map string-nat-mapp))
+(define eval-leaf-dim ((d dimp) (dim-var-map acl2::string-nat-mapp))
   ; tau (disabled book-wide) closes the natp return type via eval-var-nat.
   :returns (mv (err booleanp)
                (val natp :hints (("Goal" :in-theory (enable (:e tau-system))))))
@@ -300,7 +283,7 @@
     :const (mv nil d.val)
     :otherwise (mv t 0)))
 
-(define eval-leaf-dims ((ds dim-listp) (dim-var-map string-nat-mapp))
+(define eval-leaf-dims ((ds dim-listp) (dim-var-map acl2::string-nat-mapp))
   :returns (mv (err booleanp) (nats nat-listp))
   :short "Evaluate each collected leaf dim to a nat; fail if any does."
   (b* (((when (endp ds)) (mv nil nil))
@@ -310,7 +293,7 @@
        ((when err)  (mv t nil)))
     (mv nil (cons n ns))))
 
-(define eval-iargs ((isps ispace-listp) (dim-var-map string-nat-mapp))
+(define eval-iargs ((isps ispace-listp) (dim-var-map acl2::string-nat-mapp))
   :returns (mv (err booleanp) (nats nat-listp))
   :short "Evaluate every variable or dim occurring in an ispace-list to a nat."
   :long
@@ -351,11 +334,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Fold 1: substitute dimension variables with their nat values and constant-fold
-; arithmetic operators when all sub-dimensions become :const.
+; Fold: substitute dimension variables with their nat values, constant-fold
+; arithmetic operators when all sub-dimensions become :const, and propagate this
+; through shapes, ispaces, types, and the full expression/atom/bind hierarchy.
+; Because the @(tsee dims) clique is included in the fold, every embedded dim is
+; visited automatically; only the four arithmetic dim cases need overrides.
 
-(fty::deffold-map partial-eval-dim-arith
-  :short "Substitute free dimension variables and constant-fold arithmetic in dims."
+(fty::deffold-map partial-eval-dims
+  :short "Partially evaluate dimensions throughout Remora ASTs."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -363,44 +349,11 @@
      corresponding @(':const') dim.  After substitution, @(':add') and @(':mul')
      dims whose sub-dimensions are all @(':const') are reduced to a single
      @(':const').  @(':sub') is reduced likewise, but only when the result is
-     non-negative (natural).  Everything else is left structurally unchanged."))
-  :types (dims)
-  :extra-args ((dim-var-map string-nat-mapp))
-  :override
-  ((dim :var (b* ((dim-var-map (string-nat-map-fix dim-var-map))
-                  (pair (assoc-equal dim.name dim-var-map))
-                  ((unless pair) (dim-var dim.name)))
-               (dim-const (nfix (cdr pair)))))
-   (dim :add (b* ((new-dims (dim-list-partial-eval-dim-arith dim.dims dim-var-map))
-                  ((unless (all-dim-const-p new-dims)) (dim-add new-dims)))
-               (dim-const (nat-sum-list (dim-list-const-vals new-dims)))))
-   (dim :mul (b* ((new-dims (dim-list-partial-eval-dim-arith dim.dims dim-var-map))
-                  ((unless (all-dim-const-p new-dims)) (dim-mul new-dims)))
-               (dim-const (nat-product-list (dim-list-const-vals new-dims)))))
-   (dim :sub (b* ((new-dims (dim-list-partial-eval-dim-arith dim.dims dim-var-map))
-                  ((unless (and (consp new-dims)
-                                (all-dim-const-p new-dims)))
-                   (dim-sub new-dims))
-                  (result (nat-sub-list (dim-list-const-vals new-dims)))
-                  ((unless (natp result)) (dim-sub new-dims)))
-               (dim-const (nfix result)))))
-  :name ast-partial-eval-dim-arith)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Fold 2: propagate partial dim evaluation through shapes, ispaces, types,
-; and the full expression/atom/bind hierarchy.  Every embedded dim is handled
-; by the already-defined partial-eval-dim-arith fold above.
-
-(fty::deffold-map partial-eval-ast-dims
-  :short "Propagate partial dim evaluation through Remora ASTs."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Traverses shapes, ispaces, types, and expressions, delegating every
-     embedded @(tsee dim) to @(see ast-partial-eval-dim-arith).  All other
-     sub-trees are rebuilt recursively without custom overrides."))
-  :types (shapes/ispaces
+     non-negative (natural).  These transformations are applied to every dim
+     occurring anywhere in the traversed ASTs (shapes, ispaces, types, and
+     expressions); all other sub-trees are rebuilt recursively unchanged."))
+  :types (dims
+          shapes/ispaces
           ispace-list-option
           types
           type-option
@@ -409,31 +362,26 @@
           var+type?-list
           exprs/atoms/binds
           prog)
-  :extra-args ((dim-var-map string-nat-mapp))
+  :extra-args ((dim-var-map acl2::string-nat-mapp))
   :override
-  ((shape :dims (shape-dims (dim-list-partial-eval-dim-arith shape.dims dim-var-map)))
-   (shape :append (shape-append (shape-list-partial-eval-ast-dims shape.shapes dim-var-map)))
-   (shape :splice (shape-splice (ispace-list-partial-eval-ast-dims shape.ispaces dim-var-map)))
-   (type :bracket (type-bracket (type-partial-eval-ast-dims type.elem dim-var-map)
-                                (ispace-list-partial-eval-ast-dims type.ispaces dim-var-map)))
-   (ispace :dim (ispace-dim (dim-partial-eval-dim-arith  ispace.dim dim-var-map))))
-  :name ast-partial-eval-ast-dims)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define partial-eval-dims ((x exprp) (dim-var-map string-nat-mapp))
-  :returns (new-x exprp)
-  :short "Partially evaluate all @(':dim') terms in an expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Traverses @('x') and substitutes every free dimension variable whose
-     name appears in @('dim-var-map') with the corresponding @(':const') dim.
-     Constant-foldable arithmetic (@(':add'), @(':mul'), @(':sub') whose
-     sub-dims all become @(':const')) is reduced to a single @(':const');
-     for @(':sub'), reduction only occurs when the result is non-negative.
-     Everything else is returned structurally unchanged."))
-  (expr-partial-eval-ast-dims x dim-var-map))
+  ((dim :var (b* ((dim-var-map (acl2::string-nat-map-fix dim-var-map))
+                  (pair (omap::assoc dim.name dim-var-map))
+                  ((unless pair) (dim-var dim.name)))
+               (dim-const (nfix (cdr pair)))))
+   (dim :add (b* ((new-dims (dim-list-partial-eval-dims dim.dims dim-var-map))
+                  ((unless (all-dim-const-p new-dims)) (dim-add new-dims)))
+               (dim-const (nat-sum-list (dim-list-const-vals new-dims)))))
+   (dim :mul (b* ((new-dims (dim-list-partial-eval-dims dim.dims dim-var-map))
+                  ((unless (all-dim-const-p new-dims)) (dim-mul new-dims)))
+               (dim-const (nat-product-list (dim-list-const-vals new-dims)))))
+   (dim :sub (b* ((new-dims (dim-list-partial-eval-dims dim.dims dim-var-map))
+                  ((unless (and (consp new-dims)
+                                (all-dim-const-p new-dims)))
+                   (dim-sub new-dims))
+                  (result (nat-sub-list (dim-list-const-vals new-dims)))
+                  ((unless (natp result)) (dim-sub new-dims)))
+               (dim-const (nfix result)))))
+  :name ast-partial-eval-dims)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -446,72 +394,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Helper: right-nest a bind-list into single-bind :let expressions around a body.
-
-(define nest-let-binds ((binds bind-listp) (body exprp))
-  :returns (new-expr exprp)
-  :short "Right-nest a list of binds into single-bind @(':let') expressions
-          wrapped around @('body')."
-  (if (endp binds)
-      (expr-fix body)
-    (expr-let (list (bind-fix (car binds)))
-              (nest-let-binds (cdr binds) body))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Fold: rewrite every multi-bind :let into nested single-bind :lets, recursing
-; through the whole expression/atom/bind hierarchy.
-
-(fty::deffold-map singletonize-let
-  :short "Rewrite multi-bind @(':let') expressions as nested single-bind @(':let')s."
-  :types (shapes/ispaces
-          ispace-list-option
-          types
-          type-option
-          type-list-option
-          var+type?
-          var+type?-list
-          exprs/atoms/binds
-          prog)
-  :override
-  ((expr :let (nest-let-binds
-                (bind-list-singletonize-let expr.binds)
-                (expr-singletonize-let expr.body))))
-  :name ast-singletonize-let)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Helper: merge a bind list into a :let body, coalescing when the body is a :let.
-
-(define coalesce-let ((binds bind-listp) (body exprp))
-  :returns (new-expr exprp)
-  :short "Merge @('binds') into a @(':let') body, coalescing when the body is
-          itself a @(':let')."
-  (expr-case body
-    :let (expr-let (bind-list-fix (append (bind-list-fix binds) body.binds))
-                   body.body)
-    :otherwise (expr-let (bind-list-fix binds) (expr-fix body))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Fold: collapse chains of :let expressions into single multi-bind :lets.
-; This is the left inverse of singletonize-let on the latter's image.
-
-(fty::deffold-map flatten-let
-  :short "Collapse chains of @(':let') expressions into single multi-bind @(':let')s."
-  :types (shapes/ispaces
-          ispace-list-option
-          types
-          type-option
-          type-list-option
-          var+type?
-          var+type?-list
-          exprs/atoms/binds
-          prog)
-  :override
-  ((expr :let (coalesce-let (bind-list-flatten-let expr.binds)
-                            (expr-flatten-let expr.body))))
-  :name ast-flatten-let)
+; The @(':let') normalization transforms used below (SINGLETONIZE-LET and
+; FLATTEN-LET, with helpers NEST-LET-BINDS and COALESCE-LET) live in
+; utility-transforms.lisp, included above.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -576,7 +461,7 @@
 ;   fuel          : natp       — limits depth of cfun-body recursion
 ;   x             : AST node   — the node being processed
 ;   fn-info-map   : fn-info-mapp — accumulated cfun/instance info (threaded through)
-;   dim-var-map   : string-nat-mapp — ispace dimension-variable bindings
+;   dim-var-map   : acl2::string-nat-mapp — ispace dimension-variable bindings
 ;
 ; Each function returns (mv err fn-info-map new-x).
 ;
@@ -596,7 +481,7 @@
   :verify-guards :after-returns
   :ruler-extenders :all
 
-  (define mono-expr ((fuel natp) (x exprp) (fn-info-map fn-info-mapp) (dim-var-map string-nat-mapp) (type-map string-type-mapp))
+  (define mono-expr ((fuel natp) (x exprp) (fn-info-map fn-info-mapp) (dim-var-map acl2::string-nat-mapp) (type-map string-type-mapp))
     :short "Monomorphize an expression."
     :returns (mv err (new-fn-info-map fn-info-mapp :hyp :guard) (new-expr exprp :hyp :guard))
     :measure (two-nats-measure fuel (expr-count x))
@@ -679,13 +564,13 @@
                                 (extend-ispace-val-map iparams nats dim-var-map))
                                ; Partially evaluate the ifun's return type.
                                (new-type?
-                                (type-option-partial-eval-ast-dims
+                                (type-option-partial-eval-dims
                                   ifun-bind.type? ext-dim-var-map))
                                ; Monomorphize the ifun body (with decremented fuel).
                                ((mv body-err fn-info-map new-body)
                                 (mono-instance-body
                                  fuel
-                                 (expr-partial-eval-ast-dims
+                                 (expr-partial-eval-dims
                                    ifun-bind.expr ext-dim-var-map)
                                  fn-info-map ext-dim-var-map type-map))
                                ((when body-err) (mv body-err fn-info-map))
@@ -776,18 +661,18 @@
                                  ; Partially evaluate the cfun's param and return types.
                                  (params cfun-bind.params)
                                  (new-params
-                                   (var+type?-list-subst-type-vars (var+type?-list-partial-eval-ast-dims params
-                                                                                                       ext-dim-var-map)
+                                   (var+type?-list-subst-type-vars (var+type?-list-partial-eval-dims params
+                                                                                                     ext-dim-var-map)
                                                                   ext-type-map ext-type-map))
                                  (new-type
-                                   (type-subst-type-vars (type-partial-eval-ast-dims cfun-bind.type ext-dim-var-map)
+                                   (type-subst-type-vars (type-partial-eval-dims cfun-bind.type ext-dim-var-map)
                                                          ext-type-map ext-type-map))
                                  ; Monomorphize the cfun body (with decremented fuel).
                                  ((mv body-err fn-info-map new-body)
                                   (mono-instance-body
                                    fuel
                                    (expr-subst-type-vars
-                                    (expr-partial-eval-ast-dims
+                                    (expr-partial-eval-dims
                                       cfun-bind.expr ext-dim-var-map)
                                     ext-type-map ext-type-map)
                                    fn-info-map ext-dim-var-map ext-type-map))
@@ -856,7 +741,7 @@
         (mv t fn-info-map x))))
 
   (define mono-expr-list ((fuel natp) (x expr-listp)
-                          (fn-info-map fn-info-mapp) (dim-var-map string-nat-mapp) (type-map string-type-mapp))
+                          (fn-info-map fn-info-mapp) (dim-var-map acl2::string-nat-mapp) (type-map string-type-mapp))
     :short "Monomorphize a list of expressions."
     :returns (mv err (new-fn-info-map fn-info-mapp :hyp :guard) (new-exprs expr-listp :hyp :guard))
     :measure (two-nats-measure fuel (expr-list-count x))
@@ -870,7 +755,7 @@
             (mono-expr-list fuel (cdr x) fn-info-map dim-var-map type-map)))
         (mv err fn-info-map (cons new-e new-rest)))))
 
-  (define mono-atom ((fuel natp) (x atomp) (fn-info-map fn-info-mapp) (dim-var-map string-nat-mapp) (type-map string-type-mapp))
+  (define mono-atom ((fuel natp) (x atomp) (fn-info-map fn-info-mapp) (dim-var-map acl2::string-nat-mapp) (type-map string-type-mapp))
     :short "Monomorphize an atom."
     :returns (mv err (new-fn-info-map fn-info-mapp :hyp :guard) (new-atom atomp :hyp :guard))
     :measure (two-nats-measure fuel (atom-count x))
@@ -890,7 +775,7 @@
                  (mv err fn-info-map (atom-box x.ispaces new-array x.type)))))
 
   (define mono-atom-list ((fuel natp) (x atom-listp)
-                          (fn-info-map fn-info-mapp) (dim-var-map string-nat-mapp) (type-map string-type-mapp))
+                          (fn-info-map fn-info-mapp) (dim-var-map acl2::string-nat-mapp) (type-map string-type-mapp))
     :short "Monomorphize a list of atoms."
     :returns (mv err (new-fn-info-map fn-info-mapp :hyp :guard) (new-atoms atom-listp :hyp :guard))
     :measure (two-nats-measure fuel (atom-list-count x))
@@ -904,7 +789,7 @@
             (mono-atom-list fuel (cdr x) fn-info-map dim-var-map type-map)))
         (mv err fn-info-map (cons new-a new-rest)))))
 
-  (define mono-bind ((fuel natp) (x bindp) (fn-info-map fn-info-mapp) (dim-var-map string-nat-mapp) (type-map string-type-mapp))
+  (define mono-bind ((fuel natp) (x bindp) (fn-info-map fn-info-mapp) (dim-var-map acl2::string-nat-mapp) (type-map string-type-mapp))
     :short "Monomorphize a binding, registering @(':cfun') and @(':ifun')
             definitions in fn-info-map."
     :returns (mv err (new-fn-info-map fn-info-mapp :hyp :guard) (new-bind bindp :hyp :guard))
@@ -943,7 +828,7 @@
 
   (define mono-instance-body ((fuel natp) (body exprp)
                               (fn-info-map fn-info-mapp)
-                              (dim-var-map string-nat-mapp)
+                              (dim-var-map acl2::string-nat-mapp)
                               (type-map string-type-mapp))
     :short "Recurse into an instance body, or return it unchanged when fuel runs out."
     :long
@@ -973,10 +858,11 @@
    (xdoc::p
     "Top-level entry point.  Returns @('(mv error fn-info-map new-prog)').
      On success @('error') is @('nil') and @('fn-info-map') is a
-     @(tsee fn-info-map) mapping each @(':cfun') name to a
+     @(tsee fn-info-map) mapping each @(':cfun') and @(':ifun') name to a
      @(tsee bind+bind-map) pair, whose @('bind-map') component maps each
-     instance-name string to the corresponding monomorphized @(':fun')
-     @(tsee bind) node.  On failure @('error') is a keyword: currently
+     instance-name string to the corresponding monomorphized @(':fun') (for a
+     @(':cfun')) or @(':val') (for an @(':ifun')) @(tsee bind) node.
+     On failure @('error') is a keyword: currently
      @(':ispace-eval-error') (an ispace argument failed to evaluate to a nat),
      or @(':bad-ifun-entry') / @(':bad-cfun-entry') (a name registered as an
      @(':ifun') / @(':cfun') resolved to a binding of the wrong kind)."))
