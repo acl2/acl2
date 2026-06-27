@@ -55,6 +55,8 @@
 
     typequal/attribspec-list-listp
 
+    keyword-uscores-p
+
     unopp
     unop-case
     unop-kind
@@ -64,8 +66,10 @@
     binop-kind
 
     stor-spec
+    stor-spec-fix
 
     type-qual
+    type-qual-fix
 
     asm-name-spec-optionp
 
@@ -90,7 +94,9 @@
     make-expr-arrsub
     make-expr-funcall
     make-expr-member
+    expr-member->arg
     make-expr-memberp
+    expr-memberp->arg
     make-expr-complit
     expr-unary
     make-expr-unary
@@ -410,6 +416,7 @@
     make-label-casexpr
 
     asm-stmt
+    asm-stmt-fix
 
     stmtp
     stmt-fix
@@ -484,6 +491,7 @@
 
     trans-items
 
+    trans-item
     trans-itemp
     trans-item-fix
     trans-item-case
@@ -729,14 +737,19 @@
 
     ;; validation information:
 
+    uid
     uidp
+    uid-fix
 
+    type
     typep
+    type-fix
     type-case
     type-kind
     type-count
     type-void
     type-sint
+    type-pointer->to
 
     type-listp
     type-list-count
@@ -753,6 +766,7 @@
     type-struni-member-p
     type-struni-member-count
 
+    type-struni-member-list
     type-struni-member-listp
     type-struni-member-list-count
     type-struni-member->type
@@ -777,8 +791,12 @@
     var-vinfo->uid
     coerce-var-vinfo
 
+    type-spec-struct-vinfop
+    type-spec-struct-vinfo->type
+
     type-vinfop
     type-vinfo-fix
+    type-vinfo->type
 
     type+uid-vinfo
     type+uid-vinfop

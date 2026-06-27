@@ -78,7 +78,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-char ((char natp) (bytes byte-listp))
+(define pprint-unichar ((char unicharp) (bytes byte-listp))
   :guard (grammar-character-p char)
   :returns (new-bytes byte-listp
                       :hints (("Goal" :in-theory (enable grammar-character-p
@@ -125,11 +125,12 @@
                                            #b00111111)
                                    #b10000000)))))
        (new-bytes (append (rev encoding) (byte-list-fix bytes))))
-    new-bytes))
+    new-bytes)
+  :guard-hints (("Goal" :in-theory (enable natp-when-unicharp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-chars ((chars nat-listp) (bytes byte-listp))
+(define pprint-unichars ((chars unichar-listp) (bytes byte-listp))
   :guard (grammar-character-listp chars)
   :returns (new-bytes byte-listp)
   :short "Print zero or more characters after preprocessing."
@@ -139,8 +140,9 @@
     "The characters are supplied in a list (of their codes).
      They are printed from left to right."))
   (b* (((when (endp chars)) (byte-list-fix bytes))
-       (bytes (pprint-char (car chars) bytes)))
-    (pprint-chars (cdr chars) bytes)))
+       (bytes (pprint-unichar (car chars) bytes)))
+    (pprint-unichars (cdr chars) bytes))
+  :guard-hints (("Goal" :in-theory (enable nat-listp-when-unichar-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -161,35 +163,39 @@
      when converted to natural numbers, are larger than 127,
      and therefore are not ASCII.
      But we always call this printing function with ASCII strings."))
-  (pprint-chars (acl2::string=>nats string) bytes))
+  (pprint-unichars (acl2::string=>nats string) bytes)
+  :guard-hints
+  (("Goal" :in-theory (enable unichar-listp-when-unsigned-byte-listp-8))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-form-feed ((bytes byte-listp))
   :returns (new-bytes byte-listp)
   :short "Print a form feed after preprocessing."
-  (pprint-char 12 bytes))
+  (pprint-unichar 12 bytes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-horizontal-tab ((bytes byte-listp))
   :returns (new-bytes byte-listp)
   :short "Print a horizontal tab after preprocessing."
-  (pprint-char 9 bytes))
+  (pprint-unichar 9 bytes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-vertical-tab ((bytes byte-listp))
   :returns (new-bytes byte-listp)
   :short "Print a vertical tab after preprocessing."
-  (pprint-char 11 bytes))
+  (pprint-unichar 11 bytes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-spaces ((count posp) (bytes byte-listp))
   :returns (new-bytes byte-listp)
   :short "Print one or more spaces after preprocessing."
-  (pprint-chars (repeat count 32) bytes))
+  (pprint-unichars (repeat count 32) bytes)
+  :guard-hints
+  (("Goal" :in-theory (enable unichar-listp-when-unsigned-byte-listp-8))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -197,9 +203,9 @@
   :returns (new-bytes byte-listp)
   :short "Print a new line after preprocessing."
   (newline-case newline
-                :lf (pprint-char 10 bytes)
-                :cr (pprint-char 13 bytes)
-                :crlf (pprint-chars (list 13 10) bytes)))
+                :lf (pprint-unichar 10 bytes)
+                :cr (pprint-unichar 13 bytes)
+                :crlf (pprint-unichars (list 13 10) bytes)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -210,7 +216,7 @@
        ((unless (grammar-character-listp content))
         (raise "Internal error: bad line comment content ~x0."
                (unichar-list-fix content)))
-       (bytes (pprint-chars content bytes)))
+       (bytes (pprint-unichars content bytes)))
     bytes)
   :guard-hints (("Goal" :in-theory (enable nat-listp-when-unichar-listp)))
   :no-function nil)
@@ -224,7 +230,7 @@
        ((unless (grammar-character-listp content))
         (raise "Internal error: bad block comment content ~x0."
                (unichar-list-fix content)))
-       (bytes (pprint-chars content bytes))
+       (bytes (pprint-unichars content bytes))
        (bytes (pprint-astring "*/" bytes)))
     bytes)
   :guard-hints (("Goal" :in-theory (enable nat-listp-when-unichar-listp)))
@@ -241,7 +247,7 @@
     "This is for the @(':other') case of @(tsee plexeme)."))
   (b* (((unless (grammar-character-p char))
         (raise "Internal error: bad character code ~x0." (nfix char))))
-    (pprint-char char bytes))
+    (pprint-unichar char bytes))
   :guard-hints (("Goal" :in-theory (enable natp-when-unicharp)))
   :no-function nil)
 
@@ -253,8 +259,10 @@
   (b* ((chars (acl2::string=>nats punctuator))
        ((unless (grammar-character-listp chars))
         (raise "Internal error: bad punctuator ~x0." (str-fix punctuator))))
-    (pprint-chars chars bytes))
-  :no-function nil)
+    (pprint-unichars chars bytes))
+  :no-function nil
+  :guard-hints
+  (("Goal" :in-theory (enable unichar-listp-when-unsigned-byte-listp-8))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -267,9 +275,10 @@
     "We turn the character into its code and print it.
      Note that we do not need the numeric value of the character;
      we just need to print the character itself."))
-  (pprint-char (char-code achar) bytes)
+  (pprint-unichar (char-code achar) bytes)
   :guard-hints (("Goal" :in-theory (enable grammar-character-p
-                                           dec-digit-char-p))))
+                                           dec-digit-char-p
+                                           unicharp-of-char-code))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -282,9 +291,10 @@
     "We turn the character into its code and print it.
      Note that we do not need the numeric value of the character;
      we just need to print the character itself."))
-  (pprint-char (char-code achar) bytes)
+  (pprint-unichar (char-code achar) bytes)
   :guard-hints (("Goal" :in-theory (enable grammar-character-p
-                                           oct-digit-char-p))))
+                                           oct-digit-char-p
+                                           unicharp-of-char-code))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -297,9 +307,10 @@
     "We turn the character into its code and print it.
      Note that we do not need the numeric value of the character;
      we just need to print the character itself."))
-  (pprint-char (char-code achar) bytes)
+  (pprint-unichar (char-code achar) bytes)
   :guard-hints (("Goal" :in-theory (enable grammar-character-p
-                                           hex-digit-char-p))))
+                                           hex-digit-char-p
+                                           unicharp-of-char-code))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -401,7 +412,7 @@
    cchar
    :char (b* (((unless (grammar-character-p cchar.code))
                (raise "Internal error: bad character code ~x0." cchar.code)))
-           (pprint-char cchar.code bytes))
+           (pprint-unichar cchar.code bytes))
    :escape (pprint-escape cchar.escape bytes))
   :guard-hints (("Goal" :in-theory (enable natp-when-unicharp)))
   :no-function nil)
@@ -416,7 +427,7 @@
    schar
    :char (b* (((unless (grammar-character-p schar.code))
                (raise "Internal error: bad character code ~x0." schar.code)))
-           (pprint-char schar.code bytes))
+           (pprint-unichar schar.code bytes))
    :escape (pprint-escape schar.escape bytes))
   :guard-hints (("Goal" :in-theory (enable natp-when-unicharp)))
   :no-function nil)
@@ -430,7 +441,7 @@
   (b* ((code (h-char->code hchar))
        ((unless (grammar-character-p code))
         (raise "Internal error: bad character code ~x0." code)))
-    (pprint-char code bytes))
+    (pprint-unichar code bytes))
   :guard-hints (("Goal" :in-theory (enable natp-when-unicharp)))
   :no-function nil)
 
@@ -443,7 +454,7 @@
   (b* ((code (q-char->code qchar))
        ((unless (grammar-character-p code))
         (raise "Internal error: bad character code ~x0." code)))
-    (pprint-char code bytes))
+    (pprint-unichar code bytes))
   :guard-hints (("Goal" :in-theory (enable natp-when-unicharp)))
   :no-function nil)
 
@@ -574,8 +585,8 @@
                       (bytes (pprint-dec-digit-achar number.digit bytes)))
                    bytes)
    :number-nondigit (b* ((bytes (pprint-pnumber number.number bytes))
-                         (bytes (pprint-char (char-code number.nondigit)
-                                             bytes)))
+                         (bytes (pprint-unichar (char-code number.nondigit)
+                                                bytes)))
                       bytes)
    :number-locase-e-sign (b* ((bytes (pprint-pnumber number.number bytes))
                               (bytes (pprint-astring "e" bytes))
@@ -599,7 +610,8 @@
   :measure (pnumber-count number)
   :verify-guards :after-returns
   :guard-hints
-  (("Goal" :in-theory (enable grammar-character-p-when-letter/uscore-char-p))))
+  (("Goal" :in-theory (enable grammar-character-p-when-letter/uscore-char-p
+                              unicharp-of-char-code))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -609,8 +621,10 @@
   (b* ((chars (acl2::string=>nats ident))
        ((unless (grammar-character-listp chars))
         (raise "Internal error: bad identifier characters ~x0." chars)))
-    (pprint-chars chars bytes))
-  :no-function nil)
+    (pprint-unichars chars bytes))
+  :no-function nil
+  :guard-hints
+  (("Goal" :in-theory (enable unichar-listp-when-unsigned-byte-listp-8))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

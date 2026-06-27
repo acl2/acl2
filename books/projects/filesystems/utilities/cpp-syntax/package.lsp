@@ -24,6 +24,7 @@
    ;; Standard library symbols (all except 'block' which conflicts).
    (set-difference-eq *std-pkg-symbols*
                       '(block
+                        type
                         typep))
    ;; All C$ abstract syntax symbols (identifiers, expressions, statements,
    ;; declarations, translation units, etc.).

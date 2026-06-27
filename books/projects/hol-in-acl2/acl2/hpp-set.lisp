@@ -78,7 +78,7 @@
   (implies (symbolp x)
            (in x (v-omega*2)))
   :props (zfc v$prop v-omega+$prop domain$prop prod2$prop inverse$prop))
-  
+
 ; A handy abbreviation, defined so that it's clearly a natural number:
 (defun v-omega+-n-inv (x)
   (let* ((sx (in-in-witness x (image (v-omega+))))
@@ -161,7 +161,7 @@
                        (v-omega+-n (v-omega+-n-inv (domain x)))
                        (v-omega+-n (v-omega+-n-inv (image x))))))
   :hints (("Goal" :in-theory (enable subset)))
-  :props (zfc v-omega+$prop inverse$prop prod2$prop domain$prop v$prop))
+  :props (zfc v-omega+$prop inverse$prop prod2$prop domain$prop v$prop diff$prop))
 
 (defthmz relation-in-v-omega*2-lemma-2
   (implies (and (natp i)
@@ -195,7 +195,7 @@
            :use ((:instance relation-in-v-omega*2-lemma-2
                             (i (v-omega+-n-inv (domain x)))
                             (j (v-omega+-n-inv (image x)))))))
-  :props (zfc v-omega+$prop inverse$prop prod2$prop domain$prop v$prop))
+  :props (zfc v-omega+$prop inverse$prop prod2$prop domain$prop v$prop diff$prop))
 
 ; Start proof of in-cdr-assoc-implies-in-v-omega*2.  (Set theory lemmas
 ; cdr-preserves-in-for-transitive and car-preserves-in-for-transitive were
@@ -213,7 +213,8 @@
                 (consp (hons-assoc-equal key hta))
                 (in x (cdr (hons-assoc-equal key hta))))
            (in x (v-omega*2)))
-  :props (zfc v-omega+$prop inverse$prop prod2$prop domain$prop v$prop)
+  :props (zfc v-omega+$prop inverse$prop prod2$prop domain$prop v$prop
+              diff$prop)
   :instructions (:bash (:claim (in x (v-omega+-n (v-omega+-n-inv hta))))
                        (:rewrite in-v-omega*2-suff)))
 
@@ -296,7 +297,8 @@
                 (in y (v-omega*2)))
            (in (prod2 x y) (v-omega*2)))
   :hints (("Goal" :cases ((equal x 0) (equal y 0))))
-  :props (zfc v-omega+$prop v$prop inverse$prop prod2$prop domain$prop))
+  :props (zfc v-omega+$prop v$prop inverse$prop prod2$prop domain$prop
+              diff$prop))
 
 (defthmz union2-in-v-omega*2
   (implies (and (in x (v-omega*2))
@@ -333,7 +335,7 @@
 
 ; Note:  I think we can do one better, i.e., replacing (+ 2 n) by (1+ n).
 ; This is an immediate corollary of subset-powerset-v-omega+-n+1, which we
-; may not need but seems worth stating. 
+; may not need but seems worth stating.
 
   (implies (and (natp n)
                 (in x (v-omega+-n n)))
@@ -390,7 +392,7 @@
  (defthmz l1
    (subset (finseqs x)
            (powerset (prod2 (omega) x)))
-   :props (zfc inverse$prop prod2$prop domain$prop finseqs$prop)
+   :props (zfc inverse$prop prod2$prop domain$prop finseqs$prop diff$prop)
    :hints (("Goal" :in-theory (enable subset)))))
 
 (local
@@ -403,7 +405,7 @@
             (in (prod2 (omega) x)
                 (v-omega+-n (n1 x))))
    :props (zfc v-omega+$prop v$prop
-               inverse$prop prod2$prop domain$prop)))
+               inverse$prop prod2$prop domain$prop diff$prop)))
 
 (local
  (defthmz l3
@@ -412,7 +414,7 @@
                     (v-omega+-n (1+ (n1 x)))))
    :hints (("Goal" :in-theory (disable v-omega+-n)))
    :props (zfc v-omega+$prop v$prop
-               inverse$prop prod2$prop domain$prop)))
+               inverse$prop prod2$prop domain$prop diff$prop)))
 
 (local
  (defthmz l4
@@ -424,7 +426,7 @@
             :restrict ((subset-transitivity
                         ((y (powerset (prod2 (omega) x))))))))
    :props (zfc v-omega+$prop v$prop
-               inverse$prop prod2$prop domain$prop finseqs$prop)))
+               inverse$prop prod2$prop domain$prop finseqs$prop diff$prop)))
 
 (local
  (defthmz l5
@@ -435,7 +437,7 @@
             :in-theory (disable n1 v-omega+-n)
             :expand ((v-omega+-n (+ 2 (n1 x))))))
    :props (zfc v-omega+$prop v$prop
-               inverse$prop prod2$prop domain$prop finseqs$prop)))
+               inverse$prop prod2$prop domain$prop finseqs$prop diff$prop)))
 
 (defthmz finseqs-in-v-omega*2
   (implies (in x (v-omega*2))
@@ -443,7 +445,7 @@
   :hints (("Goal"
            :restrict ((in-v-omega*2-suff ((n (+ 2 (n1 x))))))))
   :props (zfc v-omega+$prop v$prop
-              inverse$prop prod2$prop domain$prop finseqs$prop))
+              inverse$prop prod2$prop domain$prop finseqs$prop diff$prop))
 )
 
 (encapsulate ()
@@ -472,7 +474,7 @@
  (defthmz l1
    (subset (fun-space x y)
            (powerset (prod2 x y)))
-   :props (zfc inverse$prop prod2$prop domain$prop fun-space$prop)
+   :props (zfc inverse$prop prod2$prop domain$prop fun-space$prop diff$prop)
    :hints (("Goal" :in-theory (enable subset)))))
 
 (local
@@ -486,7 +488,7 @@
             (in (prod2 x y)
                 (v-omega+-n (n1 x y))))
    :props (zfc v-omega+$prop v$prop
-               inverse$prop prod2$prop domain$prop)))
+               inverse$prop prod2$prop domain$prop diff$prop)))
 
 (local
  (defthmz l3
@@ -496,7 +498,7 @@
                     (v-omega+-n (1+ (n1 x y)))))
    :hints (("Goal" :in-theory (disable v-omega+-n)))
    :props (zfc v-omega+$prop v$prop
-               inverse$prop prod2$prop domain$prop)))
+               inverse$prop prod2$prop domain$prop diff$prop)))
 
 (local
  (defthmz l4
@@ -509,7 +511,7 @@
             :restrict ((subset-transitivity
                         ((y (powerset (prod2 x y))))))))
    :props (zfc v-omega+$prop v$prop
-               inverse$prop prod2$prop domain$prop fun-space$prop)))
+               inverse$prop prod2$prop domain$prop fun-space$prop diff$prop)))
 
 (local
  (defthmz l5
@@ -521,7 +523,7 @@
             :in-theory (disable n1 v-omega+-n)
             :expand ((v-omega+-n (+ 2 (n1 x y))))))
    :props (zfc v-omega+$prop v$prop
-               inverse$prop prod2$prop domain$prop fun-space$prop)))
+               inverse$prop prod2$prop domain$prop fun-space$prop diff$prop)))
 
 (defthmz fun-space-in-v-omega*2
   (implies (and (in x (v-omega*2))
@@ -530,14 +532,14 @@
   :hints (("Goal" :restrict ((in-v-omega*2-suff
                               ((n (+ 2 (n1 x y))))))))
   :props (zfc v-omega+$prop v$prop
-              inverse$prop prod2$prop domain$prop fun-space$prop))
+              inverse$prop prod2$prop domain$prop fun-space$prop diff$prop))
 ) ; end encapsulate
 
 (defthmz in-cdr-hons-assoc-equal-in-v-omega*2
   (implies (in a (v-omega*2))
            (in (hons-assoc-equal key a) (v-omega*2)))
   :props (zfc v-omega+$prop v$prop
-              inverse$prop prod2$prop domain$prop fun-space$prop))
+              inverse$prop prod2$prop domain$prop fun-space$prop diff$prop))
 
 (defthmz in-hol-type-eval-v-omega*2
   (implies (and (in hta (v-omega*2))
@@ -545,7 +547,7 @@
            (in (hol-type-eval type hta) (v-omega*2)))
   :props (zfc v-omega+$prop v$prop
               inverse$prop prod2$prop domain$prop fun-space$prop
-              finseqs$prop)
+              finseqs$prop diff$prop)
   :hints (("Goal" :in-theory (enable hol-type-eval))))
 
 (defthmz hol-valuep-implies-in-v-omega*2
@@ -555,7 +557,7 @@
            (in x (v-omega*2)))
   :props (zfc v-omega+$prop v$prop
               inverse$prop prod2$prop domain$prop fun-space$prop
-              finseqs$prop))
+              finseqs$prop diff$prop))
 
 ; We are nearly done.  All that's left is to define the set of HOL value pairs
 ; and prove that it is indeed the set of HOL value pairs.
@@ -603,7 +605,8 @@
   :props (zfc v-omega+$prop v$prop
               inverse$prop prod2$prop domain$prop fun-space$prop
               finseqs$prop
-              hpp-set$prop)
+              hpp-set$prop
+              diff$prop)
   :rule-classes nil)
 
 (defthmz hpp-set-correctness
@@ -613,4 +616,5 @@
   :props (zfc v-omega+$prop v$prop
               inverse$prop prod2$prop domain$prop fun-space$prop
               finseqs$prop
-              hpp-set$prop))
+              hpp-set$prop
+              diff$prop))

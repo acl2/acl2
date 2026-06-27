@@ -13,6 +13,7 @@
 (include-book "uid")
 (include-book "types")
 (include-book "types-formal-subset-and-mapping")
+(include-book "built-ins")
 (include-book "initializer-validation")
 (include-book "validation-tables")
 (include-book "validation-annotations")
@@ -36,10 +37,14 @@
    (xdoc::p
     "We provide an executable validator,
      which performs a (currently conservative) validation of C code,
-     and also annotates the ASTs with information (e.g. calculated types)."))
+     and also annotates the ASTs with information (e.g. calculated types).")
+   (xdoc::p
+    "When non-standard C extensions are enabled,
+     the validator uses information about built-in functions and objects."))
   :order-subtopics (uid
                     types
                     types-formal-subset-and-mapping
+                    built-ins
                     initializer-validation
                     validation-tables
                     validation-annotations
