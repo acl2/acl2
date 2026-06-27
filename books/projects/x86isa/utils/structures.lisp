@@ -282,7 +282,7 @@
       (otherwise (prog2$ (acl2::impossible) 0)))
     :guard-hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
 
-  (define vex->l ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
+  (define vex->l ((vex-prefixes vex-prefixes-p))
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (l (unsigned-byte-p 1 l)
                 :hyp (vex-prefixes-byte0-p vex-prefixes)
@@ -297,7 +297,7 @@
       (otherwise (prog2$ (acl2::impossible) 0)))
     :guard-hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
 
-  (define vex->pp ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
+  (define vex->pp ((vex-prefixes vex-prefixes-p))
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (pp (unsigned-byte-p 2 pp)
                  :hyp (vex-prefixes-byte0-p vex-prefixes)
@@ -312,7 +312,7 @@
       (otherwise (prog2$ (acl2::impossible) 0)))
     :guard-hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
 
-  (define vex->r ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
+  (define vex->r ((vex-prefixes vex-prefixes-p))
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (r (unsigned-byte-p 1 r)
                 :hyp (vex-prefixes-byte0-p vex-prefixes)
@@ -327,7 +327,7 @@
       (otherwise (prog2$ (acl2::impossible) 0)))
     :guard-hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
 
-  (define vex->w ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
+  (define vex->w ((vex-prefixes vex-prefixes-p))
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (w (unsigned-byte-p 1 w)
                 :hyp (vex-prefixes-byte0-p vex-prefixes)
