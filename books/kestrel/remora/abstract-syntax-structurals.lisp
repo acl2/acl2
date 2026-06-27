@@ -133,6 +133,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defprojection dim-const-list->val ((x dim-listp))
+  :guard (dim-list-case-const x)
+  :returns (vals nat-listp)
+  :short "Lift @(tsee dim-const->val) to lists."
+  (dim-const->val x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defprojection expr-array-list->dims ((x expr-listp))
   :guard (expr-list-case-array x)
   :returns (dimss nat-list-listp)
