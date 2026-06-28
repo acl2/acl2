@@ -39,6 +39,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult dec-digit-char-list-result
+  :short "Fixtype of lists of decimal digit characters and errors."
+  :ok dec-digit-char-list
+  :pred dec-digit-char-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult oct-digit-char-list-result
+  :short "Fixtype of lists of octal digit characters and errors."
+  :ok oct-digit-char-list
+  :pred oct-digit-char-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult hex-digit-char-list-result
+  :short "Fixtype of lists of hexadecimal digit characters and errors."
+  :ok hex-digit-char-list
+  :pred hex-digit-char-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult dim-result
   :short "Fixtype of dimensions and errors."
   :ok dim
@@ -90,6 +111,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult ispace-list-option-result
+  :short "Fixtype of optional lists of ispaces and errors."
+  :ok ispace-list-option
+  :pred ispace-list-option-resultp
+  :prepwork ((local (in-theory (enable ispace-list-option-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult ispace-var-result
   :short "Fixtype of ispace variables and errors."
   :ok ispace-var
@@ -102,6 +131,14 @@
   :short "Fixtype of (i) lists of ispace variables and (ii) errors."
   :ok ispace-var-list
   :pred ispace-var-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult ispace-var-list-option-result
+  :short "Fixtype of optional lists of ispace variables and errors."
+  :ok ispace-var-list-option
+  :pred ispace-var-list-option-resultp
+  :prepwork ((local (in-theory (enable ispace-var-list-option-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,6 +165,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult type-var-list-option-result
+  :short "Fixtype of optional lists of type variables and errors."
+  :ok type-var-list-option
+  :pred type-var-list-option-resultp
+  :prepwork ((local (in-theory (enable type-var-list-option-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult type-result
   :short "Fixtype of types and errors."
   :ok type
@@ -143,11 +188,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult base-lit-result
-  :short "Fixtype of base literals and errors."
-  :ok base-lit
-  :pred base-lit-resultp
-  :prepwork ((local (in-theory (enable base-lit-kind)))))
+(fty::defresult type-option-result
+  :short "Fixtype of optional types and errors."
+  :ok type-option
+  :pred type-option-resultp
+  :prepwork ((local (in-theory (enable typep type-optionp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type-list-option-result
+  :short "Fixtype of optional lists of types and errors."
+  :ok type-list-option
+  :pred type-list-option-resultp
+  :prepwork ((local (in-theory (enable type-list-option-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult var+type?-result
+  :short "Fixtype of (i) variables with optional types and (ii) errors."
+  :ok var+type?
+  :pred var+type?-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult var+type?-list-result
+  :short "Fixtype of
+          (i) lists of variables with optional types and (ii) errors."
+  :ok var+type?-list
+  :pred var+type?-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -156,42 +224,6 @@
   :ok sign-option
   :pred sign-option-resultp
   :prepwork ((local (in-theory (enable signp sign-optionp)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult dec-digit-char-list-result
-  :short "Fixtype of lists of decimal digit characters and errors."
-  :ok dec-digit-char-list
-  :pred dec-digit-char-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult oct-digit-char-list-result
-  :short "Fixtype of lists of octal digit characters and errors."
-  :ok oct-digit-char-list
-  :pred oct-digit-char-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult hex-digit-char-list-result
-  :short "Fixtype of lists of hexadecimal digit characters and errors."
-  :ok hex-digit-char-list
-  :pred hex-digit-char-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult char-lit-result
-  :short "Fixtype of character literals and errors."
-  :ok char-lit
-  :pred char-lit-resultp
-  :prepwork ((local (in-theory (enable char-lit-kind)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult char-lit-list-result
-  :short "Fixtype of lists of character literals and errors."
-  :ok char-lit-list
-  :pred char-lit-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -232,6 +264,29 @@
   :ok escape
   :pred escape-resultp
   :prepwork ((local (in-theory (enable escape-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult char-lit-result
+  :short "Fixtype of character literals and errors."
+  :ok char-lit
+  :pred char-lit-resultp
+  :prepwork ((local (in-theory (enable char-lit-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult char-lit-list-result
+  :short "Fixtype of lists of character literals and errors."
+  :ok char-lit-list
+  :pred char-lit-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult base-lit-result
+  :short "Fixtype of base literals and errors."
+  :ok base-lit
+  :pred base-lit-resultp
+  :prepwork ((local (in-theory (enable base-lit-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -277,61 +332,6 @@
   :short "Fixtype of lists of bindings and errors."
   :ok bind-list
   :pred bind-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult var+type?-result
-  :short "Fixtype of (i) variables with optional types and (ii) errors."
-  :ok var+type?
-  :pred var+type?-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult var+type?-list-result
-  :short "Fixtype of
-          (i) lists of variables with optional types and (ii) errors."
-  :ok var+type?-list
-  :pred var+type?-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult type-option-result
-  :short "Fixtype of optional types and errors."
-  :ok type-option
-  :pred type-option-resultp
-  :prepwork ((local (in-theory (enable typep type-optionp)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult type-list-option-result
-  :short "Fixtype of optional lists of types and errors."
-  :ok type-list-option
-  :pred type-list-option-resultp
-  :prepwork ((local (in-theory (enable type-list-option-kind)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult ispace-list-option-result
-  :short "Fixtype of optional lists of ispaces and errors."
-  :ok ispace-list-option
-  :pred ispace-list-option-resultp
-  :prepwork ((local (in-theory (enable ispace-list-option-kind)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult type-var-list-option-result
-  :short "Fixtype of optional lists of type variables and errors."
-  :ok type-var-list-option
-  :pred type-var-list-option-resultp
-  :prepwork ((local (in-theory (enable type-var-list-option-kind)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult ispace-var-list-option-result
-  :short "Fixtype of optional lists of ispace variables and errors."
-  :ok ispace-var-list-option
-  :pred ispace-var-list-option-resultp
-  :prepwork ((local (in-theory (enable ispace-var-list-option-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
