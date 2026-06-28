@@ -976,7 +976,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines check-exprs/atoms
+(defines check-exprs/atoms/binds
   :short "Check expressions, atoms, and lists thereof."
   :long
   (xdoc::topstring
@@ -1024,7 +1024,7 @@
 
   (define check-expr ((expr exprp) (senv senvp))
     :returns (type type-resultp)
-    :parents (type-checking check-exprs/atoms)
+    :parents (type-checking check-exprs/atoms/binds)
     :short "Check an expression, returning its type if successful."
     :long
     (xdoc::topstring
@@ -1268,7 +1268,7 @@
 
   (define check-expr-list ((exprs expr-listp) (senv senvp))
     :returns (types type-list-resultp)
-    :parents (type-checking check-exprs/atoms)
+    :parents (type-checking check-exprs/atoms/binds)
     :short "Check a list of expressions,
             returning their array types if successful."
     :long
@@ -1303,7 +1303,7 @@
 
   (define check-atom ((atom atomp) (senv senvp))
     :returns (type type-resultp)
-    :parents (type-checking check-exprs/atoms)
+    :parents (type-checking check-exprs/atoms/binds)
     :short "Check an atom, returning its atom type if successful."
     :long
     (xdoc::topstring
@@ -1404,7 +1404,7 @@
 
   (define check-atom-list ((atoms atom-listp) (senv senvp))
     :returns (types type-list-resultp)
-    :parents (type-checking check-exprs/atoms)
+    :parents (type-checking check-exprs/atoms/binds)
     :short "Check a list of atoms, returning their types if successful."
     :long
     (xdoc::topstring
@@ -1438,7 +1438,7 @@
 
   (define check-bind ((bind bindp) (senv senvp))
     :returns (new-senv senv-resultp)
-    :parents (type-checking check-exprs/atoms)
+    :parents (type-checking check-exprs/atoms/binds)
     :short "Check a binding,
             extending the static environment if successful."
     :long
@@ -1594,7 +1594,7 @@
 
   (define check-bind-list ((binds bind-listp) (senv senvp))
     :returns (new-senv senv-resultp)
-    :parents (type-checking check-exprs/atoms)
+    :parents (type-checking check-exprs/atoms/binds)
     :short "Check a list of bindings,
             threading the static environment through them."
     :long
@@ -1616,7 +1616,7 @@
 
   (verify-guards check-expr)
 
-  (fty::deffixequiv-mutual check-exprs/atoms))
+  (fty::deffixequiv-mutual check-exprs/atoms/binds))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
