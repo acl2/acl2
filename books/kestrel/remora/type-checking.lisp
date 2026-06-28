@@ -976,6 +976,110 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod type+expr
+  :short "Fixtype of pairs consisting of a type and an expression."
+  ((type type)
+   (expr expr))
+  :pred type+expr-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type+expr-result
+  :short "Fixtype of (i) pairs consisting of a type and an expression
+          and (ii) errors."
+  :ok type+expr
+  :pred type+expr-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod types+exprs
+  :short "Fixtype of pairs consisting of
+          a list of types and a list of expressions."
+  ((types type-list)
+   (exprs expr-list))
+  :pred types+exprs-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult types+exprs-result
+  :short "Fixtype of
+          (i) pairs consisting of a list of types and a list of expressions
+          and (ii) errors."
+  :ok types+exprs
+  :pred types+exprs-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod type+atom
+  :short "Fixtype of pairs consisting of a type and an atom."
+  ((type type)
+   (atom atom))
+  :pred type+atom-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type+atom-result
+  :short "Fixtype of (i) pairs consisting of a type and an atom
+          and (ii) errors."
+  :ok type+atom
+  :pred type+atom-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod types+atoms
+  :short "Fixtype of pairs consisting of
+          a list of types and a list of atoms."
+  ((types type-list)
+   (atoms atom-list))
+  :pred types+atoms-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult types+atoms-result
+  :short "Fixtype of
+          (i) pairs consisting of a list of types and a list of atoms
+          and (ii) errors."
+  :ok types+atoms
+  :pred types+atoms-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod senv+bind
+  :short "Fixtype of pairs consisting of
+          a static environment and a binding."
+  ((senv senv)
+   (bind bind))
+  :pred senv+bind-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult senv+bind-result
+  :short "Fixtype of
+          (i) pairs consisting of a static environment and a binding
+          and (ii) errors."
+  :ok senv+bind
+  :pred senv+bind-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod senv+binds
+  :short "Fixtype of pairs consisting of
+          a static environment and a list of bindings."
+  ((senv senv)
+   (binds bind-list))
+  :pred senv+binds-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult senv+binds-result
+  :short "Fixtype of
+          (i) pairs consisting of a static environment and a list of bindings
+          and (ii) errors."
+  :ok senv+binds
+  :pred senv+binds-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines check-exprs/atoms/binds
   :short "Check expressions, atoms, and lists thereof."
   :long
