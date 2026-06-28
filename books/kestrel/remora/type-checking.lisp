@@ -964,7 +964,7 @@
      If it is present, it must be a valid type that,
      once expanded against the static environment's definitions
      (see @(tsee senv-expand-type)),
-     is equivalent to the inferred type passed as argument
+     is equivalent to the calculated type passed as argument
      (which is assumed to be already expanded)."))
   (type-option-case
    type?
@@ -1092,7 +1092,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines check-exprs/atoms/binds
-  :short "Check expressions, atoms, and lists thereof."
+  :short "Check expressions, atoms, and lists thereof,
+          returning the input ASTs augmented with some type information."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1138,21 +1139,16 @@
     "In addition to the type(s)
      (or the static environment, in the case of bindings),
      each of these functions also returns
-     the expression, atom, or binding being checked.
-     This returned AST is rebuilt from the sub-ASTs
-     returned by the recursive calls;
-     for now it is identical to the input one,
-     since we do not transform it yet,
-     but it prepares for a future extension in which
-     these functions will annotate the ASTs with types."))
+     the expression, atom, or binding being checked,
+     possibly augmented with some type information."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define check-expr ((expr exprp) (senv senvp))
     :returns (type+expr type+expr-resultp)
     :parents (type-checking check-exprs/atoms/binds)
-    :short "Check an expression,
-            returning its type and the expression if successful."
+    :short "Check an expression; if successful,
+            return its type and the type-augmented expression."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -1246,7 +1242,9 @@
        which correspond to @('body-atom-type') and @('body-ispace') in our code.
        The type of the unboxing expression is the array type consisting of
        the @($\\tau_b$) type as atom
-       and the concatenation of @($\\iota_s$) and @($\\iota_b$) as ispace.")
+       and the concatenation of @($\\iota_s$) and @($\\iota_b$) as ispace.
+       We store this type into the optional type slot of
+       the returned unboxing expression.")
      (xdoc::p
       "A bracket expression is syntactic sugar for a (non-empty) frame
        whose dimensions consist of a single dimension,
@@ -1375,8 +1373,7 @@
                               :iargs expr.iargs
                               :args aes.exprs)))
      :unbox
-     (b* (((unless (no-duplicatesp-equal expr.ispaces))
-           (reserr nil))
+     (b* (((unless (no-duplicatesp-equal expr.ispaces)) (reserr nil))
           ((ok (type+expr targ)) (check-expr expr.target senv))
           ((ok target-arr-type+ispace) (type-match-array targ.type))
           (sum-type (type+ispace->type target-arr-type+ispace))
@@ -1398,17 +1395,18 @@
           ((ok arr-type+ispace) (type-match-array be.type))
           (body-atom-type (type+ispace->type arr-type+ispace))
           (body-ispace (type+ispace->ispace arr-type+ispace))
-          (body-shape (shape-from-ispace body-ispace)))
+          (body-shape (shape-from-ispace body-ispace))
+          (type (make-type-array :elem body-atom-type
+                                 :ispace (ispace-shape
+                                          (shape-append
+                                           (list sum-shape body-shape))))))
        (make-type+expr
-        :type (make-type-array :elem body-atom-type
-                               :ispace (ispace-shape
-                                        (shape-append
-                                         (list sum-shape body-shape))))
+        :type type
         :expr (make-expr-unbox :ispaces expr.ispaces
                                :var expr.var
                                :target targ.expr
                                :body be.expr
-                               :type? expr.type?)))
+                               :type? type)))
      :bracket
      (b* (((unless (consp expr.exprs)) (reserr nil))
           ((ok (types+exprs es)) (check-expr-list expr.exprs senv))
@@ -1436,8 +1434,8 @@
   (define check-expr-list ((exprs expr-listp) (senv senvp))
     :returns (types+exprs types+exprs-resultp)
     :parents (type-checking check-exprs/atoms/binds)
-    :short "Check a list of expressions,
-            returning their types and the expressions if successful."
+    :short "Check a list of expressions; if successful,
+            return their types and the type-augmented expressions."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -1469,8 +1467,8 @@
   (define check-atom ((atom atomp) (senv senvp))
     :returns (type+atom type+atom-resultp)
     :parents (type-checking check-exprs/atoms/binds)
-    :short "Check an atom,
-            returning its type and the atom if successful."
+    :short "Check an atom; if successful,
+            return its type and the type-augmented atom."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -1486,7 +1484,9 @@
        and we check the body of the abstraction
        in the extended static environment.
        Its type is the output type of the function type of the abstraction,
-       and its input types are the ones of the bound variables.")
+       and its input types are the ones of the bound variables.
+       We store the body's type into the optional type slot of
+       the returned lambda atom.")
      (xdoc::p
       "For a type abstraction,
        first we check that there are no duplicate bound variables;
@@ -1539,7 +1539,7 @@
         :type (make-type-fun :in types :out be.type)
         :atom (make-atom-lambda :params atom.params
                                 :body be.expr
-                                :type? atom.type?)))
+                                :type? be.type)))
      :tlambda
      (b* (((unless (no-duplicatesp-equal atom.params))
            (reserr nil))
@@ -1585,8 +1585,8 @@
   (define check-atom-list ((atoms atom-listp) (senv senvp))
     :returns (types+atoms types+atoms-resultp)
     :parents (type-checking check-exprs/atoms/binds)
-    :short "Check a list of atoms,
-            returning their types and the atoms if successful."
+    :short "Check a list of atoms; if successful,
+            return their types and the type-augmented atoms."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -1618,9 +1618,9 @@
   (define check-bind ((bind bindp) (senv senvp))
     :returns (senv+bind senv+bind-resultp)
     :parents (type-checking check-exprs/atoms/binds)
-    :short "Check a binding,
-            extending the static environment
-            and returning the binding if successful."
+    :short "Check a binding; if successful,
+            extend the static environment
+            and return the type-augmented binding."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -1806,15 +1806,14 @@
   (define check-bind-list ((binds bind-listp) (senv senvp))
     :returns (senv+binds senv+binds-resultp)
     :parents (type-checking check-exprs/atoms/binds)
-    :short "Check a list of bindings,
-            threading the static environment through them,
-            and returning the bindings."
+    :short "Check a list of bindings; if successful,
+            extend the static environment
+            and return the type-augmented bindings."
     :long
     (xdoc::topstring
      (xdoc::p
       "We check each binding in turn,
-       extending the static environment as we go,
-       and we return the final environment."))
+       threading through and extending the static environment as we go."))
     (b* (((when (endp binds))
           (make-senv+binds :senv (senv-fix senv) :binds nil))
          ((ok (senv+bind sb)) (check-bind (car binds) senv))

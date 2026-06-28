@@ -815,7 +815,7 @@
      (xdoc::p
       "The optional type of the body of an unbox expression
        (i.e. the result type of the unboxing)
-       will be calculated and stored by the type checker.
+       is calculated and stored by the type checker.
        It is absent after parsing."))
     (:var ((name string)))
     (:atom ((atom atom)))
@@ -881,7 +881,7 @@
        which all use a generic type.")
      (xdoc::p
       "The optional type of the body of a lambda abstraction
-       will be calculated and stored by the type checker.
+       is calculated and stored by the type checker.
        It is absent after parsing."))
     (:base ((lit base-lit)))
     (:lambda ((params var+type?-list)
