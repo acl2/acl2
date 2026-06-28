@@ -39,27 +39,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult dec-digit-char-list-result
-  :short "Fixtype of lists of decimal digit characters and errors."
-  :ok dec-digit-char-list
-  :pred dec-digit-char-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult oct-digit-char-list-result
-  :short "Fixtype of lists of octal digit characters and errors."
-  :ok oct-digit-char-list
-  :pred oct-digit-char-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult hex-digit-char-list-result
-  :short "Fixtype of lists of hexadecimal digit characters and errors."
-  :ok hex-digit-char-list
-  :pred hex-digit-char-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defresult dim-result
   :short "Fixtype of dimensions and errors."
   :ok dim

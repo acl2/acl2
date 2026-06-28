@@ -86,5 +86,8 @@
                     str::dec-digit-char-list
                     str::hex-digit-char-list
                     str::oct-digit-char-list
+                    str::dec-digit-char-list-resultp
+                    str::hex-digit-char-list-resultp
+                    str::oct-digit-char-list-resultp
                     str::string-list
                     str::string-list-fix)))
