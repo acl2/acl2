@@ -72,13 +72,14 @@
 ;; The zero flag is 1 iff the result is zero:
 (defthm sub_eax_mem32-zf
   (equal (get-flag :zf (sub_eax_mem32 x86))
-         (if (equal 0 (bvminus 32 (eax x86) (read 4 (rbx x86) x86))) 1 0)))
+         (if (equal 0 (bvminus 32 (eax x86) (read 4 (rbx x86) x86))) 1 0))
+  :hints (("Goal" :in-theory (enable sub-zf-spec32 acl2::equal-of-0-and-bvminus))))
 
 ;; The sign flag is the sign bit (bit 31) of the 32-bit result:
 (defthm sub_eax_mem32-sf
   (equal (get-flag :sf (sub_eax_mem32 x86))
          (getbit 31 (bvminus 32 (eax x86) (read 4 (rbx x86) x86))))
-  :hints (("Goal" :in-theory (enable bvminus))))
+  :hints (("Goal" :in-theory ( e/d (sub-sf-spec32 bvminus acl2::bvchop-of-sum-cases) (acl2::getbit-of-bvchop)))))
 
 ;; The auxiliary carry (borrow) flag is 1 iff the low nibble of EAX < low nibble of mem[RBX]:
 (defthm sub_eax_mem32-af
@@ -111,7 +112,7 @@
 (defthm sub_eax_mem32-pf
   (equal (get-flag :pf (sub_eax_mem32 x86))
          (if (evenp (bvcount 8 (bvminus 32 (eax x86) (read 4 (rbx x86) x86)))) 1 0))
-  :hints (("Goal" :in-theory (enable pf-spec32-alt-def bvminus))))
+  :hints (("Goal" :in-theory (enable sub-pf-spec32 pf-spec32-alt-def bvminus acl2::bvchop-of-sum-cases))))
 
 ;; All memory addresses are unchanged (instruction reads from memory but does not write):
 (defthm sub_eax_mem32-memory-unchanged

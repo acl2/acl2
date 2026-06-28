@@ -63,19 +63,20 @@
 ;; The zero flag is 1 iff the result is zero:
 (defthm sub_bl_imm8-zf
   (equal (get-flag :zf (sub_bl_imm8 x86))
-         (if (equal 0 (bvminus 8 (bl x86) 5)) 1 0)))
+         (if (equal 0 (bvminus 8 (bl x86) 5)) 1 0))
+  :hints (("Goal" :in-theory (enable sub-zf-spec8 acl2::equal-of-0-and-bvminus))))
 
 ;; The sign flag is the sign bit (bit 7) of the 8-bit result:
 (defthm sub_bl_imm8-sf
   (equal (get-flag :sf (sub_bl_imm8 x86))
          (getbit 7 (bvminus 8 (bl x86) 5)))
-  :hints (("Goal" :in-theory (enable bvminus))))
+  :hints (("Goal" :in-theory ( e/d (sub-sf-spec8 bvminus acl2::bvchop-of-sum-cases) (acl2::getbit-of-bvchop)))))
 
 ;; The auxiliary carry (borrow) flag is 1 iff the low nibble of BL < 5:
 (defthm sub_bl_imm8-af
   (equal (get-flag :af (sub_bl_imm8 x86))
          (if (< (bvchop 4 (bl x86)) 5) 1 0))
-  :hints (("Goal" :in-theory (enable bvlt bvminus acl2::bvchop-of-sum-cases))))
+  :hints (("Goal" :in-theory (e/d (bvlt bvminus acl2::bvchop-of-sum-cases) (acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version)))))
 
 ;; The overflow flag is 1 iff the signed 8-bit result overflows:
 (defthm sub_bl_imm8-of

@@ -60,19 +60,20 @@
 ;; The zero flag is 1 iff the result is zero:
 (defthm sub_rbx_imm8-zf
   (equal (get-flag :zf (sub_rbx_imm8 x86))
-         (if (equal 0 (bvminus 64 (rbx x86) 5)) 1 0)))
+         (if (equal 0 (bvminus 64 (rbx x86) 5)) 1 0))
+  :hints (("Goal" :in-theory (enable sub-zf-spec64 acl2::equal-of-0-and-bvminus))))
 
 ;; The sign flag is the sign bit (bit 63) of the 64-bit result:
 (defthm sub_rbx_imm8-sf
   (equal (get-flag :sf (sub_rbx_imm8 x86))
          (getbit 63 (bvminus 64 (rbx x86) 5)))
-  :hints (("Goal" :in-theory (enable bvminus))))
+  :hints (("Goal" :in-theory ( e/d (sub-sf-spec64 bvminus acl2::bvchop-of-sum-cases) (acl2::getbit-of-bvchop)))))
 
 ;; The auxiliary carry (borrow) flag is 1 iff the low nibble of RBX < 5:
 (defthm sub_rbx_imm8-af
   (equal (get-flag :af (sub_rbx_imm8 x86))
          (if (< (bvchop 4 (rbx x86)) 5) 1 0))
-  :hints (("Goal" :in-theory (enable bvlt bvminus acl2::bvchop-of-sum-cases))))
+  :hints (("Goal" :in-theory (e/d (bvlt bvminus acl2::bvchop-of-sum-cases) (acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version)))))
 
 ;; The overflow flag is 1 iff the signed 64-bit result overflows:
 (defthm sub_rbx_imm8-of
@@ -84,11 +85,11 @@
              0)))
   :hints (("Goal" :in-theory (enable sub-of-spec64 of-spec64 signed-byte-p))))
 
-(defthm pf-spec64-alt-def
+(local (defthm pf-spec64-alt-def
   (equal (pf-spec64 res)
          (if (evenp (bvcount 8 res)) 1 0))
   :hints (("Goal" :in-theory (enable pf-spec64 acl2::bvcount-becomes-logcount
-                                     acl2::evenp-becomes-equal-of-0-and-getbit-0))))
+                                     acl2::evenp-becomes-equal-of-0-and-getbit-0)))))
 
 ;; The parity flag considers only the 8 least significant bits and is 1 iff
 ;; they contain an even number of 1s.
@@ -96,7 +97,7 @@
   (equal (get-flag :pf (sub_rbx_imm8 x86))
          (let ((diff (bvminus 64 (rbx x86) 5)))
            (if (evenp (bvcount 8 diff)) 1 0)))
-  :hints (("Goal" :in-theory (enable pf-spec64-alt-def bvminus))))
+  :hints (("Goal" :in-theory (enable sub-pf-spec64 pf-spec64-alt-def bvminus acl2::bvchop-of-sum-cases))))
 
 ;; Memory is unchanged (this instruction does not access memory):
 (defthm sub_rbx_imm8-memory-unchanged

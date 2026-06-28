@@ -71,13 +71,14 @@
 ;; The zero flag is 1 iff the result is zero:
 (defthm sub_mem8_al-zf
   (equal (get-flag :zf (sub_mem8_al x86))
-         (if (equal 0 (bvminus 8 (read 1 (rbx x86) x86) (al x86))) 1 0)))
+         (if (equal 0 (bvminus 8 (read 1 (rbx x86) x86) (al x86))) 1 0))
+  :hints (("Goal" :in-theory (enable sub-zf-spec8 acl2::equal-of-0-and-bvminus))))
 
 ;; The sign flag is the sign bit (bit 7) of the 8-bit result:
 (defthm sub_mem8_al-sf
   (equal (get-flag :sf (sub_mem8_al x86))
          (getbit 7 (bvminus 8 (read 1 (rbx x86) x86) (al x86))))
-  :hints (("Goal" :in-theory (enable bvminus))))
+  :hints (("Goal" :in-theory ( e/d (sub-sf-spec8 bvminus acl2::bvchop-of-sum-cases) (acl2::getbit-of-bvchop)))))
 
 ;; The auxiliary carry (borrow) flag is 1 iff the low nibble of mem[RBX] < low nibble of AL:
 (defthm sub_mem8_al-af
@@ -99,15 +100,23 @@
              0)))
   :hints (("Goal" :in-theory (enable sub-of-spec8 of-spec8 signed-byte-p))))
 
+(local (defthm sub-pf-spec8-to-bvcount
+  (equal (sub-pf-spec8 dst src)
+         (if (evenp (bvcount 8 (bvminus 8 dst src))) 1 0))
+  :hints (("Goal" :in-theory (enable sub-pf-spec8 pf-spec8 bvminus
+                                     acl2::bvchop-of-sum-cases
+                                     acl2::bvchop-of-logext-same
+                                     acl2::bvchop-of-minus-of-logext-gen
+                                     acl2::bvcount-becomes-logcount
+                                     acl2::evenp-becomes-equal-of-0-and-getbit-0)))))
+
 ;; The parity flag considers only the 8 least significant bits and is 1 iff
 ;; they contain an even number of 1s.
 (defthm sub_mem8_al-pf
   (equal (get-flag :pf (sub_mem8_al x86))
          (let ((diff (bvminus 8 (read 1 (rbx x86) x86) (al x86))))
            (if (evenp (bvcount 8 diff)) 1 0)))
-  :hints (("Goal" :in-theory (enable sub-pf-spec8 pf-spec8 bvminus
-                                     acl2::bvcount-becomes-logcount
-                                     acl2::evenp-becomes-equal-of-0-and-getbit-0))))
+  :hints (("Goal" :in-theory (enable sub-pf-spec8-to-bvcount bvminus acl2::bvchop-of-sum-cases))))
 
 (defthm sub_mem8_al-other-flags
   (implies (and (member-equal flag *flags*)

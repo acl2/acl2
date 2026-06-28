@@ -68,13 +68,14 @@
 ;; The zero flag is 1 iff the result is zero:
 (defthm sub_mem16_imm8-zf
   (equal (get-flag :zf (sub_mem16_imm8 x86))
-         (if (equal 0 (bvminus 16 (read 2 (rbx x86) x86) 5)) 1 0)))
+         (if (equal 0 (bvminus 16 (read 2 (rbx x86) x86) 5)) 1 0))
+  :hints (("Goal" :in-theory (enable sub-zf-spec16 acl2::equal-of-0-and-bvminus))))
 
 ;; The sign flag is the sign bit (bit 15) of the 16-bit result:
 (defthm sub_mem16_imm8-sf
   (equal (get-flag :sf (sub_mem16_imm8 x86))
          (getbit 15 (bvminus 16 (read 2 (rbx x86) x86) 5)))
-  :hints (("Goal" :in-theory (disable read-2-blast))))
+  :hints (("Goal" :in-theory (e/d (sub-sf-spec16 bvminus acl2::bvchop-of-sum-cases) (read-2-blast acl2::getbit-of-bvchop)))))
 
 ;; The auxiliary carry (borrow) flag is 1 iff the low nibble of mem[RBX] < 5:
 (defthm sub_mem16_imm8-af
@@ -83,7 +84,7 @@
                 5)
              1
            0))
-  :hints (("Goal" :in-theory (e/d (bvlt bvminus acl2::bvchop-of-sum-cases) (read-2-blast)))))
+  :hints (("Goal" :in-theory (e/d (bvlt bvminus acl2::bvchop-of-sum-cases) (read-2-blast acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version)))))
 
 ;; The overflow flag is 1 iff the signed 16-bit result overflows:
 (defthm sub_mem16_imm8-of
@@ -107,7 +108,7 @@
   (equal (get-flag :pf (sub_mem16_imm8 x86))
          (let ((diff (bvminus 16 (read 2 (rbx x86) x86) 5)))
            (if (evenp (bvcount 8 diff)) 1 0)))
-  :hints (("Goal" :in-theory (e/d (pf-spec16-alt-def bvminus) (read-2-blast)))))
+  :hints (("Goal" :in-theory (e/d (sub-pf-spec16 pf-spec16-alt-def bvminus acl2::bvchop-of-sum-cases) (read-2-blast)))))
 
 (defthm sub_mem16_imm8-other-flags
   (implies (and (member-equal flag *flags*)

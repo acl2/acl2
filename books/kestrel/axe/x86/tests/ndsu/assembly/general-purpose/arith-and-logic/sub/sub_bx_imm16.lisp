@@ -69,19 +69,20 @@
 ;; The zero flag is 1 iff the result is zero:
 (defthm sub_bx_imm16-zf
   (equal (get-flag :zf (sub_bx_imm16 x86))
-         (if (equal 0 (bvminus 16 (bx x86) 300)) 1 0)))
+         (if (equal 0 (bvminus 16 (bx x86) 300)) 1 0))
+  :hints (("Goal" :in-theory (enable sub-zf-spec16 acl2::equal-of-0-and-bvminus))))
 
 ;; The sign flag is the sign bit (bit 15) of the 16-bit result:
 (defthm sub_bx_imm16-sf
   (equal (get-flag :sf (sub_bx_imm16 x86))
          (getbit 15 (bvminus 16 (bx x86) 300)))
-  :hints (("Goal" :in-theory (enable bvminus))))
+  :hints (("Goal" :in-theory ( e/d (sub-sf-spec16 bvminus acl2::bvchop-of-sum-cases) (acl2::getbit-of-bvchop)))))
 
 ;; The auxiliary carry (borrow) flag is 1 iff the low nibble of BX < low nibble of 300:
 (defthm sub_bx_imm16-af
   (equal (get-flag :af (sub_bx_imm16 x86))
          (if (< (bvchop 4 (bx x86)) (bvchop 4 300)) 1 0))
-  :hints (("Goal" :in-theory (enable bvlt bvminus acl2::bvchop-of-sum-cases))))
+  :hints (("Goal" :in-theory (e/d (bvlt bvminus acl2::bvchop-of-sum-cases) (acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version)))))
 
 ;; The overflow flag is 1 iff the signed 16-bit result overflows:
 (defthm sub_bx_imm16-of
@@ -93,11 +94,11 @@
              0)))
   :hints (("Goal" :in-theory (enable sub-of-spec16 of-spec16 signed-byte-p))))
 
-(defthm pf-spec16-alt-def
+(local (defthm pf-spec16-alt-def
   (equal (pf-spec16 res)
          (if (evenp (bvcount 8 res)) 1 0))
   :hints (("Goal" :in-theory (enable pf-spec16 acl2::bvcount-becomes-logcount
-                                     acl2::evenp-becomes-equal-of-0-and-getbit-0))))
+                                     acl2::evenp-becomes-equal-of-0-and-getbit-0)))))
 
 ;; The parity flag considers only the 8 least significant bits and is 1 iff
 ;; they contain an even number of 1s.
@@ -105,7 +106,7 @@
   (equal (get-flag :pf (sub_bx_imm16 x86))
          (let ((diff (bvminus 16 (bx x86) 300)))
            (if (evenp (bvcount 8 diff)) 1 0)))
-  :hints (("Goal" :in-theory (enable pf-spec16-alt-def bvminus))))
+  :hints (("Goal" :in-theory (enable sub-pf-spec16 pf-spec16-alt-def bvminus acl2::bvchop-of-sum-cases))))
 
 ;; Memory is unchanged (this instruction does not access memory):
 (defthm sub_bx_imm16-memory-unchanged

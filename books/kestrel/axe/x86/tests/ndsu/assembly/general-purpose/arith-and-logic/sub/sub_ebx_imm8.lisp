@@ -71,19 +71,20 @@
 ;; The zero flag is 1 iff the result is zero:
 (defthm sub_ebx_imm8-zf
   (equal (get-flag :zf (sub_ebx_imm8 x86))
-         (if (equal 0 (bvminus 32 (ebx x86) 5)) 1 0)))
+         (if (equal 0 (bvminus 32 (ebx x86) 5)) 1 0))
+  :hints (("Goal" :in-theory (enable sub-zf-spec32 acl2::equal-of-0-and-bvminus))))
 
 ;; The sign flag is the sign bit (bit 31) of the 32-bit result:
 (defthm sub_ebx_imm8-sf
   (equal (get-flag :sf (sub_ebx_imm8 x86))
          (getbit 31 (bvminus 32 (ebx x86) 5)))
-  :hints (("Goal" :in-theory (enable bvminus))))
+  :hints (("Goal" :in-theory ( e/d (sub-sf-spec32 bvminus acl2::bvchop-of-sum-cases) (acl2::getbit-of-bvchop)))))
 
 ;; The auxiliary carry (borrow) flag is 1 iff the low nibble of EBX < 5:
 (defthm sub_ebx_imm8-af
   (equal (get-flag :af (sub_ebx_imm8 x86))
          (if (< (bvchop 4 (ebx x86)) 5) 1 0))
-  :hints (("Goal" :in-theory (enable bvlt bvminus acl2::bvchop-of-sum-cases))))
+  :hints (("Goal" :in-theory (e/d (bvlt bvminus acl2::bvchop-of-sum-cases) (acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version)))))
 
 ;; The overflow flag is 1 iff the signed 32-bit result overflows:
 (defthm sub_ebx_imm8-of
@@ -95,18 +96,18 @@
              0)))
   :hints (("Goal" :in-theory (enable sub-of-spec32 of-spec32 signed-byte-p))))
 
-(defthm pf-spec32-alt-def
+(local (defthm pf-spec32-alt-def
   (equal (pf-spec32 res)
          (if (evenp (bvcount 8 res)) 1 0))
   :hints (("Goal" :in-theory (enable pf-spec32 acl2::bvcount-becomes-logcount
-                                     acl2::evenp-becomes-equal-of-0-and-getbit-0))))
+                                     acl2::evenp-becomes-equal-of-0-and-getbit-0)))))
 
 ;; The parity flag considers only the 8 least significant bits and is 1 iff
 ;; they contain an even number of 1s.
 (defthm sub_ebx_imm8-pf
   (equal (get-flag :pf (sub_ebx_imm8 x86))
          (if (evenp (bvcount 8 (bvminus 32 (ebx x86) 5))) 1 0))
-  :hints (("Goal" :in-theory (enable pf-spec32-alt-def bvminus))))
+  :hints (("Goal" :in-theory (enable sub-pf-spec32 pf-spec32-alt-def bvminus acl2::bvchop-of-sum-cases))))
 
 ;; Memory is unchanged (this instruction does not access memory):
 (defthm sub_ebx_imm8-memory-unchanged

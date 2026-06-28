@@ -68,13 +68,14 @@
 ;; The zero flag is 1 iff the result is zero:
 (defthm sub_mem32_imm8-zf
   (equal (get-flag :zf (sub_mem32_imm8 x86))
-         (if (equal 0 (bvminus 32 (read 4 (rbx x86) x86) 5)) 1 0)))
+         (if (equal 0 (bvminus 32 (read 4 (rbx x86) x86) 5)) 1 0))
+  :hints (("Goal" :in-theory (enable sub-zf-spec32 acl2::equal-of-0-and-bvminus))))
 
 ;; The sign flag is the sign bit (bit 31) of the 32-bit result:
 (defthm sub_mem32_imm8-sf
   (equal (get-flag :sf (sub_mem32_imm8 x86))
          (getbit 31 (bvminus 32 (read 4 (rbx x86) x86) 5)))
-  :hints (("Goal" :in-theory (enable bvminus))))
+  :hints (("Goal" :in-theory ( e/d (sub-sf-spec32 bvminus acl2::bvchop-of-sum-cases) (acl2::getbit-of-bvchop)))))
 
 ;; The auxiliary carry (borrow) flag is 1 iff the low nibble of mem[RBX] < 5:
 (defthm sub_mem32_imm8-af
@@ -83,7 +84,7 @@
                 5)
              1
            0))
-  :hints (("Goal" :in-theory (enable bvlt bvminus acl2::bvchop-of-sum-cases))))
+  :hints (("Goal" :in-theory (e/d (bvlt bvminus acl2::bvchop-of-sum-cases) (acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version)))))
 
 ;; The overflow flag is 1 iff the signed 32-bit result overflows:
 (defthm sub_mem32_imm8-of
@@ -106,7 +107,7 @@
 (defthm sub_mem32_imm8-pf
   (equal (get-flag :pf (sub_mem32_imm8 x86))
          (if (evenp (bvcount 8 (bvminus 32 (read 4 (rbx x86) x86) 5))) 1 0))
-  :hints (("Goal" :in-theory (enable pf-spec32-alt-def bvminus))))
+  :hints (("Goal" :in-theory (enable sub-pf-spec32 pf-spec32-alt-def bvminus acl2::bvchop-of-sum-cases))))
 
 (defthm sub_mem32_imm8-other-flags
   (implies (and (member-equal flag *flags*)

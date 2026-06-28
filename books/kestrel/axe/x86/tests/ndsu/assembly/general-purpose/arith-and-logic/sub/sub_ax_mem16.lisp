@@ -72,13 +72,14 @@
 ;; The zero flag is 1 iff the result is zero:
 (defthm sub_ax_mem16-zf
   (equal (get-flag :zf (sub_ax_mem16 x86))
-         (if (equal 0 (bvminus 16 (ax x86) (read 2 (rbx x86) x86))) 1 0)))
+         (if (equal 0 (bvminus 16 (ax x86) (read 2 (rbx x86) x86))) 1 0))
+  :hints (("Goal" :in-theory (enable sub-zf-spec16 acl2::equal-of-0-and-bvminus))))
 
 ;; The sign flag is the sign bit (bit 15) of the 16-bit result:
 (defthm sub_ax_mem16-sf
   (equal (get-flag :sf (sub_ax_mem16 x86))
          (getbit 15 (bvminus 16 (ax x86) (read 2 (rbx x86) x86))))
-  :hints (("Goal" :in-theory (disable read-2-blast))))
+  :hints (("Goal" :in-theory (e/d (sub-sf-spec16 bvminus acl2::bvchop-of-sum-cases) (read-2-blast acl2::getbit-of-bvchop)))))
 
 ;; The auxiliary carry (borrow) flag is 1 iff the low nibble of AX < low nibble of mem[RBX]:
 (defthm sub_ax_mem16-af
@@ -112,7 +113,7 @@
   (equal (get-flag :pf (sub_ax_mem16 x86))
          (let ((diff (bvminus 16 (ax x86) (read 2 (rbx x86) x86))))
            (if (evenp (bvcount 8 diff)) 1 0)))
-  :hints (("Goal" :in-theory (e/d (pf-spec16-alt-def bvminus) (read-2-blast)))))
+  :hints (("Goal" :in-theory (e/d (sub-pf-spec16 pf-spec16-alt-def bvminus acl2::bvchop-of-sum-cases) (read-2-blast)))))
 
 ;; All memory addresses are unchanged (instruction reads from memory but does not write):
 (defthm sub_ax_mem16-memory-unchanged

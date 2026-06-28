@@ -60,13 +60,14 @@
 ;; The zero flag is 1 iff the result is zero:
 (defthm sub_rax_mem64-zf
   (equal (get-flag :zf (sub_rax_mem64 x86))
-         (if (equal 0 (bvminus 64 (rax x86) (read 8 (rbx x86) x86))) 1 0)))
+         (if (equal 0 (bvminus 64 (rax x86) (read 8 (rbx x86) x86))) 1 0))
+  :hints (("Goal" :in-theory (enable sub-zf-spec64 acl2::equal-of-0-and-bvminus))))
 
 ;; The sign flag is the sign bit (bit 63) of the 64-bit result:
 (defthm sub_rax_mem64-sf
   (equal (get-flag :sf (sub_rax_mem64 x86))
          (getbit 63 (bvminus 64 (rax x86) (read 8 (rbx x86) x86))))
-  :hints (("Goal" :in-theory (enable bvminus))))
+  :hints (("Goal" :in-theory ( e/d (sub-sf-spec64 bvminus acl2::bvchop-of-sum-cases) (acl2::getbit-of-bvchop)))))
 
 ;; The auxiliary carry (borrow) flag is 1 iff the low nibble of RAX < low nibble of mem[RBX]:
 (defthm sub_rax_mem64-af
@@ -94,13 +95,21 @@
   :hints (("Goal" :in-theory (enable pf-spec64 acl2::bvcount-becomes-logcount
                                      acl2::evenp-becomes-equal-of-0-and-getbit-0)))))
 
+(local (defthm sub-pf-spec64-to-bvcount
+  (equal (sub-pf-spec64 dst src)
+         (if (evenp (bvcount 8 (bvminus 64 dst src))) 1 0))
+  :hints (("Goal" :in-theory (enable sub-pf-spec64 pf-spec64-alt-def bvminus
+                                     acl2::bvchop-of-sum-cases
+                                     acl2::bvchop-of-logext-same
+                                     acl2::bvchop-of-minus-of-logext-gen)))))
+
 ;; The parity flag considers only the 8 least significant bits and is 1 iff
 ;; they contain an even number of 1s.
 (defthm sub_rax_mem64-pf
   (equal (get-flag :pf (sub_rax_mem64 x86))
          (let ((diff (bvminus 64 (rax x86) (read 8 (rbx x86) x86))))
            (if (evenp (bvcount 8 diff)) 1 0)))
-  :hints (("Goal" :in-theory (enable pf-spec64-alt-def bvminus))))
+  :hints (("Goal" :in-theory (enable sub-pf-spec64-to-bvcount bvminus acl2::bvchop-of-sum-cases))))
 
 ;; All memory addresses are unchanged (instruction reads from memory but does not write):
 (defthm sub_rax_mem64-memory-unchanged

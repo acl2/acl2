@@ -72,13 +72,14 @@
 ;; The zero flag is 1 iff the result is zero:
 (defthm sub_eax_ebx_32-zf
   (equal (get-flag :zf (sub_eax_ebx_32 x86))
-         (if (equal 0 (bvminus 32 (eax x86) (ebx x86))) 1 0)))
+         (if (equal 0 (bvminus 32 (eax x86) (ebx x86))) 1 0))
+  :hints (("Goal" :in-theory (enable sub-zf-spec32 acl2::equal-of-0-and-bvminus))))
 
 ;; The sign flag is the sign bit (bit 31) of the 32-bit result:
 (defthm sub_eax_ebx_32-sf
   (equal (get-flag :sf (sub_eax_ebx_32 x86))
          (getbit 31 (bvminus 32 (eax x86) (ebx x86))))
-  :hints (("Goal" :in-theory (enable bvminus))))
+  :hints (("Goal" :in-theory ( e/d (sub-sf-spec32 bvminus acl2::bvchop-of-sum-cases) (acl2::getbit-of-bvchop)))))
 
 ;; The auxiliary carry (borrow) flag is 1 iff there is a borrow from bit 4 into bit 3:
 (defthm sub_eax_ebx_32-af
@@ -100,18 +101,18 @@
              0)))
   :hints (("Goal" :in-theory (enable sub-of-spec32 of-spec32 signed-byte-p))))
 
-(defthm pf-spec32-alt-def
+(local (defthm pf-spec32-alt-def
   (equal (pf-spec32 res)
          (if (evenp (bvcount 8 res)) 1 0))
   :hints (("Goal" :in-theory (enable pf-spec32 acl2::bvcount-becomes-logcount
-                                     acl2::evenp-becomes-equal-of-0-and-getbit-0))))
+                                     acl2::evenp-becomes-equal-of-0-and-getbit-0)))))
 
 ;; The parity flag considers only the 8 least significant bits and is 1 iff
 ;; they contain an even number of 1s.
 (defthm sub_eax_ebx_32-pf
   (equal (get-flag :pf (sub_eax_ebx_32 x86))
          (if (evenp (bvcount 8 (bvminus 32 (eax x86) (ebx x86)))) 1 0))
-  :hints (("Goal" :in-theory (enable pf-spec32-alt-def bvminus))))
+  :hints (("Goal" :in-theory (enable sub-pf-spec32 pf-spec32-alt-def bvminus acl2::bvchop-of-sum-cases))))
 
 ;; All memory addresses are unchanged:
 (defthm sub_eax_ebx_32-memory-unchanged

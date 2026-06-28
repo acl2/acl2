@@ -66,13 +66,14 @@
 ;; The zero flag is 1 iff the result is zero:
 (defthm sub_al_mem8-zf
   (equal (get-flag :zf (sub_al_mem8 x86))
-         (if (equal 0 (bvminus 8 (al x86) (read 1 (rbx x86) x86))) 1 0)))
+         (if (equal 0 (bvminus 8 (al x86) (read 1 (rbx x86) x86))) 1 0))
+  :hints (("Goal" :in-theory (enable sub-zf-spec8 acl2::equal-of-0-and-bvminus))))
 
 ;; The sign flag is the sign bit (bit 7) of the 8-bit result:
 (defthm sub_al_mem8-sf
   (equal (get-flag :sf (sub_al_mem8 x86))
          (getbit 7 (bvminus 8 (al x86) (read 1 (rbx x86) x86))))
-  :hints (("Goal" :in-theory (enable bvminus))))
+  :hints (("Goal" :in-theory ( e/d (sub-sf-spec8 bvminus acl2::bvchop-of-sum-cases) (acl2::getbit-of-bvchop)))))
 
 ;; The auxiliary carry (borrow) flag is 1 iff the low nibble of AL < low nibble of mem[RBX]:
 (defthm sub_al_mem8-af
@@ -101,6 +102,7 @@
          (let ((diff (bvminus 8 (al x86) (read 1 (rbx x86) x86))))
            (if (evenp (bvcount 8 diff)) 1 0)))
   :hints (("Goal" :in-theory (enable sub-pf-spec8 pf-spec8 bvminus
+                                     acl2::bvchop-of-sum-cases
                                      acl2::bvcount-becomes-logcount
                                      acl2::evenp-becomes-equal-of-0-and-getbit-0))))
 
