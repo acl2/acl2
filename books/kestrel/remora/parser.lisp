@@ -906,13 +906,6 @@
                  :rulename? (abnf::rulename "shape")
                  :branches (list (list tree-at) (list tree-id)))
                 input2)))
-         ;; Try dim
-         ((mv tree-dim input1) (parse-dim input))
-         ((when (not (reserrp tree-dim)))
-          (mv (abnf::make-tree-nonleaf
-               :rulename? (abnf::rulename "shape")
-               :branches (list (list tree-dim)))
-              input1))
          ;; Try "(" ws shape-paren ws ")"
          ((mv tree-open input1) (abnf::parse-ichars "(" input))
          ((when (not (reserrp tree-open)))
@@ -988,13 +981,7 @@
     :returns (mv (tree abnf::tree-resultp)
                  (rest-input nat-listp))
     :short "Parse an @('ispace')."
-    ;; [SC5]: a shape under an ispace must not be a shape->dim.  We
-    ;; satisfy this by trying dim first: if parse-dim succeeds we take
-    ;; the dim branch directly, and if it fails then parse-shape's own
-    ;; dim alternative (which just calls parse-dim) will also fail on
-    ;; the same input, so parse-shape can only succeed via one of its
-    ;; non-dim alternatives.
-    (b* (;; Try dim first (per grammar ordering; also enforces [SC5])
+    (b* (;; Try dim
          ((mv tree-dim input1) (parse-dim input))
          ((when (not (reserrp tree-dim)))
           (mv (abnf::make-tree-nonleaf

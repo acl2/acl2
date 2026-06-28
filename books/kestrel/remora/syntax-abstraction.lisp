@@ -1041,8 +1041,8 @@
       (cons d rest))
     :measure (abnf::tree-list-count trees))
 
-  ;; shape has four alternatives:
-  ;;   1 -> dim
+  ;; shape has three alternatives, distinguished by the number of
+  ;; tree-lists:
   ;;   2 -> "@" identifier
   ;;   5 -> "(" ws shape-paren ws ")"
   ;;   5 (different form) -> "[" ws *( ws ispace ) ws "]"
@@ -1057,9 +1057,6 @@
     :short "Abstract a @('shape') to a @(tsee shape)."
     (b* (((okf treess) (abnf::check-tree-nonleaf tree "shape")))
       (case (len treess)
-        (1 (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "shape"))
-                ((okf d) (abs-dim inner)))
-             (make-shape-dims :dims (list d))))
         (2 (b* (((okf (abnf::tree-list-tuple2 sub))
                  (abnf::check-tree-list-list-2 treess))
                 ((okf sigil-tree) (abnf::check-tree-list-1 sub.1st))
