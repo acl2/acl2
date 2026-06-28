@@ -4,8 +4,8 @@
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; Claude Code was provided a gutted version of this file -- which was named
-; claude.lisp -- as described below, and was prompted with the following
-; command:
+; claude.lisp -- as described below, and was prompted -- using the acl2-mcp
+; interface -- with the following command:
 
 ;   Please follow the instructions labeled "Instructions for Claude Code" in
 ;   file claude.lisp, with auto-mode on.
