@@ -5,6 +5,9 @@
 (in-package "ZF")
 
 (include-book "base")
+(include-book "finite-bang")
 (include-book "finite-domain")
+(include-book "finite-image")
+(include-book "finite-inverse")
 (include-book "finite-restrict")
 (include-book "finite-union2")
