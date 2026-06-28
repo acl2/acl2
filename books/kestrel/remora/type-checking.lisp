@@ -1139,9 +1139,11 @@
      (or the static environment, in the case of bindings),
      each of these functions also returns
      the expression, atom, or binding being checked.
-     For now this returned AST is identical to the input one
-     (i.e. it is returned unchanged),
-     but prepares for a future extension in which
+     This returned AST is rebuilt from the sub-ASTs
+     returned by the recursive calls;
+     for now it is identical to the input one,
+     since we do not transform it yet,
+     but it prepares for a future extension in which
      these functions will annotate the ASTs with types."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1274,7 +1276,7 @@
        (make-type+expr
         :type (make-type-array :elem ta.type
                                :ispace (ispace-shape (shape-dims nil)))
-        :expr (expr-fix expr)))
+        :expr (make-expr-atom :atom ta.atom)))
      :array
      (b* (((when (member-equal 0 expr.dims)) (reserr nil))
           ((unless (= (len expr.atoms)
@@ -1287,7 +1289,7 @@
         :type (make-type-array :elem type
                                :ispace (ispace-shape
                                         (shape-dims (dim-const-list expr.dims))))
-        :expr (expr-fix expr)))
+        :expr (make-expr-array :dims expr.dims :atoms tas.atoms)))
      :array-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
           ((unless (check-type expr.type senv)) (reserr nil))
@@ -1314,7 +1316,7 @@
                         (shape-append
                          (list (shape-dims (dim-const-list expr.dims))
                                (shape-from-ispace array.ispace)))))
-        :expr (expr-fix expr)))
+        :expr (make-expr-frame :dims expr.dims :exprs tes.exprs)))
      :frame-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
           ((unless (check-type expr.type senv)) (reserr nil))
@@ -1339,15 +1341,18 @@
      (b* (((ok (type+expr fe)) (check-expr expr.fun senv))
           ((ok (types+exprs aes)) (check-expr-list expr.args senv))
           ((ok type) (check-app fe.type aes.types)))
-       (make-type+expr :type type :expr (expr-fix expr)))
+       (make-type+expr :type type
+                       :expr (make-expr-app :fun fe.expr :args aes.exprs)))
      :tapp
      (b* (((ok (type+expr fe)) (check-expr expr.fun senv))
           ((ok type) (check-tapp fe.type expr.args senv)))
-       (make-type+expr :type type :expr (expr-fix expr)))
+       (make-type+expr :type type
+                       :expr (make-expr-tapp :fun fe.expr :args expr.args)))
      :iapp
      (b* (((ok (type+expr fe)) (check-expr expr.fun senv))
           ((ok type) (check-iapp fe.type expr.args senv)))
-       (make-type+expr :type type :expr (expr-fix expr)))
+       (make-type+expr :type type
+                       :expr (make-expr-iapp :fun fe.expr :args expr.args)))
      :capp
      (b* (((ok (type+expr fe)) (check-expr expr.fun senv))
           (fun-type fe.type)
@@ -1363,7 +1368,12 @@
             :none fun-type))
           ((ok (types+exprs aes)) (check-expr-list expr.args senv))
           ((ok type) (check-app fun-type aes.types)))
-       (make-type+expr :type type :expr (expr-fix expr)))
+       (make-type+expr
+        :type type
+        :expr (make-expr-capp :fun fe.expr
+                              :targs expr.targs
+                              :iargs expr.iargs
+                              :args aes.exprs)))
      :unbox
      (b* (((unless (no-duplicatesp-equal expr.ispaces))
            (reserr nil))
@@ -1394,7 +1404,11 @@
                                :ispace (ispace-shape
                                         (shape-append
                                          (list sum-shape body-shape))))
-        :expr (expr-fix expr)))
+        :expr (make-expr-unbox :ispaces expr.ispaces
+                               :var expr.var
+                               :target targ.expr
+                               :body be.expr
+                               :type? expr.type?)))
      :bracket
      (b* (((unless (consp expr.exprs)) (reserr nil))
           ((ok (types+exprs es)) (check-expr-list expr.exprs senv))
@@ -1409,11 +1423,12 @@
                          (list (shape-dims
                                 (dim-const-list (list (len expr.exprs))))
                                (shape-from-ispace array.ispace)))))
-        :expr (expr-fix expr)))
+        :expr (make-expr-bracket :exprs es.exprs)))
      :let
      (b* (((ok (senv+binds sbs)) (check-bind-list expr.binds senv))
           ((ok (type+expr be)) (check-expr expr.body sbs.senv)))
-       (make-type+expr :type be.type :expr (expr-fix expr))))
+       (make-type+expr :type be.type
+                       :expr (make-expr-let :binds sbs.binds :body be.expr))))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1428,11 +1443,11 @@
      (xdoc::p
       "The types are in the same order as the expressions."))
     (b* (((when (endp exprs))
-          (make-types+exprs :types nil :exprs (expr-list-fix exprs)))
+          (make-types+exprs :types nil :exprs nil))
          ((ok (type+expr te)) (check-expr (car exprs) senv))
          ((ok (types+exprs tes)) (check-expr-list (cdr exprs) senv)))
       (make-types+exprs :types (cons te.type tes.types)
-                        :exprs (expr-list-fix exprs)))
+                        :exprs (cons te.expr tes.exprs)))
     :measure (expr-list-count exprs)
 
     ///
@@ -1522,7 +1537,9 @@
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
         :type (make-type-fun :in types :out be.type)
-        :atom (atom-fix atom)))
+        :atom (make-atom-lambda :params atom.params
+                                :body be.expr
+                                :type? atom.type?)))
      :tlambda
      (b* (((unless (no-duplicatesp-equal atom.params))
            (reserr nil))
@@ -1530,7 +1547,7 @@
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
         :type (make-type-forall :params atom.params :body be.type)
-        :atom (atom-fix atom)))
+        :atom (make-atom-tlambda :params atom.params :body be.expr)))
      :ilambda
      (b* (((unless (no-duplicatesp-equal atom.params))
            (reserr nil))
@@ -1538,7 +1555,7 @@
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
         :type (make-type-pi :params atom.params :body be.type)
-        :atom (atom-fix atom)))
+        :atom (make-atom-ilambda :params atom.params :body be.expr)))
      :box
      (b* (((unless (check-ispace-list atom.ispaces senv)) (reserr nil))
           (ispaces (senv-expand-ispace-list atom.ispaces senv))
@@ -1556,7 +1573,11 @@
                                          maps.shape-map))
           ((ok (type+expr ae)) (check-expr atom.array senv))
           ((unless (type-equivp ae.type body-type-subst)) (reserr nil)))
-       (make-type+atom :type box-type :atom (atom-fix atom))))
+       (make-type+atom
+        :type box-type
+        :atom (make-atom-box :ispaces atom.ispaces
+                             :array ae.expr
+                             :type atom.type))))
     :measure (atom-count atom))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1571,11 +1592,11 @@
      (xdoc::p
       "The types are in the same order as the atoms."))
     (b* (((when (endp atoms))
-          (make-types+atoms :types nil :atoms (atom-list-fix atoms)))
+          (make-types+atoms :types nil :atoms nil))
          ((ok (type+atom ta)) (check-atom (car atoms) senv))
          ((ok (types+atoms tas)) (check-atom-list (cdr atoms) senv)))
       (make-types+atoms :types (cons ta.type tas.types)
-                        :atoms (atom-list-fix atoms)))
+                        :atoms (cons ta.atom tas.atoms)))
     :measure (atom-list-count atoms)
 
     ///
@@ -1691,7 +1712,9 @@
            (reserr nil)))
        (make-senv+bind
         :senv (senv-add-var+type bind.var ee.type senv)
-        :bind (bind-fix bind)))
+        :bind (make-bind-val :var bind.var
+                             :type? bind.type?
+                             :expr ee.expr)))
      :fun
      (b* (((unless (no-duplicatesp-equal (var+type?-list->var bind.params)))
            (reserr nil))
@@ -1705,7 +1728,10 @@
         :senv (senv-add-var+type bind.var
                                  (make-type-fun :in types :out ee.type)
                                  senv)
-        :bind (bind-fix bind)))
+        :bind (make-bind-fun :var bind.var
+                             :params bind.params
+                             :type? bind.type?
+                             :expr ee.expr)))
      :tfun
      (b* (((unless (no-duplicatesp-equal bind.params)) (reserr nil))
           (senv-body (senv-add-type-vars bind.params senv))
@@ -1717,7 +1743,10 @@
                                  (make-type-forall :params bind.params
                                                    :body ee.type)
                                  senv)
-        :bind (bind-fix bind)))
+        :bind (make-bind-tfun :var bind.var
+                              :params bind.params
+                              :type? bind.type?
+                              :expr ee.expr)))
      :ifun
      (b* (((unless (no-duplicatesp-equal bind.params)) (reserr nil))
           (senv-body (senv-add-ispace-vars bind.params senv))
@@ -1729,7 +1758,10 @@
                                  (make-type-pi :params bind.params
                                                :body ee.type)
                                  senv)
-        :bind (bind-fix bind)))
+        :bind (make-bind-ifun :var bind.var
+                              :params bind.params
+                              :type? bind.type?
+                              :expr ee.expr)))
      :cfun
      (b* ((tparams (type-var-list-option-case
                     bind.tparams? :some bind.tparams?.val :none nil))
@@ -1761,7 +1793,12 @@
                      :none fun-type)))
        (make-senv+bind
         :senv (senv-add-var+type bind.var fun-type senv)
-        :bind (bind-fix bind))))
+        :bind (make-bind-cfun :var bind.var
+                              :tparams? bind.tparams?
+                              :iparams? bind.iparams?
+                              :params bind.params
+                              :type bind.type
+                              :expr ee.expr))))
     :measure (bind-count bind))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1779,10 +1816,10 @@
        extending the static environment as we go,
        and we return the final environment."))
     (b* (((when (endp binds))
-          (make-senv+binds :senv (senv-fix senv) :binds (bind-list-fix binds)))
+          (make-senv+binds :senv (senv-fix senv) :binds nil))
          ((ok (senv+bind sb)) (check-bind (car binds) senv))
          ((ok (senv+binds sbs)) (check-bind-list (cdr binds) sb.senv)))
-      (make-senv+binds :senv sbs.senv :binds (bind-list-fix binds)))
+      (make-senv+binds :senv sbs.senv :binds (cons sb.bind sbs.binds)))
     :measure (bind-list-count binds))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1826,4 +1863,4 @@
      the returned program is currently identical to the input,
      as in @(tsee check-exprs/atoms/binds)."))
   (b* (((ok (type+expr te)) (check-expr (prog->expr prog) (init-senv))))
-    (make-type+prog :type te.type :prog (prog-fix prog))))
+    (make-type+prog :type te.type :prog (make-prog :expr te.expr))))
