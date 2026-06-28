@@ -242,7 +242,6 @@ dim-arith       = "+" *( ws dim )    ; addition
                 / "-" *( ws dim )    ; subtraction
 
 shape           = "@" identifier     ; shape variable
-                / dim                ; a single dim, sugar for (dims dim)
                 / "(" ws shape-paren ws ")"
                 / "[" *( ws ispace ) ws "]"   ; splice of ispaces (bracket)
 
@@ -253,7 +252,7 @@ shape-lit       = "[" *( ws decimal ) ws "]"
                   ; concrete shape literal e.g. [2 3]
 
 ispace          = dim                ; a dimension
-                / shape              ; a shape that is not a dimension [SC5]
+                / shape              ; a shape
 
 ispace-var      = dim-ispace-var / shape-ispace-var
 
@@ -567,30 +566,6 @@ HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
 ;   For well-formed input the two approaches produce identical parse
 ;   trees.  The difference is visible only in error messages for
 ;   malformed input.
-;
-; [SC5] shape under ispace must not be a dim (tagged on: ispace)
-;
-;   In the ispace rule
-;       ispace = dim / shape
-;   the second alternative must not match a shape that was produced by
-;   the "dim" alternative of the shape rule.  That is, when shape is
-;   chosen, it must actually use one of shape's other alternatives:
-;   "@" identifier, "(" ws shape-paren ws ")", or the bracketed
-;   "[" *( ws ispace ) ws "]" form.
-;
-;   Without this restriction the grammar is ambiguous: every dim is
-;   also a shape (via shape = dim), so any dim on the right-hand side
-;   of ispace would admit two parse trees -- once as ispace's dim
-;   alternative, and once as ispace's shape alternative descending
-;   through shape's dim alternative.  A dim reading is also what makes
-;   semantic sense at an ispace position that names a single size, so
-;   parsing that same text as a shape-of-one-dimension would be
-;   meaningless as well.
-;
-;   The Haskell reference implementation avoids the ambiguity by
-;   committing to the dim alternative first in its ispace parser, so
-;   the shape branch is only tried on inputs that cannot be parsed as
-;   a dim.
 
 
 ; =========================================================================
