@@ -1322,7 +1322,13 @@
   (defrule head-key-not-in-keys-of-tail
     (not (set::in (mv-nth 0 (head map))
                   (keys (tail map))))
-    :enable in-of-keys-to-assoc))
+    :enable in-of-keys-to-assoc)
+
+  (defruled in*-alt-def
+    (equal (in* keys map)
+           (set::subset keys (keys map)))
+    :induct t
+    :enable (in* assoc-to-in-of-keys set::subset)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
