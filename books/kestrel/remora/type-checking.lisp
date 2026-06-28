@@ -1797,14 +1797,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod type+prog
+  :short "Fixtype of pairs consisting of a type and a program."
+  ((type type)
+   (prog prog))
+  :pred type+prog-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type+prog-result
+  :short "Fixtype of (i) pairs consisting of a type and a program
+          and (ii) errors."
+  :ok type+prog
+  :pred type+prog-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-program ((prog progp))
-  :returns (type type-resultp)
-  :short "Check a program."
+  :returns (type+prog type+prog-resultp)
+  :short "Check a program,
+          returning its type and the program if successful."
   :long
   (xdoc::topstring
    (xdoc::p
     "We check its expression,
      using the initial static environment.
-     We return the type if successful."))
+     We return its type, together with the program, if successful;
+     the returned program is currently identical to the input,
+     as in @(tsee check-exprs/atoms/binds)."))
   (b* (((ok (type+expr te)) (check-expr (prog->expr prog) (init-senv))))
-    te.type))
+    (make-type+prog :type te.type :prog (prog-fix prog))))
