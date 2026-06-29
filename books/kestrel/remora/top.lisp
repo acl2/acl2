@@ -17,6 +17,8 @@
 (include-book "parsing-and-printing")
 (include-book "static-semantics")
 (include-book "dynamic-semantics")
+(include-book "monomorphize")
+(include-book "monomorphize-file")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -95,4 +97,5 @@
                     abstract-syntax
                     parsing-and-printing
                     static-semantics
-                    dynamic-semantics))
+                    dynamic-semantics
+                    monomorphize-prog))
