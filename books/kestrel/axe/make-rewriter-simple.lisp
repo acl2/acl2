@@ -2391,7 +2391,7 @@
             :flag ,simplify-fun-call-and-add-to-dag-name)
 
           :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                   :in-theory (e/d ( ;TAKE-WHEN-<=-OF-LEN
+                   :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
                                     len-of-cadar-when-axe-treep
                                     pseudo-termp-of-cadddr-when-axe-treep
                                     axe-bind-free-result-okayp-rewrite
@@ -2537,7 +2537,7 @@
             :flag ,simplify-fun-call-and-add-to-dag-name)
 
           :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                   :in-theory (e/d ( ;TAKE-WHEN-<=-OF-LEN
+                   :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
                                     len-of-cadar-when-axe-treep
                                     pseudo-termp-of-cadddr-when-axe-treep
                                     axe-bind-free-result-okayp-rewrite
@@ -2668,7 +2668,7 @@
             :flag ,simplify-fun-call-and-add-to-dag-name)
 
           :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                   :in-theory (e/d ( ;TAKE-WHEN-<=-OF-LEN
+                   :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
                                     len-of-cadar-when-axe-treep
                                     pseudo-termp-of-cadddr-when-axe-treep
                                     axe-bind-free-result-okayp-rewrite
@@ -3189,7 +3189,7 @@
             :flag ,simplify-fun-call-and-add-to-dag-name)
 
           :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                   :in-theory ;; (e/d ( ;TAKE-WHEN-<=-OF-LEN
+                   :in-theory ;; (e/d (;TAKE-WHEN-<=-OF-LEN
                    ;;       len-of-cadar-when-axe-treep
                    ;;       pseudo-termp-of-cadddr-when-axe-treep
                    ;;       axe-bind-free-result-okayp-rewrite
@@ -3567,7 +3567,7 @@
                      (:type-prescription wf-dagp)
                      ;; only needed when smtp:
                      ,@(and smtp '(w-of-mv-nth-1-of-prove-disjunction-with-stp)))
-                   :expand ( ;(alist-suitable-for-hypsp alist hyps)
+                   :expand (;(alist-suitable-for-hypsp alist hyps)
                             (:free (memoization ;count
                                      other-hyps alist)
                                    ,call-of-relieve-free-var-hyp-and-all-others)
@@ -3905,7 +3905,7 @@
                     (<= x
                         (get-dag-len (mv-nth 2 ,call-of-simplify-not-tree-and-add-to-dag))))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-not-tree-and-add-to-dag- suffix))
-                    :in-theory (e/d ( ;member-equal ; split into 2 cases
+                    :in-theory (e/d (;member-equal ; split into 2 cases
                                      )
                                     (,(pack$ 'theorem-for-simplify-not-tree-and-add-to-dag- suffix))))))
 
@@ -4916,7 +4916,7 @@
             :rule-classes (:rewrite :type-prescription) :flag ,simplify-fun-call-and-add-to-dag-name)
 
           :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                   :in-theory (e/d ( ;TAKE-WHEN-<=-OF-LEN
+                   :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
                                     len-of-cadar-when-axe-treep
                                     pseudo-termp-of-cadddr-when-axe-treep
                                     axe-bind-free-result-okayp-rewrite

@@ -116,7 +116,8 @@
   :short "Construct a shape term from
           a string denoting a dimension or shape variable,
           or a natural number denoting a dimension,
-          or a dimension addition term,
+          or a dimension arithmetic term
+          (@(tsee dim+), @(tsee dim*), or @(tsee dim-)),
           or some other term that is left unchanged."
   :long
   (xdoc::topstring
@@ -128,7 +129,8 @@
              (#\$ `(shape-dims (list (dim-var ,name))))
              (#\@ `(shape-var ,name)))))
         ((natp dim/shape) `(shape-dims (list (dim-const ,dim/shape))))
-        ((and (consp dim/shape) (eq (car dim/shape) 'dim+))
+        ((and (consp dim/shape)
+              (member-eq (car dim/shape) '(dim+ dim* dim-)))
          `(shape-dims (list ,dim/shape)))
         (t dim/shape)))
 
@@ -201,9 +203,12 @@
    (xdoc::p
     "The string denoting a variable must start with @('&') or @('*')."))
   (cond ((stringp type) `(type-var ,(type-var-term-from-string type)))
-        ((eq type :bool) '(type-array (type-base (base-type-bool)) (shp)))
-        ((eq type :int) '(type-array (type-base (base-type-int)) (shp)))
-        ((eq type :float) '(type-array (type-base (base-type-float)) (shp)))
+        ((eq type :bool) '(type-array (type-base (base-type-bool))
+                                      (ispace-shape (shp))))
+        ((eq type :int) '(type-array (type-base (base-type-int))
+                                     (ispace-shape (shp))))
+        ((eq type :float) '(type-array (type-base (base-type-float))
+                                       (ispace-shape (shp))))
         (t type)))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -224,7 +229,7 @@
     "Strings, natural numbers, and base type keywords
      are auto-coerced to ispaces and types."))
   `(type-array ,(type-term-from-var/base/other type)
-               ,(shape-term-from-var/dim/other dim/shape)))
+               (ispace-shape ,(shape-term-from-var/dim/other dim/shape))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

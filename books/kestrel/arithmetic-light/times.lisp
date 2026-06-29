@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operation *.
 ;
-; Copyright (C) 2019-2025 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -645,3 +645,27 @@
          (+ (* (realpart x) (imagpart y))
             (* (imagpart x) (realpart y))))
   :hints (("Goal" :in-theory (enable complex-opener))))
+
+;; todo: tighter bound when integers
+;; todo: allow <= instead of < in each hyp
+;; generalize to non-constants
+(defthm <-of-*-when-<-of-constant-and-<-of-constant-linear
+  (implies (and (< x k1) ; k1 is a free var
+                (syntaxp (quotep k1))
+                ;; (<= 0 k1)
+                (< y k2) ; k2 is a free var
+                (syntaxp (quotep k2))
+                ;; (<= 0 k2)
+                (<= 0 x)
+                (<= 0 y)
+                (rationalp k1)
+                (rationalp k2)
+                (rationalp x)
+                (rationalp y))
+           (< (* x y) (* k1 k2)))
+  :rule-classes ((:linear :trigger-terms ((* x y))))
+  :hints (("Goal"
+           :use ((:instance <=-of-*-and-*-same-helper (x1 x) (x2 k1) (y y))
+                 (:instance <=-of-*-and-*-same-helper (x1 y) (x2 k2) (y k1)))
+           :in-theory (disable <=-of-*-and-*-same-helper
+                               <-of-*-and-*-cancel-gen))))

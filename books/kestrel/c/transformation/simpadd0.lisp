@@ -95,7 +95,7 @@
                               (arg2 exprp)
                               (arg2-new exprp)
                               (arg2-thm-name symbolp)
-                              (info expr-binary-infop)
+                              (info type-vinfop)
                               (gin ginp))
   :guard (and (expr-unambp arg1)
               (expr-annop arg1)
@@ -214,7 +214,7 @@
     (expr-annop expr)
     :hyp (and (expr-annop arg1-new)
               (expr-annop arg2-new)
-              (expr-binary-infop info)))
+              (type-vinfop info)))
 
   (defret expr-aidentp-of-simpadd0-expr-binary
     (expr-aidentp expr gcc)
@@ -690,7 +690,8 @@
        :struct (b* (((mv new-spec (gout gout-spec))
                      (simpadd0-struni-spec tyspec.spec gin))
                     (gin (gin-update gin gout-spec)))
-                 (mv (type-spec-struct new-spec)
+                 (mv (c$::make-type-spec-struct :spec new-spec
+                                                :info tyspec.info)
                      (gout-no-thm gin)))
        :union (b* (((mv new-spec (gout gout-spec))
                     (simpadd0-struni-spec tyspec.spec gin))
@@ -1321,7 +1322,8 @@
          (gin (gin-update gin gout-declor)))
       (mv (make-param-declon :specs new-specs
                              :declor new-declor
-                             :attribs paramdeclon.attribs)
+                             :attribs paramdeclon.attribs
+                             :info paramdeclon.info)
           (change-gout (gout-no-thm gin)
                        :vartys gout-declor.vartys)))
     :measure (param-declon-count paramdeclon))
@@ -1379,7 +1381,7 @@
        (b* (((mv new-declor & (gout gout-declor))
              (simpadd0-declor paramdeclor.declor nil gin))
             (gin (gin-update gin gout-declor))
-            (type (param-declor-nonabstract-info->type paramdeclor.info))
+            (type (type+uid-vinfo->type paramdeclor.info))
             (ident (declor->ident paramdeclor.declor))
             (post-vartys
              (if (and (ident-formalp ident)
@@ -1657,10 +1659,10 @@
                                   (change-gin
                                    gin :vartys gout-declor.vartys)))
          ((gin gin) (gin-update gin gout-initer?))
-         (type (init-declor-info->type initdeclor.info))
+         (type (init-declor-vinfo->type initdeclor.info))
          (ident (declor->ident initdeclor.declor))
          (post-vartys
-          (if (and (not (init-declor-info->typedefp initdeclor.info))
+          (if (and (not (init-declor-vinfo->typedefp initdeclor.info))
                    (ident-formalp ident)
                    (type-formalp type)
                    (not (type-case type :void))
@@ -2950,7 +2952,7 @@
        ((mv new-declor & (gout gout-declor))
         (simpadd0-declor fundef.declor t gin))
        (gin (gin-update gin gout-declor))
-       (type (fundef-info->type fundef.info))
+       (type (type+uid-vinfo->type fundef.info))
        (ident (declor->ident fundef.declor))
        (vartys-with-fun (if (and (ident-formalp ident)
                                  (type-formalp type)

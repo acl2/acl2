@@ -13,7 +13,7 @@
 
 (include-book "../definition/lexer")
 
-(include-book "projects/abnf/tree-utilities" :dir :system)
+(include-book "projects/abnf/tree-operations/tree-utilities" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

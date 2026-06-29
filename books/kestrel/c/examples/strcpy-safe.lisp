@@ -12,7 +12,8 @@
 
 (include-book "strcpy-safe-support")
 
-(include-book "kestrel/c/syntax/input-files" :dir :system)
+(include-book "../syntax/input-files")
+(include-book "../syntax/abstract-syntax-formal-mapping-direct")
 
 (local (include-book "std/lists/top" :dir :system))
 
@@ -481,7 +482,7 @@
     (equal src-array-vals (c::value-array->elements src-array))
     (src-precond src-array-vals)
 
-    ;; The src parameter is a pointer value
+    ;; The dst parameter is a pointer value
     ;; whose referenced type is unsigned char.
     (c::valuep dst)
     (c::value-case dst :pointer)

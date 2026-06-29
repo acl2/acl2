@@ -261,7 +261,7 @@
                            expr)
                 (nat-listp acc))
            (nat-listp (maybe-add-split-candidates expr dag-array-name dag-array dag-len acc)))
-  :hints (("Goal" :cases ((integerp (nth '0 (dargs$inline expr))))
+  :hints (("Goal" :cases ((integerp (nth 0 (dargs$inline expr))))
            :in-theory (e/d (maybe-add-split-candidates
                             car-becomes-nth-of-0
                             bounded-dag-exprp
@@ -277,7 +277,7 @@
                 (all-< acc dag-len))
            (all-< (maybe-add-split-candidates expr dag-array-name dag-array dag-len acc)
                   dag-len))
-  :hints (("Goal" :cases ((integerp (nth '0 (dargs$inline expr))))
+  :hints (("Goal" :cases ((integerp (nth 0 (dargs$inline expr))))
            :in-theory (e/d (maybe-add-split-candidates
                             car-becomes-nth-of-0
                             bounded-dag-exprp

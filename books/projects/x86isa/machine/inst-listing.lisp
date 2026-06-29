@@ -1202,19 +1202,19 @@
           '((:UD (UD-LOCK-USED))))
     (INST "LODS/B" (OP :OP #xAC)
           (ARG :OP1 '(:AL) :OP2 '(X B))
-          'NIL
+          '(X86-LODS)
           '((:UD (UD-LOCK-USED))))
     (INST "LODS/W/D/Q" (OP :OP #xAD)
           (ARG :OP1 '(:RAX) :OP2 '(X V))
-          'NIL
+          '(X86-LODS)
           '((:UD (UD-LOCK-USED))))
     (INST "SCAS/B" (OP :OP #xAE)
           (ARG :OP1 '(:AL) :OP2 '(Y B))
-          'NIL
+          '(X86-SCAS)
           '((:UD (UD-LOCK-USED))))
     (INST "SCAS/W/D/Q" (OP :OP #xAF)
           (ARG :OP1 '(:RAX) :OP2 '(Y V))
-          'NIL
+          '(X86-SCAS)
           '((:UD (UD-LOCK-USED))))
     (INST "MOV" (OP :OP #xB0)
           (ARG :OP1 '(:AL/R8L) :OP2 '(I B))
@@ -5577,37 +5577,41 @@
               :PFX :NO-PREFIX
               :FEAT '(:SSE))
           (ARG :OP1 '(G Y) :OP2 '(U PS))
-          'NIL
+          '(X86-MOVMSKPS-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE)))))
     (INST "MOVMSKPD"
           (OP :OP #xF50 :PFX :66 :FEAT '(:SSE2))
           (ARG :OP1 '(G Y) :OP2 '(U PD))
-          'NIL
+          '(X86-MOVMSKPD-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
     (INST "VMOVMSKPD"
           (OP :OP #xF50
               :VEX '(:0F :128 :66 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(G Y) :OP2 '(U PD))
-          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+          '(X86-VMOVMSKPD-VEX)
+          '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
     (INST "VMOVMSKPD"
           (OP :OP #xF50
               :VEX '(:0F :256 :66 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(G Y) :OP2 '(U PD))
-          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+          '(X86-VMOVMSKPD-VEX)
+          '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
     (INST "VMOVMSKPS"
           (OP :OP #xF50
               :VEX '(:0F :128 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(G Y) :OP2 '(U PS))
-          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+          '(X86-VMOVMSKPS-VEX)
+          '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
     (INST "VMOVMSKPS"
           (OP :OP #xF50
               :VEX '(:0F :256 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(G Y) :OP2 '(U PS))
-          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+          '(X86-VMOVMSKPS-VEX)
+          '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
     (INST "SQRTPS"
           (OP :OP #xF51
               :PFX :NO-PREFIX
@@ -10390,7 +10394,7 @@
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BSF" (OP :OP #xFBC :PFX :NO-PREFIX)
           (ARG :OP1 '(G V) :OP2 '(E V))
-          '(X86-BSF-OP/EN-RM)
+          '(X86-BSF)
           '((:UD (UD-LOCK-USED))))
     (INST "TZCNT" (OP :OP #xFBC :PFX :F3)
           (ARG :OP1 '(G V) :OP2 '(E V))
@@ -10402,7 +10406,7 @@
           '((:UD (UD-LOCK-USED))))
     (INST "LZCNT" (OP :OP #xFBD :PFX :F3)
           (ARG :OP1 '(G V) :OP2 '(E V))
-          'NIL
+          '(X86-LZCNT)
           '((:UD (UD-LOCK-USED))))
     (INST "MOVSX" (OP :OP #xFBE)
           (ARG :OP1 '(G V) :OP2 '(E B))
@@ -12314,7 +12318,7 @@
                :OP2 '(H X)
                :OP3 '(W X))
           '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+            (operation . #.*OP-OR*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPOR"
           (OP :OP #xFEB
@@ -12324,7 +12328,7 @@
                :OP2 '(H X)
                :OP3 '(W X))
           '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+            (operation . #.*OP-OR*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPORD"
           (OP :OP #xFEB

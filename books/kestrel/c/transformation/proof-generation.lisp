@@ -14,7 +14,8 @@
 
 (include-book "../syntax/ascii-identifiers")
 (include-book "../syntax/unambiguity")
-(include-book "../syntax/validation-information")
+(include-book "../syntax/validation-annotations")
+(include-book "../syntax/types-formal-subset-and-mapping")
 
 (include-book "kestrel/fty/pseudo-event-form-list" :dir :system)
 
@@ -1019,7 +1020,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define xeq-expr-ident ((ident identp) (info var-infop) (gin ginp))
+(define xeq-expr-ident ((ident identp) (info var-vinfop) (gin ginp))
   :returns (mv (expr exprp) (gout goutp))
   :short "Equality transformation of an identifier expression (i.e. variable)."
   :long
@@ -1040,7 +1041,7 @@
      if the variable has a type supported in our C formalization,
      and if the variable is known in scope."))
   (b* ((ident (ident-fix ident))
-       ((var-info info) (var-info-fix info))
+       ((var-vinfo info) (var-vinfo-fix info))
        ((gin gin) gin)
        (expr (make-expr-ident :ident ident :info info))
        (gout-no-thm (gout-no-thm gin))
@@ -1098,7 +1099,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define xeq-expr-const ((const constp) (info expr-const-infop) (gin ginp))
+(define xeq-expr-const ((const constp) (info type-vinfop) (gin ginp))
   :guard (const-annop const)
   :returns (mv (expr exprp) (gout goutp))
   :short "Equality transformation of a constant."
@@ -1139,12 +1140,12 @@
      Until we extend our dynamic semantics to be more general,
      we need this additional condition for proof generation."))
   (b* (((gin gin) gin)
-       (info (expr-const-info-fix info))
+       (info (type-vinfo-fix info))
        (expr (make-expr-const :const const :info info))
        (gout-no-thm (gout-no-thm gin))
        ((unless (const-case const :int)) (mv expr gout-no-thm))
        ((iconst iconst) (const-int->iconst const))
-       ((iconst-info info) iconst.info)
+       ((iconst-vinfo info) iconst.info)
        ((unless (or (and (type-case info.type :sint)
                          (<= info.value (c::sint-max)))
                     (and (type-case info.type :uint)
@@ -1192,7 +1193,7 @@
   (defret expr-annop-of-xeq-expr-const
     (expr-annop expr)
     :hyp (and (const-annop const)
-              (expr-const-infop info)))
+              (type-vinfop info)))
 
   (defret expr-aidentp-of-xeq-expr-const
     (expr-aidentp expr gcc)
@@ -1213,7 +1214,7 @@
                         (arg exprp)
                         (arg-new exprp)
                         (arg-thm-name symbolp)
-                        (info expr-unary-infop)
+                        (info type-vinfop)
                         (gin ginp))
   :guard (and (expr-unambp arg)
               (expr-annop arg)
@@ -1295,7 +1296,7 @@
   (defret expr-annop-of-xeq-expr-unary
     (expr-annop expr)
     :hyp (and (expr-annop arg-new)
-              (expr-unary-infop info)))
+              (type-vinfop info)))
 
   (defret expr-aidentp-of-xeq-expr-unary
     (expr-aidentp expr gcc)
@@ -1434,7 +1435,7 @@
                          (arg2 exprp)
                          (arg2-new exprp)
                          (arg2-thm-name symbolp)
-                         (info expr-binary-infop)
+                         (info type-vinfop)
                          (gin ginp))
   :guard (and (expr-unambp arg1)
               (expr-annop arg1)
@@ -1666,7 +1667,7 @@
     (expr-annop expr)
     :hyp (and (expr-annop arg1-new)
               (expr-annop arg2-new)
-              (expr-binary-infop info)))
+              (type-vinfop info)))
 
   (defret expr-aidentp-of-xeq-expr-binary
     (expr-aidentp expr gcc)
@@ -3325,7 +3326,7 @@
                     (body comp-stmtp)
                     (body-new comp-stmtp)
                     (body-thm-name symbolp)
-                    (info fundef-infop)
+                    (info type+uid-vinfop)
                     (gin ginp))
   :guard (and (decl-spec-list-unambp specs)
               (decl-spec-list-annop specs)
@@ -3407,7 +3408,7 @@
                                 :declons declons-new
                                 :body body-new
                                 :info info))
-       (type (fundef-info->type info))
+       (type (type+uid-vinfo->type info))
        (ident (declor->ident declor))
        (vartys-after-fundef (if (and (ident-formalp ident)
                                      (type-formalp type)
@@ -3585,7 +3586,7 @@
               (declor-annop declor-new)
               (declon-list-annop declons-new)
               (comp-stmt-annop body-new)
-              (fundef-infop info)))
+              (type+uid-vinfop info)))
 
   (defret fundef-aidentp-of-xeq-fundef
     (fundef-aidentp fundef gcc)

@@ -51,9 +51,13 @@
    (xdoc::p
     "These ASTs preserve much of the concrete syntax information,
      so they include both core and non-core constructs.
-     We plan to define a characterization of core ASTs
+     We have defines a characterization of core ASTs
      and a desugaring transformation from all ASTs to core ASTs.
      The ASTs in [impl] are slightly more abstracted than ours.")
+   (xdoc::p
+    "Our ASTs contain some information absent from the concrete syntax,
+     such as certain type annotations.
+     These are meant to be calculated by type checking/inference.")
    (xdoc::p
     "As a general remark that applies to multiple fixtypes defined here,
      we use ACL2 strings for variable names.
@@ -117,7 +121,7 @@
        multiplications of zero or more dimensions,
        and subtractions of zero or more dimensions."))
     (:var ((name string)))
-    (:const ((value nat)))
+    (:const ((val nat)))
     (:add ((dims dim-list)))
     (:mul ((dims dim-list)))
     (:sub ((dims dim-list)))
@@ -133,21 +137,42 @@
     :elementp-of-nil nil
     :pred dim-listp))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist dim-list-list
+  :short "Fixtype of lists of lists of dimensions."
+  :elt-type dim-list
+  :true-listp t
+  :elementp-of-nil t
+  :pred dim-list-listp
+
+  ///
+
+  (defruled true-list-listp-when-dim-list-listp
+    (implies (dim-list-listp x)
+             (true-list-listp x))
+    :induct t
+    :enable dim-list-listp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftypes shapes
-  :short "Fixtypes of shapes and lists of shapes."
+(fty::deftypes shapes/ispaces
+  :short "Fixtypes of shapes and ispaces."
   :long
   (xdoc::topstring
    (xdoc::p
     "See @(tsee dims) for the reason why
      we define dimensions and shapes separately,
-     as in [impl] but unlike [thesis]."))
+     as in [impl] but unlike [thesis].")
+   (xdoc::p
+    "Shapes and ispaces are mutually recursive
+     because splices, which are shapes, contain ispaces.
+     This is consistent with a recent change to [impl]."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum shape
-    :parents (abstract-syntax-trees shapes)
+    :parents (abstract-syntax-trees shapes/ispaces)
     :short "Fixtype of shapes."
     :long
     (xdoc::topstring
@@ -156,18 +181,11 @@
      (xdoc::p
       "There are
        named variables,
-       dimensions (lifted to be shapes),
        shapes built from zero or more dimensions,
        concatenations of shapes,
-       and splicing of dimensions and shapes.")
+       and splicing of ispaces.")
      (xdoc::p
-      "The @(':dim') summand captures the case in which
-       a shape is expected
-       (currently the only place is in an array type),
-       but a dimension is provided:
-       the dimension is auto-lifted to a singleton shape;
-       it is a convenience construct, not a core construct.
-       In contrast, the @(':dims') summand is the core constructor
+      "The @(':dims') summand is the core constructor
        for a shape consisting of zero or more dimensions;
        in [esop] it is written as @($(\\mathtt{S}\\ \\iota\\ldots)$),
        in [arxiv] it is written as @($(\\mathtt{Shp}\\ \\iota\\ldots)$),
@@ -177,48 +195,72 @@
        so we use @(':dims') here.")
      (xdoc::p
       "The @(':splice') summand represents the square bracket notation.
-       Although [impl] and the ABNF grammar use ispaces inside the brackets,
-       since dimensions may be auto-lifted to shapes,
-       we can just use shapes, and avoid a mutual recursion with ispaces here.
+       As in [impl] and the ABNF grammar, it contains ispaces,
+       which is why shapes and ispaces are mutually recursive.
        This makes it apparent that
        concatenation and splicing are equivalent constructs."))
     (:var ((name string)))
-    (:dim ((dim dim)))
     (:dims ((dims dim-list)))
     (:append ((shapes shape-list)))
-    (:splice ((shapes shape-list)))
+    (:splice ((ispaces ispace-list)))
     :pred shapep)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist shape-list
-    :parents (abstract-syntax-trees shapes)
+    :parents (abstract-syntax-trees shapes/ispaces)
     :short "Fixtype of lists of shapes."
     :elt-type shape
     :true-listp t
     :elementp-of-nil nil
-    :pred shape-listp))
+    :pred shape-listp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum ispace
-  :short "Fixtype of ispaces."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This corresponds to @('ispace') in the ABNF grammar."))
-  (:dim ((dim dim)))
-  (:shape ((shape shape)))
-  :pred ispacep)
+  (fty::deftagsum ispace
+    :parents (abstract-syntax-trees shapes/ispaces)
+    :short "Fixtype of ispaces."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This corresponds to @('ispace') in the ABNF grammar."))
+    (:dim ((dim dim)))
+    (:shape ((shape shape)))
+    :pred ispacep)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist ispace-list
+    :parents (abstract-syntax-trees shapes/ispaces)
+    :short "Fixtype of lists of ispaces."
+    :elt-type ispace
+    :true-listp t
+    :elementp-of-nil nil
+    :pred ispace-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist ispace-list
-  :short "Fixtype of lists of ispaces."
-  :elt-type ispace
+(fty::deflist shape-list-list
+  :short "Fixtype of lists of lists of shapes."
+  :elt-type shape-list
   :true-listp t
-  :elementp-of-nil nil
-  :pred ispace-listp)
+  :elementp-of-nil t
+  :pred shape-list-listp
+
+  ///
+
+  (defruled true-list-listp-when-shape-list-listp
+    (implies (shape-list-listp x)
+             (true-list-listp x))
+    :induct t
+    :enable shape-list-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption ispace-option
+  ispace
+  :short "Fixtype of optional ispaces."
+  :pred ispace-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -376,17 +418,15 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to @('type-exp') in the ABNF grammar.")
+      "This corresponds to @('type') in the ABNF grammar.")
      (xdoc::p
       "There are
        variables (of two kinds),
        base types,
        array types consisting of a type for the elements
-       and a shape in which the elements are arranged,
-       bracket types which are like array types
-       but the zero or more shapes are concatenated
-       (the splicing comes from the fact that
-       dimensions are auto-lifted to shapes as in bracket shapes),
+       and an ispace indicating how the elements are arranged,
+       bracket types which are similar to array types
+       but they have zero or more ispaces to be spliced,
        function types (with zero or more input types and an output type),
        universal types (quantified over kinded variables),
        product types (quantified over ispace parameters),
@@ -394,9 +434,9 @@
     (:var ((var type-var)))
     (:base ((type base-type)))
     (:array ((elem type)
-             (shape shape)))
+             (ispace ispace)))
     (:bracket ((elem type)
-               (shapes shape-list)))
+               (ispaces ispace-list)))
     (:fun ((in type-list)
            (out type)))
     (:forall ((params type-var-list)
@@ -434,28 +474,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod var+type
-  :short "Fixtype of variables with types."
+(fty::defprod var+type?
+  :short "Fixtype of variables with optional types."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to @('pat') in the ABNF grammar.")
+    "This corresponds to @('pat') in the ABNF grammar,
+     with the relaxation that we allow a type to be missing.
+     In fact, Remora concrete syntax may evolve in that direction,
+     with type inference inferring the missing types.")
    (xdoc::p
     "These are pairs consisting of a variable name and an associated type.
      The type is an array one because variables are expressions, not atoms.
      These variables are separate from ispace and type variables."))
   ((var string)
-   (type type))
-  :pred var+type-p)
+   (type? type-option))
+  :pred var+type?-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist var+type-list
-  :short "Fixtype of lists of variables with types."
-  :elt-type var+type
+(fty::deflist var+type?-list
+  :short "Fixtype of lists of variables with optional types."
+  :elt-type var+type?
   :true-listp t
   :elementp-of-nil nil
-  :pred var+type-listp)
+  :pred var+type?-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -475,35 +518,6 @@
   sign
   :short "Fixtype of optional signs."
   :pred sign-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod expo
-  :short "Fixtype of exponents."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are used in float literals.")
-   (xdoc::p
-    "The boolean flag says whether we have @('E') (@('t')) or @('e') @('nil');
-     this is not semantically relevant,
-     but we preserve the concrete syntax information.
-     An absent sign is semantically equivalent to a positive sign,
-     but we preserve the concrete syntax information.
-     We require at least one digit, per the ABNF grammar."))
-  ((upcase bool)
-   (sign? sign-option)
-   (digits dec-digit-char-list
-           :reqfix (if (consp digits) digits '(#\0))))
-  :require (consp digits)
-  :pred expop)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption expo-option
-  expo
-  :short "Fixtype of optional exponents."
-  :pred expo-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -533,6 +547,35 @@
   :true-listp t
   :elementp-of-nil nil
   :pred int-lit-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod expo
+  :short "Fixtype of exponents."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used in float literals.")
+   (xdoc::p
+    "The boolean flag says whether we have @('E') (@('t')) or @('e') @('nil');
+     this is not semantically relevant,
+     but we preserve the concrete syntax information.
+     An absent sign is semantically equivalent to a positive sign,
+     but we preserve the concrete syntax information.
+     We require at least one digit, per the ABNF grammar."))
+  ((upcase bool)
+   (sign? sign-option)
+   (digits dec-digit-char-list
+           :reqfix (if (consp digits) digits '(#\0))))
+  :require (consp digits)
+  :pred expop)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption expo-option
+  expo
+  :short "Fixtype of optional exponents."
+  :pred expo-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -739,7 +782,7 @@
      (xdoc::p
       "There are
        named variables,
-       atoms (auto-lifted to scalars, i.e. arrays of rank 0),
+       atoms (auto-lifted to expressions),
        non-empty arrays with at least one atom,
        empty arrays with the type of the elements,
        non-empty frames with at least one expression,
@@ -756,7 +799,9 @@
        An unboxing expression
        binds zero or more variables to ispaces,
        binds a variable to the boxed expression,
-       and returns the body expression.")
+       and returns the body expression;
+       it is optionally annotated by its type
+       (the type of the whole unboxing expression).")
      (xdoc::p
       "The non-emptiness of the atom list in @(':array')
        and of the expression list in @(':frame')
@@ -766,7 +811,12 @@
        We can enforce this non-emptiness in the static semantics.
        [thesis] enforces non-emptiness with the patterns
        @($\\mathfrak{a}\\ \\mathfrak{a}\\ldots$) and @($e\\ e\\ldots$),
-       while [arxiv] paper does not."))
+       while [arxiv] paper does not.")
+     (xdoc::p
+      "The optional type of the body of an unbox expression
+       (i.e. the result type of the unboxing)
+       is calculated and stored by the type checker.
+       It is absent after parsing."))
     (:var ((name string)))
     (:atom ((atom atom)))
     (:array ((dims nat-list)
@@ -791,7 +841,8 @@
     (:unbox ((ispaces ispace-var-list)
              (var string)
              (target expr)
-             (body expr)))
+             (body expr)
+             (type? type-option)))
     (:bracket ((exprs expr-list)))
     (:let ((binds bind-list)
            (body expr)))
@@ -819,17 +870,23 @@
      (xdoc::p
       "There are
        base literals,
-       lambda abstractions of expressions over variables with types,
+       lambda abstractions of expressions over variables with types
+       with an optional type of the body (not of the abstraction),
        lambda abstractions of expressions over type variables,
        lambda abstractions of expressions over ispace variables,
        and boxed arrays with given ispaces and type.
        Since the type in a boxing construct must be a sum type,
        we could enforce this syntactically,
        but we follow [arxiv], [thesis], and [impl],
-       which all use a generic type."))
+       which all use a generic type.")
+     (xdoc::p
+      "The optional type of the body of a lambda abstraction
+       is calculated and stored by the type checker.
+       It is absent after parsing."))
     (:base ((lit base-lit)))
-    (:lambda ((params var+type-list)
-              (body expr)))
+    (:lambda ((params var+type?-list)
+              (body expr)
+              (type? type-option)))
     (:tlambda ((params type-var-list)
                (body expr)))
     (:ilambda ((params ispace-var-list)
@@ -876,7 +933,7 @@
            (type? type-option)
            (expr expr)))
     (:fun ((var string)
-           (params var+type-list)
+           (params var+type?-list)
            (type? type-option)
            (expr expr)))
     (:tfun ((var string)
@@ -890,7 +947,7 @@
     (:cfun ((var string)
             (tparams? type-var-list-option)
             (iparams? ispace-var-list-option)
-            (params var+type-list)
+            (params var+type?-list)
             (type type)
             (expr expr)))
     :pred bindp)

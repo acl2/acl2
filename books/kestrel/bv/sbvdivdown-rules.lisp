@@ -1,7 +1,7 @@
 ; Rules about sbvdivdown
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -225,8 +225,8 @@
                             (sbvdiv size x y)
                           ;;sbvdiv rounded up, and we want to round down, so subtract 1
                           (bvplus size -1 (sbvdiv size x y))))))))
-  :hints (("Goal" :cases ((and (SBVLT SIZE X '0) (SBVLT SIZE Y 0))
-                          (and (not (SBVLT SIZE X '0)) (SBVLT SIZE Y 0)))
+  :hints (("Goal" :cases ((and (SBVLT SIZE X 0) (SBVLT SIZE Y 0))
+                          (and (not (SBVLT SIZE X 0)) (SBVLT SIZE Y 0)))
            :in-theory (e/d (sbvlt
                               sbvdivdown-rewrite-case-1
                               sbvdivdown-rewrite-case-2

@@ -11,14 +11,21 @@
 (in-package "REMORA")
 
 (include-book "parser")
+
 ;; Pulls in *remora-keywords-as-natlists* and remora-keyword-p, which
 ;; are consulted by check-tree-no-keyword-identifiers below.
 (include-book "identifier-syntax")
 
+;; Certifies that the grammar's `keyword` rule and
+;; *remora-keywords-as-natlists* list the same keywords.  This book
+;; has no exported definitions used here; it is included for its
+;; assert-event side effect at certification time.
+(include-book "check-keywords")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ post-parsing
-  :parents (remora)
+  :parents (concrete-syntax parsing-and-printing)
   :short "Post-parsing checks for the Remora parser."
   :long
   (xdoc::topstring

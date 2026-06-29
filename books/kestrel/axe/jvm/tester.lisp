@@ -1,7 +1,7 @@
 ; The formal unit testing tool
 ;
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -384,7 +384,7 @@
 
 (defund assert-assumptions (class-name)
   (declare (xargs :guard (jvm::class-namep class-name)))
-  `( ;; assertion checking is on:
+  `(;; assertion checking is on:
     (equal '0
            (jvm::get-static-field ',class-name
                                   '("$assertionsDisabled" . :boolean)

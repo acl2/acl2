@@ -1,7 +1,7 @@
 ; A more compositional version of the unrolling lifter
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -236,7 +236,7 @@
 ;; TODO: We could actually have this prove the equality...
 (defun make-defun-abstracting-state-components (fn term)
   (declare (xargs :guard (pseudo-termp term)))
-  (b* (( ;; Walk through term identifying state components and binding them to vars
+  (b* ((;; Walk through term identifying state components and binding them to vars
         (mv new-term term-var-alist &)
         (abstract-state-components-in-term term nil 0))
        (state-components (strip-cars term-var-alist))

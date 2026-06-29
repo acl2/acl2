@@ -908,16 +908,14 @@
       (prog2$ (er hard? 'test-file-fn "Unexpected result (see above).")
               (mv t nil state)))))
 
-;; By default, we test all the functions in the file whose names start with any
-;; of the following: "test_", "fail_test_", "_test_", "_fail_test_".
 ;; The :include and :exclude options can be used to override this default.
-(defmacro test-file (&whole
+(defmacrodoc test-file (&whole
                        whole-form
                        executable ; a string
                      &key
-                       (include ':all) ; names of functions (strings) to test, or can be :all
-                       (exclude 'nil) ; names of functions (strings) to exclude from testing
-                       (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
+                       (include ':all)
+                       (exclude 'nil)
+                       (assumptions 'nil)
                        (extra-rules 'nil)
                        (extra-assumption-rules 'nil)
                        (extra-lift-rules 'nil)
@@ -975,4 +973,38 @@
       state)
      ;; Normal exit (remove the temp-dir, if it exists):
      (maybe-remove-temp-dir ; ,keep-temp-dir
-      state))))
+      state)))
+  :parents (acl2::formal-unit-testing acl2::axe-x86)
+  :short "Formal Unit Tester for x86."
+  :description "Apply the Formal Unit Tester to an x86 program.  See @(see acl2::formal-unit-testing) for background."
+  ;; WARNING: Some of these should be kept in sync with the doc from unroller.lisp:
+  :args ((executable "Path to the executable to test (should be an x86 binary).")
+         (include "Names of the functions to test (a list of strings, or @(':all')).  The special value @(':all') means to test all the functions in the file whose names start with any of the following: \"test_\", \"fail_test_\", \"_test_\", \"_fail_test_\".")
+         (exclude "Names of functions (strings) to exclude from testing.")
+         (expected-failures "Names of the methods that are expected to fail testing.  The special value @(':all') means that a function is expected to fail if its name starts with \"fail_test_\" or \"_fail_test_\.")
+         (assumptions "Assumptions to assume when lifting the functions.  Either a list of terms (to be assumed for every function), or an alist where each entry pairs a function name (a string) with a list of terms to be assumed when testing that function.  Instead of using this option, consider having the test harness check these conditions and return true (skipping further testing) when any of them is false.") ; todo: explain what vars can occur
+         (extra-rules "Extra rewrite rules to use throughout.")
+         (extra-assumption-rules "Extra rewrite rules to use when simplifying assumptions.")
+         (extra-lift-rules "Extra rewrite rules to use when lifting into logic.")
+         (extra-proof-rules "Extra rewrite rules to use when proving the lifted tests always return true.")
+         (remove-rules "Rewrite rules to remove throughout.")
+         (remove-assumption-rules "Rewrite rules to remove when simplifying assumptions.")
+         (remove-lift-rules "Rewrite rules to remove when lifting into logic.")
+         (remove-proof-rules "Rewrite rules to remove when proving the lifted tests always return true.")
+         (normalize-xors "Whether to normalize nests of XORs.")
+         (count-hits "Whether to count successful rewrite rule applications.")
+         (print "How verbose to be.") ; todo: details
+         (max-printed-term-size "Max term-size of a DAG that is allowed to be printed as a term.  Larger DAGs will be printed as DAGs, not terms.")
+         (monitor "Rule names (symbols) to be monitored when rewriting.") ; during assumptions too?
+         (step-limit "Limit on the total number of symbolic executions steps to allow (total number of steps over all branches, if the simulation splits).")
+         (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
+         (prune-precise "Whether to prune DAGs using precise contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning can blow up if attempted for DAGs that represent huge terms.")
+         (prune-approx "Whether to prune DAGs using approximate contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning should not blow up but doesn't use fully precise contextual information.")
+         (tactics "Sequence of proof tactics to use.")
+         (max-conflicts "Maximum number of solver conflicts before timeout is declared.")
+         (inputs-disjoint-from "What to assume about the inputs (specified using the :inputs option) being disjoint from the sections/segments in the executable.  The value :all means assume the inputs are disjoint from all sections/segments.  The value :code means assume the inputs are disjoint from the code/text section.  The value nil means do not include any assumptions of this kind.")
+         (assume-bytes "Indication of which sections/segments to assume still have their original bytes, either @(':all') (meaning assume it for all sections/segments) or @(':non-write') (meaning assume it for only non-writeable sections/segments).  Note that global variables may be initialized to certain values but may have then been overwritten before the function being lifted is called, so it may not be appropriate to assume such variables still have their original values.")
+         (stack-slots "How much unused stack space to assume is available, in terms of the number of stack slots, which are 4 bytes for 32-bit executables and 8 bytes for 64-bit executables.  The stack will expand into this space during (symbolic) execution.")
+         (existing-stack-slots "How much available stack space to assume exists.  Usually at least 1, for the saved return address.")
+         (position-independent "Whether to assume that the binary is loaded at the exact numerical position indicated in the executable (@('t'), @('nil'), or @(':auto')).")
+         (feature-flags "A list of the CPU features to assume are supported, or :auto.  Each feature is represented by a keyword.  If :auto is given, the value of the constant @('*default-feature-flags*') is used.")))

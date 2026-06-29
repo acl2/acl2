@@ -44,6 +44,10 @@
 (include-book "shellpool")
 (include-book "uiop")
 (include-book "cffi")
+(include-book "dexador")
+(include-book "usocket")
+#-allegro  ; See comment in base-raw.lsp
+(include-book "zippy")
 
 (defsection quicklisp
   :parents (interfacing-tools)
@@ -168,9 +172,7 @@ books in the Quicklisp directory.  The book doesn't really need to live in the
 @('quicklisp') directory, but keeping them there makes it easy to see what we
 are depending on and, if necessary, to change the way the wrappers work.</li>
 
-<li>Include your new book in @('quicklisp/top.lisp'), just for
-completeness.  (Hrmn, actually this book probably isn't very useful for
-anything.)</li>
+<li>Include your new book in @('quicklisp/top.lisp') (useful for certification.)</li>
 
 </ul>
 

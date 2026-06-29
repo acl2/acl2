@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "abstract-syntax-structural-operations")
+(include-book "abstract-syntax-structurals")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 
@@ -46,33 +46,29 @@
    (xdoc::p
     "We also plan to formalize a more general notion of equivalence,
      also involving multiplication and subtraction of dimensions,
-     without necessarily requiring decidability.
-     Indeed, Remora was planned to evolve towards undecidability,
-     in order to capture stronger constraints via types."))
+     without necessarily requiring decidability."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce addp
-  :short "Check if a dimension or shape or ispace or a list thereof
-          only contains addition, no multiplication or subtraction."
+  :short "Check if dimensions, shapes, and ispaces only contains additions
+          (no multiplications or subtractions)."
   :types (dims
-          shapes
-          ispace
-          ispace-list)
+          shapes/ispaces)
   :result booleanp
   :default t
   :combine and
   :override
   ((dim :mul nil)
    (dim :sub nil))
-  :name abstract-syntax-addp)
+  :name ispaces-addp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection addp-additional-theorems
-  :short "Theorems about the @(see abstract-syntax-addp) functions."
+  :short "Theorems about the @(see ispaces-addp) functions."
 
   (defruled dim-kind-not-mul-when-dim-addp
     (implies (dim-addp dim)
@@ -86,13 +82,13 @@
     :rule-classes :forward-chaining
     :enable dim-addp)
 
-  (add-to-ruleset abstract-syntax-addp-rules
+  (add-to-ruleset ispaces-addp-rules
                   '(dim-kind-not-mul-when-dim-addp
                     dim-kind-not-sub-when-dim-addp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (enable* abstract-syntax-addp-rules)))
+(local (in-theory (enable* ispaces-addp-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -174,7 +170,7 @@
     (dim-case
      dim
      :var (dim-var dim.name)
-     :const (dim-const dim.value)
+     :const (dim-const dim.val)
      :add (dim-add (flatten-add-in-dim-list dim.dims t))
      :mul (prog2$ (impossible) (dim-var "irrelevant"))
      :sub (prog2$ (impossible) (dim-var "irrelevant")))
@@ -193,6 +189,7 @@
      (xdoc::p
       "We go through each dimension and flatten it.
        However, as explained in @(tsee flatten-add-in-dim),
+       if the @('addp') flag is @('t'),
        we splice any obtained sub-addition into the current list,
        which is put into the super-addition by @(tsee flatten-add-in-dim).
        The @('addp') flag is @('t') exactly when
@@ -248,7 +245,7 @@
        (dim (car dims))
        ((mv sum new-dims) (factor-consts-in-add-dims (cdr dims))))
     (if (dim-case dim :const)
-        (mv (+ (dim-const->value dim) sum) new-dims)
+        (mv (+ (dim-const->val dim) sum) new-dims)
       (mv sum (cons (dim-fix dim) new-dims))))
   :verify-guards :after-returns)
 
@@ -293,7 +290,7 @@
   (dim-case
    dim
    :var (dim-var dim.name)
-   :const (dim-const dim.value)
+   :const (dim-const dim.val)
    :add (b* ((dims (normalize-add-dims dim.dims))
              ((when (endp dims)) (dim-const 0)) ; no dimensions
              ((when (endp (cdr dims))) (car dims))) ; one dimension
@@ -335,23 +332,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines normalize-dims-in-shapes
-  :short "Normalize dimensions in shapes and lists of shapes."
+(defines normalize-dims-in-shapes/ispaces
+  :short "Normalize dimensions in shapes and ispaces."
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define normalize-dims-in-shape ((shape shapep))
     :guard (shape-addp shape)
     :returns (new-shape shapep)
-    :parents (ispace-equivalence normalize-dims-in-shapes)
+    :parents (ispace-equivalence normalize-dims-in-shapes/ispaces)
     :short "Normalize dimensions in a shape."
     (shape-case
      shape
      :var (shape-var shape.name)
-     :dim (shape-dim (normalize-dim shape.dim))
      :dims (shape-dims (normalize-dim-list shape.dims))
      :append (shape-append (normalize-dims-in-shape-list shape.shapes))
-     :splice (shape-splice (normalize-dims-in-shape-list shape.shapes)))
+     :splice (shape-splice (normalize-dims-in-ispace-list shape.ispaces)))
     :measure (shape-count shape))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -359,7 +355,7 @@
   (define normalize-dims-in-shape-list ((shapes shape-listp))
     :guard (shape-list-addp shapes)
     :returns (new-shapes shape-listp)
-    :parents (ispace-equivalence normalize-dims-in-shapes)
+    :parents (ispace-equivalence normalize-dims-in-shapes/ispaces)
     :short "Normalize dimensions in a list of shapes."
     (cond ((endp shapes) nil)
           (t (cons (normalize-dims-in-shape (car shapes))
@@ -368,57 +364,84 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
+  (define normalize-dims-in-ispace ((ispace ispacep))
+    :guard (ispace-addp ispace)
+    :returns (new-ispace ispacep)
+    :parents (ispace-equivalence normalize-dims-in-shapes/ispaces)
+    :short "Normalize dimensions in an ispace."
+    (ispace-case
+     ispace
+     :dim (ispace-dim (normalize-dim ispace.dim))
+     :shape (ispace-shape (normalize-dims-in-shape ispace.shape)))
+    :measure (ispace-count ispace))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (define normalize-dims-in-ispace-list ((ispaces ispace-listp))
+    :guard (ispace-list-addp ispaces)
+    :returns (new-ispaces ispace-listp)
+    :parents (ispace-equivalence normalize-dims-in-shapes/ispaces)
+    :short "Normalize dimensions in a list of ispaces."
+    (cond ((endp ispaces) nil)
+          (t (cons (normalize-dims-in-ispace (car ispaces))
+                   (normalize-dims-in-ispace-list (cdr ispaces)))))
+    :measure (ispace-list-count ispaces))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
   :verify-guards :after-returns
 
   ///
 
-  (fty::deffixequiv-mutual normalize-dims-in-shapes))
+  (fty::deffixequiv-mutual normalize-dims-in-shapes/ispaces))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines normalize-shapes-single-in-shapes
-  :short "Normalize shapes to single dimensions in a shape or list of shapes."
+(defines normalize-shapes-single-in-shapes/ispaces
+  :short "Normalize to single-dimension shapes in shapes and ispaces."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We decompose shapes into concatenations of single-dimension shapes;
-     that is, we eliminate @(':dims') shapes
-     in favor of concatenations of @(':dim') shapes.
-     If a @(':dims') shape has no dimensions,
-     we turn it into the empty concatenation.
-     If a @(':dims') shape has one dimension,
-     we convert it to a @(':dim') shape with that dimension.
-     If a @(':dims') shape has two or more dimensions,
-     we turn it into a concatenation of @(':dim') shapes,
-     each of which contains one of the dimensions."))
+    "We decompose shapes into concatenations of
+     shapes consisting of singleton lists of dimensions.
+     We normalize a @(':dims') shape as follows:
+     if the @(':dims') shape has no dimensions,
+     we turn it into the empty concatenation;
+     if the @(':dims') shape has one dimension,
+     we leave it unchanged;
+     if the @(':dims') shape has two or more dimensions,
+     we turn it into a concatenation of singleton @(':dims') shapes,
+     each of which contains one of the dimensions.")
+   (xdoc::p
+    "We turn dimension ispaces to singleton shape ispaces."))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define normalize-shapes-single-in-shape ((shape shapep))
     :returns (new-shape shapep)
-    :parents (ispace-equivalence normalize-shapes-single-in-shapes)
+    :parents (ispace-equivalence normalize-shapes-single-in-shapes/ispaces)
     :short "Normalize shapes to single dimensions in a shape."
     (shape-case
      shape
      :var (shape-var shape.name)
-     :dim (shape-dim shape.dim)
      :dims (cond ((endp shape.dims) ; no dimensions
                   (shape-append nil))
                  ((endp (cdr shape.dims)) ; one dimension
-                  (shape-dim (car shape.dims)))
+                  (shape-fix shape))
                  (t ; two or more dimensions
-                  (shape-append (shape-dim-list shape.dims))))
+                  (shape-append
+                   (shape-dims-list (list-to-singletons shape.dims)))))
      :append (shape-append
               (normalize-shapes-single-in-shape-list shape.shapes))
      :splice (shape-splice
-              (normalize-shapes-single-in-shape-list shape.shapes)))
+              (normalize-shapes-single-in-ispace-list shape.ispaces)))
     :measure (shape-count shape))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define normalize-shapes-single-in-shape-list ((shapes shape-listp))
     :returns (new-shapes shape-listp)
-    :parents (ispace-equivalence normalize-shapes-single-in-shapes)
+    :parents (ispace-equivalence normalize-shapes-single-in-shapes/ispaces)
     :short "Normalize shapes to single dimensions in a list of shapes."
     (cond ((endp shapes) nil)
           (t (cons (normalize-shapes-single-in-shape (car shapes))
@@ -427,16 +450,44 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
+  (define normalize-shapes-single-in-ispace ((ispace ispacep))
+    :returns (new-ispace ispacep)
+    :parents (ispace-equivalence normalize-shapes-single-in-shapes/ispaces)
+    :short "Normalize shapes to single dimensions in an ispace."
+    (ispace-case
+     ispace
+     :dim (ispace-shape (shape-dims (list ispace.dim)))
+     :shape (ispace-shape (normalize-shapes-single-in-shape ispace.shape)))
+    :measure (ispace-count ispace))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (define normalize-shapes-single-in-ispace-list ((ispaces ispace-listp))
+    :returns (new-ispaces ispace-listp)
+    :parents (ispace-equivalence normalize-shapes-single-in-shapes/ispaces)
+    :short "Normalize shapes to single dimensions in a list of ispaces."
+    (cond ((endp ispaces) nil)
+          (t (cons (normalize-shapes-single-in-ispace (car ispaces))
+                   (normalize-shapes-single-in-ispace-list (cdr ispaces)))))
+    :measure (ispace-list-count ispaces))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
   :verify-guards :after-returns
 
   ///
 
-  (fty::deffixequiv-mutual normalize-shapes-single-in-shapes))
+  (fty::deffixequiv-mutual normalize-shapes-single-in-shapes/ispaces)
+
+  (defrule ispace-kind-of-normalize-shapes-single-in-ispace
+    (equal (ispace-kind (normalize-shapes-single-in-ispace ispace))
+           :shape)
+    :expand ((normalize-shapes-single-in-ispace ispace))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines flatten-append-in-shapes
-  :short "Flatten all the nested concatenations in a shape or list of shapes."
+(defines flatten-append-in-shapes/ispaces
+  :short "Flatten all the nested concatenations in shapes and ispaces."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -449,35 +500,46 @@
      and we also turn splices into concatenations
      (as noted in @(tsee shape), splices and concatenations are equivalent).")
    (xdoc::p
-    "This is defined on all possible shapes,
-     but it is intended for use after normalizing shapes to single dimensions
-     via @(tsee normalize-shapes-single-in-shapes),
-     which may produce concatenations.")
+    "This is defined on all possible shapes and ispaces,
+     but it is intended for use after normalizing to single-dimension shapes
+     via @(tsee normalize-shapes-single-in-shapes/ispaces),
+     which may produce concatenations.
+     Since @(tsee normalize-shapes-single-in-shapes/ispaces)
+     turns dimension ispaces into shape ispaces,
+     a splice is expected to consist of shape ispaces,
+     which we project to shapes to normalize to a concatenation.")
    (xdoc::p
     "The flattening of concatenations also has the effect of
      eliminating empty sub-concatenations used in super-concatenations,
-     e.g. @('(++ i (++ j k) (++) l)') results in @('(++ i j k l)')."))
+     e.g. @('(++ i (++ j k) (++) l)') results in @('(++ i j k l)').")
+   (xdoc::p
+    "The result of flattening a shape is always a concatenation shape."))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define flatten-append-in-shape ((shape shapep))
     :returns (new-shape shapep)
-    :parents (ispace-equivalence flatten-append-in-shapes)
+    :parents (ispace-equivalence flatten-append-in-shapes/ispaces)
     :short "Flatten all the nested concatenations in a shape."
     (shape-case
      shape
      :var (shape-append (list (shape-var shape.name)))
-     :dim (shape-append (list (shape-dim shape.dim)))
      :dims (shape-append (list (shape-dims shape.dims)))
      :append (shape-append (flatten-append-in-shape-list shape.shapes t))
-     :splice (shape-append (flatten-append-in-shape-list shape.shapes t)))
+     :splice (b* ((ispaces (flatten-append-in-ispace-list shape.ispaces))
+                  ((unless (ispace-list-case-shape ispaces))
+                   (raise "Internal error: ~x0 contains dimension ispaces."
+                          shape.ispaces)
+                   (shape-append nil))) ; irrelevant
+               (shape-append (ispace-shape-list->shape ispaces))))
+    :no-function nil
     :measure (shape-count shape))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define flatten-append-in-shape-list ((shapes shape-listp) (appendp booleanp))
     :returns (new-shapes shape-listp)
-    :parents (ispace-equivalence flatten-append-in-shapes)
+    :parents (ispace-equivalence flatten-append-in-shapes/ispaces)
     :short "Flatten all the nested concatenations in a list of shapes,
             further flattening the resulting list if part of a concatenation."
     :long
@@ -498,11 +560,51 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
+  (define flatten-append-in-ispace ((ispace ispacep))
+    :returns (new-ispace ispacep)
+    :parents (ispace-equivalence flatten-append-in-shapes/ispaces)
+    :short "Flatten all the nested concatenations in an ispace."
+    (ispace-case
+     ispace
+     :dim (ispace-dim ispace.dim)
+     :shape (ispace-shape (flatten-append-in-shape ispace.shape)))
+    :measure (ispace-count ispace))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (define flatten-append-in-ispace-list ((ispaces ispace-listp))
+    :returns (new-ispaces ispace-listp)
+    :parents (ispace-equivalence flatten-append-in-shapes/ispaces)
+    :short "Flatten all the nested concatenations in a list of ispaces."
+    (cond ((endp ispaces) nil)
+          (t (cons (flatten-append-in-ispace (car ispaces))
+                   (flatten-append-in-ispace-list (cdr ispaces)))))
+    :measure (ispace-list-count ispaces))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
   :verify-guards :after-returns
 
   ///
 
-  (fty::deffixequiv-mutual flatten-append-in-shapes))
+  (fty::deffixequiv-mutual flatten-append-in-shapes/ispaces)
+
+  (defrule shape-kind-of-flatten-append-in-shape
+    (equal (shape-kind (flatten-append-in-shape shape))
+           :append)
+    :expand ((flatten-append-in-shape shape)))
+
+  (defrule ispace-kind-of-flatten-append-in-ispace
+    (equal (ispace-kind (flatten-append-in-ispace ispace))
+           (ispace-kind ispace))
+    :expand ((flatten-append-in-ispace ispace)))
+
+  (defrule shape-kind-of-flatten-append-in-ispace-when-shape
+    (implies (ispace-case ispace :shape)
+             (equal (shape-kind
+                     (ispace-shape->shape (flatten-append-in-ispace ispace)))
+                    :append))
+    :expand (flatten-append-in-ispace ispace)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -515,13 +617,86 @@
    (xdoc::p
     "We normalize its dimensions,
      then we normalize shapes to have single dimensions,
-     and finally we flatten all concatenations."))
+     and finally we flatten all concatenations.")
+   (xdoc::p
+    "A normalized shape is always a concatenation."))
   (b* ((shape (normalize-dims-in-shape shape))
        (shape (normalize-shapes-single-in-shape shape))
        (shape (flatten-append-in-shape shape)))
-    shape))
+    shape)
+
+  ///
+
+  (defrule shape-kind-of-normalize-shape
+    (equal (shape-kind (normalize-shape shape))
+           :append)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define normalize-shape-list ((shapes shape-listp))
+  :guard (shape-list-addp shapes)
+  :returns (new-shapes shape-listp)
+  :short "Lift @(tsee normalize-shape) to lists."
+  (cond ((endp shapes) nil)
+        (t (cons (normalize-shape (car shapes))
+                 (normalize-shape-list (cdr shapes)))))
+
+  ///
+
+  (defret shape-list-case-append-of-normalize-shape-list
+    (shape-list-case-append new-shapes)
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define normalize-ispace ((ispace ispacep))
+  :guard (ispace-addp ispace)
+  :returns (new-ispace ispacep)
+  :short "Normalize an ispace."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We normalize the dimensions,
+     then we normalize to single-dimension shapes,
+     and finally we flatten all concatenations.")
+   (xdoc::p
+    "A normalized ispace is always a concatenation shape."))
+  (b* ((ispace (normalize-dims-in-ispace ispace))
+       (ispace (normalize-shapes-single-in-ispace ispace))
+       (ispace (flatten-append-in-ispace ispace)))
+    ispace)
+
+  ///
+
+  (defrule ispace-kind-of-normalize-ispace
+    (equal (ispace-kind (normalize-ispace ispace))
+           :shape))
+
+  (defrule shape-kind-of-normalize-ispace
+    (equal (shape-kind (ispace-shape->shape (normalize-ispace ispace)))
+           :append)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define normalize-ispace-list ((ispaces ispace-listp))
+  :guard (ispace-list-addp ispaces)
+  :returns (new-ispaces ispace-listp)
+  :short "Lift @(tsee normalize-ispace) to lists."
+  (cond ((endp ispaces) nil)
+        (t (cons (normalize-ispace (car ispaces))
+                 (normalize-ispace-list (cdr ispaces)))))
+
+  ///
+
+  (defret ispace-list-case-shape-of-normalize-ispace-list
+    (ispace-list-case-shape new-ispaces)
+    :hints (("Goal" :induct t)))
+
+  (defret shape-list-case-append-of-normalize-ispace-list
+    (shape-list-case-append (ispace-shape-list->shape new-ispaces))
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define shape-equivp ((shape1 shapep) (shape2 shapep))
   :returns (yes/no booleanp)
@@ -535,3 +710,40 @@
        (shape-addp shape2)
        (equal (normalize-shape shape1)
               (normalize-shape shape2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ispace-equivp ((ispace1 ispacep) (ispace2 ispacep))
+  :returns (yes/no booleanp)
+  :short "Check if two ispaces are equivalent."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case iff they only use addition
+     and they normalize to the same ispace."))
+  (and (ispace-addp ispace1)
+       (ispace-addp ispace2)
+       (equal (normalize-ispace ispace1)
+              (normalize-ispace ispace2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define shape-from-ispace ((ispace ispacep))
+  :returns (shape shapep)
+  :short "Turn an ispace into a shape."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the ispace is already a shape, it is unchanged.
+     Otherwise, we turn the dimension into a singleton shape."))
+  (ispace-case
+   ispace
+   :dim (shape-dims (list ispace.dim))
+   :shape ispace.shape))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection shape-list-from-ispace-list ((x ispace-listp))
+  :returns (shapes shape-listp)
+  :short "Lift @(tsee shape-from-ispace) to lists."
+  (shape-from-ispace x))

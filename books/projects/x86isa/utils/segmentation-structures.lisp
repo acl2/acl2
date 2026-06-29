@@ -4,6 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2026, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,10 +36,14 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author:
+; Alessandro Coglio   <www.alessandrocoglio.info>
 
 (in-package "X86ISA")
 
 (include-book "basic-structs")
+
+(include-book "xdoc/constructors" :dir :system)
 
 ;; We do these once, here, to avoid each defbitstruct below doing them locally:
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -56,22 +61,32 @@
 ;; ----------------------------------------------------------------------
 
 (defbitstruct hidden-segment-registerBits
-  :short "Intel manual, Feb'26, Vol. 3A, Figure 3-7."
-  ((base-addr 64bits)  ;; Segment Base Address
+  :short "Hidden part of segment registers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As shown in Intel manual, Mar 2026, Vol. 3A, Figure 3-7,
+     segment registers have a hidden part,
+     consisting of three fields.
+     These fields are \"cached\" from the segment descriptor (Figure 3-8):")
+   (xdoc::ul
+    (xdoc::li
+     "The base address is 32 bits in the segment descriptor,
+      so the 64 bits in @('base-addr') in this bitstruct can hold it.")
+    (xdoc::li
+     "The segment limit is 20 bits in the segment descriptor,
+      and based on the G (granularity) flag it covers up to 4 GiB,
+      so the 32 bits in @('limit') in this bitstruct can hold it.
+      IMPORTANT: this means that the cached limit field must be
+      populated only after G flag is taken into account.")
+    (xdoc::li
+     "There are 12 remaining bits in the segment descriptor,
+      so the 16 bits in @('attr') in this bitstruct can hold them.")))
+  ((base-addr 64bits)  ;; Base Address
    (limit     32bits)  ;; Segment Limit
    (attr      16bits)) ;; Attributes
   :inline t
   :msb-first nil)
-; These fields are "cached" from the segment descriptor (Figure 3-8):
-; - The Segment Base is 32 bits in the segment descriptor,
-;   so the 64 bits in BASE-ADDR above can hold it.
-; - The Segment Limit is 20 bits in the segment descriptor,
-;   and based on the G (granularity) flag it covers up to 4 GiB,
-;   so the 32 bits in LIMIT above can hold it.
-;   IMPORTANT: this means that the cached limit field must be
-;   populated only after G flag is taken into account.
-; - There are 12 remaining bits in the segment descriptor,
-;   so the 16 bits in ATTR above can hold them.
 
 (local
  (defthm hidden-segment-register-layout-ok
@@ -80,8 +95,14 @@
    :rule-classes nil))
 
 (defbitstruct segment-selectorBits
-  :short "Intel manual, Feb'26, Vol. 3A, Figure 3-6."
-  ((rpl    2bits)  ;; Requestor Privilege Level (RPL)
+  :short "Segment selectors."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the visible part of segment registers:
+     see Intel manual, Mar 2026, Vol. 3A, Figure 3-7.
+     The layout of a segment selector is in Figure 3-6."))
+  ((rpl    2bits)  ;; Requested Privilege Level (RPL)
    (ti      bitp)  ;; Table Indicator (0 = GDT, 1 = LDT)
    (index 13bits)) ;; Index of descriptor in GDT or LDT
   :inline t
@@ -93,26 +114,15 @@
         (unsigned-byte-p 16 x))
    :rule-classes nil))
 
-(defbitstruct interrupt/trap-gate-descriptor-attributesBits
-  :short "Subset of @(tsee interrupt/trap-gate-descriptorBits) above."
-  ((ist 3bits)
-   (type 4bits)
-   (s bitp)
-   (dpl 2bits)
-   (p bitp)
-   (unknownBits 5bits)) ;; TODO
-  :msb-first nil
-  :inline t)
-
-(local
- (defthm interrupt/trap-gate-descriptor-attributes-layout-ok
-   (iff (interrupt/trap-gate-descriptor-attributesBits-p x)
-        (unsigned-byte-p 16 x))
-   :rule-classes nil))
-
 (defbitstruct gdtr/idtrBits
-  :short "Intel manual, Mar'26, Vol. 2, Figure 2-6;
-          AMD manual, Mar'26, Vol. 2, Figures 4-7 and 4-8."
+  :short "Global and Interrupt Descriptor Table Registers (GDTR and IDTR)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Intel manual, Mar 2026, Vol. 3A, Figure 2-6;
+     AMD manual, Mar 2026, Vol. 2, Figures 4-7 and 4-8.")
+   (xdoc::p
+    "We use 64 bits to accommodate the longer size."))
   ((base-addr 64bits)  ;; Segment Base Address
    (limit     16bits)) ;; Segment Limit
   :msb-first nil
@@ -125,30 +135,29 @@
    :rule-classes nil))
 
 (defbitstruct code-segment-descriptorBits
-  :short "AMD manual, Jun'23, Vol. 2, Figures 4-20 and 4-14."
+  :short "Code segment descriptors."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Intel manual, Mar 2026, Vol. 3A, Figure 3-8;
+     AMD manual, Mar 2026, Vol. 2, Figures 4-14 and 4-20."))
   ((limit15-0 16bits)  ;; Ignored in 64-bit mode
    (base15-0 16bits)   ;; Ignored in 64-bit mode
    (base23-16 8bits)   ;; Ignored in 64-bit mode
-   (a bitp)            ;; Ignored in 64-bit mode
-   (r bitp)            ;; Ignored in 64-bit mode
-   (c bitp)
-   (msb-of-type bitp)  ;; must be 1
-   (s bitp)            ;; S = 1 in 64-bit mode (code/data segment)
-   (dpl 2bits)
-   (p bitp)
+   (a bitp)            ;; Accessed; ignored in 64-bit mode
+   (r bitp)            ;; Readable; ignored in 64-bit mode
+   (c bitp)            ;; Conforming
+   (msb-of-type bitp)  ;; Must be 1
+   (s bitp)            ;; System descriptor (0 = system; 1 = code or data);
+                       ;; must be 1 in 64-bit mode
+   (dpl 2bits)         ;; Descriptor privilege level
+   (p bitp)            ;; Segment present
    (limit19-16 4bits)  ;; Ignored in 64-bit mode
-   (avl bitp)          ;; Ignored in 64-bit mode
-                       ;; As per AMD manuals, this is ignored
-                       ;; in 64-bit mode but the Intel manuals
-                       ;; say it's not.  We're following the
-                       ;; Intel manuals.
-   (l bitp)
-   (d bitp)
-   (g bitp)            ;; Ignored in 64-bit mode
-                       ;; As per AMD manuals, this is ignored
-                       ;; in 64-bit mode but the Intel manuals
-                       ;; say it's not.  We're following the
-                       ;; Intel manuals.
+   (avl bitp)          ;; Available for use by system software;
+                       ;; ignored in 64-bit mode
+   (l bitp)            ;; 64-bit segment
+   (d bitp)            ;; Default operation size
+   (g bitp)            ;; Granularity; ignored in 64-bit mode
    (base31-24 8bits))  ;; Ignored in 64-bit mode
   :msb-first nil
   :inline t)
@@ -164,8 +173,8 @@
   ((a bitp)
    (r bitp)
    (c bitp)
-   (msb-of-type bitp) ;; must be 1
-   (s bitp)           ;; S = 1 in 64-bit mode
+   (msb-of-type bitp)
+   (s bitp)
    (dpl 2bits)
    (p bitp)
    (avl bitp)
@@ -183,22 +192,29 @@
    :rule-classes nil))
 
 (defbitstruct data-segment-descriptorBits
-  :short "AMD manual, Jun'23, Vol. 2, Figures 4-21 and 4-15."
+  :short "Data segment descriptors."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Intel manual, Mar 2026, Vol. 3A, Figure 3-8;
+     AMD manual, Mar 2026, Vol. 2, Figures 4-15 and 4-21."))
   ((limit15-0 16bits)  ;; Ignored in 64-bit mode
    (base15-0 16bits)   ;; Ignored in 64-bit mode
    (base23-16 8bits)   ;; Ignored in 64-bit mode
-   (a bitp)            ;; Ignored in 64-bit mode
-   (w bitp)            ;; Ignored in 64-bit mode
-   (e bitp)            ;; Ignored in 64-bit mode
-   (msb-of-type bitp)  ;; must be 0
-   (s bitp)            ;; S = 1 in 64-bit mode (code/data segment)
-   (dpl 2bits)         ;; Ignored in 64-bit mode
-   (p bitp)            ;; !! NOT IGNORED: Segment present bit !!
+   (a bitp)            ;; Accessed; ignored in 64-bit mode
+   (w bitp)            ;; Read/write; ignored in 64-bit mode
+   (e bitp)            ;; Execute; ignored in 64-bit mode
+   (msb-of-type bitp)  ;; Must be 0
+   (s bitp)            ;; System descriptor (0 = system; 1 = code or data);
+                       ;; must be 1 in 64-bit mode
+   (dpl 2bits)         ;; Descriptor privilege level; ignored in 64-bit mode
+   (p bitp)            ;; Segment present
    (limit19-16 4bits)  ;; Ignored in 64-bit mode
-   (avl bitp)
-   (l bitp)            ;; L = 1 in 64-bit mode
-   (d/b bitp)          ;; Ignored in 64-bit mode
-   (g bitp)            ;; Ignored in 64-bit mode
+   (avl bitp)          ;; Available for use by system software;
+                       ;; ignored in 64-bit mode
+   (l bitp)            ;; 64-bit segment
+   (d/b bitp)          ;; Default operation size
+   (g bitp)            ;; Granularity; ignored in 64-bit mode
    (base31-24 8bits))  ;; Ignored in 64-bit mode
   :msb-first nil
   :inline t)
@@ -214,8 +230,8 @@
   ((a bitp)
    (w bitp)
    (e bitp)
-   (msb-of-type bitp) ;; must be 0
-   (s bitp)           ;; S = 1 in 64-bit mode
+   (msb-of-type bitp)
+   (s bitp)
    (dpl 2bits)
    (p bitp)
    (avl bitp)
@@ -232,26 +248,31 @@
         (unsigned-byte-p 16 x))
    :rule-classes nil))
 
-;; System-Segment descriptors (64-bit mode): Note that the following
-;; layouts are different in 32-bit mode, or even in compatibility mode.
-
 (defbitstruct system-segment-descriptorBits
-  :short "AMD manual, Jun'23, Vol. 2, Figure 4-22."
+  :short "System segment descriptors, in 64-bit mode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Intel manual, Mar 2026, Vol. 3A, Figure 3-11;
+     AMD manual, Mar 2026, Vol. 2, Figure 4-22.")
+   (xdoc::p
+    "This is for 64-bit mode;
+     in 32-bit mode, the layout is different."))
   ((limit15-0 16bits)
    (base15-0 16bits)
    (base23-16 8bits)
    (type 4bits)
-   (s bitp) ;; S = 0 in 64-bit mode
-   (dpl 2bits)
-   (p bitp)
+   (s bitp)            ;; System descriptor (0 = system; 1 = code or data)
+   (dpl 2bits)         ;; Descriptor privilege level
+   (p bitp)            ;; Segment present
    (limit19-16 4bits)
-   (avl bitp)
-   (res1 2bits) ;; L and D/B bits are ignored.
-   (g bitp)
+   (avl bitp)          ;; Available for use by system software
+   (res1 2bits)        ;; L and D/B bits are ignored
+   (g bitp)            ;; Granularity
    (base31-24 8bits)
    (base63-32 32bits)
    (res2 8bits)
-   (all-zeroes? 5bits) ;; Check whether these are all zeroes or not.
+   (all-zeroes? 5bits) ;; Must all be 0
    (res3 19bits))
   :msb-first nil
   :inline t)
@@ -265,7 +286,7 @@
 (defbitstruct system-segment-descriptor-attributesBits
   :short "Subset of @(tsee system-segment-descriptorBits)."
   ((type 4bits)
-   (s bitp) ;; S = 0 in 64-bit mode
+   (s bitp)
    (dpl 2bits)
    (p bitp)
    (avl bitp)
@@ -281,18 +302,26 @@
    :rule-classes nil))
 
 (defbitstruct call-gate-descriptorBits
-  :short "AMD manual, Jun'23, Vol. 2, Figure 4-23."
+  :short "Call-gate descriptors, in 64-bit mode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Intel manual, Mar 2026, Vol. 3A, Figure 3-11;
+     AMD manual, Mar 2026, Vol. 2, Figure 4-23.")
+   (xdoc::p
+    "This is for 64-bit mode;
+     in 32-bit mode, the layout is different."))
   ((offset15-0 16bits)
    (selector 16bits)
    (res1 8bits)
    (type 4bits)
-   (s bitp) ;; S = 0 in 64-bit mode
-   (dpl 2bits)
-   (p bitp)
+   (s bitp)             ;; System descriptor (0 = system; 1 = code or data)
+   (dpl 2bits)          ;; Descriptor privilege level
+   (p bitp)             ;; Segment present
    (offset31-16 16bits)
    (offset63-32 32bits)
    (res2 8bits)
-   (all-zeroes? 5bits) ;; Check whether these are all zeroes or not.
+   (all-zeroes? 5bits)  ;; Must all be 0
    (res3 19bits))
   :msb-first nil
   :inline t)
@@ -320,21 +349,28 @@
    :rule-classes nil))
 
 (defbitstruct interrupt/trap-gate-descriptorBits
-  :short "AMD manual, Jun'23, Vol. 2, Figures 4-24 and 4-18."
+  :short "Interrupt-gate and trap-gate descriptors, in 64-bit mode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Intel manual, Mar 2026, Vol. 3A, Figure 3-11;
+     AMD manual, Mar 2026, Vol. 2, Figure 4-24.")
+   (xdoc::p
+    "This is for 64-bit mode;
+     in 32-bit mode, the layout is different."))
   ((offset15-0 16bits)
    (selector 16bits)
-   (ist 3bits)
+   (ist 3bits)          ;; Interrupt stack table
    (res1 5bits)
    (type 4bits)
-   (s bitp) ;; S = 0 in 64-bit mode
-   (dpl 2bits)
-   (p bitp)
+   (s bitp)             ;; System descriptor (0 = system; 1 = code or data)
+   (dpl 2bits)          ;; Descriptor privilege level
+   (p bitp)             ;; Segment present
    (offset31-16 16bits)
    (offset63-32 32bits)
    (res2 8bits)
-   (all-zeros? 5bits) ;; Check whether these are all zeroes or not.
-   (res3 19bits)
-   )
+   (all-zeroes? 5bits)  ;; Must all be 0
+   (res3 19bits))
   :msb-first nil
   :inline t)
 
@@ -342,6 +378,23 @@
  (defthm interrupt/trap-gate-descriptor-layout-ok
    (iff (interrupt/trap-gate-descriptorBits-p x)
         (unsigned-byte-p 128 x))
+   :rule-classes nil))
+
+(defbitstruct interrupt/trap-gate-descriptor-attributesBits
+  :short "Subset of @(tsee interrupt/trap-gate-descriptorBits)."
+  ((ist 3bits)
+   (type 4bits)
+   (s bitp)
+   (dpl 2bits)
+   (p bitp)
+   (unknownBits 5bits))
+  :msb-first nil
+  :inline t)
+
+(local
+ (defthm interrupt/trap-gate-descriptor-attributes-layout-ok
+   (iff (interrupt/trap-gate-descriptor-attributesBits-p x)
+        (unsigned-byte-p 16 x))
    :rule-classes nil))
 
 ;; ----------------------------------------------------------------------

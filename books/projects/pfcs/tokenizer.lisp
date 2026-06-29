@@ -14,7 +14,7 @@
 
 (include-book "lexer")
 
-(include-book "projects/abnf/tree-utilities" :dir :system)
+(include-book "projects/abnf/tree-operations/tree-utilities" :dir :system)
 
 (acl2::controlled-configuration :no-function nil)
 

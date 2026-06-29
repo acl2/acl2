@@ -224,8 +224,7 @@
            (equal (bv-array-clear size len 0 (cons a b))
                   (bv-array-clear size len 0 (cons 0 b))))
   :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2)
-                                  (
-                                   ;;update-nth-becomes-update-nth2-extend-gen
+                                  (;;update-nth-becomes-update-nth2-extend-gen
                                    )))))
 
 (defthmd bv-array-write-of-0-becomes-bv-array-clear

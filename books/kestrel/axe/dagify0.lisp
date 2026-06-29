@@ -958,7 +958,7 @@
                                 interpreted-function-alist)))))
     :flag merge-trees-into-dag-array)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d ( ;nth-0-of-nth-of-len-minus1-when-pseudo-dagp
+           :in-theory (e/d (;nth-0-of-nth-of-len-minus1-when-pseudo-dagp
                             car-becomes-nth-of-0
                             merge-tree-into-dag-array
                             merge-trees-into-dag-array
@@ -1633,7 +1633,7 @@
           (prog2$ (er hard? 'compose-dags "var ~x0 isn't present in DAG ~X12" var-to-replace main-dag nil)
                   (mv (erp-t) nil))
         (if (quotep subdag-for-var)
-            (b* ( ;; make the subdag into a dag array:
+            (b* (;; make the subdag into a dag array:
                  (dag-len 0)
                  (dag-array (new-array1 'dag-array (+ 1 (top-nodenum main-dag))))
                  (dag-parent-array (new-array1 'dag-parent-array (+ 1 (top-nodenum main-dag))))
@@ -1651,7 +1651,7 @@
                  ((when erp) (mv erp nil))
                  (top-nodenum (aref1 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array (top-nodenum main-dag))))
               (mv (erp-nil) (drop-non-supporters-array-with-name 'dag-array dag-array top-nodenum nil)))
-          (b* ( ;; make the subdag into a dag array:
+          (b* (;; make the subdag into a dag array:
                (dag-len (+ 1 (top-nodenum subdag-for-var)))
                (dag-array (alist-to-array1-with-len 'dag-array subdag-for-var (+ dag-len 1 (top-nodenum main-dag))))
                ((mv dag-parent-array dag-constant-alist dag-variable-alist)

@@ -19,6 +19,7 @@
   '(update-call-stack-height
     update-call-stack-height-aux-base
     update-call-stack-height-aux-of-if-arg1
+    stack-height-adjustment
     arm::step-opener
     arm::execute-inst-base ; requires the instruction to be known
     arm::step-of-if
@@ -35,6 +36,15 @@
             run-until-return
             run-subroutine)))
 
+(defun symbolic-execution-rules32-with-tracing ()
+  (declare (xargs :guard t))
+  (append (symbolic-execution-rules32-common)
+          '(run-until-return-with-tracing-aux-base-axe
+            run-until-return-with-tracing-aux-opener-axe
+            run-until-return-with-tracing-aux-of-if-arg2
+            run-until-return-with-tracing
+            run-subroutine-with-tracing)))
+
 (defun symbolic-execution-rules-with-stop-pcs32 ()
   (declare (xargs :guard t))
   (append (symbolic-execution-rules32-common)
@@ -42,6 +52,16 @@
             run-until-return-or-reach-pc-aux-opener-axe
             run-until-return-or-reach-pc-aux-of-if-arg2
             run-until-return-or-reach-pc
+            acl2::memberp-constant-opener ; for resolving the stop-pcs check (when non-position-independent)
+            )))
+
+(defun symbolic-execution-rules-with-stop-pcs32-with-tracing ()
+  (declare (xargs :guard t))
+  (append (symbolic-execution-rules32-common)
+          '(run-until-return-with-tracing-or-reach-pc-aux-base-axe
+            run-until-return-with-tracing-or-reach-pc-aux-opener-axe
+            run-until-return-with-tracing-or-reach-pc-aux-of-if-arg2
+            run-until-return-with-tracing-or-reach-pc
             acl2::memberp-constant-opener ; for resolving the stop-pcs check (when non-position-independent)
             )))
 
@@ -54,16 +74,18 @@
     arm::read-when-equal-of-read-bytes-and-subregion32p
     arm::read-when-equal-of-read-bytes-and-subregion32p-alt
     arm::read-when-equal-of-read-bytes
-    arm::read-when-equal-of-read-bytes-alt))
+    arm::read-when-equal-of-read-bytes-alt
+    read-when-equal-of-read-bytes-smt
+    read-when-equal-of-read-bytes-smt-alt))
 
-;; ;; sophisticated scheme for removing inner, shadowed writes
-;; (defund shadowed-write-rules32 ()
-;;   (declare (xargs :guard t))
-;;   '(write-becomes-write-of-clear-extend-axe
-;;     clear-extend-of-write-continue-axe
-;;     clear-extend-of-write-finish
-;;     clear-extend-of-write-of-clear-retract
-;;     write-of-clear-retract))
+;; sophisticated scheme for removing inner, shadowed writes
+(defund shadowed-write-rules32 ()
+  (declare (xargs :guard t))
+  '(write-becomes-write-of-clear-extend-axe
+    clear-extend-of-write-continue-axe
+    clear-extend-of-write-finish
+    clear-extend-of-write-of-clear-retract
+    write-of-clear-retract))
 
 (defun execute-function-names (mnemonics)
   (declare (xargs :guard (keyword-listp mnemonics)))
@@ -81,18 +103,21 @@
 (defund instruction-semantic-functions ()
   (declare (xargs :guard t))
   (append (set-difference-eq (semantic-functions-for-mnemonics)
-                             '(arm::execute-cmp-immediate
+                             '(;; These are replaced below by the -alt rules:
+                               arm::execute-cmp-immediate
                                arm::execute-cmp-register
                                arm::execute-cmp-register-shifted-register
                                arm::execute-cmn-immediate
                                arm::execute-cmn-register
-                               arm::execute-cmn-register-shifted-register))
+                               arm::execute-cmn-register-shifted-register
+                               arm::execute-sub-immediate))
           '(arm::execute-cmp-immediate-alt
             arm::execute-cmp-register-alt
             arm::execute-cmp-register-shifted-register-alt
             arm::execute-cmn-immediate-alt
             arm::execute-cmn-register-alt
             arm::execute-cmn-register-shifted-register-alt
+            arm::execute-sub-immediate-alt ; todo: need alt defs for other sub rules
 
             ;; These support relieving hyps of the -alt rules:
             arm::cmn-immediate-argsp
@@ -101,27 +126,67 @@
             arm::cmp-immediate-argsp
             arm::cmp-register-argsp
             arm::cmp-register-shifted-register-argsp
-            )
-          '(arm::bl-blx-common ; todo: package for the functions
+            arm::sub-immediate-argsp
+
+            ;; Additional rules needed for the instruction semantics:
+            arm::adr-common
+            arm::adr-encoding-a1-core
+            arm::adr-encoding-a2-core
+            arm::bfc-core
+            arm::bl-blx-common ; todo: add some of these to the A package?
             arm::blx-core
+            arm::ldm-core
+            arm::ldm-loop-base
+            arm::ldm-loop-unroll
+            arm::ldr-literal-core
+            arm::ldrb-literal-core
+            arm::ldrbt-common
+            arm::ldrbt-encoding-a1-core
+            arm::ldrbt-encoding-a2-core
+            arm::ldrd-literal-core
+            arm::ldrh-literal-core
+            arm::ldrht-common
+            arm::ldrht-encoding-a1-core
+            arm::ldrht-encoding-a2-core
+            arm::ldrsb-literal-core
+            arm::ldrsbt-common
+            arm::ldrsbt-encoding-a1-core
+            arm::ldrsbt-encoding-a2-core
+            arm::ldrsh-literal-core
+            arm::ldrsht-common
+            arm::ldrsht-encoding-a1-core
+            arm::ldrsht-encoding-a2-core
+            arm::ldrt-common
+            arm::ldrt-encoding-a1-core
+            arm::ldrt-encoding-a2-core
             arm::mov-common
             arm::mov-register-core
             arm::nop-core
-            arm::pop-encoding-a2-core
             arm::pop-common
+            arm::pop-encoding-a1-core
+            arm::pop-encoding-a2-core
             arm::pop-loop-base
             arm::pop-loop-unroll
+            arm::push-common
             arm::push-encoding-a1-core
             arm::push-encoding-a2-core
-            arm::push-common
             arm::push-loop-base
             arm::push-loop-unroll
-            arm::ldm-loop-base
-            arm::ldm-loop-unroll
-            arm::ldm-core
-            arm::ldr-literal-core
             arm::stm-loop-base
-            arm::stm-loop-unroll)))
+            arm::stm-loop-unroll
+            arm::stmdb-core
+            arm::strbt-common
+            arm::strbt-encoding-a1-core
+            arm::strbt-encoding-a2-core
+            arm::strht-common
+            arm::strht-encoding-a1-core
+            arm::strht-encoding-a2-core
+            arm::strt-common
+            arm::strt-encoding-a1-core
+            arm::strt-encoding-a2-core
+            arm::tst-immediate-core
+
+            arm::execute-unconditional-instruction)))
 
 (defun lifter-rules32 ()
   (declare (xargs :guard t))
@@ -177,6 +242,9 @@
      arm::le-condition-cmp-idiom
      arm::gt-condition-cmp-idiom
 
+     ;; sub rules: ; todo: add more!
+     arm::lt-condition-of-sub-sign-and-sub-overflow
+
      arm::eq-condition-constant-opener
      arm::ne-condition-constant-opener
      arm::cs-condition-constant-opener
@@ -192,6 +260,8 @@
      arm::gt-condition-constant-opener
      arm::le-condition-constant-opener
 
+     arm::addwithcarry-constant-opener ; more?
+     arm::sint-constant-opener
 
      acl2::lookup-eq-becomes-lookup-equal
      arm::==$inline
@@ -200,8 +270,11 @@
      arm::zeroextend
      arm::nullcheckifthumbee
      arm::pcvalue
-     arm::align ; redef?
-     arm::div
+     ;; arm::align ; redef?
+     arm::bvchop-2-of-align-of-4
+     arm::align-of-4-when-aligned
+     ;; arm::div
+     arm::div-becomes-bvdiv
      arm::memu
      arm::mema
      arm::advance-pc
@@ -256,6 +329,7 @@
      arm::error-of-set-apsr.v
      arm::error-of-set-apsr.q
      arm::error-of-write
+     arm::error-of-if
 
      arm::read-of-update-itstate
      arm::read-of-update-isetstate
@@ -291,6 +365,7 @@
      arm::isetstate-of-set-apsr.v
      arm::isetstate-of-set-apsr.q
      arm::isetstate-of-write
+     arm::isetstate-of-if
 
      arm::update-isetstate-when-equal-of-isetstate
 
@@ -374,6 +449,7 @@
      arm::loadwritepc
      arm::bxwritepc
      arm::branchwritepc
+     arm::aluwritepc
 
      arm::and32 ; exposes bvand
      arm::or32 ; exposes bvor
@@ -389,7 +465,7 @@
      arm::mv-nth-1-of-lsl_c-becomes-getbit
      arm::lsl-becomes-bvshl ; arm::lsl
 
-     ;; right shifts;
+     ;; right shifts:
      arm::mv-nth-0-of-lsr_c-becomes-bvshr ; arm::lsr_c
      arm::mv-nth-1-of-lsr_c-becomes-getbit
      arm::lsr-becomes-bvshr ; arm::lsr
@@ -421,6 +497,7 @@
      arm::set-reg-of-set-reg-diff-2
 
      arm::decodeimmshift
+     arm::decoderegshift
      arm::unsigned-byte-p-of-mv-nth-0-of-AddWithCarry ; could drop these if the replacement rule always fires
      arm::unsigned-byte-p-of-mv-nth-1-of-AddWithCarry
      arm::unsigned-byte-p-of-mv-nth-2-of-AddWithCarry
@@ -440,14 +517,17 @@
      arm::unsigned-byte-p-of-cmp-carry
      arm::unsigned-byte-p-of-cmp-overflow
 
+     arm::unsigned-byte-p-of-sub-sign
+     arm::unsigned-byte-p-of-sub-zero
+     arm::unsigned-byte-p-of-sub-carry
+     arm::unsigned-byte-p-of-sub-overflow
+
+     acl2::getbit-identity ; overkill?  but we need to drop getbit 0 when applied to sub-sign, etc.
+
      )
-;   (shadowed-write-rules32)
+   (shadowed-write-rules32)
    (acl2::base-rules) ; gets us if-same-branches, for example
    (acl2::core-rules-bv)
-   ;; bv rules:
-   '(acl2::bitnot-of-bitxor-of-1 ; move to core-rules-bv
-     acl2::bitxor-of-1-and-bitnot ; move to core-rules-bv
-     )
    (acl2::unsigned-byte-p-forced-rules)
    (acl2::type-rules) ; rename
    (acl2::bvchop-of-bv-rules)
@@ -505,6 +585,8 @@
      arm::read-of-write-when-disjoint-regions32p
      arm::read-of-write-when-disjoint-regions32p-gen
      arm::read-of-write-when-disjoint-regions32p-gen-alt
+     read-of-write-when-disjoint-regions32p-gen-smt
+     read-of-write-when-disjoint-regions32p-gen-smt
 
      arm::disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p
      arm::disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p-alt
@@ -546,7 +628,6 @@
      not-in-region32p-when-disjoint-regions32p-special
      ;; not-in-region32p-when-disjoint-regions32p-one ; looped -- why?
      ;; not-in-region32p-when-disjoint-regions32p-two
-     acl2::bvlt-of-1
      ;acl2::bvlt-of-bvplus-constant-and-constant-gen ; bad?
      bvlt-of-read-and-constant
 
@@ -736,8 +817,8 @@
      acl2::logtail-of-logext
      ;acl2::logtail-of-bvcat
      acl2::logtail-becomes-slice-bind-free-axe
-     acl2::bvcat-of-logext-arg2
-     acl2::bvcat-of-logext-arg4
+     ;acl2::bvcat-of-logext-arg2
+     ;acl2::bvcat-of-logext-arg4
 
      ;acl2::bvcat-of-if-arg2
      ;acl2::bvcat-of-if-arg4
@@ -765,7 +846,14 @@
      acl2::mod-becomes-bvchop-when-power-of-2p
 
      myif ; always expand to IF
-     )))
+     bvcat-of-slice-of-0-when-low-bits-0 ; to handle alignment
+
+     arm::getbit-0-of-cmp-carry
+     arm::getbit-0-of-cmp-zero
+     arm::getbit-0-of-cmp-sign
+     arm::getbit-0-of-cmp-overflow
+
+     arm::reg*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -777,3 +865,7 @@
 
 ;; split before trying to open if the state is an IF:
 (acl2::set-axe-rule-priority run-until-return-aux-of-if-arg2 -1)
+
+;; try these rules late:
+(set-axe-rule-priority read-when-equal-of-read-bytes-smt 1)
+(set-axe-rule-priority read-when-equal-of-read-bytes-smt-alt 1)

@@ -150,7 +150,7 @@
 ;;   (implies (and (equal (len x) free)
 ;;                 (syntaxp (quotep free)))
 ;;            (equal (consp x) (< 0 free)))
-;;   :hints (("Goal" :in-theory (e/d ((:i len)) ( ;len-of-cdr
+;;   :hints (("Goal" :in-theory (e/d ((:i len)) (;len-of-cdr
 ;;                                               )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -964,6 +964,7 @@
          (local (include-book "kestrel/lists-light/member-equal" :dir :system)) ; for member-equal-of-nth-same
          (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system)) ;for SUBSETP-EQUAL-OF-CDR-ARG1 and SUBSETP-EQUAL-SELF
          (local (include-book "kestrel/lists-light/cdr" :dir :system)) ; for cdr-iff
+         (local (include-book "kestrel/lists-light/union-equal" :dir :system)) ; for true-listp rules
          (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
          (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
          (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
@@ -983,34 +984,33 @@
          ;;(local (in-theory (disable CADR-BECOMES-NTH-OF-1))) ;need better acl2-count rules about nth (maybe when we know the length...)
 
          ;;for speed:
-         (local (in-theory (disable
-                             weak-dagp-aux
-                             ;;consp-from-len-cheap
-                             default-car
-                             <-of-nth-and-alen1 ;todo
-                             dag-exprp
-                             ;;list::nth-with-large-index
-                             ;;list::nth-with-large-index-2
-                             nat-listp
-                             rational-listp
-                             ;;AXE-TREE-LISTP ;try
-                             (:FORWARD-CHAINING ACL2-NUMBER-LISTP-FORWARD-TO-TRUE-LISTP)
-                             (:FORWARD-CHAINING INTEGER-LISTP-FORWARD-TO-RATIONAL-LISTP)
-                             (:FORWARD-CHAINING NAT-LISTP-FORWARD-TO-INTEGER-LISTP)
-                             (:FORWARD-CHAINING RATIONAL-LISTP-FORWARD-TO-ACL2-NUMBER-LISTP)
-                             member-equal
-;all-natp-when-not-consp
-                             all-<-when-not-consp
-                             darg-listp-when-not-consp
-                             acl2-count ;yuck
-                             SYMBOL-ALISTP ;move
-                             SYMBOL-LISTP  ; prevent inductions
-                             dag-function-call-exprp-redef
-;axe-treep
-                             axe-treep-of-cadr axe-treep-of-caddr axe-treep-of-cadddr
-                             state-p
-                             alistp
-                             mv-nth)))
+         (local (in-theory (disable weak-dagp-aux
+                                    ;;consp-from-len-cheap
+                                    default-car
+                                    <-of-nth-and-alen1 ;todo
+                                    dag-exprp
+                                    ;;list::nth-with-large-index
+                                    ;;list::nth-with-large-index-2
+                                    nat-listp
+                                    rational-listp
+                                    ;;axe-tree-listp ;try
+                                    (:forward-chaining acl2-number-listp-forward-to-true-listp)
+                                    (:forward-chaining integer-listp-forward-to-rational-listp)
+                                    (:forward-chaining nat-listp-forward-to-integer-listp)
+                                    (:forward-chaining rational-listp-forward-to-acl2-number-listp)
+                                    member-equal
+                                    ;;all-natp-when-not-consp
+                                    all-<-when-not-consp
+                                    darg-listp-when-not-consp
+                                    acl2-count ;yuck
+                                    symbol-alistp ;move
+                                    symbol-listp  ; prevent inductions
+                                    dag-function-call-exprp-redef
+                                    ;; axe-treep
+                                    axe-treep-of-cadr axe-treep-of-caddr axe-treep-of-cadddr
+                                    state-p
+                                    alistp
+                                    mv-nth)))
 
          (local (in-theory (enable natp-of-+-of-1-alt
                                    natp-of-car-when-bounded-darg-listp-gen
@@ -1018,7 +1018,7 @@
                                    nat-listp-forward-to-rational-listp
                                    symbol-list-listp-of-union-eq-with-all
                                    apply-axe-use-instances-return-type
-;apply-axe-use-instances-bound
+                                   ;;apply-axe-use-instances-bound
                                    <=-of-mv-nth-3-of-apply-axe-use-instances
                                    natp-mv-nth-3-of-apply-axe-use-instances)))
 
@@ -1030,8 +1030,6 @@
          ;; (make-instantiation-code-simple ,suffix ,evaluator-base-name)
          (make-instantiation-code-simple-free-vars ,suffix ,evaluator-base-name)
          (make-instantiation-code-simple-no-free-vars2 ,suffix ,evaluator-base-name)
-
-         ;;(in-theory (disable car-becomes-nth-of-0)) ;move to arrays-axe
 
          ;;
          ;; The main mutual recursion for the rewriting tactics:
@@ -3159,7 +3157,7 @@
                                        (stringp case-designator)
                                        (natp prover-depth)
                                        (simple-prover-optionsp options))
-                           :guard-hints (("Goal" :in-theory (e/d ( ;dag-function-call-exprp
+                           :guard-hints (("Goal" :in-theory (e/d (;dag-function-call-exprp
                                                                   dag-function-call-exprp-redef
                                                                   all-myquotep-when-darg-listp
                                                                   consp-of-cdr
@@ -3822,29 +3820,26 @@
                                            changep ;; no change to changep
                                            rule-alist interpreted-function-alist monitored-symbols print case-designator hit-counts tries prover-depth known-booleans options top-node-onlyp)
                  ;; Rewriting changed the literal.  Harvest the disjuncts, raising them to top level, and add them to the done-list:
-                 (b* (((mv erp provedp extended-done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                       (get-darg-disjuncts new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                           done-list ; will be extended with the disjuncts
-                                           nil       ;negated-flg
-                                           print))
+                 (b* (((mv erp provedp new-disjuncts dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                       (get-darg-disjuncts new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))
                       ;; TODO: Should we use the assumption-array to check for redundant disjuncts and drop them?  Should
                       ;; we use the assumption-array to check for contradictions?  In either case we might want to use the
                       ;; assumption-array without the information from this literal??  TODO: Should we use the new
                       ;; disjuncts to add information to the assumption-array?
-                      ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries)))
-                   (if provedp
+                      ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries))
+                      ((when provedp)
                        (mv (erp-nil)
-                           t ;provedp
-                           t ;changep
+                           t   ;provedp
+                           t   ;changep
                            nil ;literal-nodenums
-                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries)
-                     ;; Continue rewriting literals:
-                     (,rewrite-literals-name rest-work-list
-                                             extended-done-list
-                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                             assumption-array assumption-array-num-valid-nodes
-                                             t ;; something changed
-                                             rule-alist interpreted-function-alist monitored-symbols print case-designator hit-counts tries prover-depth known-booleans options top-node-onlyp)))))))
+                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries)))
+                   ;; Continue rewriting literals:
+                   (,rewrite-literals-name rest-work-list
+                                           (union-equal new-disjuncts done-list)
+                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                           assumption-array assumption-array-num-valid-nodes
+                                           t ;; something changed
+                                           rule-alist interpreted-function-alist monitored-symbols print case-designator hit-counts tries prover-depth known-booleans options top-node-onlyp))))))
 
          (defthm ,(pack$ rewrite-literals-name '-return-type)
            (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -4814,7 +4809,7 @@
          ;;               (cw "Clause miter literals:~%")
          ;;               ;; (print-array 'dag-array dag-array dag-len)
          ;;               (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)
-         ;;               (let* ( ;;fixme or we could use a worklist starting with literal-nodenums..
+         ;;               (let* (;;fixme or we could use a worklist starting with literal-nodenums..
          ;;                      (tag-array-for-prove-clause-miter (tag-supporters-of-nodes-with-name literal-nodenums 'dag-array dag-array 'tag-array-for-prove-clause-miter
          ;;                                                                                 (+ 1 (maxelem literal-nodenums))))
          ;;                      (rec-fn-nodenums (filter-rec-fn-nodes2 (+ -1 dag-len) 'dag-array dag-array 'tag-array-for-prove-clause-miter tag-array-for-prove-clause-miter state))
@@ -5112,16 +5107,13 @@
                  (mv :count-exceeded
                      :failed ; could instead use :timed-out here
                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
-               (b* (;; Harvest disjuncts from the new literal:
-                    ((mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                     (get-darg-disjuncts nodenum
-                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                         literal-nodenums ; will be extended
-                                         t ;negated-flag=t, since nodenum is the negation of the new literal.
-                                         print))
+               (b* (;; Harvest disjuncts from the new literal (actually, negated conjuncts since nodenum is the negation of the new literal):
+                    ((mv erp provedp new-disjuncts dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                     (get-darg-negated-conjuncts nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))
                     ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))
                     ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))
-                    (- (cw "(True case reduced dag: ~x0)~%" (drop-non-supporters-array-with-name 'dag-array dag-array nodenum nil)))
+                    (literal-nodenums (union-equal new-disjuncts literal-nodenums)) ; todo: better union op (here and elsewhere)?
+                    (- (cw "(True case reduced dag: ~x0)~%" (drop-non-supporters-array-with-name 'dag-array dag-array nodenum nil))) ; todo: do this in the false case too??
                     (- (and (member-eq print '(t :verbose :verbose!))
                             (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "true" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options)))))
                  ;; Attempt to prove case #1:
@@ -5172,15 +5164,13 @@
                  (mv :count-exceeded
                      :failed ; could instead use :timed-out here
                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
-               (b* (;; Harvest disjuncts from the new literal:
-                    ((mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+               (b* (;; Harvest disjuncts from the new literal (not the negated conjuncts, since nodenum itself is the new literal):
+                    ((mv erp provedp new-disjuncts dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                      (get-darg-disjuncts nodenum ;the new literal
-                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                         literal-nodenums ; will be extended
-                                         nil ;negated-flag=nil, since nodenum itself is the new literal.
-                                         print))
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))
                     ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))
                     ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))
+                    (literal-nodenums (union-equal new-disjuncts literal-nodenums))
                     (- (and (member-eq print '(t :verbose :verbose!))
                             (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "false" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options)))))
                  ;; Attempt to prove case #2:
@@ -5677,6 +5667,7 @@
                 ((when provedp)
                  (and print (cw "! Proved case ~s0 (one literal had a non-nil constant disjunct!)~%" case-designator))
                  (mv (erp-nil) :proved state))
+                ;; could check for empty literal-nodenums here
                 (- (and (member-eq print '(t :verbose :verbose!))
                         (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "initial" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options))))
                 (count-hits (lookup-eq :count-hits options))
@@ -5761,7 +5752,7 @@
          ;;                  (mv (erp-nil) :proved)
          ;;                (b* ((- (cw "Note: The DAG was the constant nil.")))
          ;;                  (mv (erp-nil) :failed)))
-         ;;            (b* ( ;(dummy (cw " ~x0 prover rules (print ~x1).~%" (len prover-rules) print)) ;drop?
+         ;;            (b* (;(dummy (cw " ~x0 prover rules (print ~x1).~%" (len prover-rules) print)) ;drop?
          ;; ;          (dummy (cw "print-max-conflicts-goalp:  ~x0" print-max-conflicts-goalp))
          ;;                 (dag-array (alist-to-array1 'dag-array dag))
          ;;                 (top-nodenum (top-nodenum-of-dag dag))

@@ -141,8 +141,8 @@
 
        ((mv flg2 result (the (unsigned-byte 32) mxcsr))
         (if (equal sp/dp #.*OP-DP*)
-            (dp-sse-cmp (n02 imm) xmm xmm/mem (mxcsr x86))
-          (sp-sse-cmp (n02 imm) xmm xmm/mem (mxcsr x86))))
+            (dp-sse-cmp (n03 imm) xmm xmm/mem (mxcsr x86))
+          (sp-sse-cmp (n03 imm) xmm xmm/mem (mxcsr x86))))
 
        ((when flg2)
         (if (equal sp/dp #.*OP-DP*)
@@ -265,7 +265,7 @@
 
        (mxcsr (the (unsigned-byte 32) (mxcsr x86)))
 
-       (operation (the (unsigned-byte 3) (n02 imm)))
+      (operation (the (unsigned-byte 3) (n03 imm)))
 
        ((mv flg2
             (the (unsigned-byte 32) result0)
@@ -405,7 +405,7 @@
 
        (mxcsr (the (unsigned-byte 32) (mxcsr x86)))
 
-       (operation (the (unsigned-byte 3) (n02 imm)))
+      (operation (the (unsigned-byte 3) (n03 imm)))
 
        ((mv flg2
             (the (unsigned-byte 64) result0)

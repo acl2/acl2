@@ -16370,7 +16370,7 @@ its attachment is ignored during proofs"))))
 ; c pequiv-info: info on patterned equivalence relations (pequivs) to maintain
 ;   wrld:        the current world
 ;   fnstack:     fns and terms currently being expanded - of heuristic use only
-; h ancestors:   a list of terms assumed true, modified as we backchain.
+; h ancestors:   a list of ancestor records; see (defrec ancestor ...)
 ; h backchain-limit: of heuristic use only
 ; h simplify-clause-pot-lst: a pot-lst of polys
 ; h rcnst:       the rewrite constant arguments

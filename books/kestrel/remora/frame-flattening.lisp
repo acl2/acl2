@@ -10,13 +10,13 @@
 
 (in-package "REMORA")
 
-(include-book "abstract-syntax-structural-operations")
+(include-book "abstract-syntax-structurals")
 
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 
 (acl2::controlled-configuration)
 
-(local (in-theory (enable* abstract-syntax-corep-rules)))
+(local (in-theory (enable* ast-corep-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,15 +26,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As part of desugaring, [impl] also flattens frame expressions.
-     We prefer to separate frame flattening from @(see desugaring).
-     Here we define frame flattening.")
-   (xdoc::p
-    "Although [impl] only performs frame flattening on bracket expressions,
-     the intention might actually be to perform it on all frame exrepssions.
-     Our separate formalization of frame flattening
-     operates on all frame expressions;
-     in fact, it is meant for use after desugaring."))
+    "This unnests nested frame and array expressions, under suitably conditions.
+     It could be thought of as
+     a normalizing transformation,
+     or even a desugaring transformation,
+     but it is not part of actual @(see desugaring),
+     and may not be in fact necessary for most purposes.
+     However, it is part of [impl]
+     (part of desugaring in earlier versions, but not currently),
+     and [tutor] describes it as syntactic sugar
+     (but [tutor] is older than [impl])."))
   :order-subtopics t
   :default-parent t)
 
@@ -76,7 +77,7 @@
      (xdoc::p
       "is turned into")
      (xdoc::codeblock
-      "(frame [a1 ... aN b1 ... bM] x11 ... xNP)")
+      "(frame [a1 ... aN b1 ... bM] x11 ... xQP)")
      (xdoc::p
       "and that an expression of the form")
      (xdoc::codeblock
@@ -87,7 +88,7 @@
      (xdoc::p
       "is turned into")
      (xdoc::codeblock
-      "(array [a1 ... aN b1 ... bM] x11 ... xNP)")
+      "(array [a1 ... aN b1 ... bM] x11 ... xQP)")
      (xdoc::p
       "More precisely, given an expression, we do the following.
        Unless the expression is a non-empty frame, we leave it unchanged.
@@ -128,19 +129,17 @@
           ((when (expr-list-case-frame exprs))
            (b* ((dimss (expr-frame-list->dims exprs))
                 (exprss (expr-frame-list->exprs exprs))
-                (dims (car dimss))
-                ((unless (all-equalp dims dimss)) no-further)
+                ((unless (list-repeatp dimss)) no-further)
                 ((unless (all-same-len-p exprss)) no-further))
-             (make-expr-frame :dims (append expr.dims dims)
-                              :exprs (expr-append-all exprss))))
+             (make-expr-frame :dims (append expr.dims (car dimss))
+                              :exprs (append-all exprss))))
           ((when (expr-list-case-array exprs))
            (b* ((dimss (expr-array-list->dims exprs))
                 (atomss (expr-array-list->atoms exprs))
-                (dims (car dimss))
-                ((unless (all-equalp dims dimss)) no-further)
+                ((unless (list-repeatp dimss)) no-further)
                 ((unless (all-same-len-p atomss)) no-further))
-             (make-expr-array :dims (append expr.dims dims)
-                              :atoms (atom-append-all atomss)))))
+             (make-expr-array :dims (append expr.dims (car dimss))
+                              :atoms (append-all atomss)))))
        no-further)
      :otherwise (expr-fix expr))
     :measure (expr-count expr))

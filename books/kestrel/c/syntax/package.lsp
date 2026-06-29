@@ -64,6 +64,7 @@
                 nat
                 nat-list
                 nat-list-fix
+                nat-option
                 nat-optionp
                 nat-option-fix
                 nat-list-measure
@@ -71,6 +72,8 @@
                 packn-pos
                 pos
                 pos-fix
+                pos-option
+                pos-optionp
                 pseudo-event-formp
                 pseudo-event-form-listp
                 reterr

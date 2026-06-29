@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "file-paths")
+(include-book "unicode-characters")
 
 (include-book "kestrel/fty/dec-digit-char-list" :dir :system)
 (include-book "kestrel/fty/hex-digit-char-list" :dir :system)
@@ -74,20 +75,6 @@
      Restrictions on well-formed code can be formulated
      via separate predicates on the abstract syntax.
      The grammar does not capture many static constraints anyhow.")
-   (xdoc::p
-    "The use of natural numbers to represent @('c-char') and @('s-char')
-     in character constants and string literals is motivated by
-     the fact that we commit to Unicode characters,
-     even though [C17] and [C23] prescribe
-     no specific source character set [C17:5.2.1] [C23:5.3.1].
-     These days, Unicode should be sufficiently general;
-     note that ASCII is a subset of Unicode.
-     Thus, the natural numbers represent Unicode code points,
-     which include ASCII codes as a subset.
-     Although natural numbers are more general that Unicode code points,
-     and also more general than @('c-char') and @('s-char'),
-     it is fine for abstract syntax to be more general than concrete syntax.
-     However, we should probably switch to using @(tsee uchar).")
    (xdoc::p
     "The syntax of C has some known ambiguities,
      which cannot be disambiguated purely syntactically,
@@ -226,7 +213,15 @@
   :short "Fixtype of sets of identifiers."
   :elt-type ident
   :elementp-of-nil nil
-  :pred ident-setp)
+  :pred ident-setp
+
+  ///
+
+  (defrule ident-setp-of-mergesort
+    (equal (ident-setp (set::mergesort idents))
+           (ident-listp (true-list-fix idents)))
+    :induct t
+    :enable set::mergesort))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -798,11 +793,9 @@
    (xdoc::p
     "This corresponds to @('c-char') in the ABNF grammar.")
    (xdoc::p
-    "As explained in @(see abstract-syntax),
-     the natural numbers represent Unicode code points.
-     We do not capture the restriction that the characters cannot be
+    "We do not capture the restriction that the characters cannot be
      single quote, backslash, or new-line."))
-  (:char ((code nat)))
+  (:char ((code unichar)))
   (:escape ((escape escape)))
   :pred c-char-p
   :layout :fulltree)
@@ -863,11 +856,9 @@
    (xdoc::p
     "This corresponds to @('s-char') in the ABNF grammar.")
    (xdoc::p
-    "As explained in @(see abstract-syntax),
-     the natural numbers represent Unicode code points.
-     We do not capture the restriction that the characters cannot be
+    "We do not capture the restriction that the characters cannot be
      double quote, backslash, or new-line."))
-  (:char ((code nat)))
+  (:char ((code unichar)))
   (:escape ((escape escape)))
   :pred s-char-p
   :layout :fulltree)
@@ -928,13 +919,11 @@
    (xdoc::p
     "This corresponds to @('h-char') in the ABNF grammar.")
    (xdoc::p
-    "As explained in @(see abstract-syntax),
-     the natural numbers represent Unicode code points.
-     We wrap the natural number in this fixtype for more abstraction,
-     and to facilitate the addition of restrictions on the number,
+    "We wrap the Unicode character in this fixtype for more abstraction,
+     and to facilitate the addition of restrictions on the character,
      namely that the character cannot be @('>') or a new-line,
      but for now we do not capture this restriction."))
-  ((code nat))
+  ((code unichar))
   :pred h-char-p
   :layout :fulltree)
 
@@ -951,7 +940,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection h-char-list->code-list ((x h-char-listp))
-  :returns (chars nat-listp)
+  :returns (chars unichar-listp)
   :short "Lift @(tsee h-char->code) to lists."
   (h-char->code x))
 
@@ -964,13 +953,11 @@
    (xdoc::p
     "This corresponds to @('q-char') in the ABNF grammar.")
    (xdoc::p
-    "As explained in @(see abstract-syntax),
-     the natural numbers represent Unicode code points.
-     We wrap the natural number in this fixtype for more abstraction,
-     and to facilitate the addition of restrictions on the number,
+    "We wrap the Unicode character in this fixtype for more abstraction,
+     and to facilitate the addition of restrictions on the character,
      namely that the character cannot be @('>') or a new-line,
      but for now we do not capture this restriction."))
-  ((code nat))
+  ((code unichar))
   :pred q-char-p
   :layout :fulltree)
 
@@ -987,7 +974,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection q-char-list->code-list ((x q-char-listp))
-  :returns (chars nat-listp)
+  :returns (chars unichar-listp)
   :short "Lift @(tsee q-char->code) to lists."
   (q-char->code x))
 
@@ -2005,10 +1992,12 @@
     (:bool ())
     (:complex ())
     (:atomic ((type tyname)))
-    (:struct ((spec struni-spec)))
+    (:struct ((spec struni-spec)
+              (info any)))
     (:union ((spec struni-spec)))
     (:enum ((spec enum-spec)))
-    (:typedef ((name ident)))
+    (:typedef ((name ident)
+               (info any)))
     ;; GCC extensions:
     (:int128 ((uscoret bool)))
     (:locase-float80 ())
@@ -2023,7 +2012,8 @@
     (:float128x ())
     (:builtin-va-list ())
     (:struct-empty ((attribs attrib-spec-list)
-                    (name? ident-option)))
+                    (name? ident-option)
+                    (info any)))
     (:typeof-expr ((expr expr)
                    (uscores keyword-uscores-p)))
     (:typeof-type ((type tyname)
@@ -2347,7 +2337,7 @@
        This cannot be disambiguated purely syntactically.
        So, during parsing, we always generate the @(':function-params') case,
        which may be re-classified into the @(':function-names') case
-       during post-parsing semantic analysis."))
+       by the @(see disambiguator)."))
     (:ident ((ident ident)))
     (:paren ((inner declor)))
     (:array ((declor dirdeclor)
@@ -2465,7 +2455,8 @@
        as a GCC extension (see ABNF grammar)."))
     ((specs decl-spec-list)
      (declor param-declor)
-     (attribs attrib-spec-list)) ; GCC extension
+     (attribs attrib-spec-list) ; GCC extension
+     (info any))
     :pred param-declonp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
@@ -2524,6 +2515,20 @@
     (xdoc::topstring
      (xdoc::p
       "This corresponds to @('type-name') in the ABNF grammar.")
+     (xdoc::p
+      "The short, one-word-like @('tyname') name of this fixtype
+       may seem at odds with other AST fixtypes names,
+       particularly @(tsee type-spec) and @(tsee type-qual).
+       But it is intentional:
+       in C, a type name is a ``fundamental'' notion,
+       like an expression or a statement;
+       it is, essentially, a ``type''
+       (although in our ACL2 development we give
+       a more semantic definition of `type' in @(tsee type)).
+       So we prefer the shorter name.
+       Note that we also combine it in other fixtype names,
+       e.g. in @(tsee amb-expr/tyname),
+       where the shorter name pays off in readability.")
      (xdoc::p
       "Type names may be accompanied by some additional information,
        such as the type calculated during validation."))
@@ -3684,7 +3689,7 @@
             (items trans-item-list)
             (elifs hash-elif-list)
             (else hash-else-option)))
-    (:line-comment ((content nat-listp)))
+    (:line-comment ((content unichar-list)))
     :pred trans-itemp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))

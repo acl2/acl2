@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "abstract-syntax-trees")
+(include-book "unicode-characters")
 
 (include-book "std/strings/letter-uscore-chars" :dir :system)
 
@@ -173,10 +174,10 @@
     "The @(':other') summand corresponds to
      the last alternative in the ABNF grammar rule for @('preprocessing-token'),
      as well as the prose description of the rule in [C17].
-     It consists of the code of the character.")
+     It consists of the code of the Unicode character.")
    (xdoc::p
     "For (block and line) comments, we include the content,
-     consisting of the codes of the characters.
+     consisting of the codes of the Unicode characters.
      For block comments, these are all the characters
      from just after the opening @('/*') to just before the closing @('*/').
      For line comments, these are all the characters
@@ -195,9 +196,9 @@
   (:char ((const cconst)))
   (:string ((literal stringlit)))
   (:punctuator ((punctuator string)))
-  (:other ((char nat)))
-  (:block-comment ((content nat-list)))
-  (:line-comment ((content nat-list)))
+  (:other ((char unichar)))
+  (:block-comment ((content unichar-list)))
+  (:line-comment ((content unichar-list)))
   (:newline ((chars newline)))
   (:spaces ((count pos)))
   (:horizontal-tab ())

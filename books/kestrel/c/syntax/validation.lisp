@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,7 +10,14 @@
 
 (in-package "C$")
 
-(include-book "validation-information")
+(include-book "uid")
+(include-book "types")
+(include-book "types-formal-subset-and-mapping")
+(include-book "built-ins")
+(include-book "initializer-validation")
+(include-book "validation-tables")
+(include-book "validation-annotations")
+(include-book "null-pointer-constants")
 (include-book "validator")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -30,5 +37,16 @@
    (xdoc::p
     "We provide an executable validator,
      which performs a (currently conservative) validation of C code,
-     and also annotates the ASTs with information (e.g. calculated types)."))
-  :order-subtopics (validation-information))
+     and also annotates the ASTs with information (e.g. calculated types).")
+   (xdoc::p
+    "When non-standard C extensions are enabled,
+     the validator uses information about built-in functions and objects."))
+  :order-subtopics (uid
+                    types
+                    types-formal-subset-and-mapping
+                    built-ins
+                    initializer-validation
+                    validation-tables
+                    validation-annotations
+                    null-pointer-constants
+                    validator))

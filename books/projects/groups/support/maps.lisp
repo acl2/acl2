@@ -79,55 +79,57 @@
 
 (defmap identity-map (d) d x)
 
-;; A map is m is a homomorphism from a group g to a group h if the following conditions hold:
+;; A map m is a homomorphism from a group g to a group h if the following conditions hold:
 ;;   (a) (sublistp (elts g) (domain map))
 ;;   (b) (implies (in x g) (in (mapply m x) h))
 ;;   (c) (equal (mapply m (e g)) (e h))
 ;;   (d) (implies (and (in x g) (in y g))
 ;;                (equal (mapply (op x y g)) (op (mapply m x) (mapply m y) h)))
 
-;; The function codomain-cex searches the elements of g for a counter-example of (b):
+;; The function find-codomain-cex searches the elements of g for a counter-example of (b):
 
-(defun codomain-cex-aux (map l h)
+(defun find-codomain-cex-aux (map l h)
   (if (consp l)
       (if (in (mapply map (car l)) h)
-	  (codomain-cex-aux map (cdr l) h)
-	(car l))
+	  (find-codomain-cex-aux map (cdr l) h)
+	(list (car l)))
     ()))
 
+(defund find-codomain-cex (map g h)
+  (find-codomain-cex-aux map (elts g) h))
+
 (defund codomain-cex (map g h)
-  (codomain-cex-aux map (elts g) h))
+  (car (find-codomain-cex map g h)))
 
 (local-defthm not-c-c-a
-  (implies (and (not (member-equal () l))
-		(not (codomain-cex-aux map l h))
+  (implies (and (not (find-codomain-cex-aux map l h))
 		(member-equal x l))
 	   (in (mapply map x) h)))
 
-(defthm not-codomain-cex
+(defthm not-find-codomain-cex
   (implies (and (groupp g)
-		(not (codomain-cex map g h))
+		(not (find-codomain-cex map g h))
 		(in x g))
 	   (in (mapply map x) h))
-  :hints (("Goal" :in-theory (enable codomain-cex)
+  :hints (("Goal" :in-theory (enable find-codomain-cex)
 	          :use ((:instance not-c-c-a (l (elts g)))))))
 
-(local-defthmd codomain-cex-aux-lemma
-  (let ((x (codomain-cex-aux map l h)))
+(local-defthmd find-codomain-cex-aux-lemma
+  (let ((x (find-codomain-cex-aux map l h)))
     (implies x
-	     (and (member-equal x l)
-		  (not (in (mapply map x) h)))))
+	     (and (member-equal (car x) l)
+		  (not (in (mapply map (car x)) h)))))
   :hints (("Goal" :in-theory (enable domain mapply))))
 
 ;; This is useful in proving (not (codomain-cex map g h)):
 
 (defthmd codomain-cex-lemma
   (let ((x (codomain-cex map g h)))
-    (implies x
+    (implies (find-codomain-cex map g h)
 	     (and (in x g)
 		  (not (in (mapply map x) h)))))
-  :hints (("Goal" :in-theory (enable codomain-cex)
-	   :use ((:instance codomain-cex-aux-lemma (l (elts g)))))))
+  :hints (("Goal" :in-theory (enable find-codomain-cex codomain-cex)
+	   :use ((:instance find-codomain-cex-aux-lemma (l (elts g)))))))
 
 ;; The function homomorphism-cex searches the elements of g for a counter-example of (d):
 
@@ -201,7 +203,7 @@
        (groupp h)
        (sublistp (elts g) (domain map))
        (mapp map)
-       (not (codomain-cex map g h))
+       (not (find-codomain-cex map g h))
        (equal (mapply map (e g)) (e h))
        (not (homomorphism-cex map g h))))
 
@@ -324,6 +326,8 @@
   :hints (("Goal" :in-theory (enable ielts)
 	          :use ((:instance ordp-ielts-aux (l (elts g)))))))
 
+(in-theory (enable sublistp-insert))
+
 (local-defthmd sublistp-ielts-aux
   (implies (and (homomorphismp map g h)
 		(sublistp l (elts g)))
@@ -364,7 +368,7 @@
            (equal (car (ielts map g h))
 		  (e h)))
   :hints (("Goal" :in-theory (enable e)
-                  :use (homomorphism-e
+                  :use (homomorphism-e consp-groupp
 		        (:instance member-ielts (x (e g)))
                         (:instance car-ordp-minimal (g h) (x (e h)) (l (ielts map g h))))
 	          :expand ((ielts-aux map (car g) h)))))
@@ -479,7 +483,7 @@
 	        (equal (car (kelts map g h))
 		       (e g))))
   :hints (("Goal" :in-theory (enable e kelts)
-                  :use (homomorphism-e)
+                  :use (consp-groupp homomorphism-e)
 	          :expand ((kelts-aux map (car g) h)))))
 
 (local-defthm member-kelts-aux
@@ -712,7 +716,7 @@
 
 (local-defthm not-codomain-cex-image
   (implies (homomorphismp map g h)
-           (not (codomain-cex map g (image map g h))))
+           (not (find-codomain-cex map g (image map g h))))
   :hints (("Goal" :use (ielts-image
                         (:instance codomain-cex-lemma (h (image map g h)))
 		        (:instance member-ielts (x (codomain-cex map g (image map g h))))))))
@@ -781,7 +785,7 @@
 
 (defthm codomain-cex-project-normalp
   (implies (normalp h g)
-           (not (codomain-cex (project-lcosets h g) g (quotient g h))))
+           (not (find-codomain-cex (project-lcosets h g) g (quotient g h))))
   :hints (("Goal" :use ((:instance codomain-cex-lemma (map (project-lcosets h g)) (h (quotient g h)))
                         (:instance in-lcoset-quotient (x (codomain-cex (project-lcosets h g) g (quotient g h))))))))
 
@@ -926,7 +930,7 @@
 
 (local-defthm quotient-map-codomain-cex
   (implies (homomorphismp map g h)
-           (not (codomain-cex (quotient-map map g h) (quotient g (kernel map h g)) h)))
+           (not (find-codomain-cex (quotient-map map g h) (quotient g (kernel map h g)) h)))
   :hints (("Goal" :in-theory (enable member-lcoset-qlist-iff)
                   :use ((:instance codomain-cex-lemma (map (quotient-map map g h)) (g (quotient g (kernel map h g))))))))
 
@@ -954,7 +958,7 @@
 (local-defthm quotient-map-homomorphismp-cex
   (implies (homomorphismp map g h)
            (not (homomorphism-cex (quotient-map map g h) (quotient g (kernel map h g)) h)))
-  :hints (("Goal" :in-theory (enable lcosets-cars member-lcoset-cosets member-lcoset-qlist-iff)
+  :hints (("Goal" :in-theory (enable qop lcosets-cars member-lcoset-cosets member-lcoset-qlist-iff)
                   :use ((:instance homomorphismp-cex-lemma (map (quotient-map map g h)) (g (quotient g (kernel map h g))))))))
 
 (local-defthm homomorphismp-quotient-map
@@ -979,7 +983,7 @@
   (implies (normalp h g)
            (equal (e (quotient g h))
 	          (lcoset (e g) h g)))
-  :hints (("Goal" :in-theory (enable e))))
+  :hints (("Goal" :in-theory (enable qe e))))
 
 (local-defthmd quotient-map-e
   (implies (homomorphismp map g h)
@@ -1080,7 +1084,7 @@
 
 (local-defthm isomorphismp-inv-codomain-cex
   (implies (isomorphismp map g h)
-           (not (codomain-cex (inv-isomorphism map g h) h g)))
+           (not (find-codomain-cex (inv-isomorphism map g h) h g)))
   :hints (("Goal" :in-theory (disable inv-isomorphism-val)
                   :use ((:instance codomain-cex-lemma (map (inv-isomorphism map g h)) (h g) (g h))))))
 

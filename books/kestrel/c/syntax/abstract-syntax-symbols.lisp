@@ -55,6 +55,8 @@
 
     typequal/attribspec-list-listp
 
+    keyword-uscores-p
+
     unopp
     unop-case
     unop-kind
@@ -63,8 +65,17 @@
     binop-case
     binop-kind
 
+    stor-spec
+    stor-spec-fix
+
+    type-qual
+    type-qual-fix
+
     asm-name-spec-optionp
 
+    exprs/decls/stmts
+
+    expr
     exprp
     expr-fix
     expr-count
@@ -83,7 +94,9 @@
     make-expr-arrsub
     make-expr-funcall
     make-expr-member
+    expr-member->arg
     make-expr-memberp
+    expr-memberp->arg
     make-expr-complit
     expr-unary
     make-expr-unary
@@ -128,6 +141,7 @@
     const-expr-option-count
     const-expr-option-case
 
+    genassoc
     genassocp
     genassoc-fix
     genassoc-count
@@ -139,6 +153,7 @@
     genassoc-list-fix
     genassoc-list-count
 
+    member-designor
     member-designorp
     member-designor-fix
     member-designor-count
@@ -146,6 +161,7 @@
     make-member-designor-dot
     make-member-designor-sub
 
+    type-spec
     type-specp
     type-spec-fix
     type-spec-count
@@ -161,6 +177,7 @@
 
     type-spec-listp
 
+    spec/qual
     spec/qual-p
     spec/qual-fix
     spec/qual-count
@@ -173,6 +190,7 @@
     spec/qual-list-fix
     spec/qual-list-count
 
+    align-spec
     align-specp
     align-spec-fix
     align-spec-count
@@ -180,6 +198,7 @@
     align-spec-alignas-type
     align-spec-alignas-expr
 
+    decl-spec
     decl-specp
     decl-spec-fix
     decl-spec-count
@@ -192,6 +211,7 @@
     decl-spec-list-fix
     decl-spec-list-count
 
+    initer
     initerp
     initer-fix
     initer-count
@@ -214,6 +234,7 @@
     desiniter-list-fix
     desiniter-list-count
 
+    designor
     designorp
     designor-fix
     designor-count
@@ -394,6 +415,9 @@
     make-label-name
     make-label-casexpr
 
+    asm-stmt
+    asm-stmt-fix
+
     stmtp
     stmt-fix
     stmt-count
@@ -444,8 +468,8 @@
     comp-stmt->labels
     comp-stmt->items
 
-    fundefp
     fundef
+    fundefp
     fundef-fix
     make-fundef
     fundef->declor
@@ -453,6 +477,7 @@
     fundef-optionp
     fundef-option-case
 
+    ext-declon
     ext-declonp
     ext-declon-fix
     ext-declon-case
@@ -464,6 +489,9 @@
     ext-declon-listp
     ext-declon-list-fix
 
+    trans-items
+
+    trans-item
     trans-itemp
     trans-item-fix
     trans-item-case
@@ -473,16 +501,19 @@
     trans-item-listp
     trans-item-list-fix
 
-    trans-unitp
     trans-unit
+    trans-unitp
     make-trans-unit
     trans-unit-fix
     trans-unit->items
 
+    filepath-optionp
+
+    filepath-trans-unit-map
     filepath-trans-unit-mapp
 
-    trans-ensemblep
     trans-ensemble
+    trans-ensemblep
     trans-ensemble->units
 
     filepathp
@@ -706,10 +737,43 @@
 
     ;; validation information:
 
+    uid
+    uidp
+    uid-fix
+
+    type
+    typep
+    type-fix
     type-case
     type-kind
+    type-count
     type-void
     type-sint
+    type-pointer->to
+
+    type-listp
+    type-list-count
+
+    type-struct->uid
+    type-struct->tunit?
+    type-struct->tag/members
+
+    type-struni-tag/members-p
+    type-struni-tag/members-count
+    type-struni-tag/members-case
+    type-struni-tag/members-tagged->tag
+
+    type-struni-member-p
+    type-struni-member-count
+
+    type-struni-member-list
+    type-struni-member-listp
+    type-struni-member-list-count
+    type-struni-member->type
+
+    type-params-p
+    type-params-case
+    type-params-count
 
     ident-type-map
     ident-type-mapp
@@ -719,40 +783,29 @@
     type-to-value-kind
     type-integerp
 
-    iconst-info
+    iconst-vinfo
 
-    var-info
-    var-infop
-    var-info-fix
-    coerce-var-info
+    var-vinfo
+    var-vinfop
+    var-vinfo-fix
+    var-vinfo->uid
+    coerce-var-vinfo
 
-    expr-const-infop
-    expr-const-info-fix
+    type-spec-struct-vinfop
+    type-spec-struct-vinfo->type
 
-    expr-string-infop
+    type-vinfop
+    type-vinfo-fix
+    type-vinfo->type
 
-    expr-arrsub-infop
+    type+uid-vinfo
+    type+uid-vinfop
+    type+uid-vinfo->type
+    type+uid-vinfo->uid
 
-    expr-funcall-infop
-
-    expr-unary-infop
-
-    expr-binary-infop
-
-    tyname-info
-    tyname-infop
-
-    param-declor-nonabstract-info
-    param-declor-nonabstract-info->type
-
-    init-declor-info
-    init-declor-info->type
-    init-declor-info->typedefp
-
-    fundef-info
-    fundef-infop
-    fundef-info->type
-    fundef-info->table-body-start
+    init-declor-vinfo
+    init-declor-vinfo->type
+    init-declor-vinfo->typedefp
 
     expr-type
     initer-type

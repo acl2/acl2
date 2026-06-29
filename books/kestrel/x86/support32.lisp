@@ -3173,8 +3173,7 @@
                             (:e expt)
                             ea-to-la
                             acl2::bvchop-identity)
-                           (
-                            ;acl2::bvcat-equal-rewrite
+                           (;acl2::bvcat-equal-rewrite
                             ;acl2::bvcat-equal-rewrite-alt
                             ACL2::LOGEXT-OF-LOGIOR)))))
 
@@ -3230,8 +3229,7 @@
                             (:e expt)
                             ea-to-la
                             acl2::bvchop-identity)
-                           (
-                            ACL2::LOGEXT-OF-LOGIOR)))))
+                           (ACL2::LOGEXT-OF-LOGIOR)))))
 
 (defthm mv-nth-1-of-rime-size$inline-becomes-read-from-segment-8
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -3285,8 +3283,7 @@
                             (:e expt)
                             ea-to-la
                             acl2::bvchop-identity)
-                           (
-                            ;for speed:
+                           (;for speed:
                             ACL2::LOGEXT-OF-LOGIOR
                             ACL2::UNSIGNED-BYTE-P-LOGIOR
                             ACL2::UNSIGNED-BYTE-P-OF-ASH-alt

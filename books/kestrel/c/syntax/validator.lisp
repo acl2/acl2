@@ -14,11 +14,14 @@
 
 (in-package "C$")
 
-(include-book "built-in")
+(include-book "built-ins")
 (include-book "unambiguity")
 (include-book "type-specifier-lists")
 (include-book "storage-specifier-lists")
-(include-book "validation-information")
+(include-book "initializer-validation")
+(include-book "validation-tables")
+(include-book "validation-annotations")
+(include-book "null-pointer-constants")
 (include-book "translation-unit-comparison")
 
 (include-book "kestrel/utilities/messages" :dir :system)
@@ -96,459 +99,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define empty-valid-scope ()
-  :returns (scope valid-scopep)
-  :short "Empty validator scope."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Scopes always start empty, i.e. with no identifiers.
-     This function returns the empty scope."))
-  (make-valid-scope :ord nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define init-valid-table ((filepath filepathp)
-                          &optional
-                          (externals valid-externalsp)
-                          ((completions type-completions-p) 'nil)
-                          ((next-uid uidp) '(uid 0)))
-  :returns (table valid-tablep)
-  :short "Initial validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This contains one empty scope (the initial file scope)."))
-  (make-valid-table :filepath filepath
-                    :scopes (list (empty-valid-scope))
-                    :externals externals
-                    :completions completions
-                    :next-uid next-uid))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-table-num-scopes ((table valid-tablep))
-  :returns (num natp)
-  :short "Number of scopes in a validation table."
-  (len (valid-table->scopes table)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-push-scope ((table valid-tablep))
-  :returns (new-table valid-tablep)
-  :short "Push a scope onto the validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The newly pushed scope is always empty."))
-  (b* ((scopes (valid-table->scopes table))
-       (new-scopes (cons (empty-valid-scope) scopes)))
-    (change-valid-table table :scopes new-scopes))
-  ///
-
-  (defret valid-table-num-scopes-of-valid-push-scope
-    (equal (valid-table-num-scopes new-table)
-           (1+ (valid-table-num-scopes table)))
-    :hints (("Goal" :in-theory (enable valid-table-num-scopes len)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-pop-scope ((table valid-tablep))
-  :returns (new-table valid-tablep)
-  :short "Pop a scope from the validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The popped scope is discarded."))
-  (b* (((valid-table table) table)
-       ((unless (> (valid-table-num-scopes table) 0))
-        (raise "Internal error: no scopes in validation table.")
-        (valid-table-fix table))
-       (new-scopes (cdr table.scopes)))
-    (change-valid-table table :scopes new-scopes))
-  :no-function nil
-  ///
-
-  (defret valid-table-num-scopes-of-valid-pop-scope
-    (equal (valid-table-num-scopes new-table)
-           (1- (valid-table-num-scopes table)))
-    :hyp (> (valid-table-num-scopes table) 0)
-    :hints (("Goal" :in-theory (enable valid-table-num-scopes len max fix)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-lookup-ord ((ident identp) (table valid-tablep))
-  :returns (mv (info? valid-ord-info-optionp) (currentp booleanp))
-  :short "Look up an ordinary identifier in a validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "According to the visibility and hiding rules [C17:6.2.1/2],
-     we look up the identifier starting from the innermost scope.
-     We stop as soon as we find a match.
-     We return @('nil') if we reach the outermost scope
-     without finding a match.")
-   (xdoc::p
-    "We also return a flag saying whether the identifier was found
-     in the current (i.e. innermost) scope or in some other scope.
-     We initialize this flag to @('t'),
-     and we set to @('nil') when we perform the recursive call.
-     The flag is irrelevant if the first result is @('nil'),
-     but in this case the returned flag is @('nil') too."))
-  (valid-lookup-ord-loop ident (valid-table->scopes table) t)
-
-  :prepwork
-  ((define valid-lookup-ord-loop ((ident identp)
-                                  (scopes valid-scope-listp)
-                                  (currentp booleanp))
-     :returns (mv (info? valid-ord-info-optionp) (updated-currentp booleanp))
-     :parents nil
-     (b* (((when (endp scopes)) (mv nil nil))
-          (scope (car scopes))
-          (ord-scope (valid-scope->ord scope))
-          (ident+info (assoc-equal (ident-fix ident) ord-scope))
-          ((when ident+info) (mv (cdr ident+info) (bool-fix currentp))))
-       (valid-lookup-ord-loop ident (cdr scopes) nil)))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define valid-lookup-ord-file-scope ((ident identp) (table valid-tablep))
-  :returns (info? valid-ord-info-optionp)
-  :short "Look up an ordinary identifier
-          in the file scope of a validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Unlike @(tsee valid-lookup-ord), this skips any block scopes,
-     and directly looks up the identifier in the file scope.
-     It is used in some situations."))
-  (b* ((scopes (valid-table->scopes table))
-       ((when (endp scopes)) (raise "Internal error: no scopes."))
-       (scope (car (last scopes)))
-       (ident+info (assoc-equal (ident-fix ident)
-                                (valid-scope->ord scope)))
-       ((when ident+info) (cdr ident+info)))
-    nil)
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-lookup-tag ((ident identp) (table valid-tablep))
-  :returns (mv (info? valid-tag-info-optionp) (currentp booleanp))
-  :short "Look up a tag in a validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This functions behaves just as @('valid-lookup-ord'),
-     but for tags instead of ordinary identifiers."))
-  (valid-lookup-tag-loop ident (valid-table->scopes table) t)
-
-  :prepwork
-  ((define valid-lookup-tag-loop ((ident identp)
-                                  (scopes valid-scope-listp)
-                                  (currentp booleanp))
-     :returns (mv (info? valid-tag-info-optionp) (updated-currentp booleanp))
-     :parents nil
-     (b* (((when (endp scopes)) (mv nil nil))
-          (scope (car scopes))
-          (tag-scope (valid-scope->tag scope))
-          (ident+info (assoc-equal (ident-fix ident) tag-scope))
-          ((when ident+info) (mv (cdr ident+info) (bool-fix currentp))))
-       (valid-lookup-tag-loop ident (cdr scopes) nil)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-lookup-ext ((ident identp) (table valid-tablep))
-  :returns (info? valid-ext-info-optionp)
-  :short "Look up the validation information of an identifier in the
-          @('externals') map."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This holds the validation information
-     for an identifier with external linkage
-     which has been declared in any scope or translation unit.
-     See @(see valid-table)."))
-  (b* (((valid-table table) table))
-    (cdr (omap::assoc (ident-fix ident) table.externals))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-get-fresh-uid ((ident identp)
-                             (linkage linkagep)
-                             (table valid-tablep))
-  :returns (mv (uid uidp)
-               (new-table valid-tablep))
-  :short "Get a fresh @(tsee UID) and update the table accordingly."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('next-uid') field of the @(see valid-table) is incremented to record
-     that the returned @(tsee UID) is now taken."))
-  (b* (((valid-table table) table))
-    (linkage-case
-     linkage
-     :external (b* ((info? (valid-lookup-ext ident table)))
-                 (valid-ext-info-option-case
-                  info?
-                  :some (mv (valid-ext-info->uid info?.val)
-                            (valid-table-fix table))
-                  :none (mv table.next-uid
-                            (change-valid-table
-                             table
-                             :next-uid (uid-increment table.next-uid)))))
-     :otherwise (mv table.next-uid
-                    (change-valid-table
-                     table
-                     :next-uid (uid-increment table.next-uid)))))
-
-  ///
-
-  (defret valid-get-fresh-uid.uid-under-iff
-    uid))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-update-ext ((ident identp)
-                          (type typep)
-                          (uid uidp)
-                          (table valid-tablep))
-  :returns (new-table valid-tablep)
-  :short "Update the @('externals') map with an identifier."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If no entry exists for the identifier,
-     add a new @(tsee valid-ext-info).
-     If an entry does exist, update the @('declared-in') field to include
-     the name of the current translation unit.")
-   (xdoc::p
-    "When an existing entry already exists,
-     type compatibility is not checked, nor is the UID.
-     Instead, the caller should check compatibility and ensure a proper UID
-     before updating."))
-  (b* (((valid-table table) table)
-       (info? (valid-lookup-ext ident table))
-       (new-info
-        (valid-ext-info-option-case
-         info?
-         :some (change-valid-ext-info
-                info?
-                :declared-in (insert table.filepath
-                                     (valid-ext-info->declared-in
-                                      info?.val)))
-         :none (make-valid-ext-info
-                :type type
-                :declared-in (insert table.filepath nil)
-                :uid uid)))
-       (new-externals
-        (omap::update (ident-fix ident) new-info table.externals)))
-    (change-valid-table table :externals new-externals)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-add-ord ((ident identp)
-                       (info valid-ord-infop)
-                       (table valid-tablep))
-  :returns (new-table valid-tablep)
-  :short "Add an ordinary identifier to the validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We pass the information to associate to the identifier.")
-   (xdoc::p
-    "The identifier is always added to
-     the first (i.e. innermost, i.e. current) scope.
-     We check the existence of at least one scope;
-     recall that there must be always a file scope.")
-   (xdoc::p
-    "If the identifier is already present in the current scope,
-     its information is overwritten,
-     but we only call this function after checking that
-     this overwriting is acceptable,
-     i.e. when it ``refines'' the validation information for the identifier.
-     We could consider adding a guard to this function
-     that characterizes the acceptable overwriting.")
-   (xdoc::p
-    "If @('info') indicates external linkage, we update the @('externals') map.
-     See @(tsee valid-update-ext)."))
-  (b* (((valid-table table) table)
-       ((unless (> (valid-table-num-scopes table) 0))
-        (raise "Internal error: no scopes in validation table.")
-        (valid-table-fix table))
-       (scope (car table.scopes))
-       (ord-scope (valid-scope->ord scope))
-       (new-ord-scope (acons (ident-fix ident)
-                             (valid-ord-info-fix info)
-                             ord-scope))
-       (new-scope (change-valid-scope scope :ord new-ord-scope))
-       (new-scopes (cons new-scope (cdr table.scopes)))
-       (table (change-valid-table table :scopes new-scopes))
-       (table
-         (valid-ord-info-case
-          info
-          :objfun (linkage-case
-                   info.linkage
-                   :external
-                   (valid-update-ext ident info.type info.uid table)
-                   :otherwise table)
-          :otherwise table)))
-    table)
-  :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define valid-add-ord-file-scope ((ident identp)
-                                  (info valid-ord-infop)
-                                  (table valid-tablep))
-  :returns (new-table valid-tablep)
-  :short "Add an ordinary identifier
-          to the file scope of a validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Unlike @(tsee valid-add-ord), this skips any block scopes,
-     and directly updates the file scope at the bottom of the stack.
-     It is used in some situations.")
-   (xdoc::p
-    "As in @(tsee valid-add-ord), we update the @('externals') map
-     if @('info') indicates external linkage."))
-  (b* ((scopes (valid-table->scopes table))
-       ((when (endp scopes))
-        (raise "Internal error: no scopes.")
-        (irr-valid-table))
-       (scope (car (last scopes)))
-       (ord-scope (valid-scope->ord scope))
-       (new-ord-scope (acons (ident-fix ident)
-                             (valid-ord-info-fix info)
-                             ord-scope))
-       (new-scope (change-valid-scope scope :ord new-ord-scope))
-       (new-scopes (append (butlast scopes 1) (list new-scope)))
-       (table (change-valid-table table :scopes new-scopes))
-       (table
-         (valid-ord-info-case
-          info
-          :objfun (linkage-case
-                   info.linkage
-                   :external
-                   (valid-update-ext ident info.type info.uid table)
-                   :otherwise table)
-          :otherwise table)))
-    table)
-  :guard-hints (("Goal" :in-theory (enable acons)))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define valid-add-ord-objfuns-file-scope ((idents ident-listp)
-                                          (type typep)
-                                          (linkage linkagep)
-                                          (defstatus valid-defstatusp)
-                                          (table valid-tablep))
-  :returns (new-table valid-tablep)
-  :short "Add a list of ordinary identifiers
-          corresponding to objects or functions
-          to the file scope of a validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "See @(tsee valid-add-ord-file-scope)."))
-  (b* (((when (endp idents))
-        (valid-table-fix table))
-       ((mv uid table) (valid-get-fresh-uid (first idents) linkage table)))
-    (valid-add-ord-objfuns-file-scope
-     (rest idents)
-     type
-     linkage
-     defstatus
-     (valid-add-ord-file-scope (first idents)
-                               (make-valid-ord-info-objfun
-                                :type type
-                                :linkage linkage
-                                :defstatus defstatus
-                                :uid uid)
-                               table))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-add-tag ((ident identp)
-                       (info valid-tag-infop)
-                       (table valid-tablep))
-  :returns (new-table valid-tablep)
-  :short "Add a tag to the validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Just as in @(tsee valid-add-ord),
-     the tag is added to the first (i.e. innermost) scope.
-     If the tag is already present in the current scope,
-     its information is overwritten."))
-  (b* (((valid-table table) table)
-       ((unless (> (valid-table-num-scopes table) 0))
-        (raise "Internal error: no scopes in validation table.")
-        (valid-table-fix table))
-       (scope (car table.scopes))
-       (tag-scope (valid-scope->tag scope))
-       (new-tag-scope (acons (ident-fix ident)
-                             (valid-tag-info-fix info)
-                             tag-scope))
-       (new-scope (change-valid-scope scope :tag new-tag-scope))
-       (new-scopes (cons new-scope (cdr table.scopes)))
-       (table (change-valid-table table :scopes new-scopes)))
-    table)
-  :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-has-internalp ((ident identp) (table valid-tablep))
-  :returns (has-internalp booleanp :rule-classes :type-prescription)
-  :short "Check whether an identifier has been declared with internal linkage
-          in the validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This checks whether the identifier has been declared with internal linkage
-     anywhere in the translation unit, not just the visible declaration
-     (if it exists).")
-   (xdoc::p
-    "We perform this check by looking through declarations in the file scope.
-     We are able to avoid looking through block scopes because
-     an identifier may only be declared with internal linkage in a block scope
-     if it has been previously declared with internal linkage in the file scope
-     [C17:6.2.2/4] [C17:6.2.2/6]."))
-  (b* ((info? (valid-lookup-ord-file-scope ident table)))
-    (and info?
-         (valid-ord-info-case
-          info?
-          :objfun (linkage-case
-                   info?.linkage
-                   :internal t
-                   :otherwise nil)
-          :otherwise nil))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod vstate
   :short "Fixtype of validator states."
   :long
   (xdoc::topstring
    (xdoc::p
     "This consists of
-     a (mutable) validation table,
-     a (mutable) macro table,
-     and an immutable implementation environment.
+     a validation table,
+     an information map for identifiers with external linkage,
+     a type completion map,
+     the next unused"
+    (xdoc::seetopic "uid" "unique identifier")
+    ", and an implementation environment.
      It is analogous to @(tsee dstate).")
    (xdoc::p
-    "Currently validation tables are defined in @(see validation-information),
-     and are used to annotate certain ASTs.
-     We may refactor that at some point,
-     annotating ASTs with more targeted information extracted from the tables,
-     incorporating instead validation tables into validator states.
-     But we start with this simpler wrapping of validation tables for now."))
+    "The implementation environment is constant &mdash;
+     i.e. it is never updated once set.
+     The validation table is reset for each translation unit,
+     and only contains information for the current translation unit.
+     The remaining fields,
+     @('externals'), @('completions'), and @('next-uid'),
+     accumulate over the entire validation process,
+     and their contents apply to all translation units in the ensemble."))
   ((table valid-table)
-   (macros macro-table)
+   (externals valid-externals)
+   (completions type-completions)
+   (next-uid uidp)
    (ienv ienv))
   :pred vstatep)
 
@@ -557,7 +133,11 @@
 (defirrelevant irr-vstate
   :short "An irrelevant validator state."
   :type vstatep
-  :body (vstate (irr-valid-table) (irr-macro-table) (irr-ienv)))
+  :body (vstate (irr-valid-table)
+                nil
+                nil
+                (irr-uid)
+                (irr-ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -573,8 +153,10 @@
   (xdoc::topstring
    (xdoc::p
     "This contains one empty scope (the initial file scope)."))
-  (make-vstate :table (init-valid-table filepath externals completions next-uid)
-               :macros (macro-init (ienv->dialect ienv))
+  (make-vstate :table (init-valid-table filepath (ienv->dialect ienv))
+               :externals externals
+               :completions completions
+               :next-uid next-uid
                :ienv ienv)
   :inline t)
 
@@ -584,30 +166,6 @@
   :returns (filepath filepathp)
   :short "Wrapper of @(tsee valid-table->filepath)."
   (valid-table->filepath (vstate->table vstate))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define vstate->externals ((vstate vstatep))
-  :returns (externals valid-externalsp)
-  :short "Wrapper of @(tsee valid-table->externals)."
-  (valid-table->externals (vstate->table vstate))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define vstate->completions ((vstate vstatep))
-  :returns (completions type-completions-p)
-  :short "Wrapper of @(tsee valid-table->completions)."
-  (valid-table->completions (vstate->table vstate))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define vstate->next-uid ((vstate vstatep))
-  :returns (next-uid uidp)
-  :short "Wrapper of @(tsee valid-table->next-uid)."
-  (valid-table->next-uid (vstate->table vstate))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -675,84 +233,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define vstate-lookup-ext ((ident identp) (vstate vstatep))
-  :returns (info? valid-ext-info-optionp)
-  :short "Wrapper of @(tsee valid-lookup-ext)."
-  (valid-lookup-ext ident (vstate->table vstate))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define vstate-get-fresh-uid ((ident identp)
-                              (linkage linkagep)
-                              (vstate vstatep))
-  :returns (mv (uid uidp) (new-vstate vstatep))
-  :short "Wrapper of @(tsee valid-get-fresh-uid)."
-  (b* ((table (vstate->table vstate))
-       ((mv uid new-table) (valid-get-fresh-uid ident linkage table))
-       (new-vstate (change-vstate vstate :table new-table)))
-    (mv uid new-vstate))
-  :inline t
-
-  ///
-
-  (defret vstate-get-fresh-uid.uid-under-iff
-    uid))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define vstate-update-ext ((ident identp)
-                           (type typep)
-                           (uid uidp)
-                           (vstate vstatep))
-  :returns (new-vstate vstatep)
-  :short "Wrapper of @(tsee valid-update-ext)."
-  (b* ((table (vstate->table vstate))
-       (new-table (valid-update-ext ident type uid table)))
-    (change-vstate vstate :table new-table))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define vstate-add-ord ((ident identp)
-                        (info valid-ord-infop)
-                        (vstate vstatep))
-  :returns (new-vstate vstatep)
-  :short "wrapper of @(tsee valid-add-ord)."
-  (b* ((table (vstate->table vstate))
-       (new-table (valid-add-ord ident info table)))
-    (change-vstate vstate :table new-table))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define vstate-add-ord-file-scope ((ident identp)
-                                   (info valid-ord-infop)
-                                   (vstate vstatep))
-  :returns (new-vstate vstatep)
-  :short "Wrapper of @(tsee valid-add-ord-file-scope)."
-  (b* ((table (vstate->table vstate))
-       (new-table (valid-add-ord-file-scope ident info table)))
-    (change-vstate vstate :table new-table))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define vstate-add-ord-objfuns-file-scope ((idents ident-listp)
-                                           (type typep)
-                                           (linkage linkagep)
-                                           (defstatus valid-defstatusp)
-                                           (vstate vstatep))
-  :returns (new-vstate vstatep)
-  :short "Wrapper of @(tsee valid-add-ord-objfuns-file-scope)."
-  (b* ((table (vstate->table vstate))
-       (new-table
-        (valid-add-ord-objfuns-file-scope idents type linkage defstatus table)))
-    (change-vstate vstate :table new-table))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define vstate-add-tag ((ident identp)
                         (info valid-tag-infop)
                         (vstate vstatep))
@@ -773,36 +253,268 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-composite-with-vstate ((x typep)
+(define vstate-lookup-ext ((ident identp) (vstate vstatep))
+  :returns (info? valid-ext-info-optionp)
+  :short "Look up the validation information of an identifier in the
+          @('externals') map."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This holds the validation information
+     for an identifier with external linkage
+     which has been declared in any scope or translation unit.
+     See @(see valid-table)."))
+  (b* (((vstate vstate) vstate))
+    (cdr (omap::assoc (ident-fix ident) vstate.externals))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-get-fresh-uid ((ident identp)
+                              (linkage linkagep)
+                              (vstate vstatep))
+  :returns (mv (uid uidp)
+               (new-vstate vstatep))
+  :short "Get a fresh @(tsee UID) and update the vstate accordingly."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('next-uid') field of the @(see vstate) is incremented to record
+     that the returned @(tsee UID) is now taken."))
+  (b* (((vstate vstate) vstate))
+    (linkage-case
+     linkage
+     :external (b* ((info? (vstate-lookup-ext ident vstate)))
+                 (valid-ext-info-option-case
+                  info?
+                  :some (mv (valid-ext-info->uid info?.val)
+                            (vstate-fix vstate))
+                  :none (mv vstate.next-uid
+                            (change-vstate
+                             vstate
+                             :next-uid (uid-increment vstate.next-uid)))))
+     :otherwise (mv vstate.next-uid
+                    (change-vstate
+                     vstate
+                     :next-uid (uid-increment vstate.next-uid)))))
+
+  ///
+
+  (defret vstate-get-fresh-uid.uid-under-iff
+    uid))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-update-ext ((ident identp)
+                           (type typep)
+                           (uid uidp)
+                           (vstate vstatep))
+  :returns (new-vstate vstatep)
+  :short "Update the @('externals') map with an identifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If no entry exists for the identifier,
+     add a new @(tsee valid-ext-info).
+     If an entry does exist, update the @('declared-in') field to include
+     the name of the current translation unit.")
+   (xdoc::p
+    "When an existing entry already exists,
+     type compatibility is not checked, nor is the UID.
+     Instead, the caller should check compatibility and ensure a proper UID
+     before updating."))
+  (b* (((vstate vstate) vstate)
+       ((valid-table table) vstate.table)
+       (info? (vstate-lookup-ext ident vstate))
+       (new-info
+        (valid-ext-info-option-case
+         info?
+         :some (change-valid-ext-info
+                info?
+                :declared-in (insert table.filepath
+                                     (valid-ext-info->declared-in
+                                      info?.val)))
+         :none (make-valid-ext-info
+                :type type
+                :declared-in (insert table.filepath nil)
+                :uid uid)))
+       (new-externals
+        (omap::update (ident-fix ident) new-info vstate.externals)))
+    (change-vstate vstate :externals new-externals)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-add-ord ((ident identp)
+                        (info valid-ord-infop)
+                        (vstate vstatep))
+  :returns (new-vstate vstatep)
+  :short "Add an ordinary identifier to the validation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We pass the information to associate to the identifier.")
+   (xdoc::p
+    "The identifier is always added to
+     the first (i.e. innermost, i.e. current) scope of the validation table.
+     We check the existence of at least one scope;
+     recall that there must be always a file scope.")
+   (xdoc::p
+    "If the identifier is already present in the current scope,
+     its information is overwritten,
+     but we only call this function after checking that
+     this overwriting is acceptable,
+     i.e. when it ``refines'' the validation information for the identifier.
+     We could consider adding a guard to this function
+     that characterizes the acceptable overwriting.")
+   (xdoc::p
+    "If @('info') indicates external linkage, we update the @('externals') map.
+     See @(tsee vstate-update-ext)."))
+  (b* (((vstate vstate) vstate)
+       ((valid-table table) vstate.table)
+       ((unless (> (valid-table-num-scopes table) 0))
+        (raise "Internal error: no scopes in validation table.")
+        (vstate-fix vstate))
+       (scope (car table.scopes))
+       (ord-scope (valid-scope->ord scope))
+       (new-ord-scope (acons (ident-fix ident)
+                             (valid-ord-info-fix info)
+                             ord-scope))
+       (new-scope (change-valid-scope scope :ord new-ord-scope))
+       (new-scopes (cons new-scope (cdr table.scopes)))
+       (table (change-valid-table table :scopes new-scopes))
+       (vstate (change-vstate vstate :table table))
+       (vstate
+        (valid-ord-info-case
+         info
+         :objfun (linkage-case
+                  info.linkage
+                  :external
+                  (vstate-update-ext ident info.type info.uid vstate)
+                  :otherwise vstate)
+         :otherwise vstate)))
+    vstate)
+  :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-add-ord-file-scope ((ident identp)
+                                   (info valid-ord-infop)
+                                   (vstate vstatep))
+  :returns (new-vstate vstatep)
+  :short "Add an ordinary identifier
+          to the file scope of a validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Unlike @(tsee vstate-add-ord), this skips any block scopes,
+     and directly updates the file scope at the bottom of the stack.
+     It is used in some situations.")
+   (xdoc::p
+    "As in @(tsee vstate-add-ord), we update the @('externals') map
+     if @('info') indicates external linkage."))
+  (b* (((vstate vstate) vstate)
+       ((valid-table table) vstate.table)
+       (scopes (valid-table->scopes table))
+       ((when (endp scopes))
+        (raise "Internal error: no scopes.")
+        (irr-vstate))
+       (scope (car (last scopes)))
+       (ord-scope (valid-scope->ord scope))
+       (new-ord-scope (acons (ident-fix ident)
+                             (valid-ord-info-fix info)
+                             ord-scope))
+       (new-scope (change-valid-scope scope :ord new-ord-scope))
+       (new-scopes (append (butlast scopes 1) (list new-scope)))
+       (table (change-valid-table table :scopes new-scopes))
+       (vstate (change-vstate vstate :table table))
+       (vstate
+        (valid-ord-info-case
+         info
+         :objfun (linkage-case
+                  info.linkage
+                  :external
+                  (vstate-update-ext ident info.type info.uid vstate)
+                  :otherwise vstate)
+         :otherwise vstate)))
+    vstate)
+  :guard-hints (("Goal" :in-theory (enable acons)))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-add-built-in-funs ((funs built-in-fun-listp) (vstate vstatep))
+  :returns (new-vstate vstatep)
+  :short "Add ordinary identifiers, that refer to the built-in functions,
+          to the file scope of a validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are added to the file scope.")
+   (xdoc::p
+    "Built-in functions have external linkage and are fully defined."))
+  (b* (((when (endp funs)) (vstate-fix vstate))
+       ((built-in-fun fun) (car funs))
+       (ident (ident fun.name))
+       (linkage (linkage-external))
+       (defstatus (valid-defstatus-defined))
+       ((mv uid vstate) (vstate-get-fresh-uid ident linkage vstate))
+       (type (make-type-function :ret fun.ret :params fun.params))
+       (info (make-valid-ord-info-objfun
+              :type type
+              :linkage linkage
+              :defstatus defstatus
+              :uid uid))
+       (vstate (vstate-add-ord-file-scope ident info vstate)))
+    (vstate-add-built-in-funs (cdr funs) vstate)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-add-built-in-vars ((vars built-in-var-listp) (vstate vstatep))
+  :returns (new-vstate vstatep)
+  :short "Add ordinary identifiers, that refer to the built-in functions,
+          to the file scope of a validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are added to the file scope.")
+   (xdoc::p
+    "Built-in functions have external linkage and are fully defined."))
+  (b* (((when (endp vars)) (vstate-fix vstate))
+       ((built-in-var var) (car vars))
+       (ident (ident var.name))
+       (linkage (linkage-external))
+       (defstatus (valid-defstatus-defined))
+       ((mv uid vstate) (vstate-get-fresh-uid ident linkage vstate))
+       (info (make-valid-ord-info-objfun
+              :type var.type
+              :linkage linkage
+              :defstatus defstatus
+              :uid uid))
+       (vstate (vstate-add-ord-file-scope ident info vstate)))
+    (vstate-add-built-in-vars (cdr vars) vstate)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-make-type-composite ((x typep)
                                     (y typep)
                                     (vstate vstatep))
   :returns (mv (composite typep)
                (new-vstate vstatep))
-  :short "Wrapper of @(tsee type-composite-with-table)."
-  (b* (((vstate vstate))
-       ((mv composite new-table)
-        (type-composite-with-table x y vstate.table vstate.ienv)))
-    (mv composite (change-vstate vstate :table new-table)))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define vstate-change-next-uid ((uid uidp) (vstate vstatep))
-  :returns (new-vstate vstatep)
-  :short "Change the next UID in the validation table."
-  (b* ((table (vstate->table vstate))
-       (new-table (change-valid-table table :next-uid uid)))
-    (change-vstate vstate :table new-table)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define vstate-change-completions ((completions type-completions-p)
-                                   (vstate vstatep))
-  :returns (new-vstate vstatep)
-  :short "Change the completions in the validation table."
-  (b* ((table (vstate->table vstate))
-       (new-table (change-valid-table table :completions completions)))
-    (change-vstate vstate :table new-table)))
+  :short "Construct a composite @(see type) with a validation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This wraps @(tsee type-composite),
+     extracting the @('completions') @('next-uid') from the validation state,
+     and updating the values accordingly."))
+  (b* (((vstate vstate) vstate)
+       ((mv composite completions next-uid)
+        (type-composite x y vstate.completions vstate.next-uid vstate.ienv)))
+    (mv composite
+        (change-vstate
+         vstate
+         :completions completions
+         :next-uid next-uid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -914,7 +626,7 @@
                   (t (retmsg$ "The constant ~x0 is too large."
                               (iconst-fix iconst)))))
            (t (prog2$ (impossible) (retmsg$ ""))))))
-       (info (make-iconst-info :type type :value value))
+       (info (make-iconst-vinfo :type type :value value))
        (new-iconst (change-iconst iconst :info info)))
     (retok new-iconst type)))
 
@@ -934,7 +646,10 @@
      suggesting that it should be only a warning, not an error.")
    (xdoc::p
     "The type is determined solely by the suffix, including its absence
-     [C17:6.4.4.2/4]."))
+     [C17:6.4.4.2/4].")
+   (xdoc::p
+    "Our model of types does not cover the GCC suffixes.
+     But we can safely return the unknown arithmetic type for those."))
   (b* ((suffix? (fconst-case fconst
                              :dec fconst.suffix?
                              :hex fconst.suffix?)))
@@ -945,7 +660,7 @@
           ((or (fsuffix-case suffix? :locase-l)
                (fsuffix-case suffix? :upcase-l))
            (type-ldouble))
-          (t (type-unknown)))))
+          (t (type-unknown-arithmetic)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1105,7 +820,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-c-char ((cchar c-char-p) (prefix? eprefix-optionp) (ienv ienvp))
-  :returns (mv (erp maybe-msgp) (code natp))
+  :returns (mv (erp maybe-msgp)
+               (code natp
+                     :hints (("Goal" :in-theory (enable natp-when-unicharp)))))
   :short "Validate a character of a character constant."
   :long
   (xdoc::topstring
@@ -1156,7 +873,9 @@
                             a character constant with prefix ~x2."
                            cchar.code max (eprefix-option-fix prefix?)))
                  (t (retok cchar.code)))
-     :escape (valid-escape cchar.escape max))))
+     :escape (valid-escape cchar.escape max)))
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-unicharp
+                                           rationalp-when-unicharp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1188,7 +907,7 @@
      a character constant with a prefix has type
      @('wchar_t'), @('char16_t'), or @('char32_t');
      since for now we do not model these,
-     we return an unknown type in this case.")
+     we return an unknown arithmetic type in this case.")
    (xdoc::p
     "The types @('wchar_t'), @('char16_t'), and @('char32_t')
      may vary across implementations.
@@ -1201,7 +920,7 @@
        ((cconst cconst) cconst)
        ((erp &) (valid-c-char-list cconst.cchars cconst.prefix? ienv)))
     (if cconst.prefix?
-        (retok (type-unknown))
+        (retok (type-unknown-arithmetic))
       (retok (type-sint)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1257,7 +976,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-s-char ((schar s-char-p) (prefix? eprefix-optionp) (ienv ienvp))
-  :returns (mv (erp maybe-msgp) (code natp))
+  :returns (mv (erp maybe-msgp)
+               (code natp
+                     :hints (("Goal" :in-theory (enable natp-when-unicharp)))))
   :short "Validate a character of a string literal."
   :long
   (xdoc::topstring
@@ -1290,7 +1011,9 @@
                             a character constant with prefix ~x2."
                            schar.code max (eprefix-option-fix prefix?)))
                  (t (retok schar.code)))
-     :escape (valid-escape schar.escape max))))
+     :escape (valid-escape schar.escape max)))
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-unicharp
+                                           rationalp-when-unicharp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1322,17 +1045,20 @@
      (i.e. it has the @('u8') prefix),
      it has an array type with element type @('char').
      If an encoding prefix is present,
-     the literal may have type @('wchar_t') or @('char16_t') or @('char32_t').
+     the array may have element type
+     @('wchar_t') or @('char16_t') or @('char32_t').
      Since we do not yet model the values of these type definitions,
-     we return an array type with an unknown element type in these cases."))
-  (b* (((reterr) (make-type-array :of (irr-type)))
+     we return an array type with
+     an unknown arithmetic element type in these cases."))
+  (b* (((reterr) (make-type-array :of (irr-type) :size nil))
        ((stringlit strlit) strlit)
        ((erp &) (valid-s-char-list strlit.schars strlit.prefix? ienv)))
     (retok (make-type-array
             :of (if (or (not strlit.prefix?)
                         (eprefix-case strlit.prefix? :locase-u8))
                     (type-char)
-                  (type-unknown)))))
+                  (type-unknown-arithmetic))
+            :size nil))) ; TODO: size
 
   ///
 
@@ -1376,11 +1102,11 @@
     "If all literals in the concatenation are character string literals
      or UTF-8 string literals,
      the result is an array type with the element type @('char').
-     Otherwise, it is an array type with an unknown element type.
+     Otherwise, it is an array type with an unknown arithmetic element type.
      This covers both the case of well-defined wide string literals
      (whose types we do not yet model),
      and the implementation-defined mixed string encoding."))
-  (b* (((reterr) (make-type-array :of (irr-type)))
+  (b* (((reterr) (make-type-array :of (irr-type) :size nil))
        ((unless (consp strlits))
         (retmsg$ "There must be at least one string literal."))
        ((erp prefix? conflictp) (valid-stringlit-list-loop strlits ienv))
@@ -1394,8 +1120,9 @@
     (retok (make-type-array
             :of (if (or conflictp
                         (and prefix? (not (eprefix-case prefix? :locase-u8))))
-                    (type-unknown)
-                  (type-char)))))
+                    (type-unknown-arithmetic)
+                  (type-char))
+            :size nil))) ; TODO: size
   :prepwork
   ((define valid-stringlit-list-loop ((strlits stringlit-listp) (ienv ienvp))
      :returns (mv (erp maybe-msgp)
@@ -1497,14 +1224,39 @@
        (type2 (type-apconvert type-arg2))
        ((when (and (type-case type1 :pointer)
                    (or (type-integerp type2)
-                       (type-case type2 :unknown))))
+                       ;; type2 could be integer:
+                       (type-case type2 :unknown)
+                       (type-case type2 :unknown-builtin)
+                       (type-case type2 :unknown-scalar)
+                       (type-case type2 :unknown-arithmetic))))
         (retok (type-pointer->to type1)))
        ((when (and (type-case type2 :pointer)
                    (or (type-integerp type1)
-                       (type-case type1 :unknown))))
+                       ;; type1 could be integer:
+                       (type-case type1 :unknown)
+                       (type-case type1 :unknown-builtin)
+                       (type-case type1 :unknown-scalar)
+                       (type-case type1 :unknown-arithmetic))))
         (retok (type-pointer->to type2)))
-       ((when (or (type-case type-arg1 :unknown)
-                  (type-case type-arg2 :unknown)))
+       ((when (and (or (type-case type1 :unknown-scalar) ; type1 could be
+                       (type-case type1 :unknown)        ; pointer
+                       (type-case type1 :unknown-builtin))
+                   (or (type-integerp type2)
+                       ;; type2 could be integer:
+                       (type-case type2 :unknown)
+                       (type-case type2 :unknown-builtin)
+                       (type-case type2 :unknown-scalar)
+                       (type-case type2 :unknown-arithmetic))))
+        (retok (type-unknown)))
+       ((when (and (or (type-case type2 :unknown-scalar) ; type2 could be
+                       (type-case type2 :unknown)        ; pointer
+                       (type-case type2 :unknown-builtin))
+                   (or (type-integerp type1)
+                       ;; type1 could be integer:
+                       (type-case type1 :unknown)
+                       (type-case type1 :unknown-builtin)
+                       (type-case type1 :unknown-scalar)
+                       (type-case type1 :unknown-arithmetic))))
         (retok (type-unknown))))
     (retmsg$ "In the array subscripting expression ~x0, ~
               the first sub-expression has type ~x1, ~
@@ -1585,9 +1337,13 @@
        (arg (first args))
        (type-arg (type-fpconvert (type-apconvert (first types-arg))))
        (gcc/clang (ienv->gcc/clang ienv)))
-    (if (or (type-case type-param :unknown)
+    (if (or (type-case type-param '(:unknown :unknown-builtin))
             (and gcc/clang (type-case type-param :union))
-            (type-case type-arg :unknown)
+            (type-case type-arg '(:unknown :unknown-builtin))
+            (and (type-case type-param :unknown-scalar)
+                 (type-scalarp type-arg))
+            (and (type-case type-arg :unknown-scalar)
+                 (type-scalarp type-param))
             (and (type-arithmeticp type-param)
                  (type-arithmeticp type-arg))
             (and (or (type-case type-param :struct)
@@ -1604,7 +1360,7 @@
                                 (and (type-case type-to-arg :void)
                                      (not
                                       (type-case type-to-param :function))))))
-                     (expr-null-pointer-constp arg type-arg)))
+                     (expr-null-pointer-constp arg type-arg ienv)))
             (and (type-case type-param :bool)
                  (type-case type-arg :pointer)))
         (valid-prototype-args (rest types-param)
@@ -1659,7 +1415,9 @@
      (see @(tsee valid-prototype-args)).
      We return the function return type."))
   (b* (((reterr) (irr-type))
-       ((when (type-case type-fun :unknown))
+       ((when (or (type-case type-fun :unknown)
+                  (type-case type-fun :unknown-builtin)
+                  (type-case type-fun :unknown-scalar)))
         (retok (type-unknown)))
        (type (type-fpconvert type-fun))
        ((unless (type-case type :pointer))
@@ -1669,7 +1427,7 @@
                  (expr-fix expr)
                  (type-fix type-fun)))
        (to-type (type-pointer->to type))
-       ((when (type-case to-type :unknown))
+       ((when (type-case to-type '(:unknown :unknown-builtin)))
         (retok (type-unknown)))
        ((unless (type-case to-type :function))
         (retmsg$ "In the function call expression ~x0, ~
@@ -1717,7 +1475,7 @@
      If there is no such member within the completion,
      it is a validation error [C17:6.5.2.3/1]."))
   (b* (((reterr) (irr-type))
-       ((when (type-case type-arg :unknown))
+       ((when (type-case type-arg '(:unknown :unknown-builtin)))
         (retok (type-unknown)))
        (name (expr-member->name expr))
        ((erp uid tag/members)
@@ -1777,7 +1535,9 @@
      If there is no such member within the completion,
      it is a validation error [C17:6.5.2.3/1]."))
   (b* (((reterr) (irr-type))
-       ((when (type-case type-arg :unknown))
+       ((when (type-case type-arg '(:unknown :unknown-builtin)))
+        (retok (type-unknown)))
+       ((when (type-case type-arg :unknown-scalar)) ; could be a pointer
         (retok (type-unknown)))
        (type (type-apconvert type-arg))
        ((unless (type-case type :pointer))
@@ -1785,7 +1545,7 @@
                   the sub-expression has type ~x1."
                  (expr-fix expr) (type-fix type-arg)))
        (to-type (type-pointer->to type))
-       ((when (type-case to-type :unknown))
+       ((when (type-case to-type '(:unknown :unknown-builtin)))
         (retok (type-unknown)))
        (name (expr-memberp->name expr))
        ((erp uid tag/members)
@@ -1888,53 +1648,72 @@
                   (expr-fix expr) (type-fix type-arg))))
     (case (unop-kind op)
       (:address (retok (make-type-pointer :to type-arg)))
-      (:indir (b* (((when (type-case type-arg :unknown))
+      (:indir (b* (((when (or (type-case type-arg :unknown)          ; could be
+                              (type-case type-arg :unknown-builtin)  ; pointer
+                              (type-case type-arg :unknown-scalar)))
                     (retok (type-unknown)))
                    (type (type-fpconvert (type-apconvert type-arg))))
                 (type-case
                  type
                  :pointer (retok type.to)
                  :otherwise (reterr msg))))
-      ((:plus :minus) (b* (((when (type-case type-arg :unknown))
-                            (retok (type-unknown)))
+      ((:plus :minus) (b* (((when (or (type-case type-arg :unknown)
+                                      (type-case type-arg :unknown-builtin)
+                                      (type-case type-arg :unknown-scalar)))
+                            (retok (type-unknown-arithmetic)))
                            ((unless (type-arithmeticp type-arg))
                             (reterr msg)))
+                        ;; also works when type-arg is unknown arithmetic:
                         (retok (type-integer-promote type-arg ienv))))
-      (:bitnot (b* (((when (type-case type-arg :unknown))
-                     (retok (type-unknown)))
+      (:bitnot (b* (((when (or (type-case type-arg :unknown)
+                               (type-case type-arg :unknown-builtin)
+                               (type-case type-arg :unknown-scalar)
+                               (type-case type-arg :unknown-arithmetic)))
+                     (retok (type-unknown-arithmetic)))
                     ((unless (type-integerp type-arg))
                      (reterr msg)))
                  (retok (type-integer-promote type-arg ienv))))
-      (:lognot (b* (((when (type-case type-arg :unknown))
-                     (retok (type-unknown)))
+      (:lognot (b* (((when (type-case type-arg '(:unknown :unknown-builtin)))
+                     (retok (type-unknown-arithmetic)))
                     (type (type-fpconvert (type-apconvert type-arg)))
                     ((unless (type-scalarp type))
                      (reterr msg)))
+                 ;; also works when type is unknown scalar or arithmetic:
                  (retok (type-sint))))
       ((:preinc :predec :postinc :postdec)
-       (b* (((when (type-case type-arg :unknown))
-             (retok (type-unknown)))
+       (b* (((when (or (type-case type-arg :unknown)
+                       (type-case type-arg :unknown-builtin)
+                       (type-case type-arg :unknown-scalar)))
+             (retok (type-unknown-scalar)))
+            ((when (type-case type-arg :unknown-arithmetic))
+             (retok (type-unknown-arithmetic)))
             ((unless (or (type-realp type-arg)
                          (type-case type-arg :pointer)))
              (reterr msg)))
          (retok (type-fix type-arg))))
       (:sizeof (b* (((when (type-case type-arg :function))
                      (reterr msg)))
-                 (retok (type-unknown))))
+                 (retok (type-unknown-arithmetic))))
       (:alignof (b* (((when (type-case type-arg :function))
                       (reterr msg)))
-                  (retok (type-unknown))))
+                  (retok (type-unknown-arithmetic))))
       (:real (type-case type-arg
                         :floatc (retok (type-float))
                         :doublec (retok (type-double))
                         :ldoublec (retok (type-ldouble))
-                        :unknown (retok (type-unknown))
+                        :unknown (retok (type-unknown-arithmetic))
+                        :unknown-builtin (retok (type-unknown-arithmetic))
+                        :unknown-scalar (retok (type-unknown-arithmetic))
+                        :unknown-arithmetic (retok (type-unknown-arithmetic))
                         :otherwise (reterr msg)))
       (:imag (type-case type-arg
                         :floatc (retok (type-float))
                         :doublec (retok (type-double))
                         :ldoublec (retok (type-ldouble))
-                        :unknown (retok (type-unknown))
+                        :unknown (retok (type-unknown-arithmetic))
+                        :unknown-builtin (retok (type-unknown-arithmetic))
+                        :unknown-scalar (retok (type-unknown-arithmetic))
+                        :unknown-arithmetic (retok (type-unknown-arithmetic))
                         :otherwise (reterr msg)))
       (t (prog2$ (impossible) (retmsg$ ""))))))
 
@@ -1988,18 +1767,22 @@
     "We do not perform array-to-pointer or function-to-pointer conversion
      on the left operand, because the result would not be an lvalue."))
   (b* (((reterr))
-       ((when (or (type-case type-arg1 :unknown)
-                  (type-case type-arg2 :unknown)))
+       ((when (or (type-case type-arg1 '(:unknown :unknown-builtin))
+                  (type-case type-arg2 '(:unknown :unknown-builtin))))
         (retok))
        (type1 type-arg1)
        (type2 (type-fpconvert (type-apconvert type-arg2))))
-    (if (or (and (type-arithmeticp type1)
-                 (type-arithmeticp type2))
+    (if (or (and (type-case type1 :unknown-scalar)
+                 (type-scalarp type2)) ; includes unknown scalar
+            (and (type-arithmeticp type1) ; includes unknown arithmetic
+                 (or (type-case type2 :unknown-scalar)
+                     (type-arithmeticp type2))) ; includes unknown arithmetic
             (and (or (type-case type1 :struct)
                      (type-case type1 :union))
                  (type-compatible-p type1 type2 completions ienv))
             (and (type-case type1 :pointer)
-                 (or (and (type-case type2 :pointer)
+                 (or (type-case type2 :unknown-scalar) ; could be pointer
+                     (and (type-case type2 :pointer)
                           (let ((type-to1 (type-pointer->to type1))
                                 (type-to2 (type-pointer->to type2)))
                             (or (type-compatible-p
@@ -2012,9 +1795,11 @@
                                      (or (ienv->gcc/clang ienv)
                                          (not (type-case type-to1
                                                          :function)))))))
-                     (expr-null-pointer-constp expr-arg2 type2)))
+                     (expr-null-pointer-constp expr-arg2 type2 ienv)))
             (and (type-case type1 :bool)
-                 (type-case type2 :pointer)))
+                 (or (type-case type2 :unknown-arithmetic)
+                     (type-case type2 :unknown-scalar)
+                     (type-case type2 :pointer))))
         (retok)
       (reterr t))))
 
@@ -2032,6 +1817,14 @@
           given the type of the sub-expression."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "Handling all the combinations of unknown and known types is error-prone.
+     So we start the code for each binary operator
+     with the case in which at least one of the types is some unknown
+     (any of the different unknown types we currently model):
+     in that case, we return, as the type of the result,
+     the least general yet safe type.
+     Then we handle the cases in which both types are fully known.")
    (xdoc::p
     "The @('*') binary and @('/') operators
      require arithmetic operands [C17:6.5.5/2].
@@ -2067,7 +1860,7 @@
      [C17:6.5.6/4].
      In the second case, the result has type @('ptrdiff_t') [C17:6.5.6/9],
      which has an implementation-specific definition,
-     and so we return the unknown type in this case.
+     and so we return the unknown scalar type in this case.
      In the third case,
      the result has the type of the pointer operand [C17:6.5.6/8].
      Because of the second and third cases, which involve pointers,
@@ -2158,53 +1951,66 @@
      The result has the type of the first operand [C17:6.5.13/3].
      No array-to-pointer or function-to-pointer conversions are needed."))
   (b* (((reterr) (irr-type))
-       ((when (or (type-case type-arg1 :unknown)
-                  (type-case type-arg2 :unknown)))
-        (retok (type-unknown)))
        (msg (msg$ "In the binary expression ~x0, ~
                    the sub-expressions have types ~x1 and ~x2."
                   (expr-fix expr) (type-fix type-arg1) (type-fix type-arg2))))
     (case (binop-kind op)
-      ((:mul :div) (b* (((unless (and (type-arithmeticp type-arg1)
+      ((:mul :div) (b* (((when (or (type-some-unknownp type-arg1)
+                                   (type-some-unknownp type-arg2)))
+                         (retok (type-unknown-arithmetic)))
+                        ((unless (and (type-arithmeticp type-arg1)
                                       (type-arithmeticp type-arg2)))
                          (reterr msg)))
                      (retok (type-uaconvert type-arg1 type-arg2 ienv))))
-      (:rem (b* (((unless (and (type-arithmeticp type-arg1)
-                               (type-arithmeticp type-arg2)))
+      (:rem (b* (((when (or (type-some-unknownp type-arg1)
+                            (type-some-unknownp type-arg2)))
+                  (retok (type-unknown-arithmetic)))
+                 ((unless (and (type-integerp type-arg1)
+                               (type-integerp type-arg2)))
                   (reterr msg)))
               (retok (type-uaconvert type-arg1 type-arg2 ienv))))
-      (:add (b* ((type1 (type-apconvert type-arg1))
+      (:add (b* (((when (or (type-some-unknownp type-arg1)
+                            (type-some-unknownp type-arg2)))
+                  (retok (type-unknown-scalar)))
+                 (type1 (type-apconvert type-arg1))
                  (type2 (type-apconvert type-arg2)))
-              (cond
-               ((and (type-arithmeticp type1)
-                     (type-arithmeticp type2))
-                (retok (type-uaconvert type1 type2 ienv)))
-               ((and (type-integerp type1)
-                     (type-case type2 :pointer))
-                (retok type2))
-               ((and (type-case type1 :pointer)
-                     (type-integerp type2))
-                (retok type1))
-               (t (reterr msg)))))
-      (:sub (b* ((type1 (type-apconvert type-arg1))
+              (cond ((and (type-arithmeticp type1)
+                          (type-arithmeticp type2))
+                     (retok (type-uaconvert type1 type2 ienv)))
+                    ((and (type-integerp type1)
+                          (type-case type2 :pointer))
+                     (retok type2))
+                    ((and (type-case type1 :pointer)
+                          (type-integerp type2))
+                     (retok type1))
+                    (t (reterr msg)))))
+      (:sub (b* (((when (or (type-some-unknownp type-arg1)
+                            (type-some-unknownp type-arg2)))
+                  (retok (type-unknown-scalar)))
+                 (type1 (type-apconvert type-arg1))
                  (type2 (type-apconvert type-arg2)))
-              (cond
-               ((and (type-arithmeticp type1)
-                     (type-arithmeticp type2))
-                (retok (type-uaconvert type1 type2 ienv)))
-               ((and (type-case type1 :pointer)
-                     (type-integerp type2))
-                (retok type1))
-               ((and (type-case type1 :pointer)
-                     (type-case type2 :pointer))
-                (retok (type-unknown)))
-               (t (reterr msg)))))
-      ((:shl :shr) (b* (((unless (and (type-integerp type-arg1)
+              (cond ((and (type-arithmeticp type1)
+                          (type-arithmeticp type2))
+                     (retok (type-uaconvert type1 type2 ienv)))
+                    ((and (type-case type1 :pointer)
+                          (type-integerp type2))
+                     (retok type1))
+                    ((and (type-case type1 :pointer)
+                          (type-case type2 :pointer))
+                     (retok (type-unknown-arithmetic)))
+                    (t (reterr msg)))))
+      ((:shl :shr) (b* (((when (or (type-some-unknownp type-arg1)
+                                   (type-some-unknownp type-arg2)))
+                         (retok (type-unknown-arithmetic)))
+                        ((unless (and (type-integerp type-arg1)
                                       (type-integerp type-arg2)))
                          (reterr msg)))
                      (retok (type-integer-promote type-arg1 ienv))))
       ((:lt :gt :le :ge)
-       (b* ((type1 (type-apconvert type-arg1))
+       (b* (((when (or (type-some-unknownp type-arg1)
+                       (type-some-unknownp type-arg2)))
+             (retok (type-sint)))
+            (type1 (type-apconvert type-arg1))
             (type2 (type-apconvert type-arg2))
             ((unless (or (and (type-realp type1)
                               (type-realp type2))
@@ -2218,12 +2024,15 @@
                                           type-to1 type-to2 completions ienv))))
                            (and (ienv->gcc/clang ienv)
                                 (expr-null-pointer-constp
-                                 (expr-binary->arg1 expr) type1)
+                                 (expr-binary->arg1 expr) type1 ienv)
                                 (type-case type2 :pointer)))))
              (reterr msg)))
          (retok (type-sint))))
       ((:eq :ne)
-       (b* ((type1 (type-fpconvert (type-apconvert type-arg1)))
+       (b* (((when (or (type-some-unknownp type-arg1)
+                       (type-some-unknownp type-arg2)))
+             (retok (type-sint)))
+            (type1 (type-fpconvert (type-apconvert type-arg1)))
             (type2 (type-fpconvert (type-apconvert type-arg2)))
             ((unless (or (and (type-arithmeticp type1)
                               (type-arithmeticp type2))
@@ -2240,19 +2049,25 @@
                                                  (not (type-case type-to1
                                                                  :function))))))
                                  (expr-null-pointer-constp
-                                  (expr-binary->arg2 expr) type2))
+                                  (expr-binary->arg2 expr) type2 ienv))
                            (and (expr-null-pointer-constp
-                                 (expr-binary->arg1 expr) type1)
+                                 (expr-binary->arg1 expr) type1 ienv)
                                 (type-case type2 :pointer)))))
              (reterr msg)))
          (retok (type-sint))))
       ((:bitand :bitxor :bitior)
-       (b* (((unless (and (type-integerp type-arg1)
+       (b* (((when (or (type-some-unknownp type-arg1)
+                       (type-some-unknownp type-arg2)))
+             (retok (type-unknown-arithmetic)))
+            ((unless (and (type-integerp type-arg1)
                           (type-integerp type-arg2)))
              (reterr msg)))
          (retok (type-uaconvert type-arg1 type-arg2 ienv))))
       ((:logand :logor)
-       (b* ((type1 (type-fpconvert (type-apconvert type-arg1)))
+       (b* (((when (or (type-some-unknownp type-arg1)
+                       (type-some-unknownp type-arg2)))
+             (retok (type-sint)))
+            (type1 (type-fpconvert (type-apconvert type-arg1)))
             (type2 (type-fpconvert (type-apconvert type-arg2)))
             ((unless (and (type-scalarp type1)
                           (type-scalarp type2)))
@@ -2265,16 +2080,25 @@
              :iferr msg))
          (retok (type-fix type-arg1))))
       ((:asg-mul :asg-div)
-       (b* (((unless (and (type-arithmeticp type-arg1)
+       (b* (((when (or (type-some-unknownp type-arg1)
+                       (type-some-unknownp type-arg2)))
+             (retok (type-unknown-arithmetic)))
+            ((unless (and (type-arithmeticp type-arg1)
                           (type-arithmeticp type-arg2)))
              (reterr msg)))
          (retok (type-fix type-arg1))))
-      (:asg-rem (b* (((unless (and (type-integerp type-arg1)
+      (:asg-rem (b* (((when (or (type-some-unknownp type-arg1)
+                                (type-some-unknownp type-arg2)))
+                      (retok (type-unknown-arithmetic)))
+                     ((unless (and (type-integerp type-arg1)
                                    (type-integerp type-arg2)))
                       (reterr msg)))
                   (retok (type-fix type-arg1))))
       ((:asg-add :asg-sub)
-       (b* ((type1 (type-fpconvert (type-apconvert type-arg1)))
+       (b* (((when (or (type-some-unknownp type-arg1)
+                       (type-some-unknownp type-arg2)))
+             (retok (type-unknown-scalar)))
+            (type1 (type-fpconvert (type-apconvert type-arg1)))
             (type2 (type-fpconvert (type-apconvert type-arg2)))
             ((unless (or (and (type-arithmeticp type1)
                               (type-arithmeticp type2))
@@ -2283,7 +2107,10 @@
              (reterr msg)))
          (retok (type-fix type-arg1))))
       ((:asg-shl :asg-shr :asg-and :asg-xor :asg-ior)
-       (b* (((unless (and (type-integerp type-arg1)
+       (b* (((when (or (type-some-unknownp type-arg1)
+                       (type-some-unknownp type-arg2)))
+             (retok (type-unknown-arithmetic)))
+            ((unless (and (type-integerp type-arg1)
                           (type-integerp type-arg2)))
              (reterr msg)))
          (retok (type-fix type-arg1))))
@@ -2308,7 +2135,7 @@
      but we do not have a notion of complete types yet.
      The result has type @('size_t') [C17:6.5.3.4/5],
      whose definition is implementation-defined,
-     so for now we just return the unknown type;
+     so for now we just return the unknown arithmetic type;
      we will need to extend implementation environments
      with information about the definition of @('size_t')."))
   (b* (((reterr) (irr-type))
@@ -2321,7 +2148,7 @@
                    (t (impossible)))
                  (expr-fix expr)
                  (type-fix type))))
-    (retok (type-unknown))))
+    (retok (type-unknown-arithmetic))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2341,9 +2168,19 @@
      we perform array-to-pointer and function-to-pointer conversions.
      The result is the type denoted by the type name."))
   (b* (((reterr) (irr-type))
-       ((when (or (type-case type-cast :unknown)
-                  (type-case type-arg :unknown)))
+       ((when (type-case type-cast :unknown))
         (retok (type-unknown)))
+       ((when (type-case type-cast :unknown-builtin))
+        (retok (type-unknown-builtin)))
+       ((when (type-case type-cast :unknown-scalar))
+        (retok (type-unknown-scalar)))
+       ((when (type-case type-cast :unknown-arithmetic))
+        (retok (type-unknown-arithmetic)))
+       ((when (or (type-case type-arg :unknown)
+                  (type-case type-arg :unknown-builtin)
+                  (type-case type-arg :unknown-scalar)
+                  (type-case type-arg :unknown-arithmetic)))
+        (retok (type-fix type-cast)))
        (type1-arg (type-fpconvert (type-apconvert type-arg)))
        ((unless (or (type-case type-cast :void)
                     (type-scalarp type-cast)))
@@ -2392,9 +2229,9 @@
      array-to-pointer and function-to-pointer conversions."))
   (b* (((reterr) (irr-type) (vstate-fix vstate))
        (ienv (vstate->ienv vstate))
-       ((when (or (type-case type-test :unknown)
-                  (type-case type-then :unknown)
-                  (type-case type-else :unknown)))
+       ((when (or (type-case type-test '(:unknown :unknown-builtin))
+                  (type-case type-then '(:unknown :unknown-builtin))
+                  (type-case type-else '(:unknown :unknown-builtin))))
         (retok (type-unknown) (vstate-fix vstate)))
        (type1 (type-fpconvert (type-apconvert type-test)))
        (type2 (type-fpconvert (type-apconvert type-then)))
@@ -2403,6 +2240,9 @@
         (retmsg$ "In the conditional expression ~x0, ~
                   the first operand has type ~x1."
                  (expr-fix expr) (type-fix type-test)))
+       ((when (or (type-case type2 :unknown-scalar)
+                  (type-case type3 :unknown-scalar)))
+        (retok (type-unknown-scalar) (vstate-fix vstate)))
        ((when (and (type-arithmeticp type2)
                    (type-arithmeticp type3)))
         (retok (type-uaconvert type2 type3 ienv) (vstate-fix vstate)))
@@ -2416,7 +2256,7 @@
                        type2
                        type3))
              ((mv composite vstate)
-              (type-composite-with-vstate type2 type3 vstate)))
+              (vstate-make-type-composite type2 type3 vstate)))
           (retok composite vstate)))
        ((when (and (type-case type2 :union)
                    (type-case type3 :union)))
@@ -2428,7 +2268,7 @@
                        type2
                        type3))
              ((mv composite vstate)
-              (type-composite-with-vstate type2 type3 vstate)))
+              (vstate-make-type-composite type2 type3 vstate)))
           (retok composite vstate)))
        ((when (and (type-case type2 :pointer)
                    (type-compatible-p type2
@@ -2436,14 +2276,16 @@
                                       (vstate->completions vstate)
                                       ienv)))
         (b* (((mv composite vstate)
-              (type-composite-with-vstate type2 type3 vstate)))
+              (vstate-make-type-composite type2 type3 vstate)))
           (retok composite vstate)))
        ((when (and (type-case type2 :pointer)
-                   (expr-null-pointer-constp (expr-cond->else expr) type3)))
+                   (expr-null-pointer-constp
+                    (expr-cond->else expr) type3 ienv)))
         (retok (type-fix type2) (vstate-fix vstate)))
        ((when (and (type-case type3 :pointer)
                    (expr-cond->then expr)
-                   (expr-null-pointer-constp (expr-cond->then expr) type2)))
+                   (expr-null-pointer-constp
+                    (expr-cond->then expr) type2 ienv)))
         (retok (type-fix type3) (vstate-fix vstate)))
        ((when (and (type-case type2 :pointer)
                    (type-case type3 :pointer)
@@ -2508,7 +2350,7 @@
      in practical code,
      which seems indeed consistent with other types like @('signed int');
      so we accept all three variants.
-     But for now we map all of them to the unknown type."))
+     But for now we map all of them to the unknown arithmetic type."))
   (b* (((reterr) (irr-type)))
     (cond
      ((type-spec-list-char-p tyspecs)
@@ -2561,50 +2403,50 @@
      ((type-spec-list-long-double-complex-p tyspecs)
       (retok (type-ldoublec)))
      ((type-spec-list-locase-float80-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-locase-float128-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-locase-float80-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-locase-float128-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-float16-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-float16x-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-float32-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-float32x-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-float64-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-float64x-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-float128-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-float128x-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-float16-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-float16x-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-float32-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-float32x-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-float64-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-float64x-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-float128-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-float128x-complex-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((or (type-spec-list-int128-p tyspecs)
           (type-spec-list-signed-int128-p tyspecs))
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-unsigned-int128-p tyspecs)
-      (retok (type-unknown)))
+      (retok (type-unknown-arithmetic)))
      (t (retmsg$ "The type specifier sequence ~x0 is invalid."
                  (type-spec-list-fix tyspecs))))))
 
@@ -3047,29 +2889,29 @@
        for that, we need a more refined type system.
        The result has type @('size_t') [C17:7.19],
        whose definition is implementation-dependent,
-       and thus for now we return the unknown type."))
+       and thus for now we return the unknown arithmetic type."))
     (b* (((reterr) (irr-expr) (irr-type) nil (irr-vstate))
          (ienv (vstate->ienv vstate)))
       (expr-case
        expr
        :ident (b* (((erp type linkage uid) (valid-var expr.ident vstate))
-                   (info (make-var-info :type type
-                                        :linkage linkage
-                                        :uid uid)))
+                   (info (make-var-vinfo :type type
+                                         :linkage linkage
+                                         :uid uid)))
                 (retok (make-expr-ident :ident expr.ident
                                         :info info)
                        type
                        nil
                        (vstate-fix vstate)))
        :const (b* (((erp const type) (valid-const expr.const vstate))
-                   (info (make-expr-const-info :type type)))
+                   (info (make-type-vinfo :type type)))
                 (retok (make-expr-const :const const
                                         :info info)
                        type
                        nil
                        (vstate-fix vstate)))
        :string (b* (((erp type) (valid-stringlit-list expr.strings ienv))
-                    (info (make-expr-string-info :type type)))
+                    (info (make-type-vinfo :type type)))
                  (retok (change-expr-string expr :info info)
                         type
                         nil
@@ -3092,7 +2934,7 @@
                     ((erp new-arg2 type-arg2 types-arg2 vstate)
                      (valid-expr expr.arg2 vstate))
                     ((erp type) (valid-arrsub expr type-arg1 type-arg2))
-                    (info (make-expr-arrsub-info :type type)))
+                    (info (make-type-vinfo :type type)))
                  (retok (make-expr-arrsub :arg1 new-arg1
                                           :arg2 new-arg2
                                           :info info)
@@ -3109,7 +2951,7 @@
                                      types-arg
                                      (vstate->completions vstate)
                                      ienv))
-                     (info (make-expr-funcall-info :type type)))
+                     (info (make-type-vinfo :type type)))
                   (retok (make-expr-funcall :fun new-fun
                                             :args new-args
                                             :info info)
@@ -3142,7 +2984,10 @@
                                    (lifetime-auto)
                                  (lifetime-static))))
                   (cond
-                   ((type-case target-type :unknown)
+                   ((or (type-case target-type :unknown)
+                        (type-case target-type :unknown-builtin)
+                        (type-case target-type :unknown-scalar)
+                        (type-case target-type :unknown-arithmetic))
                     (b* (((erp new-elems types-desiniters vstate)
                           (valid-desiniter-list
                            expr.elems
@@ -3242,7 +3087,7 @@
                                    target-type
                                    str-expr
                                    str-type))
-                         (info (make-expr-string-info :type str-type))
+                         (info (make-type-vinfo :type str-type))
                          (new-complit
                           (make-expr-complit
                            :type new-type
@@ -3292,7 +3137,7 @@
        :unary (b* (((erp new-arg type-arg types-arg vstate)
                     (valid-expr expr.arg vstate))
                    ((erp type) (valid-unary expr expr.op type-arg ienv))
-                   (info (make-expr-unary-info :type type)))
+                   (info (make-type-vinfo :type type)))
                 (retok (make-expr-unary :op expr.op
                                         :arg new-arg
                                         :info info)
@@ -3335,7 +3180,7 @@
                                    type-arg2
                                    (vstate->completions vstate)
                                    ienv))
-                    (info (make-expr-binary-info :type type)))
+                    (info (make-type-vinfo :type type)))
                  (retok (make-expr-binary :op expr.op
                                           :arg1 new-arg1
                                           :arg2 new-arg2
@@ -3385,7 +3230,7 @@
                        (valid-member-designor expr.member vstate)))
                    (retok (make-expr-offsetof :type new-type
                                               :member new-member)
-                          (type-unknown)
+                          (type-unknown-arithmetic)
                           (set::union types more-types)
                           vstate))
        :va-arg (b* (((erp new-list & list-types vstate)
@@ -3511,7 +3356,7 @@
          ((erp new-expr type types vstate)
           (valid-expr (const-expr->expr cexpr) vstate))
          (val (const-eval-expr new-expr ienv))
-         (info (make-const-expr-info :value val)))
+         (info (make-const-expr-vinfo :value val)))
       (retok (make-const-expr :expr new-expr :info info) type types vstate))
     :measure (acl2::two-nats-measure (const-expr-count cexpr) 0))
 
@@ -3836,39 +3681,46 @@
                           ((mv info? -)
                            (vstate-lookup-tag tyspec.spec.name? vstate))
                           ((when info?)
-                           (if (equal (valid-tag-info->kind info?)
-                                      (tag-kind-struct))
-                               (retok (type-spec-struct new-spec)
-                                      (make-type-struct
+                           (b* (((unless (equal (valid-tag-info->kind info?)
+                                                (tag-kind-struct)))
+                                 (retmsg$ "The tag is expected ~
+                                           to be of kind 'union', ~
+                                           but it is of kind 'struct'. ~
+                                           This occurred ~
+                                           in the type specifier ~x1."
+                                          tyspec.spec.name?
+                                          (type-spec-fix tyspec)))
+                                (type (make-type-struct
                                        :uid (valid-tag-info->uid info?)
                                        :tunit? (vstate->filepath vstate)
                                        :tag/members
                                        (type-struni-tag/members-tagged
-                                        tyspec.spec.name?))
-                                      nil
-                                      types
-                                      vstate)
-                             (retmsg$ "The tag is expected ~
-                                       to be of kind 'union', ~
-                                       but it is of kind 'struct'. ~
-                                       This occurred ~
-                                       in the type specifier ~x1."
-                                      tyspec.spec.name?
-                                      (type-spec-fix tyspec))))
+                                        tyspec.spec.name?)))
+                                (info (type-spec-struct-vinfo type)))
+                             (retok (make-type-spec-struct :spec new-spec
+                                                           :info info)
+                                    type
+                                    nil
+                                    types
+                                    vstate)))
                           (uid (vstate->next-uid vstate))
-                          (vstate (vstate-change-next-uid (uid-increment uid)
-                                                          vstate))
+                          (vstate (change-vstate
+                                   vstate
+                                   :next-uid (uid-increment uid)))
                           (vstate (vstate-add-tag tyspec.spec.name?
                                                   (make-valid-tag-info
                                                    :kind (tag-kind-struct)
                                                    :uid uid)
-                                                  vstate)))
-                       (retok (type-spec-struct new-spec)
-                              (make-type-struct
-                               :uid uid
-                               :tunit? (vstate->filepath vstate)
-                               :tag/members (type-struni-tag/members-tagged
-                                             tyspec.spec.name?))
+                                                  vstate))
+                          (type (make-type-struct
+                                 :uid uid
+                                 :tunit? (vstate->filepath vstate)
+                                 :tag/members (type-struni-tag/members-tagged
+                                               tyspec.spec.name?)))
+                          (info (type-spec-struct-vinfo type)))
+                       (retok (make-type-spec-struct :spec new-spec
+                                                     :info info)
+                              type
                               nil
                               types
                               vstate)))
@@ -3893,8 +3745,9 @@
                      (b* (((when current-uid?)
                            (mv current-uid? vstate))
                           (uid (vstate->next-uid vstate))
-                          (vstate (vstate-change-next-uid (uid-increment uid)
-                                                          vstate)))
+                          (vstate (change-vstate
+                                   vstate
+                                   :next-uid (uid-increment uid))))
                        (mv uid
                            (if tyspec.spec.name?
                                (vstate-add-tag tyspec.spec.name?
@@ -3913,13 +3766,15 @@
                                              tyspec.spec.name?)
                                           (type-struni-tag/members-untagged
                                            type-struni-members))))
-                    (vstate (vstate-change-completions
-                             (hons-acons
-                              uid
-                              type-struni-members
-                              (vstate->completions vstate))
-                             vstate)))
-                 (retok (type-spec-struct new-spec)
+                    (vstate (change-vstate
+                             vstate
+                             :completions (hons-acons
+                                           uid
+                                           type-struni-members
+                                           (vstate->completions vstate))))
+                    (info (type-spec-struct-vinfo type)))
+                 (retok (make-type-spec-struct :spec new-spec
+                                               :info info)
                         type
                         nil
                         types
@@ -3955,8 +3810,9 @@
                                      tyspec.spec.name?
                                      (type-spec-fix tyspec))))
                          (uid (vstate->next-uid vstate))
-                         (vstate (vstate-change-next-uid (uid-increment uid)
-                                                         vstate))
+                         (vstate (change-vstate
+                                  vstate
+                                  :next-uid (uid-increment uid)))
                          (vstate (vstate-add-tag tyspec.spec.name?
                                                  (make-valid-tag-info
                                                   :kind (tag-kind-union)
@@ -3992,8 +3848,9 @@
                     (b* (((when current-uid?)
                           (mv current-uid? vstate))
                          (uid (vstate->next-uid vstate))
-                         (vstate (vstate-change-next-uid (uid-increment uid)
-                                                         vstate)))
+                         (vstate (change-vstate
+                                  vstate
+                                  :next-uid (uid-increment uid))))
                       (mv uid
                           (if tyspec.spec.name?
                               (vstate-add-tag tyspec.spec.name?
@@ -4012,12 +3869,12 @@
                                             tyspec.spec.name?)
                                          (type-struni-tag/members-untagged
                                           type-struni-members))))
-                   (vstate (vstate-change-completions
-                            (hons-acons
-                             uid
-                             type-struni-members
-                             (vstate->completions vstate))
-                            vstate)))
+                   (vstate (change-vstate
+                            vstate
+                            :completions (hons-acons
+                                          uid
+                                          type-struni-members
+                                          (vstate->completions vstate)))))
                 (retok (type-spec-union new-spec)
                        type
                        nil
@@ -4037,13 +3894,19 @@
                                (ident->unwrap tyspec.name))))
                   (valid-ord-info-case
                    info?
-                   :typedef (retok (type-spec-typedef tyspec.name)
-                                   info?.def
-                                   nil
-                                   nil
-                                   same-vstate)
+                   :typedef (b* ((info (make-type+uid-vinfo
+                                        :type info?.def
+                                        :uid info?.uid)))
+                              (retok (make-type-spec-typedef
+                                      :name tyspec.name
+                                      :info info)
+                                     info?.def
+                                     nil
+                                     nil
+                                     same-vstate))
                    :otherwise (retmsg$ "The identifier ~x0 does not ~
-                                        represent a typedef.")))
+                                        represent a typedef."
+                                       (ident->unwrap tyspec.name))))
        :int128 (retok (make-type-spec-int128 :uscoret tyspec.uscoret)
                       nil
                       ext-tyspecs
@@ -4063,7 +3926,7 @@
        :float128x (retok (type-spec-float128x) nil ext-tyspecs nil same-vstate)
        :builtin-va-list (if (endp tyspecs)
                             (retok (type-spec-builtin-va-list)
-                                   (type-unknown)
+                                   (type-unknown-builtin)
                                    nil
                                    nil
                                    same-vstate)
@@ -4091,9 +3954,9 @@
                            (b* (((when current-uid?)
                                  (mv current-uid? vstate))
                                 (uid (vstate->next-uid vstate))
-                                (vstate (vstate-change-next-uid
-                                         (uid-increment uid)
-                                         vstate)))
+                                (vstate (change-vstate
+                                         vstate
+                                         :next-uid (uid-increment uid))))
                              (mv uid
                                  (if tyspec.name?
                                      (vstate-add-tag tyspec.name?
@@ -4111,15 +3974,18 @@
                                       tyspec.name?)
                                    (type-struni-tag/members-untagged
                                     nil))))
-                          (vstate (vstate-change-completions
-                                   (hons-acons
-                                    uid
-                                    nil
-                                    (vstate->completions vstate))
-                                   vstate)))
+                          (vstate
+                           (change-vstate
+                            vstate
+                            :completions (hons-acons
+                                          uid
+                                          nil
+                                          (vstate->completions vstate))))
+                          (info (type-spec-struct-vinfo type)))
                        (retok (make-type-spec-struct-empty
                                :attribs tyspec.attribs
-                               :name? tyspec.name?)
+                               :name? tyspec.name?
+                               :info info)
                               type
                               nil
                               nil
@@ -4335,7 +4201,10 @@
        (b* (((erp new-expr type types vstate)
              (valid-const-expr align.expr vstate))
             ((unless (or (type-integerp type)
-                         (type-case type :unknown)))
+                         (type-case type :unknown)
+                         (type-case type :unknown-builtin)
+                         (type-case type :unknown-scalar)
+                         (type-case type :unknown-arithmetic)))
              (retmsg$ "In the alignment specifier ~x0, ~
                        the argument has type ~x1."
                       (align-spec-fix align) type)))
@@ -4634,7 +4503,10 @@
           (retmsg$ "Too many initializers. Unexpected initializer: ~x0"
                    (irr-initer)))
          (target-type (initer-context->type ctx))
-         ((when (type-case target-type :unknown))
+         ((when (or (type-case target-type :unknown)
+                    (type-case target-type :unknown-builtin)
+                    (type-case target-type :unknown-scalar)
+                    (type-case target-type :unknown-arithmetic)))
           (initer-case
            initer
            :single (b* (((erp new-expr & types vstate)
@@ -4719,14 +4591,17 @@
                                  (or (type-characterp
                                       (type-array->of target-type))
                                      (type-case (type-array->of target-type)
-                                                :unknown))
+                                                '(:unknown
+                                                  :unknown-builtin
+                                                  :unknown-scalar
+                                                  :unknown-arithmetic)))
                                (type-compatible-p
                                 (type-array->of target-type)
                                 (type-array->of str-type)
                                 (vstate->completions vstate)
                                 ienv)))
                          (retok nil nil nil nil nil))
-                        (info (make-expr-string-info :type str-type)))
+                        (info (make-type-vinfo :type str-type)))
                      (retok t
                             (initer-single
                              (make-expr-string
@@ -4758,7 +4633,11 @@
                          (valid-stringlit-list
                           (expr-string->strings str-expr) ienv))
                         (new-ctx
-                         (if (type-case (type-array->of target-type) :unknown)
+                         (if (type-case (type-array->of target-type)
+                                        '(:unknown
+                                          :unknown-builtin
+                                          :unknown-scalar
+                                          :unknown-arithmetic))
                              ;; When element type of the target array is
                              ;; unknown, we can't know whether the true type
                              ;; is a character type (in which case this case
@@ -4782,7 +4661,7 @@
                                       (type-integerp
                                        (type-array->of target-type))))
                          (retok nil nil nil nil nil))
-                        (info (make-expr-string-info :type str-type))
+                        (info (make-type-vinfo :type str-type))
                         (new-initer
                          (make-initer-list
                           :elems
@@ -4952,7 +4831,7 @@
          ((vstate vstate) vstate)
          ((desiniter desiniter) desiniter)
          ;; (info
-         ;;  (desiniter-info
+         ;;  (desiniter-vinfo
          ;;    (if (and (endp desiniter.designors)
          ;;             (not (subobjects-stack-end-p subobjects-stack)))
          ;;        (subobjects-stack-to-designors subobjects-stack vstate.ienv)
@@ -4975,11 +4854,11 @@
                         1024))
          (new-subobjects-stack (initer-context-stack->stack ctx))
          (info
-          (desiniter-info
-            (if (and (endp desiniter.designors)
-                     (not (subobjects-stack-end-p new-subobjects-stack)))
-                (subobjects-stack-to-designors new-subobjects-stack vstate.ienv)
-              nil)))
+          (desiniter-vinfo
+           (if (and (endp desiniter.designors)
+                    (not (subobjects-stack-end-p new-subobjects-stack)))
+               (subobjects-stack-to-designors new-subobjects-stack vstate.ienv)
+             nil)))
          (new-subobjects-stack
           (if (subobjects-stack-end-p new-subobjects-stack)
               ;; TODO: this case is impossible.
@@ -5071,19 +4950,33 @@
             ((erp new-range? range?-type? range?-types vstate)
              (valid-const-expr-option designor.range? vstate))
             ((unless (or (type-integerp index-type)
-                         (type-case index-type :unknown)))
+                         (type-case index-type :unknown)
+                         (type-case index-type :unknown-builtin)
+                         (type-case index-type :unknown-scalar)
+                         (type-case index-type :unknown-arithmetic)))
              (retmsg$ "The first or only index of the designator ~x0 ~
                        has type ~x1."
                       (designor-fix designor)
                       index-type))
             ((unless (or (not range?-type?)
                          (type-integerp range?-type?)
-                         (type-case range?-type? :unknown)))
+                         (type-case range?-type? :unknown)
+                         (type-case range?-type? :unknown-builtin)
+                         (type-case range?-type? :unknown-scalar)
+                         (type-case range?-type? :unknown-arithmetic)))
              (retmsg$ "The second index of the designator ~x0 ~
                        has type ~x1."
                       (designor-fix designor)
                       range?-type?))
-            ((when (type-case target-type :unknown))
+            ((when (or (type-case target-type :unknown)
+                       (type-case target-type :unknown-builtin)
+                       (type-case target-type :unknown-scalar)
+                       (type-case target-type :unknown-arithmetic)
+                       (not range?-type?)
+                       (type-case range?-type? :unknown)
+                       (type-case range?-type? :unknown-builtin)
+                       (type-case range?-type? :unknown-scalar)
+                       (type-case range?-type? :unknown-arithmetic)))
              (retok (make-designor-sub :index new-index :range? new-range?)
                     (initer-subobjects-stack-unknown)
                     (set::union index-types range?-types)
@@ -5093,13 +4986,13 @@
                       (designor-fix designor)
                       (type-fix target-type)))
             (element-type (type-array->of target-type))
-            ((unless (const-expr-infop (const-expr->info new-index)))
+            ((unless (const-expr-vinfop (const-expr->info new-index)))
              (retmsg$ "Internal error. ~
                        Constant expression is not annotated: ~x0."
                       new-index))
             (index-nat?
              (value-to-integer
-              (const-expr-info->value (const-expr->info new-index))))
+              (const-expr-vinfo->value (const-expr->info new-index))))
             ((when (and index-nat? (not (natp index-nat?))))
              (retmsg$ "The first or only index of the designator ~x0 ~
                        is negative."))
@@ -5113,14 +5006,14 @@
                   ((when (const-expr-option-case new-range? :none))
                    (retok nil))
                   (new-range (const-expr-option-some->val new-range?))
-                  ((unless (const-expr-infop
+                  ((unless (const-expr-vinfop
                             (const-expr->info new-range)))
                    (retmsg$ "Internal error. ~
                              Constant expression is not annotated: ~x0."
                             new-range))
                   (range-nat?
                    (value-to-integer
-                    (const-expr-info->value (const-expr->info new-range))))
+                    (const-expr-vinfo->value (const-expr->info new-range))))
                   ((when (and range-nat? (not (natp range-nat?))))
                    (retmsg$ "The second index of the designator ~x0 ~
                              is negative.")))
@@ -5489,14 +5382,17 @@
                 types
                 vstate))
        :array
-       (b* ((type (make-type-array :of type))
+       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type vstate))
             ((erp new-expr? index-type? more-types vstate)
              (valid-expr-option dirdeclor.size? vstate))
             ((when (and index-type?
                         (not (type-integerp index-type?))
-                        (not (type-case index-type? :unknown))))
+                        (not (type-case index-type? :unknown))
+                        (not (type-case index-type? :unknown-builtin))
+                        (not (type-case index-type? :unknown-scalar))
+                        (not (type-case index-type? :unknown-arithmetic))))
              (retmsg$ "The index expression ~
                        of the direct declarator ~x0 ~
                        has type ~x1."
@@ -5510,13 +5406,16 @@
                 (set::union types more-types)
                 vstate))
        :array-static1
-       (b* ((type (make-type-array :of type))
+       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type vstate))
             ((erp new-expr index-type more-types vstate)
              (valid-expr dirdeclor.size vstate))
             ((unless (or (type-integerp index-type)
-                         (type-case index-type :unknown)))
+                         (type-case index-type :unknown)
+                         (type-case index-type :unknown-builtin)
+                         (type-case index-type :unknown-scalar)
+                         (type-case index-type :unknown-arithmetic)))
              (retmsg$ "The index expression ~
                        of the direct declarator ~x0 ~
                        has type ~x1."
@@ -5530,13 +5429,16 @@
                 (set::union types more-types)
                 vstate))
        :array-static2
-       (b* ((type (make-type-array :of type))
+       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type vstate))
             ((erp new-expr index-type more-types vstate)
              (valid-expr dirdeclor.size vstate))
             ((unless (or (type-integerp index-type)
-                         (type-case index-type :unknown)))
+                         (type-case index-type :unknown)
+                         (type-case index-type :unknown-builtin)
+                         (type-case index-type :unknown-scalar)
+                         (type-case index-type :unknown-arithmetic)))
              (retmsg$ "The index expression ~
                        of the direct declarator ~x0 ~
                        has type ~x1."
@@ -5550,7 +5452,7 @@
                 (set::union types more-types)
                 vstate))
        :array-star
-       (b* ((type (make-type-array :of type))
+       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor
               dirdeclor.declor fundef-params-p type vstate)))
@@ -5572,13 +5474,19 @@
             (vstate (vstate-push-scope vstate))
             ((erp new-params type-params return-types0 vstate)
              (b* (((reterr) nil (irr-type-params) nil vstate)
-                  ((when (equal dirdeclor.params
-                                (list (make-param-declon
-                                       :specs (list (decl-spec-typespec
-                                                     (type-spec-void)))
-                                       :declor (param-declor-none)
-                                       :attribs nil))))
-                   (retok dirdeclor.params
+                  ((when (and (not (endp dirdeclor.params))
+                              (endp (rest dirdeclor.params))
+                              (equal (param-declon->specs
+                                      (first dirdeclor.params))
+                                     (list (decl-spec-typespec
+                                            (type-spec-void))))
+                              (equal (param-declon->declor
+                                      (first dirdeclor.params))
+                                     (param-declor-none))
+                              (not (param-declon->attribs
+                                    (first dirdeclor.params)))))
+                   (retok (list (change-param-declon (first dirdeclor.params)
+                                                     :info (make-param-declon-vinfo :type nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -5594,8 +5502,8 @@
                       return-types
                       vstate)))
             (vstate (if outermost-fundef-params-p
-                       vstate
-                     (vstate-pop-scope vstate)))
+                        vstate
+                      (vstate-pop-scope vstate)))
             (type (make-type-function :ret type :params type-params))
             ((erp new-dirdeclor type ident return-types1 vstate)
              (valid-dirdeclor
@@ -5747,14 +5655,17 @@
                 types
                 vstate))
        :array
-       (b* ((type (make-type-array :of type))
+       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate))
             ((erp new-size? index-type? more-types vstate)
              (valid-expr-option dirabsdeclor.size? vstate))
             ((when (and index-type?
                         (not (type-integerp index-type?))
-                        (not (type-case index-type? :unknown))))
+                        (not (type-case index-type? :unknown))
+                        (not (type-case index-type? :unknown-builtin))
+                        (not (type-case index-type? :unknown-scalar))
+                        (not (type-case index-type? :unknown-arithmetic))))
              (retmsg$ "The index expression ~
                        of the direct abstract declarator ~x0 ~
                        has type ~x1."
@@ -5768,13 +5679,16 @@
                 (set::union types more-types)
                 vstate))
        :array-static1
-       (b* ((type (make-type-array :of type))
+       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate))
             ((erp new-size index-type more-types vstate)
              (valid-expr dirabsdeclor.size vstate))
             ((unless (or (type-integerp index-type)
-                         (type-case index-type :unknown)))
+                         (type-case index-type :unknown)
+                         (type-case index-type :unknown-builtin)
+                         (type-case index-type :unknown-scalar)
+                         (type-case index-type :unknown-arithmetic)))
              (retmsg$ "The index expression ~
                        of the direct abstract declarator ~x0 ~
                        has type ~x1."
@@ -5788,13 +5702,16 @@
                 (set::union types more-types)
                 vstate))
        :array-static2
-       (b* ((type (make-type-array :of type))
+       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate))
             ((erp new-size index-type more-types vstate)
              (valid-expr dirabsdeclor.size vstate))
             ((unless (or (type-integerp index-type)
-                         (type-case index-type :unknown)))
+                         (type-case index-type :unknown)
+                         (type-case index-type :unknown-builtin)
+                         (type-case index-type :unknown-scalar)
+                         (type-case index-type :unknown-arithmetic)))
              (retmsg$ "The index expression ~
                        of the direct abstract declarator ~x0 ~
                        has type ~x1."
@@ -5808,7 +5725,7 @@
                 (set::union types more-types)
                 vstate))
        :array-star
-       (b* ((type (make-type-array :of type))
+       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate)))
          (retok (dirabsdeclor-array-star new-declor?)
@@ -5825,13 +5742,19 @@
             (vstate (vstate-push-scope vstate))
             ((erp new-params type-params return-types0 vstate)
              (b* (((reterr) nil (irr-type-params) nil vstate)
-                  ((when (equal dirabsdeclor.params
-                                (list (make-param-declon
-                                       :specs (list (decl-spec-typespec
-                                                     (type-spec-void)))
-                                       :declor (param-declor-none)
-                                       :attribs nil))))
-                   (retok dirabsdeclor.params
+                  ((when (and (not (endp dirabsdeclor.params))
+                              (endp (rest dirabsdeclor.params))
+                              (equal (param-declon->specs
+                                      (first dirabsdeclor.params))
+                                     (list (decl-spec-typespec
+                                            (type-spec-void))))
+                              (equal (param-declon->declor
+                                      (first dirabsdeclor.params))
+                                     (param-declor-none))
+                              (not (param-declon->attribs
+                                    (first dirabsdeclor.params)))))
+                   (retok (list (change-param-declon (first dirabsdeclor.params)
+                                                     :info (make-param-declon-vinfo :type nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -5949,10 +5872,12 @@
                 :array (make-type-pointer :to type.of)
                 :function (make-type-pointer :to type)
                 :otherwise type))
+         (info (param-declon-vinfo type))
          ((when (not ident?))
           (retok (make-param-declon :specs new-specs
                                     :declor new-decl
-                                    :attribs paramdecl.attribs)
+                                    :attribs paramdecl.attribs
+                                    :info info)
                  type
                  (set::union types more-types)
                  vstate))
@@ -5970,7 +5895,8 @@
          (vstate (vstate-add-ord ident? ord-info vstate)))
       (retok (make-param-declon :specs new-specs
                                 :declor new-decl
-                                :attribs paramdecl.attribs)
+                                :attribs paramdecl.attribs
+                                :info info)
              type
              (set::union types more-types)
              vstate))
@@ -6046,7 +5972,7 @@
        (b* (((erp new-declor type ident types vstate)
              (valid-declor paramdeclor.declor nil type vstate))
             ((mv uid vstate) (vstate-get-fresh-uid ident (linkage-none) vstate))
-            (info (make-param-declor-nonabstract-info :type type :uid uid)))
+            (info (make-type+uid-vinfo :type type :uid uid)))
          (retok (make-param-declor-nonabstract :declor new-declor
                                                :info info)
                 type
@@ -6115,7 +6041,7 @@
           (valid-spec/qual-list tyname.specquals nil nil vstate))
          ((erp new-decl? type more-types vstate)
           (valid-absdeclor-option tyname.declor? type vstate))
-         (info (make-tyname-info :type type)))
+         (info (make-type-vinfo :type type)))
       (retok (make-tyname :specquals new-specquals
                           :declor? new-decl?
                           :info info)
@@ -6382,7 +6308,10 @@
           (valid-const-expr-option structdeclor.expr? vstate))
          ((when (and width-type?
                      (not (type-integerp width-type?))
-                     (not (type-case width-type? :unknown))))
+                     (not (type-case width-type? :unknown))
+                     (not (type-case width-type? :unknown-builtin))
+                     (not (type-case width-type? :unknown-scalar))
+                     (not (type-case width-type? :unknown-arithmetic))))
           (retmsg$ "The structure declarator ~x0 ~
                     has a width of type ~x1."
                    (struct-declor-fix structdeclor)
@@ -6517,7 +6446,10 @@
           (valid-const-expr-option enumer.value? vstate))
          ((when (and type?
                      (not (type-integerp type?))
-                     (not (type-case type? :unknown))))
+                     (not (type-case type? :unknown))
+                     (not (type-case type? :unknown-builtin))
+                     (not (type-case type? :unknown-scalar))
+                     (not (type-case type? :unknown-arithmetic))))
           (retmsg$ "The value of the numerator ~x0 has type ~x1."
                    (enumer-fix enumer) type?)))
       (retok (make-enumer :name enumer.name :value? new-value?) types vstate))
@@ -6570,7 +6502,10 @@
          ((erp new-test type types vstate)
           (valid-const-expr statassert.test vstate))
          ((unless (or (type-integerp type)
-                      (type-case type :unknown)))
+                      (type-case type :unknown)
+                      (type-case type :unknown-builtin)
+                      (type-case type :unknown-scalar)
+                      (type-case type :unknown-arithmetic)))
           (retmsg$ "The expression in the static assertion declaration ~x0 ~
                     has type ~x1."
                    (statassert-fix statassert)
@@ -6722,12 +6657,18 @@
                           is already declared in the current scope ~
                           with associated information ~x1."
                          ident info?))
+               ((mv uid vstate)
+                (if (and info? currentp (valid-ord-info-case info? :typedef))
+                    (mv (valid-ord-info-typedef->uid info?) vstate)
+                  (vstate-get-fresh-uid ident (linkage-none) vstate)))
                (vstate (vstate-add-ord ident
-                                       (valid-ord-info-typedef type)
+                                       (make-valid-ord-info-typedef
+                                        :def type
+                                        :uid uid)
                                        vstate))
-               (anno-info (make-init-declor-info :type type
-                                                 :typedefp t
-                                                 :uid? nil)))
+               (anno-info (make-init-declor-vinfo :type type
+                                                  :typedefp t
+                                                  :uid uid)))
             (retok (make-init-declor :declor new-declor
                                      :asm? initdeclor.asm?
                                      :attribs initdeclor.attribs
@@ -6765,9 +6706,9 @@
                     :defstatus defstatus
                     :uid uid))
          (vstate (vstate-add-ord ident new-info vstate))
-         (anno-info (make-init-declor-info :type type
-                                           :typedefp nil
-                                           :uid? uid))
+         (anno-info (make-init-declor-vinfo :type type
+                                            :typedefp nil
+                                            :uid uid))
          ((erp new-initer? more-types vstate)
           (valid-initer-option initdeclor.initer? type lifetime? vstate))
          ((when (and (linkage-case linkage :external)
@@ -6837,8 +6778,14 @@
                    (set::union types more-types)
                    vstate)))
          ((unless (or (equal type info.type)
-                      (equal type (type-unknown))
-                      (equal info.type (type-unknown))))
+                      (type-case type '(:unknown
+                                        :unknown-builtin
+                                        :unknown-scalar
+                                        :unknown-arithmetic))
+                      (type-case info.type '(:unknown
+                                             :unknown-builtin
+                                             :unknown-scalar
+                                             :unknown-arithmetic))))
           (retmsg$ "The identifier ~x0 ~
                     is declared with type ~x1 ~
                     after being declared with type ~x2."
@@ -6999,7 +6946,10 @@
        (b* (((erp new-expr type types vstate)
              (valid-const-expr label.expr vstate))
             ((unless (or (type-integerp type)
-                         (type-case type :unknown)))
+                         (type-case type :unknown)
+                         (type-case type :unknown-builtin)
+                         (type-case type :unknown-scalar)
+                         (type-case type :unknown-arithmetic)))
              (retmsg$ "The first or only 'case' expression ~
                        in the label ~x0 has type ~x1."
                       (label-fix label) type))
@@ -7007,7 +6957,10 @@
              (valid-const-expr-option label.range? vstate))
             ((when (and type?
                         (not (type-integerp type?))
-                        (not (type-case type? :unknown))))
+                        (not (type-case type? :unknown))
+                        (not (type-case type? :unknown-builtin))
+                        (not (type-case type? :unknown-scalar))
+                        (not (type-case type? :unknown-arithmetic))))
              (retmsg$ "The second 'case' expression~
                        in the label ~x0 has type ~x1."
                       (label-fix label) type?)))
@@ -7137,7 +7090,7 @@
             ((erp new-test test-type test-types vstate)
              (valid-expr stmt.test vstate))
             ((unless (or (type-scalarp test-type)
-                         (type-case test-type :unknown)))
+                         (type-case test-type '(:unknown :unknown-builtin))))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) test-type))
             (vstate (vstate-push-scope vstate))
@@ -7154,7 +7107,7 @@
             ((erp new-test test-type test-types vstate)
              (valid-expr stmt.test vstate))
             ((unless (or (type-scalarp test-type)
-                         (type-case test-type :unknown)))
+                         (type-case test-type '(:unknown :unknown-builtin))))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) test-type))
             (vstate (vstate-push-scope vstate))
@@ -7175,7 +7128,10 @@
             ((erp new-target target-type target-types vstate)
              (valid-expr stmt.target vstate))
             ((unless (or (type-integerp target-type)
-                         (type-case target-type :unknown)))
+                         (type-case target-type :unknown)
+                         (type-case target-type :unknown-builtin)
+                         (type-case target-type :unknown-scalar)
+                         (type-case target-type :unknown-arithmetic)))
              (retmsg$ "The target of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) target-type))
             (vstate (vstate-push-scope vstate))
@@ -7192,7 +7148,7 @@
             ((erp new-test test-type test-types vstate)
              (valid-expr stmt.test vstate))
             ((unless (or (type-scalarp test-type)
-                         (type-case test-type :unknown)))
+                         (type-case test-type '(:unknown :unknown-builtin))))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) test-type))
             (vstate (vstate-push-scope vstate))
@@ -7214,7 +7170,7 @@
             ((erp new-test test-type test-types vstate)
              (valid-expr stmt.test vstate))
             ((unless (or (type-scalarp test-type)
-                         (type-case test-type :unknown)))
+                         (type-case test-type '(:unknown :unknown-builtin))))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) test-type))
             (vstate (vstate-pop-scope vstate)))
@@ -7230,7 +7186,7 @@
              (valid-expr-option stmt.test vstate))
             ((when (and test-type?
                         (not (type-scalarp test-type?))
-                        (not (type-case test-type? :unknown))))
+                        (not (type-case test-type? '(:unknown :unknown-builtin)))))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) test-type?))
             ((erp new-next & next-types vstate)
@@ -7256,7 +7212,7 @@
              (valid-expr-option stmt.test vstate))
             ((when (and test-type?
                         (not (type-scalarp test-type?))
-                        (not (type-case test-type? :unknown))))
+                        (not (type-case test-type? '(:unknown :unknown-builtin)))))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) test-type?))
             ((erp new-next & next-types vstate)
@@ -7445,12 +7401,26 @@
   :prepwork
   ((local (in-theory (enable acons)))
 
-   ;; Necessary for termination proof.
+   ;; The following theorems are (for some reason)
+   ;; necessary for the termination proof.
+
    (defrulel expr-count-min-when-complit-linear
      (implies (expr-case expr :complit)
               (<= 4 (expr-count expr)))
      :rule-classes :linear
-     :expand ((expr-count expr))))
+     :expand (expr-count expr))
+
+   (defrulel dirdeclor-count-when-function-linear
+     (implies (equal (dirdeclor-kind dirdeclor) :function-params)
+              (<= 4 (dirdeclor-count dirdeclor)))
+     :rule-classes :linear
+     :expand (dirdeclor-count dirdeclor))
+
+   (defrulel dirabsdeclor-count-when-function-linear
+     (implies (equal (dirabsdeclor-kind dirabsdeclor) :function)
+              (<= 4 (dirabsdeclor-count dirabsdeclor)))
+     :rule-classes :linear
+     :expand (dirabsdeclor-count dirabsdeclor)))
 
   ///
 
@@ -7725,6 +7695,12 @@
             '(:in-theory (enable valid-decl-spec-list)))
            ((acl2::occur-lst '(acl2::flag-is 'valid-initer) clause)
             '(:expand ((valid-initer initer ctx lifetime vstate steps))))
+           ((acl2::occur-lst '(acl2::flag-is 'valid-dirdeclor) clause)
+            '(:expand ((valid-dirdeclor dirdeclor fundef-params-p type vstate)
+                       (valid-dirdeclor dirdeclor nil type vstate)
+                       (valid-dirdeclor dirdeclor t type vstate))))
+           ((acl2::occur-lst '(acl2::flag-is 'valid-dirabsdeclor) clause)
+            '(:expand ((valid-dirabsdeclor dirabsdeclor type vstate))))
            (t nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -7924,36 +7900,39 @@
                  (fundef-fix fundef)))
        ((mv uid vstate) (vstate-get-fresh-uid ident (linkage-none) vstate))
        (vstate (vstate-add-ord (ident "__func__")
-                              (make-valid-ord-info-objfun
-                               :type (make-type-array :of (type-char))
-                               :linkage (linkage-none)
-                               :defstatus (valid-defstatus-defined)
-                               :uid uid)
-                              vstate))
+                               (make-valid-ord-info-objfun
+                                :type (make-type-array :of (type-char)
+                                                       :size nil) ; TODO: size
+                                :linkage (linkage-none)
+                                :defstatus (valid-defstatus-defined)
+                                :uid uid)
+                               vstate))
        ((mv uid vstate) (vstate-get-fresh-uid ident (linkage-none) vstate))
        (vstate (if (ienv->gcc/clang ienv)
-                  (vstate-add-ord (ident "__FUNCTION__")
-                                  (make-valid-ord-info-objfun
-                                   :type (make-type-array :of (type-char))
-                                   :linkage (linkage-none)
-                                   :defstatus (valid-defstatus-defined)
-                                   :uid uid)
-                                  vstate)
-                vstate))
+                   (vstate-add-ord (ident "__FUNCTION__")
+                                   (make-valid-ord-info-objfun
+                                    :type (make-type-array :of (type-char)
+                                                           :size nil) ; TODO: size
+                                    :linkage (linkage-none)
+                                    :defstatus (valid-defstatus-defined)
+                                    :uid uid)
+                                   vstate)
+                 vstate))
        ((mv uid vstate) (vstate-get-fresh-uid ident (linkage-none) vstate))
        (vstate (if (ienv->gcc/clang ienv)
-                  (vstate-add-ord (ident "__PRETTY_FUNCTION__")
-                                  (make-valid-ord-info-objfun
-                                   :type (make-type-array :of (type-char))
-                                   :linkage (linkage-none)
-                                   :defstatus (valid-defstatus-defined)
-                                   :uid uid)
-                                  vstate)
-                vstate))
+                   (vstate-add-ord (ident "__PRETTY_FUNCTION__")
+                                   (make-valid-ord-info-objfun
+                                    :type (make-type-array :of (type-char)
+                                                           :size nil) ; TODO: size
+                                    :linkage (linkage-none)
+                                    :defstatus (valid-defstatus-defined)
+                                    :uid uid)
+                                   vstate)
+                 vstate))
        ((erp new-body & & vstate) (valid-comp-stmt fundef.body t vstate))
        (vstate (vstate-pop-scope vstate))
-       (info (make-fundef-info :type type
-                               :uid fundef-uid)))
+       (info (make-type+uid-vinfo :type type
+                                  :uid fundef-uid)))
     (retok (make-fundef :extension fundef.extension
                         :specs new-specs
                         :declor new-declor
@@ -8055,25 +8034,36 @@
                   (info (macro-info-object
                          (list (make-plexeme-ident :ident name
                                                    :provenance nil))))
-                  (macros (vstate->macros vstate))
-                  ((mv erp new-macros) (macro-define name info macros))
+                  (table (vstate->table vstate))
+                  ((mv erp new-macros)
+                   (macro-define name info (valid-table->macros table)))
                   ((unless (maybe-msgp erp))
                    (raise "Internal error: malformed error ~x0." erp)
                    (reterr "irrelevant"))
                   ((when erp) (mv erp nil (irr-vstate)))
-                  (vstate (change-vstate vstate :macros new-macros)))
+                  (vstate (change-vstate
+                           vstate
+                           :table (change-valid-table
+                                   table
+                                   :macros new-macros))))
                (retok (list (trans-item-fix item)) vstate))
      :undef (b* ((name (ident->unwrap item.macro))
                  ((unless (stringp name))
                   (raise "Internal error: macro name ~x0." name)
                   (reterr "irrelevant"))
-                 (macros (vstate->macros vstate))
-                 ((mv erp new-macros) (macro-undefine name macros))
+                 (table (vstate->table vstate))
+                 ((mv erp new-macros)
+                  (macro-undefine name (valid-table->macros table)))
                  ((unless (maybe-msgp erp))
                   (raise "Internal error: malformed error ~x0." erp)
                   (reterr "irrelevant"))
                  ((when erp) (mv erp nil (irr-vstate)))
-                 (vstate (change-vstate vstate :macros new-macros)))
+                 (vstate (change-vstate
+                          vstate
+                          :table
+                          (change-valid-table
+                           table
+                           :macros new-macros))))
               (retok (list (trans-item-fix item)) vstate))
      :cond (reterr
             (msg "Validator does not support conditional directives yet."))
@@ -8124,10 +8114,7 @@
 
 (define valid-trans-unit ((filepath filepathp)
                           (tunit trans-unitp)
-                          (externals valid-externalsp)
-                          (completions type-completions-p)
-                          (next-uid uidp)
-                          (ienv ienvp))
+                          (vstate vstatep))
   :guard (trans-unit-unambp tunit)
   :returns (mv (erp maybe-msgp) (new-tunit trans-unitp) (new-vstate vstatep))
   :short "Validate a translation unit."
@@ -8150,35 +8137,16 @@
     "If validation is successful,
      we add the final validation table to
      the information slot of the translation unit,
-     i.e. we annotate the translation unit with its final validation table.")
-   (xdoc::p
-    "For each built-in function, the associated information consists of
-     an unknown function type, external linkage, and defined status.
-     The latter two seem reasonable, given that these identifiers
-     are visible and have the same meaning in every translation unit,
-     and have their own (built-in) definitions.
-     For each built-in object, the associated information consists of
-     the unknown type, external linkage, and defined status;
-     the rationale for the latter two is the same as for functions."))
+     i.e. we annotate the translation unit with its final validation table."))
   (b* (((reterr) (irr-trans-unit) (irr-vstate))
-       (dialect (ienv->dialect ienv))
-       (vstate (init-vstate ienv filepath externals completions next-uid))
-       (vstate (vstate-add-ord-objfuns-file-scope
-               (built-in-functions-for dialect)
-               (make-type-function :ret (type-unknown)
-                                   :params (type-params-unspecified))
-               (linkage-external)
-               (valid-defstatus-defined)
-               vstate))
-       (vstate (vstate-add-ord-objfuns-file-scope
-               (built-in-vars-for dialect)
-               (type-unknown)
-               (linkage-external)
-               (valid-defstatus-defined)
-               vstate))
+       ((vstate vstate) vstate)
+       (dialect (ienv->dialect vstate.ienv))
+       (vstate (change-vstate vstate :table (init-valid-table filepath dialect)))
+       (vstate (vstate-add-built-in-funs (built-in-functions-for dialect) vstate))
+       (vstate (vstate-add-built-in-vars (built-in-vars-for dialect) vstate))
        ((erp new-items vstate)
         (valid-trans-item-list (trans-unit->items tunit) vstate))
-       (info (make-trans-unit-info :table-end (vstate->table vstate))))
+       (info (make-trans-unit-vinfo :table-end (vstate->table vstate))))
     (retok (make-trans-unit :items new-items
                             :info info)
            vstate))
@@ -8193,49 +8161,38 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-filepath-trans-unit-map ((tumap filepath-trans-unit-mapp)
-                                       (externals valid-externalsp)
-                                       (completions type-completions-p)
-                                       (next-uid uidp)
-                                       (ienv ienvp)
-                                       (keep-going booleanp))
+                                       (keep-going booleanp)
+                                       (vstate vstatep))
   :guard (filepath-trans-unit-map-unambp tumap)
   :returns (mv (erp maybe-msgp)
-               (new-tumap filepath-trans-unit-mapp
-                          :hyp (filepath-trans-unit-mapp tumap))
+               (new-tumap filepath-trans-unit-mapp)
                (final-vstate vstatep))
   :short "Validate a map from file paths to translation units."
   (valid-filepath-trans-unit-map-loop (omap::keys
                                        (filepath-trans-unit-map-fix tumap))
                                       tumap
-                                      externals
-                                      completions
-                                      next-uid
-                                      ienv
-                                      keep-going)
+                                      keep-going
+                                      vstate)
 
   :prepwork
   ((define valid-filepath-trans-unit-map-loop ((paths filepath-setp)
                                                (tumap filepath-trans-unit-mapp)
-                                               (externals valid-externalsp)
-                                               (completions type-completions-p)
-                                               (next-uid uidp)
-                                               (ienv ienvp)
-                                               (keep-going booleanp))
+                                               (keep-going booleanp)
+                                               (vstate vstatep))
      :guard (and (set::subset paths (omap::keys tumap))
                  (filepath-trans-unit-map-unambp tumap))
      :returns (mv (erp maybe-msgp)
-                  (new-tumap filepath-trans-unit-mapp
-                             :hyp (filepath-trans-unit-mapp tumap))
+                  (new-tumap filepath-trans-unit-mapp)
                   (final-vstate vstatep))
      :parents nil
      (b* (((reterr) nil (irr-vstate))
           ((when (set::emptyp (filepath-set-fix paths)))
-           (retok nil (irr-vstate))) ; TODO: check this
+           (retok nil (vstate-fix vstate)))
           (tumap (filepath-trans-unit-map-fix tumap))
           (path (set::head paths))
           (tunit (omap::lookup path tumap))
           ((mv erp new-tunit vstate)
-           (valid-trans-unit path tunit externals completions next-uid ienv))
+           (valid-trans-unit path tunit vstate))
           ((when erp)
            (if keep-going
                (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
@@ -8243,23 +8200,15 @@
                            erp)
                        (valid-filepath-trans-unit-map-loop (set::tail paths)
                                                            tumap
-                                                           externals
-                                                           completions
-                                                           next-uid
-                                                           ienv
-                                                           keep-going))
+                                                           keep-going
+                                                           vstate))
              (retmsg$ "Error in translation unit ~x0: ~@1"
                       (filepath->string path)
                       erp)))
-          ((vstate vstate) vstate)
-          ((valid-table table) vstate.table)
           ((erp new-tumap -) (valid-filepath-trans-unit-map-loop (set::tail paths)
                                                                  tumap
-                                                                 table.externals
-                                                                 table.completions
-                                                                 table.next-uid
-                                                                 ienv
-                                                                 keep-going)))
+                                                                 keep-going
+                                                                 vstate)))
        (retok (omap::update path new-tunit new-tumap)
               vstate))
      :no-function nil
@@ -8300,17 +8249,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We validate each translation unit.
-     As mentioned in @(tsee valid-trans-unit),
-     we annotate the translation unit with the final validation table.
-     For now we do no make any use of the returned table,
-     but in the future we should use it to validate
-     the externally linked identifiers across
-     different translation units of a translation ensemble."))
+    "We validate each translation unit,
+     annotating each one with its final validation table.
+     Information that accumulates across translation units
+     (external linkage identifiers, type completions, and the UID counter)
+     is threaded through the validation of each unit
+     and collected into the @(tsee trans-ensemble-vinfo) annotation
+     on the resulting ensemble."))
   (b* (((reterr) (irr-trans-ensemble))
        (tumap (trans-ensemble->units tuens))
+       (vstate (init-vstate ienv (irr-filepath)))
        ((erp new-tumap vstate)
-        (valid-filepath-trans-unit-map tumap nil nil (uid 0) ienv keep-going))
+        (valid-filepath-trans-unit-map tumap keep-going vstate))
        (- (if keep-going
               (b* ((len-tumap (omap::size tumap))
                    (len-new-tumap (omap::size new-tumap))
@@ -8319,11 +8269,15 @@
                     nil
                   (cw "Validated ~x0/~x1 translation units.~%"
                       len-new-tumap len-tumap)))
-            nil)))
+            nil))
+       (info (make-trans-ensemble-vinfo
+              :externals (vstate->externals vstate)
+              :completions (vstate->completions vstate)
+              :next-uid (vstate->next-uid vstate))))
     (retok (make-trans-ensemble
             :units new-tumap
             :resolved-includes nil
-            :info (trans-ensemble-info (vstate->table vstate)))))
+            :info info)))
 
   ///
 

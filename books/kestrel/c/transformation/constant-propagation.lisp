@@ -21,7 +21,7 @@
 (include-book "../language/dynamic-semantics")
 (include-book "../language/values")
 (include-book "../syntax/abstract-syntax-operations")
-(include-book "../syntax/langdef-mapping")
+(include-book "../syntax/abstract-syntax-formal-mapping-direct")
 (include-book "../syntax/code-ensembles")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -983,7 +983,9 @@
                   (mv (type-spec-atomic type) env))
         :struct (b* (((mv spec env)
                       (const-prop-struni-spec tyspec.spec env)))
-                  (mv (type-spec-struct spec) env))
+                  (mv (c$::make-type-spec-struct :spec spec
+                                                 :info nil)
+                      env))
         :union (b* (((mv spec env)
                      (const-prop-struni-spec tyspec.spec env)))
                  (mv (type-spec-union spec) env))
@@ -1433,7 +1435,8 @@
       (mv (make-param-declon
             :specs spec
             :declor decl
-            :attribs paramdecl.attribs)
+            :attribs paramdecl.attribs
+            :info paramdecl.info)
           env))
     :measure (param-declon-count paramdecl))
 

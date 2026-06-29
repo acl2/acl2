@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 (include-book "std/util/deffixer" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system)) ; for more DEFLIST theorems
@@ -37,7 +38,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ucharp (x)
+(define unicharp (x)
   :returns (yes/no booleanp)
   :short "Recognize Unicode characters."
   :long
@@ -58,67 +59,103 @@
 
   ///
 
-  (defruled ucharp-alt-def
-    (equal (ucharp x)
+  (defruled unicharp-alt-def
+    (equal (unicharp x)
            (and (integerp x)
                 (<= 0 x)
                 (<= x #x10ffff)
                 (not (and (<= #xd800 x)
                           (<= x #xdfff))))))
 
-  (defruled natp-when-ucharp
-    (implies (ucharp x)
+  (defruled natp-when-unicharp
+    (implies (unicharp x)
              (natp x))
     :rule-classes (:rewrite :compound-recognizer))
 
-  (defruled ucharp-lower-bound
-    (implies (ucharp x)
+  (defruled integerp-when-unicharp
+    (implies (unicharp x)
+             (integerp x)))
+
+  (defruled rationalp-when-unicharp
+    (implies (unicharp x)
+             (rationalp x)))
+
+  (defruled acl2-numberp-when-unicharp
+    (implies (unicharp x)
+             (acl2-numberp x)))
+
+  (defruled unicharp-lower-bound
+    (implies (unicharp x)
              (>= x 0))
     :rule-classes :forward-chaining)
 
-  (defruled ucharp-upper-bound
-    (implies (ucharp x)
+  (defruled unicharp-upper-bound
+    (implies (unicharp x)
              (<= x #x10ffff))
-    :rule-classes :forward-chaining))
+    :rule-classes :forward-chaining)
+
+  (defruled unicharp-when-unsigned-byte-p-8
+    (implies (unsigned-byte-p 8 x)
+             (unicharp x))
+    :enable unsigned-byte-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deffixer uchar-fix
-  :short "Fixer for @(tsee ucharp)."
-  :pred ucharp
+(defruled unicharp-of-char-code
+  :short "The code of an ACL2 character is a Unicode character."
+  (unicharp (char-code char))
+  :enable unicharp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deffixer unichar-fix
+  :short "Fixer for @(tsee unicharp)."
+  :pred unicharp
   :body-fix 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection uchar
+(defsection unichar
   :short "Fixtype of Unicode characters."
-  (fty::deffixtype uchar
-    :pred ucharp
-    :fix uchar-fix
-    :equiv uchar-equiv
+  (fty::deffixtype unichar
+    :pred unicharp
+    :fix unichar-fix
+    :equiv unichar-equiv
     :define t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption uchar-option
-  uchar
+(fty::defoption unichar-option
+  unichar
   :short "Fixtype of optional Unicode characters."
-  :pred uchar-optionp)
+  :pred unichar-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist uchar-list
+(fty::deflist unichar-list
   :short "Fixtype of lists of Unicode characters."
-  :elt-type uchar
+  :elt-type unichar
   :true-listp t
   :elementp-of-nil nil
-  :pred uchar-listp
+  :pred unichar-listp
 
   ///
 
-  (defruled uchar-listp-of-resize-list
-    (implies (and (uchar-listp chars)
-                  (ucharp default))
-             (uchar-listp (resize-list chars length default)))
+  (defruled unichar-listp-of-resize-list
+    (implies (and (unichar-listp chars)
+                  (unicharp default))
+             (unichar-listp (resize-list chars length default)))
     :induct t
-    :enable resize-list))
+    :enable resize-list)
+
+  (defruled nat-listp-when-unichar-listp
+    (implies (unichar-listp x)
+             (nat-listp x))
+    :induct t
+    :enable (unichar-listp nat-listp natp-when-unicharp))
+
+  (defruled unichar-listp-when-unsigned-byte-listp-8
+    (implies (unsigned-byte-listp 8 x)
+             (unichar-listp x))
+    :induct t
+    :enable (unichar-listp unicharp-when-unsigned-byte-p-8)))

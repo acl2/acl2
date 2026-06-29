@@ -74,6 +74,7 @@
                          "babel"
                          "zippy"
                          "dexador"
+                         "usocket"
                          )
                    :to "./bundle")
 

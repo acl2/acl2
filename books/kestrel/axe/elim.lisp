@@ -48,7 +48,7 @@
                 (nat-listp items)
                 (integerp bound)
                 (consp items))
-           (not (< bound (binary-+ '1 (maxelem items)))))
+           (not (< bound (+ 1 (maxelem items)))))
   :hints (("Goal" :in-theory (enable all-< maxelem))))
 
 (defthm axe-treep-of-list-of-cons

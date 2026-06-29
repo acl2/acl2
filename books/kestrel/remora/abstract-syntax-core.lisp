@@ -12,6 +12,8 @@
 
 (include-book "abstract-syntax-trees")
 
+(include-book "lists")
+
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 (include-book "kestrel/utilities/ordinals" :dir :system)
 
@@ -42,15 +44,19 @@
     "We exclude:")
    (xdoc::ul
     (xdoc::li
-     "Shapes with zero or more dimensions,
+     "Shapes with non-singleton lists of dimensions
+      (the @(':dims') summand of @(tsee shape)),
       because they are expressible as concatenations of
-      shapes with single dimensions.")
+      shapes with singleton lists of dimensions.")
     (xdoc::li
      "Shape splices,
       because they are expressible as concatenations.")
     (xdoc::li
      "Bracket types,
       because they are expressible as array types.")
+    (xdoc::li
+     "Atom expressions,
+      because they are expressible as 0-rank array expressions.")
     (xdoc::li
      "String literals,
       because they are expressible as array expressions.")
@@ -59,59 +65,75 @@
       because they are expressible as simpler applications.")
     (xdoc::li
      "Bracket expressions,
-      because they are expressible as array expressions."))
+      because they are expressible as array expressions.")
+    (xdoc::li
+     "Function bindings,
+      because they are expressible as value bindings
+      (to lambda abstractions)."))
    (xdoc::p
     "Perhaps surprisingly, we do not exclude @('let') expressions,
-     although it seems that they should be reducible to
-     applications of lambda abstractions.
-     Abstractly, @($\\mathbf{let}\\ x = a\\ \\mathbf{in}\\ b$)
-     is equivalent to @($(\\lambda x.\\ b)\\ a$).
+     although one might expect that they should be reducible to
+     applications of lambda abstractions:
+     abstractly, @($(\\mathbf{let}\\ x = a\\ \\mathbf{in}\\ b)$)
+     is equivalent to @($((\\lambda x.\\ b)\\ a)$).
      However, if we attempt to perform that transformation
-     on Remora's @('let') expressions,
-     we run into the issue that,
-     for the function bindings @(':fun'), @(':tfun'), and @(':ifun'),
-     the result type is optional (see @(tsee bind)).
-     This means that, if we attempt to turn those bindings
-     into associations of lambda expressions to expression variables,
-     we may not know the type of those expression variables,
-     which is required in the outer lambda expression
-     that we are trying to generate by desugaring.")
-   (xdoc::p
-    "For example, given")
+     on Remora's @('let val') expressions,
+     we run into the issue that the type is optional,
+     but a lambda abstraction in Remora always needs a parameter type.
+     For example, given")
    (xdoc::codeblock
-    "(let ((fun (f (x Int)) <f-body>)) <let-body>)")
+    "(let ((val x a)) b)")
    (xdoc::p
-    "which omits the optional result type of @('f'),
-     first we need to turn the binding into a value one
-     (because lambda expressions do not have ``nested'' functions")
+    "where the optional type is omitted, we would need to turn that into")
    (xdoc::codeblock
-    "(let ((val f (fn ((x Int)) <f-body>))) <let-body>)")
-   (xdoc::p
-    "and then we can attempt to produce the application")
-   (xdoc::codeblock
-    "((fn ((f ?)) <let-body>) (fn ((x Int)) <f-body>))")
+    "((fn ((x ?)) b) a)")
    (xdoc::p
     "but, as signified by the @('?'), which is a required type,
-     we do not know which function type to use:
-     we have its (only) input type @('Int'), but not its output type.
+     we do not know which type to use.
      This can be known via type checking,
-     but the desugaring transformation is just a syntactic one.")
+     but the desugaring transformation is just a syntactic one,
+     at least for now.")
    (xdoc::p
-    "We could at least exclude the combined function bindings from the core
-     (i.e. the @(':cfun') summand of @(tsee bind)),
-     but we defer this whole issue for now.
-     The Remora syntax is likely to evolve
+    "The issue could be avoided by doing beta reduction as part of desugaring.
+     That is, speaking abstractly again,
+     instead of turning @($(\\mathbf{let}\\ x = a\\ \\mathbf{in}\\ b)$)
+     into @($((\\lambda x.\\ b)\\ a)$),
+     we could turn that directly into @($b[x/a]$),
+     by which we mean substituting
+     each free occurrence of @($x$) in @($b$) with @($a$).
+     However, substitution may need to rename bound variables to avoid capture,
+     as done by our "
+    (xdoc::seetopic "variable-substitution-alpha-operations"
+                    "auto-alpha-renaming substitution operations")
+    "; but both beta reduction and alpha renaming add conceptual complexity,
+     partly due to the fact that there are many ways
+     to alpha-rename bound variables to avoid capture;
+     it is much simpler to generate an application of a lambda abstraction.")
+   (xdoc::p
+    "We have recently extended our abstract syntax to allow
+     parameters of lambda abstractions without types.
+     This would let us desugar @('let')s at the AST level,
+     but the results may not have a concrete syntax counterpart.
+     Thus. for now we keep @('let')s in the core.
+     The Remora concrete syntax is likely to evolve
      towards requiring fewer type annotations,
-     e.g. in lambda expressions,
-     which could resolve the issue described above."))
-  :types (shapes
-          ispace
-          ispace-list
+     thus matching our current abstract syntax.")
+   (xdoc::p
+    "We desugar the four function bindings to value bindings.
+     So the core has ispace, type, and value bindings.")
+   (xdoc::p
+    "We could also desugar ispace and type bindings
+     to applications of ispace and type lambda abstractions,
+     since their parameters are just ispace and type variables,
+     which do not require anything extra (like types for term variables).
+     We should also desugar @('let')s with multiple bindings
+     to multiple @('let')s with single bindings."))
+  :types (shapes/ispaces
           ispace-list-option
           types
           type-option
-          var+type
-          var+type-list
+          var+type?
+          var+type?-list
           exprs/atoms/binds
           expr-list-list
           atom-list-list
@@ -120,17 +142,23 @@
   :default t
   :combine and
   :override
-  ((shape :dims nil)
+  ((shape :dims (and (consp shape.dims)
+                     (endp (cdr shape.dims))))
    (shape :splice nil)
    (type :bracket nil)
+   (expr :atom nil)
    (expr :string nil)
    (expr :capp nil)
-   (expr :bracket nil))
-  :name abstract-syntax-corep)
+   (expr :bracket nil)
+   (bind :fun nil)
+   (bind :tfun nil)
+   (bind :ifun nil)
+   (bind :cfun nil))
+  :name ast-corep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection abstract-syntax-corep-additional-theorems
+(defsection ast-corep-additional-theorems
   :short "Additional theorems about the core AST predicates."
 
   (defruled shape-corep-when-var
@@ -138,8 +166,10 @@
              (shape-corep shape))
     :enable shape-corep)
 
-  (defruled shape-corep-when-dim
-    (implies (shape-case shape :dim)
+  (defruled shape-corep-when-dims-and-singleton
+    (implies (and (shape-case shape :dims)
+                  (consp (shape-dims->dims shape))
+                  (endp (cdr (shape-dims->dims shape))))
              (shape-corep shape))
     :enable shape-corep)
 
@@ -168,11 +198,55 @@
              (atom-corep atom))
     :enable atom-corep)
 
-  (add-to-ruleset abstract-syntax-corep-rules
+  (defruled not-bind-corep-when-fun
+    (implies (equal (bind-kind bind) :fun)
+             (not (bind-corep bind)))
+    :enable bind-corep)
+
+  (defruled not-bind-corep-when-tfun
+    (implies (equal (bind-kind bind) :tfun)
+             (not (bind-corep bind)))
+    :enable bind-corep)
+
+  (defruled not-bind-corep-when-ifun
+    (implies (equal (bind-kind bind) :ifun)
+             (not (bind-corep bind)))
+    :enable bind-corep)
+
+  (defruled not-bind-corep-when-cfun
+    (implies (equal (bind-kind bind) :cfun)
+             (not (bind-corep bind)))
+    :enable bind-corep)
+
+  (defruled expr-list-corep-of-append-all
+    (equal (expr-list-corep (append-all exprss))
+           (expr-list-list-corep exprss))
+    :induct t
+    :enable (append-all
+             expr-list-corep-of-append
+             expr-list-list-corep-of-cons
+             expr-list-list-corep-when-atom))
+
+  (defruled atom-list-corep-of-append-all
+    (equal (atom-list-corep (append-all atomss))
+           (atom-list-list-corep atomss))
+    :induct t
+    :enable (append-all
+             atom-list-corep-of-append
+             atom-list-list-corep-of-cons
+             atom-list-list-corep-when-atom))
+
+  (add-to-ruleset ast-corep-rules
                   '(shape-corep-when-var
-                    shape-corep-when-dim
+                    shape-corep-when-dims-and-singleton
                     ispace-corep-when-dim
                     type-corep-when-var
                     type-corep-when-base
                     expr-corep-when-var
-                    atom-corep-when-base)))
+                    atom-corep-when-base
+                    not-bind-corep-when-fun
+                    not-bind-corep-when-tfun
+                    not-bind-corep-when-ifun
+                    not-bind-corep-when-cfun
+                    expr-list-corep-of-append-all
+                    atom-list-corep-of-append-all)))

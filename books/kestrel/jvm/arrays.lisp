@@ -651,8 +651,7 @@
                 )
            (equal (addresses-of-array-ref-list item-list items-left dims heap)
                   (append (addresses-of-array-ref (nth (+ -1 items-left) item-list) dims heap)
-                          (addresses-of-array-ref-list item-list (+ -1 items-left) dims heap))))
-  :hints (("Goal" :in-theory (enable))))
+                          (addresses-of-array-ref-list item-list (+ -1 items-left) dims heap)))))
 
 (defthm addresses-of-array-ref-one-dim
   (implies (and (eql 1 (len dims))
@@ -1141,12 +1140,12 @@
   :hints (("Goal" :expand (array-refp ad (list rowcount colcount)
                                       :int heap)
            :induct (true-listp ads)
-           :in-theory (e/d ( ;array-elem-2d2 ;array-elem-2d ;array-refp
+           :in-theory (e/d (;array-elem-2d2 ;array-elem-2d ;array-refp
                             array-contents2
                             array-row
                             true-listp
                             )
-                           ( ;array-elem-2d2-recollapse
+                           (;array-elem-2d2-recollapse
                             ;;array-elem-2d-recollapse
                             ;;array-ref-listp-open-when-consp
                             ;;array-row-recollapse
@@ -1173,7 +1172,7 @@
 ;;                      (CLEAR-FIELD (NTH 0 ADS)
 ;;                                   (array-contents-pair)
 ;;                                   HEAP)))
-;;            :in-theory (e/d ( ;memberp-nth-and-cdr  ;yuck
+;;            :in-theory (e/d (;memberp-nth-and-cdr  ;yuck
 ;;                             LIST::CLEAR-NTH
 ;;                             no-duplicatesp-equal) (LIST::UPDATE-NTH-EQUAL-REWRITE
 ;;                                                    LIST::UPDATE-NTH-BECOMES-CLEAR-NTH))
@@ -1234,5 +1233,5 @@
            :use (:instance in-of-nth-and-rkeys-when-array-ref-listp
                            (dims (cdr dims))
                            (ads (get-field ad (array-contents-pair) heap)))
-           :in-theory (e/d (array-refp (:i nth)) (
-                                             in-of-nth-and-rkeys-when-array-ref-listp)))))
+           :in-theory (e/d (array-refp (:i nth))
+                           (in-of-nth-and-rkeys-when-array-ref-listp)))))

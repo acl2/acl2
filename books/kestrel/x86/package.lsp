@@ -1307,7 +1307,8 @@
     x86isa::sib->scale
 
     x86isa::bitcount8
-    x86isa::tzcnt))
+    x86isa::tzcnt
+    x86isa::blsi))
 
 ;; formals that appear in theorems (or do we want to import these from acl2?):
 ;; also includes some vars that are let-bound in definitions

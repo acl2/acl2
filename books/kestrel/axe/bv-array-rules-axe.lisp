@@ -267,7 +267,7 @@
                   (bvchop-list element-size lst)))
   :hints (("Goal" :in-theory (e/d (bv-array-write bv-array-read update-nth2
                                                   ;list::update-nth-equal-rewrite
-                                                  BVCHOP-WHEN-I-IS-NOT-AN-INTEGER) ( ;take-of-bvchop-list
+                                                  BVCHOP-WHEN-I-IS-NOT-AN-INTEGER) (;take-of-bvchop-list
                                                   NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
                                                   ;;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
                                                   )))))
@@ -549,7 +549,7 @@
                 (equal len (len data)))
            (equal (bvplus size val (bv-array-read size len index data))
                   (bv-array-read size len index (map-bvplus-val size val data))))
-  :hints (("Goal" :in-theory (enable bv-array-read acl2::bvplus-of-nth bvlt))))
+  :hints (("Goal" :in-theory (enable bv-array-read bvplus-of-nth bvlt))))
 
 (defthmd bv-array-read-shorten-when-not-max-smt
   (implies (and (syntaxp (and (quotep data)

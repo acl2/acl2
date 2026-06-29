@@ -43,7 +43,7 @@
         (prunep (if check-fnsp (dag-fns-include-anyp dag '(if myif boolif bvif)) t)))
     (if (not prunep)
         (mv (erp-nil) dag state)
-      (b* ( ;; TODO: Consider first doing a pruning as a DAG, using only approximate contexts (or would that not do anything that rewriting doesn't already do?)
+      (b* (;; TODO: Consider first doing a pruning as a DAG, using only approximate contexts (or would that not do anything that rewriting doesn't already do?)
            (term (dag-to-term dag)) ; can explode!
            ((mv erp changep term state)
             (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp

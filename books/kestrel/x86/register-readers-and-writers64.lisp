@@ -22,9 +22,10 @@
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "readers-and-writers64") ; drop?
 (include-book "readers-and-writers")
+(include-book "register-readers-and-writers-8-16")
 (include-book "kestrel/bv/logext-def" :dir :system)
 (include-book "kestrel/bv/bvcat-def" :dir :system)
-(include-book "kestrel/bv/slice-def" :dir :system)
+;(include-book "kestrel/bv/slice-def" :dir :system)
 (local (include-book "kestrel/bv/logext" :dir :system))
 (local (include-book "kestrel/bv/signed-byte-p" :dir :system))
 (local (include-book "kestrel/bv/bitops" :dir :system))
@@ -1376,3 +1377,30 @@
   :hints (("Goal" :in-theory (enable wr64
                                      set-rax set-rcx set-rdx set-rbx set-rsp set-rbp set-rsi set-rdi set-r8 set-r9 set-r10 set-r11 set-r12 set-r13 set-r14 set-r15
                                      rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15 bvchop loghead))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; We regard AL, etc. as just abbreviations, rather than proving rules about them.
+
+(defthmd al-becomes-rax (equal (al x86) (bvchop 8 (rax x86))) :hints (("Goal" :in-theory (enable al rax))))
+(defthmd bl-becomes-rbx (equal (bl x86) (bvchop 8 (rbx x86))) :hints (("Goal" :in-theory (enable bl rbx))))
+(defthmd cl-becomes-rcx (equal (cl x86) (bvchop 8 (rcx x86))) :hints (("Goal" :in-theory (enable cl rcx))))
+(defthmd dl-becomes-rdx (equal (dl x86) (bvchop 8 (rdx x86))) :hints (("Goal" :in-theory (enable dl rdx))))
+(defthmd sil-becomes-rsi (equal (sil x86) (bvchop 8 (rsi x86))) :hints (("Goal" :in-theory (enable sil rsi))))
+(defthmd dil-becomes-rdi (equal (dil x86) (bvchop 8 (rdi x86))) :hints (("Goal" :in-theory (enable dil rdi))))
+(defthmd spl-becomes-rsp (equal (spl x86) (bvchop 8 (rsp x86))) :hints (("Goal" :in-theory (enable spl rsp))))
+(defthmd bpl-becomes-rbp (equal (bpl x86) (bvchop 8 (rbp x86))) :hints (("Goal" :in-theory (enable bpl rbp))))
+
+(defthmd ah-becomes-rax (equal (ah x86) (slice 15 8 (rax x86))) :hints (("Goal" :in-theory (enable ah rax))))
+(defthmd bh-becomes-rbx (equal (bh x86) (slice 15 8 (rbx x86))) :hints (("Goal" :in-theory (enable bh rbx))))
+(defthmd ch-becomes-rcx (equal (ch x86) (slice 15 8 (rcx x86))) :hints (("Goal" :in-theory (enable ch rcx))))
+(defthmd dh-becomes-rdx (equal (dh x86) (slice 15 8 (rdx x86))) :hints (("Goal" :in-theory (enable dh rdx))))
+
+(defthmd ax-becomes-rax (equal (ax x86) (bvchop 16 (rax x86))) :hints (("Goal" :in-theory (enable ax rax))))
+(defthmd bx-becomes-rbx (equal (bx x86) (bvchop 16 (rbx x86))) :hints (("Goal" :in-theory (enable bx rbx))))
+(defthmd cx-becomes-rcx (equal (cx x86) (bvchop 16 (rcx x86))) :hints (("Goal" :in-theory (enable cx rcx))))
+(defthmd dx-becomes-rdx (equal (dx x86) (bvchop 16 (rdx x86))) :hints (("Goal" :in-theory (enable dx rdx))))
+(defthmd si-becomes-rsi (equal (si x86) (bvchop 16 (rsi x86))) :hints (("Goal" :in-theory (enable si rsi))))
+(defthmd di-becomes-rdi (equal (di x86) (bvchop 16 (rdi x86))) :hints (("Goal" :in-theory (enable di rdi))))
+(defthmd sp-becomes-rsp (equal (sp x86) (bvchop 16 (rsp x86))) :hints (("Goal" :in-theory (enable sp rsp))))
+(defthmd bp-becomes-rbp (equal (bp x86) (bvchop 16 (rbp x86))) :hints (("Goal" :in-theory (enable bp rbp))))

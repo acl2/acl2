@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function string-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -63,3 +63,9 @@
   (implies (string-listp x)
            (true-listp x))
   :hints (("Goal" :in-theory (enable string-listp))))
+
+;; should use l1 and l2 but we use x and y to match std
+(defthm string-listp-of-set-difference-equal
+  (implies (string-listp x)
+           (string-listp (set-difference-equal x y)))
+  :hints (("Goal" :in-theory (enable string-listp set-difference-equal))))

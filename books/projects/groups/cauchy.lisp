@@ -20,7 +20,7 @@
                 (posp n)
 		(in x g)
 		(divides n (ord x g)))
-	   (elt-of-ord n g)))
+	   (find-elt-of-ord n g)))
 
 ;; A consequence of lagrange and euclid:
 
@@ -29,7 +29,7 @@
                 (abelianp g)
                 (primep p)
 		(divides p (order g))
-                (not (elt-of-ord p g))
+                (not (find-elt-of-ord p g))
 		(in a g))
 	   (divides p (order (quotient g (cyclic a g))))))
 
@@ -53,8 +53,8 @@
 (defthmd lift-elt-of-ord
   (implies (and (normalp h g)
                 (posp m)
-                (elt-of-ord m (quotient g h)))
-           (elt-of-ord m g)))
+                (find-elt-of-ord m (quotient g h)))
+           (find-elt-of-ord m g)))
 
 (defun cauchy-abelian-induction (g)
   (declare (xargs :measure (order g)))
@@ -319,24 +319,26 @@
 
 ;; Search for a non-central group element the centralizer of which has order divisible by p:
 
-(defun find-elt-aux (l g p)
+(defun find-cauchy-elt-aux (l g p)
   (if (consp l)
       (if (and (not (in (car l) (center g)))
                (divides p (order (centralizer (car l) g))))
-	  (car l)
-	(find-elt-aux (cdr l) g p))
+	  (list (car l))
+	(find-cauchy-elt-aux (cdr l) g p))
     ()))
 
-(defund find-elt (g p) (find-elt-aux (elts g) g p))
+(defund find-cauchy-elt (g p) (find-cauchy-elt-aux (elts g) g p))
+
+(defund cauchy-elt (g p) (car (find-cauchy-elt g p)))
 
 ;; If such an element exists, then since it in not in the center, the order of its centralizer is
 ;; less than that of g:
 
-(defthmd find-elt-centralizer
+(defthmd cauchy-elt-centralizer
   (implies (and (groupp g)
                 (primep p)
-                (find-elt g p))
-	   (let ((cent (centralizer (find-elt g p) g)))
+                (find-cauchy-elt g p))
+	   (let ((cent (centralizer (cauchy-elt g p) g)))
 	     (and (subgroupp cent g)
 	          (< (order cent) (order g))
 		  (divides p (order cent))))))
@@ -344,11 +346,11 @@
 ;; Assume that p divides the order of g.  If no such element exists, then the length of every nontrivial
 ;; cojugacy class is divisible by p, and according to the class equation, so is the order of the center:
 
-(defthmd find-elt-center
+(defthm cauchy-elt-center
   (implies (and (groupp g)
                 (primep p)
 		(divides p (order g))
-                (null (find-elt g p)))
+                (null (find-cauchy-elt g p)))
 	   (divides p (order (center g)))))
 
 ;; Clearly, if any subgroup of g has an element of order p, then so does g:
@@ -362,18 +364,16 @@
   (implies (and (groupp g)
                 (natp n)
 		(subgroupp h g)
-		(elt-of-ord n h))
-	   (elt-of-ord n g)))
+		(find-elt-of-ord n h))
+	   (find-elt-of-ord n g)))
 
 ;; The theorem follows by induction:
 
-(defun cauchy-induction (g p)
-  (declare (xargs :measure (order g)))
-  (if (and (groupp g)
-           (primep p)
-	   (find-elt g p))
-      (cauchy-induction (centralizer (find-elt g p) g) p)
-    t))
+(defthmd cauchy-lemma
+  (implies (and (groupp g)
+                (primep p)
+		(divides p (order g)))
+	   (find-elt-of-ord p g)))
 
 (defthmd cauchy
   (implies (and (groupp g)

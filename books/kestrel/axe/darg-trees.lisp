@@ -1,7 +1,7 @@
 ; Trees whose leaves are DAG function arguments ("dargs")
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -33,7 +33,7 @@
        (natp tree) ; a nodenum
      (let ((fn (ffn-symb tree)))
        (if (eq fn 'quote)
-           ;; a quoted constant;
+           ;; a quoted constant:
            (and (= 1 (len (fargs tree)))
                 (true-listp (fargs tree)))
          ;; the application of a function symbol or lambda to args that are darg-trees:

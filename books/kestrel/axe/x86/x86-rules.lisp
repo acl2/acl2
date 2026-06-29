@@ -689,7 +689,7 @@
                 (not (ms x86))
                 (not (fault x86)))
            (equal (x86-fetch-decode-execute x86)
-                  (let* ( ;(__function__ 'x86-fetch-decode-execute)
+                  (let* (;(__function__ 'x86-fetch-decode-execute)
                          (ctx 'x86-fetch-decode-execute))
                     ;; (if (or (ms x86) (fault x86)) ; known false above
                     ;;     x86

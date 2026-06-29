@@ -232,12 +232,12 @@
     ;; todo: qsub16
     ;; todo: qsub8
     ;; todo: rbit
-    ;; todo: rev
-    ;; todo: rev16
-    ;; todo: revsh
-    ;; todo: ror
-
-    (:rrx (cond 4) 0 0 _ 0 _ 1 1 0 1 s (0) (0) (0) (0) (rd 4) 0 0 0 0 0 _ 1 1 0 (rm 4))
+    (:rev (cond 4) 0 1 1 0 1 _ 0 _ 1 1 _ (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 0 0 1 1 (rm 4))
+    (:rev16 (cond 4) 0 1 1 0 1 _ 0 _ 1 1 _ (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 1 0 1 1 (rm 4))
+    (:revsh (cond 4) 0 1 1 0 1 _ 1 _ 1 1 _ (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 1 0 1 1 (rm 4))
+    (:ror-immediate (cond 4) 0 0 _ 0 _ 1 1 0 1 s (0) (0) (0) (0) (rd 4) (imm5 5) 1 1 0 (rm 4))
+    (:ror-register (cond 4) 0 0 _ 0 _ 1 1 0 1 s (0) (0) (0) (0) (rd 4) (rm 4) 0 1 1 1 (rn 4))
+    (:rrx           (cond 4) 0 0 _ 0 _ 1 1 0 1 s (0) (0) (0) (0) (rd 4) 0 0 0 0 0 _ 1 1 0 (rm 4))
 
     (:rsb-immediate (cond 4) 0 0 _ 1 _ 0 0 1 1 s (rn 4) (rd 4) (imm12 12))
     (:rsb-register (cond 4) 0 0 _ 0 _ 0 0 1 1 s (rn 4) (rd 4) (imm5 5) (type 2) 0 (rm 4))
@@ -329,7 +329,7 @@
     (:sub-register-shifted-register   (cond 4) 0 0 0 0 0 1 0 s (rn 4) (rd 4) (rs 4) 0 (type 2) 1 (rm 4))
     ;; "sub SP minus immediate" and "sub SP minus register" seem to be just special cases of the above
 
-;;;    (:svc (cond 4) 1 1 1 1 (imm24 24)) ; supervisor call
+    (:svc (cond 4) 1 1 1 1 (imm24 24)) ; supervisor call
 
     (:swp/swpb (cond 4) 0 0 0 1 0 b 0 0 (rn 4) (rt 4) (0) (0) (0) (0) 1 0 0 1 (rt2 4))
 
@@ -385,7 +385,9 @@
     (:uxtb (cond 4) 0 1 1 0 1 1 1 0 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
 
     ;; todo: uxt16
-    ;; todo: uxth
+
+    (:uxth (cond 4) 0 1 1 0 1 1 1 1 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
+
     ;; todo: vaba/vabal
     ;; todo: vabd/vabdl
     ;; todo: vabd floating point
@@ -538,7 +540,7 @@
     (:strb-immediate :strbt-encoding-a1) ; check me
     (:strb-register :strbt-encoding-a2) ; check me
     (:push-encoding-a1 :stmdb/stmfd)
-    ))
+    (:ror-immediate :rrx)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

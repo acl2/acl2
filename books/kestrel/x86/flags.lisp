@@ -38,6 +38,9 @@
 (defconst *flags*
   '(:cf :pf :af :zf :sf :tf :if :df :of :iopl :nt :rf :vm :ac :vif :vip :id))
 
+(defconst *standard-flags*
+  '(:af :cf :of :pf :sf :zf))
+
 (defconst *one-bit-flags*
   '(:cf :pf :af :zf :sf :tf :if :df :of
         ;; :iopl
@@ -706,7 +709,7 @@
 ;;;
 
 (defthm !rflags-of-xr-rflags-of-set-flag
-  (implies (member-equal flag '(:af :cf :pf :of :sf :zf))
+  (implies (member-equal flag '(:af :cf :pf :of :sf :zf)) ; gen?
            (equal (!rflags (xr :rflags nil (set-flag flag val x86)) x86-2)
                   (set-flag flag val (!rflags (xr :rflags nil  x86) x86-2))))
   :hints (("Goal" :in-theory (enable set-flag

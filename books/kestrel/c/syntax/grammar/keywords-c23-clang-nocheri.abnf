@@ -1,0 +1,59 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains grammar rules for keywords
+; in the C23 dialect with Clang and without CHERI extensions.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+keyword = keyword-c23
+        / keyword-gcc-clang
+        / keyword-clang
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+alignas-keyword = %s"alignas" / %s"_Alignas"
+
+alignof-keyword = %s"alignof" / %s"_Alignof" / %s"__alignof" / %s"__alignof__"
+
+asm-keyword = %s"asm" / %s"__asm" / %s"__asm__"
+
+attribute-keyword = %s"__attribute" / %s"__attribute__"
+
+bool-keyword = %s"bool" / %s"_Bool"
+
+complex-keyword = %s"_Complex" / %s"__complex" / %s"__complex__"
+
+const-keyword = %s"const" / %s"__const" / %s"__const__"
+
+imag-keyword = %s"__imag"
+
+inline-keyword = %s"inline" / %s"__inline" / %s"__inline__"
+
+nullptr-keyword = %s"nullptr" / %s"__nullptr"
+
+real-keyword = %s"__real"
+
+restrict-keyword = %s"restrict" / %s"__restrict" / %s"__restrict__"
+
+signed-keyword = %s"signed" / %s"__signed" / %s"__signed__"
+
+static-assert-keyword = %s"static_assert" / %s"_Static_assert"
+
+thread-local-keyword = %s"thread_local" / %s"_Thread_local"
+
+typeof-keyword = %s"typeof" / %s"__typeof" / %s"__typeof__"
+
+typeof-unqual-keyword =
+    %s"typeof_unqual" / %s"__typeof_unqual" / %s"__typeof_unqual__"
+
+volatile-keyword = %s"volatile" / %s"__volatile" / %s"__volatile__"

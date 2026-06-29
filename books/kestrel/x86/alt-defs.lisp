@@ -1,7 +1,7 @@
 ; Redefinining functions from the x86isa model
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,6 +19,7 @@
 (include-book "projects/x86isa/machine/instructions/rotates-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/divide-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/xor-spec" :dir :system)
+(include-book "projects/x86isa/machine/instructions/bit" :dir :system)
 ;(include-book "centaur/bitops/fast-rotate" :dir :system)
 ;(include-book "projects/x86isa/machine/get-prefixes" :dir :system)
 (local (include-book "flags"))
@@ -34,6 +35,7 @@
 (include-book "kestrel/bv/bvmod" :dir :system) ; reduce?
 (include-book "kestrel/bv/bvsx" :dir :system) ; reduce?
 (include-book "kestrel/bv/rightrotate" :dir :system)
+(include-book "kestrel/bv/bvshl-def" :dir :system)
 ;(local (include-book "kestrel/bv/sbvlt-rules" :dir :system))
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; for logext-of-bvsx
 ;(local (include-book "kestrel/bv/logext" :dir :system))
@@ -52,6 +54,7 @@
 ;; (local (include-book "kestrel/arithmetic-light/limit-expt" :dir :system)) ;prevent calls of expt on huge args
 ;; (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
@@ -83,26 +86,28 @@
 
 ;; TODO: Other sizes.
 (defthm ror-spec-64-alt-def
-  (equal (ror-spec-64 x n rflags)
-         (let* ((chopped-n (bvchop 6 n))
-                (result-value (rightrotate 64 n x)) ; note the unchopped n here
+  (equal (ror-spec-64 dst src input-rflags)
+         (let* ((chopped-src (bvchop 6 src))
+                (result-value (rightrotate 64 src dst)) ; note the unchopped n here
                 )
            (mv result-value
                ;; output flags:
-               (if (equal chopped-n 0)
-                   (bvchop 32 rflags)
-                 (if (equal chopped-n 1)
-                     ;; nicer than what the naive definition does?:
-                     (!rflagsbits->cf
-                       (getbit 0 x) ;(getbit 63 (rightrotate 64 1 x))
-                       (!rflagsbits->of
-                         (bitxor (getbit 0 x) ; (getbit 63 (rightrotate 64 1 x))
-                                 (getbit 63 x) ; (getbit 62 (rightrotate 64 1 x))
-                                 )
-                         rflags))
-                   (!rflagsbits->cf (getbit 63 result-value) rflags)))
+               (if (equal chopped-src 0)
+                   (bvchop 32 input-rflags)
+                 (if (equal chopped-src 1)
+                     (let ((cf (getbit 0 dst)) ; (getbit 63 (rightrotate 64 1 x))
+                           (of (bitxor (getbit 0 dst) ; (getbit 63 (rightrotate 64 1 x))
+                                       (getbit 63 dst) ; (getbit 62 (rightrotate 64 1 x))
+                                       )))
+                       (!rflagsbits->cf cf
+                                        (!rflagsbits->of of input-rflags)))
+                   (!rflagsbits->cf (getbit 63 result-value) input-rflags)))
                ;; undefined flags:
-               (if (equal chopped-n 1) 0 2048))))
+               (if (equal chopped-src 0)
+                   0
+                 (if (equal chopped-src 1)
+                     0
+                   (!rflagsbits->of 1 0))))))
   :hints (("Goal" :in-theory (e/d (acl2::logapp-becomes-bvcat-when-bv
                                    x86isa::ror-spec-64
                                    !rflagsbits->cf
@@ -420,3 +425,13 @@
            (mv result x86isa::output-rflags x86isa::undefined-flags)))
   :hints (("Goal" :in-theory (acl2::e/d* (x86isa::gpr-xor-spec-8 x86isa::rflag-rows-enables bvxor)
                                          ((tau-system))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm blsi-redef
+  (implies (and (syntaxp (quotep operand-size))
+                (natp operand-size))
+           (equal (x86isa::blsi operand-size src-val)
+                  (let ((bitwidth (* 8 operand-size)))
+                    (bvshl bitwidth 1 (tzcnt bitwidth 0 src-val)))))
+  :hints (("Goal" :in-theory (enable x86isa::blsi ash bvshl bvcat))))

@@ -12922,6 +12922,7 @@
      (t nil))))
 
 (defmacro tau-data (fn)
+  (declare (xargs :guard (symbolp fn)))
   `(tau-data-fn ',fn (w state)))
 
 (defun all-fnnames-world1 (trips logicp wrld ans)

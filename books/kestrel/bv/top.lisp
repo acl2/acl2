@@ -29,6 +29,7 @@
 (include-book "bytep")
 
 ;; Underlying functions:
+(include-book "logbitp")
 (include-book "lognot")
 (include-book "logand")
 (include-book "logand-b")

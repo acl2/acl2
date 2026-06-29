@@ -621,7 +621,7 @@
        ;; Make the standard assumptions:
        (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-address-var target-offset position-independentp feature-flags))
        ;; Gather memory-regions to assume loaded:
-       ((mv erp regions-to-load) (acl2::elf64-regions-to-load parsed-elf)) ; these use absolute addresses
+       ((mv erp regions-to-load) (acl2::elf-regions-to-load parsed-elf)) ; these use absolute addresses
        ((when erp) (mv erp nil nil))
        ;; Checks that there is at least one load segment:
        ((when (not (consp regions-to-load)))

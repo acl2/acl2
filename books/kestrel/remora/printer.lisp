@@ -13,9 +13,12 @@
 (include-book "abstract-syntax-trees")
 (include-book "abstract-syntax-well-formed")
 
-(include-book "std/strings/top" :dir :system)
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
+(include-book "kestrel/fty/defresult" :dir :system)
 (include-book "unicode/utf8-encode" :dir :system)
+(include-book "unicode/utf8-decode" :dir :system)
+(include-book "std/basic/defs" :dir :system)
+(include-book "std/typed-lists/nat-listp" :dir :system)
 
 (local (include-book "std/basic/ifix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
@@ -29,10 +32,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ printer
-  :parents (remora)
+  :parents (parsing-and-printing)
   :short "A pretty-printer of Remora from the abstract syntax."
   :long
   (xdoc::topstring
+   (xdoc::p "
+ @({
+ (print-prog p)
+ })
+ ")
    (xdoc::p
     "We provide a pretty-printer that turns @(see abstract-syntax) ASTs
      into Remora source text, according to the concrete syntax described
@@ -59,10 +67,7 @@
     "The Remora-specific layer (@(see expr-to-pdoc), @(see prog-to-pdoc),
      etc.) walks the AST and builds the @(tsee pdoc).  The top-level
      entry point is @(tsee print-prog), which composes the walker and
-     @(tsee layout) into a single @('prog &rarr; string') function.")
-   (xdoc::p
-    "This file is work in progress.  The @(tsee pdoc) engine is in
-     place; the AST walker is being added incrementally."))
+     @(tsee layout) into a single @('prog &rarr; string') function."))
   :order-subtopics t
   :default-parent t)
 
@@ -90,7 +95,11 @@
       "The six constructors:")
      (xdoc::ul
       (xdoc::li
-       "@(':text') &mdash; literal text with no embedded newlines.")
+       "@(':text') &mdash; literal text with no embedded newlines,
+        stored as a list of Unicode code points (one nat per code point).
+        Use the @(tsee pdoc-ascii) macro for ASCII string literals at
+        call sites; for runtime UTF-8-byte-string input (identifier
+        names) use @(tsee utf8-string=>codepoints).")
       (xdoc::li
        "@(':line') &mdash; soft newline: a single space when the
         enclosing @(':group') fits on the current line, otherwise a
@@ -106,7 +115,7 @@
        "@(':group') &mdash; render @('body') flat if it fits in the
         remaining columns of the current line; otherwise let its
         @(':line')s expand to newlines.")))
-    (:text ((str string)))
+    (:text ((cps nat-list)))
     (:line ())
     (:hardline ())
     (:concat ((left pdoc) (right pdoc)))
@@ -121,6 +130,107 @@
     :true-listp t
     :elementp-of-nil nil
     :pred pdoc-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Helpers for building @(tsee pdoc-text) leaves at the code-point level.
+;;
+;; The pdoc :text leaf carries a nat-list of code points (not a string).
+;; The printer assembles text from three sources:
+;;
+;;   (a) ASCII string literals embedded in printer source (e.g. "Bool",
+;;       "(", "Forall").  Use the @(tsee pdoc-ascii) macro, which
+;;       expands at read time to a quoted constant nat-list and signals
+;;       a hard error on any non-ASCII character.
+;;
+;;   (b) Identifier names from the AST, stored as ACL2 strings of
+;;       UTF-8 bytes (see @(see abstract-syntax-trees)).  Use
+;;       @(tsee utf8-string=>codepoints), which decodes the bytes to
+;;       code points.
+;;
+;;   (c) Numbers formatted as decimal text.  Use
+;;       @(tsee nat-to-dec-codepoints) instead of @(tsee
+;;       str::nat-to-dec-string).
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char-list-all-ascii-p ((chars character-listp))
+  :returns (b booleanp)
+  :short "True iff every character has @(tsee char-code) less than 128."
+  (cond ((endp chars) t)
+        ((< (char-code (car chars)) 128)
+         (char-list-all-ascii-p (cdr chars)))
+        (t nil)))
+
+(define ascii-string=>codepoints ((s stringp))
+  :returns (cps nat-listp)
+  :short "Map an ASCII string to the nat-list of its char-codes.
+          Caller must ensure @('s') contains only ASCII (codes
+          @('< 128'))."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For ASCII strings, the ACL2 @(tsee char-code) of each character
+     equals the Unicode code point.  This function is invoked at
+     macro-expansion time by @(tsee pdoc-ascii) and at runtime nowhere
+     in the printer (call sites use the macro)."))
+  (chars=>nats (explode s)))
+
+(defmacro+ pdoc-ascii (s)
+  :parents (printer)
+  :short "Wrap an ASCII string literal as a @(tsee pdoc-text) leaf
+          whose code-point list is computed at admission time."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "@('(pdoc-ascii \"Bool\")') expands at read time to
+     @('(pdoc-text (quote (66 111 111 108)))'), so the code-point list
+     is a compile-time constant rather than something rebuilt on every
+     call.  The expansion happens by calling @(tsee
+     ascii-string=>codepoints) on the literal string.")
+   (xdoc::p
+    "The macro signals a hard error at admission time if its argument
+     is not a string literal, or if the string contains any character
+     with code @('>= 128').  This prevents silently emitting bogus
+     code points (which the previous string-leaved printer's
+     byte-counting would have hidden).")
+   (xdoc::p
+    "For non-ASCII literal text, write the code points explicitly,
+     e.g. @('(pdoc-text (quote (#x3A0)))') for capital pi.  For
+     runtime UTF-8-byte-string input (e.g., identifier names from
+     the AST), use @(tsee utf8-string=>codepoints)."))
+  (cond ((not (stringp s))
+         (er hard 'pdoc-ascii
+             "Expected a string literal, got ~x0." s))
+        ((not (char-list-all-ascii-p (explode s)))
+         (er hard 'pdoc-ascii
+             "String ~x0 contains a non-ASCII character (code >= 128). ~
+              For non-ASCII text, pass code points explicitly via ~
+              (pdoc-text '(...))." s))
+        (t (let ((cps (ascii-string=>codepoints s)))
+             `(pdoc-text (quote ,cps))))))
+
+(define utf8-string=>codepoints ((s stringp))
+  :returns (cps nat-listp)
+  :short "Decode an ACL2 string of UTF-8 bytes to its code-point list.
+          Returns the empty list on invalid UTF-8 (defensive)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Identifier names in the AST are stored as ACL2 strings whose
+     bytes are the UTF-8 encoding of the original code-point sequence
+     (see @(see abstract-syntax-trees)).  This function reverses that
+     encoding."))
+  (b* ((bytes (string=>nats (str-fix s)))
+       ((unless (unsigned-byte-listp 8 bytes)) nil)
+       (cps (utf8=>ustring bytes))
+       ((unless (nat-listp cps)) nil))
+    cps))
+
+(define nat-to-dec-codepoints ((n natp))
+  :returns (cps nat-listp)
+  :short "Decimal digits of @('n') as a code-point list."
+  (ascii-string=>codepoints (str::nat-to-dec-string (nfix n))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -167,7 +277,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce size
-  :name pdoc-sizes  ; xdoc topic name (and makes pdoc-sizes-rules ruleset)
   :short "A positive size for @(tsee pdoc) values, used as a measure
           for @(tsee pdoc)-recursing functions."
   :types (pdocs)
@@ -179,7 +288,8 @@
                     (pdoc-size (pdoc-concat->left pdoc))
                     (pdoc-size (pdoc-concat->right pdoc))))
    (pdoc :nest (+ 1 (pdoc-size (pdoc-nest->body pdoc))))
-   (pdoc :group (+ 1 (pdoc-size (pdoc-group->body pdoc))))))
+   (pdoc :group (+ 1 (pdoc-size (pdoc-group->body pdoc)))))
+  :name abstract-syntax-size)
 
 (define cmds-size ((cs cmd-listp))
   :returns (n natp :rule-classes (:rewrite :type-prescription))
@@ -204,7 +314,51 @@
 (define fits ((w integerp) (cs cmd-listp))
   :returns (yes booleanp)
   :short "One-line lookahead used by @(tsee layout) to decide
-          @(':group') flat-vs-break."
+          @(':group') flat-vs-break.  Column width is measured in
+          code points (one code point per column), not UTF-8 bytes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "@(tsee fits) and @(tsee layout) use a simple, pragmatic model:
+     one code point in a @(':text') leaf counts as one display column.
+     This is exact for ASCII, Latin Extended, Greek, Cyrillic, Hebrew,
+     Arabic, and every other Basic Multilingual Plane script whose
+     code points are single non-combining glyphs.  It is more correct
+     than UTF-8 byte counting for identifiers that contain such characters.")
+   (xdoc::p
+    "The code-point-per-column model is still wrong, in opposite
+     directions, for the following Unicode features.  None of these has been
+     seen in Remora source, but they are listed here for future reference:")
+   (xdoc::ul
+    (xdoc::li
+     "@('East-Asian-Wide') and @('Fullwidth') characters (most CJK
+      ideographs, fullwidth punctuation): one code point but two
+      display columns.  The printer under-counts, so lines with these
+      characters may overflow @('width') without breaking.")
+    (xdoc::li
+     "Combining marks (e.g. @('U+0301') COMBINING ACUTE ACCENT):
+      one code point but zero columns&mdash;they attach to the
+      preceding base character.  The printer over-counts.  Precomposed
+      forms (NFC) avoid this.")
+    (xdoc::li
+     "Zero-width characters (@('U+200B') ZERO WIDTH SPACE, @('U+200D')
+      ZERO WIDTH JOINER, variation selectors @('U+FE00')&ndash;@('U+FE0F'),
+      bidi controls): one code point, zero columns.")
+    (xdoc::li
+     "Emoji ZWJ sequences (e.g. family glyphs, skin-tone modifiers):
+      multiple code points that the renderer collapses into a single
+      glyph of one or two display columns.  The printer over-counts
+      by however many code points the sequence contains.")
+    (xdoc::li
+     "Hangul jamo sequences in their decomposed form: leading +
+      vowel + (optional) trailing jamo render as one syllable block
+      of two columns but parse as 2&ndash;3 code points."))
+   (xdoc::p
+    "A fully Unicode-aware width function would consult the East-Asian
+     Width property (UAX #11) and the General_Category for combining
+     marks.  Implementing that is straightforward but adds a
+     property-table dependency that is unwarranted for current uses
+     of the printer."))
   (b* (((when (< (ifix w) 0)) nil)
        ((when (endp cs)) t)
        (c (car cs))
@@ -213,7 +367,7 @@
        (m (cmd->mode c))
        (d (cmd->pdoc c)))
     (pdoc-case d
-      :text (fits (- (ifix w) (length d.str)) rest)
+      :text (fits (- (ifix w) (len d.cps)) rest)
       :line (mode-case m
               :flat (fits (- (ifix w) 1) rest)
               :break t)
@@ -241,42 +395,41 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define spaces-string ((n natp))
-  :returns (s stringp)
+(define spaces-codepoints ((n natp))
+  :returns (cps nat-listp)
   :hooks nil
-  :short "A string of @('n') spaces."
+  :short "A list of @('n') space code points (each @('#x20'))."
   (if (zp n)
-      ""
-    (str::cat " " (spaces-string (- n 1)))))
+      nil
+    (cons #x20 (spaces-codepoints (- n 1)))))
 
-(define newline-and-indent ((n natp))
-  :returns (s stringp)
+(define newline-and-indent-codepoints ((n natp))
+  :returns (cps nat-listp)
   :hooks nil
-  :short "@('#\\Newline') followed by @('n') spaces."
-  (str::cat (str::implode (list #\Newline))
-            (spaces-string n)))
+  :short "Newline (@('#x0A')) followed by @('n') spaces, as code points."
+  (cons #x0A (spaces-codepoints n)))
 
 (define layout ((width natp) (col natp) (cs cmd-listp))
-  :returns (s stringp)
-  :short "Render a command list to text."
-  (b* (((when (endp cs)) "")
+  :returns (cps nat-listp)
+  :short "Render a command list to a code-point list."
+  (b* (((when (endp cs)) nil)
        (c (car cs))
        (rest (cdr cs))
        (i (cmd->indent c))
        (m (cmd->mode c))
        (d (cmd->pdoc c)))
     (pdoc-case d
-      :text (str::cat d.str
-                      (layout width
-                              (+ (lnfix col) (length d.str))
-                              rest))
+      :text (append d.cps
+                    (layout width
+                            (+ (lnfix col) (len d.cps))
+                            rest))
       :line (mode-case m
-              :flat (str::cat " "
-                              (layout width (+ (lnfix col) 1) rest))
-              :break (str::cat (newline-and-indent i)
-                               (layout width i rest)))
-      :hardline (str::cat (newline-and-indent i)
-                          (layout width i rest))
+              :flat (cons #x20
+                          (layout width (+ (lnfix col) 1) rest))
+              :break (append (newline-and-indent-codepoints i)
+                             (layout width i rest)))
+      :hardline (append (newline-and-indent-codepoints i)
+                        (layout width i rest))
       :concat (layout width col
                       (cons (make-cmd :indent i :mode m :pdoc d.left)
                             (cons (make-cmd :indent i :mode m :pdoc d.right)
@@ -303,8 +456,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define layout-pdoc ((width natp) (d pdocp))
-  :returns (s stringp)
-  :short "Render a single @(tsee pdoc) to text at column 0."
+  :returns (cps nat-listp)
+  :short "Render a single @(tsee pdoc) to a code-point list at column 0."
   (layout width 0
           (list (make-cmd :indent 0 :mode (mode-break) :pdoc d))))
 
@@ -317,7 +470,7 @@
 (define pdoc-empty ()
   :returns (d pdocp)
   :short "The empty document."
-  (pdoc-text ""))
+  (pdoc-text nil))
 
 (define pdoc-seq ((ds pdoc-listp))
   :returns (d pdocp)
@@ -337,19 +490,19 @@
 (define pdoc-paren ((d pdocp))
   :returns (out pdocp)
   :short "Wrap a document in parentheses (no break)."
-  (pdoc-concat (pdoc-text "(")
-               (pdoc-concat d (pdoc-text ")"))))
+  (pdoc-concat (pdoc-ascii "(")
+               (pdoc-concat d (pdoc-ascii ")"))))
 
 (define pdoc-bracket ((d pdocp))
   :returns (out pdocp)
   :short "Wrap a document in square brackets (no break)."
-  (pdoc-concat (pdoc-text "[")
-               (pdoc-concat d (pdoc-text "]"))))
+  (pdoc-concat (pdoc-ascii "[")
+               (pdoc-concat d (pdoc-ascii "]"))))
 
 (define pdoc-space ()
   :returns (out pdocp)
   :short "A single literal space."
-  (pdoc-text " "))
+  (pdoc-ascii " "))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -367,11 +520,11 @@
           fits, otherwise @('keyword') on one line and @('body')
           indented two columns on subsequent lines.  Use this for the
           fixed-keyword forms like @('let'), @('fn'), @('A'),
-          @('Forall')."
+          @('Forall').  @('keyword') is expected to be ASCII."
   (pdoc-group
    (pdoc-paren
     (pdoc-concat
-     (pdoc-text keyword)
+     (pdoc-text (ascii-string=>codepoints keyword))
      (pdoc-nest 2 (pdoc-concat (pdoc-line) body))))))
 
 (define pdoc-call-form ((head pdocp) (args pdocp))
@@ -401,8 +554,8 @@
           @('(dims)') / @('(++)') / @('(+)') when the list is empty;
           @(tsee pdoc-prefix-form) would insert a stray @(tsee
           pdoc-line) before nothing, leaving a trailing space inside
-          the parens."
-  (pdoc-paren (pdoc-text keyword)))
+          the parens.  @('keyword') is expected to be ASCII."
+  (pdoc-paren (pdoc-text (ascii-string=>codepoints keyword))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -418,74 +571,74 @@
   :returns (d pdocp)
   :short "Render a @(tsee base-type) as a pdoc."
   (base-type-case bt
-    :bool (pdoc-text "Bool")
-    :int (pdoc-text "Int")
-    :float (pdoc-text "Float")))
+    :bool (pdoc-ascii "Bool")
+    :int (pdoc-ascii "Int")
+    :float (pdoc-ascii "Float")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; Numeric literals.
 ;;
 
-(define sign-to-string ((s signp))
-  :returns (str stringp)
-  (sign-case s :plus "+" :minus "-"))
+(define sign-to-codepoints ((s signp))
+  :returns (cps nat-listp)
+  (sign-case s :plus (list #x2B) :minus (list #x2D)))
 
-(define sign-option-to-string ((s? sign-optionp))
-  :returns (str stringp)
+(define sign-option-to-codepoints ((s? sign-optionp))
+  :returns (cps nat-listp)
   (sign-option-case s?
-                    :some (sign-to-string s?.val)
-                    :none ""))
+                    :some (sign-to-codepoints s?.val)
+                    :none nil))
 
-(define expo-to-string ((e expop))
-  :returns (str stringp)
+(define expo-to-codepoints ((e expop))
+  :returns (cps nat-listp)
   :hooks nil
   :guard-hints (("Goal" :in-theory (enable str::character-listp-when-dec-digit-char-listp)))
   (b* ((upcase (expo->upcase e))
        (sign? (expo->sign? e))
        (digits (expo->digits e)))
-    (str::cat (if upcase "E" "e")
-              (str::cat (sign-option-to-string sign?)
-                        (str::implode digits)))))
+    (append (if upcase (list #x45) (list #x65))
+            (append (sign-option-to-codepoints sign?)
+                    (chars=>nats digits)))))
 
-(define expo-option-to-string ((e? expo-optionp))
-  :returns (str stringp)
+(define expo-option-to-codepoints ((e? expo-optionp))
+  :returns (cps nat-listp)
   :hooks nil
   (expo-option-case e?
-                    :some (expo-to-string e?.val)
-                    :none ""))
+                    :some (expo-to-codepoints e?.val)
+                    :none nil))
 
-(define int-lit-to-string ((il int-litp))
-  :returns (str stringp)
+(define int-lit-to-codepoints ((il int-litp))
+  :returns (cps nat-listp)
   :hooks nil
   :guard-hints (("Goal" :in-theory (enable str::character-listp-when-dec-digit-char-listp)))
   (b* ((sign? (int-lit->sign? il))
        (digits (int-lit->digits il)))
-    (str::cat (sign-option-to-string sign?)
-              (str::implode digits))))
+    (append (sign-option-to-codepoints sign?)
+            (chars=>nats digits))))
 
-(define float-lit-to-string ((fl float-litp))
-  :returns (str stringp)
+(define float-lit-to-codepoints ((fl float-litp))
+  :returns (cps nat-listp)
   :hooks nil
   :guard-hints (("Goal" :in-theory (enable str::character-listp-when-dec-digit-char-listp)))
   (b* ((sign? (float-lit->sign? fl))
        (whole (float-lit->whole-digits fl))
        (frac (float-lit->frac-digits fl))
        (expo? (float-lit->expo? fl))
-       (dot/frac (cond ((consp frac) (str::cat "." (str::implode frac)))
-                       (t ""))))
-    (str::cat (sign-option-to-string sign?)
-              (str::cat (str::implode whole)
-                        (str::cat dot/frac
-                                  (expo-option-to-string expo?))))))
+       (dot/frac (cond ((consp frac) (cons #x2E (chars=>nats frac)))
+                       (t nil))))
+    (append (sign-option-to-codepoints sign?)
+            (append (chars=>nats whole)
+                    (append dot/frac
+                            (expo-option-to-codepoints expo?))))))
 
 (define base-lit-to-pdoc ((bl base-litp))
   :returns (d pdocp)
   :short "Render a @(tsee base-lit) as a pdoc."
   (base-lit-case bl
-    :bool (pdoc-text (if bl.lit "#t" "#f"))
-    :int (pdoc-text (int-lit-to-string bl.lit))
-    :float (pdoc-text (float-lit-to-string bl.lit))))
+    :bool (if bl.lit (pdoc-ascii "#t") (pdoc-ascii "#f"))
+    :int (pdoc-text (int-lit-to-codepoints bl.lit))
+    :float (pdoc-text (float-lit-to-codepoints bl.lit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -498,8 +651,8 @@
           Dimension variables are prefixed with @('$'); shape variables
           with @('@')."
   (ispace-var-case iv
-    :dim (pdoc-text (str::cat "$" iv.name))
-    :shape (pdoc-text (str::cat "@" iv.name))))
+    :dim (pdoc-text (cons #x24 (utf8-string=>codepoints iv.name)))
+    :shape (pdoc-text (cons #x40 (utf8-string=>codepoints iv.name)))))
 
 (define type-var-to-pdoc ((tv type-varp))
   :returns (d pdocp)
@@ -507,8 +660,8 @@
           Atom-kinded variables are prefixed with @('&'); array-kinded
           variables with @('*')."
   (type-var-case tv
-    :atom (pdoc-text (str::cat "&" tv.name))
-    :array (pdoc-text (str::cat "*" tv.name))))
+    :atom (pdoc-text (cons #x26 (utf8-string=>codepoints tv.name)))
+    :array (pdoc-text (cons #x2A (utf8-string=>codepoints tv.name)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -521,7 +674,7 @@
   (cond ((endp ds) (pdoc-empty))
         ((endp (cdr ds)) (pdoc-fix (car ds)))
         (t (pdoc-concat (car ds)
-                        (pdoc-concat (pdoc-text " ")
+                        (pdoc-concat (pdoc-ascii " ")
                                      (pdoc-intersperse-space (cdr ds)))))))
 
 (define pdoc-intersperse-line ((ds pdoc-listp))
@@ -547,8 +700,8 @@
   (define dim-to-pdoc ((d dimp))
     :returns (out pdocp)
     (dim-case d
-      :var (pdoc-text (str::cat "$" d.name))
-      :const (pdoc-text (str::nat-to-dec-string d.value))
+      :var (pdoc-text (cons #x24 (utf8-string=>codepoints d.name)))
+      :const (pdoc-text (nat-to-dec-codepoints d.val))
       :add (if (consp d.dims)
                (pdoc-prefix-form "+" (dim-list-to-pdoc d.dims))
              (pdoc-naked-form "+"))
@@ -571,18 +724,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Shapes (mutually recursive: shape, shape-list).
+;; Flat-form string printers for dim and dim-list.  These produce the
+;; canonical compact form (single-space separators, no line breaks) that
+;; the parser accepts.  They are intended as round-trip-provable
+;; alternatives to dim-to-pdoc / dim-list-to-pdoc when pretty-printing
+;; layout flexibility is not needed.
 ;;
 
-(defines shape-to-pdoc-defs
-  :short "Render @(tsee shape) and @(tsee shape-list) values as pdocs."
+(defines dim-shape-to-string
+  :short "Render @(tsee dim) and @(tsee dim-list) values as flat strings."
+  :verify-guards :after-returns
+
+  (define dim-to-string ((d dimp))
+    :returns (s stringp)
+    (dim-case d
+      :var (str::cat "$" d.name)
+      :const (str::nat-to-dec-string d.val)
+      :add (str::cat "(+" (str::cat (dim-list-to-string d.dims) ")"))
+      :mul (str::cat "(*" (str::cat (dim-list-to-string d.dims) ")"))
+      :sub (str::cat "(-" (str::cat (dim-list-to-string d.dims) ")")))
+    :measure (dim-count d))
+
+  (define dim-list-to-string ((ds dim-listp))
+    :returns (s stringp)
+    :short "Render a @(tsee dim-list) as a flat string with each dim
+            preceded by a single space (so the empty list yields the
+            empty string, and a non-empty list looks like
+            @(' d1 d2 ...')).  Used by @(tsee dim-to-string) inside the
+            parens of @('+'), @('*'), and @('-') forms."
+    (cond ((endp ds) "")
+          (t (str::cat " "
+                       (str::cat (dim-to-string (car ds))
+                                 (dim-list-to-string (cdr ds))))))
+    :measure (dim-list-count ds)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Shapes and ispaces (mutually recursive clique).
+;;
+
+(defines shape/ispace-to-pdoc-defs
+  :short "Render @(tsee shape), @(tsee ispace), and their list versions
+          as pdocs."
   :verify-guards :after-returns
 
   (define shape-to-pdoc ((s shapep))
     :returns (out pdocp)
     (shape-case s
-      :var (pdoc-text (str::cat "@" s.name))
-      :dim (dim-to-pdoc s.dim)
+      :var (pdoc-text (cons #x40 (utf8-string=>codepoints s.name)))
       :dims (if (consp s.dims)
                 (pdoc-prefix-form "dims" (dim-list-to-pdoc s.dims))
               (pdoc-naked-form "dims"))
@@ -591,7 +780,7 @@
                 (pdoc-naked-form "++"))
       :splice (pdoc-group
                (pdoc-bracket
-                (shape-list-to-pdoc s.shapes))))
+                (ispace-list-to-pdoc s.ispaces))))
     :measure (shape-count s))
 
   (define shape-list-to-pdoc ((ss shape-listp))
@@ -601,33 +790,30 @@
           (t (pdoc-concat (shape-to-pdoc (car ss))
                           (pdoc-concat (pdoc-line)
                                        (shape-list-to-pdoc (cdr ss))))))
-    :measure (shape-list-count ss)))
+    :measure (shape-list-count ss))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; Ispaces (deftagsum, not in a deftypes block).
-;;
+  (define ispace-to-pdoc ((i ispacep))
+    :returns (out pdocp)
+    (ispace-case i
+                 :dim (dim-to-pdoc i.dim)
+                 :shape (shape-to-pdoc i.shape))
+    :measure (ispace-count i))
 
-(define ispace-to-pdoc ((i ispacep))
-  :returns (out pdocp)
-  (ispace-case i
-    :dim (dim-to-pdoc i.dim)
-    :shape (shape-to-pdoc i.shape)))
-
-(define ispace-list-to-pdoc ((is ispace-listp))
-  :returns (out pdocp)
-  (cond ((endp is) (pdoc-empty))
-        ((endp (cdr is)) (ispace-to-pdoc (car is)))
-        (t (pdoc-concat (ispace-to-pdoc (car is))
-                        (pdoc-concat (pdoc-line)
-                                     (ispace-list-to-pdoc (cdr is)))))))
+  (define ispace-list-to-pdoc ((is ispace-listp))
+    :returns (out pdocp)
+    (cond ((endp is) (pdoc-empty))
+          ((endp (cdr is)) (ispace-to-pdoc (car is)))
+          (t (pdoc-concat (ispace-to-pdoc (car is))
+                          (pdoc-concat (pdoc-line)
+                                       (ispace-list-to-pdoc (cdr is))))))
+    :measure (ispace-list-count is)))
 
 (define ispace-list-option-to-pdoc ((io ispace-list-optionp))
   :returns (out pdocp)
   :short "Render @(tsee ispace-list-option): @(':none') prints as
           @('_'), @(':some') prints as parenthesized list."
   (ispace-list-option-case io
-    :none (pdoc-text "_")
+    :none (pdoc-ascii "_")
     :some (pdoc-paren (ispace-list-to-pdoc io.val))))
 
 (define ispace-var-list-to-pdoc ((ivs ispace-var-listp))
@@ -643,7 +829,7 @@
   :short "Render @(tsee ispace-var-list-option): @(':none') prints as
           @('_'), @(':some') prints as parenthesized list."
   (ispace-var-list-option-case io
-    :none (pdoc-text "_")
+    :none (pdoc-ascii "_")
     :some (pdoc-paren (ispace-var-list-to-pdoc io.val))))
 
 (define type-var-list-to-pdoc ((tvs type-var-listp))
@@ -659,7 +845,7 @@
   :short "Render @(tsee type-var-list-option): @(':none') prints as
           @('_'), @(':some') prints as parenthesized list."
   (type-var-list-option-case io
-    :none (pdoc-text "_")
+    :none (pdoc-ascii "_")
     :some (pdoc-paren (type-var-list-to-pdoc io.val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -680,12 +866,12 @@
               "A"
               (pdoc-concat (type-to-pdoc ty.elem)
                            (pdoc-concat (pdoc-line)
-                                        (shape-to-pdoc ty.shape))))
+                                        (ispace-to-pdoc ty.ispace))))
       :bracket (pdoc-group
                 (pdoc-bracket
                  (pdoc-concat (type-to-pdoc ty.elem)
                               (pdoc-concat (pdoc-line)
-                                           (shape-list-to-pdoc ty.shapes)))))
+                                           (ispace-list-to-pdoc ty.ispaces)))))
       :fun (pdoc-prefix-form
             "->"
             (pdoc-concat (pdoc-paren (type-list-to-pdoc ty.in))
@@ -728,42 +914,60 @@
   :short "Render @(tsee type-list-option): @(':none') prints as
           @('_'), @(':some') prints as parenthesized list."
   (type-list-option-case to
-    :none (pdoc-text "_")
+    :none (pdoc-ascii "_")
     :some (pdoc-paren (type-list-to-pdoc to.val))))
 
-(define pat-to-pdoc ((vt var+type-p))
-  :returns (out pdocp)
-  :short "Render a @(tsee var+type) as the @('pat') grammar form
+(fty::defresult pdoc-result
+  :short "Fixtype of pdocs and errors."
+  :ok pdoc
+  :pred pdoc-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pat-to-pdoc ((vt var+type?-p))
+  :returns (out pdoc-resultp)
+  :short "Render a @(tsee var+type?) as the @('pat') grammar form
           @('(name type)') &mdash; no colon."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The AST @(tsee var+type) fixtype is used by both
+    "The AST @(tsee var+type?) fixtype is used by both
      @(tsee atom-lambda)/@(tsee bind-fun)/@(tsee bind-cfun) parameter
      lists and (potentially) other binders.  In every case where it
      appears in our AST, the corresponding concrete syntax is the
      @('pat') rule of @('grammar.abnf'), namely @('\"(\" ws identifier
-     ws type-exp ws \")\"') &mdash; with no separating colon.")
+     ws type ws \")\"') &mdash; with no separating colon.")
    (xdoc::p
-    "The colon-style @('name : type-exp') form (@('val-typed-sig'),
+    "The type is optional in the AST, but the @('pat') grammar rule
+     requires it, and we do not perform type inference yet.
+     So, when the type is absent, we fail:
+     there is no concrete syntax that renders it.")
+   (xdoc::p
+    "The colon-style @('name : type') form (@('val-typed-sig'),
      @('colon-type') in the grammar) is used in @(tsee bind-val) for
      the variable+type signature and in fun-style binders for the
      optional return type.  Both store the type as a separate
-     @(tsee type-option) field rather than as a @(tsee var+type), so
+     @(tsee type-option) field rather than as a @(tsee var+type?), so
      they don't go through this function."))
-  (pdoc-paren
-   (pdoc-concat (pdoc-text (var+type->var vt))
-                (pdoc-concat (pdoc-text " ")
-                             (type-to-pdoc (var+type->type vt))))))
+  (b* ((type? (var+type?->type? vt)))
+    (type-option-case
+     type?
+     :none (reserr (list :pat-without-type (var+type?->var vt)))
+     :some (pdoc-paren
+            (pdoc-concat
+             (pdoc-text (utf8-string=>codepoints (var+type?->var vt)))
+             (pdoc-concat (pdoc-ascii " ")
+                          (type-to-pdoc type?.val)))))))
 
-(define pat-list-to-pdoc ((vts var+type-listp))
-  :returns (out pdocp)
+(define pat-list-to-pdoc ((vts var+type?-listp))
+  :returns (out pdoc-resultp)
   :short "Render a list of @('pat') forms separated by soft lines."
   (cond ((endp vts) (pdoc-empty))
         ((endp (cdr vts)) (pat-to-pdoc (car vts)))
-        (t (pdoc-concat (pat-to-pdoc (car vts))
-                        (pdoc-concat (pdoc-line)
-                                     (pat-list-to-pdoc (cdr vts)))))))
+        (t (b* (((ok first) (pat-to-pdoc (car vts)))
+                ((ok rest) (pat-list-to-pdoc (cdr vts))))
+             (pdoc-concat first
+                          (pdoc-concat (pdoc-line) rest))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -774,8 +978,8 @@
   :returns (out pdocp)
   :short "Render a list of nats as space-separated decimal strings."
   (cond ((endp ns) (pdoc-empty))
-        ((endp (cdr ns)) (pdoc-text (str::nat-to-dec-string (nfix (car ns)))))
-        (t (pdoc-concat (pdoc-text (str::nat-to-dec-string (nfix (car ns))))
+        ((endp (cdr ns)) (pdoc-text (nat-to-dec-codepoints (nfix (car ns)))))
+        (t (pdoc-concat (pdoc-text (nat-to-dec-codepoints (nfix (car ns))))
                         (pdoc-concat (pdoc-line)
                                      (nat-list-to-pdoc (cdr ns)))))))
 
@@ -788,126 +992,112 @@
 ;;
 
 (define ascii-mnemonic-of-code ((code natp))
-  :returns (s stringp)
+  :returns (cps nat-listp)
   :short "Map an ASCII control code (@('#x00')&ndash;@('#x20')) to its
-          Remora source-form mnemonic (@('NUL')&ndash;@('SP'))."
+          Remora source-form mnemonic (@('NUL')&ndash;@('SP'))
+          as a code-point list."
   :guard (<= code #x20)
   (b* ((c (lnfix code)))
-    (case c
-      (0 "NUL") (1 "SOH") (2 "STX") (3 "ETX") (4 "EOT") (5 "ENQ")
-      (6 "ACK") (7 "BEL") (8 "BS")  (9 "HT")  (10 "LF") (11 "VT")
-      (12 "FF") (13 "CR") (14 "SO") (15 "SI") (16 "DLE") (17 "DC1")
-      (18 "DC2") (19 "DC3") (20 "DC4") (21 "NAK") (22 "SYN") (23 "ETB")
-      (24 "CAN") (25 "EM") (26 "SUB") (27 "ESC") (28 "FS") (29 "GS")
-      (30 "RS") (31 "US") (32 "SP")
-      (otherwise ""))))
+    (ascii-string=>codepoints
+     (case c
+       (0 "NUL") (1 "SOH") (2 "STX") (3 "ETX") (4 "EOT") (5 "ENQ")
+       (6 "ACK") (7 "BEL") (8 "BS")  (9 "HT")  (10 "LF") (11 "VT")
+       (12 "FF") (13 "CR") (14 "SO") (15 "SI") (16 "DLE") (17 "DC1")
+       (18 "DC2") (19 "DC3") (20 "DC4") (21 "NAK") (22 "SYN") (23 "ETB")
+       (24 "CAN") (25 "EM") (26 "SUB") (27 "ESC") (28 "FS") (29 "GS")
+       (30 "RS") (31 "US") (32 "SP")
+       (otherwise "")))))
 
-(define char-escape-to-string ((ce char-escapep))
-  :returns (s stringp)
-  :short "Render a @(tsee char-escape) to the suffix that follows the
-          backslash (e.g. @(':n') &rarr; @('\"n\"'))."
+(define char-escape-to-codepoints ((ce char-escapep))
+  :returns (cps nat-listp)
+  :short "Render a @(tsee char-escape) as the code-point list following
+          the backslash (e.g. @(':n') &rarr; @('(#x6E)'))."
   (char-escape-case ce
-    :a "a" :b "b" :f "f" :n "n" :r "r" :t "t" :v "v"
-    :bslash "\\" :dquote "\"" :squote "'"))
+    :a (list #x61)
+    :b (list #x62)
+    :f (list #x66)
+    :n (list #x6E)
+    :r (list #x72)
+    :t (list #x74)
+    :v (list #x76)
+    :bslash (list #x5C)
+    :dquote (list #x22)
+    :squote (list #x27)))
 
-(define ascii-escape-to-string ((ae ascii-escapep))
-  :returns (s stringp)
-  :short "Render an @(tsee ascii-escape) to its source-form mnemonic
-          (e.g. @('NUL'), @('LF'), @('DEL'))."
+(define ascii-escape-to-codepoints ((ae ascii-escapep))
+  :returns (cps nat-listp)
+  :short "Render an @(tsee ascii-escape) as the code-point list of its
+          source-form mnemonic (e.g. @('NUL'), @('LF'), @('DEL'))."
   (ascii-escape-case ae
     :nul-to-sp (ascii-mnemonic-of-code ae.code)
-    :del "DEL"))
+    :del (ascii-string=>codepoints "DEL")))
 
-(define caret-escape-to-string ((ce caret-escapep))
-  :returns (s stringp)
-  :short "Render a @(tsee caret-escape) to @('^') followed by the
-          character whose code is @('code+#x40')."
+(define caret-escape-to-codepoints ((ce caret-escapep))
+  :returns (cps nat-listp)
+  :short "Render a @(tsee caret-escape) as @('^') followed by the code
+          point @('code+#x40')."
   :hooks nil
   :guard-hints (("Goal" :in-theory (enable caret-escape->code)))
-  (b* ((code (caret-escape->code ce))
-       (caret-char (code-char (+ code #x40))))
-    (str::cat "^" (str::implode (list caret-char)))))
+  (b* ((code (caret-escape->code ce)))
+    (list #x5E (+ code #x40))))
 
-(define dec-digit-char-list-to-string ((digits str::dec-digit-char-listp))
-  :returns (s stringp)
+(define dec-digit-char-list-to-codepoints ((digits str::dec-digit-char-listp))
+  :returns (cps nat-listp)
   :hooks nil
   :guard-hints (("Goal" :in-theory (enable str::character-listp-when-dec-digit-char-listp)))
-  (str::implode digits))
+  (chars=>nats digits))
 
-(define oct-digit-char-list-to-string ((digits str::oct-digit-char-listp))
-  :returns (s stringp)
+(define oct-digit-char-list-to-codepoints ((digits str::oct-digit-char-listp))
+  :returns (cps nat-listp)
   :hooks nil
   :guard-hints (("Goal" :in-theory (enable str::character-listp-when-oct-digit-char-listp)))
-  (str::implode digits))
+  (chars=>nats digits))
 
-(define hex-digit-char-list-to-string ((digits str::hex-digit-char-listp))
-  :returns (s stringp)
+(define hex-digit-char-list-to-codepoints ((digits str::hex-digit-char-listp))
+  :returns (cps nat-listp)
   :hooks nil
   :guard-hints (("Goal" :in-theory (enable str::character-listp-when-hex-digit-char-listp)))
-  (str::implode digits))
+  (chars=>nats digits))
 
-(define num-escape-to-string ((ne num-escapep))
-  :returns (s stringp)
-  :short "Render a @(tsee num-escape) to its source form: bare digits
-          for decimal, prefixed by @('o') for octal, by @('x') for
-          hexadecimal."
+(define num-escape-to-codepoints ((ne num-escapep))
+  :returns (cps nat-listp)
+  :short "Render a @(tsee num-escape) to its source form (as code points):
+          bare digits for decimal, prefixed by @('o') for octal, by
+          @('x') for hexadecimal."
   (num-escape-case ne
-    :dec (dec-digit-char-list-to-string ne.digits)
-    :oct (str::cat "o" (oct-digit-char-list-to-string ne.digits))
-    :hex (str::cat "x" (hex-digit-char-list-to-string ne.digits))))
+    :dec (dec-digit-char-list-to-codepoints ne.digits)
+    :oct (cons #x6F (oct-digit-char-list-to-codepoints ne.digits))
+    :hex (cons #x78 (hex-digit-char-list-to-codepoints ne.digits))))
 
-(define escape-to-string ((e escapep))
-  :returns (s stringp)
+(define escape-to-codepoints ((e escapep))
+  :returns (cps nat-listp)
   :short "Render the suffix of a @('\\\\')-escape; the leading @('\\\\')
-          is added by @(tsee char-lit-to-string)."
+          is added by @(tsee char-lit-to-codepoints)."
   (escape-case e
-    :char (char-escape-to-string e.escape)
-    :ascii (ascii-escape-to-string e.escape)
-    :caret (caret-escape-to-string e.escape)
-    :num (num-escape-to-string e.escape)))
+    :char (char-escape-to-codepoints e.escape)
+    :ascii (ascii-escape-to-codepoints e.escape)
+    :caret (caret-escape-to-codepoints e.escape)
+    :num (num-escape-to-codepoints e.escape)))
 
-(define codepoint-to-utf8-string ((code natp))
-  :returns (s stringp)
-  :short "Encode a Unicode code point as the UTF-8 byte sequence packed
-          into an ACL2 string."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Codes outside the valid Unicode scalar range (i.e. surrogates
-     @('#xD800')&ndash;@('#xDFFF') or values above @('#x10FFFF')) are
-     mapped to the empty string defensively; the @(tsee char-lit) AST
-     type rules them out, so this branch is unreachable in well-formed
-     ASTs."))
-  :hooks nil
-  :guard-hints
-  (("Goal" :in-theory (enable acl2::ustring? acl2::uchar?
-                              acl2::ustring=>utf8
-                              acl2::uchar=>utf8))
-   ("Goal'" :cases ((<= (lnfix code) #xD7FF))))
-  (b* ((c (lnfix code))
-       ((unless (or (and (<= 0 c) (<= c #xD7FF))
-                    (and (<= #xE000 c) (<= c #x10FFFF))))
-        "")
-       (bytes (acl2::ustring=>utf8 (list c)))
-       ((unless (acl2::unsigned-byte-listp 8 bytes)) ""))
-    (nats=>string bytes)))
-
-(define char-lit-to-string ((cl char-litp))
-  :returns (s stringp)
-  :short "Render a single @(tsee char-lit) to its source-text form."
+(define char-lit-to-codepoints ((cl char-litp))
+  :returns (cps nat-listp)
+  :short "Render a single @(tsee char-lit) to its source-text form as
+          a code-point list.  For @(':char') this is just the singleton
+          @('(cl.code)'); for @(':escape') it is @('#x5C') (backslash)
+          followed by the rendered escape suffix."
   (char-lit-case cl
-    :char (codepoint-to-utf8-string cl.code)
-    :escape (str::cat "\\" (escape-to-string cl.escape))))
+    :char (list (lnfix cl.code))
+    :escape (cons #x5C (escape-to-codepoints cl.escape))))
 
-(define char-lit-list-to-string ((chars char-lit-listp))
-  :returns (s stringp)
+(define char-lit-list-to-codepoints ((chars char-lit-listp))
+  :returns (cps nat-listp)
   :short "Render the contents of a Remora string literal: concatenation
-          of @(tsee char-lit-to-string) over @('chars').  Does NOT
-          insert empty escapes; use @(tsee string-lit-to-string) for
+          of @(tsee char-lit-to-codepoints) over @('chars').  Does NOT
+          insert empty escapes; use @(tsee string-lit-to-codepoints) for
           a round-trip-safe rendering of a string literal."
-  (cond ((endp chars) "")
-        (t (str::cat (char-lit-to-string (car chars))
-                     (char-lit-list-to-string (cdr chars))))))
+  (cond ((endp chars) nil)
+        (t (append (char-lit-to-codepoints (car chars))
+                   (char-lit-list-to-codepoints (cdr chars))))))
 
 ;; ---- Disambiguation: insert "\&" empty-escapes where adjacent
 ;; char-lits would otherwise be merged on re-parse. ----
@@ -957,26 +1147,30 @@
                         (and (<= #x41 next-cp) (<= next-cp #x46))    ; A-F
                         (and (<= #x61 next-cp) (<= next-cp #x66)))))))) ; a-f
 
-(define char-lit-list-to-string-disambig ((chars char-lit-listp))
-  :returns (s stringp)
+(define char-lit-list-to-codepoints-disambig ((chars char-lit-listp))
+  :returns (cps nat-listp)
   :short "Render @('chars') as the contents of a string literal,
-          inserting @('\\&') between adjacent char-lits where the
-          parser would otherwise re-merge them."
-  (cond ((endp chars) "")
+          inserting @('\\&') (code points @('#x5C #x26')) between
+          adjacent char-lits where the parser would otherwise re-merge
+          them."
+  (cond ((endp chars) nil)
         ((endp (cdr chars))
-         (char-lit-to-string (car chars)))
-        (t (str::cat
-            (char-lit-to-string (car chars))
-            (str::cat (if (needs-empty-escape-between (car chars)
-                                                       (cadr chars))
-                          "\\&" "")
-                      (char-lit-list-to-string-disambig (cdr chars)))))))
+         (char-lit-to-codepoints (car chars)))
+        (t (append
+            (char-lit-to-codepoints (car chars))
+            (append (if (needs-empty-escape-between (car chars)
+                                                     (cadr chars))
+                        (list #x5C #x26)
+                      nil)
+                    (char-lit-list-to-codepoints-disambig (cdr chars)))))))
 
-(define string-lit-to-string ((chars char-lit-listp))
-  :returns (s stringp)
+(define string-lit-to-codepoints ((chars char-lit-listp))
+  :returns (cps nat-listp)
   :short "Render a string literal: surround the disambig'd contents
-          with double quotes."
-  (str::cat "\"" (str::cat (char-lit-list-to-string-disambig chars) "\"")))
+          with double-quote code points (@('#x22'))."
+  (cons #x22
+        (append (char-lit-list-to-codepoints-disambig chars)
+                (list #x22))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -989,151 +1183,174 @@
   :verify-guards :after-returns
 
   (define expr-to-pdoc ((e exprp))
-    :returns (out pdocp)
+    :returns (out pdoc-resultp)
     (expr-case e
-      :var (pdoc-text e.name)
+      :var (pdoc-text (utf8-string=>codepoints e.name))
       :atom (atom-to-pdoc e.atom)
-      :array (pdoc-prefix-form
-              "array"
-              (pdoc-concat (pdoc-bracket (nat-list-to-pdoc e.dims))
-                           (pdoc-concat (pdoc-line)
-                                        (atom-list-to-pdoc e.atoms))))
-      :array-empty (pdoc-text "<array-empty>")
-      :frame (pdoc-prefix-form
-              "frame"
-              (pdoc-concat (pdoc-bracket (nat-list-to-pdoc e.dims))
-                           (pdoc-concat (pdoc-line)
-                                        (expr-list-to-pdoc e.exprs))))
-      :frame-empty (pdoc-text "<frame-empty>")
-      :string (pdoc-text (string-lit-to-string e.chars))
-      :app (if (consp e.args)
-               (pdoc-call-form (expr-to-pdoc e.fun)
-                               (expr-list-to-pdoc e.args))
-             (pdoc-head-only-form (expr-to-pdoc e.fun)))
-      :tapp (pdoc-prefix-form
-             "t-app"
-             (pdoc-concat (expr-to-pdoc e.fun)
-                          (if (consp e.args)
-                              (pdoc-concat (pdoc-line)
-                                           (type-list-to-pdoc e.args))
-                            (pdoc-empty))))
-      :iapp (pdoc-prefix-form
-             "i-app"
-             (pdoc-concat (expr-to-pdoc e.fun)
-                          (if (consp e.args)
-                              (pdoc-concat (pdoc-line)
-                                           (ispace-list-to-pdoc e.args))
-                            (pdoc-empty))))
-      :capp (pdoc-prefix-form
-             "@"
-             (pdoc-concat
-              (expr-to-pdoc e.fun)
-              (pdoc-concat
-               (pdoc-line)
+      :array (b* (((ok atoms) (atom-list-to-pdoc e.atoms)))
+               (pdoc-prefix-form
+                "array"
+                (pdoc-concat (pdoc-bracket (nat-list-to-pdoc e.dims))
+                             (pdoc-concat (pdoc-line) atoms))))
+      :array-empty (pdoc-prefix-form
+                    "array"
+                    (pdoc-concat (pdoc-bracket (nat-list-to-pdoc e.dims))
+                                 (pdoc-concat (pdoc-line)
+                                              (type-to-pdoc e.type))))
+      :frame (b* (((ok exprs) (expr-list-to-pdoc e.exprs)))
+               (pdoc-prefix-form
+                "frame"
+                (pdoc-concat (pdoc-bracket (nat-list-to-pdoc e.dims))
+                             (pdoc-concat (pdoc-line) exprs))))
+      :frame-empty (pdoc-prefix-form
+                    "frame"
+                    (pdoc-concat (pdoc-bracket (nat-list-to-pdoc e.dims))
+                                 (pdoc-concat (pdoc-line)
+                                              (type-to-pdoc e.type))))
+      :string (pdoc-text (string-lit-to-codepoints e.chars))
+      :app (b* (((ok fun) (expr-to-pdoc e.fun)))
+             (if (consp e.args)
+                 (b* (((ok args) (expr-list-to-pdoc e.args)))
+                   (pdoc-call-form fun args))
+               (pdoc-head-only-form fun)))
+      :tapp (b* (((ok fun) (expr-to-pdoc e.fun)))
+              (pdoc-prefix-form
+               "t-app"
+               (pdoc-concat fun
+                            (if (consp e.args)
+                                (pdoc-concat (pdoc-line)
+                                             (type-list-to-pdoc e.args))
+                              (pdoc-empty)))))
+      :iapp (b* (((ok fun) (expr-to-pdoc e.fun)))
+              (pdoc-prefix-form
+               "i-app"
+               (pdoc-concat fun
+                            (if (consp e.args)
+                                (pdoc-concat (pdoc-line)
+                                             (ispace-list-to-pdoc e.args))
+                              (pdoc-empty)))))
+      :capp (b* (((ok fun) (expr-to-pdoc e.fun))
+                 ((ok args-doc)
+                  (if (consp e.args)
+                      (b* (((ok args) (expr-list-to-pdoc e.args)))
+                        (pdoc-concat (pdoc-line) args))
+                    (pdoc-empty))))
+              (pdoc-prefix-form
+               "@"
                (pdoc-concat
-                (type-list-option-to-pdoc e.targs)
+                fun
                 (pdoc-concat
                  (pdoc-line)
                  (pdoc-concat
-                  (ispace-list-option-to-pdoc e.iargs)
-                  (if (consp e.args)
-                      (pdoc-concat (pdoc-line)
-                                   (expr-list-to-pdoc e.args))
-                    (pdoc-empty))))))))
+                  (type-list-option-to-pdoc e.targs)
+                  (pdoc-concat
+                   (pdoc-line)
+                   (pdoc-concat
+                    (ispace-list-option-to-pdoc e.iargs)
+                    args-doc)))))))
       :unbox
       ;; Surface form (grammar unbox-spec):
       ;;   *( ispace-var ws ) identifier ws exp
+      ;; The optional result type (e.type?) has no concrete syntax,
+      ;; so it is not printed.
       ;; Suppress the leading pdoc-line / ispaces-doc when there are
       ;; zero ispace-vars; otherwise we get a stray space inside the
       ;; spec paren ("(unbox ( v target) body)").
       (b* ((ispaces-prefix (if (consp e.ispaces)
                                (pdoc-concat (ispace-var-list-to-pdoc e.ispaces)
                                             (pdoc-line))
-                             (pdoc-empty))))
+                             (pdoc-empty)))
+           ((ok target) (expr-to-pdoc e.target))
+           ((ok body) (expr-to-pdoc e.body)))
         (pdoc-prefix-form
          "unbox"
          (pdoc-concat
           (pdoc-paren
            (pdoc-concat ispaces-prefix
-                        (pdoc-concat (pdoc-text e.var)
-                                     (pdoc-concat (pdoc-line)
-                                                  (expr-to-pdoc e.target)))))
-          (pdoc-concat (pdoc-line)
-                       (expr-to-pdoc e.body)))))
-      :bracket (pdoc-group
-                (pdoc-bracket (expr-list-to-pdoc e.exprs)))
-      :let (pdoc-prefix-form
-            "let"
-            (pdoc-concat (pdoc-paren (bind-list-to-pdoc e.binds))
-                         (pdoc-concat (pdoc-line)
-                                      (expr-to-pdoc e.body)))))
+                        (pdoc-concat (pdoc-text (utf8-string=>codepoints e.var))
+                                     (pdoc-concat (pdoc-line) target))))
+          (pdoc-concat (pdoc-line) body))))
+      :bracket (b* (((ok exprs) (expr-list-to-pdoc e.exprs)))
+                 (pdoc-group (pdoc-bracket exprs)))
+      :let (b* (((ok binds) (bind-list-to-pdoc e.binds))
+                ((ok body) (expr-to-pdoc e.body)))
+             (pdoc-prefix-form
+              "let"
+              (pdoc-concat (pdoc-paren binds)
+                           (pdoc-concat (pdoc-line) body)))))
     :measure (expr-count e))
 
   (define expr-list-to-pdoc ((es expr-listp))
-    :returns (out pdocp)
+    :returns (out pdoc-resultp)
     (cond ((endp es) (pdoc-empty))
           ((endp (cdr es)) (expr-to-pdoc (car es)))
-          (t (pdoc-concat (expr-to-pdoc (car es))
-                          (pdoc-concat (pdoc-line)
-                                       (expr-list-to-pdoc (cdr es))))))
+          (t (b* (((ok first) (expr-to-pdoc (car es)))
+                  ((ok rest) (expr-list-to-pdoc (cdr es))))
+               (pdoc-concat first
+                            (pdoc-concat (pdoc-line) rest)))))
     :measure (expr-list-count es))
 
   (define atom-to-pdoc ((a atomp))
-    :returns (out pdocp)
+    :returns (out pdoc-resultp)
     (atom-case a
       :base (base-lit-to-pdoc a.lit)
-      :lambda (pdoc-prefix-form
-               "fn"
-               (pdoc-concat (pdoc-paren (pat-list-to-pdoc a.params))
-                            (pdoc-concat (pdoc-line)
-                                         (expr-to-pdoc a.body))))
-      :tlambda (pdoc-prefix-form
-                "t-fn"
-                (pdoc-concat (pdoc-paren (type-var-list-to-pdoc a.params))
-                             (pdoc-concat (pdoc-line)
-                                          (expr-to-pdoc a.body))))
-      :ilambda (pdoc-prefix-form
-                "i-fn"
-                (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc a.params))
-                             (pdoc-concat (pdoc-line)
-                                          (expr-to-pdoc a.body))))
-      :box (pdoc-prefix-form
-            "box"
-            (pdoc-concat
-             (pdoc-paren (ispace-list-to-pdoc a.ispaces))
-             (pdoc-concat
-              (pdoc-line)
+      ;; We do not print the optional body type (a.type?):
+      ;; it has no concrete syntax (it is computed by type checking).
+      :lambda (b* (((ok params) (pat-list-to-pdoc a.params))
+                   ((ok body) (expr-to-pdoc a.body)))
+                (pdoc-prefix-form
+                 "fn"
+                 (pdoc-concat (pdoc-paren params)
+                              (pdoc-concat (pdoc-line) body))))
+      :tlambda (b* (((ok body) (expr-to-pdoc a.body)))
+                 (pdoc-prefix-form
+                  "t-fn"
+                  (pdoc-concat (pdoc-paren (type-var-list-to-pdoc a.params))
+                               (pdoc-concat (pdoc-line) body))))
+      :ilambda (b* (((ok body) (expr-to-pdoc a.body)))
+                 (pdoc-prefix-form
+                  "i-fn"
+                  (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc a.params))
+                               (pdoc-concat (pdoc-line) body))))
+      :box (b* (((ok array) (expr-to-pdoc a.array)))
+             (pdoc-prefix-form
+              "box"
               (pdoc-concat
-               (expr-to-pdoc a.array)
-               (pdoc-concat (pdoc-line)
-                            (type-to-pdoc a.type)))))))
+               (pdoc-paren (ispace-list-to-pdoc a.ispaces))
+               (pdoc-concat
+                (pdoc-line)
+                (pdoc-concat
+                 array
+                 (pdoc-concat (pdoc-line)
+                              (type-to-pdoc a.type))))))))
     :measure (atom-count a))
 
   (define atom-list-to-pdoc ((as atom-listp))
-    :returns (out pdocp)
+    :returns (out pdoc-resultp)
     (cond ((endp as) (pdoc-empty))
           ((endp (cdr as)) (atom-to-pdoc (car as)))
-          (t (pdoc-concat (atom-to-pdoc (car as))
-                          (pdoc-concat (pdoc-line)
-                                       (atom-list-to-pdoc (cdr as))))))
+          (t (b* (((ok first) (atom-to-pdoc (car as)))
+                  ((ok rest) (atom-list-to-pdoc (cdr as))))
+               (pdoc-concat first
+                            (pdoc-concat (pdoc-line) rest)))))
     :measure (atom-list-count as))
 
   (define bind-to-pdoc ((b bindp))
-    :returns (out pdocp)
+    :returns (out pdoc-resultp)
     (bind-case b
       :ispace (pdoc-paren
-               (pdoc-concat (pdoc-text "extent")
-                            (pdoc-concat (pdoc-text " ")
+               (pdoc-concat (pdoc-ascii "extent")
+                            (pdoc-concat (pdoc-ascii " ")
                                          (pdoc-concat
                                           (ispace-var-to-pdoc b.var)
-                                          (pdoc-concat (pdoc-text " ")
+                                          (pdoc-concat (pdoc-ascii " ")
                                                        (ispace-to-pdoc b.ispace))))))
       :type (pdoc-paren
-             (pdoc-concat (pdoc-text "type")
-                          (pdoc-concat (pdoc-text " ")
+             (pdoc-concat (pdoc-ascii "type")
+                          (pdoc-concat (pdoc-ascii " ")
                                        (pdoc-concat
                                         (type-var-to-pdoc b.var)
-                                        (pdoc-concat (pdoc-text " ")
+                                        (pdoc-concat (pdoc-ascii " ")
                                                      (type-to-pdoc b.type))))))
       :val
       ;; Two surface forms (grammar val-bind):
@@ -1142,45 +1359,46 @@
       (b* ((sig-doc
             (type-option-case b.type?
               :some (pdoc-paren
-                     (pdoc-concat (pdoc-text b.var)
-                                  (pdoc-concat (pdoc-text " : ")
+                     (pdoc-concat (pdoc-text (utf8-string=>codepoints b.var))
+                                  (pdoc-concat (pdoc-ascii " : ")
                                                (type-to-pdoc b.type?.val))))
-              :none (pdoc-text b.var))))
+              :none (pdoc-text (utf8-string=>codepoints b.var))))
+           ((ok expr) (expr-to-pdoc b.expr)))
         (pdoc-prefix-form
          "val"
          (pdoc-concat sig-doc
-                      (pdoc-concat (pdoc-line)
-                                   (expr-to-pdoc b.expr)))))
+                      (pdoc-concat (pdoc-line) expr))))
       :fun
       ;; Surface form (grammar fun-bind):
       ;;   "fun" "(" identifier *( ws pat ) [ ws colon-type ] ")" exp
       ;; The whole signature is parenthesized.
       (b* ((type-suffix (type-option-case b.type?
-                          :some (pdoc-concat (pdoc-text " : ")
+                          :some (pdoc-concat (pdoc-ascii " : ")
                                              (type-to-pdoc b.type?.val))
                           :none (pdoc-empty)))
-           (params-doc (if (consp b.params)
-                           (pdoc-concat (pdoc-line)
-                                        (pat-list-to-pdoc b.params))
-                         (pdoc-empty)))
+           ((ok params-doc) (if (consp b.params)
+                                (b* (((ok params) (pat-list-to-pdoc b.params)))
+                                  (pdoc-concat (pdoc-line) params))
+                              (pdoc-empty)))
+           ((ok expr) (expr-to-pdoc b.expr))
            (sig-doc (pdoc-paren
-                     (pdoc-concat (pdoc-text b.var)
+                     (pdoc-concat (pdoc-text (utf8-string=>codepoints b.var))
                                   (pdoc-concat params-doc type-suffix)))))
         (pdoc-prefix-form
          "fun"
          (pdoc-concat sig-doc
-                      (pdoc-concat (pdoc-line)
-                                   (expr-to-pdoc b.expr)))))
+                      (pdoc-concat (pdoc-line) expr))))
       :tfun
       ;; Surface form (grammar tfun-bind):
       ;;   "t-fun" "(" identifier "(" *( ws type-var ) ")" [ ws colon-type ] ")" exp
       (b* ((type-suffix (type-option-case b.type?
-                          :some (pdoc-concat (pdoc-text " : ")
+                          :some (pdoc-concat (pdoc-ascii " : ")
                                              (type-to-pdoc b.type?.val))
                           :none (pdoc-empty)))
+           ((ok expr) (expr-to-pdoc b.expr))
            (sig-doc (pdoc-paren
                      (pdoc-concat
-                      (pdoc-text b.var)
+                      (pdoc-text (utf8-string=>codepoints b.var))
                       (pdoc-concat
                        (pdoc-line)
                        (pdoc-concat
@@ -1189,18 +1407,18 @@
         (pdoc-prefix-form
          "t-fun"
          (pdoc-concat sig-doc
-                      (pdoc-concat (pdoc-line)
-                                   (expr-to-pdoc b.expr)))))
+                      (pdoc-concat (pdoc-line) expr))))
       :ifun
       ;; Surface form (grammar ifun-bind):
       ;;   "i-fun" "(" identifier "(" *( ws ispace-var ) ")" [ ws colon-type ] ")" exp
       (b* ((type-suffix (type-option-case b.type?
-                          :some (pdoc-concat (pdoc-text " : ")
+                          :some (pdoc-concat (pdoc-ascii " : ")
                                              (type-to-pdoc b.type?.val))
                           :none (pdoc-empty)))
+           ((ok expr) (expr-to-pdoc b.expr))
            (sig-doc (pdoc-paren
                      (pdoc-concat
-                      (pdoc-text b.var)
+                      (pdoc-text (utf8-string=>codepoints b.var))
                       (pdoc-concat
                        (pdoc-line)
                        (pdoc-concat
@@ -1209,25 +1427,25 @@
         (pdoc-prefix-form
          "i-fun"
          (pdoc-concat sig-doc
-                      (pdoc-concat (pdoc-line)
-                                   (expr-to-pdoc b.expr)))))
+                      (pdoc-concat (pdoc-line) expr))))
       :cfun
       ;; Surface form (grammar at-fun-bind / at-fun-sig):
       ;;   "fun" "(" "@" identifier type-vars ispace-vars *( ws pat ) ws colon-type ")" exp
       ;; Keyword is "fun" (the "@" lives inside the sig).  type-vars and
       ;; ispace-vars are each either "(" *( ws v ) ")" or "_".
       ;; colon-type is mandatory here.
-      (b* ((params-doc (if (consp b.params)
-                           (pdoc-concat (pdoc-line)
-                                        (pat-list-to-pdoc b.params))
-                         (pdoc-empty)))
+      (b* (((ok params-doc) (if (consp b.params)
+                                (b* (((ok params) (pat-list-to-pdoc b.params)))
+                                  (pdoc-concat (pdoc-line) params))
+                              (pdoc-empty)))
+           ((ok expr) (expr-to-pdoc b.expr))
            (sig-doc (pdoc-paren
                      (pdoc-concat
-                      (pdoc-text "@")
+                      (pdoc-ascii "@")
                       (pdoc-concat
                        (pdoc-line)
                        (pdoc-concat
-                        (pdoc-text b.var)
+                        (pdoc-text (utf8-string=>codepoints b.var))
                         (pdoc-concat
                          (pdoc-line)
                          (pdoc-concat
@@ -1239,22 +1457,22 @@
                             (pdoc-concat
                              params-doc
                              (pdoc-concat
-                              (pdoc-text " : ")
+                              (pdoc-ascii " : ")
                               (type-to-pdoc b.type)))))))))))))
         (pdoc-prefix-form
          "fun"
          (pdoc-concat sig-doc
-                      (pdoc-concat (pdoc-line)
-                                   (expr-to-pdoc b.expr))))))
+                      (pdoc-concat (pdoc-line) expr)))))
     :measure (bind-count b))
 
   (define bind-list-to-pdoc ((bs bind-listp))
-    :returns (out pdocp)
+    :returns (out pdoc-resultp)
     (cond ((endp bs) (pdoc-empty))
           ((endp (cdr bs)) (bind-to-pdoc (car bs)))
-          (t (pdoc-concat (bind-to-pdoc (car bs))
-                          (pdoc-concat (pdoc-line)
-                                       (bind-list-to-pdoc (cdr bs))))))
+          (t (b* (((ok first) (bind-to-pdoc (car bs)))
+                  ((ok rest) (bind-list-to-pdoc (cdr bs))))
+               (pdoc-concat first
+                            (pdoc-concat (pdoc-line) rest)))))
     :measure (bind-list-count bs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1263,12 +1481,42 @@
 ;;
 
 (define prog-to-pdoc ((p progp))
-  :returns (out pdocp)
+  :returns (out pdoc-resultp)
   :short "Render a @(tsee prog) (top-level program) as a pdoc."
   (expr-to-pdoc (prog->expr p)))
 
+(define print-prog-to-codepoints ((p progp) &key ((width natp) '80))
+  :returns (cps nat-listp)
+  :short "Render a @(tsee prog) AST to a list of Unicode code points,
+          wrapping at @('width') columns.  This is the codepoint-level
+          entry point; @(tsee print-prog) is the string wrapper."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If rendering fails (e.g. a parameter has no type, which has no
+     concrete syntax and which we do not infer yet), we return the
+     empty list of code points, so that @(tsee print-prog) is total
+     and yields the empty string in that case."))
+  (b* ((pd (prog-to-pdoc p))
+       ((when (reserrp pd)) nil))
+    (layout-pdoc width pd)))
+
 (define print-prog ((p progp) &key ((width natp) '80))
   :returns (s stringp)
-  :short "Top-level entry point: render a @(tsee prog) AST to text,
-          wrapping at @('width') columns."
-  (layout-pdoc width (prog-to-pdoc p)))
+  :short "Top-level entry point: render a @(tsee prog) AST to a UTF-8
+          encoded ACL2 string, wrapping at @('width') columns.  Thin
+          wrapper around @(tsee print-prog-to-codepoints) that
+          UTF-8-encodes the code-point list into bytes and packs the
+          bytes into an ACL2 string."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The defensive @(tsee ustring?) check guarantees the guard
+     of @(tsee ustring=>utf8); for well-formed ASTs all emitted
+     code points are valid Unicode scalars, so the @('unless') branch
+     is unreachable."))
+  (b* ((cps (print-prog-to-codepoints p :width width))
+       ((unless (ustring? cps)) "")
+       (bytes (ustring=>utf8 cps))
+       ((unless (unsigned-byte-listp 8 bytes)) ""))
+    (nats=>string bytes)))

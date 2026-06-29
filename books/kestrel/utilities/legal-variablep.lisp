@@ -1,6 +1,6 @@
 ; Theorems about legal-variablep
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -221,8 +221,7 @@
   (implies (and (member-equal sym syms)
                 (all-symbols-have-packagep syms pkg))
            (equal (symbol-package-name sym)
-                  pkg))
-  :hints (("Goal" :in-theory (enable))))
+                  pkg)))
 
 (defthm symbol-package-name-when-member-equal-of-common-lisp-symbols-from-main-lisp-package
   (implies (member-equal sym (common-lisp-symbols-from-main-lisp-package))

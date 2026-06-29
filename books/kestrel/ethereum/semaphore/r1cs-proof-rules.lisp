@@ -1023,7 +1023,6 @@
                                               (ADD y
                                                    rot p) p) p) p)))))
   :hints (("Goal" ;:in-theory (enable PFIELD::ADD-BECOMES-BVPLUS-34)
-           :in-theory (disable)
            :use (:instance add-helper-bv35
                                   (bv35 (ADD inv0
                                              (ADD inv4

@@ -6,7 +6,7 @@ This directory contains an ACL2 formalization of elementary linear algebra, a wo
 
 This work is documented in two papers that appear in the 2025 ACL2 Workshop.  As explained in the first of these papers, we separate those aspects of the theory that apply to matrices over an arbitrary commutative ring with unity from those that are restricted to matrices over a field (i.e., that depend on the existence of a multiplicative inverse).  The first three books address matrices over a ring:
 
-* ring
+  * ring
     - Encapsulation of the axioms for a commutative ring with unity
     - Properties of lists of ring elemants
 
@@ -40,7 +40,7 @@ The next book, which depends on the last 3, deals with topics that apply only to
 
 In the book "rational", which is incompatible with the other books, we replace the constrained functions in field.lisp with the corresponding rational functions and in this context, we reproduce the function definitions in field.lisp, fmat.lisp, fdet.lisp, and reduction.lisp.  The result is that these definitions are now executable and may be used for the purposes of testing and illustration.
 
-Several additional books are planned.  The first 2 are based on the theory of matrices oever a field:
+Several additional books are planned.  The first 2 are based on the theory of matrices over a field:
 
   * vector spaces
 

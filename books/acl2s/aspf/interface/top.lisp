@@ -1,7 +1,8 @@
-; Redefinition of acl2::comment-window-co in acl2s-interface.lsp seems to be
-; causing certification to hang when GCL is the host Lisp, so we exclude GCL
-; unless/until this is fixed:
-; cert_param: (non-gcl)
+; Note: This book failed to certify in some GCL versions preceding 2.7.2, but
+; was fixed before its release, in fact it was fixed in Version_2_7_2pre23.  So
+; if you get a certification failure with GCL, consider updating your GCL
+; version or else label this book locally with a "cert_param: " with value
+; (non-gcl).
 
 ; (depends-on "acl2s-interface.lsp")
 ; (depends-on "acl2s-interface-utils.lsp")

@@ -31,6 +31,16 @@
          (bitnot (bitxor y x)))
   :hints (("Goal" :in-theory (e/d (bitnot bitxor bvxor) (bvxor-1-becomes-bitxor)))))
 
+;see also bitxor-of-bitnot-arg1
+(defthm bitxor-of-bitnot-same-arg1
+  (equal (bitxor (bitnot x) x)
+         1))
+
+;see also bitxor-of-bitnot-arg2
+(defthm bitxor-of-bitnot-same-arg2
+  (equal (bitxor x (bitnot x))
+         1))
+
 (defthm bitxor-of-1-becomes-bitnot-arg1
   (equal (bitxor 1 x)
          (bitnot x))
@@ -59,12 +69,12 @@
            :in-theory (e/d (;bitxor
                             ) (bvxor-1-becomes-bitxor)))))
 
-;; for when we are not just choosing a the normal form (either (bitnot x) or (bitxor 1 x)).
+;; for when we are not enforcing a normal form (either (bitnot x) or (bitxor 1 x)).
 (defthm bitnot-of-bitxor-of-1
   (equal (bitnot (bitxor 1 x))
          (getbit 0 x)))
 
-;; for when we are not just choosing a the normal form (either (bitnot x) or (bitxor 1 x)).
+;; for when we are not enforcing a normal form (either (bitnot x) or (bitxor 1 x)).
 (defthm bitxor-of-1-and-bitnot
   (equal (bitxor 1 (bitnot x))
          (getbit 0 x)))

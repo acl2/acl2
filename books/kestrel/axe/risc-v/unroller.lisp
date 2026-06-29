@@ -35,7 +35,6 @@
 (include-book "kestrel/bv/ash" :dir :system)
 (include-book "kestrel/axe/rules1" :dir :system)
 (include-book "rewriter")
-(include-book "../step-increments")
 (include-book "../rule-limits")
 (include-book "../prune-dag-precisely")
 (include-book "../prune-dag-approximately")

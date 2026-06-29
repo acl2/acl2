@@ -15,9 +15,15 @@
 (include-book "unroller")
 ;; (include-book "loop-lifter")
 ;; (include-book "prove-equivalence")
+(include-book "kestrel/utilities/xdoc-paras" :dir :system)
 
 ;; todo: extend this
 (defxdoc axe-arm
   :parents (axe)
   :short "The ARM variant of Axe."
-)
+  :long (xdoc::topparas
+          "The ARM variant of Axe covers a growing set of ARM32 instructions.
+
+           The main tool provided is @(tsee a::def-unrolled).
+
+           See @('[books]/kestrel/axe/arm/examples/') for examples of ARM code lifted and verified by Axe."))

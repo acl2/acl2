@@ -31,24 +31,47 @@
                                        values))
                   '(all-equalp
                     bool
+                    boolean-resultp
+                    booleanp-when-result-not-error
+                    change-string-string-map-quadruple
+                    chars=>nats
                     defmacro+
                     defxdoc+
                     enable*
+                    explode
                     impossible
                     int
+                    integer-resultp
+                    integer-list-resultp
+                    lifix
                     lnfix
+                    make-string-string-map-pair
+                    make-string-string-map-quadruple
                     nat
+                    nat-resultp
                     nat-list
                     nat-list-fix
+                    nat-list-resultp
                     nat-list-listp
+                    nat-list-list-resultp
+                    nat-list-list-listp
                     nats=>string
+                    pos-fix
                     prefixp
                     str-fix
                     string=>nats
                     string-setp
-                    string-string-map
+                    string-sfix
                     string-string-mapp
                     string-string-map-fix
+                    string-string-map-pair
+                    string-string-map-pair-resultp
+                    string-string-map-quadruple
+                    string-string-map-quadruple-resultp
+                    unsigned-byte-listp
+                    ustring?
+                    ustring=>utf8
+                    utf8=>ustring
                     fty::ok
                     fty::okf
                     fty::patbind-ok
@@ -57,9 +80,14 @@
                     fty::reserrf
                     fty::reserrf-push
                     fty::reserrp
+                    std::define-sk
                     std::defret-mutual
                     std::defval
                     str::dec-digit-char-list
                     str::hex-digit-char-list
                     str::oct-digit-char-list
-                    str::string-list)))
+                    str::dec-digit-char-list-resultp
+                    str::hex-digit-char-list-resultp
+                    str::oct-digit-char-list-resultp
+                    str::string-list
+                    str::string-list-fix)))

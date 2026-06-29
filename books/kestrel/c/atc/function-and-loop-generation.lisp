@@ -1688,10 +1688,12 @@
                                ,@correct-thms
                                ,@measure-thms
                                ,fn-fun-env-thm
+                               return-type-of-stmt-value-return
                                return-type-of-stmt-value-none
                                expr-value-optionp-when-expr-valuep
                                (:e c::expr-value-optionp)
-                               expr-valuep-of-expr-value))
+                               expr-valuep-of-expr-value
+                               max))
                  :use (:instance (:guard-theorem ,fn)
                                  :extra-bindings-ok
                                  ,@(alist-to-doublets instantiation))
@@ -1707,7 +1709,6 @@
                           ,@value-kind-thms
                           not
                           return-type-of-stmt-value-return
-                          return-type-of-stmt-value-none
                           stmt-value-return->value?-of-stmt-value-return
                           value-option-fix-when-value-optionp
                           ,@result-thms
@@ -1728,7 +1729,8 @@
                           return-type-of-stmt-value-none
                           expr-value-optionp-when-expr-valuep
                           (:e c::expr-value-optionp)
-                          expr-valuep-of-expr-value))))))
+                          expr-valuep-of-expr-value
+                          max))))))
        ((mv local-event exported-event)
         (evmac-generate-defthm name
                                :formula formula

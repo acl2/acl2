@@ -49,6 +49,7 @@
 (include-book "java/top")
 ;; (include-book "jvm/top")  ;; TODO: Uncomment when stable
 (include-book "json/top")
+(include-book "jsonrpc/top")
 (include-book "htclient/top")
 (include-book "lists-light/top")
 (include-book "number-theory/top")

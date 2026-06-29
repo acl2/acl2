@@ -444,7 +444,7 @@
   (declare (xargs :guard t
                   :guard-hints (("Goal" :in-theory (enable class-tablep0)))))
   (and (class-tablep0 class-table)
-       (let* ( ;call mapp here?
+       (let* (;call mapp here?
               (dom (acl2::rkeys class-table))
               (key-list (SET::2LIST dom))) ;call key-list?
          (and (all-bound-to-a-non-interfacep *built-in-exception-classes* class-table)
@@ -754,7 +754,7 @@
                                    ;is-an-interfacep
                                    BOUND-TO-A-NON-INTERFACEP
                                    )
-                                  ( ;ACL2::MEMBERP-OF-SET2LIST ;introduces set::in
+                                  (;ACL2::MEMBERP-OF-SET2LIST ;introduces set::in
                                    ))))))
 
 (defthm all-bound-to-a-non-interfacep-of-get-superclasses-aux

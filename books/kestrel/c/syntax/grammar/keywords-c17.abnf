@@ -10,44 +10,53 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains grammar rules for keywords
-; that are specific to the C17 dialect without extensions.
-; These rules make use of some of the ones in keywords.abnf.
+; This file contains a grammar rule for keywords in the C17 dialects.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-keyword = keyword-c17
+; Keywords in the C17 standard [C17:6.4.1/1].
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-alignas-keyword = %s"_Alignas"
-
-alignof-keyword = %s"_Alignof"
-
-bool-keyword = %s"_Bool"
-
-complex-keyword = %s"_Complex"
-
-const-keyword = %s"const"
-
-inline-keyword = %s"inline"
-
-restrict-keyword = %s"restrict"
-
-signed-keyword = %s"signed"
-
-static-assert-keyword = %s"_Static_assert"
-
-thread-local-keyword = %s"_Thread_local"
-
-volatile-keyword = %s"volatile"
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; remove when the rest of the grammar is modularized:
-
-asm-keyword = %s"asm" / %s"__asm" / %s"__asm__"
-
-attribute-keyword = %s"__attribute" / %s"__attribute__"
-
-typeof-keyword = %s"typeof" / %s"__typeof" / %s"__typeof__"
+keyword-c17 = %s"auto"
+            / %s"break"
+            / %s"case"
+            / %s"char"
+            / %s"const"
+            / %s"continue"
+            / %s"default"
+            / %s"do"
+            / %s"double"
+            / %s"else"
+            / %s"enum"
+            / %s"extern"
+            / %s"float"
+            / %s"for"
+            / %s"goto"
+            / %s"if"
+            / %s"inline"
+            / %s"int"
+            / %s"long"
+            / %s"register"
+            / %s"restrict"
+            / %s"return"
+            / %s"short"
+            / %s"signed"
+            / %s"sizeof"
+            / %s"static"
+            / %s"struct"
+            / %s"switch"
+            / %s"typedef"
+            / %s"union"
+            / %s"unsigned"
+            / %s"void"
+            / %s"volatile"
+            / %s"while"
+            / %s"_Alignas"
+            / %s"_Alignof"
+            / %s"_Atomic"
+            / %s"_Bool"
+            / %s"_Complex"
+            / %s"_Generic"
+            / %s"_Imaginary"
+            / %s"_Noreturn"
+            / %s"_Static_assert"
+            / %s"_Thread_local"

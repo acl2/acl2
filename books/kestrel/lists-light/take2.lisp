@@ -1,7 +1,7 @@
 ; More rules about take
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -110,8 +110,7 @@
                 (< 0 n)
                 (natp m))
            (equal (cdr (take n (nthcdr m x)))
-                  (take (+ -1 n) (nthcdr (+ 1 m) x))))
-  :hints (("Goal" :in-theory (enable ))))
+                  (take (+ -1 n) (nthcdr (+ 1 m) x)))))
 
 ;drop rewrite part?
 (defthm consp-of-take-tp

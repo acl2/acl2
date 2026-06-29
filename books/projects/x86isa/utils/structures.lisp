@@ -38,6 +38,8 @@
 ; Warren A. Hunt, Jr. <hunt@cs.utexas.edu>
 ; Matt Kaufmann       <kaufmann@cs.utexas.edu>
 ; Robert Krug         <rkrug@cs.utexas.edu>
+; Contributing Author(s):
+; Alessandro Coglio   <www.alessandrocoglio.info>
 
 (in-package "X86ISA")
 
@@ -75,12 +77,15 @@
 
 (defsection legacy-prefixes-layout-structure
 
-  :short "Functions to collect legacy prefix bytes from an x86 instruction."
+  :short "Structure to collect legacy prefix bytes from an x86 instruction."
 
-  :long "<p>The field @('num') of @('prefixes') not only includes the number of
-  legacy prefixes present in an instruction, but also the number of REX bytes,
-  even though REX bytes are not stored in this structure.  See @(tsee
-  get-prefixes) for details.</p>"
+  :long
+  "<p>These prefixes are described in
+   Intel manual, Mar 2026, Vol. 2, Sections 2.1 and 2.2.</p>
+   <p>The field @('num') of @('prefixes') not only includes the number of
+   legacy prefixes present in an instruction, but also the number of REX bytes,
+   even though REX bytes are not stored in this structure.  See @(tsee
+   get-prefixes) for details.</p>"
 
   (defbitstruct prefixes
     ((num         4bits "Number of Prefix Bytes")
@@ -100,13 +105,18 @@
 
 (defsection vex-prefixes-layout-structures
 
-  :short "Functions to decode and collect VEX prefix bytes from an x86
-  instruction."
+  :short "Functions to decode and structures to collect
+          VEX prefix bytes in an x86 instruction."
+  :long
+  "<p>The VEX prefix is described in
+   Intel manual, Mar 2026, Vol. 2, Section 2.3.</p>"
 
   (defbitstruct vex-prefixes
+    :short "VEX prefixes."
+    :long "<p>Intel manual, Mar 2026, Vol. 2, Figure 2-9.</p>"
     ((byte0  8bits "Can either be #xC4 or #xC5")
-     (byte1  8bits "Byte 1 of VEX prefixes")
-     (byte2  8bits "Relevant only for 3-byte VEX prefixes"))
+     (byte1  8bits "Byte 1")
+     (byte2  8bits "Byte 2, relevant only for 3-byte VEX prefixes"))
     :inline t)
 
   (local
@@ -115,23 +125,25 @@
           (unsigned-byte-p *vex-width* x))
      :rule-classes nil))
 
-  (define vex-prefixes-byte0-p ((vex-prefixes vex-prefixes-p))
-    :short "Returns @('t') if byte0 of the @('vex-prefixes') structure is
-    either @('*vex2-byte0*') or @('*vex3-byte0*'); returns @('nil') otherwise."
+  (define vex-prefixes-byte0-p ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :returns (ok booleanp)
+    :short "Returns @('t') if byte0 of the @('vex-prefixes') structure is
+            either @('*vex2-byte0*') (i.e. C5H) or @('*vex3-byte0*') (i.e. C4H);
+            returns @('nil') otherwise."
     (let ((byte0 (vex-prefixes->byte0 vex-prefixes)))
       (or (equal byte0 #.*vex2-byte0*) (equal byte0 #.*vex3-byte0*))))
 
-  ;; From Intel Vol. 2, Section 2.3.5.6: "In 32-bit mode the VEX first
+  ;; From Intel manual, Mar 2026, Vol. 2, Section 2.3.5.6:
+  ;; "In 32-bit mode the VEX first
   ;; byte C4 and C5 alias onto the LES and LDS instructions. To
   ;; maintain compatibility with existing programs the VEX 2nd byte,
   ;; bits [7:6] must be 11b."
 
-  ;; So, in 32-bit mode, vex2-byte1 must have r and MSB of
-  ;; vvvv set to 1, and vex3-byte1 must have r and x set to 1
+  ;; So, in 32-bit mode, vex2-byte1 must have R and MSB of
+  ;; vvvv set to 1, and vex3-byte1 must have R and X set to 1
   ;; if VEX is to be used instead of LES/LDS.
 
-  ;; From Intel manual (Dec 2024) Vol 2 Sec 2.3.5.6:
+  ;; From Intel manual, Mar 2026, Vol. 2, Section 2.3.5.6:
   ;; "If an instruction does not use VEX.vvvv then it should be set to
   ;; 1111b otherwise instruction will #UD.  In 64-bit mode all 4 bits
   ;; may be used. See Table 2-8 for the encoding of the XMM or YMM
@@ -139,41 +151,49 @@
   ;; is not 1, the 2-byte VEX version will generate LDS instruction
   ;; and the 3-byte VEX version will ignore this bit)."
 
-  ;; The above is reason why only 8 XMM/YMM registers are available in
-  ;; 32- and 16-bit modes.
+  ;; The above is the reason why only 8 XMM/YMM registers are available in
+  ;; 32-bit and 16-bit modes.
 
   ;; Source for VEX layout constants:
-  ;; Intel Vol. 2 (Dec 2023), Figure 2-9 (VEX bit fields)
+  ;; Intel Vol. 2 (Mar 2026), Figure 2-9 (VEX bit fields)
 
   ;; Note that the 2-byte VEX implies a leading 0F opcode byte, and
   ;; the 3-byte VEX implies leading 0F, 0F 38, or 0F 3A bytes.
 
   (defbitstruct vex2-byte1
+    :short "Byte 1 of 2-byte VEX prefix."
+    :long "<p>Intel manual, Mar 2026, Vol. 2, Figure 2-9.</p>"
     ((pp 2bits
          "Opcode extension providing equivalent functionality of a SIMD
-          prefix; <br/>
-          @('#b00 - None; #b01 - #x66; #b10 - #xF3; #b11 - #xF2')")
+          prefix: <br/>
+          @('#b00: None') <br/>
+          @('#b01: #x66') <br/>
+          @('#b10: #xF3') <br/>
+          @('#b11: #xF2')")
      (l  bitp
-         "Vector Length; <br/>
-          @('0 - scalar or 128-bit vector; 1 - 256-bit vector')")
+         "Vector Length: <br/>
+          @('0: scalar or 128-bit vector') <br/>
+          @('1: 256-bit vector')")
      (vvvv 4bits
-           "A register specifier (in 1's complement form) or @('1111') if
-            unused.")
+           "A register specifier (in 1's complement form)
+            or @('1111') if unused.")
      (r    bitp
-           "@('REX.R') in 1's complement (inverted) form;<br/>
-            @('1: Same as REX.R=0 (must be 1 in 32-bit mode);')<br/>
-            @('0: Same as REX.R=1 (64-bit mode only)').<br/>
+           "@('REX.R') in 1's complement (inverted) form: <br/>
+            @('1: Same as REX.R=0 (must be 1 in 32-bit mode);') <br/>
+            @('0: Same as REX.R=1 (64-bit mode only)'). <br/>
             In protected and compatibility modes, the bit must be set to @('1'),
             otherwise the instruction is LES or LDS."))
     :msb-first nil
     :inline t)
 
   (defbitstruct vex3-byte1
+    :short "Byte 1 of 3-byte VEX prefix."
+    :long "<p>Intel manual, Mar 2026, Vol. 2, Figure 2-9.</p>"
     ((m-mmmm 5bits
              "@('00000'): Reserved for future use (will #UD) <br/>
-              @('00001'): implied 0F leading opcode byte
-              @('00010'): implied 0F 38 leading opcode bytes
-              @('00011'): implied 0F 3A leading opcode bytes
+              @('00001'): implied 0F leading opcode byte <br/>
+              @('00010'): implied 0F 38 leading opcode bytes <br/>
+              @('00011'): implied 0F 3A leading opcode bytes <br/>
               @('00100-11111'): Reserved for future use (will #UD)")
      (b bitp
         "REX.B in 1's complement (inverted) form <br/>
@@ -183,52 +203,54 @@
         "REX.X in 1's complement (inverted) form <br/>
          @('1 - Same as REX.X=0') (must be 1 in 32-bit mode) <br/>
          @('0 - Same as REX.X=1') (64-bit mode only) <br/>
-         In 32-bit modes, this bit must be set to @('1'), otherwise the
-         instruction is LES or LDS.")
+         In 32-bit modes, this bit must be set to @('1'),
+         otherwise the instruction is LES or LDS.")
      (r bitp
         "REX.R in 1's complement (inverted) form <br/>
          @('1 - Same as REX.R=0') (must be 1 in 32-bit mode) <br/>
          @('0 - Same as REX.R=1') (64-bit mode only) <br/>
-         In protected and compatibility modes the bit must be set to @('1')
+         In protected and compatibility modes the bit must be set to @('1'),
          otherwise the instruction is LES or LDS."))
     :xvar vex3byte1
     :msb-first nil
     :inline t)
 
   (defbitstruct vex3-byte2
+    :short "Byte 2 of 3-byte VEX prefix."
+    :long "<p>Intel manual, Mar 2026, Vol. 2, Figure 2-9.</p>"
     ((pp 2bits
-         "Opcode extension providing equivalent functionality of a SIMD
-          prefix<br />
-          @('#b00: None') <br />
-          @('#b01: #x66') <br />
-          @('#b10: #xF3') <br />
+         "Opcode extension providing equivalent functionality of
+          a SIMD prefix: <br/>
+          @('#b00: None') <br/>
+          @('#b01: #x66') <br/>
+          @('#b10: #xF3') <br/>
           @('#b11: #xF2')")
-
      (l bitp
-        "Vector Length <br />
-         @('0: scalar or 128-bit vector') <br />
+        "Vector Length: <br/>
+         @('0: scalar or 128-bit vector') <br/>
          @('1: 256-bit vector')")
-
      (vvvv 4bits
-           "A register specifier (in 1's complement form) or @('1111') if
-            unused.")
-
+           "A register specifier (in 1's complement form)
+            or @('1111') if unused.")
      (w bitp
-        "Opcode specific (use like REX.W, or used for opcode extension, or
-         ignored, depending on the opcode byte." ))
+        "Opcode specific (use like REX.W, or used for opcode extension,
+         or ignored, depending on the opcode byte)." ))
     :msb-first nil
     :inline t)
 
   (define vex-prefixes-map-p ((bytes :type (unsigned-byte 16))
-                              (vex-prefixes vex-prefixes-p))
+                              (vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :guard (and (vex-prefixes-byte0-p vex-prefixes)
                 (or (equal bytes #ux0F)
                     (equal bytes #ux0F38)
                     (equal bytes #ux0F3A)))
     :returns (ok booleanp)
-    :short "Returns @('t') if the @('vex-prefixes'), irrespective of whether
-    they are two- or three-byte form, indicate the map that begins with the
-    escape bytes @('bytes')."
+    :short "Returns @('t') if the @('vex-prefixes'),
+            irrespective of whether they are two- or three-byte form,
+            indicate the map that begins with the escape bytes @('bytes')."
+    :long
+    "<p>Intel manual, Mar 2026, Vol. 2, Section 2.3.6.1
+     says that 2-byte VEX implies 0F opcode byte</p>"
     (b* ((byte0 (vex-prefixes->byte0 vex-prefixes))
          (byte1 (vex-prefixes->byte1 vex-prefixes)))
       (case bytes
@@ -236,7 +258,7 @@
          (or (equal byte0 #.*vex2-byte0*)
              (and (equal byte0 #.*vex3-byte0*)
                   (equal (vex3-byte1->m-mmmm byte1) #.*v0F*))))
-        (otherwise
+        (otherwise ; 0F38 and 0F3A
          (and (equal byte0 #.*vex3-byte0*)
               (if (equal bytes #ux0F38)
                   (equal (vex3-byte1->m-mmmm byte1) #.*v0F38*)
@@ -245,69 +267,73 @@
   ;; Some convenient accessor functions for those fields of the VEX prefixes
   ;; that are common to both the two- and three-byte forms:
 
-  (define vex->vvvv ((vex-prefixes vex-prefixes-p))
-    :short "Get the @('VVVV') field of @('vex-prefixes'); cognizant of the two-
-    or three-byte VEX prefixes form."
+  (define vex->vvvv ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (vvvv (unsigned-byte-p 4 vvvv)
                    :hyp (vex-prefixes-byte0-p vex-prefixes)
-                   :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+                   :hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
+    :short "Get the @('vvvv') field of @('vex-prefixes');
+            cognizant of the two- or three-byte VEX prefixes form."
     (case (vex-prefixes->byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1->vvvv (vex-prefixes->byte1 vex-prefixes)))
       (#.*vex3-byte0*
        (vex3-byte2->vvvv (vex-prefixes->byte2 vex-prefixes)))
-      (otherwise -1)))
+      (otherwise (prog2$ (acl2::impossible) 0)))
+    :guard-hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
 
   (define vex->l ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
-    :short "Get the @('L') field of @('vex-prefixes'); cognizant of the two- or
-    three-byte VEX prefixes form."
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (l (unsigned-byte-p 1 l)
                 :hyp (vex-prefixes-byte0-p vex-prefixes)
-                :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+                :hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
+    :short "Get the @('L') field of @('vex-prefixes');
+            cognizant of the two- or three-byte VEX prefixes form."
     (case (vex-prefixes->byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1->l (vex-prefixes->byte1 vex-prefixes)))
       (#.*vex3-byte0*
        (vex3-byte2->l (vex-prefixes->byte2 vex-prefixes)))
-      (otherwise -1)))
+      (otherwise (prog2$ (acl2::impossible) 0)))
+    :guard-hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
 
   (define vex->pp ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
-    :short "Get the @('PP') field of @('vex-prefixes'); cognizant of the two- or
-    three-byte VEX prefixes form."
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (pp (unsigned-byte-p 2 pp)
                  :hyp (vex-prefixes-byte0-p vex-prefixes)
-                 :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+                 :hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
+    :short "Get the @('pp') field of @('vex-prefixes');
+            cognizant of the two- or three-byte VEX prefixes form."
     (case (vex-prefixes->byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1->pp (vex-prefixes->byte1 vex-prefixes)))
       (#.*vex3-byte0*
        (vex3-byte2->pp (vex-prefixes->byte2 vex-prefixes)))
-      (otherwise -1)))
+      (otherwise (prog2$ (acl2::impossible) 0)))
+    :guard-hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
 
   (define vex->r ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
-    :short "Get the @('R') field of @('vex-prefixes'); cognizant of the two- or
-    three-byte VEX prefixes form."
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (r (unsigned-byte-p 1 r)
                 :hyp (vex-prefixes-byte0-p vex-prefixes)
-                :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+                :hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
+    :short "Get the @('R') field of @('vex-prefixes');
+            cognizant of the two- or three-byte VEX prefixes form."
     (case (vex-prefixes->byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1->r (vex-prefixes->byte1 vex-prefixes)))
       (#.*vex3-byte0*
        (vex3-byte1->r (vex-prefixes->byte1 vex-prefixes)))
-      (otherwise -1)))
+      (otherwise (prog2$ (acl2::impossible) 0)))
+    :guard-hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
 
   (define vex->w ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
-    :short "Get the @('W') field of @('vex-prefixes'); cognizant of the two- or
-    three-byte VEX prefixes form."
     :guard (vex-prefixes-byte0-p vex-prefixes)
     :returns (w (unsigned-byte-p 1 w)
                 :hyp (vex-prefixes-byte0-p vex-prefixes)
-                :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+                :hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
+    :short "Get the @('W') field of @('vex-prefixes');
+            cognizant of the two- or three-byte VEX prefixes form."
     (case (vex-prefixes->byte0 vex-prefixes)
       (#.*vex3-byte0*
        (vex3-byte2->w (vex-prefixes->byte2 vex-prefixes)))
@@ -329,44 +355,51 @@
   ;; that only apply to the three-byte forms, but that can be extended to
   ;; the two-byte forms:
 
-  (define vex->x ((vex-prefixes vex-prefixes-p))
+  (define vex->x ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
+    :returns (x (unsigned-byte-p 1 x))
     :short "Get the @('X') field of @('vex-prefixes') for the three-byte form,
-            or 1 for the two-byte form."
+            or return 1 for the two-byte form."
     :long "<p>Although the two-byte form has no @('X') bit,
            as far as the VEX encoding of the REX byte is concerned,
            the two-byte form can be regarded as encoding the value 0
            for the @('X') bit of the REX byte.
            Since the REX.X encoding in VEX is negated,
            this function returns 1 for the two-byte form.</p>
-           <p>See Intel manual Volume 2 Figure 2-9 of Dec 2023.</p> "
+           <p>See Intel manual Volume 2 Figure 2-9 of Mar 2026.</p>"
     (case (vex-prefixes->byte0 vex-prefixes)
       (#.*vex3-byte0* (vex3-byte1->x (vex-prefixes->byte1 vex-prefixes)))
       (otherwise 1)))
 
-  (define vex->b ((vex-prefixes vex-prefixes-p))
+  (define vex->b ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
+    :returns (b (unsigned-byte-p 1 b))
     :short "Get the @('B') field of @('vex-prefixes') for the three-byte form,
-            or 1 for the two-byte form."
+            or return 1 for the two-byte form."
     :long "<p>Although the two-byte form has no @('B') bit,
            as far as the VEX encoding of the REX byte is concerned,
            the two-byte form can be regarded as encoding the value 0
            for the @('B') bit of the REX byte.
            Since the REX.B encoding in VEX is negated,
            this function returns 1 for the two-byte form.</p>
-           <p>See Intel manual Volume 2 Figure 2-9 of Dec 2023.</p> "
+           <p>See Intel manual Volume 2 Figure 2-9 of Mar 2026.</p>"
     (case (vex-prefixes->byte0 vex-prefixes)
       (#.*vex3-byte0* (vex3-byte1->b (vex-prefixes->byte1 vex-prefixes)))
       (otherwise 1))))
 
 (defsection evex-prefixes-layout-structures
 
-  :short "Functions to decode and collect EVEX prefix bytes from an x86
-  instruction."
+  :short "Functions to decode and structures to collect
+          EVEX prefix bytes in an x86 instruction."
+  :long
+  "<p>The EVEX prefix is described in
+   Intel manual, Mar 2026, Vol. 2, Section 2.7.</p>"
 
-  ;; Sources: - Intel Vol. 2, Table 2-30
+  ;; Sources: - Intel Vol. 2, Section 2.7
   ;;          - Sandpile, under "byte encodings" section:
   ;;            http://www.sandpile.org/x86/opc_enc.htm
 
   (defbitstruct evex-prefixes
+    :short "EVEX prefixes."
+    :long "<p>Intel manual, Mar 2026, Vol. 2, Figure 2-11.</p>"
     ((byte0      8bits) ;; Should be #ux62
      (byte1      8bits)
      (byte2      8bits)
@@ -381,39 +414,47 @@
      :rule-classes nil))
 
   (defbitstruct evex-byte1
+    :short "Byte 1 of EVEX prefix."
+    :long "<p>Intel manual, Mar 2026, Vol. 2,
+           Figure 2-11 and Table 2-32.</p>"
     ((mmm 3bits
           "Access to up to 8 decoding maps (currently only 1, 2, 3, 5, 6).
-           Compressed legacy escape -- low two bits identical to VEX.pp.")
+           Compressed legacy escape:
+           low two bits identical to lowest two bits of VEX.m-mmmm.")
      (res bitp "Reserved; must be zero." :default '0)
      (r-prime bitp
-              "High-16 register specifier modifier -- combine with EVEX.R and
-               ModR/M.reg.")
-
-     ;; R, X, B are the next-8 register specifier
-     ;; modifiers --- combine with ModR/M.reg,
-     ;; ModR/M.r/m (base, index/vidx).
+              "High-16 register specifier modifier;
+               combine with EVEX.R and ModR/M.reg.")
+     ;; R, X, B are the next-8 register specifier modifiers;
+     ;; combine with ModR/M.reg, ModR/M.r/m (base, index/vidx).
      (b bitp)
-     (x bitp "Must be set to @('1') in 32-bit mode, otherwise instruction is
-              BOUND.")
-     (r bitp "Must be set to @('1') in 32-bit mode. otherwise instruction is
-              BOUND."))
+     (x bitp "Must be set to @('1') in 32-bit mode,
+              otherwise instruction is BOUND.")
+     (r bitp "Must be set to @('1') in 32-bit mode,
+              otherwise instruction is BOUND."))
     :inline t
     :msb-first nil
     :xvar byte1)
 
   (defbitstruct evex-byte2
-    ((pp 2bits "Compressed legacy escape -- identical to low two bits of VEX.pp.")
+    :short "Byte 2 of EVEX prefix."
+    :long "<p>Intel manual, Mar 2026, Vol. 2,
+           Figure 2-11 and Table 2-32.</p>"
+    ((pp 2bits "Compressed legacy escape: identical to low two bits of VEX.pp.")
      (res bitp "Reserved; Must be one." :default '1)
-     (vvvv 4bits "NDS register specifier --- same as VEX.vvvv.")
+     (vvvv 4bits "VVVV register specifier --- same as VEX.vvvv.")
      (w bitp "Operand size promotion / opcode extension."))
     :inline t
     :msb-first nil)
 
   (defbitstruct evex-byte3
+    :short "Byte 3 of EVEX prefix."
+    :long "<p>Intel manual, Mar 2026, Vol. 2,
+           Figure 2-11 and Table 2-32.</p>"
     ((aaa 3bits "Embedded opmask register specifier.")
      (v-prime bitp
-              "High-16 NDS/VIDX register specifier -- combine with EVEX.vvvv or
-               when VSIB present.")
+              "High-16 VVVV/VIDX register specifier;
+               combine with EVEX.vvvv or when VSIB present.")
      (b bitp "Broadcast/RC/SAE Context.")
      (vl/rc 2bits "Vector length/RC (denoted as L'L in the Intel manuals).")
      (z bitp "Zeroing/Merging."))
@@ -424,47 +465,49 @@
   ;; functions' guard proofs simpler:
 
   (define evex->aaa ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('aaa') field (embedded opmask) of @('evex-prefixes')."
     :returns (aaa (unsigned-byte-p 3 aaa) :hyp :guard)
+    :short "Get the @('aaa') field of @('evex-prefixes')."
     (evex-byte3->aaa (evex-prefixes->byte3 evex-prefixes)))
 
   (define evex->z ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('z') field (embedded opmask) of @('evex-prefixes')."
     :returns (z (unsigned-byte-p 1 z) :hyp :guard)
+    :short "Get the @('z') field of @('evex-prefixes')."
     (evex-byte3->z (evex-prefixes->byte3 evex-prefixes)))
 
   (define evex->vvvv ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('VVVV') field of @('evex-prefixes')."
     :returns (vvvv (unsigned-byte-p 4 vvvv) :hyp :guard)
+    :short "Get the @('vvvv') field of @('evex-prefixes')."
     (evex-byte2->vvvv (evex-prefixes->byte2 evex-prefixes)))
 
   (define evex->v-prime ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('v-prime') field of @('evex-prefixes')."
     :returns (v-prime (unsigned-byte-p 1 v-prime) :hyp :guard)
+    :short "Get the @('v-prime') field of @('evex-prefixes')."
     (evex-byte3->v-prime (evex-prefixes->byte3 evex-prefixes)))
 
   (define evex->vl/rc ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('vl/rc') field of @('evex-prefixes')."
     :returns (vl/rc (unsigned-byte-p 2 vl/rc) :hyp :guard)
+    :short "Get the @('vl/rc') field of @('evex-prefixes')."
     (evex-byte3->vl/rc (evex-prefixes->byte3 evex-prefixes)))
 
   (define evex->pp ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('PP') field of @('evex-prefixes')."
     :returns (pp (unsigned-byte-p 2 pp) :hyp :guard)
+    :short "Get the @('pp') field of @('evex-prefixes')."
     (evex-byte2->pp (evex-prefixes->byte2 evex-prefixes)))
 
   (define evex->w ((evex-prefixes evex-prefixes-p))
-    :short "Get the @('W') field of @('evex-prefixes')."
     :returns (w (unsigned-byte-p 1 w) :hyp :guard)
+    :short "Get the @('W') field of @('evex-prefixes')."
     (evex-byte2->w (evex-prefixes->byte2 evex-prefixes))))
 
 (defsection ModR/M-structures
   :parents (ModR/M-decoding structures)
   :short "Bitstruct definitions to store a ModR/M byte and its fields."
+  :long "<p>Intel manual, Mar 2026, Vol. 2, Figure 2-1.</p>"
 
   (local (xdoc::set-default-parents ModR/M-structures))
 
   (defbitstruct modr/m
+    :short "ModR/M byte."
     ((r/m 3bits)
      (reg 3bits)
      (mod 2bits))
@@ -490,8 +533,12 @@
 
   :parents (SIB-decoding structures)
   :short "Bitstruct definitions to store a SIB byte and its fields."
+  :long "<p>Intel manual, Mar 2026, Vol. 2, Figure 2-1.</p>"
+
+  (local (xdoc::set-default-parents SIB-structures))
 
   (defbitstruct sib
+    :short "SIB byte."
     ((base  3bits)
      (index 3bits)
      (scale 2bits))
@@ -518,31 +565,31 @@
 ;; Rflags:
 
 (defbitstruct rflagsBits
-  :long "<p>Source: Intel Manual, Dec-23, Vol. 1, Section 3.4.3</p>"
-  ((cf bitp)      ; carry flag
+  :short "Flags register."
+  :long "<p>Intel Manual, Mar 2026, Vol. 1, Section 3.4.3.</p>"
+  ((cf bitp)                  ; carry flag
    (res1 bitp :default '1)    ; 1 (reserved)
-   (pf bitp)      ; parity flag
+   (pf bitp)                  ; parity flag
    (res2 bitp :default '0)    ; 0 (reserved)
-   (af bitp)      ; auxiliary-carry flag
+   (af bitp)                  ; auxiliary carry flag
    (res3 bitp :default '0)    ; 0 (reserved)
-   (zf bitp)      ; zero flag
-   (sf bitp)      ; sign flag
-   (tf bitp)      ; trap flag
-   (intf bitp)    ; interrupt-enable flag
-   (df bitp)      ; direction flag
-   (of bitp)      ; overflow flag
-   (iopl 2bits)  ; i/o privilege level
-   (nt bitp)      ; nested task
+   (zf bitp)                  ; zero flag
+   (sf bitp)                  ; sign flag
+   (tf bitp)                  ; trap flag
+   (intf bitp)                ; interrupt enable flag
+   (df bitp)                  ; direction flag
+   (of bitp)                  ; overflow flag
+   (iopl 2bits)               ; I/O privilege level
+   (nt bitp)                  ; nested task
    (res4 bitp :default '0)    ; 0 (reserved)
-   (rf bitp)      ; resume flag
-   (vm bitp)      ; virtual-8086 mode
-   (ac bitp)      ; alignment check
-   (vif bitp)     ; virtual interrupt flag
-   (vip bitp)     ; virtual interrupt pending
-   (id bitp)      ; id flag
-   (res5 10bits) ; 0 (reserved)
-;   (reserved     32 32) ; reserved bits
-   )
+   (rf bitp)                  ; resume flag
+   (vm bitp)                  ; virtual-8086 mode
+   (ac bitp)                  ; alignment check / access control
+   (vif bitp)                 ; virtual interrupt flag
+   (vip bitp)                 ; virtual interrupt pending
+   (id bitp)                  ; id flag
+   (res5 10bits)              ; 0 (reserved)
+  )
   :msb-first nil
   :inline t)
 
@@ -552,8 +599,8 @@
         (unsigned-byte-p 32 x))
    :rule-classes nil))
 
-;; Enable the following for RoW proofs involving rflags (bitstruct accessor and
-;; updater functions):
+;; Enable the following for RoW proofs involving rflags
+;; (bitstruct accessor and updater functions):
 
 (def-ruleset rflag-RoWs-enables
   '(!rflagsBits->cf-is-rflagsBits
@@ -584,7 +631,8 @@
 ;; Control Registers:
 
 (defbitstruct cr0Bits
-  :long "<p>Source: Intel Manual, Dec-23, Vol. 3A, Section 2.5</p>"
+  :short "CR0 register."
+  :long "<p>Intel Manual, Mar 2026, Vol. 3A, Section 2.5.</p>"
   ((pe bitp        "Protection Enable")
    (mp bitp        "Monitor coProcessor")
    (em bitp        "Emulation Bit")
@@ -609,7 +657,8 @@
    :rule-classes nil))
 
 (defbitstruct cr3Bits
-  :long "<p>Source: Intel Manual, Dec-23, Vol. 3A, Section 2.5</p>"
+  :short "CR3 register."
+  :long "<p>Intel Manual, Mar 2026, Vol. 3A, Section 2.5.</p>"
   ((res1 3bits)    ;; 0
    (pwt bitp)      ;; Page-Level Writes Tranparent
    (pcd bitp)      ;; Page-Level Cache Disable
@@ -619,7 +668,7 @@
    ;; The reason why res3 are 12 reserved bits is that
    ;; CR3[63:MAXPHYADDR] must be 0 (see Intel Manual Vol. 3A Section 2.5),
    ;; and in our model we have 52-bit physical addresses.
-   )
+  )
   :msb-first nil
   :inline t)
 
@@ -630,7 +679,8 @@
    :rule-classes nil))
 
 (defbitstruct cr4Bits
-  :long "<p>Source: Intel Manual, Dec-23, Vol. 3A, Section 2.5</p>"
+  :short "CR4 register."
+  :long "<p>Intel Manual, Mar 2026, Vol. 3A, Section 2.5.</p>"
   ((vme bitp)        ;; Virtual-8086 Mode Extensions
    (pvi bitp)        ;; Protected-Mode Virtual Interrupts
    (tsd bitp)        ;; Time-Stamp Disable
@@ -647,34 +697,36 @@
    (vmxe bitp)       ;; VMX Enable Bit
    (smxe bitp)       ;; SMX Enable Bit
    (res1 bitp)       ;; 0 (Reserved)
-   (fsgsbase bitp)   ;; FSGSBase-Enable Bit (Enables the
-                     ;; instructions RDFSBASE, RDGSBASE,
-                     ;; WRFSBASE, and WRGSBASE.)
-   (pcide bitp)      ;; PCID-Enable Bit
+   (fsgsbase bitp)   ;; FSGSBase-Enable Bit (enables the instructions
+                     ;; RDFSBASE, RDGSBASE, WRFSBASE, and WRGSBASE)
+   (pcide bitp)      ;; Process-Context Identifiers Enable Bit
    (osxsave bitp)    ;; XSAVE and Processor Extended States
    (kl bitp)         ;; Key Locker Enable Bit
    (smep bitp)       ;; Supervisor Mode Execution Prevention
    (smap bitp)       ;; Supervisor Mode Access Prevention
-   (pke bitp)        ;; Protection keys for user-mode pages
+   (pke bitp)        ;; Enable protection keys for user-mode pages
    (cet bitp)        ;; Control Flow Enforcement Technology
    (pks bitp)        ;; Protection keys for supervisor-mode pages
    (uintr bitp)      ;; User interrupts enable bit
+   (res2 2bits)      ;; 0 (Reserved)
+   (lam-sup bitp)    ;; Supervisor LAM enable
+   (res3 3bits)      ;; 0 (Reserved)
+   (fred bitp)       ;; FRED enable
    ;; The remaining bits are reserved.
-   )
+  )
   :msb-first nil
   :inline t)
 
 (local
  (defthm cr4-layout-ok
    (iff (cr4Bits-p x)
-        (unsigned-byte-p
-         ;; 64 --- A smaller value here avoids bignum creation.
-         26 x))
+        (unsigned-byte-p 33 x))
    :rule-classes nil))
 
-; Intel manual, Dec'23, Vol. 3A, Section 11.8.6
+; Intel manual, Mar 2026, Vol. 3A, Section 13.8.6
 (defbitstruct cr8Bits
-  :long "<p>Source: Intel Manual, Dec-23, Vol. 3A, Section 2.5</p>"
+  :short "CR8 register."
+  :long "<p>Intel Manual, Mar 2026, Vol. 3A, Section 2.5.</p>"
   (
    ;; Task Priority Level (width = 4). This sets
    ;; the threshold value corresponding to the
@@ -692,18 +744,14 @@
 (local
  (defthm cr8-layout-ok
    (iff (cr8Bits-p x)
-        (unsigned-byte-p ;; 64
-         ;; A smaller value here avoids
-         ;; bignum creation.
-         4
-         x))
+        (unsigned-byte-p 4 x))
    :rule-classes nil))
 
 (defbitstruct xcr0Bits
-  :long "<p>Source: Intel manual, Dec'23, Vol. 3A, Figure 2-8</p>"
+  :short "XCR0 register."
+  :long "<p>Intel manual, Mar 2026, Vol. 3A, Figure 2-8.</p>"
   ;; Software can access XCR0 only if CR4.OSXSAVE[bit 18] = 1. (This bit
   ;; is also readable as CPUID.01H:ECX.OSXSAVE[bit 27].)
-
   ((fpu/mmx-state bitp) ;; This bit must be 1.  An attempt
                         ;; to write 0 to this bit causes a
                         ;; #GP exception.
@@ -719,8 +767,7 @@
    (res2 7bits) ;; 0 (Reserved)
    (tileconfig-state bitp)
    (tiledata-state bitp)
-   (res4 45bits)
-   )
+   (res3 45bits))
   :msb-first nil
   :inline t)
 
@@ -735,18 +782,19 @@
 ;; Model-specific Registers:
 
 (defbitstruct ia32_eferBits
-  :long "<p>Source: Intel Manual, Dec-23, Vol. 3A, Section 2.2.1</p>"
+  :short "IA32_EFER register."
+  :long "<p>Intel Manual, Mar 2026, Vol. 3A, Section 2.2.1.</p>"
   ((sce bitp)    ;; Syscall Enable (R/W) (enables SYSCALL/SYSRET)
    (res1 7bits)  ;; Reserved?
    (lme bitp)    ;; Long Mode Enabled (R/W)
    (res2 bitp)   ;; Reserved?
    (lma bitp)    ;; Long Mode Active (R)
    (nxe bitp)    ;; Execute Disable Bit Enable (R/W)
-                 ;; (Enables page access restriction by
-                 ;; preventing instruction fetches from
-                 ;; PAE pages with the XD bit set)
+   ;; (Enables page access restriction by
+   ;; preventing instruction fetches from
+   ;; PAE pages with the XD bit set)
    ;; The remaining bits are reserved.
-   )
+  )
   :msb-first nil
   :inline t)
 

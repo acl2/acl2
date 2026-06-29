@@ -25,7 +25,7 @@
 (defthmd order-extend-p-subgroup
   (implies (and (subgroupp h g)
 		(posp n)
-		(elt-of-ord n (quotient (normalizer h g) h)))
+		(find-elt-of-ord n (quotient (normalizer h g) h)))
 	   (let ((k (extend-p-subgroup h g n)))
 	     (and (subgroupp h k)
 	          (subgroupp k g)

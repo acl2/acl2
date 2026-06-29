@@ -40,7 +40,7 @@
 
 (local (in-theory (e/d (consp-of-cdr-when-dargp
                         not-cddr-when-dargp)
-                       ( ;symbolp-of-car-of-car-when-symbol-term-alistp
+                       (;symbolp-of-car-of-car-when-symbol-term-alistp
                         assoc-equal
                         ;;default-car
                         ;;default-cdr

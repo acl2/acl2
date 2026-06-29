@@ -374,7 +374,7 @@
 ;todo: what about shift operators?  we need an official list of BV ops
 (defun unsigned-byte-p-rules ()
   (declare (xargs :guard t))
-  '( ;; todo: add more?
+  '(;; todo: add more?
     unsigned-byte-p-of-bvchop
     unsigned-byte-p-of-bvcat-all-cases ;todo name
     unsigned-byte-p-of-bvcat ;todo drop?
@@ -866,6 +866,9 @@
      equal-of-0-and-bitnot
      equal-of-1-and-bitnot
 
+     bitnot-of-bitxor-of-1
+     bitxor-of-1-and-bitnot
+
      bvand-of-myif-arg1
      bvand-of-myif-arg2
      bvxor-of-myif-1
@@ -1017,6 +1020,7 @@
      bvif-of-getbit-arg3
      bvif-of-getbit-arg4
 
+     bvlt-of-1
      not-bvlt-self
      bvlt-of-ifix-arg2
      bvlt-of-ifix-arg3
@@ -1798,7 +1802,7 @@
     bvchop-list-of-bvchop-list))
 
 ;; are these all for when the logext is too big?
-;; do we need these if we have the convert-to-bv-rules?
+;; todo: can we rely on the convert-to-bv-rules instead (make sure those are always included)?
 (defun bv-of-logext-rules ()
   (declare (xargs :guard t))
   '(bvplus-of-logext-arg2
@@ -1874,8 +1878,7 @@
 
 ;; ;these are now all/mostly related to 2d arrays?
 ;; (defconst *misc-rules*
-;;   '(
-;;     ;; SLICE-OF-BVCAT-HACK-GEN-BETTER
+;;   '(;; SLICE-OF-BVCAT-HACK-GEN-BETTER
 
 ;; ;    get-rid-of-logtail ;bbozo drop me! we need a more systematic way to get rid of logtail? or does it not appear?
 
@@ -2038,8 +2041,7 @@
 ;fixme do i ever see logtail?
 (defun more-rules-yuck ()
   (declare (xargs :guard t))
-  '(
-;    bvand-logtail-arg1 ;trying without these (logtail now never appears?) Thu Mar  3 01:55:15 2011
+  '(; bvand-logtail-arg1 ;trying without these (logtail now never appears?) Thu Mar  3 01:55:15 2011
 ;    bvand-logtail-arg2
 ;    bvor-logtail-arg1
 ;    bvor-logtail-arg2
@@ -3519,7 +3521,6 @@
              commutativity-2-of-+-when-constant
              rationalp-of--
              rationalp-+
-             bvlt-of-1
              max
              bvchop-of-times-of-/-32
              integerp-of-1-times-1/32

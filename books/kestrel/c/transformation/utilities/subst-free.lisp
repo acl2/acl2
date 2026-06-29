@@ -358,9 +358,11 @@
      (type-spec-atomic
        (tyname-subst-free (c$::type-spec-atomic->type type-spec)
                           subst bound-vars))
-     :struct (type-spec-struct (struni-spec-subst-free
-                                 (c$::type-spec-struct->spec type-spec)
-                                 subst bound-vars))
+     :struct (c$::make-type-spec-struct
+               :spec (struni-spec-subst-free
+                       (c$::type-spec-struct->spec type-spec)
+                       subst bound-vars)
+               :info type-spec.info)
      :union (type-spec-union (struni-spec-subst-free
                                (c$::type-spec-union->spec type-spec)
                                subst bound-vars))
@@ -868,7 +870,10 @@
           (param-declor-subst-free
             (c$::param-declon->declor param-declon)
             subst bound-vars)))
-      (mv (param-declon specs declor (c$::param-declon->attribs param-declon))
+      (mv (param-declon specs
+                        declor
+                        (c$::param-declon->attribs param-declon)
+                        (c$::param-declon->info param-declon))
           (ident-set-fix bound-vars)))
     :measure (param-declon-count param-declon))
 

@@ -122,7 +122,7 @@
                 (natp element-count))
            (equal (bv-list-read-chunk-little element-size element-count index list)
                   (bv-list-read-chunk-little element-size element-count index (take (+ element-count -1 (expt 2 8)) list))))
-  :hints (("Goal" :use (:instance acl2::bv-list-read-shorten-core (bound (+ 255 element-count)))
+  :hints (("Goal" :use (:instance bv-list-read-shorten-core (bound (+ 255 element-count)))
            :in-theory (enable unsigned-byte-p))))
 
 ;;special case when index is a byte -- todo gen, using axe-syntaxp
@@ -134,5 +134,5 @@
            (equal (bv-list-read-chunk-little element-size element-count index list)
                   ;; the call of TAKE here should get evaluated:
                   (bv-list-read-chunk-little element-size element-count index (take (+ element-count -1 (expt 2 8)) list))))
-  :hints (("Goal" :use (:instance acl2::bv-list-read-shorten-core (bound (+ 255 element-count)))
+  :hints (("Goal" :use (:instance bv-list-read-shorten-core (bound (+ 255 element-count)))
            :in-theory (enable unsigned-byte-p))))

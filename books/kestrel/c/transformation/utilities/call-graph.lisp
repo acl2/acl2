@@ -658,8 +658,8 @@
   :returns (call-graph$ call-graphp)
   :short "Build a call graph corresponding to a translation unit."
   (b* (((trans-unit trans-unit) trans-unit)
-       (info (c$::trans-unit-info-fix (c$::trans-unit->info trans-unit)))
-       (valid-table (c$::trans-unit-info->table-end info)))
+       (info (c$::trans-unit-vinfo-fix (c$::trans-unit->info trans-unit)))
+       (valid-table (c$::trans-unit-vinfo->table-end info)))
     (call-graph-trans-item-list trans-unit.items filepath valid-table call-graph))
   :guard-hints (("Goal" :in-theory (enable c$::trans-unit-annop))))
 

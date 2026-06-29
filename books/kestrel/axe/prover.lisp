@@ -102,7 +102,7 @@
 ;;            (all-myquotep (mv-nth 1 (sublis-var-and-eval-lst alist l interpreted-function-alist))))
 ;;   :hints (("subgoal *1/1"
 ;; ;           :use (:instance pseudo-termp-of-sublis-var-and-eval (form (car l)))
-;;            :in-theory (e/d ( ;consp-of-cdr-when-pseudo-termp
+;;            :in-theory (e/d (;consp-of-cdr-when-pseudo-termp
 ;;                             ) (
 ;;                             ;pseudo-termp-of-sublis-var-and-eval
 ;;                             )))
@@ -1383,26 +1383,23 @@
                                               changep ;; no change to changep
                                               rule-alist interpreted-function-alist monitored-symbols print case-designator work-hard-when-instructedp hit-counts tries prover-depth options (+ -1 count) state)
            ;; Rewriting changed the literal.  Harvest the disjuncts, raising them to top level, and add them to the done-list:
-           (b* (((mv erp provedp extended-done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+           (b* (((mv erp provedp new-disjuncts dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                  (get-darg-disjuncts new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                done-list ; will be extended with the disjuncts
-                                nil       ;negated-flg
-                                nil       ; print, todo
-                                ))
-                ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)))
-             (if provedp
+                                     nil ; print, todo
+                                     ))
+                ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))
+                ((when provedp)
                  (mv (erp-nil)
                      t   ;provedp
                      t   ;changep
                      nil ;literal-nodenums
-                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
-               ;; Continue rewriting literals:
-               (rewrite-literals-for-axe-prover rest-work-list
-                                                extended-done-list
-                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                t ;; something changed
-                                                rule-alist interpreted-function-alist monitored-symbols print case-designator work-hard-when-instructedp hit-counts tries prover-depth options (+ -1 count) state)
-               )))))))
+                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)))
+             ;; Continue rewriting literals:
+             (rewrite-literals-for-axe-prover rest-work-list
+                                              (union-equal new-disjuncts done-list)
+                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                              t ;; something changed
+                                              rule-alist interpreted-function-alist monitored-symbols print case-designator work-hard-when-instructedp hit-counts tries prover-depth options (+ -1 count) state)))))))
 
  ;; can this loop? probably, if the rules loop?
  ;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state).
@@ -1608,7 +1605,7 @@
  ;;               (cw "Clause miter literals:~%")
  ;;               ;; (print-array 'dag-array dag-array dag-len)
  ;;               (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)
- ;;               (let* ( ;;fixme or we could use a worklist starting with literal-nodenums..
+ ;;               (let* (;;fixme or we could use a worklist starting with literal-nodenums..
  ;;                      (tag-array-for-prove-clause-miter (tag-supporters-of-nodes-with-name literal-nodenums 'dag-array dag-array 'tag-array-for-prove-clause-miter
  ;;                                                                                 (+ 1 (maxelem literal-nodenums))))
  ;;                      (rec-fn-nodenums (filter-rec-fn-nodes2 (+ -1 dag-len) 'dag-array dag-array 'tag-array-for-prove-clause-miter tag-array-for-prove-clause-miter state))
@@ -1838,8 +1835,7 @@
              ;;splitting on nodenum (which is not a call of NOT):
              ;;instead of proving the clause C, we will prove both (or (not nodenum) C) and (or nodenum C)
              ;;can we somehow avoid this saving? copy to a new array? ;change rewrite-literals-for-axe-prover to not destroy existing nodes?!
-             (b* (
-                  ;;(saved-dag-array dag-array) ;(saved-dag-alist (array-to-alist 'dag-array dag-array dag-len)) ;don't convert to an alist?  just restore later by making the old value of dag-array the new  under-the-hood value?  same for parents array?
+             (b* (;;(saved-dag-array dag-array) ;(saved-dag-alist (array-to-alist 'dag-array dag-array dag-len)) ;don't convert to an alist?  just restore later by making the old value of dag-array the new  under-the-hood value?  same for parents array?
                   ;;(saved-dag-len dag-len)
                   ;;(saved-dag-parent-array dag-parent-array) ;(saved-dag-parent-alist (array-to-alist 'dag-parent-array dag-parent-array dag-len))
                   ;;(saved-dag-constant-alist dag-constant-alist)
@@ -1959,8 +1955,8 @@
           (mv (erp-nil) :proved state)
         (b* ((- (cw "Note: The DAG was the constant nil.")))
           (mv (erp-nil) :failed state)))
-    (b* ( ;(dummy (cw " ~x0 prover rules (print ~x1).~%" (len prover-rules) print)) ;drop?
-;          (dummy (cw "print-max-conflicts-goalp:  ~x0" print-max-conflicts-goalp))
+    (b* (;; (dummy (cw " ~x0 prover rules (print ~x1).~%" (len prover-rules) print)) ;drop?
+         ;; (dummy (cw "print-max-conflicts-goalp:  ~x0" print-max-conflicts-goalp))
          ;; Load the DAG nodes into an array:
          (dag-array (make-dag-into-array 'dag-array dag 0)) ; todo: use nonzero slack?
          (top-nodenum (top-nodenum dag))

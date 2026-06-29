@@ -519,10 +519,9 @@
     bit->bool$inline
     bit->bool
 
-    acl2::bfix
-    ;; acl2::bfix$ ; doesn't seem to exist
-    acl2::bfix$inline
-    ))
+    bfix
+    ;; bfix$ ; doesn't seem to exist
+    bfix$inline))
 
 ;; Ideally, these would all be rewritten away
 (defconst *symbols-from-rtl*

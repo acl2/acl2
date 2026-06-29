@@ -193,9 +193,7 @@
 (local
  (defthm cancel-hack
   (equal (< (+ a b c) c)
-         (< (+ a b) 0))
-  :hints (("Goal" :in-theory (enable)))))
-
+         (< (+ a b) 0))))
 
 ;; FIXME What version of the JVM spec should we target?
 
@@ -3761,8 +3759,8 @@
            :in-theory (e/d (make-class-info-from-raw-parsed-class
                             JVM::CLASS-INFOP0 ;todo
                             raw-parsed-classp
-                            superclass-and-interfaceness-okp
-                            ) ( ;jvm::make-class-info ;todo
+                            superclass-and-interfaceness-okp)
+                           (;jvm::make-class-info ;todo
                             )))))
 
 (defthm class-infop-of-mv-nth-0-of-make-class-info-from-raw-parsed-class

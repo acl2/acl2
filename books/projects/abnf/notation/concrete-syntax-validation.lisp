@@ -1,10 +1,10 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -12,10 +12,10 @@
 
 (include-book "concrete-syntax")
 
-(include-book "../operations/well-formedness")
-(include-book "../operations/closure")
-(include-book "../operations/in-terminal-set")
-(include-book "../operations/plugging")
+(include-book "../grammar-operations/well-formedness")
+(include-book "../grammar-operations/closure")
+(include-book "../grammar-operations/in-terminal-set")
+(include-book "../grammar-operations/plugging")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -39,8 +39,9 @@
    (xdoc::p
     "These theorems are in a separate file
      so that the definition of the concrete syntax
-     does not depend on the grammar @(see operations),
-     as also done for @(see core-rules-validation)
+     does not depend on the "
+    (xdoc::seetopic "grammar-operations" "grammar operations")
+    ", as also done for @(see core-rules-validation)
      and for @(see concrete-syntax-rules-validation)."))
 
   (defruled rulelist-wfp-of-*grammar*

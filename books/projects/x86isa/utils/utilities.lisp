@@ -97,10 +97,10 @@
   :short "Definitions of commonly used constants and some functions to
   convert between @('natp') and @('integerp'), etc."
 
-  :long "<p>Definitions of constants (of the form @('2^W')) and
-functions/macros grouped in @('ruleset')s of the following form are defined
-(where @('W') is at least a two-digit natural number; @('8') is represented as
-@('08')):</p>
+  :long "<p>Definitions of constants (of the form @('*2^W*'), where @('W') is the
+plain decimal natural number) and functions/macros grouped in @('ruleset')s of
+the following form are defined (where in the function/macro names @('W') is
+zero-padded to at least two digits, so @('8') is represented as @('08')):</p>
 
 <ul>
 
@@ -126,7 +126,8 @@ functions/macros grouped in @('ruleset')s of the following form are defined
 <li>@('iW') belongs to @('iw-defs') ruleset.
 @({
     (define iW ((x integerp))
-      (logext W x))
+      (mbe :logic (logext W x)
+           :exec (fast-logext W x)))
 })</li>
 
 <li>@('nW-to-iW') belongs to @('nw-to-iw-defs') ruleset.
@@ -138,7 +139,7 @@ functions/macros grouped in @('ruleset')s of the following form are defined
 
 <li>@('iW-to-nW') belongs to @('iw-to-nw-defs') ruleset.
 @({
-    (define iW-to-Nw ((x iWp :type (signed-byte W)))
+    (define iW-to-nW ((x iWp :type (signed-byte W)))
         (mbe :logic (loghead W x)
              :exec (if (>= x 0) x (+ x 2^W))))
 })</li>
@@ -146,7 +147,7 @@ functions/macros grouped in @('ruleset')s of the following form are defined
 </ul>
 
 <p>The function @('np-def-n') is used to automatically create these
-constants and functions; it also proves some associated lemmas.</p>")
+constants and functions.</p>")
 
 ;; Lemmas to help in the MBE proof obligations
 ;; of the generated NTOI and ITON functions below:
@@ -311,7 +312,7 @@ constants and functions; it also proves some associated lemmas.</p>")
 
 (define trunc
   ;; We prefer using trunc in function definitions.
-  ((n :type (integer 0 *))
+  ((n :type (integer 0 *)) ; n is in bytes
    (x :type integer))
   :inline t
   :no-function t
@@ -322,7 +323,7 @@ constants and functions; it also proves some associated lemmas.</p>")
     (4  (n32 x))
     (8  (n64 x))
     (16 (n128 x))
-    (t (part-select x :low 0 :width n))))
+    (t (part-select x :low 0 :width (* 8 n)))))
 
 ;; ----------------------------------------------------------------------
 

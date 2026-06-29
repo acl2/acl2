@@ -97,7 +97,7 @@
                               (booleanp count-hits))
                   :mode :program
                   :stobjs state))
-  (b* ( ;; (vars (r1cs->vars r1cs))
+  (b* (;; (vars (r1cs->vars r1cs))
        ;; (constraints (r1cs->constraints r1cs))
        ;; Maps the vars in the R1CS (which are just symbols in that piece of
        ;; data) to ACL2 variables for the proof:

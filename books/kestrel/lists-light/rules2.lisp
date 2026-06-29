@@ -556,11 +556,10 @@
                   (not (equal (nth 1 lst)
                               (nth 2 lst)))))
   :hints (("Goal" :expand (take 3 lst)
-           :in-theory (e/d (subrange take) (
-                                                FIRSTN-OF-ONE-MORE ;bozo looped
-                                                TAKE-OF-CDR
-                                                3-cdrs
-                                                )))))
+           :in-theory (e/d (subrange take)
+                           (firstn-of-one-more ;bozo looped
+                            take-of-cdr
+                            3-cdrs)))))
 
 ;bozo add to bags lib
 (defthm not-unique-of-cons-nth
@@ -1104,11 +1103,9 @@
   :hints (("Goal"
            :use ((:instance SUBRANGE-OUT-OF-ORDER (start start1))
                  (:instance SUBRANGE-OUT-OF-ORDER (start start2)))
-           :in-theory (e/d (subrange) (
-                                       TAKE-OF-CDR-BECOMES-SUBRANGE
-
-                                       nthcdr-of-take)))))
-
+           :in-theory (e/d (subrange)
+                           (take-of-cdr-becomes-subrange
+                            nthcdr-of-take)))))
 
 ;the regular rule, len-of-subrange, gives rise to ifs during backchaining
 ;this covers the usual case...
@@ -1476,15 +1473,13 @@
 (defthm equal-of-cdr-and-cons-of-nth-of-1
   (equal (equal (cdr x) (cons (nth 1 x) y))
          (and (< 1 (len x))
-              (equal (cddr x) y)))
-  :hints (("Goal" :in-theory (disable))))
+              (equal (cddr x) y))))
 
 (defthm equal-of-nthcdr-and-cons-of-nth
   (implies (natp n)
            (equal (equal (nthcdr n x) (cons (nth n x) y))
                   (and (< n (len x))
-                       (equal (nthcdr (+ 1 n) x) y))))
-  :hints (("Goal" :in-theory (disable))))
+                       (equal (nthcdr (+ 1 n) x) y)))))
 
 ;(defmacro memberp (a x) `(memberp ,a ,x))
 

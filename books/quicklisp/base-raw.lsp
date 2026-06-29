@@ -105,6 +105,7 @@
 (load-system-from-acl2-quicklisp-bundle "osicat")
 (load-system-from-acl2-quicklisp-bundle "shellpool")
 (load-system-from-acl2-quicklisp-bundle "uiop")
+(load-system-from-acl2-quicklisp-bundle "usocket")
 
 (load-system-from-acl2-quicklisp-bundle "dexador")
 

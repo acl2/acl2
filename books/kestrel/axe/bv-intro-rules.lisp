@@ -315,10 +315,8 @@
 ;;                   (bvplus (+ 1 xsize) 1 x)))
 ;;   :hints (("Goal" :in-theory (e/d (bvplus
 ;;                                    UNSIGNED-BYTE-P-FORCED)
-;;                                   (
-;;                                    PLUS-BECOMES-BVPLUS
-;;                                    <-OF-CONSTANT-WHEN-UNSIGNED-BYTE-P-SIZE-PARAM
-;;                                    )))))
+;;                                   (PLUS-BECOMES-BVPLUS
+;;                                    <-OF-CONSTANT-WHEN-UNSIGNED-BYTE-P-SIZE-PARAM)))))
 
 
 ;; Special case for when the + is inside an unsigned-byte-p.

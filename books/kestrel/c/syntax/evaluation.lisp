@@ -54,6 +54,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum pointer
+  :parents (value)
+  :short "Fixtype of pointer values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now, we only distinguish between null and non-null pointers.
+     By ``non-null'', we mean any pointer to an object or a function.
+     Such a pointer will compare unequal to a null pointer [C17:6.3.2.3/3].
+     Note that there is only one null pointer value,
+     in the sense that null pointers always compare equal [C17:6.3.2.3/3].")
+   (xdoc::p
+    "We also include an @(':unknown') case."))
+  (:unknown ())
+  (:null ())
+  (:non-null ())
+  :pred pointerp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftypes values/value-list
   :short "Fixtypes of values and value lists."
 
@@ -74,22 +94,23 @@
                       "implementation environment")
       "."))
     (:unknown ())
-    (:bool   ((get bit)))
-    (:uchar  ((get nat
-                   :reqfix (if (unsigned-byte-p 8 get) get 0)))
+    (:bool    ((get bit)))
+    (:uchar   ((get nat
+                    :reqfix (if (unsigned-byte-p 8 get) get 0)))
      :require (unsigned-byte-p 8 get))
-    (:schar  ((get int
-                   :reqfix (if (signed-byte-p 8 get) get 0)))
+    (:schar   ((get int
+                    :reqfix (if (signed-byte-p 8 get) get 0)))
      :require (signed-byte-p 8 get))
-    (:ushort ((get nat)))
-    (:sshort ((get int)))
-    (:uint   ((get nat)))
-    (:sint   ((get int)))
-    (:ulong  ((get nat)))
-    (:slong  ((get int)))
-    (:ullong ((get nat)))
-    (:sllong ((get int)))
-    (:array  ((elements value-list)))
+    (:ushort  ((get nat)))
+    (:sshort  ((get int)))
+    (:uint    ((get nat)))
+    (:sint    ((get int)))
+    (:ulong   ((get nat)))
+    (:slong   ((get int)))
+    (:ullong  ((get nat)))
+    (:sllong  ((get int)))
+    (:pointer ((get pointer)))
+    (:array   ((elements value-list)))
     :pred valuep
     :prepwork ((local (in-theory (enable nfix ifix)))))
 
@@ -897,6 +918,7 @@
    :slong val.get
    :ullong val.get
    :sllong val.get
+   :pointer nil
    :array nil)
   :inline t)
 
@@ -1024,13 +1046,34 @@
 (define eval-unop ((op unopp) (val valuep) (ienv ienvp))
   :returns (new-val valuep)
   :short "Apply a unary operator to a value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('&') operator is documented in [C17:6.5.3.2/3].
+     In our approximate representation of values,
+     we can only represent null or non-null pointers.
+     Since we assume the expression is well-typed,
+     we know that a real evaluation
+     would be a pointer to an object or function,
+     which must be non-null [6.3.2.3/3].
+     This seems unlikely to be respected by GCC/Clang dialects,
+     so we are conservative and return an unknown pointer in such cases.")
+   (xdoc::p
+    "The @('+') prefix operator is documented in [C17:6.5.3.3/2]")
+   (xdoc::p
+    "The @('-') operator is documented in [C17:6.5.3.3/3]")
+   (xdoc::p
+    "The @('~') operator is documented in [C17:6.5.3.3/4]")
+   (xdoc::p
+    "The @('!') operator is documented in [C17:6.5.3.3/5]"))
   (unop-case
    op
-   ;; 6.5.3.3/2
+   :address (if (ienv->gcc/clang ienv)
+                (value-pointer (pointer-unknown))
+              (value-pointer (pointer-non-null)))
    :plus (if (value-integerp val)
              (integer-promote-value val ienv)
            (value-unknown))
-   ;; 6.5.3.3/3
    :minus (b* (((unless (value-integerp val))
                 (value-unknown))
                (promoted (integer-promote-value val ienv)))
@@ -1043,7 +1086,6 @@
               :ullong (value-ullong-mod (- promoted.get) ienv)
               :sllong (try-value-sllong (- promoted.get) ienv)
               :otherwise (value-unknown)))
-   ;; 6.5.3.3/4
    :bitnot (b* (((unless (value-integerp val))
                  (value-unknown))
                 (promoted (integer-promote-value val ienv)))
@@ -1056,7 +1098,6 @@
                :ullong (value-ullong-mod (lognot promoted.get) ienv)
                :sllong (try-value-sllong (lognot promoted.get) ienv)
                :otherwise (value-unknown)))
-   ;; 6.5.3.3/5
    :lognot (b* (((unless (value-arithmeticp val))
                  (value-unknown))
                 ((mv - converted)

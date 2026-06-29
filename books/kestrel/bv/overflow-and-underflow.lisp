@@ -123,7 +123,7 @@
   (implies (posp size)
            (equal (signed-addition-underflowsp size x y)
                   (signed-addition-underflowsp size y x)))
-  :hints (("Goal" :in-theory (e/d ( ;bvplus
+  :hints (("Goal" :in-theory (e/d (;bvplus
                                    bvchop-of-sum-cases sbvlt bvlt getbit-of-+
                                    logext-cases
                                    bvminus bvuminus

@@ -141,7 +141,7 @@
                                 (and (acl2::subsetp-eq
                                       keywords
                                       ;; all the allowed keywords:
-                                      '( ;; components of a frame:
+                                      '(;; components of a frame:
                                         :pc
                                         :locals
                                         :stack
@@ -347,7 +347,7 @@
                 ;(not (method-abstractp (method-info (top-frame (binding th (thread-table s))))))
                 )
            (method-programp (current-program th s)))
-  :hints (("Goal" :in-theory (e/d (current-program) ()))))
+  :hints (("Goal" :in-theory (enable current-program))))
 
 ;move
 (defthm memberp-of-0-and-strip-cars-when-method-programp
@@ -400,8 +400,7 @@
            (jvm-statep (throw-exception objectref objectref-class th s)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
                   :cases ((call-stack-non-emptyp th s))
-                  :in-theory (e/d (current-program throw-exception)
-                                  ()))))
+                  :in-theory (enable current-program throw-exception))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4512,7 +4511,7 @@
          (t (prog2$ (cw "ERROR: INVOKESTATIC is trying to execute unsupported native method ~s0.~s1 in method ~s2.~s3.~%"
                         actual-class-name method-name (cur-class-name (thread-top-frame th s)) (cur-method-name (thread-top-frame th s)))
                     (error-state (list :unsupported-native-method actual-class-name method-name descriptor) s)))))
-    (let* ( ;(prog (method-program method-info))
+    (let* (;(prog (method-program method-info))
            ;;fixme s1 is not used in all branches below
            (s1 (modify th s
                        ;; we now do this in the return:
@@ -4644,7 +4643,7 @@
                               (invokevirtual-instructionp inst))
                   :verify-guards nil
                   ))
-  (let* ( ;(class-name (farg1 inst)) ;the actual method may come from a superclass ; fixme - So why is this even in the class file?
+  (let* (;(class-name (farg1 inst)) ;the actual method may come from a superclass ; fixme - So why is this even in the class file?
          (method-name (farg2 inst))
          (descriptor (farg3 inst))
          (parameter-types (farg4 inst))
@@ -4659,8 +4658,7 @@
                 (mv nil nil t)
               (prog2$ (cw "ERROR: Calling :invokevirtual on an array object with an unknown method")
                       (mv t nil nil)))
-          (let* (
-                 ;;this is the method lookup precedure described in the spec for invokevirtual
+          (let* (;;this is the method lookup precedure described in the spec for invokevirtual
                  ;;(do we do anything that corresponds to "resolution" as described in the spec?)
                  (closest-method-and-class-name (lookup-method obj-type
                                                                method-name
@@ -4689,7 +4687,7 @@
                                                       ;;formal-slot-count
                                                       objectref method-info class-name
                                                   th s)
-  (let* ( ;longs and doubles take two slots
+  (let* (;longs and doubles take two slots
          (closest-method method-info)
          (actual-class-name class-name)
 ;         (prog (method-program closest-method))
@@ -4751,7 +4749,7 @@
 ;; TODO: Call resolve-method.
 ;; TODO: Don't let this open if we can't resolve the type.
 (defund execute-invokevirtual (inst th s)
-  (let* ( ;(class-name (farg1 inst)) ;the actual method may come from a superclass ; fixme - So why is this even in the class file?
+  (let* (;(class-name (farg1 inst)) ;the actual method may come from a superclass ; fixme - So why is this even in the class file?
          (method-name (farg2 inst))
          (descriptor (farg3 inst))
          (parameter-types (farg4 inst))
@@ -4828,7 +4826,7 @@
 ;FFFIXME does this set the current class in the make-frame right?
 ;; TODO: Call resolve-method.
 (defund execute-INVOKEINTERFACE (inst th s)
-  (let* ( ;(class-name (farg1 inst))
+  (let* (;(class-name (farg1 inst))
          (method-name (farg2 inst))
          (descriptor (farg3 inst))
          (parameter-types (farg4 inst))
@@ -4843,8 +4841,7 @@
               (error-state (list "INVOKEINTERFACE with non-class" obj-class-name) s)
             (if (not (bound-in-class-tablep obj-class-name (class-table s)))
                 (error-state (list "ERROR: Class not bound in class-table:" obj-class-name (class-table s)) s)
-              (let* (
-;(obj-class-name (class-name-of-ref obj-ref (heap s)))
+              (let* (;(obj-class-name (class-name-of-ref obj-ref (heap s)))
                      (closest-method-and-class-name
                       (lookup-method obj-class-name
                                      method-name
@@ -4857,8 +4854,7 @@
                          (actual-class-name (cdr closest-method-and-class-name)))
                     (if (method-abstractp closest-method) ; todo: prove this can't happen
                         (error-state `(:invokeinterface-abstract-method ,closest-method) s)
-                      (let (
-;         (prog (method-program closest-method))
+                      (let (; (prog (method-program closest-method))
                          (s1 (modify th s
                                      ;; we now do this in the return:
                                      ;; :pc (+ 5 ;(inst-length inst)

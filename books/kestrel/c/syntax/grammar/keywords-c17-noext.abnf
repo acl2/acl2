@@ -1,0 +1,52 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains grammar rules for keywords
+; in the C17 dialect without extensions.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+keyword = keyword-c17
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+alignas-keyword = %s"_Alignas"
+
+alignof-keyword = %s"_Alignof"
+
+bool-keyword = %s"_Bool"
+
+complex-keyword = %s"_Complex"
+
+const-keyword = %s"const"
+
+inline-keyword = %s"inline"
+
+restrict-keyword = %s"restrict"
+
+signed-keyword = %s"signed"
+
+static-assert-keyword = %s"_Static_assert"
+
+thread-local-keyword = %s"_Thread_local"
+
+volatile-keyword = %s"volatile"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; remove when the rest of the grammar is modularized:
+
+asm-keyword = %s"asm" / %s"__asm" / %s"__asm__"
+
+attribute-keyword = %s"__attribute" / %s"__attribute__"
+
+typeof-keyword = %s"typeof" / %s"__typeof" / %s"__typeof__"

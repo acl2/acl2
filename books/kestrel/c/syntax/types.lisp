@@ -13,8 +13,6 @@
 
 (include-book "abstract-syntax-trees")
 (include-book "implementation-environments")
-(include-book "formalized")
-(include-book "langdef-mapping")
 (include-book "uid")
 (include-book "file-paths")
 
@@ -24,7 +22,6 @@
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 
-(include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
 (local (include-book "std/basic/inductions" :dir :system))
@@ -107,7 +104,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ types
-  :parents (validation-information)
+  :parents (validation)
   :short "C types used by the validator."
   :long
   (xdoc::topstring
@@ -170,9 +167,22 @@
         because there are different enumeration types.")
       (xdoc::li
        "An array type [C17:6.2.5/20],
-        derived from the ``element type.''
+        derived from the ``element type.'',
+        and with an optional positive size.
         This is an approximation,
-        because we do not track the size of the array type.")
+        because variable length arrays have a size
+        that is an expression in general
+        (e.g. a declaration @('int a[n+1];'), where @('n') is a variable).
+        For now we only track array types with known constant size,
+        using @('nil') to mean `unknown size',
+        making the type partially unknown,
+        as opposed to totally unknown
+        as in the @(':unknown') case described below.
+        We use a positive integer instead of a natural
+        because arrays are not empty [C17:6.2.5/20],
+        and so a known constant size must not be 0
+        (but we can revise this if we discover that
+        array types may need to track a 0 size).")
       (xdoc::li
        "A pointer type [C17:6.2.5/20],
         derived from the ``referenced type.''")
@@ -191,7 +201,21 @@
         but we do not yet indicate in the implementation environment
         what primitive type is equivalent to @('wchar_t').
         Therefore, we give such character constants the unknown type,
-        which is always acceptable."))
+        which is always acceptable.")
+      (xdoc::li
+       "An ``unknown builtin'' type that restricts
+        the previously described unknown type to only involve built-in types.
+        I.e., the type cannot involve a user-defined
+        structure, union, or enumeration.")
+      (xdoc::li
+       "An ``unknown scalar'' type that restricts
+        the previously described unknown type to be at least scalar.")
+      (xdoc::li
+       "An ``unknown arithmetic'' type that restricts
+        the previously described unknown type to be at least arithmetic."))
+     (xdoc::p
+      "The unknown built-in, scalar, and arithmetic types
+       are useful to improve the precision of our validation.")
      (xdoc::p
       "Besides the approximations noted above,
        currently we do not capture atomic types [C17:6.2.5/20],
@@ -225,10 +249,14 @@
              (tunit? filepath-option)
              (tag/members type-struni-tag/members)))
     (:enum ())
-    (:array ((of type)))
+    (:array ((of type)
+             (size pos-option)))
     (:pointer ((to type)))
     (:function ((ret type) (params type-params)))
     (:unknown ())
+    (:unknown-builtin ())
+    (:unknown-scalar ())
+    (:unknown-arithmetic ())
     :pred typep
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
@@ -667,6 +695,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-some-unknownp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is one of the unknown types."
+  (or (type-case type :unknown)
+      (type-case type :unknown-builtin)
+      (type-case type :unknown-scalar)
+      (type-case type :unknown-arithmetic)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-standard-signed-integerp ((type typep))
   :returns (yes/no booleanp)
   :short "Check if a type is a standard signed integer type [C17:6.2.5/4]."
@@ -894,7 +932,8 @@
   :returns (yes/no booleanp)
   :short "Check if a type is an arithmetic type [C17:6.2.5/18]."
   (or (type-integerp type)
-      (type-floatingp type))
+      (type-floatingp type)
+      (type-case type :unknown-arithmetic))
 
   ///
 
@@ -903,7 +942,8 @@
                   (syntaxp (quotep kind)))
              (equal (type-arithmeticp type)
                     (or (type-integerp type)
-                        (type-floatingp type)))))
+                        (type-floatingp type)
+                        (type-case type :unknown-arithmetic)))))
 
   (defrule type-arithmeticp-when-type-integerp
     (implies (type-integerp type)
@@ -915,7 +955,8 @@
   :returns (yes/no booleanp)
   :short "Check if a type is a scalar type [C17:6.2.5/21]."
   (or (type-arithmeticp type)
-      (type-case type :pointer))
+      (type-case type :pointer)
+      (type-case type :unknown-scalar))
 
   ///
 
@@ -924,7 +965,8 @@
                   (syntaxp (quotep kind)))
              (equal (type-scalarp type)
                     (or (type-arithmeticp type)
-                        (type-case type :pointer))))))
+                        (type-case type :pointer)
+                        (type-case type :unknown-scalar))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1050,7 +1092,7 @@
      is implementation-defined,
      and could even vary based on the program,
      as mentioned in footnote 131 of [C17:6.7.2.2/4].
-     Thus, for now we promote the (one) enumerated type to unknown."))
+     Thus, for now we promote the (one) enumerated type to unknown scalar."))
   (type-case
    type
    :bool (type-sint)
@@ -1065,7 +1107,7 @@
    :ushort (if (<= (ienv->ushort-max ienv) (ienv->sint-max ienv))
                (type-sint)
              (type-uint))
-   :enum (type-unknown)
+   :enum (type-unknown-arithmetic)
    :otherwise (type-fix type))
 
   ///
@@ -1213,7 +1255,8 @@
      which is normally also the type of
      the result of the arithmetic operation.")
    (xdoc::p
-    "If either type is unkwnon, the result is the unkwnon type too.
+    "If either type is unknown, the result is the unknown arithmetic type;
+     we know that it must be at least arithmetic.
      This case will eventually go away,
      once we have a full type system in our validator.")
    (xdoc::p
@@ -1233,8 +1276,13 @@
     "Otherwise, none of the types is floating,
      and we apply the integer promotions to both types.
      Then we apply the remaining rules, for integer types, in [C17:6.3.1.8],
-     via separate functions (see their documentation)."))
+     via separate functions (see their documentation).
+     Note that currently enum types are promoted to the unknown arithmetic type,
+     so we need to handle that case after the integer promotions."))
   (cond
+   ((or (type-some-unknownp type1)
+        (type-some-unknownp type2))
+    (type-unknown-arithmetic))
    ((or (type-case type1 :ldoublec)
         (type-case type2 :ldoublec))
     (type-ldoublec))
@@ -1256,11 +1304,11 @@
    (t (b* ((type1 (type-integer-promote type1 ienv))
            (type2 (type-integer-promote type2 ienv)))
         (cond
-         ((or (type-case type1 :unknown)
-              (type-case type2 :unknown))
-          (type-unknown))
          ((equal type1 type2)
           type1)
+         ((or (type-case type1 :unknown-arithmetic)
+              (type-case type2 :unknown-arithmetic))
+          (type-unknown-arithmetic))
          ((and (type-signed-integerp type1)
                (type-signed-integerp type2))
           (type-uaconvert-signed type1 type2))
@@ -1276,7 +1324,8 @@
          (t (prog2$ (impossible) (irr-type)))))))
   :guard-hints (("Goal"
                  :do-not '(preprocess)
-                 :in-theory (e/d (type-arithmeticp
+                 :in-theory (e/d (type-some-unknownp
+                                  type-arithmeticp
                                   type-integerp
                                   type-unsigned-integerp
                                   type-signed-integerp
@@ -1358,10 +1407,20 @@
      (xdoc::p
       "See @(tsee type-compatible-p) for a description
        of what type compatibility means and how we check it."))
-    (or (type-case y :unknown)
+    (or (type-case x :unknown)
+        (type-case x :unknown-builtin)
+        (type-case y :unknown)
+        (type-case y :unknown-builtin)
+        (and (type-case x :unknown-scalar)
+             (type-scalarp y))
+        (and (type-case y :unknown-scalar)
+             (type-scalarp x))
+        (and (type-case x :unknown-arithmetic)
+             (type-arithmeticp y))
+        (and (type-case y :unknown-arithmetic)
+             (type-arithmeticp x))
         (type-case
           x
-          :unknown t
           :struct
           (type-case
             y
@@ -1374,7 +1433,10 @@
                       (type-struni-tag/members-case
                         y.tag/members
                         :tagged
-                        (b* ((completions (type-completions-fix completions))
+                        (b* (((unless (equal x.tag/members.tag
+                                             y.tag/members.tag))
+                              nil)
+                             (completions (type-completions-fix completions))
                              (incomplete (uid-set-fix incomplete))
                              ((when (or (in x.uid incomplete)
                                         (in y.uid incomplete)))
@@ -1404,7 +1466,9 @@
                 (type-struni-tag/members-case
                   y.tag/members
                   :tagged
-                  (b* ((completions (type-completions-fix completions))
+                  (b* (((unless (equal x.tag/members.tag y.tag/members.tag))
+                        nil)
+                       (completions (type-completions-fix completions))
                        (incomplete (uid-set-fix incomplete))
                        ((when (or (in x.uid incomplete)
                                   (in y.uid incomplete)))
@@ -1443,7 +1507,8 @@
                       x.tag/members
                       :tagged (type-struni-tag/members-case
                                 y.tag/members
-                                :tagged t
+                                :tagged (equal x.tag/members.tag
+                                               y.tag/members.tag)
                                 :untagged nil)
                       :untagged (type-struni-tag/members-case
                                   y.tag/members
@@ -1454,7 +1519,7 @@
                 x.tag/members
                 :tagged (type-struni-tag/members-case
                           y.tag/members
-                          :tagged t
+                          :tagged (equal x.tag/members.tag y.tag/members.tag)
                           :untagged nil)
                 :untagged (type-struni-tag/members-case
                             y.tag/members
@@ -1463,8 +1528,14 @@
             :otherwise nil)
           :array (type-case
                    y
-                   :array (type-compatible-p-aux
-                            x.of y.of completions incomplete ienv)
+                   :array (and (type-compatible-p-aux x.of
+                                                      y.of
+                                                      completions
+                                                      incomplete
+                                                      ienv)
+                               (or (not x.size)
+                                   (not y.size)
+                                   (equal x.size y.size)))
                    :otherwise nil)
           :pointer (type-case
                      y
@@ -1770,7 +1841,18 @@
      is established by the following cases:")
    (xdoc::ul
     (xdoc::li
-     "If either type is unknown, the types are compatible.")
+     "If any type is unknown, the types are compatible.
+      The same applies to unknown built-in types.")
+    (xdoc::li
+     "If neither type is unknown or built-in,
+      and one of the types is unknown scalar,
+      then the types are compatible iff
+      the other type is scalar.")
+    (xdoc::li
+     "If neither type is unknown,
+      and one of the types is unknown arithmetic,
+      then the types are compatible iff
+      the other type is arithmetic.")
     (xdoc::li
      "Structure type compatibility depends on
       whether they are declared in the same translation unit.
@@ -1813,8 +1895,13 @@
       [C17:6.7.6.1/2].")
     (xdoc::li
      "Array types are considered compatible
-      if their element types are compatible;
-      their size is not currently considered [C17:6.7.6.2/6].")
+      if their element types are compatible.
+      If they both have a size, it must be the same size [C17:6.7.6.2/6];
+      if any of them does not have a size, which means unknown size for us,
+      then we consider them compatible,
+      because we are approximating,
+      and the two sizes could be the same
+      (otherwise we may be rejecting legal code).")
     (xdoc::li
      "Enumeration types are considered compatible
       with <i>all</i> integer types.
@@ -1859,10 +1946,10 @@
       outlined above.")
    (xdoc::ul
     (xdoc::li
-     "Two struct types are compared as if
+     "Two tagged struct types are compared as if
       they were declared in separate translation units [C23:6.2.7/1].")
     (xdoc::li
-     "Two union types are compared as if
+     "Two tagged union types are compared as if
       they were declared in separate translation units [C23:6.2.7/1]."))))
   (type-compatible-p-aux x y completions nil ienv))
 
@@ -2002,6 +2089,9 @@
           :unknown (mv (type-fix x)
                        (type-completions-fix completions)
                        (uid-fix next-uid))
+          :unknown-builtin (mv (type-fix x)
+                               (type-completions-fix completions)
+                               (uid-fix next-uid))
           :otherwise (mv (irr-type)
                          (type-completions-fix completions)
                          (uid-fix next-uid)))
@@ -2018,13 +2108,20 @@
                                            completions
                                            next-uid
                                            ienv
-                                           (- (the unsigned-byte count) 1))))
-                   (mv (make-type-array :of of-type)
+                                           (- (the unsigned-byte count) 1)))
+                      (size (cond ((equal x.size y.size) x.size)
+                                  ((not x.size) y.size)
+                                  ((not y.size) x.size)
+                                  (t nil))))
+                   (mv (make-type-array :of of-type :size size)
                        completions
                        next-uid))
           :unknown (mv (type-fix x)
                        (type-completions-fix completions)
                        (uid-fix next-uid))
+          :unknown-builtin (mv (type-fix x)
+                               (type-completions-fix completions)
+                               (uid-fix next-uid))
           :otherwise (mv (irr-type)
                          (type-completions-fix completions)
                          (uid-fix next-uid)))
@@ -2045,6 +2142,12 @@
           :unknown (mv (type-fix x)
                        (type-completions-fix completions)
                        (uid-fix next-uid))
+          :unknown-builtin (mv (type-fix x)
+                               (type-completions-fix completions)
+                               (uid-fix next-uid))
+          :unknown-scalar (mv (type-fix x)
+                              (type-completions-fix completions)
+                              (uid-fix next-uid))
           :otherwise (mv (irr-type)
                          (type-completions-fix completions)
                          (uid-fix next-uid)))
@@ -2074,12 +2177,32 @@
           :unknown (mv (type-fix x)
                        (type-completions-fix completions)
                        (uid-fix next-uid))
+          :unknown-builtin (mv (type-fix x)
+                               (type-completions-fix completions)
+                               (uid-fix next-uid))
           :otherwise (mv (irr-type)
                          (type-completions-fix completions)
                          (uid-fix next-uid)))
         :unknown (mv (type-fix y)
                      (type-completions-fix completions)
                      (uid-fix next-uid))
+        :unknown-builtin (mv (if (type-case y :unknown)
+                                   (type-fix x)
+                                 (type-fix y))
+                               (type-completions-fix completions)
+                               (uid-fix next-uid))
+        :unknown-scalar (mv (if (type-case y '(:unknown :unknown-builtin))
+                                (type-fix x)
+                              (type-fix y))
+                            (type-completions-fix completions)
+                            (uid-fix next-uid))
+        :unknown-arithmetic (mv (if (type-case y '(:unknown
+                                                   :unknown-builtin
+                                                   :unknown-scalar))
+                                (type-fix x)
+                              (type-fix y))
+                                (type-completions-fix completions)
+                                (uid-fix next-uid))
         :otherwise (mv (type-fix x)
                        (type-completions-fix completions)
                        (uid-fix next-uid))))
@@ -2246,14 +2369,16 @@
   (xdoc::topstring
    (xdoc::p
     "In our approximate type system,
-     a composite type is a type that is compatible with both input types.
+     a composite type is a type that is compatible with both input types,
+     which must be compatible with each other
+     (we plan to add a guard for that).
      For function types, further constraints apply.
      See @(tsee type-params-composite-aux).")
    (xdoc::p
-    "When taking the composite of the unknown type with any other type,
-     we take the other type as the composite.
-     Our choice to take the more specific of the two compatible types
-     is consistent with the general pattern
+    "When taking the composite of one of the unknown type variants
+     with any other type,
+     we take the more specific type as the composite.
+     This choice is consistent with the general pattern
      of constraints outlined by the standard
      (e.g., when taking the composite of two arrays,
      one with a length, and the other without,
@@ -2278,7 +2403,10 @@
      we return @('nil') instead.")
    (xdoc::p
     "These values largely come directly from the implementation environment.
-     The size of the complex floating types is given by [C17:6.2.5/13]."))
+     The size of the complex floating types is given by [C17:6.2.5/13].")
+   (xdoc::p
+    "The size of an array type is known iff
+     the size of its element type and the size component of the type are."))
   (b* (((ienv ienv) ienv))
     (type-case
       type
@@ -2304,10 +2432,17 @@
       :struct nil
       :union nil
       :enum nil
-      :array nil
+      :array (b* ((elem-size (type-size-exact type.of ienv)))
+               (if (and elem-size type.size)
+                   (* elem-size type.size)
+                 nil))
       :pointer ienv.pointer-bytes
       :function nil
-      :unknown nil)))
+      :unknown nil
+      :unknown-builtin nil
+      :unknown-scalar nil
+      :unknown-arithmetic nil))
+  :measure (type-count type))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2345,7 +2480,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define members-filter-contributers ((members type-struni-member-listp))
+(define members-filter-contributors ((members type-struni-member-listp))
   :returns (new-members type-struni-member-listp)
   :parents (contributes-named-members-p)
   :short "Filter out members which do not contribute any named members to the
@@ -2354,8 +2489,8 @@
          nil)
         ((contributes-named-members-p (first members))
          (cons (type-struni-member-fix (first members))
-               (members-filter-contributers (rest members))))
-        (t (members-filter-contributers (rest members)))))
+               (members-filter-contributors (rest members))))
+        (t (members-filter-contributors (rest members)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2385,255 +2520,4 @@
   (if (endp pointers)
       (type-fix type)
     (make-type-pointer :to (make-pointers-to (rest pointers) type)))
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-formalp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is supported in our formal semantics of C."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "By `supported' we mean that the type corresponds to
-     one in the fixtype @(tsee c::type) of types in our formal semantics.
-     This consists of @('void'),
-     plain @('char'),
-     the standard integer types except @('_Bool'),
-     pointer types,
-     and struct types with tags.")
-   (xdoc::p
-    "The array types are not supported because
-     they are too coarse compared to their @(tsee c::type) counterparts:
-     they do not include size information.
-     Struct types without tag are not supported,
-     because they always have a tag in @(tsee c::type).")
-   (xdoc::p
-    "This predicate can be regarded as an extension of
-     the collection of @('-formalp') predicates in @(see formalized-subset)."))
-  (or (and (member-eq (type-kind type)
-                      '(:void
-                        :char :uchar :schar
-                        :ushort :sshort
-                        :uint :sint
-                        :ulong :slong
-                        :ullong :sllong))
-           t)
-      (and (type-case type :pointer)
-           (type-formalp (type-pointer->to type)))
-      (and (type-case type :struct)
-           (let ((tag/members (type-struct->tag/members type)))
-             (type-struni-tag/members-case
-               tag/members
-               :tagged (ident-formalp tag/members.tag)
-               :untagged nil))))
-  :measure (type-count type))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-option-formalp ((type? type-optionp))
-  :returns (yes/no booleanp)
-  :short "Check if an optional type is supported in our formal semantics of C."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the case if the type is absent or supported."))
-  (type-option-case type?
-                    :some (type-formalp type?.val)
-                    :none t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-set-formalp ((types type-setp))
-  :returns (yes/no booleanp)
-  :short "Check if all the types in a set
-          are supported in our formal semantics of C."
-  (or (set::emptyp (type-set-fix types))
-      (and (type-formalp (set::head types))
-           (type-set-formalp (set::tail types))))
-  :prepwork ((local (in-theory (enable emptyp-of-type-set-fix)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-option-set-formalp ((type?s type-option-setp))
-  :returns (yes/no booleanp)
-  :short "Check if all the optional types in a set
-          are supported in our formal semantics of C."
-  (or (set::emptyp (type-option-set-fix type?s))
-      (and (type-option-formalp (set::head type?s))
-           (type-option-set-formalp (set::tail type?s))))
-  :prepwork ((local (in-theory (enable emptyp-of-type-option-set-fix)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ldm-type ((type typep))
-  :returns (mv erp (type1 c::typep))
-  :short "Map a type in @(tsee type) to a type in the language definition."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This function can be regarded as an extension of
-     the collection of @('ldm-') functions
-     in @(see mapping-to-language-definition).
-     The supported types are the same as discussed in @(tsee type-formalp)."))
-  (b* (((reterr) (c::type-void)))
-    (type-case
-     type
-     :void (retok (c::type-void))
-     :char (retok (c::type-char))
-     :schar (retok (c::type-schar))
-     :uchar (retok (c::type-uchar))
-     :sshort (retok (c::type-sshort))
-     :ushort (retok (c::type-ushort))
-     :sint (retok (c::type-sint))
-     :uint (retok (c::type-uint))
-     :slong (retok (c::type-slong))
-     :ulong (retok (c::type-ulong))
-     :sllong (retok (c::type-sllong))
-     :ullong (retok (c::type-ullong))
-     :float (reterr (msg "Type ~x0 not supported." (type-fix type)))
-     :double (reterr (msg "Type ~x0 not supported." (type-fix type)))
-     :ldouble (reterr (msg "Type ~x0 not supported." (type-fix type)))
-     :floatc (reterr (msg "Type ~x0 not supported." (type-fix type)))
-     :doublec (reterr (msg "Type ~x0 not supported." (type-fix type)))
-     :ldoublec (reterr (msg "Type ~x0 not supported." (type-fix type)))
-     :bool (reterr (msg "Type ~x0 not supported." (type-fix type)))
-     :struct (let ((tag/members (type-struct->tag/members type)))
-               (type-struni-tag/members-case
-                 tag/members
-                 :tagged (b* (((erp tag) (ldm-ident tag/members.tag)))
-                           (retok (c::type-struct tag)))
-                 :untagged (reterr (msg "Type ~x0 not supported."
-                                        (type-fix type)))))
-     :union (reterr (msg "Type ~x0 not supported." (type-fix type)))
-     :enum (reterr (msg "Type ~x0 not supported." (type-fix type)))
-     :array (reterr (msg "Type ~x0 not supported." (type-fix type)))
-     :pointer (b* (((erp refd-type) (ldm-type type.to)))
-                (retok (c::make-type-pointer :to refd-type)))
-     :function (reterr (msg "Type ~x0 not supported." (type-fix type)))
-     :unknown (reterr (msg "Type ~x0 not supported." (type-fix type)))))
-  :measure (type-count type)
-  :verify-guards :after-returns
-
-  ///
-
-  (defret ldm-type-when-type-formalp
-    (not erp)
-    :hyp (type-formalp type)
-    :hints (("Goal" :induct t
-                    :in-theory (enable type-formalp)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ldm-type-option ((type? type-optionp))
-  :returns (mv erp (type?1 c::type-optionp))
-  :short "Map an optional type in @(tsee type-option)
-          to an optional type in the language definition."
-  (type-option-case type?
-                    :some (ldm-type type?.val)
-                    :none (mv nil nil))
-
-  ///
-
-  (defret ldm-type-option-when-type-option-formalp
-    (not erp)
-    :hyp (type-option-formalp type?)
-    :hints (("Goal" :in-theory (enable type-option-formalp)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ldm-type-set ((types type-setp))
-  :returns (mv erp (types1 c::type-setp))
-  :short "Map a set of types in @(tsee type-set)
-          to a set of types in the language definition."
-  (b* (((when (set::emptyp (type-set-fix types))) (mv nil nil))
-       ((mv erp type) (ldm-type (set::head types)))
-       ((when erp) (mv erp nil))
-       ((mv erp types) (ldm-type-set (set::tail types)))
-       ((when erp) (mv erp nil)))
-    (mv nil (set::insert type types)))
-  :prepwork ((local (in-theory (enable emptyp-of-type-set-fix))))
-  :verify-guards :after-returns
-
-  ///
-
-  (defret ldm-type-set-when-type-set-formalp
-    (not erp)
-    :hyp (type-set-formalp types)
-    :hints (("Goal" :induct t :in-theory (enable type-set-formalp)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ldm-type-option-set ((type?s type-option-setp))
-  :returns (mv erp (type?s1 c::type-option-setp))
-  :short "Map a set of optional types in @(tsee type-option-set)
-          to a set of optional types in the language definition."
-  (b* (((when (set::emptyp (type-option-set-fix type?s))) (mv nil nil))
-       ((mv erp type?) (ldm-type-option (set::head type?s)))
-       ((when erp) (mv erp nil))
-       ((mv erp type?s) (ldm-type-option-set (set::tail type?s)))
-       ((when erp) (mv erp nil)))
-    (mv nil (set::insert type? type?s)))
-  :prepwork ((local (in-theory (enable emptyp-of-type-option-set-fix))))
-  :verify-guards :after-returns
-
-  ///
-
-  (defret ldm-type-option-set-when-type-option-set-formalp
-    (not erp)
-    :hyp (type-option-set-formalp type?s)
-    :hints (("Goal" :induct t :in-theory (enable type-option-set-formalp)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-to-value-kind ((type typep))
-  :returns (kind keywordp
-                 :hints (("Goal" :in-theory (enable type-kind))))
-  :short "Map a type to the corresponding @(tsee c::value) kind."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We throw a hard error unless the type has
-     a corresponding kind of values in the formal semantics.
-     This function is always called when this condition is satisfied;
-     the hard error signals an implementation error."))
-  (if (type-formalp type)
-      (type-kind type)
-    (prog2$ (raise "Internal error: type ~x0 has no corresponding value kind.")
-            :irrelevant))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ildm-type ((ctype c::typep))
-  :returns (type typep)
-  :short "Map a type in the language formalization to a type in @(tsee type)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the inverse of @(tsee ldm-type),
-     hence the @('i') for `inverse'.")
-   (xdoc::p
-    "Since our current type system is approximate (see @(tsee type)),
-     this mapping abstracts away information in some cases."))
-  (c::type-case
-   ctype
-   :void (type-void)
-   :char (type-char)
-   :schar (type-schar)
-   :uchar (type-uchar)
-   :sshort (type-sshort)
-   :ushort (type-ushort)
-   :sint (type-sint)
-   :uint (type-uint)
-   :slong (type-slong)
-   :ulong (type-ulong)
-   :sllong (type-sllong)
-   :ullong (type-ullong)
-   ;; TODO: we can't really create a struct, unless we wanted to invent a UID
-   ;; and tunit. Then, we could perhaps create an incomplete struct type.
-   :struct (irr-type)
-   :pointer (make-type-pointer :to (ildm-type ctype.to))
-   :array (make-type-array :of (ildm-type ctype.of)))
-  :measure (c::type-count ctype)
   :verify-guards :after-returns)

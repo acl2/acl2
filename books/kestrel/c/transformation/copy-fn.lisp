@@ -18,7 +18,7 @@
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/code-ensembles")
-(include-book "../syntax/validation-information")
+(include-book "../syntax/validation-annotations")
 (include-book "utilities/rename-fn")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -79,7 +79,7 @@
   :returns (fundef? fundef-optionp)
   (b* (((fundef fundef) fundef)
        ((declor fundef.declor) fundef.declor)
-       ((fundef-info info) fundef.info))
+       ((type+uid-vinfo info) fundef.info))
     (dirdeclor-case
       fundef.declor.direct
       :function-params

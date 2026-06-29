@@ -414,8 +414,7 @@
            (not (equal (unquote arg1) (unquote arg2)))
            (cw "~%   EQL test ~x0 compares different constants (perhaps after substituting lets)." orig-term))
       (and (not (member-eq :equality-variant suppress))
-           (b* (
-                ((mv type-set1 &)
+           (b* (((mv type-set1 &)
                  (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
                 ((mv type-set2 &)
                  (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
@@ -532,8 +531,7 @@
   (and
    ;; It's not surprising for an MBT (or its negation), so we suppress that:
    (not (possibly-negated-mbtp term))
-   (b* (
-        ;; Apply the subst before checking:
+   (b* (;; Apply the subst before checking:
         (term (sublis-var-simple subst term))
         ;; Get the type:
         ((mv type-set &)

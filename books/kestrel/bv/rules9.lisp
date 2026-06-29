@@ -727,9 +727,7 @@
            (equal (getbit n (+ x (* (expt 2 n) bit)))
                   (bitxor bit (getbit n x))))
   :hints (("Goal" :cases ((equal bit 0))
-           :in-theory (e/d (getbit slice bitnot BVCHOP-OF-SUM-CASES)
-                           (
-                            )))))
+           :in-theory (enable getbit slice bitnot BVCHOP-OF-SUM-CASES))))
 
 (defthm getbit-of-+-of-*-of-expt-when-bitp-arg2-arg2
   (implies (and (bitp bit)

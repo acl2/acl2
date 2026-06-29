@@ -5,9 +5,10 @@ License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 This note sketches the logical foundation for our integration of ZFG
 (Zermelo Fraenkel set theory with global choice) with ACL2, which we
 may call ACL2(zfc).  We assume familiarity with ACL2 and ZF as well as
-the basics of the file base.lisp in this directory.  Note as is
-well-known, that ZFG is conservative over ZFC (Zermelo Fraenkel set
-theory with local choice).
+the basics of the file base.lisp in this directory.  Note: It is
+well-known that ZFG is conservative over ZFC (Zermelo Fraenkel set
+theory with local choice) and hence over ZF.  We assume that ZF is
+consistent.
 
 It may seem that no such foundation is necessary; after all, the
 set-theory books in the current directory (books/projects/set-theory/)
@@ -29,14 +30,13 @@ This expands to the following.
    :hints ...)
 
 The hypothesis (force? (zfc)) is logically just (zfc).  So this
-theorem is vacuous is (zfc) is false.  In fact, (zfc) is introduced in
+theorem is vacuous if (zfc) is false.  In fact, (zfc) is introduced in
 an encapsulate in base.lisp with a local witness of nil!  So how is it
 that the theorem in-union2 means anything non-trivial?
 
 This note outlines how we can view (zfc) as being true in a suitable
-setting, assuming of course that ZF is consistent.  More generally,
-this note outlines how we can interpret defthmz as being simply defthm
-in that setting.
+setting.  More generally, this note outlines how we can interpret
+defthmz as being simply defthm in that setting.
 
 We introduce the following notions before presenting the key theorems.
 
@@ -52,8 +52,8 @@ ACL2 for that event are all logical consequences of the axioms
 introduced so far.  So for example, a recursive defun is logically
 admissible if the measure conjecture is a logical consequences of the
 axioms introduced so far, regardless of whether the ACL2 system can
-actually prove the measure conjecture.  (Note that we are ignoring
-guards.)
+actually prove the measure conjecture.  Note that we are ignoring
+guards.
 
 (b) An "ACL2 session" is a sequence of events where every axiomatic
 event is logically admissible and every formula of a theorem event is
@@ -61,10 +61,9 @@ indeed a theorem of the axiomatic events present at its introduction.
 We consider it to be a correctness requirement for the ACL2
 implementation that every ACL2 logical world represents an ACL2
 session.  We do not consider include-book events to be part of an ACL2
-session, but rather, we consider the non-local events introduced by an
-include-book event (as though :puff had been used; see :DOC puff)..
-The "theory of" a session is defined to be the deductive closure of
-its axioms.
+session, but rather, we consider their non-local events (as though
+:puff had been used; see :DOC puff).  The "theory of" a session is
+defined to be the deductive closure of its axioms.
 
 (c) Let EZ be the encapsulate that introduces the ACL2 versions of the
 ZFG axioms.  (See base.lisp.)  An "EZ session" is a defaxiom-free ACL2
@@ -73,8 +72,8 @@ move EZ to the front of any ACL2 session that includes it; so without
 loss of generality, we further specify that EZ is the first event in
 an EZ session.
 
-(d) Defthmz and similar macros use a table, called "zfc-table", whose
-keys indicate assumptions besides (zfc) that are valid in the
+(d) The defthmz, thmz, and defthmdz macros use a table, called
+"zfc-table", whose keys indicate assumptions that are valid in the
 set-theoretic setting developed in this note.  These assumptions are
 all calls of zero-ary functions.  A "zfc prop" of an EZ session
 indicates such functions: technically, it is either a key in the
@@ -98,8 +97,8 @@ our integration of ZFG with ACL2.
 Theorem 1.  The zfc theory of an EZ session is consistent, assuming
 that ZF is consistent.
 
-Theorem 2.  For every theorem proved in an EZ session, if we replace
-all zfc props by t (and remove such from its hypotheses) then the
+Theorem 2.  For each theorem proved in an EZ session, if we replace
+all zfc props by t (and remove such from its hypotheses), then the
 result is a theorem of the zfc theory of the session.
 
 Remark 1.  Theorem 2 is trivial by clause (e3) from the definition of

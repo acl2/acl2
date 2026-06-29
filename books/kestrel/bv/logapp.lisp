@@ -1,7 +1,7 @@
 ; BV Library: theorems about logapp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -113,7 +113,7 @@
   :hints (("Goal"
            :use (:instance mod-of-*-of-expt-and-expt-bound (i j))
            :in-theory (e/d (logapp expt-of-+)
-                           ( ;MOD-SUM-CASES
+                           (;MOD-SUM-CASES
                             mod-of-*-of-expt-and-expt-bound
                             MOD-X-I*J-OF-POSITIVES)))))
 

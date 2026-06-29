@@ -1,24 +1,24 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ABNF")
 
 (include-book "core-rules")
-(include-book "../operations/well-formedness")
-(include-book "../operations/closure")
-(include-book "../operations/in-terminal-set")
+(include-book "../grammar-operations/well-formedness")
+(include-book "../grammar-operations/closure")
+(include-book "../grammar-operations/in-terminal-set")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection core-rules-validation
-  :parents (core-rules)
+  :parents (notation)
   :short "Validation of the core rules."
   :long
   (xdoc::topstring
@@ -35,8 +35,9 @@
      "Without the @('OCTET') rule,
       generate only strings of ASCII codes."))
    (xdoc::p
-    "These validation theorems depend on some grammar @(see operations).
-     Thus, we put them in a separate file,
+    "These validation theorems depend on some "
+    (xdoc::seetopic "grammar-operations" "grammar operations")
+    ". Thus, we put them in a separate file,
      avoiding a dependency of the file that defines the core rules
      on the grammar operations."))
 

@@ -19,7 +19,7 @@
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/unambiguity")
-(include-book "../syntax/validation-information")
+(include-book "../syntax/validation-annotations")
 (include-book "../syntax/code-ensembles")
 (include-book "utilities/collect-idents")
 (include-book "utilities/fresh-ident")
@@ -118,7 +118,7 @@
        ((mv erp linkage tag?)
         (get-gso-linkage-from-valid-table
           ident
-          (c$::trans-unit-info->table-end (c$::trans-unit->info tunit))))
+          (c$::trans-unit-vinfo->table-end (c$::trans-unit->info tunit))))
        ((unless erp)
         (retok filepath linkage tag?)))
     (get-gso-filepath-linkage-search ident (omap::tail tunits)))
@@ -157,15 +157,15 @@
        ((erp linkage tag?)
         (get-gso-linkage-from-valid-table
           ident
-          (c$::trans-unit-info->table-end (c$::trans-unit->info tunit)))))
+          (c$::trans-unit-vinfo->table-end (c$::trans-unit->info tunit)))))
     (retok filepath? linkage tag?))
   :guard-hints (("Goal" :in-theory (enable c$::trans-ensemble-annop)))
   :prepwork
-  ((defrulel trans-unit-infop-of-assoc-tunits
+  ((defrulel trans-unit-vinfop-of-assoc-tunits
      (implies (and (filepath-trans-unit-mapp tunits)
                    (c$::filepath-trans-unit-map-annop tunits)
                    (omap::assoc filepath tunits))
-              (c$::trans-unit-infop
+              (c$::trans-unit-vinfop
                 (c$::trans-unit->info
                   (cdr (omap::assoc filepath tunits)))))
      :induct t
@@ -345,18 +345,22 @@
                (list (declon-fix declon)
                      (c$::make-declon-declon
                        :specs (list (c$::decl-spec-typespec
-                                      (c$::type-spec-struct
+                                      (c$::make-type-spec-struct
+                                        :spec
                                         (c$::make-struni-spec
                                           :attribs nil
                                           :name? new1
-                                          :members remanining-struct-decls)))))
+                                          :members remanining-struct-decls)
+                                        :info nil))))
                      (c$::make-declon-declon
                        :specs (list (c$::decl-spec-typespec
-                                      (c$::type-spec-struct
+                                      (c$::make-type-spec-struct
+                                        :spec
                                         (c$::make-struni-spec
                                           :attribs nil
                                           :name? new2
-                                          :members split-struct-decls))))))))
+                                          :members split-struct-decls)
+                                        :info nil)))))))
       :statassert (retok nil nil (list (declon-fix declon)))))
   ///
 
@@ -602,7 +606,7 @@
        ((unless (desiniter-annop desiniter))
         (retmsg$ "Cannot infer designation from initializer: ~x0"
                  (desiniter-fix desiniter)))
-       ((c$::desiniter-info info) desiniter.info)
+       ((c$::desiniter-vinfo info) desiniter.info)
        ((when (endp info.designors))
         (retmsg$ "Cannot infer designation from initializer: ~x0"
                  (desiniter-fix desiniter))))
@@ -829,18 +833,22 @@
            (explicit-extern (has-extern-p declon.specs))
            (decl-new1-type
              (c$::decl-spec-typespec
-               (c$::type-spec-struct
+               (c$::make-type-spec-struct
+                 :spec
                  (c$::make-struni-spec
                     :attribs nil
                     :name? new1-type
-                    :members nil))))
+                    :members nil)
+                 :info nil)))
            (decl-new2-type
              (c$::decl-spec-typespec
-               (c$::type-spec-struct
+               (c$::make-type-spec-struct
+                 :spec
                  (c$::make-struni-spec
                    :attribs nil
                    :name? new2-type
-                   :members nil)))))
+                   :members nil)
+                 :info nil))))
         (retok
           t
           (list (c$::make-declon-declon
@@ -1086,10 +1094,11 @@
             ((unless (equal expr.ident original))
              (expr-fix c$::expr))
             (ident-linkage
-              (c$::var-info->linkage
-                (c$::coerce-var-info expr.info)))
+              (c$::var-vinfo->linkage
+                (c$::coerce-var-vinfo expr.info)))
             (- (and (equal linkage ident-linkage)
-                    (raise "Global struct object ~x0 occurs in illegal
+                    (raise "SPLIT-GSO ERROR: ~
+                            Global struct object ~x0 occurs in illegal
                             expression."
                            original))))
          (expr-fix c$::expr)))
@@ -1104,8 +1113,8 @@
                 :ident (b* (((unless (equal expr.arg.ident original))
                              nil)
                             (ident-linkage
-                              (c$::var-info->linkage
-                                (c$::coerce-var-info expr.arg.info))))
+                              (c$::var-vinfo->linkage
+                                (c$::coerce-var-vinfo expr.arg.info))))
                          (equal linkage ident-linkage))
                 :otherwise nil))
             ((unless match)
@@ -1135,12 +1144,13 @@
                                         ((unless (equal expr.arg.ident original))
                                          nil)
                                         (ident-linkage
-                                          (c$::var-info->linkage
-                                            (c$::coerce-var-info expr.arg.info))))
+                                          (c$::var-vinfo->linkage
+                                            (c$::coerce-var-vinfo expr.arg.info))))
                                      (equal linkage ident-linkage))
                             :otherwise nil)
                   :otherwise nil))
-           (raise "Global struct object ~x0 occurs in illegal expression."
+           (raise "SPLIT-GSO ERROR: ~
+                   Global struct object ~x0 occurs in illegal expression."
                   original)
          (make-expr-unary
            :op expr.op
@@ -1327,15 +1337,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ident-map
-  ((strings string-listp))
-  :returns (idents ident-listp)
-  (if (endp strings)
-      nil
-    (cons (ident (first strings))
-          (ident-map (rest strings))))
-  :guard-hints (("Goal" :in-theory (enable string-listp))))
-
 (define split-gso-process-inputs (const-old
                                   const-new
                                   object-name
@@ -1402,7 +1403,7 @@
        (new-type2 (and new-type2 (c$::ident new-type2)))
        ((unless (string-listp split-members))
         (retmsg$ "~x0 must be a string list" split-members))
-       (split-members (ident-map split-members))
+       (split-members (c$::string-list-map-ident split-members))
        ((unless (symbolp const-new))
         (retmsg$ "~x0 must be a symbol" const-new)))
     (retok code
@@ -1534,7 +1535,7 @@
                                                      new-type2
                                                      split-members
                                                      (w state)))
-       ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
+       ((when erp) (er-soft+ ctx t '(_) "SPIT-GSO ERROR: ~@0" erp)))
     (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,6 +1,6 @@
 ; Formalization of one's complement arithmetic
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -271,7 +271,7 @@
                                    bvplus
                                    bvchop-of-sum-cases
                                    unsigned-byte-p)
-                                  ( ;; for speed:
+                                  (;; for speed:
                                    distributivity-of-minus-over-+)))))
 
 ;; Check whether X is equal to positive 0 (all zeros) or negative 0 (all ones).

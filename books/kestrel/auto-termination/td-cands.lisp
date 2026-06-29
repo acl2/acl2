@@ -9355,7 +9355,7 @@
    (PFCS::LIFT-VAR-NAME-SET-TO-LIST :SYSTEM . "projects/pfcs/lifting")
    (ABNF::DEFTREEOPS-GEN-NUMRANGE-INFO-ALIST-AUX :SYSTEM
                                                  .
-                                                 "projects/abnf/grammar-definer/deftreeops")
+                                                 "projects/abnf/tree-operations/deftreeops")
    (DEPGRAPH::TRANSDEPS-DIRECT-FOR-NODES :SYSTEM . "centaur/depgraph/transdeps")
    (OMAP::DELETE* :SYSTEM . "std/omaps/core"))
   ((JUSTIFICATION (X)

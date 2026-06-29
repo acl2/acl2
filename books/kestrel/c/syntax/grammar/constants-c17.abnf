@@ -10,7 +10,8 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains rules for constants for the C17 dialects [C17:6.4.4/1].
+; This file contains a grammar rules for constants in the C17 dialects
+; [C17:6.4.4/1].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

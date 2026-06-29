@@ -3546,7 +3546,7 @@ Subtopics
       [30m[47m(fmt1! str alist col channel state evisc) => (mv col state)[0m[0m
 
   [Fmx]
-      [30m[47m(fmx str &rest args) => state[0m[0m
+      [30m[47m(fmx str &rest args) => (mv col state)[0m[0m
 
   [Fmx-cw]
       [30m[47m(fmx-cw str &rest args) => state[0m[0m
@@ -10044,7 +10044,7 @@ The Logical Description of ACL2 Arrays
              ).
 
   [30m[47mObj[0m[0m may be any object and is called the ``default value'' of the
-  array.  [30m[47m[Max][0m[0m must be an integer greater than [30m[47mdim[0m[0m.  [30m[47mName[0m[0m must be a
+  array.  [30m[47mMax[0m[0m must be an integer greater than [30m[47mdim[0m[0m.  [30m[47mName[0m[0m must be a
   symbol.  The [30m[47m:[0m[0m[30m[47m[default][0m[0m and [30m[47m:name[0m[0m entries are optional; if
   [30m[47m:[0m[0m[30m[47m[default][0m[0m is omitted, the default value is [30m[47mnil[0m[0m.  The function
   [30m[47m[header][0m[0m, when given a name and a 1- or 2-dimensional array,
@@ -10096,7 +10096,7 @@ The Logical Description of ACL2 Arrays
   To prevent arrays from growing excessively long due to repeated
   [30m[47m[aset1][0m[0m operations, [30m[47m[aset1][0m[0m essentially calls [30m[47m[compress1][0m[0m on the
   new alist whenever the length of the new alist exceeds the
-  [30m[47m:[0m[0m[30m[47m[maximum-length][0m[0m entry, [30m[47m[max][0m[0m, in the [header] of the array.  See
+  [30m[47m:[0m[0m[30m[47m[maximum-length][0m[0m entry, [30m[47mmax[0m[0m, in the [header] of the array.  See
   the definition of [30m[47m[aset1][0m[0m (for example by using [30m[47m:[0m[0m[30m[47m[pe][0m[0m).  This is
   primarily just a mechanism for freeing up [30m[47m[cons][0m[0m space consumed
   while doing [30m[47m[aset1][0m[0m operations.  Note however that this [30m[47m[compress1][0m[0m
@@ -42955,7 +42955,7 @@ Example 2
                  "See [printing-to-strings].")
  (FMX
   (IO ACL2-BUILT-INS)
-  "[30m[47m(fmx str &rest args) => state[0m[0m
+  "[30m[47m(fmx str &rest args) => (mv col state)[0m[0m
 
   See [fmt] for further explanation, including documentation of the
   tilde-directives.")
@@ -63676,7 +63676,7 @@ Subtopics
       [30m[47m(fmt1! str alist col channel state evisc) => (mv col state)[0m[0m
 
   [Fmx]
-      [30m[47m(fmx str &rest args) => state[0m[0m
+      [30m[47m(fmx str &rest args) => (mv col state)[0m[0m
 
   [Fmx-cw]
       [30m[47m(fmx-cw str &rest args) => state[0m[0m
@@ -106507,7 +106507,8 @@ Heuristic and Efficiency Improvements
   compiled with each pass.  Now, with a few exceptions, these
   definitions are saved in the first pass of evaluating the
   [30m[47mencapsulate[0m[0m form and retrieved, rather than re-evaluated, in the
-  second pass.  The exceptions include the following.
+  second pass.  The exceptions include the following.  [31;1mWARNING[0m: These
+  restrictions have been removed in later versions; see [note-8-8].
 
       * No definition is stored or retrieved that is within the scope of an
         [30m[47mencapsulate[0m[0m form with a non-empty list of [signature]s.
@@ -106842,6 +106843,10 @@ Changes to Existing Features
   Improved the [guard], as well as the guard violation message, for
   [30m[47m[defevaluator][0m[0m.
 
+  The macro [30m[47m[tau-data][0m[0m now has a guard requiring its argument to be a
+  symbol.  Thanks to Jerome Dubois and Eric Smith for a Zulip
+  discussion leading to this change.
+
 
 New Features
 
@@ -106893,6 +106898,18 @@ Bug Fixes
   produced with Claude Code that points out the bugs and provides the
   fixes.
 
+  A release note item in [note-8-7] mentions a new feature in the
+  preceding ACL2 release, for which ``definitions are saved in the
+  first pass of evaluating the [30m[47mencapsulate[0m[0m form and retrieved, rather
+  than re-evaluated, in the second pass.'' The implementation of this
+  feature has been significantly modified.  This modification fixes
+  some bugs, as noted in a new test book,
+  [30m[47mbooks/system/tests/encap-defs-ht-input.lsp[0m[0m, which mentions those
+  bugs (search for ``8.7'').  This modification also removes the
+  first two restrictions mentioned in the aforementioned release note
+  item.  The key idea is to avoid saving code for [local] definitions
+  but to save code for most [redundant] definitions.
+
 
 Changes at the System Level
 
@@ -106900,6 +106917,22 @@ Changes at the System Level
   events instead of [30m[47m[defaxiom][0m[0m events.  Thanks to Eric Smith for
   showing us a report from Claude Code, which explained how those two
   formulas are provable from the other axioms.
+
+  Added a capability for collecting times for definitions made during
+  the [30m[47minclude-book[0m[0m pass of [30m[47m[certify-book][0m[0m.  See the comment in the
+  definition of [30m[47m*pass2-def-time-info*[0m[0m in the ACL2 source code.
+  Thanks to Eric Smith for a conversation leading to this
+  enhancement.
+
+  Added a build-time check (incomplete in principle, but perhaps
+  complete in practice) that for ACL2 floating-point operations (see
+  [df]), overflow and division by zero cause errors rather than
+  producing results that are not truly numbers.  Thanks to Camm
+  Maguire for a conversation leading to this check.
+
+  (GCL only) Added code for proper handling of floating-point
+  exceptions on arm and riscv64 platforms.  Thanks to Camm Maguire
+  for major help with this.
 
 
 EMACS Support
@@ -151115,9 +151148,10 @@ Subtopics
   such advice.  But these remarks have helped many users approach
   ACL2 in a constructive and disciplined way.
 
-  We say much more about The Method in the ACL2 book.  See the home
-  page.  Also see [set-gag-mode] for a discussion of a way for ACL2
-  to help you to use The Method.  And again, see
+  We say much more about The Method in the book, [3mComputer-Aided
+  Reasoning: An Approach[0m; see [pubs::pubs-books].  Also see
+  [set-gag-mode] for a discussion of a way for ACL2 to help you to
+  use The Method.  And again, see
   [introduction-to-the-theorem-prover] for a more detailed tutorial.
 
   Learning to read failed proofs is a useful skill.  There are several

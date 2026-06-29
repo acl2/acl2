@@ -348,8 +348,7 @@
                 ;(integerp free)
                 )
            (equal (write-byte ad byte stat)
-                  (write-byte free byte stat)))
-  :hints (("Goal" :in-theory (enable))))
+                  (write-byte free byte stat))))
 
 (defthm write-byte-of-write-byte-same
   (equal (write-byte ad byte1 (write-byte ad byte2 stat))
@@ -405,8 +404,7 @@
          (if (equal (bvchop 32 addr1)
                     (bvchop 32 addr2))
              (bvchop 8 byte)
-           (read-byte addr1 stat)))
-  :hints (("Goal" :in-theory (enable))))
+           (read-byte addr1 stat))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1462,7 +1460,7 @@
                 )
            (equal (read n1 addr1 (write-byte addr2 byte stat))
                   (read n1 addr1 stat)))
-  :hints ( ;("subgoal *1/2" :cases ((equal n1 1)))
+  :hints (;("subgoal *1/2" :cases ((equal n1 1)))
           ("Goal" :do-not '(generalize eliminate-destructors)
            :induct (read n1 addr1 stat)
            :in-theory (e/d (read bvplus acl2::bvchop-of-sum-cases  bvuminus bvminus equal-of-read-and-read-when-bvchops-agree ifix)

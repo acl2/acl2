@@ -719,7 +719,7 @@
                                                          instruction-argsp
                                                          instruction-opcode
                                                          member-equal)
-                                                        ( ;memberp-of-cons
+                                                        (;memberp-of-cons
                                                          ))))))
   (case (instruction-opcode inst)
     ((:aload :astore :dload :dstore :fload :fstore :iload :istore :lload :lstore :ret)

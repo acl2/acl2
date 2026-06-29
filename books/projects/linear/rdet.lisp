@@ -141,7 +141,7 @@
 		  (r+ (r* c (rdet (replace-row a i x) n))
 		      (rdet (replace-row a i y) n)))))
 
-;; As a consequence of rdet-n-linear, if a has a zero row, then its deteminant is (r0).
+;; As a consequence of rdet-n-linear, if a has a zero row, then its determinant is (r0).
 ;; To prove this, we instantiate rdet-n-linear with c = (r1) and x = y = (rlistn0 n):
 
 (defthmd rdet-replace-0-1

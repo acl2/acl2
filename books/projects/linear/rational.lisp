@@ -829,14 +829,14 @@
 	(1- m))
     ()))
 
-(defun solvablep (a b m)
+(defun solvablep (a b)
   (null (find-nonzero (fmat* (row-reduce-mat a) (col-mat b))
                       (row-rank a)
-		      m)))
+		      (len a))))
 
 ;; (defthmd linear-equations-unsolvable-case
 ;;   (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
-;;                 (not (solvablep a b m)))
+;;                 (not (solvablep a b)))
 ;; 	      (not (solutionp x a b))))
 
 
@@ -854,7 +854,7 @@
 ;;   (let* ((br (fmat* (row-reduce-mat a) (col-mat b)))
 ;;          (bq (first-rows n br)))
 ;;     (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
-;;                   (solvablep a b m)
+;;                   (solvablep a b)
 ;; 	             (= (row-rank a) n))
 ;; 	        (iff (solutionp x a b)
 ;; 	             (equal x (col 0 bq))))))
@@ -895,26 +895,29 @@
 
 ;; x is a solution of our system of equations iff the following condition holds:
 
-(defun solution-test (x aq bq l f k)
+(defun solution-test-aux (x aq bq l f k)
   (if (zp k)
       t
     (and (equal (nth (nth (1- k) l) x)
                 (f+ (car (nth (1- k) bq))
 		    (f- (fdot-select f (nth (1- k) aq) x))))
-	 (solution-test x aq bq l f (1- k)))))
+	 (solution-test-aux x aq bq l f (1- k)))))
 
+(defund solution-test (x a b n)
+  (let* ((ar (row-reduce a))
+         (br (fmat* (row-reduce-mat a) (col-mat b)))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (bq (first-rows q br))
+         (lead-inds (lead-inds aq))
+         (free-inds (free-inds aq n)))
+    (solution-test-aux x aq bq lead-inds free-inds q)))
+  
 ;; (defthmd linear-equations-solvable-case
-;;   (let* ((ar (row-reduce a))
-;;          (br (fmat* (row-reduce-mat a) (col-mat b)))
-;;          (q (num-nonzero-rows ar))
-;;          (aq (first-rows q ar))
-;;          (bq (first-rows q br))
-;;          (l (lead-inds aq))
-;;          (f (free-inds aq n)))
-;;     (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
-;;                   (solvablep a b m))
-;;              (iff (solutionp x a b)
-;;                   (solution-test x aq bq l f q)))))                        
+;;   (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
+;;                 (solvablep a b))
+;;            (iff (solutionp x a b)
+;;                 (solution-test x a b n))))
 
 ;; Note that if (len l) = n and f = nil, then the equation
 
@@ -924,11 +927,11 @@
 
 ;;   (nth i x) = (car (nth i bq),
 
-;; (solution-test x aq bq l f q) reduces to x = (col 0 bq), and linear-equations-solvable-case
+;; (solution-test-aux x aq bq l f q) reduces to x = (col 0 bq), and linear-equations-solvable-case
 ;; reduces to the earlier result linear-equations-unique-solution-case.
 
 ;; Otherwise, the entries of x corresponding to the indices in (lead-inds aq) are determined
 ;; by the entries corresponding to (free-inds aq n).  Thus, there is a unique solution
 ;; corresponding to every assignment of values to the latter set of entries, and hence an
-;; infinite number of solutions.  We shall revisit this result later in tconnection with the
+;; infinite number of solutions.  We shall revisit this result later in connection with the
 ;; vector space of solutions of a homogeneous system of equations.

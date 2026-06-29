@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ parse-directory-utilities
-  :parents (remora)
+  :parents (parsing-and-printing)
   :short "Bulk parser-runner for assurance testing."
   :long
   (xdoc::topstring

@@ -39245,7 +39245,7 @@ current fast alists."
 
 (defxdoc fmx
   :parents (io acl2-built-ins)
-  :short "@('(fmx str &rest args) => state')"
+  :short "@('(fmx str &rest args) => (mv col state)')"
   :long "<p>See @(see fmt) for further explanation, including documentation of
  the tilde-directives.</p>")
 
@@ -109410,7 +109410,8 @@ it."
  implies that such function definitions were compiled with each pass.  Now,
  with a few exceptions, these definitions are saved in the first pass of
  evaluating the @('encapsulate') form and retrieved, rather than re-evaluated,
- in the second pass.  The exceptions include the following.
+ in the second pass.  The exceptions include the following.  <b>WARNING</b>:
+ These restrictions have been removed in later versions; see @(see note-8-8).
 
  <ul>
 
@@ -109698,6 +109699,10 @@ it."
  ")
 
 (defxdoc note-8-8
+
+; When *debug-on* is t, the debug info now goes to (standard-co state) instead
+; of Lisp standard output.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -109753,6 +109758,10 @@ it."
  <p>Improved the @(see guard), as well as the guard violation message, for
  @(tsee defevaluator).</p>
 
+ <p>The macro @(tsee tau-data) now has a guard requiring its argument to be a
+ symbol.  Thanks to Jerome Dubois and Eric Smith for a Zulip discussion leading
+ to this change.</p>
+
  <h3>New Features</h3>
 
  <p>For @(tsee defstobj) fields of hash-table type, a new &ldquo;keys&rdquo;
@@ -109801,12 +109810,38 @@ it."
  @(tsee mfc-relieve-hyp).  Thanks to Eric Smith for sending a report he
  produced with Claude Code that points out the bugs and provides the fixes.</p>
 
+ <p>A release note item in @(see note-8-7) mentions a new feature in the
+ preceding ACL2 release, for which &ldquo;definitions are saved in the first
+ pass of evaluating the @('encapsulate') form and retrieved, rather than
+ re-evaluated, in the second pass.&rdquo; The implementation of this feature
+ has been significantly modified.  This modification fixes some bugs, as noted
+ in a new test book, @('books/system/tests/encap-defs-ht-input.lsp'), which
+ mentions those bugs (search for &ldquo;8.7&rdquo;).  This modification also
+ removes the first two restrictions mentioned in the aforementioned release
+ note item.  The key idea is to avoid saving code for @(see local) definitions
+ but to save code for most @(see redundant) definitions.</p>
+
  <h3>Changes at the System Level</h3>
 
  <p>The built-in @(see events) @('Integer-1') and @('cons-equal') are now
  @(tsee defthm) events instead of @(tsee defaxiom) events.  Thanks to Eric
  Smith for showing us a report from Claude Code, which explained how those two
  formulas are provable from the other axioms.</p>
+
+ <p>Added a capability for collecting times for definitions made during the
+ @('include-book') pass of @(tsee certify-book).  See the comment in the
+ definition of @('*pass2-def-time-info*') in the ACL2 source code.  Thanks to
+ Eric Smith for a conversation leading to this enhancement.</p>
+
+ <p>Added a build-time check (incomplete in principle, but perhaps complete in
+ practice) that for ACL2 floating-point operations (see @(see df)), overflow
+ and division by zero cause errors rather than producing results that are not
+ truly numbers.  Thanks to Camm Maguire for a conversation leading to this
+ check.</p>
+
+ <p>(GCL only) Added code for proper handling of floating-point exceptions on
+ arm and riscv64 platforms.  Thanks to Camm Maguire for major help with
+ this.</p>
 
  <h3>EMACS Support</h3>
 
@@ -151246,10 +151281,11 @@ work on <tt>(q x)</tt>.</p>
  somewhat pretentious nature of any such advice.  But these remarks have helped
  many users approach ACL2 in a constructive and disciplined way.</p>
 
- <p>We say much more about The Method in the ACL2 book.  See the home page.
- Also see @(see set-gag-mode) for a discussion of a way for ACL2 to help you to
- use The Method.  And again, see @(see introduction-to-the-theorem-prover) for
- a more detailed tutorial.</p>
+ <p>We say much more about The Method in the book, <em>Computer-Aided
+ Reasoning: An Approach</em>; see @(see pubs::pubs-books).  Also see @(see
+ set-gag-mode) for a discussion of a way for ACL2 to help you to use The
+ Method.  And again, see @(see introduction-to-the-theorem-prover) for a more
+ detailed tutorial.</p>
 
  <p>Learning to read failed proofs is a useful skill.  There are several kinds
  of ``checkpoints'' in a proof: (1) a formula to which induction is being (or

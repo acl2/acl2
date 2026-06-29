@@ -1,7 +1,7 @@
 ; BV Library: additional logxor theorems
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -41,7 +41,7 @@
          (bvchop n (lognot i)))
   :hints (("Goal" :in-theory (enable lognot))))
 
-;bozo FLOOR-MINUS-ERIC-BETTER looped on      (FLOOR '0 (EXPT '2 N))
+;bozo FLOOR-MINUS-ERIC-BETTER looped on      (FLOOR 0 (EXPT 2 N))
 (defthm logtail-of-logxor
   (equal (logtail n (logxor i j))
          (logxor (logtail n i)
@@ -59,8 +59,7 @@
   (equal (getbit n (logxor i j))
          (logxor (getbit n i)
                  (getbit n j)))
-  :hints (("Goal" :in-theory (e/d (getbit)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable getbit))))
 
 (defthm logbitp-of-logxor
   (implies (and (natp i)

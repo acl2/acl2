@@ -25,7 +25,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ parser-interface
-  :parents (remora)
+  :parents (parsing-and-printing)
   :short "API functions for parsing Remora source from a string."
   :long
   (xdoc::topstring
@@ -44,7 +44,7 @@
      entries are retained for ongoing development and debugging, since they
      are useful for testing fragments of source in isolation.
      The per-rule entries currently cover @('ispace'), @('base-val'),
-     @('base-type'), @('type-var'), @('ispace-var'), @('type-exp'),
+     @('base-type'), @('type-var'), @('ispace-var'), @('type'),
      @('char-lit'), @('string-lit'), @('exp'), @('atom'), and @('bind').")
    (xdoc::p
     "All entry points require the entire input to be consumed by the parse,
@@ -71,6 +71,79 @@
      body of a program."))
   :order-subtopics t
   :default-parent t)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Program-level entry points for parsing to CSTs
+;; For entry points for parsing to ASTs see the end of this file.
+;;
+;; parse-program-from-codepoints and parse-program-from-bytes and
+;; and parse-program-from-string are
+;; CST-producing helpers shared by the user-facing AST entries.  Each
+;; bundles the SC2 check from post-parsing.lisp (xdoc topic
+;; post-parsing) into the parsing pipeline (parse + [SC2] + input
+;; exhaustion).
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-program-from-codepoints ((codepoints nat-listp))
+  :returns (tree abnf::tree-resultp)
+  :hooks nil
+  :short "Parse a Remora program from a list of Unicode code points."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Parses the result as a Remora program, checks that all input is
+     consumed, checks that the fringe of the output CST is equal to
+     the input list of codepoints, and checks the extra-grammatical
+     constraint [SC2] (no identifier may match a reserved keyword).
+     Returns a @(tsee abnf::tree-resultp): a parse tree on success,
+     or an error on failure."))
+  (b* (((mv tree rest) (parse-program codepoints))
+       ((when (reserrp tree)) (reserrf-push tree))
+       ((unless (null rest))
+        (reserrf (cons :remaining-input rest)))
+       ((unless (equal (abnf::tree->string tree)
+                       codepoints))
+        (reserrf (cons :fringe-mismatch
+                       "internal parser bug -- please report this with the source that triggered it")))
+       (check (check-tree-no-keyword-identifiers tree))
+       ((when (reserrp check)) (reserrf-push check)))
+    tree))
+
+(define parse-program-from-bytes ((bytes nat-listp))
+  :returns (tree abnf::tree-resultp)
+  :hooks nil
+  :short "Parse a Remora program from UTF-8 bytes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Decodes @('bytes') as UTF-8 into Unicode code points,
+     and then composes @(tsee parse-program-from-codepoints).
+     Returns a @(tsee abnf::tree-resultp):
+     a parse tree on success, or an error on failure."))
+  (b* (((unless (acl2::unsigned-byte-listp 8 bytes))
+        (reserrf (cons :invalid-octets bytes)))
+       (codepoints (acl2::utf8=>ustring bytes))
+       ((unless (nat-listp codepoints))
+        (reserrf (cons :invalid-utf-8 bytes))))
+    (parse-program-from-codepoints codepoints)))
+
+(define parse-program-from-string ((string stringp))
+  :returns (tree abnf::tree-resultp)
+  :hooks nil
+  :short "Parse a Remora program from an ACL2 string into a CST."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Treats @('string') as UTF-8 bytes (ACL2 strings are sequences of
+     bytes with char-codes 0&ndash;255), and
+     @(tsee parse-program-from-bytes) to obtain a CST.
+     Returns a @(tsee abnf::tree-resultp):
+     a parse tree on success, or an error on failure."))
+  (parse-program-from-bytes (string=>nats string)))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -183,7 +256,7 @@
 (defparse-from-string base-type   base-type-resultp)
 (defparse-from-string type-var    type-var-resultp)
 (defparse-from-string ispace-var  ispace-var-resultp)
-(defparse-from-string type-exp    type-resultp)
+(defparse-from-string type    type-resultp)
 (defparse-from-string char-lit    char-lit-resultp)
 (defparse-from-string string-lit  char-lit-list-resultp)
 (defparse-from-string exp         expr-resultp)
@@ -216,7 +289,7 @@
    (xdoc::p
     "Dispatches on @('rule-name'), which must be one of
      @('\"ispace\"'), @('\"base-val\"'), @('\"base-type\"'),
-     @('\"type-var\"'), @('\"ispace-var\"'), @('\"type-exp\"'),
+     @('\"type-var\"'), @('\"ispace-var\"'), @('\"type\"'),
      @('\"char-lit\"'), @('\"string-lit\"'), @('\"exp\"'),
      @('\"atom\"'), or @('\"bind\"').
      Other rule names produce a @(see reserr).")
@@ -234,8 +307,8 @@
          (parse-to-ast-and-check type-var   source-code))
         ((equal rule-name "ispace-var")
          (parse-to-ast-and-check ispace-var source-code))
-        ((equal rule-name "type-exp")
-         (parse-to-ast-and-check type-exp   source-code))
+        ((equal rule-name "type")
+         (parse-to-ast-and-check type   source-code))
         ((equal rule-name "char-lit")
          (parse-to-ast-and-check char-lit   source-code))
         ((equal rule-name "string-lit")
@@ -250,56 +323,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Program-level entry points.
-;;
-;; parse-program-from-codepoints and parse-program-from-bytes are
-;; CST-producing helpers shared by the user-facing AST entries.  Each
-;; bundles the SC2 check from post-parsing.lisp (xdoc topic
-;; post-parsing) into the parsing pipeline (parse + [SC2] + input
-;; exhaustion).
-;;
-;; parse-from-string and parse-from-file at the bottom of this section
-;; are the canonical user-facing entry points: they return a prog AST.
+;; Program-level entry points for parsing to ASTs.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define parse-program-from-codepoints ((codepoints nat-listp))
-  :returns (tree abnf::tree-resultp)
-  :hooks nil
-  :short "Parse a Remora program from a list of Unicode code points."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Parses the result as a Remora program, checks that all input is
-     consumed, and checks the extra-grammatical constraint [SC2]
-     (no identifier may match a reserved keyword).  Returns a
-     @(tsee abnf::tree-resultp): a parse tree on success, or an error
-     on failure."))
-  (b* (((mv tree rest) (parse-program codepoints))
-       ((when (reserrp tree)) (reserrf-push tree))
-       ((unless (null rest))
-        (reserrf (cons :remaining-input rest)))
-       (check (check-tree-no-keyword-identifiers tree))
-       ((when (reserrp check)) (reserrf-push check)))
-    tree))
-
-(define parse-program-from-bytes ((bytes nat-listp))
-  :returns (tree abnf::tree-resultp)
-  :hooks nil
-  :short "Parse a Remora program from UTF-8 bytes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Decodes @('bytes') as UTF-8 into Unicode code points,
-     and then composes @(tsee parse-program-from-codepoints).
-     Returns a @(tsee abnf::tree-resultp):
-     a parse tree on success, or an error on failure."))
-  (b* (((unless (acl2::unsigned-byte-listp 8 bytes))
-        (reserrf (cons :invalid-octets bytes)))
-       (codepoints (acl2::utf8=>ustring bytes))
-       ((unless (nat-listp codepoints))
-        (reserrf (cons :invalid-utf-8 bytes))))
-    (parse-program-from-codepoints codepoints)))
 
 (define parse-from-string ((string stringp))
   :returns (ast prog-resultp)
@@ -314,7 +340,7 @@
      @(tsee abs-prog) to lift the CST to a @(tsee prog) AST.
      The full pipeline is UTF-8 decode + ABNF parse +
      [SC2] keyword check + input exhaustion + CST&rarr;AST abstraction."))
-  (b* (((okf tree) (parse-program-from-bytes (string=>nats string))))
+  (b* (((okf tree) (parse-program-from-string string)))
     (abs-prog tree)))
 
 (define parse-from-file ((filename stringp) state)

@@ -673,7 +673,7 @@
 ;;                                               dag-array
 ;;                                               (aset1-safe 'acc-array acc-array n nil)) ;no variables
 ;;                   ;;function call:
-;;                   (let* ( ;(fn (ffn-symb expr))
+;;                   (let* (;(fn (ffn-symb expr))
 ;;                          (args (fargs expr))
 ;;                          (arg-var-lists (aref1-lst 'acc-array acc-array (KEEP-INTEGERPS args)))
 ;;                          (args-vars (multi-union-eq arg-var-lists)))

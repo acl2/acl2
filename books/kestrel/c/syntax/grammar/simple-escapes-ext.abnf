@@ -10,16 +10,15 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains rules for simple escape sequences
-; [C17:6.4.4.4/1] [C23:6.4.5.5]
-; that are specific to the C dialects with GCC or Clang extensions.
-; The file simple-escapes-std.abnf contains rules for
-; dialects without extensions.
+; This file contains a grammar rule for simple escape sequences
+; in the non-standard C dialects (i.e. with extensions)
+; [C17:6.4.4.4/1] [C23:6.4.5.5].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The only difference is the addition of the '\%' escape sequence.
-; Although we did not find it in the GCC or Clang documentation,
+; The only difference with the rule in simple-escapes-std.abnf is
+; the addition of the '\%' escape sequence.
+; Although we did not find it in the GCC or Clang or CHERI documentation,
 ; we encountered it in practical code, and we found this web page:
 ; https://stackoverflow.com/questions/34142682/what-is-the-backslash-percent-escape-in-c.
 ; For simplicity, for now we allow it

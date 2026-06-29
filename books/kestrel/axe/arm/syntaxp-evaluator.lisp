@@ -16,7 +16,7 @@
 (include-book "../axe-syntax-functions-boolean")
 (include-book "../axe-syntax-functions-bv")
 (include-book "../make-axe-syntaxp-evaluator")
-;; (include-book "syntax-functions")
+(include-book "syntax-functions")
 
 ;; todo: what order should these be in?
 (make-axe-syntaxp-evaluator 'arm '(lighter-dargp
@@ -36,7 +36,7 @@
                                    term-should-be-trimmed-axe
                                    should-commute-axe-argsp
                                    should-commute-axe-args-increasingp
-                                   ;; r::write-with-addr-and-size-presentp-axe
+                                   a::write-with-addr-and-size-presentp-axe
                                    ;;x::write-nest-with-inner-set-flagp-axe
                                    dargs-equalp
                                    ;;x::addresses-out-of-orderp

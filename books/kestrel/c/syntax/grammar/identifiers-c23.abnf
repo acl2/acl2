@@ -10,10 +10,8 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains grammar rules for identifiers
-; that are specific to the C23 standard [C23:6.4.3.1].
-; Together with the generic rules in identifiers.abnf,
-; they form the rules for identifiers for the C23 dialects.
+; This file contains grammar rules for identifiers in the C23 dialects
+; [C23:6.4.3.1].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

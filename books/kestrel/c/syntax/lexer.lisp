@@ -2844,7 +2844,11 @@
              (t nil)))
      :measure (nfix i)
      :hints (("Goal" :in-theory (enable nfix)))
-     :guard-hints (("Goal" :in-theory (enable nfix))))))
+     :guard-hints
+     (("Goal"
+       :in-theory (enable nfix)
+       :use (:instance natp-when-unicharp
+                       (x (char+position->char (parstate->char i parstate)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

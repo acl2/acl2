@@ -1,6 +1,6 @@
 ; Rules about bvmult
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -38,14 +38,14 @@
                   (< (* k1 x) (expt 2 size)) ; the bvmult doesn't chop anything
                   (natp size)
                   (natp k1)
-                  ;;(< 0 k1) ;;
+                  ;;(< 0 k1)
                   (natp k2)
                   (natp x)
                   )
              (equal (< (bvmult size k1 x) k2)
                     (< (bvchop size x) (/ k2 k1))))
     :hints (("Goal" :cases ((<= 1 k1))
-             :in-theory (enable bvmult UNSIGNED-BYTE-P)))))
+             :in-theory (enable bvmult unsigned-byte-p)))))
 
 (local
   (defthmd <-of-bvmult-arg1-core-2
@@ -54,20 +54,20 @@
                   (< (* k1 x) (expt 2 size)) ; the bvmult doesn't chop anything
                   (natp size)
                   (natp k1)
-                  (< 0 k1) ;;
+                  (< 0 k1)
                   (natp k2)
                   (natp x))
              (equal (< (bvmult size k1 x) k2)
                     (<= (bvchop size x) (/ k2 k1))))
     :hints (("Goal" :cases ((<= 1 k1))
-             :in-theory (enable bvmult UNSIGNED-BYTE-P)))))
+             :in-theory (enable bvmult unsigned-byte-p)))))
 
 (defthmd <-of-bvmult-arg1-core
   (implies (and (< (* k1 x) (expt 2 size)) ; the bvmult doesn't chop anything
                 ;;(< (* k1 (bvchop size x)) (expt 2 size)) ; the bvmult doesn't chop anything
                 (natp size)
                 (natp k1)
-                (< 0 k1) ;;
+                (< 0 k1)
                 (natp k2)
                 (natp x))
            (equal (< (bvmult size k1 x) k2)
@@ -122,7 +122,7 @@
                   (and (< (/ k2 k1) (bvchop size x))
                        (< k2 (expt 2 size)))))
   :hints (("Goal" :cases ((<= 1 k1))
-           :in-theory (enable bvmult UNSIGNED-BYTE-P))))
+           :in-theory (enable bvmult unsigned-byte-p))))
 
 (defthmd <-of-constant-and-bvmult-of-constant
   (implies (and (syntaxp (and (quotep k1) (quotep k2)))
@@ -137,7 +137,7 @@
                           (bvchop size x))
                        (< k2 (expt 2 size)))))
   :hints (("Goal" :cases ((<= 1 k1))
-           :in-theory (enable bvmult UNSIGNED-BYTE-P))))
+           :in-theory (enable bvmult unsigned-byte-p))))
 
 ;todo: allow the sizes to differ
 (defthmd bvlt-of-constant-and-bvmult-of-constant

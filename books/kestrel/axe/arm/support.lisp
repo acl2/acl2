@@ -103,4 +103,4 @@
                   (set-reg reg2 val2 (set-reg reg1 val1 stat))))
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" ;:use write32-xreg-of-write32-xreg-diff-helper
-           :in-theory (enable))))
+           )))

@@ -23,8 +23,7 @@
 ;ffixme add binary-+, unary--, myif, etc.?
 ;todo: what about myif when bv branches?
 (defconst *trimmable-non-arithmetic-operators*  ; rename to *trimmable-non-arithmetic-bv-operators* ?
-  '(
-    ;; getbit ; would we ever need to trim a getbit?
+  '(;; getbit ; would we ever need to trim a getbit?
     ;; bitxor bitnot bitand bitor  ;could we really trim a one-bit operator?
     ;; bool-to-bit ;todo: think about this
     bvnot bvand bvor bvxor

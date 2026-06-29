@@ -63,9 +63,9 @@
                               (or (myquotep dag2)
                                   (pseudo-dagp dag2)))
                   :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
-                                 :in-theory (e/d ( ;car-of-nth-of-len-minus1-when-pseudo-dagp
+                                 :in-theory (e/d (;car-of-nth-of-len-minus1-when-pseudo-dagp
                                                   BOUNDED-DAG-PARENT-ARRAYP)
-                                                 ( ;REVERSE-REMOVAL
+                                                 (;REVERSE-REMOVAL
                                                   PSEUDO-DAG-arrayP))))))
   (if (quotep dag1)
       (mv (erp-nil) dag1 dag2)
@@ -181,7 +181,7 @@
   :hints (("Goal" :use pseudo-dagp-aux-of-mv-nth-2-of-merge-dag-into-dag-quick
            :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (pseudo-dagp merge-dag-into-dag-quick)
-                           ( ;myquotep
+                           (;myquotep
                             quotep len natp BOUNDED-DAG-EXPRP
                             pseudo-dagp-aux-of-mv-nth-2-of-merge-dag-into-dag-quick)))))
 

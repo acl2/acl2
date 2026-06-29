@@ -10,12 +10,8 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains rules for floating constants
-; that are common to all the C dialects
+; This file contains grammar rules for floating constants in all the C dialects
 ; [C17:6.4.4.2/1] [C23:6.4.5.3].
-; Together with the rules
-; in the dialect-specific files floating-constants-*.abnf,
-; they define the floating constants of each C dialect.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

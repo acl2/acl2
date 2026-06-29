@@ -12,7 +12,8 @@
 
 (include-book "strcpy-safe-support")
 
-(include-book "kestrel/c/syntax/input-files" :dir :system)
+(include-book "../syntax/input-files")
+(include-book "../syntax/abstract-syntax-formal-mapping-direct")
 
 (local (include-book "std/basic/fix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
@@ -69,7 +70,7 @@
        (const (c$::expr-const->const expr))
        (iconst (c$::const-int->iconst const))
        (info (c$::iconst->info iconst)))
-    (c$::iconst-info->value info)))
+    (c$::iconst-vinfo->value info)))
 
 ; The buffer size is not 0.
 (assert-event (/= *buffer-size* 0))

@@ -4074,7 +4074,7 @@
   (equal (car (row-mat x)) x)
   :hints (("Goal" :in-theory (enable row-mat))))
 
-(local-defthmd col-0-col-mat
+(defthmd col-0-col-mat
   (implies (flistnp x n)
            (equal (col 0 (col-mat x)) x))
   :hints (("Goal" :in-theory (disable fmatp-row-mat)
@@ -4600,9 +4600,7 @@
 ;; Otherwise, the entries of x corresponding to the indices in (lead-inds aq) are determined
 ;; by the entries corresponding to (free-inds aq n).  Thus, there is a unique solution
 ;; corresponding to every assignment of values to the latter set of entries, and hence an
-;; infinite number of solutions.  We shall revisit this result later in tconnection with the 
-;; vector space of solutions of a homogeneous system of equations.
-
+;; infinite number of solutions.
 
 ;;--------------------------------------------------------------------------------------------------
 
@@ -4661,3 +4659,550 @@
 			(:instance first-nonzero-nonzero (x (nth k a)))
 			(:instance flistnp-row (i k))
 			(:instance not-flist0p-row (i k))))))
+
+;;---------------------------------------------
+
+;; The system of equations (fmat* a (col-mat x)) = (col-mat b) is said to be homogeneous if all entries of b are 0.
+;; A homogeneous system has the trivial solution and is therefore solvable:
+
+(local-defthmd homogeneous-solution-0-1
+  (implies (and (fmatp a m n) (posp m) (posp n) (natp i) (< i m))
+           (equal (entry i 0 (fmat* a (col-mat (flistn0 n))))
+	          (f0)))
+  :hints (("Goal" :use (flistnp-row
+                        (:instance fmat*-entry (b (col-mat (flistn0 n))) (p 1) (j 0))
+		        (:instance col-0-col-mat (x (flistn0 n)))
+			(:instance fdot-comm (x (nth i a)) (y (flistn0 n)))))))
+
+(local-defthm len-car-fmat
+  (implies (and (fmatp a m n) (posp m) (posp n))
+           (equal (len (car a)) n))
+  :hints (("Goal" :use ((:instance len-fmat-row (i 0))))))
+
+(local-defthm entry-col-mat
+  (implies (and (natp n) (natp i) (flistnp x n) (< i n))
+           (equal (entry i 0 (col-mat x))
+	          (nth i x)))
+  :hints (("Goal" :in-theory (enable row-mat col-mat)
+                  :expand ((FMATP (LIST X) 1 N) (FMATP NIL 0 N))
+                  :use ((:instance transpose-fmat-entry (a (list x)) (m 1) (j i) (i 0))))))
+
+(defthmd homogeneous-solution-0
+  (implies (and (fmatp a m n) (posp m) (posp n))
+           (solutionp (flistn0 n) a (flistn0 m)))
+  :hints (("Goal" :in-theory (e/d (solutionp) (entry))
+                  :use ((:instance fmat-entry-diff-lemma (a (fmat* a (col-mat (flistn0 n)))) (b (col-mat (flistn0 m))) (n 1))
+                        (:instance homogeneous-solution-0-1 (i (car (entry-diff (fmat* a (col-mat (flistn0 n))) (col-mat (flistn0 m))))))))))
+
+(defthm solvablep-homogeneous
+  (implies (and (fmatp a m n) (posp m) (posp n))
+           (solvablep a (flistn0 m)))
+  :hints (("Goal" :use (homogeneous-solution-0
+                        (:instance linear-equations-unsolvable-case (b (flistn0 m)) (x (flistn0 n)))))))
+
+;; The solutions of a homogeneous system may be characterized as follows:
+
+(defund sol0p (x a)
+  (and (flistnp x (len (car a)))
+       (solutionp x a (flistn0 (len a)))))
+
+;; The set of solutions is closed under addition and scalar multiplication:
+
+(local-defthm fmat-add-col-mat
+  (implies (and (natp n) (flistnp x n) (flistnp y n))
+           (equal (fmat-add (col-mat x) (col-mat y))
+	          (col-mat (flist-add x y))))
+  :hints (("Goal" :in-theory (disable entry)
+                  :use ((:instance fmat-entry-diff-lemma (m n) (n 1) (a (fmat-add (col-mat x) (col-mat y))) (b (col-mat (flist-add x y))))
+		        (:instance fmat-add-entry (a (col-mat x)) (b (col-mat y)) (m n) (n 1) (j 0)
+			                          (i (CAR (ENTRY-DIFF (FMAT-ADD (COL-MAT X) (COL-MAT Y)) (COL-MAT (FLIST-ADD X Y))))))))))
+
+(defthmd sol0p-fadd
+  (implies (and (posp m) (posp n) (fmatp a m n)
+                (sol0p x a)
+		(sol0p y a))
+	   (sol0p (flist-add x y) a))
+  :hints (("Goal" :in-theory (enable solutionp sol0p)
+                  :use ((:instance fmat*-dist-2 (b1 (col-mat x)) (b2 (col-mat y)) (p 1))))))
+
+(local-defthmd fmat-scalar-mul-col-mat
+  (implies (and (posp n) (flistnp x n) (fp c))
+           (equal (col-mat (flist-scalar-mul c x))
+	          (fmat-scalar-mul c (col-mat x))))	          
+  :hints (("Goal" :in-theory (e/d (fmatp-fmat-scalar-mul) (entry))
+                  :use ((:instance fmat-entry-diff-lemma (m n) (n 1) (a (fmat-scalar-mul c (col-mat x))) (b (col-mat (flist-scalar-mul c x))))
+		        (:instance fmat-scalar-mul-entry (a (col-mat x)) (m n) (n 1) (j 0)
+			                          (i (CAR (ENTRY-DIFF (fmat-scalar-mul c (col-mat x)) (col-mat (flist-scalar-mul c x))))))))))
+
+(local-defthm flist-scalar-mul-flistn0
+  (implies (fp c)
+           (equal (flist-scalar-mul c (flistn0 n))
+	          (flistn0 n))))
+
+(defthmd sol0p-scalar-mul
+  (implies (and (posp m) (posp n) (fmatp a m n)
+                (sol0p x a)
+		(fp c))
+	   (sol0p (flist-scalar-mul c x) a))
+  :hints (("Goal" :in-theory (enable solutionp sol0p)
+                  :use (fmat-scalar-mul-col-mat
+		        (:instance fmat*-fmat-scalar-mul-2 (b (col-mat x)) (p 1))
+		        (:instance fmat-scalar-mul-col-mat (n m) (x (flistn0 m)))))))
+
+;; The test for a solution reduces to the following:
+
+(defun sol0-test-aux (x aq l f k)
+  (if (zp k)
+      t
+    (and (equal (nth (nth (1- k) l) x)
+                (f- (fdot-select f (nth (1- k) aq) x)))
+	 (sol0-test-aux x aq l f (1- k)))))
+
+(defund sol0-test (x a n)
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (lead-inds (lead-inds aq))
+         (free-inds (free-inds aq n)))
+    (sol0-test-aux x aq lead-inds free-inds q)))
+
+(in-theory (enable fmatp))
+
+(local-defthm lehc-1
+  (implies (and (fmatp a m n) (posp m) (posp n) (natp i) (< i m))
+           (equal (entry i 0 (fmat* a (col-mat (flistn0 n))))
+	          (entry i 0 (col-mat (flistn0 m)))))
+  :hints (("Goal" :use (flistnp-row
+                        (:instance fmat*-entry (b (col-mat (flistn0 n))) (p 1) (j 0))
+                        (:instance entry-col-mat (n m) (x (flistn0 m)))
+			(:instance fdot-comm (x (flistn0 n)) (y (nth i a)))
+                        (:instance col-0-col-mat (x (flistn0 n)))))))
+
+(local-defthm lehc-2
+  (implies (and (fmatp a m n) (posp m) (posp n))
+           (equal (fmat* a (col-mat (flistn0 n)))
+	          (col-mat (flistn0 m))))
+  :hints (("Goal" :use ((:instance fmat-entry-diff-lemma (a (fmat* a (col-mat (flistn0 n)))) (b (col-mat (flistn0 m))) (n 1))
+                        (:instance lehc-1 (i (car (entry-diff (fmat* a (col-mat (flistn0 n))) (col-mat (flistn0 m))))))))))
+
+(local-defthmd lehc-3
+  (implies (and (natp m) (natp q) (<= q m) (natp i) (< i q))
+           (equal (entry i 0 (first-rows q (col-mat (flistn0 m))))
+	          (entry i 0 (col-mat (flistn0 q)))))
+  :hints (("Goal" :use ((:instance nth-first-rows (a (col-mat (flistn0 m))) (n 1))
+                        (:instance entry-col-mat (n m) (x (flistn0 m)))
+                        (:instance entry-col-mat (n q) (x (flistn0 q)))))))
+
+(local-defthmd lehc-4
+  (implies (and (posp m) (natp q) (<= q m))
+           (equal (first-rows q (col-mat (flistn0 m)))
+	          (col-mat (flistn0 q))))
+  :hints (("Goal" :use ((:instance fmat-entry-diff-lemma (a (first-rows q (col-mat (flistn0 m)))) (b (col-mat (flistn0 q))) (m q) (n 1))
+                        (:instance lehc-3 (i (car (entry-diff (first-rows q (col-mat (flistn0 m))) (col-mat (flistn0 q))))))
+			(:instance fmatp-first-rows (a (col-mat (flistn0 m))) (n 1))))))
+
+(local-defthmd sublistp-set-difference-equal
+  (sublistp (set-difference-equal l m) l))
+
+(local-defthmd lehc-5
+  (sublistp (free-inds a n) (ninit n))
+  :hints (("Goal" :use ((:instance sublistp-set-difference-equal (l (ninit n)) (m (lead-inds a))))
+                  :in-theory (enable free-inds))))
+
+(local-defthm lehc-6
+  (implies (and (fmatp a m n) (posp m) (posp n))
+           (let* ((ar (row-reduce a))
+                  (br (fmat* (row-reduce-mat a) (col-mat (flistn0 m))))
+                  (q (num-nonzero-rows ar))
+                  (aq (first-rows q ar))
+                  (bq (first-rows q br)))
+	     (and (natp q)
+	          (<= q m)
+		  (equal bq (col-mat (flistn0 q)))
+		  (fmatp aq q n))))
+  :hints (("Goal" :in-theory (enable fmatp-row-reduce-mat fmatp-row-reduce row-echelon-p-row-reduce)
+                  :use ((:instance num-nonzero-rows<=m (a (row-reduce a)))
+		        (:instance first-rows-rank (ar (row-reduce a)))
+		        (:instance lehc-2 (a (row-reduce-mat a)) (n m))
+			(:instance lehc-4 (q (num-nonzero-rows (row-reduce a))))))))
+
+(local-defthm lehc-7
+  (implies (and (fmatp a m n) (posp m) (posp n))
+           (let* ((ar (row-reduce a))
+                  (q (num-nonzero-rows ar))
+                  (aq (first-rows q ar))
+		  (f (free-inds aq n)))
+	     (sublistp f (ninit n))))
+  :hints (("Goal" :in-theory (enable fmatp-row-reduce-mat fmatp-row-reduce row-echelon-p-row-reduce)
+                  :use ((:instance lehc-5 (a (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))))))
+
+(local-defthmd lehc-8
+  (implies (and (posp m) (posp n) (natp q) (<= q m) (flistnp x n) (fmatp aq q n)
+                (sublistp f (ninit n)) (posp k) (<= k q))
+           (equal (f+ (car (nth (1- k) (col-mat (flistn0 q))))
+		      (f- (fdot-select f (nth (1- k) aq) x)))
+		  (f- (fdot-select f (nth (1- k) aq) x))))
+  :hints (("Goal" :in-theory (disable f0id2 fp-fdot-select)
+	                  :use ((:instance entry-col-mat (n q) (i (1- k)) (x (flistn0 q)))
+			        (:instance flistnp-row (a aq) (m q) (i (1- k)))
+				(:instance f0id2 (x (F- (FDOT-SELECT F (NTH (+ -1 K) AQ) X))))
+			        (:instance fp-fdot-select (l f) (x (nth (1- k) aq)) (y x))))))
+
+(local-defthmd lehc-9
+  (implies (and (posp m) (posp n) (natp q) (<= q m) (flistnp x n) (fmatp aq q n)
+                (sublistp f (ninit n)) (natp k) (<= k q))
+           (equal (solution-test-aux x aq (col-mat (flistn0 q)) l f k)
+	          (sol0-test-aux x aq l f k)))
+  :hints (("Goal" :induct (fact k))
+          ("Subgoal *1/2" :expand ((SOLUTION-TEST-AUX X AQ (COL-MAT (FLISTN0 Q)) l f k))
+	                  :use (lehc-8))))
+
+(local-defthmd lehc-10
+  (implies (and (fmatp a m n) (posp m) (posp n) (flistnp x n))
+           (equal (sol0-test x a n)
+	          (solution-test x a (flistn0 m) n)))
+  :hints (("Goal" :in-theory (enable sol0-test solution-test)
+                  :use (lehc-6 lehc-7
+		        (:instance lehc-9 (aq (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))
+			                  (q (num-nonzero-rows (row-reduce a)))
+					  (l (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))
+					  (f (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n))
+					  (k (num-nonzero-rows (row-reduce a))))))))
+
+(defthmd linear-equations-homogeneous-case
+  (implies (and (fmatp a m n) (posp m) (posp n) (flistnp x n))
+           (iff (sol0p x a)
+                (sol0-test x a n)))
+  :hints (("Goal" :in-theory (enable sol0p)
+                  :use (lehc-10 solvablep-homogeneous
+		        (:instance linear-equations-solvable-case (b (flistn0 m)))))))
+
+;; Eventually, we shall examine the solution set of a homogeneous system as a vector space.  Here we merely
+;; observe the existence of a nontrivial solution in the case m < n, a result that is needed in our 
+;; formalization of galois theory.
+
+;; We construct a solution that has a 1 at every free index:
+
+(defun flistn1 (n)
+  (if (zp n)
+      ()
+    (cons (f1) (flistn1 (1- n)))))
+
+(defun gen-sol0-aux (aq l f n k)
+  (if (posp k)
+      (append (gen-sol0-aux aq l f n (1- k))
+              (list (if (member (1- k) l)
+	                (f- (fdot-select f (nth (index (1- k) l) aq) (flistn1 n)))
+		      (f1))))
+    ()))
+
+(defund gen-sol0 (a n)
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+	 (l (lead-inds aq))
+         (f (free-inds aq n)))
+    (gen-sol0-aux aq l f n n)))
+
+(local-defthm len-append
+  (equal (len (append l m))
+         (+ (len l) (len m))))
+
+(local-defthm nth-append
+  (implies (natp k)
+           (equal (nth k (append l m))
+	          (if (< k (len l))
+		      (nth k l)
+		    (nth (- k (len l)) m)))))
+
+(local-defthm sol0-1
+  (implies (natp k)
+           (equal (len (gen-sol0-aux aq l f n k))
+	          k)))
+
+(local-defthmd sol0-2
+  (implies (and (natp k) (natp i) (< i k)
+                (not (member i l)))
+           (equal (nth i (gen-sol0-aux aq l f n k))
+                  (f1))))
+
+(local-defthmd sol0-3
+  (implies (and (natp k) (natp i) (< i k)
+                (member i l))
+           (equal (nth i (gen-sol0-aux aq l f n k))
+                  (f- (fdot-select f (nth (index i l) aq) (flistn1 n))))))
+
+(local-defun all-1 (f x)
+  (if (consp f)
+      (and (equal (nth (car f) x) (f1))
+           (all-1 (cdr f) x))
+    t))
+
+(local-defun nth-flistn1-induct (k n)
+  (if (and (natp k) (natp n) (< k n))
+      (if (zp k)
+          t
+	(nth-flistn1-induct (1- k) (1- n)))
+    ()))
+
+(local-defthm nth-flistn1
+  (implies (and (natp k) (natp n) (< k n))
+           (equal (nth k (flistn1 n))
+	          (f1)))
+  :hints (("Goal" :induct (nth-flistn1-induct k n))
+          ("Subgoal *1/1" :expand (flistn1 n))))
+
+(local-defthmd sol0-4
+  (implies (and (natp n) (sublistp f (ninit n)) (all-1 f x))
+           (equal (fdot-select f a x)
+	          (fdot-select f a (flistn1 n))))
+  :hints (("Subgoal *1/3" :use ((:instance member-ninit (x (car f)))))))
+
+(local-defthmd member-set-difference-equal
+  (iff (member x (set-difference-equal l m))
+       (and (member x l) (not (member x m)))))
+
+(local-defthmd sol0-5
+  (implies (and (fmatp a m n) (posp m) (posp n) (> n m))
+    (let* ((ar (row-reduce a))
+           (q (num-nonzero-rows ar))
+           (aq (first-rows q ar))
+           (f (free-inds aq n)))
+      (implies (sublistp f1 f)
+               (all-1 f1 (gen-sol0 a n)))))
+  :hints (("Goal" :induct (len f1))
+          ("Subgoal *1/1" :in-theory (enable free-inds gen-sol0)
+	                  :use ((:instance sol0-2 (i (car f1)) (k n)
+			                          (l (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))
+			                          (f (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n))
+						  (aq (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))
+				(:instance member-ninit (x (car f1)))
+				(:instance member-set-difference-equal
+				   (x (car f1)) (l (ninit n))
+				   (m (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))))))))
+
+(local-defthmd sol0-6
+  (implies (and (fmatp a m n) (posp m) (posp n) (> n m))
+    (let* ((ar (row-reduce a))
+           (q (num-nonzero-rows ar))
+           (aq (first-rows q ar))
+           (f (free-inds aq n)))
+      (all-1 f (gen-sol0 a n))))
+  :hints (("Goal" :use ((:instance sol0-5 (f1 (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n)))))))
+
+(local-defthmd sol0-7
+  (implies (and (fmatp a m n) (posp m) (posp n) (> n m))
+    (let* ((ar (row-reduce a))
+           (q (num-nonzero-rows ar))
+           (aq (first-rows q ar))
+           (l (lead-inds aq)))
+      (sublistp l (ninit n))))
+  :hints (("Goal" :in-theory (enable fmatp-row-reduce-mat fmatp-row-reduce row-echelon-p-row-reduce)
+                  :use ((:instance sublistp-lead-inds-ninit (a (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))
+                                                            (m (num-nonzero-rows (row-reduce a))))
+			(:instance first-rows-rank (ar (row-reduce a)))))))
+
+(local-defthmd sol0-8
+  (implies (and (fmatp a m n) (posp m) (posp n) (> n m))
+    (let* ((ar (row-reduce a))
+           (q (num-nonzero-rows ar))
+           (aq (first-rows q ar))
+           (l (lead-inds aq)))
+      (equal (len l) q)))
+  :hints (("Goal" :in-theory (enable fmatp-row-reduce-mat fmatp-row-reduce row-echelon-p-row-reduce)
+                  :use ((:instance len-lead-inds-num-nonzero-rows (a (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))
+			(:instance first-rows-rank (ar (row-reduce a)))))))
+
+(local-defthmd sol0-9
+  (implies (and (fmatp a m n) (posp m) (posp n) (> n m))
+    (let* ((ar (row-reduce a))
+           (q (num-nonzero-rows ar))
+           (aq (first-rows q ar))
+           (l (lead-inds aq)))
+      (dlistp l)))
+  :hints (("Goal" :in-theory (enable fmatp-row-reduce-mat fmatp-row-reduce row-echelon-p-row-reduce)
+                  :use (lehc-6
+		        (:instance first-rows-rank (ar (row-reduce a)))
+		        (:instance dlistp-lead-inds (m (num-nonzero-rows (row-reduce a)))
+			                            (a (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))))))
+
+
+(local-defthmd sol0-10
+  (implies (and (fmatp a m n) (posp m) (posp n) (> n m))
+    (let* ((ar (row-reduce a))
+           (q (num-nonzero-rows ar))
+           (aq (first-rows q ar))
+           (l (lead-inds aq))
+           (f (free-inds aq n)))
+      (implies (and (natp i) (< i q))
+               (equal (nth (nth i l) (gen-sol0 a n))
+                      (f- (fdot-select f (nth i aq) (gen-sol0 a n)))))))
+  :hints (("Goal" :in-theory (enable gen-sol0)
+                  :use (sol0-6 sol0-7 sol0-8 sol0-9
+                        (:instance member-nth (n i) (l (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))))
+                        (:instance sol0-3 (k n)
+                                          (i (nth i (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))))
+					  (aq (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))
+					  (l (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))
+					  (f (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n)))
+			(:instance sol0-4 (f (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n))
+			                  (a (nth i (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))
+ 					  (x (gen-sol0 a n)))
+			(:instance member-ninit (x (nth i (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))))))))
+                                         
+(local-defthmd sol0-11
+  (implies (and (fmatp a m n) (posp m) (posp n) (> n m))
+           (let* ((ar (row-reduce a))
+                  (q (num-nonzero-rows ar))
+                  (aq (first-rows q ar))
+                  (l (lead-inds aq))
+                  (f (free-inds aq n)))
+             (implies (and (natp k) (<= k q))
+                      (sol0-test-aux (gen-sol0 a n) aq l f k))))
+  :hints (("Goal" :induct (fact k))
+          ("Subgoal *1/2" :use ((:instance sol0-10 (i (1- k)))))))
+
+(local-defthm flistnp-flistn1
+  (implies (natp n)
+           (flistnp (flistn1 n) n)))
+
+(local-defthmd sol0-12
+  (implies (and (fmatp a m n) (posp m) (posp n) (> n m) (natp i) (< i n))
+           (fp (nth i (gen-sol0 a n))))
+  :hints (("Goal" :in-theory (e/d (gen-sol0) (ind<len))
+                  :use (lehc-6 sol0-7 sol0-8
+			(:instance flistnp-row (a (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))
+			                       (m (num-nonzero-rows (row-reduce a)))
+					       (i (index i (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))))
+			(:instance ind<len (x i) (l (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))))
+			(:instance lehc-5  (a (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))
+                        (:instance sol0-2 (k n)
+					  (aq (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))
+					  (l (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))
+					  (f (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n)))
+                        (:instance sol0-3 (k n)
+					  (aq (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))
+					  (l (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))
+					  (f (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n)))))))
+
+(local-defun flistnp-cex (l)
+  (if (consp l)
+      (if (fp (car l))
+          (1+ (flistnp-cex (cdr l)))
+	0)
+    ()))
+
+(local-defthmd flistnp-cex-lemma
+  (implies (and (true-listp l) (not (flistnp l (len l))))
+           (let ((i (flistnp-cex l)))
+	     (and (natp i)
+	          (< i (len l))
+		  (not (fp (nth i l)))))))
+
+(local-defthmd sol0-13
+  (implies (natp k)
+           (let ((l (gen-sol0-aux aq l f n k)))
+	     (and (true-listp l)
+	          (equal (len l) k)))))
+
+(local-defthmd sol0-14
+  (implies (and (fmatp a m n) (posp m) (posp n) (> n m))
+           (flistnp (gen-sol0 a n) n))
+  :hints (("Goal" :in-theory (enable gen-sol0)
+                  :use ((:instance sol0-13 (aq (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))
+		                           (l (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))
+					   (f (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n))
+					   (k n))
+			(:instance flistnp-cex-lemma (l (gen-sol0 a n)))
+			(:instance sol0-12 (i (flistnp-cex (gen-sol0 a n))))))))
+ 
+(defthmd sol0p-gen-sol0
+  (implies (and (fmatp a m n) (posp m) (posp n) (> n m))
+           (sol0p (gen-sol0 a n) a))
+  :hints (("Goal" :in-theory (enable sol0-test sol0p)
+                  :use (sol0-14
+		        (:instance linear-equations-homogeneous-case (x (gen-sol0 a n)))
+		        (:instance sol0-11 (k (num-nonzero-rows (row-reduce a))))))))
+
+(local-defthmd sol0-15
+  (implies (not (consp (set-difference-equal x y)))
+           (sublistp x y)))
+
+(local-defthmd sol0-16
+  (implies (and (fmatp a m n) (posp m) (posp n) (> n m))
+           (consp (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n)))
+  :hints (("Goal" :in-theory (e/d (fmatp-row-reduce-mat fmatp-row-reduce row-echelon-p-row-reduce free-inds) (lehc-6))
+                  :use (lehc-6
+		        (:instance len-lead-inds-bound (a (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))
+		                                       (m (num-nonzero-rows (row-reduce a))))
+			(:instance num-nonzero-rows<=m (a (row-reduce a)))
+			(:instance sol0-15 (x (ninit n)) (y (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))))
+			(:instance sublistp-<=-len (l (ninit n)) (m (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))))))))
+
+(local-defthmd sol0-17
+  (sublistp (set-difference-equal x y) x))
+
+(local-defthmd sol0-18
+  (implies (and (fmatp a m n) (posp m) (posp n) (> n m))
+           (sublistp (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n)
+	             (ninit n)))
+  :hints (("Goal" :in-theory (e/d (free-inds fmatp-row-reduce-mat fmatp-row-reduce row-echelon-p-row-reduce) (lehc-6))
+                  :use (sol0-16 lehc-6
+			(:instance sol0-17 (x (ninit n)) (y (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))))
+		        (:instance first-rows-rank (ar (row-reduce a)))
+			(:instance member-ninit (x (car (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n))))))))
+
+(local-defthmd sol0-19
+  (implies (and (fmatp a m n) (posp m) (posp n) (> n m))
+           (let ((c (car (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n))))
+	     (and (natp c) (< c n)
+	          (not (member c (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))))))
+  :hints (("Goal" :in-theory (e/d (fmatp-row-reduce-mat fmatp-row-reduce row-echelon-p-row-reduce) (lehc-7 lehc-6))
+                  :use (sol0-16 sol0-18 lehc-6
+		        (:instance first-rows-rank (ar (row-reduce a)))
+		        (:instance member-free-inds (a (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))
+			                            (m (num-nonzero-rows (row-reduce a)))
+						    (x (car (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n))))
+			(:instance member-ninit (x (car (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n))))))))
+
+(local-defthmd sol0-20
+  (implies (and (fmatp a m n) (posp m) (posp n) (> n m))
+           (let ((c (car (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n))))
+	     (and (natp c) (< c n)
+	          (equal (nth c (gen-sol0 a n)) (f1)))))
+  :hints (("Goal" :in-theory (e/d (gen-sol0 fmatp-row-reduce-mat fmatp-row-reduce row-echelon-p-row-reduce) (lehc-7 lehc-6))
+                  :use (sol0-19 lehc-6
+		        (:instance first-rows-rank (ar (row-reduce a)))
+                        (:instance sol0-2 (k n)
+			                  (i (car (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n)))
+					  (aq (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))
+					  (l (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))
+					  (f (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n)))))))
+
+(local-defthmd sol0-21
+  (implies (and (natp c) (< c (len x)) (flist0p x))
+           (equal (nth c x) (f0))))
+
+(defthmd gen-sol0-nontrivial
+  (implies (and (fmatp a m n) (posp m) (posp n) (> n m))
+           (not (flist0p (gen-sol0 a n))))
+  :hints (("Goal" :in-theory (enable gen-sol0)
+                  :use (sol0-20
+                        (:instance sol0-1 (k n)
+					  (aq (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))
+					  (l (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))
+					  (f (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n)))
+			(:instance sol0-21 (x (gen-sol0 a n))
+			                   (c (car (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n))))))))
+
+(defun-sk nontrivial-sol0p (a)
+  (exists (x)
+    (and (not (flist0p x))
+         (sol0p x a))))
+
+(defthmd exists-sol0p
+  (implies (and (posp m) (posp n) (> n m) (fmatp a m n))
+           (nontrivial-sol0p a))
+  :hints (("Goal" :use (sol0p-gen-sol0 gen-sol0-nontrivial
+                        (:instance nontrivial-sol0p-suff (x (gen-sol0 a n)))))))
+

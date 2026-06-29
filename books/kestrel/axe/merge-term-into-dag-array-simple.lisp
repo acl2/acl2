@@ -652,7 +652,7 @@
                               ))))
     :flag merge-term-into-dag-array-simple)
   :skip-others t
-  :hints (("Goal" :in-theory (e/d ( ;merge-term-into-dag-array-simple
+  :hints (("Goal" :in-theory (e/d (;merge-term-into-dag-array-simple
                                    merge-terms-into-dag-array-simple
                                    consp-of-lookup-equal-when-all-myquotep-of-strip-cdrs)
                                   (natp))

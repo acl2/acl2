@@ -372,8 +372,12 @@
                   (bitxor x y)))
   :hints (("Goal" :in-theory (e/d (bitxor b-xor) (bvxor-1-becomes-bitxor)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm b-not-becomes-bitnot
-  (implies (unsigned-byte-p 1 x)
-           (equal (b-not x)
-                  (bitnot x)))
-  :hints (("Goal" :in-theory (e/d (bitnot b-not) (bvxor-1-becomes-bitxor)))))
+  (equal (b-not b)
+         (if (unsigned-byte-p 1 b)
+             (bitnot b)
+           ;; odd case:
+           1))
+  :hints (("Goal" :in-theory (enable b-not bit-to-bool))))

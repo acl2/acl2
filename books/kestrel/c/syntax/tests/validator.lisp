@@ -268,9 +268,9 @@ void f() {
             (expr-xp (expr-unary->arg expr-sizeof))
             (expr-x (expr-paren->inner expr-xp)))
          (and (expr-case expr-x :ident)
-              (equal (var-info->type (expr-ident->info expr-x))
+              (equal (var-vinfo->type (expr-ident->info expr-x))
                      (type-sint))
-              (equal (var-info->linkage (expr-ident->info expr-x))
+              (equal (var-vinfo->linkage (expr-ident->info expr-x))
                      (linkage-external)))))
 
 (test-valid
@@ -278,11 +278,6 @@ void f() {
   void f() {
   int y = sizeof(x);
   }
-")
-
-(test-valid
- "int x;
-  void f(x) {}
 ")
 
 (test-valid
@@ -876,38 +871,38 @@ void bar(void) {
              (tunit2 (omap::head-val (omap::tail filepath-trans-unit-map)))
              (items1 (trans-unit->items tunit1))
              (foo-init1 (first (declon-declon->declors (ext-declon-declon->declon (trans-item-declon->declon (first items1))))))
-             (foo-init1-uid (init-declor-info->uid? (init-declor->info foo-init1)))
+             (foo-init1-uid (init-declor-vinfo->uid (init-declor->info foo-init1)))
              ;; (- (cw "foo-init1 uid: ~x0~%" foo-init1-uid))
              (bar-fundef (ext-declon-fundef->fundef (trans-item-declon->declon (second items1))))
-             (bar-fundef-uid (fundef-info->uid (fundef->info bar-fundef)))
+             (bar-fundef-uid (type+uid-vinfo->uid (fundef->info bar-fundef)))
              ;; (- (cw "bar-fundef uid: ~x0~%" bar-fundef-uid))
              (bar-params (dirdeclor-function-params->params (declor->direct (fundef->declor bar-fundef))))
              (bar-param-declon (param-declon->declor (first bar-params)))
-             (x-param-uid (param-declor-nonabstract-info->uid (param-declor-nonabstract->info bar-param-declon)))
+             (x-param-uid (type+uid-vinfo->uid (param-declor-nonabstract->info bar-param-declon)))
              ;; (- (cw "x-param uid: ~x0~%" x-param-uid))
              (bar-body-decl1 (first (comp-stmt->items (fundef->body bar-fundef))))
              (foo-init2 (first (declon-declon->declors (block-item-declon->declon bar-body-decl1))))
-             (foo-init2-uid (init-declor-info->uid? (init-declor->info foo-init2)))
+             (foo-init2-uid (init-declor-vinfo->uid (init-declor->info foo-init2)))
              ;; (- (cw "foo-init2 uid: ~x0~%" foo-init2-uid))
              (x-expr (initer-single->expr (init-declor->initer? foo-init2)))
-             (x-expr-uid (var-info->uid (expr-ident->info x-expr)))
+             (x-expr-uid (var-vinfo->uid (expr-ident->info x-expr)))
              ;; (- (cw "x-expr uid: ~x0~%" x-expr-uid))
              (bar-body-decl2 (first (comp-stmt->items (stmt-compound->stmt (block-item-stmt->stmt (second (comp-stmt->items (fundef->body bar-fundef))))))))
              (foo-init3 (first (declon-declon->declors (block-item-declon->declon bar-body-decl2))))
-             (foo-init3-uid (init-declor-info->uid? (init-declor->info foo-init3)))
+             (foo-init3-uid (init-declor-vinfo->uid (init-declor->info foo-init3)))
              ;; (- (cw "foo-init3 uid: ~x0~%" foo-init3-uid))
              (bar-return-stmt (block-item-stmt->stmt (third (comp-stmt->items (fundef->body bar-fundef)))))
-             (foo-expr-uid (var-info->uid (expr-ident->info (stmt-return->expr? bar-return-stmt))))
+             (foo-expr-uid (var-vinfo->uid (expr-ident->info (stmt-return->expr? bar-return-stmt))))
              ;; (- (cw "foo-expr uid: ~x0~%" foo-expr-uid))
              (items2 (trans-unit->items tunit2))
              (bar-init (first (declon-declon->declors (ext-declon-declon->declon (trans-item-declon->declon (first items2))))))
-             (bar-init-uid (init-declor-info->uid? (init-declor->info bar-init)))
+             (bar-init-uid (init-declor-vinfo->uid (init-declor->info bar-init)))
              ;; (- (cw "bar-init uid: ~x0~%" bar-init-uid))
              (foo-fundef (ext-declon-fundef->fundef (trans-item-declon->declon (second items2))))
-             (foo-fundef-uid (fundef-info->uid (fundef->info foo-fundef)))
+             (foo-fundef-uid (type+uid-vinfo->uid (fundef->info foo-fundef)))
              ;; (- (cw "foo-fundef uid: ~x0~%" foo-fundef-uid))
              (foo-return-stmt (block-item-stmt->stmt (first (comp-stmt->items (fundef->body foo-fundef)))))
-             (bar-expr-uid (var-info->uid (expr-ident->info (stmt-return->expr? foo-return-stmt))))
+             (bar-expr-uid (var-vinfo->uid (expr-ident->info (stmt-return->expr? foo-return-stmt))))
              ;; (- (cw "bar-expr uid: ~x0~%" bar-expr-uid))
              )
           (and (equal foo-init1-uid foo-init3-uid)
@@ -946,9 +941,9 @@ int main(void) {
                (cdr (omap::assoc (filepath "test0")
                                  (trans-ensemble->units ast))))
              (info? (trans-unit->info tunit-test0))
-             ((unless (trans-unit-infop info?))
+             ((unless (trans-unit-vinfop info?))
               nil)
-             (table (trans-unit-info->table-end info?))
+             (table (trans-unit-vinfo->table-end info?))
              ((mv ord-info? currentp)
               (valid-lookup-ord (ident "foo") table)))
           (and ord-info?
@@ -970,9 +965,9 @@ void foo(void) {
                (cdr (omap::assoc (filepath "test0")
                                  (trans-ensemble->units ast))))
              (info? (trans-unit->info tunit-test0))
-             ((unless (trans-unit-infop info?))
+             ((unless (trans-unit-vinfop info?))
               nil)
-             (table (trans-unit-info->table-end info?))
+             (table (trans-unit-vinfo->table-end info?))
              ((mv ord-info? currentp)
               (valid-lookup-ord (ident "foo") table)))
           (and ord-info?
@@ -994,9 +989,9 @@ static void foo(void) {
                (cdr (omap::assoc (filepath "test0")
                                  (trans-ensemble->units ast))))
              (info? (trans-unit->info tunit-test0))
-             ((unless (trans-unit-infop info?))
+             ((unless (trans-unit-vinfop info?))
               nil)
-             (table (trans-unit-info->table-end info?))
+             (table (trans-unit-vinfo->table-end info?))
              ((mv ord-info? currentp)
               (valid-lookup-ord (ident "foo") table)))
           (and ord-info?
@@ -1759,13 +1754,127 @@ static struct myStruct my = { 1, 1, 1, 1, 1 };
              (my-init-declor (car (declon-declon->declors my-declon)))
              (initer (init-declor->initer? my-init-declor))
              (desiniters (initer-list->elems initer)))
-          (and (equal (desiniter-info->designors (desiniter->info (first desiniters)))
+          (and (equal (desiniter-vinfo->designors (desiniter->info (first desiniters)))
                       (list (designor-dot (ident "a"))))
-               (equal (desiniter-info->designors (desiniter->info (second desiniters)))
+               (equal (desiniter-vinfo->designors (desiniter->info (second desiniters)))
                       (list (designor-dot (ident "b"))))
-               (equal (desiniter-info->designors (desiniter->info (third desiniters)))
+               (equal (desiniter-vinfo->designors (desiniter->info (third desiniters)))
                       (list (designor-dot (ident "c"))))
-               (equal (desiniter-info->designors (desiniter->info (fourth desiniters)))
+               (equal (desiniter-vinfo->designors (desiniter->info (fourth desiniters)))
                       (list (designor-dot (ident "e"))))
-               (equal (desiniter-info->designors (desiniter->info (fifth desiniters)))
+               (equal (desiniter-vinfo->designors (desiniter->info (fifth desiniters)))
                       (list (designor-dot (ident "f")))))))
+
+;; Valid null pointer constants
+(test-valid
+  "int * a = 0;
+int * b = (void *)0;
+int * c = (void *)(1 - 1);
+int * d = 1 - 1;
+")
+
+;; Not a valid null pointer constant (expression does not evaluate to 0).
+(test-valid-fail
+  "int * x = 2 - 1;
+")
+
+;; Typedef UIDs.
+
+;; A typedef redefined in the same scope, with a compatible type, reuses the
+;; same UID as the original declaration.
+(test-valid
+  "typedef int T;
+typedef int T;
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (items (trans-unit->items tunit))
+             (declon1 (ext-declon-declon->declon
+                        (trans-item-declon->declon (first items))))
+             (declon2 (ext-declon-declon->declon
+                        (trans-item-declon->declon (second items))))
+             (info1 (init-declor->info
+                      (first (declon-declon->declors declon1))))
+             (info2 (init-declor->info
+                      (first (declon-declon->declors declon2)))))
+          (and (init-declor-vinfo->typedefp info1)
+               (init-declor-vinfo->typedefp info2)
+               (equal (init-declor-vinfo->uid info1)
+                      (init-declor-vinfo->uid info2)))))
+
+;; Distinct typedef names get distinct UIDs.
+(test-valid
+  "typedef int T;
+typedef int U;
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (items (trans-unit->items tunit))
+             (declon1 (ext-declon-declon->declon
+                        (trans-item-declon->declon (first items))))
+             (declon2 (ext-declon-declon->declon
+                        (trans-item-declon->declon (second items))))
+             (info1 (init-declor->info
+                      (first (declon-declon->declors declon1))))
+             (info2 (init-declor->info
+                      (first (declon-declon->declors declon2)))))
+          (not (equal (init-declor-vinfo->uid info1)
+                      (init-declor-vinfo->uid info2)))))
+
+;; A typedef name used as a type specifier is annotated with the UID of its
+;; declaration.
+(test-valid
+  "typedef int T;
+T x;
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (items (trans-unit->items tunit))
+             (declon1 (ext-declon-declon->declon
+                        (trans-item-declon->declon (first items))))
+             (declon2 (ext-declon-declon->declon
+                        (trans-item-declon->declon (second items))))
+             (decl-uid (init-declor-vinfo->uid
+                         (init-declor->info
+                           (first (declon-declon->declors declon1)))))
+             (tyspec (decl-spec-typespec->spec
+                       (first (declon-declon->specs declon2))))
+             (use-uid (type+uid-vinfo->uid
+                        (type-spec-typedef->info tyspec))))
+          (equal decl-uid use-uid)))
+
+;; A typedef shadowed in an inner scope gets a fresh UID distinct from the
+;; outer typedef, and uses within the inner scope refer to the inner UID.
+(test-valid
+  "typedef int T;
+void f(void) {
+  typedef int T;
+  T x;
+}
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (items (trans-unit->items tunit))
+             (outer-declon (ext-declon-declon->declon
+                             (trans-item-declon->declon (first items))))
+             (outer-uid (init-declor-vinfo->uid
+                          (init-declor->info
+                            (first (declon-declon->declors outer-declon)))))
+             (fundef (ext-declon-fundef->fundef
+                       (trans-item-declon->declon (second items))))
+             (block-items (comp-stmt->items (fundef->body fundef)))
+             (inner-declon (block-item-declon->declon (first block-items)))
+             (inner-uid (init-declor-vinfo->uid
+                          (init-declor->info
+                            (first (declon-declon->declors inner-declon)))))
+             (use-declon (block-item-declon->declon (second block-items)))
+             (use-tyspec (decl-spec-typespec->spec
+                           (first (declon-declon->specs use-declon))))
+             (use-uid (type+uid-vinfo->uid
+                        (type-spec-typedef->info use-tyspec))))
+          (and (not (equal outer-uid inner-uid))
+               (equal inner-uid use-uid))))
+
+(test-valid
+  "int f();
+
+void g(void) {
+  f(3);
+}
+")

@@ -18,8 +18,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (enable type+shape-p-when-result-not-error
-                          type+shape-listp-when-result-not-error)))
+(local (in-theory (enable type+ispace-p-when-result-not-error
+                          type+ispace-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,31 +41,31 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-array ((type typep))
-  :returns (type+shape type+shape-resultp)
+  :returns (type+ispace type+ispace-resultp)
   :short "Check if an array type is an @(':array') summand,
-          returning its elements' atom type and its shape if successful."
+          returning its elements' atom type and its ispace if successful."
   (if (type-case type :array)
-      (make-type+shape :type (type-array->elem type)
-                       :shape (type-array->shape type))
+      (make-type+ispace :type (type-array->elem type)
+                        :ispace (type-array->ispace type))
     (reserr nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-list-match-array ((types type-listp))
-  :returns (types+shapes type+shape-list-resultp)
+  :returns (types+ispaces type+ispace-list-resultp)
   :short "Check if all the array types in a list are @(':array') summands,
-          returning the list of their elements' atom types and its shapes
+          returning the list of their elements' atom types and its ispaces
           if successful."
   (b* (((when (endp types)) nil)
-       ((ok type+shape) (type-match-array (car types)))
-       ((ok types+shapes) (type-list-match-array (cdr types))))
-    (cons type+shape types+shapes))
+       ((ok type+ispace) (type-match-array (car types)))
+       ((ok types+ispaces) (type-list-match-array (cdr types))))
+    (cons type+ispace types+ispaces))
 
   ///
 
   (defret len-of-type-list-match-array
-    (implies (not (reserrp types+shapes))
-             (equal (len types+shapes)
+    (implies (not (reserrp types+ispaces))
+             (equal (len types+ispaces)
                     (len types)))
     :hints (("Goal" :induct t))))
 

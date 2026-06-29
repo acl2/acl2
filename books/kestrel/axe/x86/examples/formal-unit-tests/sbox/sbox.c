@@ -48,7 +48,7 @@ unsigned char inv_box (unsigned char i) {
   return inv_sbox[i];
 }
 
-// Test that the sinverse box always inverts the main sbox
+// Test that the inverse sbox always inverts the main sbox
 bool test_inverse_1 (unsigned char i) {
   return inv_box(box(i)) == i;
 }

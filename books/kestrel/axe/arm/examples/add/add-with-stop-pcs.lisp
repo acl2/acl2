@@ -12,6 +12,8 @@
 
 ;; STATUS: COMPLETE, needs cleaning up
 
+;; cert_param: (uses-stp)
+
 (include-book "kestrel/axe/arm/unroller" :dir :system)
 (include-book "kestrel/axe/equivalence-checker" :dir :system)
 

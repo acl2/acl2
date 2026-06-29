@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -156,21 +156,21 @@
            (equal (logand -128 a)
                   (logapp 7 0 (logtail 7 a))))
   :hints (("Goal" :use (:instance logand-of-minus-of-expt2 (n 7))
-           :in-theory (e/d (logtail)( logand-of-minus-of-expt2)))))
+           :in-theory (e/d (logtail) (logand-of-minus-of-expt2)))))
 
 (defthm logand-minus-64-hack
   (implies (integerp a)
            (equal (logand -64 a)
                   (logapp 6 0 (logtail 6 a))))
   :hints (("Goal" :use (:instance logand-of-minus-of-expt2 (n 6))
-           :in-theory (e/d (logtail)( logand-of-minus-of-expt2)))))
+           :in-theory (e/d (logtail) (logand-of-minus-of-expt2)))))
 
 (defthm logand-minus-32-hack
   (implies (integerp a)
            (equal (logand -32 a)
                   (logapp 5 0 (logtail 5 a))))
   :hints (("Goal" :use (:instance logand-of-minus-of-expt2 (n 5))
-           :in-theory (e/d (logtail)( logand-of-minus-of-expt2)))))
+           :in-theory (e/d (logtail) (logand-of-minus-of-expt2)))))
 
 (defthm bvcat-of-bvxor-tighten-2
   (implies (and (< size1 size2)

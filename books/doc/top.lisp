@@ -164,10 +164,8 @@
   (include-book "std/strings/base64" :dir :system)
   (include-book "std/strings/pretty" :dir :system)
 
-
   (include-book "centaur/ubdds/lite" :dir :system)
   (include-book "centaur/ubdds/param" :dir :system)
-
 
   ;; BOZO conflict with prefix-hash stuff above.  Need to fix this.  Also, are
   ;; these being used at all?
@@ -185,6 +183,7 @@
 
   (include-book "coi/util/rewrite-equiv" :dir :system)
 
+  (include-book "unicode/doc" :dir :system)
   (include-book "clause-processors/doc" :dir :system)
   (include-book "system/event-names" :dir :system)
   (include-book "system/acl2-system-exports" :dir :system)
@@ -273,6 +272,9 @@
   (include-book "centaur/esim/top-doc" :dir :system)
   (include-book "centaur/aig/top-doc" :dir :system)
   (include-book "std/util/termhints" :dir :system)
+
+  ;; Auto-generated from ACL2(r) (see projects/omp/gen-top-doc.lsp)
+  (include-book "projects/omp/top-doc" :dir :system)
 
   ;; omitted from gl
   (include-book "centaur/misc/outer-local" :dir :system)
