@@ -102,30 +102,32 @@
      by which we mean substituting
      each free occurrence of @($x$) in @($b$) with @($a$).
      However, substitution may need to rename bound variables to avoid capture,
-     and our current "
-    (xdoc::seetopic "abstract-syntax-variable-operations"
-                    "substitution operations")
-    " do not do that yet.
-     We plan to extend them to rename bound variables to avoid capture,
-     but the fact remains that beta reduction adds conceptual complexity,
+     as done by our "
+    (xdoc::seetopic "variable-substitution-alpha-operations"
+                    "auto-alpha-renaming substitution operations")
+    "; but both beta reduction and alpha renaming add conceptual complexity,
      partly due to the fact that there are many ways
-     to rename bound variables to avoid capture;
-     It is much simpler to generate an application of a lambda abstraction.")
+     to alpha-rename bound variables to avoid capture;
+     it is much simpler to generate an application of a lambda abstraction.")
    (xdoc::p
-    "For now we keep @('let')s in the core.
-     Note that the Remora syntax is likely to evolve
+    "We have recently extended our abstract syntax to allow
+     parameters of lambda abstractions without types.
+     This would let us desugar @('let')s at the AST level,
+     but the results may not have a concrete syntax counterpart.
+     Thus. for now we keep @('let')s in the core.
+     The Remora concrete syntax is likely to evolve
      towards requiring fewer type annotations,
-     e.g. in lambda expressions,
-     which could resolve the issue described above,
-     i.e. it may allow us to produce applications of lambda expressions.")
+     thus matching our current abstract syntax.")
    (xdoc::p
-    "Note that we desugar the four function bindings to value bindings.")
+    "We desugar the four function bindings to value bindings.
+     So the core has ispace, type, and value bindings.")
    (xdoc::p
     "We could also desugar ispace and type bindings
      to applications of ispace and type lambda abstractions,
      since their parameters are just ispace and type variables,
      which do not require anything extra (like types for term variables).
-     We plan to work on that soon."))
+     We should also desugar @('let')s with multiple bindings
+     to multiple @('let')s with single bindings."))
   :types (shapes/ispaces
           ispace-list-option
           types

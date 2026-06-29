@@ -13,9 +13,11 @@
 (include-book "parser")
 (include-book "abstract-syntax")
 
-(include-book "kestrel/fty/defresult" :dir :system)
+(include-book "kestrel/fty/dec-digit-char-list-result" :dir :system)
+(include-book "kestrel/fty/hex-digit-char-list-result" :dir :system)
 (include-book "kestrel/fty/nat-natlist-result" :dir :system)
 (include-book "kestrel/fty/nat-list-result" :dir :system)
+(include-book "kestrel/fty/oct-digit-char-list-result" :dir :system)
 (include-book "kestrel/fty/string-result" :dir :system)
 (include-book "kestrel/fty/boolean-result" :dir :system)
 (include-book "projects/abnf/tree-operations/tree-utilities" :dir :system)
@@ -53,7 +55,7 @@
                     base-typep-when-result-not-error
                     base-litp-when-result-not-error
                     sign-optionp-when-result-not-error
-                    dec-digit-char-listp-when-result-not-error
+                    str::dec-digit-char-listp-when-result-not-error
                     str::dec-digit-char-p
                     char-litp-when-result-not-error
                     char-lit-listp-when-result-not-error
@@ -62,8 +64,8 @@
                     caret-escapep-when-result-not-error
                     num-escapep-when-result-not-error
                     escapep-when-result-not-error
-                    oct-digit-char-listp-when-result-not-error
-                    hex-digit-char-listp-when-result-not-error
+                    str::oct-digit-char-listp-when-result-not-error
+                    str::hex-digit-char-listp-when-result-not-error
                     str::oct-digit-char-p
                     str::hex-digit-char-p
                     var+type?-p-when-result-not-error
@@ -1041,8 +1043,8 @@
       (cons d rest))
     :measure (abnf::tree-list-count trees))
 
-  ;; shape has four alternatives:
-  ;;   1 -> dim
+  ;; shape has three alternatives, distinguished by the number of
+  ;; tree-lists:
   ;;   2 -> "@" identifier
   ;;   5 -> "(" ws shape-paren ws ")"
   ;;   5 (different form) -> "[" ws *( ws ispace ) ws "]"
@@ -1057,9 +1059,6 @@
     :short "Abstract a @('shape') to a @(tsee shape)."
     (b* (((okf treess) (abnf::check-tree-nonleaf tree "shape")))
       (case (len treess)
-        (1 (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "shape"))
-                ((okf d) (abs-dim inner)))
-             (make-shape-dims :dims (list d))))
         (2 (b* (((okf (abnf::tree-list-tuple2 sub))
                  (abnf::check-tree-list-list-2 treess))
                 ((okf sigil-tree) (abnf::check-tree-list-1 sub.1st))
