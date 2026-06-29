@@ -1429,6 +1429,12 @@
              (set::in b (values m)))
     :induct t)
 
+  (defrule cdr-assoc-in-values
+    (implies (assoc key map)
+             (set::in (cdr (assoc key map))
+                      (values map)))
+    :induct t)
+
   (defrule values-of-update-when-not-assoc
     (implies (not (consp (assoc key map)))
              (equal (values (update key val map))
@@ -1441,6 +1447,12 @@
     :induct t
     :enable (keys values set::expensive-rules)
     :rule-classes :linear)
+
+  (defrule lookup*-subset-values
+    (set::subset (lookup* keys map)
+                 (values map))
+    :induct t
+    :enable (lookup* lookup))
 
   (defruled rlookup-to-in-of-values
     (equal (set::emptyp (rlookup v x))
