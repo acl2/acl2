@@ -90,7 +90,7 @@
                       (and (set::in k (values x))
                            (cons k (set::head (rlookup k x))))))
     :enable (rlookup values set::expensive-rules))
-  
+
   (defruledl assoc-of-inverse-inverse
       (implies (injectivep x)
                (equal (assoc k (inverse (inverse x)))
