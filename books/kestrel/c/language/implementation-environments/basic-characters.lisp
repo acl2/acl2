@@ -95,7 +95,7 @@
 
   ///
 
-  (defrule ascii-basic-exec-chars-subset-ascii-basic-source-chars
+  (defrule ascii-basic-source-chars-subset-ascii-basic-exec-chars
     (set::subset (ascii-basic-source-chars std)
                  (ascii-basic-exec-chars std)))
 
