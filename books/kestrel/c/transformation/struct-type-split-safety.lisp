@@ -415,7 +415,8 @@
   (xdoc::topstring
    (xdoc::p
     "We set the nested flag to @('nil'), since we are at the top level."))
-  (type-sts-safep type nil spec))
+  (or (type-sts-safep type nil spec)
+      (sts-reject (type-fix type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -452,6 +453,27 @@
            (raise "Internal error: ~x0 is ambiguous." (tyname-fix tyname)))
        (or (tyname-annop tyname)
            (raise "Internal error: ~x0 is not validated." (tyname-fix tyname))))
+  :no-function nil
+  :enabled t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define init-declor-unamb/anno-p ((ideclor init-declorp))
+  :returns (yes/no booleanp)
+  :short "Check that an initializer declarator
+          is unambiguous and has validation annotations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Throw an error, but logically just return @('nil'), if not.
+     This is enabled because we use it as an abbreviation,
+     until @(tsee fty::deffold-map) supports fold guards."))
+  (and (or (init-declor-unambp ideclor)
+           (raise "Internal error: ~x0 is ambiguous."
+                  (init-declor-fix ideclor)))
+       (or (init-declor-annop ideclor)
+           (raise "Internal error: ~x0 is not validated."
+                  (init-declor-fix ideclor))))
   :no-function nil
   :enabled t)
 
@@ -623,6 +645,25 @@
                  (type-vinfo->type (tyname->info tyname))
                  spec))
            (sts-reject (type-spec-atomic tyname)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define init-declor-info-sts-safep ((ideclor init-declorp)
+                                    (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if the type in
+          the validation annotation of an initializer declarator
+          is safe for the STS transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check that the type (annotated by the validator) is safe.
+     We only check the annotation of the initializer declarator,
+     but we use the whole AST for error reporting."))
+  (and (init-declor-unamb/anno-p ideclor)
+       (b* (((init-declor-vinfo info) (init-declor->info ideclor)))
+         (or (top-type-sts-safep info.type spec)
+             (sts-reject (init-declor-fix ideclor))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -833,16 +874,26 @@
     "Initializers with optional designations are only reachable
      from list initializers, which are excluded (see above).")
    (xdoc::p
-    "We exclude declarators and abstract declarators,
+    "We exclude declarators and abstract declarators
+     (@(tsee declor) and @(tsee absdeclor) ASTs)
      because in combination with type specifiers
      they may give rise to arrays of the struct being split.
+     This is excessively coarse, and temporary.
      We may need to look at types added by the validator
-     to make this kind of checks more easily.")
-   (xdoc::p
-    "The exclusion of declarators and abstract declarators
+     to make this kind of checks more easily.
+     The exclusion of declarators and abstract declarators
      implies the exclusion of many constructs,
      e.g. most parameter and structure declarations;
-     the latter prevent the nesting of the struct being split.")
+     the latter prevent the nesting of the struct being split.
+     We will eliminate this draconina exclusion once we have added more checks;
+     for instance, the safety of declarators in initializer declarators
+     is assured by the checks on initializer declarators, which we have.")
+   (xdoc::p
+    "By checking that the types of initializer declarators are safe,
+     we also check the safety of declarations (@(tsee declon) ASTs)
+     with initializer declarators.
+     We still need to take care of declarations
+     without initializer declarators.")
    (xdoc::p
     "We exclude assembly, because we do not know what it does exactly.")
    (xdoc::p
@@ -892,6 +943,11 @@
    (desiniter (sts-reject (desiniter-fix desiniter)))
    (declor (sts-reject (declor-fix declor)))
    (absdeclor (sts-reject (absdeclor-fix absdeclor)))
+   (init-declor (b* (((init-declor init-declor)))
+                  (and (declor-sts-safep init-declor.declor spec)
+                       (attrib-spec-list-sts-safep init-declor.attribs spec)
+                       (initer-option-sts-safep init-declor.initer? spec)
+                       (init-declor-info-sts-safep init-declor spec))))
    (asm-stmt (sts-reject (asm-stmt-fix asm-stmt)))
    (trans-item :include nil)
    (trans-item :define nil)

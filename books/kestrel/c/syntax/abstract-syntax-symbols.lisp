@@ -388,6 +388,7 @@
     make-init-declor
     init-declor->declor
     init-declor->initer?
+    init-declor->info
 
     init-declor-listp
     init-declor-list-fix
