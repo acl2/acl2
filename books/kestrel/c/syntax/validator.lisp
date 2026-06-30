@@ -6320,7 +6320,7 @@
                    width-type?)))
       (retok (make-struct-declor :declor? new-declor?
                                  :expr? new-expr?
-                                 :info nil)
+                                 :info (type-vinfo new-type))
              previous
              (make-type-struni-member
               :name? (and structdeclor.declor?

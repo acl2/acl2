@@ -330,7 +330,10 @@
       "Function definitions are annotated with
        the type of the function
        (the whole function type, not just the return type)
-       and the UID."))
+       and the UID.")
+     (xdoc::p
+      "Structure declarators are annotated with a type,
+       which is the type of the member being declared."))
     :types (ident
             ident-list
             ident-option
@@ -418,6 +421,12 @@
      (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
                   (absdeclor-option-annop (tyname->declor? tyname))
                   (type-vinfop (tyname->info tyname))))
+     (struct-declor (and (declor-option-annop
+                          (struct-declor->declor? struct-declor))
+                         (const-expr-option-annop
+                          (struct-declor->expr? struct-declor))
+                         (type-vinfop
+                          (struct-declor->info struct-declor))))
      (attrib t)
      (attrib-spec t)
      (init-declor (and (declor-annop (init-declor->declor init-declor))
@@ -572,6 +581,13 @@
            (and (declor-annop declor)
                 (type+uid-vinfop info)))
     :expand (param-declor-annop (param-declor-nonabstract declor info)))
+
+  (defruled struct-declor-annop-of-struct-declor
+    (equal (struct-declor-annop (struct-declor declor? expr? info))
+           (and (declor-option-annop declor?)
+                (const-expr-option-annop expr?)
+                (type-vinfop info)))
+    :expand (struct-declor-annop (struct-declor declor? expr? info)))
 
   (defruled init-declor-annop-of-init-declor
     (equal (init-declor-annop (init-declor declor asm? attribs initer? info))
@@ -821,6 +837,21 @@
               (param-declor-nonabstract->info param-declor)))
     :enable param-declor-annop)
 
+  (defruled declor-option-annop-of-struct-declor->declor?
+    (implies (struct-declor-annop struct-declor)
+             (declor-option-annop (struct-declor->declor? struct-declor)))
+    :enable struct-declor-annop)
+
+  (defruled const-expr-option-annop-of-struct-declor->expr?
+    (implies (struct-declor-annop struct-declor)
+             (const-expr-option-annop (struct-declor->expr? struct-declor)))
+    :enable struct-declor-annop)
+
+  (defruled type-vinfop-of-struct-declor->info
+    (implies (struct-declor-annop struct-declor)
+             (type-vinfop (struct-declor->info struct-declor)))
+    :enable struct-declor-annop)
+
   (defruled decl-spec-list-annop-of-fundef->specs
     (implies (fundef-annop fundef)
              (decl-spec-list-annop (fundef->specs fundef)))
@@ -896,6 +927,7 @@
      param-declon-annop-of-param-declon
      param-declor-annop-of-param-declor-nonabstract
      type+uid-vinfop-of-param-declor-nonabstract->info
+     struct-declor-annop-of-struct-declor
      init-declor-annop-of-init-declor
      fundef-annop-of-fundef
      trans-unit-annop-of-trans-unit
@@ -937,6 +969,9 @@
      param-declor-annop-of-param-declon->declor
      attrib-spec-list-annop-of-param-declon->attribs
      type-option-vinfop-of-param-declon->info
+     declor-option-annop-of-struct-declor->declor?
+     const-expr-option-annop-of-struct-declor->expr?
+     type-vinfop-of-struct-declor->info
      decl-spec-list-annop-of-fundef->specs
      declor-annop-of-fundef->declor
      declon-list-annop-of-fundef->declons
