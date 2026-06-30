@@ -877,26 +877,16 @@
     "Initializers with optional designations are only reachable
      from list initializers, which are excluded (see above).")
    (xdoc::p
-    "We exclude declarators and abstract declarators
-     (@(tsee declor) and @(tsee absdeclor) ASTs)
+    "Declarators (@(tsee declor) ASTs) are checked indirectly,
+     via the types of the ASTs where declarators may appear:
+     function definitions,
+     initializer declarators,
+     and non-abstract parameter declarators.")
+   (xdoc::p
+    "We exclude abstract declarators (@(tsee absdeclor) ASTs)
      because in combination with type specifiers
      they may give rise to arrays of the struct being split.
-     This is excessively coarse, and temporary.
-     We may need to look at types added by the validator
-     to make this kind of checks more easily.
-     The exclusion of declarators and abstract declarators
-     implies the exclusion of many constructs,
-     e.g. most parameter and structure declarations;
-     the latter prevent the nesting of the struct being split.
-     We will eliminate this draconina exclusion once we have added more checks;
-     for instance, the safety of declarators in initializer declarators
-     is assured by the checks on initializer declarators, which we have.")
-   (xdoc::p
-    "By checking that the types of initializer declarators are safe,
-     we also check the safety of declarations (@(tsee declon) ASTs)
-     with initializer declarators.
-     We still need to take care of declarations
-     without initializer declarators.")
+     This is too coarse, and we will refine it.")
    (xdoc::p
     "We exclude assembly, because we do not know what it does exactly.")
    (xdoc::p
@@ -944,7 +934,6 @@
    (decl-spec :stdcall (sts-reject (decl-spec-fix decl-spec)))
    (decl-spec :declspec (sts-reject (decl-spec-fix decl-spec)))
    (desiniter (sts-reject (desiniter-fix desiniter)))
-   (declor (sts-reject (declor-fix declor)))
    (absdeclor (sts-reject (absdeclor-fix absdeclor)))
    (param-declor :nonabstract (and (declor-sts-safep param-declor.declor spec)
                                    (param-declor-nonabstract-sts-safep
@@ -963,7 +952,7 @@
                   (attrib-spec-list-sts-safep fundef.attribs spec)
                   (declon-list-sts-safep fundef.declons spec)
                   (comp-stmt-sts-safep fundef.body spec)
-                  (fundef-info-sts-safep fundef.info spec))))
+                  (fundef-info-sts-safep fundef spec))))
    (trans-item :include nil)
    (trans-item :define nil)
    (trans-item :undef nil)
