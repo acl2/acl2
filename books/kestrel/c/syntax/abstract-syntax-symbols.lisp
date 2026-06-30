@@ -808,6 +808,7 @@
     type+uid-vinfo->uid
 
     init-declor-vinfo
+    init-declor-vinfop
     init-declor-vinfo->type
     init-declor-vinfo->typedefp
 

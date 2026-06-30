@@ -456,27 +456,6 @@
   :no-function nil
   :enabled t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define init-declor-unamb/anno-p ((ideclor init-declorp))
-  :returns (yes/no booleanp)
-  :short "Check that an initializer declarator
-          is unambiguous and has validation annotations."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Throw an error, but logically just return @('nil'), if not.
-     This is enabled because we use it as an abbreviation,
-     until @(tsee fty::deffold-map) supports fold guards."))
-  (and (or (init-declor-unambp ideclor)
-           (raise "Internal error: ~x0 is ambiguous."
-                  (init-declor-fix ideclor)))
-       (or (init-declor-annop ideclor)
-           (raise "Internal error: ~x0 is not validated."
-                  (init-declor-fix ideclor))))
-  :no-function nil
-  :enabled t)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-unary-sts-safep ((op unopp)
@@ -680,10 +659,12 @@
     "We check that the type (annotated by the validator) is safe.
      We only check the annotation of the initializer declarator,
      but we use the whole AST for error reporting."))
-  (and (init-declor-unamb/anno-p ideclor)
-       (b* (((init-declor-vinfo info) (init-declor->info ideclor)))
-         (or (top-type-sts-safep info.type spec)
-             (sts-reject (init-declor-fix ideclor))))))
+  (b* ((info (init-declor->info ideclor)))
+    (and (or (init-declor-vinfop info)
+             (raise "Internal error: malformed ~x0." info))
+         (or (top-type-sts-safep (init-declor-vinfo->type info) spec)
+             (sts-reject (init-declor-fix ideclor)))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
