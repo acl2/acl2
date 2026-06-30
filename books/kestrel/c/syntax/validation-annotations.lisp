@@ -53,6 +53,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod type-option-vinfo
+  :short "Fixtype of validator information consisting of an optional type."
+  ((type? type-option))
+  :pred type-option-vinfop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod type+uid-vinfo
   :short "Fixtype of validator information consisting of a type and a UID."
   ((type type)
@@ -311,6 +318,12 @@
        their @('typedef')-name-free types
        (see @(tsee valid-type-spec)).")
      (xdoc::p
+      "Parameter declarations are annotated with optional types.
+       The type is absent for the special @('(void)') syntax
+       that denotes an empty parameter list,
+       where the single parameter declaration
+       does not actually declare a parameter.")
+     (xdoc::p
       "Non-abstract parameter declarators are annotated with
        their types and their UIDs.")
      (xdoc::p
@@ -398,7 +411,7 @@
                         (param-declor-annop (param-declon->declor param-declon))
                         (attrib-spec-list-annop
                           (param-declon->attribs param-declon))
-                        (param-declon-vinfop (param-declon->info param-declon))))
+                        (type-option-vinfop (param-declon->info param-declon))))
      (param-declor :nonabstract (and (declor-annop
                                       (param-declor-nonabstract->declor
                                        param-declor))
@@ -551,7 +564,7 @@
            (and (decl-spec-list-annop specs)
                 (param-declor-annop declor)
                 (attrib-spec-list-annop attribs)
-                (param-declon-vinfop info)))
+                (type-option-vinfop info)))
     :expand (param-declon-annop (param-declon specs declor attribs info)))
 
   (defruled param-declor-annop-of-param-declor-nonabstract
@@ -790,9 +803,9 @@
              (attrib-spec-list-annop (param-declon->attribs param-declon)))
     :enable param-declon-annop)
 
-  (defruled param-declon-vinfop-of-param-declon->info
+  (defruled type-option-vinfop-of-param-declon->info
     (implies (param-declon-annop param-declon)
-             (param-declon-vinfop (param-declon->info param-declon)))
+             (type-option-vinfop (param-declon->info param-declon)))
     :enable param-declon-annop)
 
   (defruled declor-annop-of-param-declor-nonabstract->declor
@@ -923,7 +936,7 @@
      decl-spec-list-annop-of-param-declon->specs
      param-declor-annop-of-param-declon->declor
      attrib-spec-list-annop-of-param-declon->attribs
-     param-declon-vinfop-of-param-declon->info
+     type-option-vinfop-of-param-declon->info
      decl-spec-list-annop-of-fundef->specs
      declor-annop-of-fundef->declor
      declon-list-annop-of-fundef->declons

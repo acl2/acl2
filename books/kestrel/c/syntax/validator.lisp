@@ -5485,8 +5485,9 @@
                                      (param-declor-none))
                               (not (param-declon->attribs
                                     (first dirdeclor.params)))))
-                   (retok (list (change-param-declon (first dirdeclor.params)
-                                                     :info (make-param-declon-vinfo :type nil)))
+                   (retok (list (change-param-declon
+                                 (first dirdeclor.params)
+                                 :info (make-type-option-vinfo :type? nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -5753,8 +5754,9 @@
                                      (param-declor-none))
                               (not (param-declon->attribs
                                     (first dirabsdeclor.params)))))
-                   (retok (list (change-param-declon (first dirabsdeclor.params)
-                                                     :info (make-param-declon-vinfo :type nil)))
+                   (retok (list (change-param-declon
+                                 (first dirabsdeclor.params)
+                                 :info (make-type-option-vinfo :type? nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -5872,7 +5874,7 @@
                 :array (make-type-pointer :to type.of)
                 :function (make-type-pointer :to type)
                 :otherwise type))
-         (info (param-declon-vinfo type))
+         (info (type-option-vinfo type))
          ((when (not ident?))
           (retok (make-param-declon :specs new-specs
                                     :declor new-decl

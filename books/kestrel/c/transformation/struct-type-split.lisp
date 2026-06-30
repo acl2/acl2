@@ -2148,10 +2148,10 @@
           (param-declon-fix param-declon)
           st)
          ((param-declon param-declon) param-declon)
-         ((c$::param-declon-vinfo info) param-declon.info)
+         ((type-option-vinfo info) param-declon.info)
          ((mv erp splitp)
-          (if info.type
-              (sts-check-type info.type st)
+          (if info.type?
+              (sts-check-type info.type? st)
             (mv nil nil)))
          ((when erp)
           (retmsg$ "~@0~%~@1"
