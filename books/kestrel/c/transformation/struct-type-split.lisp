@@ -2539,7 +2539,8 @@
                    (context-msg-struct-declor struct-declor
                                               (sts-split-state->dialect st))))
          (new-struct-declor (c$::make-struct-declor :declor? left-declor?
-                                                    :expr? left-expr?))
+                                                    :expr? left-expr?
+                                                    :info struct-declor.info))
          ((unless splitp)
           (retok nil new-struct-declor new-struct-declor st))
          (rightp (struct-declor-sts-rightp new-struct-declor st)))

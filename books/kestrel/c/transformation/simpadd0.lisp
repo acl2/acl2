@@ -1525,7 +1525,8 @@
           (simpadd0-const-expr-option structdeclor.expr? gin))
          (gin (gin-update gin gout-expr?)))
       (mv (make-struct-declor :declor? new-declor?
-                              :expr? new-expr?)
+                              :expr? new-expr?
+                              :info structdeclor.info)
           (gout-no-thm gin)))
     :measure (struct-declor-count structdeclor))
 

@@ -6318,7 +6318,9 @@
                     has a width of type ~x1."
                    (struct-declor-fix structdeclor)
                    width-type?)))
-      (retok (make-struct-declor :declor? new-declor? :expr? new-expr?)
+      (retok (make-struct-declor :declor? new-declor?
+                                 :expr? new-expr?
+                                 :info nil)
              previous
              (make-type-struni-member
               :name? (and structdeclor.declor?
