@@ -633,12 +633,6 @@
   :returns (yes/no booleanp)
   :short "Check if a non-abstract parameter declarator
           is safe for the STS transformation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We check that the type (annotated by the validator) is safe.
-     We only check the annotation of the parameter declarator,
-     but we use the whole AST for error reporting."))
   (and (or (type+uid-vinfop info)
            (raise "Internal error: malformed ~x0." info))
        (or (top-type-sts-safep (type+uid-vinfo->type info) spec)
@@ -653,17 +647,25 @@
   :short "Check if the type in
           the validation annotation of an initializer declarator
           is safe for the STS transformation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We check that the type (annotated by the validator) is safe.
-     We only check the annotation of the initializer declarator,
-     but we use the whole AST for error reporting."))
   (b* ((info (init-declor->info ideclor)))
     (and (or (init-declor-vinfop info)
              (raise "Internal error: malformed ~x0." info))
          (or (top-type-sts-safep (init-declor-vinfo->type info) spec)
              (sts-reject (init-declor-fix ideclor)))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fundef-info-sts-safep ((fundef fundefp) (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if the type in
+          the validation annotation of a function definition
+          is safe for the STS transformation."
+  (b* ((info (fundef->info fundef)))
+    (and (or (type+uid-vinfop info)
+             (raise "Internal error: malformed ~x0." info))
+         (or (top-type-sts-safep (type+uid-vinfo->type info) spec)
+             (sts-reject (fundef-fix fundef)))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -955,6 +957,13 @@
                        (initer-option-sts-safep init-declor.initer? spec)
                        (init-declor-info-sts-safep init-declor spec))))
    (asm-stmt (sts-reject (asm-stmt-fix asm-stmt)))
+   (fundef (b* (((fundef fundef)))
+             (and (decl-spec-list-sts-safep fundef.specs spec)
+                  (declor-sts-safep fundef.declor spec)
+                  (attrib-spec-list-sts-safep fundef.attribs spec)
+                  (declon-list-sts-safep fundef.declons spec)
+                  (comp-stmt-sts-safep fundef.body spec)
+                  (fundef-info-sts-safep fundef.info spec))))
    (trans-item :include nil)
    (trans-item :define nil)
    (trans-item :undef nil)
