@@ -1328,7 +1328,20 @@
     (equal (in* keys map)
            (set::subset keys (keys map)))
     :induct t
-    :enable (in* assoc-to-in-of-keys set::subset)))
+    :enable (in* assoc-to-in-of-keys set::subset))
+
+  (defruled in-keys-when-in-rlookup
+    (implies (set::in x (rlookup y map))
+             (set::in x (keys map)))
+    :induct t
+    :enable rlookup
+    :disable keys)
+
+  (defrule rlookup-subset-keys
+    (set::subset (rlookup y map) (keys map))
+    :enable (set::expensive-rules
+             in-keys-when-in-rlookup)
+    :disable keys))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
