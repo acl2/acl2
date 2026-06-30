@@ -1,7 +1,7 @@
 ; Rules about IF
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -42,9 +42,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Usually we may prefer to remove the NOT (and swap the branches), but in
+;; other cases we may prefer to bring small branches (like constants) forward.
+
+;; Drops the NOT without regard to which branch we might prefer to see first.
 (defthmd if-of-not
   (equal (if (not test) x y)
          (if test y x)))
+
+;; Brings the constant branch forward.
+;; WARNING: Incompatible with if-of-not.
+(defthmd if-when-constant-arg3
+  (implies (syntaxp (and (quotep ep)
+                         (not (quotep tp))))
+           (equal (if test tp ep)
+                  (if (not test) ep tp))))
+
+;; Brings the constant branch forward.
+;; Could use if-when-constant-arg3 but this is safer.
+(defthmd if-of-not-when-constant-arg3
+  (implies (syntaxp (and (quotep ep)
+                         (not (quotep tp))))
+           (equal (if (not test) tp ep)
+                  (if test ep tp))))
+
+;; Holds even if TEST is not boolean
+(defthmd if-of-not-of-not
+  (equal (if (not (not test)) x y)
+         (if test x y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -180,9 +205,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;rename?
+;just use if-of-if-arg1-same-arg1-arg2?
 (defthmd if-thm
   (equal (if (if test test t) then else)
          then))
+
+(defthmd if-of-if-arg1-same-arg1-arg2
+  (equal (if (if test test x) then else)
+         (if (if test t x) then else)))
+
+(defthmd if-of-if-arg1-same-arg1-arg3
+  (equal (if (if test x test) then else)
+         (if (if test x nil) then else)))
 
 ;or go via bool-fix
 (defthmd if-of-if-t-nil
