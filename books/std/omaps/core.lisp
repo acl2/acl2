@@ -1435,6 +1435,13 @@
                       (values map)))
     :induct t)
 
+  (defrule lookup-in-values-when-in-keys
+    (implies (set::in key (keys map))
+             (set::in (lookup key map)
+                      (values map)))
+    :enable lookup
+    :disable values)
+
   (defrule values-of-update-when-not-assoc
     (implies (not (consp (assoc key map)))
              (equal (values (update key val map))
