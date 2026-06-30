@@ -477,6 +477,7 @@
     fundef-fix
     make-fundef
     fundef->declor
+    fundef->info
 
     fundef-optionp
     fundef-option-case
