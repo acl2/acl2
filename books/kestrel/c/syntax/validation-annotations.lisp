@@ -388,9 +388,6 @@
                                      (expr-fix expr)))
      (const-expr (and (expr-annop (const-expr->expr const-expr))
                       (const-expr-vinfop (const-expr->info const-expr))))
-     (desiniter (and (designor-list-annop (desiniter->designors desiniter))
-                     (initer-annop (desiniter->initer desiniter))
-                     (desiniter-vinfop (desiniter->info desiniter))))
      (type-spec :struct (and (struni-spec-annop type-spec.spec)
                              (type-spec-struct-vinfop type-spec.info)))
      (type-spec :typedef (type+uid-vinfop type-spec.info))
@@ -400,12 +397,12 @@
                                      (type-spec-fix type-spec)))
      (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
                                        (align-spec-fix align-spec)))
+     (desiniter (and (designor-list-annop (desiniter->designors desiniter))
+                     (initer-annop (desiniter->initer desiniter))
+                     (desiniter-vinfop (desiniter->info desiniter))))
      (dirabsdeclor :dummy-base (raise "Internal error: ~
                                        dummy base case of ~
                                        direct abstract declarator."))
-     (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
-                  (absdeclor-option-annop (tyname->declor? tyname))
-                  (type-vinfop (tyname->info tyname))))
      (param-declon (and (decl-spec-list-annop
                           (param-declon->specs param-declon))
                         (param-declor-annop (param-declon->declor param-declon))
@@ -418,6 +415,9 @@
                                      (type+uid-vinfop
                                       (param-declor-nonabstract->info
                                        param-declor))))
+     (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
+                  (absdeclor-option-annop (tyname->declor? tyname))
+                  (type-vinfop (tyname->info tyname))))
      (attrib t)
      (attrib-spec t)
      (init-declor (and (declor-annop (init-declor->declor init-declor))
