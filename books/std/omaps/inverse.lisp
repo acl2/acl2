@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Quan Luu (quan.luu@kestrel.edu)
+; Contributing Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -116,10 +117,20 @@
              assoc-of-compose))
 
   (defrule identityp-compose-with-inverse
-      (implies (injectivep x)
-               (identityp (compose (inverse x) x)))
+    (implies (injectivep x)
+             (identityp (compose (inverse x) x)))
     :enable (assoc-of-compose-inverse
-             pick-a-point-identityp)))
+             pick-a-point-identityp))
 
+  (defruled lookup-inverse-in-keys-when-in-values-and-injective
+    (implies (and (injectivep map)
+                  (set::in y (values map)))
+             (set::in (lookup y (inverse map))
+                      (keys map)))
+    :enable (lookup
+             in-of-values-to-rlookup
+             set::expensive-rules)
+    :use (:instance set::in-head (x (rlookup y map)))
+    :disable set::in-head))
 
 (in-theory (disable injectivep-implies-not-rlookup-head-val-tail))
