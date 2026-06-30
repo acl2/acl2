@@ -95,6 +95,10 @@
 
   ///
 
+  (defrule ascii-basic-exec-chars-subset-ascii-basic-source-chars
+    (set::subset (ascii-basic-source-chars std)
+                 (ascii-basic-exec-chars std)))
+
   (defruled digits-in-ascii-basic-exec-chars
     (set::subset '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                  (ascii-basic-exec-chars std))
