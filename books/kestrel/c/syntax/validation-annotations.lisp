@@ -51,7 +51,7 @@
   ((type type))
   :pred type-vinfop)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod type+uid-vinfo
   :short "Fixtype of validator information consisting of a type and a UID."
@@ -59,7 +59,7 @@
    (uid uid))
   :pred type+uid-vinfop)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod iconst-vinfo
   :short "Fixtype of validation information for integer constants."
@@ -76,7 +76,7 @@
    (value nat))
   :pred iconst-vinfop)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod var-vinfo
   :short "Fixtype of validation information for variables."
@@ -96,7 +96,7 @@
    (uid uid))
   :pred var-vinfop)
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;
 
 (defirrelevant irr-var-vinfo
   :short "An irrelevant validation information for variables."
@@ -105,7 +105,7 @@
                         :linkage (irr-linkage)
                         :uid (irr-uid)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (define coerce-var-vinfo (x)
   :returns (info var-vinfop)
@@ -121,7 +121,7 @@
             (irr-var-vinfo)))
   :no-function nil)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod const-expr-vinfo
   :short "Fixtype of validation information for constant expressions."
@@ -136,7 +136,7 @@
   ((value valuep))
   :pred const-expr-vinfop)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod type-spec-struct-vinfo
   :short "Fixtype of validation information for struct type specifiers."
@@ -161,7 +161,7 @@
   :require (type-case type :struct)
   :pred type-spec-struct-vinfop)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod desiniter-vinfo
   :short "Fixtype of validation information for initializers with optional
@@ -180,7 +180,7 @@
   ((designors designor-list))
   :pred desiniter-vinfop)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod param-declon-vinfo
   :short "Fixtype of validation information for parameter declarations."
@@ -197,7 +197,7 @@
   ((type type-option))
   :pred param-declon-vinfop)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod init-declor-vinfo
   :short "Fixtype of validation information for initializer declarators."
@@ -223,7 +223,7 @@
    (uid uid))
   :pred init-declor-vinfop)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod trans-unit-vinfo
   :short "Fixtype of validation information for translation units."
@@ -239,7 +239,7 @@
   ((table-end valid-table))
   :pred trans-unit-vinfop)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod trans-ensemble-vinfo
   :short "Fixtype of validation information for translation ensembles."
