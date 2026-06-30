@@ -648,6 +648,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define param-declor-nonabstract-sts-safep ((declor declorp)
+                                            info
+                                            (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a non-abstract parameter declarator
+          is safe for the STS transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check that the type (annotated by the validator) is safe.
+     We only check the annotation of the parameter declarator,
+     but we use the whole AST for error reporting."))
+  (and (or (type+uid-vinfop info)
+           (raise "Internal error: malformed ~x0." info))
+       (or (top-type-sts-safep (type+uid-vinfo->type info) spec)
+           (sts-reject (param-declor-nonabstract declor info))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define init-declor-info-sts-safep ((ideclor init-declorp)
                                     (spec sts-struct-specp))
   :returns (yes/no booleanp)
@@ -943,6 +963,11 @@
    (desiniter (sts-reject (desiniter-fix desiniter)))
    (declor (sts-reject (declor-fix declor)))
    (absdeclor (sts-reject (absdeclor-fix absdeclor)))
+   (param-declor :nonabstract (and (declor-sts-safep param-declor.declor spec)
+                                   (param-declor-nonabstract-sts-safep
+                                    param-declor.declor
+                                    param-declor.info
+                                    spec)))
    (init-declor (b* (((init-declor init-declor)))
                   (and (declor-sts-safep init-declor.declor spec)
                        (attrib-spec-list-sts-safep init-declor.attribs spec)

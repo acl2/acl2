@@ -313,12 +313,15 @@
     param-declon-list-fix
     param-declon-list-count
 
+    param-declor
     param-declorp
     param-declor-fix
     param-declor-count
     param-declor-case
+    param-declor-nonabstract
     make-param-declor-nonabstract
     param-declor-nonabstract->declor
+    param-declor-nonabstract->info
     param-declor-abstract
     param-declor-none
 
