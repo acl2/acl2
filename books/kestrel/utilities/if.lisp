@@ -177,23 +177,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;gen the cons?
-(defthmd if-of-if-of-cons-arg1-arg2
-  (equal (if (if x (cons a b) y) z w)
-         (if (if x t y) z w)))
-
-;gen the cons?
-(defthmd if-of-if-of-cons-arg1-arg3
-  (equal (if (if x y (cons a b)) z w)
-         (if (if x y t) z w)))
-
-;; drop since we turn the cons into t and then apply the t-nil rule
-;; ;move
-;; ;can help when the inner if returns an error (a cons) or nil
-;; (defthmd if-of-if-of-cons-and-nil
-;;   (equal (if (if test (cons a b) nil) tp ep)
-;;          (if test tp ep)))
-
 (defthmd if-of-if-same-arg2
   (equal (if test (if test tp ep) ep2)
          (if test tp ep2)))
@@ -204,11 +187,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;rename?
-;just use if-of-if-arg1-same-arg1-arg2?
-(defthmd if-thm
-  (equal (if (if test test t) then else)
-         then))
+;; Handling a nested IF in the first argument
+
+;; For some of these, surrounding IF allows us to preserve only boolean
+;; equivalence when rewriting the inner IF.
+
+;; todo: rename these all to start with "if-of-of-arg1"
+
+;or go via bool-fix
+(defthmd if-of-if-t-nil
+  (equal (if (if test t nil) then else)
+         (if test then else)))
 
 (defthmd if-of-if-arg1-same-arg1-arg2
   (equal (if (if test test x) then else)
@@ -218,7 +207,25 @@
   (equal (if (if test x test) then else)
          (if (if test x nil) then else)))
 
-;or go via bool-fix
-(defthmd if-of-if-t-nil
-  (equal (if (if test t nil) foo bar)
-         (if test foo bar)))
+;rename?  drop?
+;just use if-of-if-arg1-same-arg1-arg2?
+(defthmd if-thm
+  (equal (if (if test test t) then else)
+         then))
+
+;gen the cons?
+(defthmd if-of-if-of-cons-arg1-arg2
+  (equal (if (if x (cons a b) y) then else)
+         (if (if x t y) then else)))
+
+;gen the cons?
+(defthmd if-of-if-of-cons-arg1-arg3
+  (equal (if (if x y (cons a b)) then else)
+         (if (if x y t) then else)))
+
+;; drop since we turn the cons into t and then apply the t-nil rule
+;; ;move
+;; ;can help when the inner if returns an error (a cons) or nil
+;; (defthmd if-of-if-of-cons-and-nil
+;;   (equal (if (if test (cons a b) nil) tp ep)
+;;          (if test tp ep)))
