@@ -205,20 +205,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define charset-source-char-code (char (charset charsetp))
-  :guard (set::in char (charset-source-chars charset))
+(define charset-source-char-code (schar (charset charsetp))
+  :guard (set::in schar (charset-source-chars charset))
   :returns (code natp)
   :short "Code a source characters."
-  (source-char-code char (charset->source charset))
+  (source-char-code schar (charset->source charset))
   :guard-hints (("Goal" :in-theory (enable charset-source-chars))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define charset-exec-char-value (char (charset charsetp))
-  :guard (set::in char (charset-exec-chars charset))
+(define charset-exec-char-value (echar (charset charsetp))
+  :guard (set::in echar (charset-exec-chars charset))
   :returns (val natp)
   :short "Value of an execution character."
-  (exec-char-value char (charset->exec charset))
+  (exec-char-value echar (charset->exec charset))
   :guard-hints (("Goal" :in-theory (enable charset-exec-chars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
