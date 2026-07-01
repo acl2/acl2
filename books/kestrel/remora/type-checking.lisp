@@ -1726,7 +1726,11 @@
            (reserr nil)))
        (make-senv+bind
         :senv (senv-add-var+type bind.var
-                                 (make-type-fun :in types :out ee.type)
+                                 (make-type-array
+                                  :elem (make-type-fun
+                                         :in types
+                                         :out ee.type)
+                                  :ispace (ispace-shape (shape-dims nil)))
                                  senv)
         :bind (make-bind-fun :var bind.var
                              :params bind.params
@@ -1740,8 +1744,11 @@
            (reserr nil)))
        (make-senv+bind
         :senv (senv-add-var+type bind.var
-                                 (make-type-forall :params bind.params
-                                                   :body ee.type)
+                                 (make-type-array
+                                  :elem (make-type-forall
+                                         :params bind.params
+                                         :body ee.type)
+                                  :ispace (ispace-shape (shape-dims nil)))
                                  senv)
         :bind (make-bind-tfun :var bind.var
                               :params bind.params
@@ -1755,8 +1762,11 @@
            (reserr nil)))
        (make-senv+bind
         :senv (senv-add-var+type bind.var
-                                 (make-type-pi :params bind.params
-                                               :body ee.type)
+                                 (make-type-array
+                                  :elem (make-type-pi
+                                         :params bind.params
+                                         :body ee.type)
+                                  :ispace (ispace-shape (shape-dims nil)))
                                  senv)
         :bind (make-bind-ifun :var bind.var
                               :params bind.params
@@ -1792,7 +1802,11 @@
                                              :body fun-type)
                      :none fun-type)))
        (make-senv+bind
-        :senv (senv-add-var+type bind.var fun-type senv)
+        :senv (senv-add-var+type bind.var
+                                 (make-type-array
+                                  :elem fun-type
+                                  :ispace (ispace-shape (shape-dims nil)))
+                                 senv)
         :bind (make-bind-cfun :var bind.var
                               :tparams? bind.tparams?
                               :iparams? bind.iparams?
