@@ -1576,7 +1576,8 @@
           (const-prop-const-expr-option structdeclor.expr? env)))
       (mv (make-struct-declor
             :declor? declor?
-            :expr? expr?)
+            :expr? expr?
+            :info structdeclor.info)
           env))
     :measure (struct-declor-count structdeclor))
 

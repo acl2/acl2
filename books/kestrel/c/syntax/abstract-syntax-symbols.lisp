@@ -313,12 +313,15 @@
     param-declon-list-fix
     param-declon-list-count
 
+    param-declor
     param-declorp
     param-declor-fix
     param-declor-count
     param-declor-case
+    param-declor-nonabstract
     make-param-declor-nonabstract
     param-declor-nonabstract->declor
+    param-declor-nonabstract->info
     param-declor-abstract
     param-declor-none
 
@@ -388,6 +391,7 @@
     make-init-declor
     init-declor->declor
     init-declor->initer?
+    init-declor->info
 
     init-declor-listp
     init-declor-list-fix
@@ -473,6 +477,7 @@
     fundef-fix
     make-fundef
     fundef->declor
+    fundef->info
 
     fundef-optionp
     fundef-option-case
@@ -798,12 +803,17 @@
     type-vinfo-fix
     type-vinfo->type
 
+    type-option-vinfo
+    type-option-vinfop
+    type-option-vinfo->type?
+
     type+uid-vinfo
     type+uid-vinfop
     type+uid-vinfo->type
     type+uid-vinfo->uid
 
     init-declor-vinfo
+    init-declor-vinfop
     init-declor-vinfo->type
     init-declor-vinfo->typedefp
 

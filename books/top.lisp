@@ -370,6 +370,8 @@ book that depends on Glucose being installed.</p>")
 
 (include-book "demos/divp-by-casting" :dir :system)
 (include-book "demos/majority-vote" :dir :system)
+; Excluded due to conflict in definition of perm in kestrel/lists-light/perm-def.lisp:
+; (include-book "demos/claude/qsort-examples" :dir :system) ; includes "qsort"
 
 (include-book "system/top" :dir :system)
 ; Books from books/system/ that are not included by including books/system/top

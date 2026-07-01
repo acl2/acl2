@@ -1,0 +1,104 @@
+; Proofs about a 1-instruction binary that ORs AL with a memory byte (8-bit)
+;
+; Copyright (C) 2026 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Yusuf Moshood (yusuf.moshood@ndus.edu)
+;         Sudarshan Srinivasan (sudarshan.srinivasan@ndsu.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "X")
+
+;; Lifts the functionality of or_al_mem8.elf64 into logic using the Axe-based x86
+;; lifter and proves various properties.
+
+;; (depends-on "or_al_mem8.elf64")
+;; cert_param: (uses-stp)
+
+(include-book "kestrel/axe/x86/unroller" :dir :system)
+(include-book "kestrel/x86/register-readers-and-writers-8-16" :dir :system)
+
+;; Rewrite al to bvchop-of-rax so proofs reduce to the rax form.
+(local (defthm al-rewrite
+  (equal (al x86) (bvchop 8 (rax x86)))
+  :hints (("Goal" :in-theory (enable al rax)))))
+
+;; Lifts the subroutine into logic: Creates the function or_al_mem8, which
+;; represents the effect of the program on the x86 state.
+;; OR AL, [RBX] is encoded as 0A 03 (2 bytes), so stop PC = 0x401002.
+;; The canonical-address-p assumption is required for the x86 model to perform
+;; the memory read at [RBX] without an error branch.
+(def-unrolled or_al_mem8
+  :executable "or_al_mem8.elf64"
+  :target #x401000
+  :stop-pcs '(#x401002)
+  :extra-assumptions '((unsigned-canonical-address-p (rbx x86))))
+
+;; Now we prove various properties of the lifted instruction.  WARNING: To
+;; formulate these, do not look at the lifted code or the ACL2 x86 model.
+;; Instead, look at other sources of information, especially the Intel/AMD
+;; manuals.  The goal is to provide a cross check on what the ACL2 model does.
+
+;; AL after the operation: DEST <- DEST OR SRC (Intel SDM Vol 2A: OR entry).
+(defthm or_al_mem8-al
+  (equal (al (or_al_mem8 x86))
+         (bvor 8 (al x86) (read 1 (rbx x86) x86))))
+
+;; The RIP is advanced by 2 (OR AL, [RBX] is 2 bytes: 0A 03)
+(defthm or_al_mem8-rip
+  (equal (rip (or_al_mem8 x86))
+         (+ 2 #x401000)))
+
+;; Registers other than RAX are unchanged.
+(defthm or_al_mem8-other-registers
+  (implies (not (equal *rax* reg))
+           (equal (rgfi reg (or_al_mem8 x86))
+                  (rgfi reg x86)))
+  :hints (("Goal" :in-theory (enable set-rax))))
+
+;; The carry flag is cleared to 0 (Intel SDM Vol 2A: OR clears CF).
+(defthm or_al_mem8-cf
+  (equal (get-flag :cf (or_al_mem8 x86))
+         0))
+
+;; The overflow flag is cleared to 0 (Intel SDM Vol 2A: OR clears OF).
+(defthm or_al_mem8-of
+  (equal (get-flag :of (or_al_mem8 x86))
+         0))
+
+;; The zero flag is 1 iff the result is 0.
+(defthm or_al_mem8-zf
+  (equal (get-flag :zf (or_al_mem8 x86))
+         (if (equal 0 (bvor 8 (al x86) (read 1 (rbx x86) x86)))
+             1
+           0)))
+
+;; The sign flag is the sign bit (bit 7) of the 8-bit result.
+(defthm or_al_mem8-sf
+  (equal (get-flag :sf (or_al_mem8 x86))
+         (getbit 7 (bvor 8 (al x86) (read 1 (rbx x86) x86)))))
+
+;; The parity flag considers only the 8 least significant bits and is 1 iff
+;; they contain an even number of 1s.
+(defthm or_al_mem8-pf
+  (equal (get-flag :pf (or_al_mem8 x86))
+         (if (evenp (bvcount 8 (bvor 8 (al x86) (read 1 (rbx x86) x86))))
+             1
+           0))
+  :hints (("Goal" :in-theory (enable pf-spec8
+                                     acl2::bvcount-becomes-logcount
+                                     acl2::evenp-becomes-equal-of-0-and-getbit-0))))
+
+;; All memory addresses are unchanged (instruction reads from memory but does not write)
+(defthm or_al_mem8-memory-unchanged
+  (equal (memi address (or_al_mem8 x86))
+         (memi address x86)))
+
+(defthm or_al_mem8-other-flags
+  (implies (and (member-equal flag *flags*)
+                (not (member-eq flag *standard-flags*)))
+           (equal (get-flag flag (or_al_mem8 x86))
+                  (get-flag flag x86)))
+  :hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant))))

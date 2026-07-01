@@ -6742,7 +6742,8 @@
             (b* (((erp cexpr last-span parstate) ; declor : expr
                   (parse-constant-expression parstate)))
               (retok (make-struct-declor :declor? declor
-                                         :expr? cexpr)
+                                         :expr? cexpr
+                                         :info nil)
                      (span-join span last-span)
                      parstate)))
            ;; If token2 is not a colon,
@@ -6750,7 +6751,8 @@
            (t ; declor other
             (b* ((parstate (if token2 (unread-token parstate) parstate)))
               (retok (make-struct-declor :declor? declor
-                                         :expr? nil)
+                                         :expr? nil
+                                         :info nil)
                      span
                      parstate))))))
        ;; If token is a colon,
@@ -6760,7 +6762,8 @@
         (b* (((erp cexpr last-span parstate) ; : expr
               (parse-constant-expression parstate)))
           (retok (make-struct-declor :declor? nil
-                                     :expr? cexpr)
+                                     :expr? cexpr
+                                     :info nil)
                  (span-join span last-span)
                  parstate)))
        ;; If token is anything else, it is an error.

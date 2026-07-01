@@ -2836,7 +2836,9 @@
           (dimb-declor-option structdeclor.declor? dstate))
          ((erp new-expr? dstate)
           (dimb-const-expr-option structdeclor.expr? dstate)))
-      (retok (make-struct-declor :declor? new-declor? :expr? new-expr?)
+      (retok (make-struct-declor :declor? new-declor?
+                                 :expr? new-expr?
+                                 :info nil)
              dstate))
     :measure (struct-declor-count structdeclor))
 

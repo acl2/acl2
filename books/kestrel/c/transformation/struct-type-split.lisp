@@ -2148,10 +2148,10 @@
           (param-declon-fix param-declon)
           st)
          ((param-declon param-declon) param-declon)
-         ((c$::param-declon-vinfo info) param-declon.info)
+         ((type-option-vinfo info) param-declon.info)
          ((mv erp splitp)
-          (if info.type
-              (sts-check-type info.type st)
+          (if info.type?
+              (sts-check-type info.type? st)
             (mv nil nil)))
          ((when erp)
           (retmsg$ "~@0~%~@1"
@@ -2539,7 +2539,8 @@
                    (context-msg-struct-declor struct-declor
                                               (sts-split-state->dialect st))))
          (new-struct-declor (c$::make-struct-declor :declor? left-declor?
-                                                    :expr? left-expr?))
+                                                    :expr? left-expr?
+                                                    :info struct-declor.info))
          ((unless splitp)
           (retok nil new-struct-declor new-struct-declor st))
          (rightp (struct-declor-sts-rightp new-struct-declor st)))

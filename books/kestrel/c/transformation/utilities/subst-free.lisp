@@ -1008,7 +1008,7 @@
           (declor-option-subst-free
            (c$::struct-declor->declor? structdeclor)
            subst bound-vars)))
-      (mv (struct-declor declor? expr?)
+      (mv (struct-declor declor? expr? (c$::struct-declor->info structdeclor))
           (ident-set-fix bound-vars)))
     :measure (struct-declor-count structdeclor))
 
