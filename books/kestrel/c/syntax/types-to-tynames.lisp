@@ -399,8 +399,9 @@
             :some (make-struct-declor
                     :declor? (absdeclor-option-to-declor declor?
                                                          member.name?.val)
-                    :expr? nil)
-            :none (make-struct-declor :declor? nil :expr? nil))))
+                    :expr? nil
+                    :info nil)
+            :none (make-struct-declor :declor? nil :expr? nil :info nil))))
       (retok
        (make-struct-declon-member :extension nil
                                   :specquals specquals

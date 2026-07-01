@@ -532,7 +532,7 @@
        (tyspecs (ildm-tyspecseq sdeclon.tyspec))
        (specquals (spec/qual-typespec-list tyspecs))
        (declor (ildm-obj-declor sdeclon.declor))
-       (sdeclor (make-struct-declor :declor? declor :expr? nil)))
+       (sdeclor (make-struct-declor :declor? declor :expr? nil :info nil)))
     (make-struct-declon-member :extension nil
                                :specquals specquals
                                :declors (list sdeclor)
