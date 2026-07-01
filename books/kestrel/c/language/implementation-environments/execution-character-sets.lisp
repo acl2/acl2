@@ -241,7 +241,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the natural number associated to the map."))
+    "This is the natural number associated to the character."))
   (lnfix (omap::lookup echar (exec-charset->chars-with-values charset)))
   :guard-hints (("Goal" :in-theory (enable exec-chars))))
 
