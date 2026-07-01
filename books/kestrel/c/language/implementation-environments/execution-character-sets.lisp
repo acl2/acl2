@@ -248,8 +248,7 @@
   :guard (and (set::in bchar (ascii-basic-exec-chars std))
               (exec-charset-wfp charset std uchar-format))
   :returns exec-char
-  :short "Basic execution character corresponding to
-          an ACL2 character denoting a basic execution character."
+  :short "Basic execution character corresponding to an ACL2 character."
   (declare (ignore std uchar-format))
   (omap::lookup (acl2::char-fix bchar) (exec-charset->basic-chars charset))
   :guard-hints (("Goal" :in-theory (enable exec-charset-wfp

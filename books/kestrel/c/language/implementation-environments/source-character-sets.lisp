@@ -206,8 +206,7 @@
   :guard (and (set::in bchar (ascii-basic-source-chars std))
               (source-charset-wfp charset std))
   :returns source-char
-  :short "Basic source character corresponding to
-          an ACL2 character denoting a basic source character."
+  :short "Basic source character corresponding to an ACL2 character."
   :long
   (xdoc::topstring
    (xdoc::p
