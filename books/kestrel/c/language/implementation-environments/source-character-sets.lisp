@@ -235,4 +235,18 @@
              source-charset-has-basic-chars-p
              acl2::code-in-char-code-set-when-char-in-char-set
              set::expensive-rules
-             omap::lookup-inverse-in-keys-when-in-values-and-injective)))
+             omap::lookup-inverse-in-keys-when-in-values-and-injective))
+
+  (defruled source-char-code-of-basic-source-char
+    (implies (and (source-charset-wfp charset std)
+                  (set::in bchar (ascii-basic-source-chars std)))
+             (equal (source-char-code (basic-source-char bchar charset std)
+                                      charset)
+                    (char-code bchar)))
+    :enable (source-char-code
+             basic-source-char
+             source-charset-wfp
+             source-charset-has-basic-chars-p
+             acl2::code-in-char-code-set-when-char-in-char-set
+             omap::lookup-of-lookup-of-inverse
+             set::subset-in)))
