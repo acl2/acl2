@@ -1368,6 +1368,9 @@
     bvand-with-small-arg1
     bvand-with-small-arg2
 
+    ;; if-becomes-bvif-1-axe ; todo: uncomment, but that caused problems
+    ;; if-becomes-bvif-2-axe
+    ;; if-becomes-bvif-3-axe
     myif-becomes-bvif-1-axe ; kill special case rules for this?
     myif-becomes-bvif-2-axe
     myif-becomes-bvif-3-axe
