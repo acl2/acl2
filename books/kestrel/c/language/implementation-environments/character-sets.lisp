@@ -233,7 +233,19 @@
   :short "Basic source character corresponding to an ACL2 character."
   (declare (ignore uchar-format))
   (basic-source-char bchar (charset->source charset) std)
-  :guard-hints (("Goal" :in-theory (enable charset-wfp))))
+  :guard-hints (("Goal" :in-theory (enable charset-wfp)))
+
+  ///
+
+  (defruled charset-basic-source-char-in-charset-source-chars
+    (implies (and (charset-wfp charset std uchar-format)
+                  (set::in bchar (ascii-basic-source-chars std)))
+             (set::in (charset-basic-source-char bchar charset std uchar-format)
+                      (charset-source-chars charset)))
+    :enable (charset-basic-source-char
+             charset-source-chars
+             charset-wfp
+             basic-source-char-in-source-chars)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -246,7 +258,19 @@
   :returns exec-char
   :short "Basic execution character corresponding to an ACL2 character."
   (basic-exec-char bchar (charset->exec charset) std uchar-format)
-  :guard-hints (("Goal" :in-theory (enable charset-wfp))))
+  :guard-hints (("Goal" :in-theory (enable charset-wfp)))
+
+  ///
+
+  (defruled charset-basic-exec-char-in-charset-exec-chars
+    (implies (and (charset-wfp charset std uchar-format)
+                  (set::in bchar (ascii-basic-exec-chars std)))
+             (set::in (charset-basic-exec-char bchar charset std uchar-format)
+                      (charset-exec-chars charset)))
+    :enable (charset-basic-exec-char
+             charset-exec-chars
+             charset-wfp
+             basic-exec-char-in-exec-chars)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
