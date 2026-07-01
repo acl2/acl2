@@ -1,5 +1,8 @@
 ; (certify-book "qsort")
 
+; Note added by Matt K., 6/30/2026: See demos/claude/qsort.lisp for a
+; AI-generated verified quicksort that uses stobj arrays.
+
 (in-package "ACL2")
 
 (include-book "perm")
