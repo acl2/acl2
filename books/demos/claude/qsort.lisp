@@ -5,6 +5,9 @@
 ;;; in the future, feel free to remove it from the community books, though
 ;;; perhaps you can just get Claude to fix it!
 
+;;; NOTE: Ideally, please don't edit this book -- it would be good to keep it
+;;; all as Claude's work.
+
 ;;; I used acl2-mcp to give Claude the following command:
 
 ;;;   Please generate an efficient sorting program in ACL2 based on a stobj
@@ -46,6 +49,10 @@
 ;;; On occasion Claude suspended because I purchased only the $20/month plan.
 ;;; But then, after the time Claude said it would be available to me again, I
 ;;; simply asked it to continue.
+
+;;; Note: This has failed to certify in ACL2(r), hence:
+; cert_param: (non-acl2r)
+;;; But please don't try to fix that (see "NOTE" above).
 
 ;;; End of Comment from Matt Kaufmann.
 
