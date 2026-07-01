@@ -140,13 +140,13 @@
      actually exclude backslash and new-line from both
      (while single quote is allowed in string literals,
      and double quote is allowed in character constants),
-     so we could restrict the map to all the source character
+     so we could restrict the map to all the source characters
      except for backslash and new-line characters,
      but for simplicity we do not make that restriction.
      In typical C implementations,
      source and execution character sets would be both Unicode,
      so the mapping is an identity.
-     But if the need arise, we could relax the constraints on
+     But if the need arises, we could relax the constraints on
      the mapping from source to execution characters.")
    (xdoc::p
     "The map must return execution characters.
@@ -208,7 +208,7 @@
 (define charset-source-char-code (schar (charset charsetp))
   :guard (set::in schar (charset-source-chars charset))
   :returns (code natp)
-  :short "Code a source characters."
+  :short "Code of a source character."
   (source-char-code schar (charset->source charset))
   :guard-hints (("Goal" :in-theory (enable charset-source-chars))))
 
