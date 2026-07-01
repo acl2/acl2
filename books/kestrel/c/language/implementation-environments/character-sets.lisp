@@ -230,8 +230,7 @@
   :guard (and (set::in bchar (ascii-basic-source-chars std))
               (charset-wfp charset std uchar-format))
   :returns source-char
-  :short "Basic source character corresponding to
-          an ACL2 character denoting a basic source character."
+  :short "Basic source character corresponding to an ACL2 character."
   (declare (ignore uchar-format))
   (basic-source-char bchar (charset->source charset) std)
   :guard-hints (("Goal" :in-theory (enable charset-wfp))))
@@ -245,8 +244,7 @@
   :guard (and (set::in bchar (ascii-basic-exec-chars std))
               (charset-wfp charset std uchar-format))
   :returns exec-char
-  :short "Basic execution character corresponding to
-          an ACL2 character denoting a basic execution character."
+  :short "Basic execution character corresponding to an ACL2 character."
   (basic-exec-char bchar (charset->exec charset) std uchar-format)
   :guard-hints (("Goal" :in-theory (enable charset-wfp))))
 
