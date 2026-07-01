@@ -187,15 +187,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define source-char-code (char (charset source-charsetp))
-  :guard (set::in char (source-chars charset))
+(define source-char-code (schar (charset source-charsetp))
+  :guard (set::in schar (source-chars charset))
   :returns (code natp)
   :short "Code of a source character."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the natural number associated to the character."))
-  (lnfix (omap::lookup char (source-charset->chars-with-codes charset)))
+  (lnfix (omap::lookup schar (source-charset->chars-with-codes charset)))
   :guard-hints (("Goal" :in-theory (enable source-chars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
