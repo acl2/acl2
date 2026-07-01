@@ -201,7 +201,8 @@
     "The map from characters to values must be injective.
      The character set must include the basic characters,
      whose values must all fit in a byte.
-     The digit values must be in order."))
+     The digit values must be in order.
+     The map from ASCII characters to execution characters must be injective."))
   (b* (((exec-charset charset)))
     (and (omap::injectivep charset.chars-with-values)
          (exec-charset-has-basic-chars-p charset.chars-with-values
@@ -211,7 +212,8 @@
                                           charset.basic-chars
                                           uchar-format)
          (exec-charset-digits-in-order-p charset.chars-with-values
-                                         charset.basic-chars)))
+                                         charset.basic-chars)
+         (omap::injectivep charset.basic-chars)))
   :guard-hints (("Goal" :in-theory (enable exec-charset-has-basic-chars-p
                                            digits-in-ascii-basic-exec-chars))))
 
