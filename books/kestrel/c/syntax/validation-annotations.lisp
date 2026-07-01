@@ -286,13 +286,8 @@
       "The @(':combine') operator is @(tsee and),
        because we need to check all the constructs, recursively.")
      (xdoc::p
-      "We override the predicate for
+      "We override the predicates for
        the constructs for which the validator adds information.")
-     (xdoc::p
-      "Since for now the validator accepts GCC attribute and other extensions
-       without actually checking them and their constituents,
-       we also have the annotation predicates accept those constructs,
-       by overriding those cases to return @('t').")
      (xdoc::p
       "The validator operates on unambiguous abstract syntax,
        which satisfies the @(see unambiguity) predicates.
@@ -304,11 +299,18 @@
        note that @(tsee raise) is logically @('nil'),
        so the annotation predicates are false on ambiguous constructs.")
      (xdoc::p
-      "Some kinds of expressions are annotated with their type;
-       this should be probably extended to all expressions.
-       A few kinds of expressions have additional information.")
+      "Some ASTs are annotated with
+       information of fixtypes that are specific to those ASTs,
+       e.g. @(tsee iconst-vinfo):
+       see the documentation of those fixtypes
+       for an explanation of the information they carry for the ASTs.
+       Other ASTs are annotated with non-AST-specific fixtypes,
+       e.g. @(tsee type-vinfo):
+       for these, we provide explanations in this documentation topic,
+       where we also explain other overridings.")
      (xdoc::p
-      "Type names are annotated with the type they denote.")
+      "Some kinds of expressions are annotated with their type;
+       this should be probably extended to all expressions.")
      (xdoc::p
       "@('typedef') type specifiers are annotated with
        the type that they denote and the UID of the name.
@@ -322,18 +324,25 @@
        The type is absent for the special @('(void)') syntax
        that denotes an empty parameter list,
        where the single parameter declaration
-       does not actually declare a parameter.")
+       does not actually declare a parameter.
+       The type is present otherwise, and it is the type of the parameter.")
      (xdoc::p
       "Non-abstract parameter declarators are annotated with
        their types and their UIDs.")
      (xdoc::p
+      "Type names are annotated with the type they denote.")
+     (xdoc::p
+      "Structure declarators are annotated with the type of the member.")
+     (xdoc::p
+      "Since for now the validator accepts GCC attribute and other extensions
+       without actually checking them and their constituents,
+       we also have the annotation predicates accept those constructs,
+       by overriding those cases to return @('t').")
+     (xdoc::p
       "Function definitions are annotated with
        the type of the function
        (the whole function type, not just the return type)
-       and the UID.")
-     (xdoc::p
-      "Structure declarators are annotated with a type,
-       which is the type of the member being declared."))
+       and the UID."))
     :types (ident
             ident-list
             ident-option
@@ -533,12 +542,11 @@
                 (const-expr-vinfop info)))
     :expand (const-expr-annop (const-expr expr info)))
 
-  (defruled desiniter-annop-of-desiniter
-    (equal (desiniter-annop (desiniter designors initer info))
-           (and (designor-list-annop designors)
-                (initer-annop initer)
-                (desiniter-vinfop info)))
-    :expand (desiniter-annop (desiniter designors initer info))
+  (defrule type-spec-annop-of-type-spec-struct-empty
+    (equal (type-spec-annop (type-spec-struct-empty attribs name? info))
+           (and (attrib-spec-list-annop attribs)
+                (type-spec-struct-vinfop info)))
+    :expand (type-spec-annop (type-spec-struct-empty attribs name? info))
     :enable identity)
 
   (defrule type-spec-annop-of-type-spec-struct
@@ -554,19 +562,13 @@
     :expand (type-spec-annop (type-spec-typedef name info))
     :enable identity)
 
-  (defrule type-spec-annop-of-type-spec-struct-empty
-    (equal (type-spec-annop (type-spec-struct-empty attribs name? info))
-           (and (attrib-spec-list-annop attribs)
-                (type-spec-struct-vinfop info)))
-    :expand (type-spec-annop (type-spec-struct-empty attribs name? info))
+  (defruled desiniter-annop-of-desiniter
+    (equal (desiniter-annop (desiniter designors initer info))
+           (and (designor-list-annop designors)
+                (initer-annop initer)
+                (desiniter-vinfop info)))
+    :expand (desiniter-annop (desiniter designors initer info))
     :enable identity)
-
-  (defruled tyname-annop-of-tyname
-    (equal (tyname-annop (tyname specquals declor? info))
-           (and (spec/qual-list-annop specquals)
-                (absdeclor-option-annop declor?)
-                (type-vinfop info)))
-    :expand (tyname-annop (tyname specquals declor? info)))
 
   (defruled param-declon-annop-of-param-declon
     (equal (param-declon-annop (param-declon specs declor attribs info))
@@ -581,6 +583,13 @@
            (and (declor-annop declor)
                 (type+uid-vinfop info)))
     :expand (param-declor-annop (param-declor-nonabstract declor info)))
+
+  (defruled tyname-annop-of-tyname
+    (equal (tyname-annop (tyname specquals declor? info))
+           (and (spec/qual-list-annop specquals)
+                (absdeclor-option-annop declor?)
+                (type-vinfop info)))
+    :expand (tyname-annop (tyname specquals declor? info)))
 
   (defruled struct-declor-annop-of-struct-declor
     (equal (struct-declor-annop (struct-declor declor? expr? info))
@@ -728,21 +737,6 @@
              (const-expr-vinfop (const-expr->info const-expr)))
     :enable const-expr-annop)
 
-  (defruled designor-list-annop-of-desiniter->designors
-    (implies (desiniter-annop desiniter)
-             (designor-list-annop (desiniter->designors desiniter)))
-    :enable desiniter-annop)
-
-  (defruled initer-annop-of-desiniter->initer
-    (implies (desiniter-annop desiniter)
-             (initer-annop (desiniter->initer desiniter)))
-    :enable desiniter-annop)
-
-  (defruled desiniter-vinfop-of-desiniter->info
-    (implies (desiniter-annop desiniter)
-             (desiniter-vinfop (desiniter->info desiniter)))
-    :enable desiniter-annop)
-
   (defrule struni-spec-annop-of-type-spec-struct->spec
     (implies (and (type-spec-annop type-spec)
                   (type-spec-case type-spec :struct))
@@ -774,35 +768,20 @@
              (type-spec-struct-vinfop (type-spec-struct-empty->info type-spec)))
     :enable type-spec-annop)
 
-  (defruled declor-annop-of-init-declor->declor
-    (implies (init-declor-annop init-declor)
-             (declor-annop (init-declor->declor init-declor)))
-    :enable init-declor-annop)
+  (defruled designor-list-annop-of-desiniter->designors
+    (implies (desiniter-annop desiniter)
+             (designor-list-annop (desiniter->designors desiniter)))
+    :enable desiniter-annop)
 
-  (defruled initer-option-annop-of-init-declor->initer?
-    (implies (init-declor-annop init-declor)
-             (initer-option-annop (init-declor->initer? init-declor)))
-    :enable init-declor-annop)
+  (defruled initer-annop-of-desiniter->initer
+    (implies (desiniter-annop desiniter)
+             (initer-annop (desiniter->initer desiniter)))
+    :enable desiniter-annop)
 
-  (defruled init-declor-vinfop-of-init-declor->info
-    (implies (init-declor-annop init-declor)
-             (init-declor-vinfop (init-declor->info init-declor)))
-    :enable init-declor-annop)
-
-  (defruled spec/qual-list-annop-of-tyname->specquals
-    (implies (tyname-annop tyname)
-             (spec/qual-list-annop (tyname->specquals tyname)))
-    :enable tyname-annop)
-
-  (defruled absdeclor-option-annop-of-tyname->declor?
-    (implies (tyname-annop tyname)
-             (absdeclor-option-annop (tyname->declor? tyname)))
-    :enable tyname-annop)
-
-  (defruled type-vinfop-of-tyname->info
-    (implies (tyname-annop tyname)
-             (type-vinfop (tyname->info tyname)))
-    :enable tyname-annop)
+  (defruled desiniter-vinfop-of-desiniter->info
+    (implies (desiniter-annop desiniter)
+             (desiniter-vinfop (desiniter->info desiniter)))
+    :enable desiniter-annop)
 
   (defruled decl-spec-list-annop-of-param-declon->specs
     (implies (param-declon-annop param-declon)
@@ -837,6 +816,21 @@
               (param-declor-nonabstract->info param-declor)))
     :enable param-declor-annop)
 
+  (defruled spec/qual-list-annop-of-tyname->specquals
+    (implies (tyname-annop tyname)
+             (spec/qual-list-annop (tyname->specquals tyname)))
+    :enable tyname-annop)
+
+  (defruled absdeclor-option-annop-of-tyname->declor?
+    (implies (tyname-annop tyname)
+             (absdeclor-option-annop (tyname->declor? tyname)))
+    :enable tyname-annop)
+
+  (defruled type-vinfop-of-tyname->info
+    (implies (tyname-annop tyname)
+             (type-vinfop (tyname->info tyname)))
+    :enable tyname-annop)
+
   (defruled declor-option-annop-of-struct-declor->declor?
     (implies (struct-declor-annop struct-declor)
              (declor-option-annop (struct-declor->declor? struct-declor)))
@@ -851,6 +845,21 @@
     (implies (struct-declor-annop struct-declor)
              (type-vinfop (struct-declor->info struct-declor)))
     :enable struct-declor-annop)
+
+  (defruled declor-annop-of-init-declor->declor
+    (implies (init-declor-annop init-declor)
+             (declor-annop (init-declor->declor init-declor)))
+    :enable init-declor-annop)
+
+  (defruled initer-option-annop-of-init-declor->initer?
+    (implies (init-declor-annop init-declor)
+             (initer-option-annop (init-declor->initer? init-declor)))
+    :enable init-declor-annop)
+
+  (defruled init-declor-vinfop-of-init-declor->info
+    (implies (init-declor-annop init-declor)
+             (init-declor-vinfop (init-declor->info init-declor)))
+    :enable init-declor-annop)
 
   (defruled decl-spec-list-annop-of-fundef->specs
     (implies (fundef-annop fundef)
@@ -919,14 +928,13 @@
      expr-annop-of-expr-unary
      expr-annop-of-expr-binary
      const-expr-annop-of-const-expr
-     desiniter-annop-of-desiniter
      type-spec-annop-of-type-spec-struct
      type-spec-annop-of-type-spec-typedef
      type-spec-annop-of-type-spec-struct-empty
-     tyname-annop-of-tyname
+     desiniter-annop-of-desiniter
      param-declon-annop-of-param-declon
      param-declor-annop-of-param-declor-nonabstract
-     type+uid-vinfop-of-param-declor-nonabstract->info
+     tyname-annop-of-tyname
      struct-declor-annop-of-struct-declor
      init-declor-annop-of-init-declor
      fundef-annop-of-fundef
@@ -950,28 +958,29 @@
      type-vinfop-of-expr-binary->info
      expr-annop-of-const-expr->expr
      const-expr-vinfop-of-const-expr->info
-     designor-list-annop-of-desiniter->designors
-     initer-annop-of-desiniter->initer
-     desiniter-vinfop-of-desiniter->info
      struni-spec-annop-of-type-spec-struct->spec
      type-spec-struct-vinfop-of-type-spec-struct->info
      type+uid-vinfop-of-type-spec-typedef->info
      attrib-spec-list-annop-of-type-spec-struct-empty->attribs
      type-spec-struct-vinfop-of-type-spec-struct-empty->info
-     declor-annop-of-init-declor->declor
-     initer-option-annop-of-init-declor->initer?
-     init-declor-vinfop-of-init-declor->info
-     spec/qual-list-annop-of-tyname->specquals
-     absdeclor-option-annop-of-tyname->declor?
-     type-vinfop-of-tyname->info
-     declor-annop-of-param-declor-nonabstract->declor
+     designor-list-annop-of-desiniter->designors
+     initer-annop-of-desiniter->initer
+     desiniter-vinfop-of-desiniter->info
      decl-spec-list-annop-of-param-declon->specs
      param-declor-annop-of-param-declon->declor
      attrib-spec-list-annop-of-param-declon->attribs
      type-option-vinfop-of-param-declon->info
+     declor-annop-of-param-declor-nonabstract->declor
+     type+uid-vinfop-of-param-declor-nonabstract->info
+     spec/qual-list-annop-of-tyname->specquals
+     absdeclor-option-annop-of-tyname->declor?
+     type-vinfop-of-tyname->info
      declor-option-annop-of-struct-declor->declor?
      const-expr-option-annop-of-struct-declor->expr?
      type-vinfop-of-struct-declor->info
+     declor-annop-of-init-declor->declor
+     initer-option-annop-of-init-declor->initer?
+     init-declor-vinfop-of-init-declor->info
      decl-spec-list-annop-of-fundef->specs
      declor-annop-of-fundef->declor
      declon-list-annop-of-fundef->declons
