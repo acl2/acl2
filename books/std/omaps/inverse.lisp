@@ -16,8 +16,13 @@
 (include-book "identityp")
 (include-book "injectivep")
 
+(local (include-book "assoc"))
 (local (include-book "extensionality"))
 (local (include-book "update"))
+
+; set-in-of-rlookup is enabled by assoc.lisp; keep it disabled here so it does
+; not perturb the other proofs, and enable it only where it is needed.
+(local (in-theory (disable set-in-of-rlookup)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -131,6 +136,18 @@
              in-of-values-to-rlookup
              set::expensive-rules)
     :use (:instance set::in-head (x (rlookup y map)))
+    :disable set::in-head)
+
+  (defruled lookup-of-lookup-of-inverse
+    (implies (and (injectivep map)
+                  (set::in val (values map)))
+             (equal (lookup (lookup val (inverse map)) map)
+                    val))
+    :enable (lookup
+             assoc-of-inverse
+             in-of-values-to-rlookup
+             set-in-of-rlookup)
+    :use (:instance set::in-head (x (rlookup val map)))
     :disable set::in-head))
 
 (in-theory (disable injectivep-implies-not-rlookup-head-val-tail))
