@@ -228,15 +228,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-char-value (char (charset exec-charsetp))
-  :guard (set::in char (exec-chars charset))
+(define exec-char-value (echar (charset exec-charsetp))
+  :guard (set::in echar (exec-chars charset))
   :returns (val natp)
   :short "Value of an execution character."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the natural number associated to the map."))
-  (lnfix (omap::lookup char (exec-charset->chars-with-values charset)))
+  (lnfix (omap::lookup echar (exec-charset->chars-with-values charset)))
   :guard-hints (("Goal" :in-theory (enable exec-chars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
