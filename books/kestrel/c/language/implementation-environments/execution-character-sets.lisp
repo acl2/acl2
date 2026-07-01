@@ -186,7 +186,11 @@
                                (- (char-code ch) (char-code #\0)))))))
   :guard-hints (("Goal" :in-theory (enable* omap::assoc-to-in-of-keys
                                             acl2::acl2-numberp-when-natp
-                                            set::expensive-rules))))
+                                            set::expensive-rules)))
+  ///
+  (fty::deffixequiv-sk exec-charset-digits-in-order-p
+    :args ((chars-with-values any-nat-mapp)
+           (basic-chars character-any-mapp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
