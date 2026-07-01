@@ -45,7 +45,8 @@
   :order-subtopics (basic-characters
                     source-character-sets
                     execution-character-sets
-                    t))
+                    t)
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
