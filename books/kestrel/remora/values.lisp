@@ -548,6 +548,120 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define primop-value-funp ((op primop-valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a value related to a primitive operation
+          is applicable to expression values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A value related to a primitive operation (see @(tsee primop-value))
+     may be applicable to expression values (via term applications),
+     or to type values (via type applications),
+     or to ispace values (via ispace applications).
+     This predicate,
+     along with @(tsee primop-value-tfunp) and @(tsee primop-value-ifunp),
+     checks these applicabilities,
+     which are exhaustive and non-overlapping.
+     The three predicates mirror the three kinds of lambda abstraction values,
+     i.e. the @(':lambda'), @(':tlambda'), and @(':ilambda') summands
+     of @(tsee expr-value).")
+   (xdoc::p
+    "All the current values of @(tsee primop-value)
+     are applicable to expression values:
+     thus, this predicate currently holds on all the values.
+     When summands for the instantiation stages
+     of polymorphic primitive operations are added,
+     this predicate will hold on
+     exactly the stages that may be applied to expression values,
+     i.e. the fully instantiated ones."))
+  (declare (ignore op))
+  t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primop-value-tfunp ((op primop-valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a value related to a primitive operation
+          is applicable to type values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee primop-value-funp) for
+     a description of the three applicability predicates.")
+   (xdoc::p
+    "The current values of @(tsee primop-value),
+     i.e. the monomorphic primitive operations,
+     are not applied to type values:
+     thus, this predicate currently holds on no value.
+     When summands for the instantiation stages
+     of polymorphic primitive operations are added,
+     this predicate will hold on
+     exactly the stages that expect type values next
+     (e.g. an uninstantiated @('length'))."))
+  (declare (ignore op))
+  nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primop-value-ifunp ((op primop-valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a value related to a primitive operation
+          is applicable to ispace values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee primop-value-funp) for
+     a description of the three applicability predicates.")
+   (xdoc::p
+    "The current values of @(tsee primop-value),
+     i.e. the monomorphic primitive operations,
+     are not applied to ispace values:
+     thus, this predicate currently holds on no value.
+     When summands for the instantiation stages
+     of polymorphic primitive operations are added,
+     this predicate will hold on
+     exactly the stages that expect ispace values next
+     (e.g. a @('length') already applied to a type value)."))
+  (declare (ignore op))
+  nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection primop-value-applicability-theorems
+  :short "Theorems about the applicability predicates
+          for values related to primitive operations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The predicates
+     @(tsee primop-value-funp),
+     @(tsee primop-value-tfunp), and
+     @(tsee primop-value-ifunp)
+     are exhaustive and non-overlapping:
+     every value related to a primitive operation
+     satisfies exactly one of them."))
+
+  (defrule primop-value-applicability-exhaustive
+    (or (primop-value-funp op)
+        (primop-value-tfunp op)
+        (primop-value-ifunp op))
+    :rule-classes nil
+    :enable primop-value-funp)
+
+  (defrule primop-value-applicability-non-overlapping
+    (and (not (and (primop-value-funp op)
+                   (primop-value-tfunp op)))
+         (not (and (primop-value-funp op)
+                   (primop-value-ifunp op)))
+         (not (and (primop-value-tfunp op)
+                   (primop-value-ifunp op))))
+    :rule-classes nil
+    :enable (primop-value-tfunp
+             primop-value-ifunp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define primop-type ((op primop-valuep))
   :returns (type type-valuep)
   :short "Type of a primitive operation, as a type value."
