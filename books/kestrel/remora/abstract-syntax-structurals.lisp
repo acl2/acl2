@@ -345,6 +345,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-ensure-array ((type typep))
+  :returns (type1 typep)
+  :short "Ensure that a type is an array type,
+          lifting atom types to scalar array types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Remora's syntax allows atom types where array types are expected,
+     with those atom types being regarded as scalar (i.e. 0-rank) array types.
+     This function explicates this optional lifting:
+     it leaves array types unchanged,
+     and it turns atom types
+     into scalar array types (i.e. with no dimensions)."))
+  (if (type-atomp type)
+      (make-type-array :elem type :ispace (ispace-shape (shape-dims nil)))
+    (type-fix type)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define dim/shape-names-of-ispace-vars ((vars ispace-var-setp))
   :returns (mv (dim-names string-setp) (shape-names string-setp))
   :short "Extract the sets of dimension and shape variable names
