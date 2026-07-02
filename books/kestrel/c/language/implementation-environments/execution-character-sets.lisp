@@ -23,6 +23,8 @@
 
 (acl2::controlled-configuration)
 
+; cert_param: (non-acl2r)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ execution-character-sets
