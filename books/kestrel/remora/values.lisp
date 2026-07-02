@@ -663,8 +663,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define primop-type ((op primop-valuep))
+  :guard (primop-value-funp op)
   :returns (type type-valuep)
-  :short "Type of a primitive operation, as a type value."
+  :short "Type of a primitive operation value applicable to expression values,
+          as a type value."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -673,7 +675,7 @@
      We keep this consistent with @(tsee primop-types) by construction;
      a theorem relating the two could be added later.")
    (xdoc::p
-    "Curerntly this type is always
+    "Currently this type is always
      a zero-rank array of the operation's function type,
      whose inputs and output are themselves
      zero-rank arrays of base types.
@@ -684,8 +686,14 @@
      uniformly with how the same information
      is obtained for lambda abstractions.")
    (xdoc::p
-    "Not all primitive operations in Remora have types of this form.
-     Those primitive operations will be handled later."))
+    "This function is restricted, via the guard,
+     to the primitive operation values applicable to expression values,
+     which are the ones used as function values.
+     When summands for the instantiation stages
+     of polymorphic primitive operations are added,
+     this ACL2 function will also cover the fully instantiated stages,
+     whose function type values will be constructed
+     from the instantiation values in the fields."))
   (b* ((int-tv (make-type-value-array
                 :elem (type-value-base (base-type-int))
                 :dims nil))
@@ -800,16 +808,19 @@
   ///
 
   (defret type-value-kind-of-primop-type
-    (equal (type-value-kind type) :array))
+    (implies (primop-value-funp op)
+             (equal (type-value-kind type) :array)))
 
   (defret type-value-kind-of-elem-of-primop-type
-    (equal (type-value-kind (type-value-array->elem type)) :fun)))
+    (implies (primop-value-funp op)
+             (equal (type-value-kind (type-value-array->elem type)) :fun))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define primop-arity ((op primop-valuep))
+  :guard (primop-value-funp op)
   :returns (arity natp)
-  :short "Arity of a primitive operation."
+  :short "Arity of a primitive operation value applicable to expression values."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -820,7 +831,10 @@
    (xdoc::p
     "We define this as the number of inputs
      of the operation's function type (see @(tsee primop-type)),
-     so that the arity cannot diverge from the type."))
+     so that the arity cannot diverge from the type.
+     Like @(tsee primop-type),
+     this function is restricted, via the guard,
+     to the values applicable to expression values."))
   (len (type-value-fun->in (type-value-array->elem (primop-type op)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1347,7 +1361,10 @@
      and hence the frames over which the application is lifted.")
    (xdoc::p
     "It is an error if a non-function leaf is reached,
-     or if an empty vector is reached, which has no function to return.")
+     or if an empty vector is reached, which has no function to return.
+     A @(':primop') leaf must be applicable to expression values
+     (see @(tsee primop-value-funp));
+     otherwise, it is an error as well.")
    (xdoc::p
     "It should be an invariant that, in a well-formed expression value,
      all elements (if the expression value is not scalar) have equivalent types,
@@ -1362,7 +1379,9 @@
   (expr-value-case
    val
    :base (reserr nil)
-   :primop (expr-value-fix val)
+   :primop (if (primop-value-funp val.val)
+               (expr-value-fix val)
+             (reserr nil))
    :lambda (expr-value-fix val)
    :tlambda (reserr nil)
    :ilambda (reserr nil)
@@ -1371,7 +1390,17 @@
                (expr-value-first-fun (car val.elems))
              (reserr nil))
    :vector-empty (reserr nil))
-  :measure (expr-value-count val))
+  :measure (expr-value-count val)
+
+  ///
+
+  (defret primop-value-funp-of-expr-value-first-fun
+    (implies (and (not (reserrp fval))
+                  (expr-value-case fval :primop))
+             (primop-value-funp (expr-value-primop->val fval)))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable expr-value-first-fun)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

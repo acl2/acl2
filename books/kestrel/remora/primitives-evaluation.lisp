@@ -1026,9 +1026,11 @@
      on a scalar primitive operation and its scalar argument cells,
      after the rank-polymorphic lifting.")
    (xdoc::p
-    "We dispatch on the operation,
-     check that it is applied to the right number of argument cells,
-     and call the @('prim-...') function
+    "We check that the value is applicable to expression values
+     (see @(tsee primop-value-funp))
+     and that it is applied to the right number of argument cells;
+     then we dispatch on the operation,
+     calling the @('prim-...') function
      that defines the operation's semantics.
      Anything else is an error.")
    (xdoc::p
@@ -1036,6 +1038,7 @@
      because each @('prim-...') function returns
      a scalar base value on success."))
   (b* ((args (expr-value-list-fix args))
+       ((unless (primop-value-funp op)) (reserr nil))
        ((unless (equal (len args) (primop-arity op))) (reserr nil)))
     (primop-value-case
      op
