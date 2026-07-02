@@ -19,6 +19,7 @@
 (include-book "bool-formats")
 (include-book "integer-format-templates")
 (include-book "integer-formats")
+(include-book "character-sets")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
@@ -63,6 +64,7 @@
                     bool-formats
                     integer-format-templates
                     integer-formats
+                    character-sets
                     t)
   :default-parent t)
 
