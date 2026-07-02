@@ -568,12 +568,12 @@
 (define x86-enter-copy-nested-frame-pointers
   ((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
    (count            :type (integer 0 31))
-   (operand-size     :type (integer 1 8))
+   (operand-size     :type (integer 2 8))
    (frame-ptr        :type (signed-byte 64))
    (rsp              :type (signed-byte 64))
    (check-alignment? booleanp)
    x86)
-  :guard (member operand-size '(1 2 4 8))
+  :guard (member operand-size '(2 4 8))
   :returns (mv flg
                (new-rsp i64p :hyp (i64p rsp))
                (x86 x86p :hyp (x86p x86)))
@@ -637,13 +637,11 @@
                                             x86)))
   :measure (nfix count)
   :guard-hints (("Goal"
-                 :in-theory (e/d (rme-size-of-1-to-rme08
-                                  rme-size-of-2-to-rme16
+                 :in-theory (e/d (rme-size-of-2-to-rme16
                                   rme-size-of-4-to-rme32
                                   rme-size-of-8-to-rme64)
                                  ())
-                 :cases ((eql operand-size 1)
-                         (eql operand-size 2)
+                 :cases ((eql operand-size 2)
                          (eql operand-size 4)
                          (eql operand-size 8))))
 
