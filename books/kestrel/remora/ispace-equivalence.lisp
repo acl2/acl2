@@ -725,25 +725,3 @@
        (ispace-addp ispace2)
        (equal (normalize-ispace ispace1)
               (normalize-ispace ispace2))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define shape-from-ispace ((ispace ispacep))
-  :returns (shape shapep)
-  :short "Turn an ispace into a shape."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the ispace is already a shape, it is unchanged.
-     Otherwise, we turn the dimension into a singleton shape."))
-  (ispace-case
-   ispace
-   :dim (shape-dims (list ispace.dim))
-   :shape ispace.shape))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection shape-list-from-ispace-list ((x ispace-listp))
-  :returns (shapes shape-listp)
-  :short "Lift @(tsee shape-from-ispace) to lists."
-  (shape-from-ispace x))
