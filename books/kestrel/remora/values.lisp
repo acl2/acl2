@@ -448,7 +448,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum primop-value
-  :short "Fixtype of values related to primitive operations."
+  :short "Fixtype of primitive operation values."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -550,12 +550,12 @@
 
 (define primop-value-funp ((op primop-valuep))
   :returns (yes/no booleanp)
-  :short "Check if a value related to a primitive operation
-          is applicable to expression values."
+  :short "Check if a primitive operation value is
+          applicable to expression values."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A value related to a primitive operation (see @(tsee primop-value))
+    "A primitive operation value (see @(tsee primop-value))
      may be applicable to expression values (via term applications),
      or to type values (via type applications),
      or to ispace values (via ispace applications).
@@ -582,8 +582,8 @@
 
 (define primop-value-tfunp ((op primop-valuep))
   :returns (yes/no booleanp)
-  :short "Check if a value related to a primitive operation
-          is applicable to type values."
+  :short "Check if a primitive operation value is
+          applicable to type values."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -606,8 +606,7 @@
 
 (define primop-value-ifunp ((op primop-valuep))
   :returns (yes/no booleanp)
-  :short "Check if a value related to a primitive operation
-          is applicable to ispace values."
+  :short "Check if a primitive operation value is applicable to ispace values."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -630,7 +629,7 @@
 
 (defsection primop-value-applicability-theorems
   :short "Theorems about the applicability predicates
-          for values related to primitive operations."
+          for primitive operation values."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -639,8 +638,7 @@
      @(tsee primop-value-tfunp), and
      @(tsee primop-value-ifunp)
      are exhaustive and non-overlapping:
-     every value related to a primitive operation
-     satisfies exactly one of them."))
+     every primitive operation value satisfies exactly one of them."))
 
   (defrule primop-value-applicability-exhaustive
     (or (primop-value-funp op)
