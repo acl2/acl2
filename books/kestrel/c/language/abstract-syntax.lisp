@@ -37,10 +37,7 @@
      (as part of perhaps a larger character set like Unicode).")
    (xdoc::p
     "We plan to generalize and extend this abstract syntax
-     to avoid specific assumptions and to cover all the C constructs.
-     In particular, we plan to use the formalization of "
-    (xdoc::seetopic "character-sets" "character sets")
-    " to lift the ASCII assumption.")
+     to avoid specific assumptions and to cover all the C constructs.")
    (xdoc::p
     "The purpose of this abstract syntax is to support
      our formal definition of (a subset of) C.

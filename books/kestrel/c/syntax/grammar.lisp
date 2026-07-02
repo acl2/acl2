@@ -114,9 +114,7 @@
    (xdoc::p
     "[C17:5.2.1] provides requirements on the source character set,
      i.e. the character set used to write the C code,
-     but the details of this character set are implementation-dependent;
-     see @('[books]/kestrel/c/language/character-sets.lisp')
-     for a formalization of the requirements in [C17:5.2.1].
+     but the details of this character set are implementation-dependent.
      In particular, [C17:5.2.1] does not prescribe ASCII or Unicode.
      Our grammar assumes Unicode, which is a very general assumption these days;
      other (uncommon) character sets should be also easily encodable in Unicode,
