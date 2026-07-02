@@ -753,12 +753,20 @@
                                    x86
                                    :mem-ptr? nil))
        ;; The COND below is analogous to the one after the nesting block
-       ;; further down, but it has no #SS case because the error tags
-       ;; mapped to #SS there can only arise from ADD-TO-*SP,
+       ;; further down (see the comment there about the possible errors),
+       ;; with two differences:
+       ;; the #SS case omits the error tags :NON-CANONICAL-STACK-ADDRESS
+       ;; and :OUT-OF-SEGMENT-STACK-ADDRESS,
+       ;; which can only arise from ADD-TO-*SP,
        ;; whose failure for this push of rBP
-       ;; is already mapped to #SS just above.
+       ;; is already mapped to #SS just above;
+       ;; the #SS case also omits the error symbols RML16 etc.,
+       ;; which can only arise from reads, while this is a write.
        ((when flg)
         (cond
+         ((or (and (consp flg) (eql (car flg) :segment-limit-fail))
+              (member-eq flg '(wml16 wml32 wml64)))
+          (!!fault-fresh :ss 0 :stack-writing-error flg)) ;; #SS(0)
          ((and (consp flg) (eql (car flg) :unaligned-linear-address))
           (!!fault-fresh :ac 0 :memory-access-unaligned flg)) ;; #AC(0)
          (t ;; Unclassified error!
@@ -798,11 +806,30 @@
                                            :mem-ptr? nil))
                ((when flg) (mv flg rsp x86)))
             (mv nil rsp x86))))
+       ;; In the COND below:
+       ;; the error tags :NON-CANONICAL-STACK-ADDRESS
+       ;; and :OUT-OF-SEGMENT-STACK-ADDRESS come from ADD-TO-*SP;
+       ;; the error tag :SEGMENT-LIMIT-FAIL comes from EA-TO-LA
+       ;; (via RME-SIZE and WME-SIZE), in 32-bit mode,
+       ;; for an access that starts within the stack segment limits
+       ;; but ends past them;
+       ;; the error symbols RML16 etc. and WML16 etc.
+       ;; come from the functions with those names
+       ;; (via RME-SIZE and WME-SIZE), in 64-bit mode,
+       ;; for an access that starts at a canonical address
+       ;; but ends past the canonical address space.
+       ;; The last two kinds of errors are possible because ADD-TO-*SP
+       ;; only checks the start address of an access.
+       ;; All the aforementioned errors are stack faults (#SS);
+       ;; an :UNALIGNED-LINEAR-ADDRESS error from RME-SIZE or WME-SIZE
+       ;; is instead an alignment check fault (#AC).
        ((when flg)
         (cond
-         ((and (consp flg)
-               (or (eql (car flg) :non-canonical-stack-address)
-                   (eql (car flg) :out-of-segment-stack-address)))
+         ((or (and (consp flg)
+                   (or (eql (car flg) :non-canonical-stack-address)
+                       (eql (car flg) :out-of-segment-stack-address)
+                       (eql (car flg) :segment-limit-fail)))
+              (member-eq flg '(rml16 rml32 rml64 wml16 wml32 wml64)))
           (!!fault-fresh :ss 0 :enter-stack-error flg)) ;; #SS(0)
          ((and (consp flg) (eql (car flg) :unaligned-linear-address))
           (!!fault-fresh :ac 0 :memory-access-unaligned flg)) ;; #AC(0)
