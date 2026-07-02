@@ -752,7 +752,17 @@
                                    check-alignment?
                                    x86
                                    :mem-ptr? nil))
-       ((when flg) (!!ms-fresh :stack-writing-error flg))
+       ;; The COND below is analogous to the one after the nesting block
+       ;; further down, but it has no #SS case because the error tags
+       ;; mapped to #SS there can only arise from ADD-TO-*SP,
+       ;; whose failure for this push of rBP
+       ;; is already mapped to #SS just above.
+       ((when flg)
+        (cond
+         ((and (consp flg) (eql (car flg) :unaligned-linear-address))
+          (!!fault-fresh :ac 0 :memory-access-unaligned flg)) ;; #AC(0)
+         (t ;; Unclassified error!
+          (!!ms-fresh :stack-writing-error flg))))
 
        ;; FrameTemp := rSP, i.e. the stack pointer just after pushing rBP.
        ((the (signed-byte 64) frame-temp) rsp)
