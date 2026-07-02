@@ -293,11 +293,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "Since variables are expressions, the type must be an array type.
+     So we auto-lift atom types to scalar array types if needed.")
+   (xdoc::p
     "This may override an existing variable,
      which is intended hiding behavior."))
   (b* ((expr-vars (senv->expr-vars senv))
        (new-expr-vars (omap::update (str::str-fix var)
-                                    (type-fix type)
+                                    (type-ensure-array type)
                                     expr-vars)))
     (change-senv senv :expr-vars new-expr-vars)))
 
