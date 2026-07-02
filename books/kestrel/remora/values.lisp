@@ -448,16 +448,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum primop-value
-  :short "Fixtype of primitive operation values."
+  :short "Fixtype of values related to primitive operations."
   :long
   (xdoc::topstring
    (xdoc::p
     "In Remora, the primitive operations (i.e. built-in functions)
      are denoted by certain variables implicitly in scope,
      whose types are given by @(tsee primop-types).
-     This fixtype enumerates the operations themselves,
+     This fixtype currently enumerates the operations themselves,
      one summand per operation,
-     in correspondence with the entries of @(tsee primop-types).")
+     in correspondence with the entries of @(tsee primop-types);
+     but we will extend this soon to include summands
+     that correspond to partially instantiated primitive operations
+     (more details below).")
    (xdoc::p
     "A value of this fixtype represents a primitive operation
      as a scalar (zero-rank array) function value,
@@ -465,7 +468,35 @@
      These are incorporated into @(tsee expr-value)
      as its @(':primop') summand;
      the operations they denote will be evaluated via
-     the ACL2 functions in @(see primitives-evaluation)."))
+     the ACL2 functions in @(see primitives-evaluation).")
+   (xdoc::p
+    "The operations currently in this fixtype are all monomorphic:
+     the element type of each operation's zero-rank array type
+     is a function type between base types.
+     Remora also has polymorphic primitive operations,
+     such as @('length'),
+     where the element type of the zero-rank array type
+     involves universal and product types;
+     [impl] calls these operations `intrinsics',
+     reserving `primitives' for the monomorphic ones,
+     but we call both `primitive operations',
+     in the sense that they are not defined with Remora code,
+     but are built-in.
+     (The current division between `primitives' and `intrinsics' in [impl]
+     as monomorphic and polymorphic functions is actually incidental:
+     by `primitive' [impl] means on integers and similar types,
+     and by `intrinsic' [impl] means the other built-ins;
+     but as mentioned already, we just use the term `primitive' for all.)
+     Since a polymorphic operation cannot be
+     directly applied to expression values,
+     but must first be applied to type values and/or ispace values,
+     we will extend this fixtype with,
+     for each polymorphic operation,
+     a summand for each instantiation stage of the operation,
+     whose fields hold the instantiation values received so far.
+     This fixtype will then contain
+     not only primitive operations proper (the uninstantiated stages),
+     but more generally values related to primitive operations."))
   (:int-add ())
   (:int-sub ())
   (:int-mul ())
