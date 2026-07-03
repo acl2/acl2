@@ -1013,7 +1013,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-primop ((op primop-valuep) (args expr-value-listp))
+(define eval-primop-fun ((op primop-valuep) (args expr-value-listp))
   :guard (primop-value-funp op)
   :returns (val expr-value-resultp)
   :short "Evaluate the application of a primitive operation
@@ -1098,10 +1098,10 @@
 
   ///
 
-  (defret expr-value-wfp-of-eval-primop
+  (defret expr-value-wfp-of-eval-primop-fun
     (implies (not (reserrp val))
              (expr-value-wfp val))
-    :hints (("Goal" :in-theory (enable eval-primop
+    :hints (("Goal" :in-theory (enable eval-primop-fun
                                        prim-int-add
                                        prim-int-sub
                                        prim-int-mul

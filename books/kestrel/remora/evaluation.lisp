@@ -1968,7 +1968,7 @@
      (xdoc::p
       "If the function cell is
        a primitive operation value applicable to expression values,
-       it is applied to the argument cells via @(tsee eval-primop),
+       it is applied to the argument cells via @(tsee eval-primop-fun),
        which dispatches to the corresponding ACL2 function
        in @(see primitives-evaluation)."))
     (b* (((when (zp limit)) (reserr :limit)))
@@ -1985,7 +1985,7 @@
                    denv)))
          (eval-expr funcell.body denv (1- limit)))
        :primop (if (primop-value-funp funcell.val)
-                   (eval-primop funcell.val argcells)
+                   (eval-primop-fun funcell.val argcells)
                  (reserr nil))
        :otherwise (reserr nil)))
     :measure (nfix limit))
