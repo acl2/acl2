@@ -972,15 +972,20 @@
      (which is already expanded).
      The lifting to a scalar array is needed because
      the expression type is always an array type,
-     while the annotating type may be an atom type."))
+     while the annotating type may be an atom type.
+     The lifting must be done after the expansion,
+     because otherwise if the annotating type is an array type variable,
+     its lifting would fail,
+     but if it expands to a non-variable instead,
+     then lifting would succeed."))
   (type-option-case
    anno-type
    :none t
-   :some (b* ((anno-type (type-ensure-array anno-type.val))
-              ((unless (check-type anno-type senv)) nil)
-              (expanded (senv-expand-type anno-type senv))
-              ((when (reserrp expanded)) nil))
-           (type-equivp expr-type expanded))))
+   :some (b* (((unless (check-type anno-type.val senv)) nil)
+              (anno-type (senv-expand-type anno-type.val senv))
+              ((when (reserrp anno-type)) nil)
+              (anno-type (type-ensure-array anno-type)))
+           (type-equivp expr-type anno-type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
