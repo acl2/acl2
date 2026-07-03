@@ -2389,3 +2389,26 @@
                        acl2::true-list-listp-when-nat-list-listp
                        true-list-listp-when-expr-value-list-listp)
                       (len-of-eval-expr-list))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-prog ((prog progp) (limit natp))
+  :returns (val expr-value-resultp)
+  :short "Evaluate a program to an expression value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We evaluate the program's expression via @(tsee eval-expr)
+     in the initial dynamic environment (see @(tsee init-denv)),
+     which contains just the primitive operations in scope.")
+   (xdoc::p
+    "The @('limit') input bounds the depth of the evaluation recursion,
+     as explained in @(see eval-exprs/atoms/binds);
+     its exhaustion causes an error result."))
+  (eval-expr (prog->expr prog) (init-denv) limit)
+
+  ///
+
+  (defret expr-value-wfp-of-eval-prog
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
