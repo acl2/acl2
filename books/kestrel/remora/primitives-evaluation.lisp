@@ -180,9 +180,13 @@
 (define prim-int-div ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer division."
-  :long "<p>Integer division uses ACL2's @(tsee floor), which rounds towards
-  minus infinity. This is consistent with [impl], which uses Haskell's
-  @('div')</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Integer division uses ACL2's @(tsee floor),
+     which rounds towards minus infinity.
+     This is consistent with [impl],
+     which uses Haskell's @('div')."))
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (= i2.int 0)) (reserr nil)) ;; ERROR: division by zero
@@ -192,9 +196,13 @@
 (define prim-int-mod ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer modulo."
-  :long "<p>Integer modulo uses ACL2's @(tsee mod), whose result takes the sign
-  of the divisor. This is consistent with [impl], which uses Haskell's
-  @('mod')</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Integer modulo uses ACL2's @(tsee mod),
+     whose result takes the sign of the divisor.
+     This is consistent with [impl],
+     which uses Haskell's @('mod')."))
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (= i2.int 0)) (reserr nil)) ;; ERROR: modulo zero
@@ -244,12 +252,19 @@
 (define prim-int-shl ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer left shift."
-  :long "<p>Left shift uses ACL2's @(tsee ash) with a non-negative shift
-  amount, erroring on a negative shift amount. Because integers are modeled as
-  unbounded (see @(see primitives-evaluation)), the shift never overflows: no
-  high-order bits are lost. This differs from [impl], which uses Haskell's
-  fixed-width @('shiftL'), where bits shifted past the word width are
-  discarded.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Left shift uses ACL2's @(tsee ash)
+     with a non-negative shift amount,
+     erroring on a negative shift amount.
+     Because integers are modeled as unbounded
+     (see @(see primitives-evaluation)),
+     the shift never overflows:
+     no high-order bits are lost.
+     This differs from [impl],
+     which uses Haskell's fixed-width @('shiftL'),
+     where bits shifted past the word width are discarded."))
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (< i2.int 0)) (reserr nil)) ;; ERROR: shift by negative bits
@@ -277,14 +292,22 @@
 (define prim-int-popc ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer pop count."
-  :long "<p>Pop count (the number of set bits) uses ACL2's @(tsee logcount).
-  Only non-negative inputs are accepted; a negative input is an error. On a
-  negative integer, [impl]'s Haskell @('popCount') counts the set bits of the
-  fixed-width two's-complement representation (a finite, width-dependent count),
-  whereas @(tsee logcount) counts the bits of the unbounded magnitude. Because
-  integers are modeled as unbounded (see @(see primitives-evaluation)), there is
-  no fixed width to match, so the behavior on negative inputs would differ from
-  [impl]; we therefore restrict to non-negative inputs for now.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Pop count (the number of set bits) uses ACL2's @(tsee logcount).
+     Only non-negative inputs are accepted;
+     a negative input is an error.
+     On a negative integer,
+     [impl]'s Haskell @('popCount') counts the set bits
+     of the fixed-width two's-complement representation
+     (a finite, width-dependent count),
+     whereas @(tsee logcount) counts the bits of the unbounded magnitude.
+     Because integers are modeled as unbounded
+     (see @(see primitives-evaluation)),
+     there is no fixed width to match,
+     so the behavior on negative inputs would differ from [impl];
+     we therefore restrict to non-negative inputs for now."))
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((when (< i1.int 0)) (reserr nil)) ;; ERROR: negative input
        (ival (int-value (logcount i1.int))))
@@ -361,16 +384,23 @@
 (define prim-float-add ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float addition."
-  :long "<p>Finite values are added as exact rationals
-  (see @(see primitives-evaluation) for the float model).
-  The special cases follow [impl]:</p>
-  <ul>
-   <li>NaN + anything = NaN.</li>
-   <li>(+inf) + (-inf) = NaN.</li>
-   <li>(+inf) + @('x') = +inf, where @('x') is a finite rational.</li>
-   <li>(-inf) + @('x') = -inf, where @('x') is a finite rational.</li>
-   <li>(-0) + (-0) = -0; every other sum that is zero is +0.</li>
-  </ul>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Finite values are added as exact rationals
+     (see @(see primitives-evaluation) for the float model).
+     The special cases follow [impl]:")
+   (xdoc::ul
+    (xdoc::li
+     "NaN + anything = NaN.")
+    (xdoc::li
+     "(+inf) + (-inf) = NaN.")
+    (xdoc::li
+     "(+inf) + @('x') = +inf, where @('x') is a finite rational.")
+    (xdoc::li
+     "(-inf) + @('x') = -inf, where @('x') is a finite rational.")
+    (xdoc::li
+     "(-0) + (-0) = -0; every other sum that is zero is +0.")))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (nan1 (float-value-case f1 :nan))
@@ -406,18 +436,25 @@
 (define prim-float-sub ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float subtraction."
-  :long "<p>Finite values are subtracted as exact rationals
-  (see @(see primitives-evaluation) for the float model).
-  The special cases follow [impl]:</p>
-  <ul>
-   <li>NaN - anything = NaN; anything - NaN = NaN.</li>
-   <li>(+inf) - (+inf) = NaN; (-inf) - (-inf) = NaN.</li>
-   <li>(+inf) - @('x') = +inf; @('x') - (-inf) = +inf, where @('x') is a finite
-  rational.</li>
-   <li>(-inf) - @('x') = -inf; @('x') - (+inf) = -inf, where @('x') is a finite
-  rational.</li>
-   <li>(-0) - (+0) = -0; every other difference that is zero is +0.</li>
-  </ul>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Finite values are subtracted as exact rationals
+     (see @(see primitives-evaluation) for the float model).
+     The special cases follow [impl]:")
+   (xdoc::ul
+    (xdoc::li
+     "NaN - anything = NaN; anything - NaN = NaN.")
+    (xdoc::li
+     "(+inf) - (+inf) = NaN; (-inf) - (-inf) = NaN.")
+    (xdoc::li
+     "(+inf) - @('x') = +inf; @('x') - (-inf) = +inf,
+      where @('x') is a finite rational.")
+    (xdoc::li
+     "(-inf) - @('x') = -inf; @('x') - (+inf) = -inf,
+      where @('x') is a finite rational.")
+    (xdoc::li
+     "(-0) - (+0) = -0; every other difference that is zero is +0.")))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (nan1 (float-value-case f1 :nan))
@@ -456,19 +493,27 @@
 (define prim-float-mul ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float multiplication."
-  :long "<p>Finite values are multiplied as exact rationals
-  (see @(see primitives-evaluation) for the float model).
-  The sign of an infinite or zero result is the exclusive-or of the operand
-  signs (negative zero counts as negative).
-  The special cases follow [impl]:</p>
-  <ul>
-   <li>NaN * anything = NaN.</li>
-   <li>0 * inf = NaN.</li>
-   <li>If either operand is infinite, the result is an infinity
-       with the exclusive-or sign.</li>
-   <li>Otherwise the result is the rational product; a zero product is -0 when
-       the operand signs differ and +0 when they agree.</li>
-  </ul>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Finite values are multiplied as exact rationals
+     (see @(see primitives-evaluation) for the float model).
+     The sign of an infinite or zero result is
+     the exclusive-or of the operand signs
+     (negative zero counts as negative).
+     The special cases follow [impl]:")
+   (xdoc::ul
+    (xdoc::li
+     "NaN * anything = NaN.")
+    (xdoc::li
+     "0 * inf = NaN.")
+    (xdoc::li
+     "If either operand is infinite,
+      the result is an infinity with the exclusive-or sign.")
+    (xdoc::li
+     "Otherwise the result is the rational product;
+      a zero product is -0 when the operand signs differ
+      and +0 when they agree.")))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (nan1 (float-value-case f1 :nan))
@@ -522,21 +567,31 @@
 (define prim-float-div ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float division."
-  :long "<p>Finite values are divided as exact rationals
-  (see @(see primitives-evaluation) for the float model).
-  Unlike integer division, division by zero is not an error: it follows
-  [impl]. The sign of an infinite or zero result is the exclusive-or of the
-  operand signs (negative zero counts as negative).
-  The special cases follow [impl]:</p>
-  <ul>
-   <li>NaN / anything = NaN; anything / NaN = NaN.</li>
-   <li>0 / 0 = NaN; inf / inf = NaN.</li>
-   <li>@('x') / 0 = inf; inf / @('x') = inf, where @('x') is a finite
-  rational.</li>
-   <li>@('x') / inf = 0, where @('x') is a finite rational.</li>
-   <li>Otherwise the rational quotient; a zero quotient is -0 when the operand
-       signs differ and +0 when they agree.</li>
-  </ul>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Finite values are divided as exact rationals
+     (see @(see primitives-evaluation) for the float model).
+     Unlike integer division, division by zero is not an error:
+     it follows [impl].
+     The sign of an infinite or zero result is
+     the exclusive-or of the operand signs
+     (negative zero counts as negative).
+     The special cases follow [impl]:")
+   (xdoc::ul
+    (xdoc::li
+     "NaN / anything = NaN; anything / NaN = NaN.")
+    (xdoc::li
+     "0 / 0 = NaN; inf / inf = NaN.")
+    (xdoc::li
+     "@('x') / 0 = inf; inf / @('x') = inf,
+      where @('x') is a finite rational.")
+    (xdoc::li
+     "@('x') / inf = 0, where @('x') is a finite rational.")
+    (xdoc::li
+     "Otherwise the rational quotient;
+      a zero quotient is -0 when the operand signs differ
+      and +0 when they agree.")))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (nan1 (float-value-case f1 :nan))
@@ -587,25 +642,41 @@
 (define prim-float-expt ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float exponentiation."
-  :long "<p>Exponentiation @('base ** exponent'). The base may be any float
-  value and the exponent may be any float value except a non-integer rational:
-  ACL2's @(tsee expt) supports only integer exponents and returns an exact
-  rational, and a non-integer rational exponent would generally yield an
-  irrational result that the rational model (see @(see primitives-evaluation))
-  cannot represent, so that single case errors.</p>
-  <p>Every other case, including the special values, follows [impl]'s Haskell
-  @('**')):</p>
-  <ul>
-   <li>x ** 0 = 1 for any x, including NaN and the infinities (a zero exponent
-       being the integer 0 or negative zero).</li>
-   <li>1 ** y = 1 for any y; (-1) ** inf = 1.</li>
-   <li>NaN in the base or exponent otherwise yields NaN.</li>
-   <li>x ** (+inf) is +inf when the base magnitude exceeds 1 and +0 when it is
-       below 1; x ** (-inf) is the reverse.</li>
-   <li>For a nonzero integer exponent, signed zeros and infinities follow the
-       parity rules (e.g. (-0) ** 3 = -0, (-inf) ** (-3) = -0), and a finite
-       nonzero rational base is raised exactly with @(tsee expt).</li>
-  </ul>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Exponentiation @('base ** exponent').
+     The base may be any float value
+     and the exponent may be any float value
+     except a non-integer rational:
+     ACL2's @(tsee expt) supports only integer exponents
+     and returns an exact rational,
+     and a non-integer rational exponent
+     would generally yield an irrational result
+     that the rational model (see @(see primitives-evaluation))
+     cannot represent,
+     so that single case errors.")
+   (xdoc::p
+    "Every other case, including the special values,
+     follows [impl]'s Haskell @('**'):")
+   (xdoc::ul
+    (xdoc::li
+     "x ** 0 = 1 for any x, including NaN and the infinities
+      (a zero exponent being the integer 0 or negative zero).")
+    (xdoc::li
+     "1 ** y = 1 for any y; (-1) ** inf = 1.")
+    (xdoc::li
+     "NaN in the base or exponent otherwise yields NaN.")
+    (xdoc::li
+     "x ** (+inf) is +inf when the base magnitude exceeds 1
+      and +0 when it is below 1;
+      x ** (-inf) is the reverse.")
+    (xdoc::li
+     "For a nonzero integer exponent,
+      signed zeros and infinities follow the parity rules
+      (e.g. (-0) ** 3 = -0, (-inf) ** (-3) = -0),
+      and a finite nonzero rational base
+      is raised exactly with @(tsee expt).")))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        ((when (and (float-value-case f2 :ratio)
@@ -672,12 +743,17 @@
 (define prim-float-max ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float maximum."
-  :long "<p>Follows [impl]'s Haskell @('max'):
-  @('max x y = if x <= y then y else x'), where @('<=') is the IEEE comparison
-  in which any comparison with NaN is false. The result is therefore
-  order-dependent on NaN: @('max NaN y') is NaN but @('max x NaN') is x. Since
-  negative and positive zero compare equal, a tie returns the second
-  operand.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Follows [impl]'s Haskell @('max'):
+     @('max x y = if x <= y then y else x'),
+     where @('<=') is the IEEE comparison
+     in which any comparison with NaN is false.
+     The result is therefore order-dependent on NaN:
+     @('max NaN y') is NaN but @('max x NaN') is x.
+     Since negative and positive zero compare equal,
+     a tie returns the second operand."))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (fval
@@ -702,12 +778,17 @@
 (define prim-float-min ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float minimum."
-  :long "<p>Follows [impl]'s Haskell @('min'):
-  @('min x y = if x <= y then x else y'), where @('<=') is the IEEE comparison
-  in which any comparison with NaN is false. The result is therefore
-  order-dependent on NaN: @('min NaN y') is y but @('min x NaN') is NaN. Since
-  negative and positive zero compare equal, a tie returns the first
-  operand.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Follows [impl]'s Haskell @('min'):
+     @('min x y = if x <= y then x else y'),
+     where @('<=') is the IEEE comparison
+     in which any comparison with NaN is false.
+     The result is therefore order-dependent on NaN:
+     @('min NaN y') is y but @('min x NaN') is NaN.
+     Since negative and positive zero compare equal,
+     a tie returns the first operand."))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (fval
@@ -732,20 +813,32 @@
 (define prim-float-sqrt ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float square root."
-  :long "<p>Square root is currently a stub that always errors.</p>
-  <p>The difficulty is that our float model represents finite values as exact
-  rationals (see @(see primitives-evaluation)), but the square root of a
-  rational is in general irrational. So the exact result is not representable as a
-  @(tsee float-value).</p>
-  <p>[impl] computes square roots with Haskell's @('sqrt'), which maps onto the
-  IEEE-754 hardware/library square root: it returns the correctly-rounded
-  single-precision float nearest the true result. That is possible only because
-  Haskell's @('Float') is finite-precision floating point, which accepts
-  rounding; the irrational answer is approximated by the nearest representable
-  float. Our exact-rational model has no notion of a nearest representable value
-  to round to, so we cannot reproduce this without first committing to a
-  concrete float format and rounding rule, a decision Remora has not yet made.
-  We therefore defer the implementation and error for now.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Square root is currently a stub that always errors.")
+   (xdoc::p
+    "The difficulty is that our float model
+     represents finite values as exact rationals
+     (see @(see primitives-evaluation)),
+     but the square root of a rational is in general irrational.
+     So the exact result is not representable as a @(tsee float-value).")
+   (xdoc::p
+    "[impl] computes square roots with Haskell's @('sqrt'),
+     which maps onto the IEEE-754 hardware/library square root:
+     it returns the correctly-rounded single-precision float
+     nearest the true result.
+     That is possible only because
+     Haskell's @('Float') is finite-precision floating point,
+     which accepts rounding;
+     the irrational answer is approximated
+     by the nearest representable float.
+     Our exact-rational model has
+     no notion of a nearest representable value to round to,
+     so we cannot reproduce this without first committing to
+     a concrete float format and rounding rule,
+     a decision Remora has not yet made.
+     We therefore defer the implementation and error for now."))
   (b* (((ok &) (check-expr-value-float val1)))
     (reserr nil)))
 
@@ -754,9 +847,13 @@
 (define prim-float-eq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float equality."
-  :long "<p>Follows [impl]'s IEEE-754 equality, which is not reflexive: NaN is
-  equal to nothing, including itself, so @('NaN == NaN') is false. Negative zero
-  and positive zero compare equal.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Follows [impl]'s IEEE-754 equality, which is not reflexive:
+     NaN is equal to nothing, including itself,
+     so @('NaN == NaN') is false.
+     Negative zero and positive zero compare equal."))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (bval
@@ -775,10 +872,14 @@
 
 (define prim-float-neq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
-  :short "Evaluation of float equality."
-  :long "<p>Follows [impl]'s IEEE-754 equality, which is not reflexive: NaN is
-  equal to nothing, including itself, so @('NaN != NaN') is true. Negative zero
-  and positive zero compare equal.</p>"
+  :short "Evaluation of float inequality."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Follows [impl]'s IEEE-754 equality, which is not reflexive:
+     NaN is equal to nothing, including itself,
+     so @('NaN != NaN') is true.
+     Negative zero and positive zero compare equal."))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (bval
@@ -798,9 +899,14 @@
 (define prim-float-lt ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float less-than comparison."
-  :long "<p>Follows [impl]'s IEEE-754 less-than comparison: NaN is unordered, so
-  any comparison involving NaN is false. Negative zero and positive zero compare
-  equal, so @('-0 < +0') is false.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Follows [impl]'s IEEE-754 less-than comparison:
+     NaN is unordered,
+     so any comparison involving NaN is false.
+     Negative zero and positive zero compare equal,
+     so @('-0 < +0') is false."))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (bval
@@ -822,9 +928,14 @@
 (define prim-float-gt ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float greater-than comparison."
-  :long "<p>Follows [impl]'s IEEE-754 greater-than comparison: NaN is unordered,
-  so any comparison involving NaN is false. Negative zero and positive zero
-  compare equal, so @('+0 > -0') is false.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Follows [impl]'s IEEE-754 greater-than comparison:
+     NaN is unordered,
+     so any comparison involving NaN is false.
+     Negative zero and positive zero compare equal,
+     so @('+0 > -0') is false."))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (bval
@@ -845,10 +956,14 @@
 (define prim-float-leq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float less-than-or-equal-to comparison."
-  :long "<p>Follows [impl]'s IEEE-754 less-than-or-equal comparison: NaN is
-  unordered, so any comparison involving NaN is false. Negative zero and
-  positive zero compare equal, so @('-0 <= +0') and @('+0 <= -0') are both
-  true.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Follows [impl]'s IEEE-754 less-than-or-equal comparison:
+     NaN is unordered,
+     so any comparison involving NaN is false.
+     Negative zero and positive zero compare equal,
+     so @('-0 <= +0') and @('+0 <= -0') are both true."))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (bval
@@ -870,10 +985,14 @@
 (define prim-float-geq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float greater-than-or-equal-to comparison."
-  :long "<p>Follows [impl]'s IEEE-754 greater-than-or-equal comparison: NaN is
-  unordered, so any comparison involving NaN is false. Negative zero and
-  positive zero compare equal, so @('-0 >= +0') and @('+0 >= -0') are both
-  true.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Follows [impl]'s IEEE-754 greater-than-or-equal comparison:
+     NaN is unordered,
+     so any comparison involving NaN is false.
+     Negative zero and positive zero compare equal,
+     so @('-0 >= +0') and @('+0 >= -0') are both true."))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (bval
@@ -897,9 +1016,13 @@
 (define prim-float-truncate ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float truncation to integer."
-  :long "<p>Float-to-integer truncation uses ACL2's @(tsee truncate), which
-  rounds towards zero. This is consistent with [impl], which uses Haskell's
-  @('truncate')</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Float-to-integer truncation uses ACL2's @(tsee truncate),
+     which rounds towards zero.
+     This is consistent with [impl],
+     which uses Haskell's @('truncate')."))
   (b* (((ok fval) (check-expr-value-float val1)))
     (float-value-case fval
       :ratio  (expr-value-base (base-value-int
@@ -912,9 +1035,14 @@
 (define prim-float-round ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float rounding to integer."
-  :long "<p>Float-to-integer rounding uses ACL2's @(tsee round), which rounds
-  to the nearest integer, with ties going to the even integer. This is
-  consistent with [impl], which uses Haskell's @('round')</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Float-to-integer rounding uses ACL2's @(tsee round),
+     which rounds to the nearest integer,
+     with ties going to the even integer.
+     This is consistent with [impl],
+     which uses Haskell's @('round')."))
   (b* (((ok fval) (check-expr-value-float val1)))
     (float-value-case fval
       :ratio  (expr-value-base (base-value-int
@@ -927,9 +1055,13 @@
 (define prim-float-ceiling ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float ceiling to integer."
-  :long "<p>Float-to-integer ceiling uses ACL2's @(tsee ceiling), which rounds
-  towards positive infinity. This is consistent with [impl], which uses
-  Haskell's @('ceiling')</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Float-to-integer ceiling uses ACL2's @(tsee ceiling),
+     which rounds towards positive infinity.
+     This is consistent with [impl],
+     which uses Haskell's @('ceiling')."))
   (b* (((ok fval) (check-expr-value-float val1)))
     (float-value-case fval
       :ratio  (expr-value-base (base-value-int
@@ -942,9 +1074,13 @@
 (define prim-float-floor ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float floor to integer."
-  :long "<p>Float-to-integer floor uses ACL2's @(tsee floor), which rounds
-  towards minus infinity. This is consistent with [impl], which uses Haskell's
-  @('floor')</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Float-to-integer floor uses ACL2's @(tsee floor),
+     which rounds towards minus infinity.
+     This is consistent with [impl],
+     which uses Haskell's @('floor')."))
   (b* (((ok fval) (check-expr-value-float val1)))
     (float-value-case fval
       :ratio  (expr-value-base (base-value-int
