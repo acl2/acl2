@@ -1089,7 +1089,8 @@
      :bool-neq (prim-bool-neq (first args) (second args))
      :bool-to-int (prim-bool-to-int (first args))
      :bool-to-float (prim-bool-to-float (first args))))
-  :guard-hints (("Goal" :in-theory (enable primop-arity primop-type)))
+  :guard-hints (("Goal" :in-theory (enable primop-arity
+                                           type-of-primop-value-fun)))
 
   ///
 

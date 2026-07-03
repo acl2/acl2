@@ -660,7 +660,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define primop-type ((op primop-valuep))
+(define type-of-primop-value-fun ((op primop-valuep))
   :guard (primop-value-funp op)
   :returns (type type-valuep)
   :short "Type of a primitive operation value applicable to expression values,
@@ -805,11 +805,11 @@
 
   ///
 
-  (defret type-value-kind-of-primop-type
+  (defret type-value-kind-of-type-of-primop-value-fun
     (implies (primop-value-funp op)
              (equal (type-value-kind type) :array)))
 
-  (defret type-value-kind-of-elem-of-primop-type
+  (defret type-value-kind-of-elem-of-type-of-primop-value-fun
     (implies (primop-value-funp op)
              (equal (type-value-kind (type-value-array->elem type)) :fun))))
 
@@ -828,12 +828,13 @@
      1 for the unary operations, 2 for the binary ones.")
    (xdoc::p
     "We define this as the number of inputs
-     of the operation's function type (see @(tsee primop-type)),
+     of the operation's function type (see @(tsee type-of-primop-value-fun)),
      so that the arity cannot diverge from the type.
-     Like @(tsee primop-type),
+     Like @(tsee type-of-primop-value-fun),
      this function is restricted, via the guard,
      to the values applicable to expression values."))
-  (len (type-value-fun->in (type-value-array->elem (primop-type op)))))
+  (len (type-value-fun->in
+        (type-value-array->elem (type-of-primop-value-fun op)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1425,7 +1426,7 @@
      whose dimensions are returned.
      For a primitive operation,
      we likewise read the input types of its function type
-     (see @(tsee primop-type)),
+     (see @(tsee type-of-primop-value-fun)),
      which are all array types,
      and return their dimensions.
      It is an error if the value is not a function value,
@@ -1441,7 +1442,8 @@
                (type-value-array-list->dims tvals))
      :primop (b* ((tvals (type-value-fun->in
                           (type-value-array->elem
-                           (primop-type (expr-value-primop->val fval)))))
+                           (type-of-primop-value-fun
+                            (expr-value-primop->val fval)))))
                   ((unless (type-value-list-case-array tvals)) (reserr nil)))
                (type-value-array-list->dims tvals))
      :otherwise (reserr nil)))
@@ -1465,7 +1467,7 @@
     "We read the codomain from a representative function leaf
      (see @(tsee expr-value-first-fun)):
      for a primitive operation, it is the output of its function type
-     (see @(tsee primop-type));
+     (see @(tsee type-of-primop-value-fun));
      for a lambda abstraction, it is the body type stored in the value,
      which must be present,
      because evaluation is only meaningful on
@@ -1483,7 +1485,7 @@
     (expr-value-case
      fval
      :primop (type-value-fun->out
-              (type-value-array->elem (primop-type fval.val)))
+              (type-value-array->elem (type-of-primop-value-fun fval.val)))
      :lambda (b* ((type? (expr-value-lambda->type? fval)))
                (type-value-option-case
                 type?
