@@ -1089,7 +1089,10 @@
      :bool-eq (prim-bool-eq (first args) (second args))
      :bool-neq (prim-bool-neq (first args) (second args))
      :bool-to-int (prim-bool-to-int (first args))
-     :bool-to-float (prim-bool-to-float (first args))))
+     :bool-to-float (prim-bool-to-float (first args))
+     :length (reserr nil)
+     :length-t (reserr nil)
+     :length-t-d-s (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable arity-of-primop-value-fun
                                            type-of-primop-value-fun)))
 

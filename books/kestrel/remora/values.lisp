@@ -455,22 +455,22 @@
     "In Remora, the primitive operations (i.e. built-in functions)
      are denoted by certain variables implicitly in scope,
      whose types are given by @(tsee primop-types).
-     This fixtype currently enumerates the operations themselves,
-     one summand per operation,
-     in correspondence with the entries of @(tsee primop-types);
-     but we will extend this soon to include summands
-     that correspond to partially instantiated primitive operations
-     (more details below).")
+     This fixtype contains summands for the operations themselves,
+     in correspondence with the entries of @(tsee primop-types),
+     as well as summands for partially and fully instantiated
+     polymorphic operations (more details below).")
    (xdoc::p
-    "A value of this fixtype represents a primitive operation
+    "A value of this fixtype represents a primitive operation,
+     or an instantiation stage thereof,
      as a scalar (zero-rank array) function value,
-     analogously to how a lambda abstraction is a function value.
+     analogously to how the three kinds of lambda abstractions
+     are scalar function values.
      These are incorporated into @(tsee expr-value)
      as its @(':primop') summand;
      the operations they denote will be evaluated via
      the ACL2 functions in @(see primitives-evaluation).")
    (xdoc::p
-    "The operations currently in this fixtype are all monomorphic:
+    "The operations from @(':int-add') to @(':bool-to-float') are monomorphic:
      the element type of each operation's zero-rank array type
      is a function type between base types.
      Remora also has polymorphic primitive operations,
@@ -490,13 +490,20 @@
      Since a polymorphic operation cannot be
      directly applied to expression values,
      but must first be applied to type values and/or ispace values,
-     we will extend this fixtype with,
+     this fixtype includes,
      for each polymorphic operation,
      a summand for each instantiation stage of the operation,
-     whose fields hold the instantiation values received so far.
-     This fixtype will then contain
-     not only primitive operations proper (the uninstantiated stages),
-     but more generally values related to primitive operations."))
+     whose fields hold the instantiation values received so far.")
+   (xdoc::p
+    "Currently the only polymorphic operation is @('length'),
+     with three stages:
+     @(':length') is the uninstantiated operation;
+     @(':length-t') is the operation applied to
+     a type value for its type parameter;
+     @(':length-t-d-s') is the operation further applied to
+     ispace values for its ispace parameters,
+     i.e. a natural number for the dimension parameter
+     and a list of natural numbers for the shape parameter."))
   (:int-add ())
   (:int-sub ())
   (:int-mul ())
@@ -544,6 +551,11 @@
   (:bool-neq ())
   (:bool-to-int ())
   (:bool-to-float ())
+  (:length ())
+  (:length-t ((tval type-value)))
+  (:length-t-d-s ((tval type-value)
+                  (d nat)
+                  (s nat-list)))
   :pred primop-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -567,16 +579,15 @@
      i.e. the @(':lambda'), @(':tlambda'), and @(':ilambda') summands
      of @(tsee expr-value).")
    (xdoc::p
-    "All the current values of @(tsee primop-value)
-     are applicable to expression values:
-     thus, this predicate currently holds on all the values.
-     When summands for the instantiation stages
-     of polymorphic primitive operations are added,
-     this predicate will hold on
-     exactly the stages that may be applied to expression values,
-     i.e. the fully instantiated ones."))
-  (declare (ignore op))
-  t)
+    "This predicate holds on the monomorphic primitive operations,
+     which need no instantiation,
+     and on the fully instantiated stages
+     of the polymorphic primitive operations,
+     currently the @(':length-t-d-s') stage of @('length')."))
+  (primop-value-case op
+                     :length nil
+                     :length-t nil
+                     :otherwise t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -590,17 +601,13 @@
     "See @(tsee primop-value-funp) for
      a description of the three applicability predicates.")
    (xdoc::p
-    "The current values of @(tsee primop-value),
-     i.e. the monomorphic primitive operations,
-     are not applied to type values:
-     thus, this predicate currently holds on no value.
-     When summands for the instantiation stages
-     of polymorphic primitive operations are added,
-     this predicate will hold on
-     exactly the stages that expect type values next
-     (e.g. an uninstantiated @('length'))."))
-  (declare (ignore op))
-  nil)
+    "This predicate holds on
+     the stages of polymorphic primitive operations
+     that expect type values next,
+     currently the uninstantiated @(':length') stage of @('length')."))
+  (primop-value-case op
+                     :length t
+                     :otherwise nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -613,17 +620,13 @@
     "See @(tsee primop-value-funp) for
      a description of the three applicability predicates.")
    (xdoc::p
-    "The current values of @(tsee primop-value),
-     i.e. the monomorphic primitive operations,
-     are not applied to ispace values:
-     thus, this predicate currently holds on no value.
-     When summands for the instantiation stages
-     of polymorphic primitive operations are added,
-     this predicate will hold on
-     exactly the stages that expect ispace values next
-     (e.g. a @('length') already applied to a type value)."))
-  (declare (ignore op))
-  nil)
+    "This predicate holds on
+     the stages of polymorphic primitive operations
+     that expect ispace values next,
+     currently the @(':length-t') stage of @('length')."))
+  (primop-value-case op
+                     :length-t t
+                     :otherwise nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -645,7 +648,9 @@
         (primop-value-tfunp op)
         (primop-value-ifunp op))
     :rule-classes nil
-    :enable primop-value-funp)
+    :enable (primop-value-funp
+             primop-value-tfunp
+             primop-value-ifunp))
 
   (defrule primop-value-applicability-non-overlapping
     (and (not (and (primop-value-funp op)
@@ -655,7 +660,8 @@
          (not (and (primop-value-tfunp op)
                    (primop-value-ifunp op))))
     :rule-classes nil
-    :enable (primop-value-tfunp
+    :enable (primop-value-funp
+             primop-value-tfunp
              primop-value-ifunp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -687,11 +693,18 @@
     "This function is restricted, via the guard,
      to the primitive operation values applicable to expression values,
      which are the ones used as function values.
-     When summands for the instantiation stages
-     of polymorphic primitive operations are added,
-     this ACL2 function will also cover the fully instantiated stages,
-     whose function type values will be constructed
-     from the instantiation values in the fields."))
+     For the fully instantiated stages
+     of polymorphic primitive operations,
+     the function type value is constructed
+     from the instantiation values in the fields:
+     for the @(':length-t-d-s') stage of @('length'),
+     the input is an array of the stored type value,
+     whose dimensions are the stored dimension
+     followed by the stored shape,
+     and the output is the zero-rank array of the integer type.
+     For the stages not applicable to expression values,
+     which are outside the guard,
+     we return an irrelevant type value."))
   (b* ((int-tv (make-type-value-array
                 :elem (type-value-base (base-type-int))
                 :dims nil))
@@ -801,17 +814,29 @@
      :bool-eq bool-binop-tv
      :bool-neq bool-binop-tv
      :bool-to-int bool-to-int-tv
-     :bool-to-float bool-to-float-tv))
+     :bool-to-float bool-to-float-tv
+     :length (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :length-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :length-t-d-s (make-type-value-array
+                    :elem (make-type-value-fun
+                           :in (list (make-type-value-array
+                                      :elem op.tval
+                                      :dims (cons op.d op.s)))
+                           :out int-tv)
+                    :dims nil)))
+  :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///
 
   (defret type-value-kind-of-type-of-primop-value-fun
     (implies (primop-value-funp op)
-             (equal (type-value-kind type) :array)))
+             (equal (type-value-kind type) :array))
+    :hints (("Goal" :in-theory (enable primop-value-funp))))
 
   (defret type-value-kind-of-elem-of-type-of-primop-value-fun
     (implies (primop-value-funp op)
-             (equal (type-value-kind (type-value-array->elem type)) :fun))))
+             (equal (type-value-kind (type-value-array->elem type)) :fun))
+    :hints (("Goal" :in-theory (enable primop-value-funp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
