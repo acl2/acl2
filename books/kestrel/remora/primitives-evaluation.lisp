@@ -86,6 +86,9 @@
     (xdoc::li "@(tsee prim-float-truncate), @(tsee prim-float-round),
                @(tsee prim-float-ceiling), @(tsee prim-float-floor)."))
    (xdoc::p
+    "The polymorphic primitive currently implemented is
+     @(tsee prim-length).")
+   (xdoc::p
     "For integers, we currently model Remora integer values as unbounded
      mathematical integers, matching ACL2's own integer type.
      This keeps the integer primitives easy to define for now;
@@ -1149,6 +1152,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define prim-length ((tval type-valuep)
+                     (d natp)
+                     (s nat-listp)
+                     (val1 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of array length."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('length') operation
+     (see the @(':length-t-d-s') summand of @(tsee primop-value)):
+     @('tval'), @('d'), and @('s') are the instantiation values,
+     and @('val1') is the argument cell.
+     According to the instantiated type of the operation,
+     the argument cell is an array
+     whose dimensions are the dimension @('d') followed by the shape @('s'),
+     and the result is @('d'), as a scalar integer value.
+     We defensively check that
+     the argument cell has the expected dimensions.")
+   (xdoc::p
+    "The type value @('tval') is currently unused,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cell
+     when those checks are extended to types."))
+  (declare (ignore tval))
+  (b* ((d (lnfix d))
+       (s (nat-list-fix s))
+       ((ok dims) (check-dims-of-expr-value val1))
+       ((unless (equal dims (cons d s))) (reserr nil)))
+    (expr-value-base (base-value-int (int-value d)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define eval-primop-fun ((op primop-valuep) (args expr-value-listp))
   :guard (primop-value-funp op)
   :returns (val expr-value-resultp)
@@ -1227,7 +1264,7 @@
      :bool-to-float (prim-bool-to-float (first args))
      :length (prog2$ (impossible) (reserr nil))
      :length-t (prog2$ (impossible) (reserr nil))
-     :length-t-d-s (reserr :todo)))
+     :length-t-d-s (prim-length op.tval op.d op.s (first args))))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp
                                            arity-of-primop-value-fun
                                            type-of-primop-value-fun)))
@@ -1284,4 +1321,5 @@
                                        prim-bool-eq
                                        prim-bool-neq
                                        prim-bool-to-int
-                                       prim-bool-to-float)))))
+                                       prim-bool-to-float
+                                       prim-length)))))
