@@ -1039,7 +1039,8 @@
      a scalar base value on success."))
   (b* ((args (expr-value-list-fix args))
        ((unless (primop-value-funp op)) (reserr nil))
-       ((unless (equal (len args) (primop-arity op))) (reserr nil)))
+       ((unless (equal (len args) (arity-of-primop-value-fun op)))
+        (reserr nil)))
     (primop-value-case
      op
      :int-add (prim-int-add (first args) (second args))
@@ -1089,7 +1090,7 @@
      :bool-neq (prim-bool-neq (first args) (second args))
      :bool-to-int (prim-bool-to-int (first args))
      :bool-to-float (prim-bool-to-float (first args))))
-  :guard-hints (("Goal" :in-theory (enable primop-arity
+  :guard-hints (("Goal" :in-theory (enable arity-of-primop-value-fun
                                            type-of-primop-value-fun)))
 
   ///

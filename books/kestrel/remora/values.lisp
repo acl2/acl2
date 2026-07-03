@@ -815,7 +815,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define primop-arity ((op primop-valuep))
+(define arity-of-primop-value-fun ((op primop-valuep))
   :guard (primop-value-funp op)
   :returns (arity natp)
   :short "Arity of a primitive operation value applicable to expression values."
