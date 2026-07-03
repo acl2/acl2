@@ -247,6 +247,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define dims-of-type-value ((tval type-valuep))
+  :returns (dims nat-listp)
+  :short "Dimensions of a type value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Atom type values have the empty list of dimensions.
+     Array type values have explicit dimensions.")
+   (xdoc::p
+    "Recall that scalar (i.e. 0-rank) array types are
+     equivalent to their atom element types."))
+  (type-value-case
+   tval
+   :base nil
+   :array tval.dims
+   :fun nil
+   :forall nil
+   :pi nil
+   :sigma nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection dims-of-type-value-list ((x type-value-listp))
+  :returns (dimss nat-list-listp)
+  :short "Lift @(tsee dims-of-type-value) to lists."
+  (dims-of-type-value x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-values-match-type-vars-p ((tvals type-value-listp)
                                        (vars type-var-listp))
   :returns (yes/no booleanp)
@@ -1462,15 +1491,13 @@
     (expr-value-case
      fval
      :lambda (b* ((tvals (var+typevalue-list->type
-                          (expr-value-lambda->params fval)))
-                  ((unless (type-value-list-case-array tvals)) (reserr nil)))
-               (type-value-array-list->dims tvals))
+                          (expr-value-lambda->params fval))))
+               (dims-of-type-value-list tvals))
      :primop (b* ((tvals (type-value-fun->in
                           (type-value-array->elem
                            (type-of-primop-value-fun
-                            (expr-value-primop->val fval)))))
-                  ((unless (type-value-list-case-array tvals)) (reserr nil)))
-               (type-value-array-list->dims tvals))
+                            (expr-value-primop->val fval))))))
+               (dims-of-type-value-list tvals))
      :otherwise (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable expr-valuep-when-result-not-error))))
 
