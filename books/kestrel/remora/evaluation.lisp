@@ -1966,7 +1966,8 @@
        which is intended hiding behavior),
        and we evaluate the body of the lambda abstraction.")
      (xdoc::p
-      "If the function cell is a primitive operation,
+      "If the function cell is
+       a primitive operation value applicable to expression values,
        it is applied to the argument cells via @(tsee eval-primop),
        which dispatches to the corresponding ACL2 function
        in @(see primitives-evaluation)."))
@@ -1983,7 +1984,9 @@
                    argcells
                    denv)))
          (eval-expr funcell.body denv (1- limit)))
-       :primop (eval-primop funcell.val argcells)
+       :primop (if (primop-value-funp funcell.val)
+                   (eval-primop funcell.val argcells)
+                 (reserr nil))
        :otherwise (reserr nil)))
     :measure (nfix limit))
 

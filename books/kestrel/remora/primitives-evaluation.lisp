@@ -807,15 +807,15 @@
         (float-value-case f1
           :nan    nil
           :posinf nil
-          :neginf (not (or (float-value-case f2 :neginf) 
+          :neginf (not (or (float-value-case f2 :neginf)
                            (float-value-case f2 :nan)))
           :neg0 (or (float-value-case f2 :posinf)
-                    (and (float-value-case f2 :ratio) 
+                    (and (float-value-case f2 :ratio)
                          (< 0 (float-value-ratio->ratio f2))))
           :ratio (or (float-value-case f2 :posinf)
-                     (and (float-value-case f2 :neg0) 
+                     (and (float-value-case f2 :neg0)
                           (< f1.ratio 0))
-                     (and (float-value-case f2 :ratio) 
+                     (and (float-value-case f2 :ratio)
                           (< f1.ratio (float-value-ratio->ratio f2)))))))
     (expr-value-base (base-value-bool bval))))
 
@@ -833,12 +833,12 @@
           :posinf (not (or (float-value-case f2 :posinf) (float-value-case f2 :nan)))
           :neginf nil
           :neg0 (or (float-value-case f2 :neginf)
-                    (and (float-value-case f2 :ratio) 
+                    (and (float-value-case f2 :ratio)
                          (> 0 (float-value-ratio->ratio f2))))
           :ratio (or (float-value-case f2 :neginf)
-                     (and (float-value-case f2 :neg0) 
+                     (and (float-value-case f2 :neg0)
                           (> f1.ratio 0))
-                     (and (float-value-case f2 :ratio) 
+                     (and (float-value-case f2 :ratio)
                           (> f1.ratio (float-value-ratio->ratio f2)))))))
     (expr-value-base (base-value-bool bval))))
 
@@ -858,12 +858,12 @@
           :neginf (not (float-value-case f2 :nan))
           :neg0 (or (float-value-case f2 :posinf)
                     (float-value-case f2 :neg0)
-                    (and (float-value-case f2 :ratio) 
+                    (and (float-value-case f2 :ratio)
                          (<= 0 (float-value-ratio->ratio f2))))
           :ratio (or (float-value-case f2 :posinf)
-                     (and (float-value-case f2 :neg0) 
+                     (and (float-value-case f2 :neg0)
                           (<= f1.ratio 0))
-                     (and (float-value-case f2 :ratio) 
+                     (and (float-value-case f2 :ratio)
                           (<= f1.ratio (float-value-ratio->ratio f2)))))))
     (expr-value-base (base-value-bool bval))))
 
@@ -883,12 +883,12 @@
           :neginf (float-value-case f2 :neginf)
           :neg0 (or (float-value-case f2 :neginf)
                     (float-value-case f2 :neg0)
-                    (and (float-value-case f2 :ratio) 
+                    (and (float-value-case f2 :ratio)
                          (>= 0 (float-value-ratio->ratio f2))))
           :ratio (or (float-value-case f2 :neginf)
-                     (and (float-value-case f2 :neg0) 
+                     (and (float-value-case f2 :neg0)
                           (>= f1.ratio 0))
-                     (and (float-value-case f2 :ratio) 
+                     (and (float-value-case f2 :ratio)
                           (>= f1.ratio (float-value-ratio->ratio f2)))))))
     (expr-value-base (base-value-bool bval))))
 
@@ -902,7 +902,7 @@
   @('truncate')</p>"
   (b* (((ok fval) (check-expr-value-float val1)))
     (float-value-case fval
-      :ratio  (expr-value-base (base-value-int 
+      :ratio  (expr-value-base (base-value-int
                                 (int-value (truncate fval.ratio 1))))
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
@@ -917,7 +917,7 @@
   consistent with [impl], which uses Haskell's @('round')</p>"
   (b* (((ok fval) (check-expr-value-float val1)))
     (float-value-case fval
-      :ratio  (expr-value-base (base-value-int 
+      :ratio  (expr-value-base (base-value-int
                                 (int-value (round fval.ratio 1))))
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
@@ -932,7 +932,7 @@
   Haskell's @('ceiling')</p>"
   (b* (((ok fval) (check-expr-value-float val1)))
     (float-value-case fval
-      :ratio  (expr-value-base (base-value-int 
+      :ratio  (expr-value-base (base-value-int
                                 (int-value (ceiling fval.ratio 1))))
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
@@ -947,7 +947,7 @@
   @('floor')</p>"
   (b* (((ok fval) (check-expr-value-float val1)))
     (float-value-case fval
-      :ratio  (expr-value-base (base-value-int 
+      :ratio  (expr-value-base (base-value-int
                                 (int-value (floor fval.ratio 1))))
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
@@ -1014,6 +1014,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-primop ((op primop-valuep) (args expr-value-listp))
+  :guard (primop-value-funp op)
   :returns (val expr-value-resultp)
   :short "Evaluate the application of a primitive operation
           to its argument cells."
@@ -1026,19 +1027,17 @@
      on a scalar primitive operation and its scalar argument cells,
      after the rank-polymorphic lifting.")
    (xdoc::p
-    "We check that the value is applicable to expression values
-     (see @(tsee primop-value-funp))
-     and that it is applied to the right number of argument cells;
+    "The guard requires the value to be applicable to expression values
+     (see @(tsee primop-value-funp)).
+     We check that the value is applied to the right number of argument cells;
      then we dispatch on the operation,
-     calling the @('prim-...') function
-     that defines the operation's semantics.
+     calling the @('prim-...') function that defines the operation's semantics.
      Anything else is an error.")
    (xdoc::p
     "The result is well-formed when it is not an error,
      because each @('prim-...') function returns
      a scalar base value on success."))
   (b* ((args (expr-value-list-fix args))
-       ((unless (primop-value-funp op)) (reserr nil))
        ((unless (equal (len args) (arity-of-primop-value-fun op)))
         (reserr nil)))
     (primop-value-case
@@ -1090,10 +1089,11 @@
      :bool-neq (prim-bool-neq (first args) (second args))
      :bool-to-int (prim-bool-to-int (first args))
      :bool-to-float (prim-bool-to-float (first args))
-     :length (reserr nil)
-     :length-t (reserr nil)
-     :length-t-d-s (reserr nil)))
-  :guard-hints (("Goal" :in-theory (enable arity-of-primop-value-fun
+     :length (prog2$ (impossible) (reserr nil))
+     :length-t (prog2$ (impossible) (reserr nil))
+     :length-t-d-s (reserr :todo)))
+  :guard-hints (("Goal" :in-theory (enable primop-value-funp
+                                           arity-of-primop-value-fun
                                            type-of-primop-value-fun)))
 
   ///
