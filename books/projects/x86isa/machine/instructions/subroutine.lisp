@@ -492,16 +492,23 @@
   ;; According to the pseudocode in Intel manual, Jun 2026, Volume 2A, LEAVE
   ;; specification, the size of rSP and rBP in the assignment rSP := rBP is
   ;; determined by StackAddressSize, while the size of rBP in the assignment
-  ;; rBP := Pop() is determined by OperandSize. It seems that these two sizes
-  ;; should be the same for this operation to make sense: it is not clear why
-  ;; OperandSize is used in the pseudocode, and why the table shows that a
-  ;; 16-bit stack address size is allowed in 64-bit mode, in which the stack
-  ;; size is always 64 bits. For now we use the operand size for both
-  ;; assignments, implicitly assuming that it is equal to the stack address
-  ;; size. TODO: We should test if a real processor accepts LEAVE instructions
-  ;; whose StackAddressSize and OperandSize differ; we should also test if a
-  ;; real processor allows operations just on BP and SP (i.e. 16-bit size) in
-  ;; 64-bit mode.
+  ;; rBP := Pop() is determined by OperandSize. That is, the stack address
+  ;; size determines the width at which rBP is used as an address: it is the
+  ;; new value of rSP, and also the address from which the pop reads. The
+  ;; operand size determines the width of the data transfer into rBP: the
+  ;; number of bytes popped, and the slice of rBP that receives them. The two
+  ;; sizes may differ: e.g. LEAVE with a 66H prefix in 64-bit mode pops 16
+  ;; bits of data from the address in the full 64-bit rBP. This reading of
+  ;; the pseudocode is confirmed by the Description section of the ENTER
+  ;; specification, which says that the OperandSize attribute determines "the
+  ;; data being transferred from SP/ESP/RSP register into the BP/EBP/RBP
+  ;; register" (in ENTER, the transfer opposite to LEAVE's), and which makes
+  ;; software responsible for ensuring that, after a 66H ENTER (whose rBP
+  ;; write updates only BP, leaving the high bits of rBP stale), the value of
+  ;; rBP "remains a valid address in the stack" so that a 66H LEAVE works:
+  ;; this implies that LEAVE uses the full stack-address-size-wide rBP as the
+  ;; address of the pop. Thus, below we read rBP at the stack address size,
+  ;; and we use the operand size for the pop's data.
 
   :parents (one-byte-opcodes)
 
@@ -510,6 +517,8 @@
                                          rme-size-of-2-to-rme16
                                          rme-size-of-4-to-rme32
                                          rme-size-of-8-to-rme64
+                                         rme16
+                                         rme32
                                          rme64)
                                         ())))
 
@@ -520,7 +529,13 @@
   (b* (((the (integer 2 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
-       (rbp/ebp/bp (rgfi-size operand-size *rbp* 0 x86))
+       ;; We read rBP at the stack address size (not the operand size),
+       ;; because this value is used as an address, namely the new value of
+       ;; rSP, from which the pop below reads; see the comments at the
+       ;; beginning of this function.
+       ((the (integer 2 8) stack-address-size)
+        (select-stack-address-size proc-mode x86))
+       (rbp/ebp/bp (rgfi-size stack-address-size *rbp* 0 x86))
 
        ;; RBP/EBP/BP is the new value of RSP/ESP/SP now, but we cannot write it
        ;; into the state yet. However, we use it, below, to pop the new value
@@ -595,9 +610,11 @@
    which is decremented and written to on each iteration.
    </p>
    <p>
-   Following the treatment of LEAVE (see @(tsee x86-leave)),
-   we use the operand size as the size of the frame pointers,
-   implicitly assuming that it is equal to the stack address size.
+   Per the ENTER specification, the operand size is
+   the size of each frame pointer copied by the loop,
+   i.e. the size of the data read and written by each iteration,
+   and thus also the amount by which
+   @('frame-ptr') and @('rsp') are decremented.
    </p>"
   (if (mbe :logic (zp count) :exec (eql count 0))
       (mv nil (the (signed-byte 64) rsp) x86)
@@ -687,9 +704,10 @@
   ;; specification, as well as the helper function
   ;; X86-ENTER-COPY-NESTED-FRAME-POINTERS above.
 
-  ;; As with LEAVE (see X86-LEAVE), we use the operand size as the size of the
-  ;; stack accesses, implicitly assuming that it is equal to the stack address
-  ;; size.
+  ;; We currently read rBP (used, below, as the base address from which the
+  ;; nested frame pointers are copied) at the operand size, implicitly
+  ;; assuming that it is equal to the stack address size. TODO: Read it at
+  ;; the stack address size instead, as done for rBP in X86-LEAVE.
 
   :parents (one-byte-opcodes)
 
