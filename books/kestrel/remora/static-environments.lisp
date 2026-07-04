@@ -118,7 +118,17 @@
      the dynamic semantics of these operations
      is formalized in @(see primitives-evaluation).
      This is an initial selection of primitive operations;
-     more will be added as the formalization grows."))
+     more will be added as the formalization grows.")
+   (xdoc::p
+    "The operations from @('+') to @('bool->f') have monomorphic types:
+     zero-rank array types of function types between base types.
+     The @('length') operation is the first one with a polymorphic type:
+     a universal type of a product type of a function type, as in [impl].
+     Like the monomorphic types,
+     the whole type is a zero-rank array type,
+     but the bodies of the universal and product types
+     need no zero-rank array wrapping,
+     because atom types are auto-lifted to array types in those places."))
   (b* ((int-binop-type
         (t[] (t-> (:int :int) :int) (shp)))
        (int-unop-type
@@ -144,7 +154,13 @@
        (bool-to-int-type
         (t[] (t-> (:bool) :int) (shp)))
        (bool-to-float-type
-        (t[] (t-> (:bool) :float) (shp))))
+        (t[] (t-> (:bool) :float) (shp)))
+       (length-type
+        (t[] (tforall ("&t")
+                      (tpi ("$d" "@s")
+                           (t-> ((t[] "&t" (shape++ "$d" "@s")))
+                                :int)))
+             (shp))))
     (omap::from-alist
      (list (cons "+" int-binop-type)
            (cons "-" int-binop-type)
@@ -192,7 +208,8 @@
            (cons "bool.==" bool-binop-type)
            (cons "bool.!=" bool-binop-type)
            (cons "bool->i" bool-to-int-type)
-           (cons "bool->f" bool-to-float-type)))))
+           (cons "bool->f" bool-to-float-type)
+           (cons "length" length-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
