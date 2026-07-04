@@ -530,17 +530,25 @@
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        ;; We read rBP at the stack address size (not the operand size),
-       ;; because this value is used as an address, namely the new value of
-       ;; rSP, from which the pop below reads; see the comments at the
-       ;; beginning of this function.
+       ;; because this value is used as an address,
+       ;; namely the new value of rSP, from which the pop below reads;
+       ;; see the comments at the beginning of this function.
        ((the (integer 2 8) stack-address-size)
         (select-stack-address-size proc-mode x86))
        (rbp/ebp/bp (rgfi-size stack-address-size *rbp* 0 x86))
 
-       ;; RBP/EBP/BP is the new value of RSP/ESP/SP now, but we cannot write it
-       ;; into the state yet. However, we use it, below, to pop the new value
-       ;; of RBP/EBP/BP: as we do that, we implicitly check it to be canonical
-       ;; (in 64-bit mode) or within the stack segment limits (in 32-bit mode),
+       ;; RBP/EBP/BP is the new value of RSP/ESP/SP now,
+       ;; but we cannot write it into the state yet,
+       ;; because according to
+       ;; Intel manual, Jun 2026, Vol. 3, Section 7.5,
+       ;; a fault must leave the processor state in the same state as
+       ;; at the start of the instruction that caused the fault,
+       ;; the following code may result in #SS,
+       ;; and Table 7-1 in Chapter 7 classifies #SS as a fault.
+       ;; We use RBP/EBP/BP, below, to pop the new value of RBP/EBP/BP:
+       ;; as we do that,
+       ;; we implicitly check it to be canonical (in 64-bit mode) or
+       ;; within the stack segment limits (in 32-bit mode),
        ;; so there's no need to make these checks explicitly here.
 
        (inst-ac? (alignment-checking-enabled-p x86))
