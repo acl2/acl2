@@ -950,37 +950,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-bind-type-annotation ((anno-type type-optionp)
-                                    (expr-type typep)
+(define check-bind-type-annotation ((type? type-optionp)
+                                    (type typep)
                                     (senv senvp))
   :returns (yes/no booleanp)
-  :short "Check the optional type annotation of a binding
-          against an expression type."
+  :short "Check the optional type annotation of a binding."
   :long
   (xdoc::topstring
    (xdoc::p
     "Several kinds of bindings have an optional type annotation
-     (see @(tsee bind)),
-     which must be equivalent to the type of the expression
-     that the type annotation pertains to.
-     If the type annotation is absent, there is nothing to check.
+     (see @(tsee bind)).
+     If the annotation is absent, there is nothing to check.
      If it is present, it must be a valid type that,
      once expanded against the static environment's definitions
      (see @(tsee senv-expand-type)),
-     and once lifted to a scalar array type if it is an atom type,
-     is equivalent to the calculated expression type passed as argument
-     (which is already expanded).
-     The lifting to a scalar array is needed because
-     the expression type is always an array type,
-     while the annotating type may be an atom type."))
+     is equivalent to the calculated type passed as argument
+     (which is assumed to be already expanded)."))
   (type-option-case
-   anno-type
+   type?
    :none t
-   :some (b* ((anno-type (type-ensure-array anno-type.val))
-              ((unless (check-type anno-type senv)) nil)
-              (expanded (senv-expand-type anno-type senv))
+   :some (b* (((unless (check-type type?.val senv)) nil)
+              (expanded (senv-expand-type type?.val senv))
               ((when (reserrp expanded)) nil))
-           (type-equivp expr-type expanded))))
+           (type-equivp type expanded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

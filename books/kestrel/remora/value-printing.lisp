@@ -75,8 +75,7 @@
   :returns (new-digits str::dec-digit-char-listp)
   :short "Pad a list of digits with leading zeros up to a given length."
   (append (repeat (nfix (- (nfix len) (len digits))) #\0)
-          (mbe :logic (str::dec-digit-char-list-fix digits)
-               :exec digits))
+          (str::dec-digit-char-list-fix digits))
   :prepwork
   ((local
     (acl2::defrule dec-digit-char-listp-of-repeat-of-zero-char
@@ -179,15 +178,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Conversion of type and ispace values back to type and ispace ASTs.
-; These conversions are total.
-
-(define nats-to-const-dims ((nats nat-listp))
-  :returns (dims dim-listp)
-  :short "Represent a list of naturals as a list of constant dimensions."
-  (if (endp nats)
-      nil
-    (cons (dim-const (car nats))
-          (nats-to-const-dims (cdr nats)))))
+; These conversions are total.  Constant dimension lists reuse
+; @(tsee dim-const-list) from the abstract-syntax structurals.
 
 (defines type-value-to-type
   :short "Convert type values back to types."
@@ -201,7 +193,7 @@
      :base (type-base tval.type)
      :array (make-type-array
              :elem (type-value-to-type tval.elem)
-             :ispace (ispace-shape (shape-dims (nats-to-const-dims tval.dims))))
+             :ispace (ispace-shape (shape-dims (dim-const-list tval.dims))))
      :fun (make-type-fun :in (type-value-list-to-types tval.in)
                          :out (type-value-to-type tval.out))
      :forall (make-type-forall :params tval.params :body tval.body)
@@ -245,7 +237,7 @@
   (ispace-value-case
    ival
    :dim (ispace-dim (dim-const ival.val))
-   :shape (ispace-shape (shape-dims (nats-to-const-dims ival.val)))))
+   :shape (ispace-shape (shape-dims (dim-const-list ival.val)))))
 
 (std::defprojection ispace-value-list-to-ispaces ((x ispace-value-listp))
   :returns (ispaces ispace-listp)

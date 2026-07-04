@@ -10,6 +10,7 @@
 
 (in-package "REMORA")
 
+(include-book "abstract-syntax-derived-fixtypes")
 (include-book "abstract-syntax-structurals")
 
 (local (include-book "std/lists/len" :dir :system))
@@ -41,32 +42,28 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-array ((type typep))
+  :no-function nil
   :returns (type+ispace type+ispace-resultp)
-  :short "Check if an array type is a non-variable array type or an atom type,
+  :short "Check if an array type is an @(':array') or @(':bracket') summand,
           returning its elements' atom type and its ispace if successful."
   :long
   (xdoc::topstring
    (xdoc::p
-    "In ASTs, atom types may be used where array types are expected.
-     Thus, this function succeeds on atom types,
-     regarding them as scalar (i.e. 0-ranked) arrays.
-     The function also succeeds in array types,
-     both explicit and in bracket form.
-     The only case in which this does not succeed is on array type variables,
-     because we could not obtain the element atom type and the ispace."))
-  (cond
-   ((type-atomp type)
-    (make-type+ispace :type type :ispace (ispace-shape (shape-dims nil))))
-   ((type-case type :array)
-    (make-type+ispace :type (type-array->elem type)
-                      :ispace (type-array->ispace type)))
-   ((type-case type :bracket)
-    (make-type+ispace :type (type-bracket->elem type)
-                      :ispace (ispace-shape
-                               (shape-append
-                                (shape-list-from-ispace-list
-                                 (type-bracket->ispaces type))))))
-   (t (reserr nil))))
+    "A bracket type is an array type whose shape is
+     the concatenation of its ispaces
+     (see @(tsee type) and @(tsee eval-type)),
+     so we return that concatenation as its ispace,
+     consistently with @(tsee type-equivp)."))
+  (type-case
+   type
+   :array (make-type+ispace :type type.elem
+                            :ispace type.ispace)
+   :bracket (make-type+ispace
+             :type type.elem
+             :ispace (ispace-shape
+                      (shape-append
+                       (shape-list-from-ispace-list type.ispaces))))
+   :otherwise (reserrf (list :not-array-type (type-fix type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
