@@ -1156,6 +1156,7 @@
                      (d natp)
                      (s nat-listp)
                      (val1 expr-valuep))
+  :guard (expr-value-wfp val1)
   :returns (val expr-value-resultp)
   :short "Evaluation of array length."
   :long
@@ -1169,8 +1170,8 @@
      the argument cell is an array
      whose dimensions are the dimension @('d') followed by the shape @('s'),
      and the result is @('d'), as a scalar integer value.
-     We defensively check that
-     the argument cell has the expected dimensions.")
+     The guard requires the argument cell to be well-formed;
+     we defensively check that it has the expected dimensions.")
    (xdoc::p
     "The type value @('tval') is currently unused,
      because our well-formedness checks on expression values
@@ -1180,8 +1181,8 @@
   (declare (ignore tval))
   (b* ((d (lnfix d))
        (s (nat-list-fix s))
-       ((ok dims) (check-dims-of-expr-value val1))
-       ((unless (equal dims (cons d s))) (reserr nil)))
+       ((unless (equal (dims-of-expr-value val1) (cons d s)))
+        (reserr nil)))
     (expr-value-base (base-value-int (int-value d)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
