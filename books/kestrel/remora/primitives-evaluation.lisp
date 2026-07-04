@@ -1198,7 +1198,7 @@
    (xdoc::p
     "This is the dynamic counterpart, for primitive operations,
      of evaluating the body of a lambda abstraction:
-     it will be called by @(tsee eval-app-cell)
+     it is called by @(tsee eval-app-cell)
      on a scalar primitive operation and its scalar argument cells,
      after the rank-polymorphic lifting.")
    (xdoc::p
@@ -1326,3 +1326,96 @@
                                        prim-bool-to-int
                                        prim-bool-to-float
                                        prim-length)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-primop-tfun ((op primop-valuep) (tvals type-value-listp))
+  :guard (primop-value-tfunp op)
+  :returns (val expr-value-resultp)
+  :short "Evaluate the application of a primitive operation value
+          to type values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the dynamic counterpart, for primitive operations,
+     of applying a type lambda abstraction to type values:
+     it is called by @(tsee eval-tapp)
+     on a scalar primitive operation value
+     and the type argument values.")
+   (xdoc::p
+    "The guard requires the value to be applicable to type values
+     (see @(tsee primop-value-tfunp)).
+     We check that the type values match, in number and kinds,
+     the type parameters of the operation,
+     i.e. the ones in the operation's type in @(tsee primop-types);
+     then we construct the next instantiation stage of the operation,
+     which stores the type values received.
+     Anything else is an error."))
+  (primop-value-case
+   op
+   :length (b* (((unless (type-values-match-type-vars-p
+                          tvals
+                          (list (type-var-atom "t"))))
+                 (reserr nil)))
+             (expr-value-primop (primop-value-length-t (first tvals))))
+   :otherwise (prog2$ (impossible) (reserr nil)))
+  :guard-hints (("Goal" :in-theory (enable primop-value-tfunp
+                                           type-values-match-type-vars-p)))
+
+  ///
+
+  (defret expr-value-wfp-of-eval-primop-tfun
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hints (("Goal" :in-theory (enable expr-value-wfp
+                                       check-dims-of-expr-value)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-primop-ifun ((op primop-valuep) (ivals ispace-value-listp))
+  :guard (primop-value-ifunp op)
+  :returns (val expr-value-resultp)
+  :short "Evaluate the application of a primitive operation value
+          to ispace values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the dynamic counterpart, for primitive operations,
+     of applying an ispace lambda abstraction to ispace values:
+     it is called by @(tsee eval-iapp)
+     on a scalar primitive operation value
+     and the ispace argument values.")
+   (xdoc::p
+    "The guard requires the value to be applicable to ispace values
+     (see @(tsee primop-value-ifunp)).
+     We check that the ispace values match, in number and sorts,
+     the ispace parameters of the operation,
+     i.e. the ones in the operation's type in @(tsee primop-types);
+     then we construct the next instantiation stage of the operation,
+     which stores the ispace values received
+     (for @('length'), a dimension and a shape),
+     along with the previously received type values.
+     Anything else is an error."))
+  (primop-value-case
+   op
+   :length-t (b* (((unless (ispace-values-match-ispace-vars-p
+                            ivals
+                            (list (ispace-var-dim "d")
+                                  (ispace-var-shape "s"))))
+                   (reserr nil)))
+               (expr-value-primop
+                (make-primop-value-length-t-d-s
+                 :tval op.tval
+                 :d (ispace-value-dim->val (first ivals))
+                 :s (ispace-value-shape->val (second ivals)))))
+   :otherwise (prog2$ (impossible) (reserr nil)))
+  :guard-hints (("Goal" :in-theory (enable primop-value-ifunp
+                                           ispace-values-match-ispace-vars-p)))
+
+  ///
+
+  (defret expr-value-wfp-of-eval-primop-ifun
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hints (("Goal" :in-theory (enable expr-value-wfp
+                                       check-dims-of-expr-value)))))
