@@ -164,6 +164,8 @@
        (ival (int-value (+ i1.int i2.int))))
     (expr-value-base (base-value-int ival))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-int-sub ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer subtraction."
@@ -172,6 +174,8 @@
        (ival (int-value (- i1.int i2.int))))
     (expr-value-base (base-value-int ival))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-int-mul ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer multiplication."
@@ -179,6 +183,8 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (* i1.int i2.int))))
     (expr-value-base (base-value-int ival))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-div ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -196,6 +202,8 @@
        (ival (int-value (floor i1.int i2.int))))
     (expr-value-base (base-value-int ival))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-int-mod ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer modulo."
@@ -212,6 +220,8 @@
        (ival (int-value (mod i1.int i2.int))))
     (expr-value-base (base-value-int ival))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-int-max ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer maximum."
@@ -219,6 +229,8 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (max i1.int i2.int))))
     (expr-value-base (base-value-int ival))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-min ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -228,6 +240,8 @@
        (ival (int-value (min i1.int i2.int))))
     (expr-value-base (base-value-int ival))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-int-bit-and ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer bitwise conjunction."
@@ -235,6 +249,8 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (logand i1.int i2.int))))
     (expr-value-base (base-value-int ival))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-bit-or ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -244,6 +260,8 @@
        (ival (int-value (logior i1.int i2.int))))
     (expr-value-base (base-value-int ival))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-int-bit-xor ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer bitwise exclusive disjunction."
@@ -251,6 +269,8 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (logxor i1.int i2.int))))
     (expr-value-base (base-value-int ival))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-shl ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -274,6 +294,8 @@
        (ival (int-value (ash i1.int i2.int))))
     (expr-value-base (base-value-int ival))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-int-shr ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer right shift."
@@ -291,6 +313,8 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        (ival (int-value (lognot i1.int))))
     (expr-value-base (base-value-int ival))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-popc ((val1 expr-valuep))
   :returns (val expr-value-resultp)
@@ -326,6 +350,8 @@
        (bval (= i1.int i2.int)))
     (expr-value-base (base-value-bool bval))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-int-neq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer inequality."
@@ -333,6 +359,8 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (not (= i1.int i2.int))))
     (expr-value-base (base-value-bool bval))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-lt ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -342,6 +370,8 @@
        (bval (< i1.int i2.int)))
     (expr-value-base (base-value-bool bval))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-int-gt ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer greater-than comparison."
@@ -350,6 +380,8 @@
        (bval (> i1.int i2.int)))
     (expr-value-base (base-value-bool bval))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-int-leq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer less-than-or-equal-to comparison."
@@ -357,6 +389,8 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (<= i1.int i2.int)))
     (expr-value-base (base-value-bool bval))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-geq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -374,6 +408,8 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        (fval (float-value-ratio i1.int)))
     (expr-value-base (base-value-float fval))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-to-bool ((val1 expr-valuep))
   :returns (val expr-value-resultp)
@@ -436,6 +472,8 @@
                (float-value-ratio (+ r1 r2)))))))
     (expr-value-base (base-value-float fval))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-float-sub ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float subtraction."
@@ -492,6 +530,8 @@
                         (float-value-ratio->ratio f2))))
                (float-value-ratio (- r1 r2)))))))
     (expr-value-base (base-value-float fval))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-mul ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -567,6 +607,8 @@
                  (float-value-ratio res)))))))
     (expr-value-base (base-value-float fval))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-float-div ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float division."
@@ -641,6 +683,8 @@
                    (float-value-neg0)
                  (float-value-ratio res)))))))
     (expr-value-base (base-value-float fval))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-expt ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -743,6 +787,8 @@
           (t (float-value-ratio (expt r1 r2))))))
     (expr-value-base (base-value-float fval))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-float-max ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float maximum."
@@ -778,6 +824,8 @@
                (if res f2 f1))))))
     (expr-value-base (base-value-float fval))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-float-min ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float minimum."
@@ -812,6 +860,8 @@
                   (res (<= r1 r2)))
                (if res f1 f2))))))
     (expr-value-base (base-value-float fval))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-sqrt ((val1 expr-valuep))
   :returns (val expr-value-resultp)
@@ -873,6 +923,8 @@
                           (= f1.ratio (float-value-ratio->ratio f2)))))))
     (expr-value-base (base-value-bool bval))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-float-neq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float inequality."
@@ -898,6 +950,8 @@
                           (and (float-value-case f2 :ratio)
                                (= f1.ratio (float-value-ratio->ratio f2))))))))
     (expr-value-base (base-value-bool bval))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-lt ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -928,6 +982,8 @@
                           (< f1.ratio (float-value-ratio->ratio f2)))))))
     (expr-value-base (base-value-bool bval))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-float-gt ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float greater-than comparison."
@@ -944,7 +1000,8 @@
        (bval
         (float-value-case f1
           :nan    nil
-          :posinf (not (or (float-value-case f2 :posinf) (float-value-case f2 :nan)))
+          :posinf (not (or (float-value-case f2 :posinf)
+                           (float-value-case f2 :nan)))
           :neginf nil
           :neg0 (or (float-value-case f2 :neginf)
                     (and (float-value-case f2 :ratio)
@@ -955,6 +1012,8 @@
                      (and (float-value-case f2 :ratio)
                           (> f1.ratio (float-value-ratio->ratio f2)))))))
     (expr-value-base (base-value-bool bval))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-leq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -984,6 +1043,8 @@
                      (and (float-value-case f2 :ratio)
                           (<= f1.ratio (float-value-ratio->ratio f2)))))))
     (expr-value-base (base-value-bool bval))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-geq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -1035,6 +1096,8 @@
       :neginf (reserr nil)
       :nan    (reserr nil))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-float-round ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float rounding to integer."
@@ -1055,6 +1118,8 @@
       :neginf (reserr nil)
       :nan    (reserr nil))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-float-ceiling ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float ceiling to integer."
@@ -1073,6 +1138,8 @@
       :posinf (reserr nil)
       :neginf (reserr nil)
       :nan    (reserr nil))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-floor ((val1 expr-valuep))
   :returns (val expr-value-resultp)
@@ -1102,6 +1169,8 @@
        (bval (not b1)))
     (expr-value-base (base-value-bool bval))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-bool-and ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of boolean conjunction."
@@ -1109,6 +1178,8 @@
        ((ok b2) (check-expr-value-bool val2))
        (bval (and b1 b2)))
     (expr-value-base (base-value-bool bval))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-bool-or ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -1118,6 +1189,8 @@
        (bval (or b1 b2)))
     (expr-value-base (base-value-bool bval))))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (define prim-bool-eq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of boolean equality."
@@ -1125,6 +1198,8 @@
        ((ok b2) (check-expr-value-bool val2))
        (bval (iff b1 b2)))
     (expr-value-base (base-value-bool bval))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-bool-neq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -1142,6 +1217,8 @@
   (b* (((ok b1) (check-expr-value-bool val1))
        (ival (int-value (if b1 1 0))))
     (expr-value-base (base-value-int ival))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-bool-to-float ((val1 expr-valuep))
   :returns (val expr-value-resultp)
