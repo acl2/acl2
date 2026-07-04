@@ -704,10 +704,19 @@
   ;; specification, as well as the helper function
   ;; X86-ENTER-COPY-NESTED-FRAME-POINTERS above.
 
-  ;; We currently read rBP (used, below, as the base address from which the
-  ;; nested frame pointers are copied) at the operand size, implicitly
-  ;; assuming that it is equal to the stack address size. TODO: Read it at
-  ;; the stack address size instead, as done for rBP in X86-LEAVE.
+  ;; rBP is used at two different widths in this instruction (cf. the
+  ;; comments in X86-LEAVE about the roles of the operand size and of the
+  ;; stack address size). As data, rBP is operand-size wide: the Description
+  ;; section of the ENTER specification says that the OperandSize attribute
+  ;; determines the size of each frame pointer copied onto the stack, and
+  ;; "the data being transferred from SP/ESP/RSP register into the BP/EBP/RBP
+  ;; register"; accordingly, Push(rBP) below pushes the operand-size-wide
+  ;; rBP, and rBP := FrameTemp writes the low operand-size-wide part of
+  ;; FrameTemp into rBP. As an address, rBP is stack-address-size wide: the
+  ;; loop in the pseudocode decrements RBP, EBP, or BP according to
+  ;; StackSize (notably, the full RBP when StackSize = 64 and OperandSize =
+  ;; 16); accordingly, the base address from which the nested frame pointers
+  ;; are copied below is the stack-address-size-wide rBP.
 
   :parents (one-byte-opcodes)
 
@@ -754,9 +763,8 @@
 
        (check-alignment? (alignment-checking-enabled-p x86))
 
-       ;; Push rBP.  We read rBP once here, and use it both as the value to
-       ;; push and (below, if the nesting level is greater than 0) as the base
-       ;; pointer from which the nested frame pointers are copied.
+       ;; Push rBP. The value pushed is the operand-size-wide rBP;
+       ;; see the comments at the beginning of this function.
        ((the (unsigned-byte 64) rbp) (rgfi-size operand-size *rbp* 0 x86))
        (rsp (read-*sp proc-mode x86))
        ((mv flg (the (signed-byte 64) rsp))
@@ -800,11 +808,18 @@
        ((mv flg (the (signed-byte 64) rsp) x86)
         (if (eql nesting-level 0)
             (mv nil rsp x86)
-          (b* (((mv flg (the (signed-byte 64) rsp) x86)
+          (b* (;; The base address from which the nested frame pointers are
+               ;; copied is the stack-address-size-wide rBP;
+               ;; see the comments at the beginning of this function.
+               ((the (integer 2 8) stack-address-size)
+                (select-stack-address-size proc-mode x86))
+               ((the (signed-byte 64) frame-ptr)
+                (i64 (rgfi-size stack-address-size *rbp* 0 x86)))
+               ((mv flg (the (signed-byte 64) rsp) x86)
                 (x86-enter-copy-nested-frame-pointers proc-mode
                                                       (1- nesting-level)
                                                       operand-size
-                                                      (i64 rbp)
+                                                      frame-ptr
                                                       rsp
                                                       check-alignment?
                                                       x86))
