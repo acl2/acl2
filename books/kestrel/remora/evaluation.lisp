@@ -1538,10 +1538,11 @@
        and @('tvals') are the expression values of the type arguments.")
      (xdoc::p
       "The function value must be an array, of any rank,
-       whose elements are type lambda abstractions;
+       whose elements are type lambda abstractions
+       or primitive operation values applicable to type values;
        the type argument values must match
        the parameters in number and kinds.
-       Each such lambda abstraction is applied to the type argument values.")
+       Each such element is applied to the type argument values.")
      (xdoc::p
       "This ACL2 function performs that element-wise application.
        The base case is that of a scalar (i.e. 0-rank array) function value:
@@ -1550,7 +1551,11 @@
        to associate the arguments with the parameters
        (which may override existing associations,
        which is intended hiding behavior),
-       and we evaluate the body of the type lambda abstraction.")
+       and we evaluate the body of the type lambda abstraction.
+       If instead the scalar function value is
+       a primitive operation value applicable to type values,
+       it is applied to the type argument values
+       via @(tsee eval-primop-tfun).")
      (xdoc::p
       "A non-empty vector function value
        is applied via a separate ACL2 function that goes through the list.
@@ -1590,6 +1595,9 @@
              (reserr nil))
             (denv (denv-add-type-vars funval.params tvals denv)))
          (eval-expr funval.body denv (1- limit)))
+       :primop (if (primop-value-tfunp funval.val)
+                   (eval-primop-tfun funval.val tvals)
+                 (reserr nil))
        :vector
        (b* (((ok vals) (eval-tapp-list funval.elems tvals denv (1- limit)))
             ;; TODO: eliminate the next two checks via proof
@@ -1671,10 +1679,11 @@
        and @('ivals') are the expression values of the ispace arguments.")
      (xdoc::p
       "The function value must be an array, of any rank,
-       whose elements are ispace lambda abstractions;
+       whose elements are ispace lambda abstractions
+       or primitive operation values applicable to ispace values;
        the ispace argument values must match
        the parameters in number and sorts.
-       Each such lambda abstraction is applied to the ispace argument values.")
+       Each such element is applied to the ispace argument values.")
      (xdoc::p
       "This ACL2 function performs that element-wise application.
        The base case is that of a scalar (i.e. 0-rank array) function value:
@@ -1683,7 +1692,11 @@
        to associate the arguments with the parameters
        (which may override existing associations,
        which is intended hiding behavior),
-       and we evaluate the body of the ispace lambda abstraction.")
+       and we evaluate the body of the ispace lambda abstraction.
+       If instead the scalar function value is
+       a primitive operation value applicable to ispace values,
+       it is applied to the ispace argument values
+       via @(tsee eval-primop-ifun).")
      (xdoc::p
       "A non-empty vector function value
        is applied via a separate ACL2 function that goes through the list.
@@ -1723,6 +1736,9 @@
              (reserr nil))
             (denv (denv-add-ispace-vars funval.params ivals denv)))
          (eval-expr funval.body denv (1- limit)))
+       :primop (if (primop-value-ifunp funval.val)
+                   (eval-primop-ifun funval.val ivals)
+                 (reserr nil))
        :vector
        (b* (((ok vals) (eval-iapp-list funval.elems ivals denv (1- limit)))
             ;; TODO: eliminate the next two checks via proof
