@@ -964,15 +964,25 @@
      If it is present, it must be a valid type that,
      once expanded against the static environment's definitions
      (see @(tsee senv-expand-type)),
-     is equivalent to the calculated type passed as argument
-     (which is assumed to be already expanded)."))
+     and once lifted to a scalar array type if it is an atom type,
+     is equivalent to the calculated expression type passed as argument
+     (which is already expanded).
+     The lifting to a scalar array is needed because
+     the expression type is always an array type,
+     while the annotating type may be an atom type.
+     The lifting must be done after the expansion,
+     because otherwise if the annotating type is an array type variable,
+     its lifting would fail,
+     but if it expands to a non-variable instead,
+     then lifting would succeed."))
   (type-option-case
    type?
    :none t
-   :some (b* (((unless (check-type type?.val senv)) nil)
-              (expanded (senv-expand-type type?.val senv))
-              ((when (reserrp expanded)) nil))
-           (type-equivp type expanded))))
+   :some (b* (((unless (check-type anno-type.val senv)) nil)
+              (anno-type (senv-expand-type anno-type.val senv))
+              ((when (reserrp anno-type)) nil)
+              (anno-type (type-ensure-array anno-type)))
+           (type-equivp expr-type anno-type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
