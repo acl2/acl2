@@ -1187,7 +1187,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-primop-fun ((op primop-valuep) (args expr-value-listp))
-  :guard (primop-value-funp op)
+  :guard (and (primop-value-funp op)
+              (expr-value-list-wfp args))
   :returns (val expr-value-resultp)
   :short "Evaluate the application of a primitive operation
           to its argument cells."
@@ -1201,7 +1202,8 @@
      after the rank-polymorphic lifting.")
    (xdoc::p
     "The guard requires the value to be applicable to expression values
-     (see @(tsee primop-value-funp)).
+     (see @(tsee primop-value-funp))
+     and the argument cells to be well-formed.
      We check that the value is applied to the right number of argument cells;
      then we dispatch on the operation,
      calling the @('prim-...') function that defines the operation's semantics.
