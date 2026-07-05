@@ -860,15 +860,20 @@
 		  :elem (make-type-value-fun
 			 :in (list (make-type-value-array
 				    :elem op.tval
-				    :dims (cons (1+ op.d) op.s)))))
-
+				    :dims (cons (1+ op.d) op.s)))
+			 :out (make-type-value-array
+			       :elem op.tval
+			       :dims op.s)))
      :tail (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t-d-s (make-type-value-array
 		  :elem (make-type-value-fun
 			 :in (list (make-type-value-array
 				    :elem op.tval
-				    :dims (cons (1+ op.d) op.s)))))
+				    :dims (cons (1+ op.d) op.s)))
+			 :out (make-type-value-array
+			       :elem op.tval
+			       :dims (cons op.d op.s))))
      :length (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t-d-s (make-type-value-array
