@@ -580,6 +580,16 @@
   (:bool-neq ())
   (:bool-to-int ())
   (:bool-to-float ())
+  (:head ())
+  (:head-t ((tval type-value)))
+  (:head-t-d-s ((tval type-value)
+		(d nat)
+		(s nat-list)))
+  (:tail ())
+  (:tail-t ((tval type-value)))
+  (:tail-t-d-s ((tval type-value)
+		(d nat)
+		(s nat-list)))
   (:length ())
   (:length-t ((tval type-value)))
   (:length-t-d-s ((tval type-value)
@@ -844,6 +854,21 @@
      :bool-neq bool-binop-tv
      :bool-to-int bool-to-int-tv
      :bool-to-float bool-to-float-tv
+     :head (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :head-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :head-t-d-s (make-type-value-fun
+		  :elem (make-type-value-fun
+			 :in (list (make-type-value-array
+				    :elem op.tval
+				    :dims (cons (1+ op.d) op.s)))))
+
+     :tail (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :tail-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :tail-t-d-s (make-type-value-array
+		  :elem (make-type-value-fun
+			 :in (list (make-type-value-array
+				    :elem op.tval
+				    :dims (cons (1+ op.d) op.s)))))
      :length (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t-d-s (make-type-value-array
