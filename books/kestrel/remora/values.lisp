@@ -863,7 +863,7 @@
 				    :dims (cons (1+ op.d) op.s)))))
 
      :tail (prog2$ (impossible) (type-value-base (base-type-bool)))
-     :tail-t (prog2$ (impossible) (type-value-case (base-type-bool)))
+     :tail-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t-d-s (make-type-value-array
 		  :elem (make-type-value-fun
 			 :in (list (make-type-value-array
