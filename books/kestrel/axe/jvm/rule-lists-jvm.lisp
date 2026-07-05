@@ -691,7 +691,8 @@
   (append (jvm-constant-opener-rules)
           (new-ad-rules)
           (address-rules)
-          '(set::delete-constant-opener ;needed for address calcs
+          '(if-becomes-myif ; todo: avoid myif, now that a rewrite rule can have a LHS that is an IF
+            set::delete-constant-opener ;needed for address calcs
             set::tail$inline-constant-opener   ;needed for address calcs
             set::head$inline-constant-opener   ;needed for address calcs
             set::emptyp$inline-constant-opener ;needed for address calcs
