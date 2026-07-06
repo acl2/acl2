@@ -503,7 +503,7 @@
      the element type of each operation's zero-rank array type
      is a function type between base types.
      Remora also has polymorphic primitive operations,
-     such as @('length'),
+     such as @('head'), @('tail'), and @('length'),
      where the element type of the zero-rank array type
      involves universal and product types;
      [impl] calls these operations `intrinsics',
@@ -524,8 +524,8 @@
      a summand for each instantiation stage of the operation,
      whose fields hold the instantiation values received so far.")
    (xdoc::p
-    "Currently the only polymorphic operation is @('length'),
-     with three stages:
+    "Currently the only polymorphic operations are @('head'), @('tail'), and @('length'),
+     each with three similar stages. For example, here are the stages of @('length'):
      @(':length') is the uninstantiated operation;
      @(':length-t') is the operation applied to
      a type value for its type parameter;
@@ -583,13 +583,13 @@
   (:head ())
   (:head-t ((tval type-value)))
   (:head-t-d-s ((tval type-value)
-		(d nat)
-		(s nat-list)))
+                (d nat)
+                (s nat-list)))
   (:tail ())
   (:tail-t ((tval type-value)))
   (:tail-t-d-s ((tval type-value)
-		(d nat)
-		(s nat-list)))
+                (d nat)
+                (s nat-list)))
   (:length ())
   (:length-t ((tval type-value)))
   (:length-t-d-s ((tval type-value)
@@ -621,9 +621,12 @@
     "This predicate holds on the monomorphic primitive operations,
      which need no instantiation,
      and on the fully instantiated stages
-     of the polymorphic primitive operations,
-     currently the @(':length-t-d-s') stage of @('length')."))
+     of the polymorphic primitive operations."))
   (primop-value-case op
+                     :head nil
+                     :head-t nil
+                     :tail nil
+                     :tail-t nil
                      :length nil
                      :length-t nil
                      :otherwise t))
@@ -642,9 +645,10 @@
    (xdoc::p
     "This predicate holds on
      the stages of polymorphic primitive operations
-     that expect type values next,
-     currently the uninstantiated @(':length') stage of @('length')."))
+     that expect type values next."))
   (primop-value-case op
+                     :head t
+                     :tail t
                      :length t
                      :otherwise nil))
 
@@ -661,9 +665,10 @@
    (xdoc::p
     "This predicate holds on
      the stages of polymorphic primitive operations
-     that expect ispace values next,
-     currently the @(':length-t') stage of @('length')."))
+     that expect ispace values next."))
   (primop-value-case op
+                     :head-t t
+                     :tail-t t
                      :length-t t
                      :otherwise nil))
 
@@ -856,24 +861,24 @@
      :bool-to-float bool-to-float-tv
      :head (prog2$ (impossible) (type-value-base (base-type-bool)))
      :head-t (prog2$ (impossible) (type-value-base (base-type-bool)))
-     :head-t-d-s (make-type-value-fun
-		  :elem (make-type-value-fun
-			 :in (list (make-type-value-array
-				    :elem op.tval
-				    :dims (cons (1+ op.d) op.s)))
-			 :out (make-type-value-array
-			       :elem op.tval
-			       :dims op.s)))
+     :head-t-d-s (make-type-value-array
+                  :elem (make-type-value-fun
+                         :in (list (make-type-value-array
+                                    :elem op.tval
+                                    :dims (cons (1+ op.d) op.s)))
+                         :out (make-type-value-array
+                               :elem op.tval
+                               :dims op.s)))
      :tail (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t-d-s (make-type-value-array
-		  :elem (make-type-value-fun
-			 :in (list (make-type-value-array
-				    :elem op.tval
-				    :dims (cons (1+ op.d) op.s)))
-			 :out (make-type-value-array
-			       :elem op.tval
-			       :dims (cons op.d op.s))))
+                  :elem (make-type-value-fun
+                         :in (list (make-type-value-array
+                                    :elem op.tval
+                                    :dims (cons (1+ op.d) op.s)))
+                         :out (make-type-value-array
+                               :elem op.tval
+                               :dims (cons op.d op.s))))
      :length (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t-d-s (make-type-value-array
