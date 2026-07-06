@@ -87,6 +87,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption ispace-value-option
+  ispace-value
+  :short "Fixtype of optional ispace values."
+  :pred ispace-value-optionp)
+
+;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult ispace-value-result
   :short "Fixtype of ispace values and errors."
   :ok ispace-value
