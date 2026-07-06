@@ -35,6 +35,7 @@
                     booleanp-when-result-not-error
                     change-string-string-map-quadruple
                     chars=>nats
+                    cons-listp
                     defmacro+
                     defund-sk
                     defxdoc+
