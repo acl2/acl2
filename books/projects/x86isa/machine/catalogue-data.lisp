@@ -63,7 +63,6 @@
   :doc "<p>Unimplemented instructions are:</p>
 <ul>
 <li>BOUND -- not valid in 64 bit mode</li>
-<li>ENTER</li>
 <li>RET -- only far return with immediate (0xCA)</li>
 <li>INT -- software interrupt</li>
 <li>INTO -- overflow trap</li>
@@ -102,8 +101,7 @@
 (def-sdm-instruction-section "5.1.10 Enter and Leave Instructions"
   :mnemonics '(ENTER LEAVE)
   :doc "<p>This group just includes ENTER and LEAVE, which oddly are also
-  counted amongst the @(see |5.1.7 Control Transfer Instructions|) group. LEAVE
-  is defined but ENTER is not.</p>")
+  counted amongst the @(see |5.1.7 Control Transfer Instructions|) group.</p>")
 
 (def-sdm-instruction-section "5.1.11 Flag Control (EFLAG) Instructions"
   :mnemonics '(STC CLC CMC CLD STD LAHF SAHF PUSHF/D/Q POPF/D/Q STI CLI))

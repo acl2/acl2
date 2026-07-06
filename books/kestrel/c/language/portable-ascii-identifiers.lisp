@@ -56,9 +56,9 @@
     (xdoc::li
      "Other implementation-defined characters."))
    (xdoc::p
-    "The characters in (1) and (2) are part of the "
-    (xdoc::seetopic "basic-source-charp" "basic source character set")
-    ". The characters in (3) are presumably not
+    "The characters in (1) and (2) are part of
+     the basic source character set.
+     The characters in (3) are presumably not
      part of the basic source character set,
      because they are non-ASCII Unicode characters,
      while the basic source character set
@@ -71,7 +71,7 @@
      [C17] imposes no constraints on them.")
    (xdoc::p
     "Recall that [C17] does not require the basic source character set
-     to consist of ASCII characters (see @(see source-character-set)).
+     to consist of ASCII characters.
      If it does consist of ASCII characters, then
      the characters in (1) and (2) above are ASCII,
      the characters in (3) are not ASCII,

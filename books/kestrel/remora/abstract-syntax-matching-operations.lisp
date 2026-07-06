@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "abstract-syntax-derived-fixtypes")
+(include-book "abstract-syntax-structurals")
 
 (local (include-book "std/lists/len" :dir :system))
 
@@ -42,12 +42,31 @@
 
 (define type-match-array ((type typep))
   :returns (type+ispace type+ispace-resultp)
-  :short "Check if an array type is an @(':array') summand,
+  :short "Check if an array type is a non-variable array type or an atom type,
           returning its elements' atom type and its ispace if successful."
-  (if (type-case type :array)
-      (make-type+ispace :type (type-array->elem type)
-                        :ispace (type-array->ispace type))
-    (reserr nil)))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In ASTs, atom types may be used where array types are expected.
+     Thus, this function succeeds on atom types,
+     regarding them as scalar (i.e. 0-ranked) arrays.
+     The function also succeeds in array types,
+     both explicit and in bracket form.
+     The only case in which this does not succeed is on array type variables,
+     because we could not obtain the element atom type and the ispace."))
+  (cond
+   ((type-atomp type)
+    (make-type+ispace :type type :ispace (ispace-shape (shape-dims nil))))
+   ((type-case type :array)
+    (make-type+ispace :type (type-array->elem type)
+                      :ispace (type-array->ispace type)))
+   ((type-case type :bracket)
+    (make-type+ispace :type (type-bracket->elem type)
+                      :ispace (ispace-shape
+                               (shape-append
+                                (shape-list-from-ispace-list
+                                 (type-bracket->ispaces type))))))
+   (t (reserr nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

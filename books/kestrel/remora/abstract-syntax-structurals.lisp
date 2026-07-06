@@ -330,6 +330,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define shape-from-ispace ((ispace ispacep))
+  :returns (shape shapep)
+  :short "Turn an ispace into a shape."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the ispace is already a shape, it is unchanged.
+     Otherwise, we turn the dimension into a singleton shape."))
+  (ispace-case
+   ispace
+   :dim (shape-dims (list ispace.dim))
+   :shape ispace.shape))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection shape-list-from-ispace-list ((x ispace-listp))
+  :returns (shapes shape-listp)
+  :short "Lift @(tsee shape-from-ispace) to lists."
+  (shape-from-ispace x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-atomp ((type typep))
   :returns (yes/no booleanp)
   :short "Check if a type has the atom kind."
@@ -342,6 +364,25 @@
              :forall t
              :pi t
              :sigma t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-ensure-array ((type typep))
+  :returns (type1 typep)
+  :short "Ensure that a type is an array type,
+          lifting atom types to scalar array types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Remora's syntax allows atom types where array types are expected,
+     with those atom types being regarded as scalar (i.e. 0-rank) array types.
+     This function explicates this optional lifting:
+     it leaves array types unchanged,
+     and it turns atom types
+     into scalar array types (i.e. with no dimensions)."))
+  (if (type-atomp type)
+      (make-type-array :elem type :ispace (ispace-shape (shape-dims nil)))
+    (type-fix type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

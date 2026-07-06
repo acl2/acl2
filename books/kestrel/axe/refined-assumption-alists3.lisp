@@ -20,7 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Just call member-equal and remove the p from this name?
-;; Only called by the legacy rewriter?
+;; Only called by the legacy rewriter.
 (defund nodenum-equal-to-refined-assumptionp (nodenum refined-assumption-alist dag-array)
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum))

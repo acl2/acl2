@@ -105,7 +105,9 @@
 
 ;; NOTE: To debug possible rewrite loops, do:
 ;; (trace$ (acl2::increment-hit-count :entry (car acl2::arglist) :exit :done))
-;; and also supply :count-hits t to the tool, if needed.
+;; and also supply :count-hits t or :print :verbose to the tool, if needed.
+;; NOTE: Loops may also involve replacements made using the memoization,
+;; but those steps won't show up in this trace.
 
 (local
   (defthm hit-count-info-worldp-of-increment-hit-count

@@ -1468,7 +1468,7 @@
           '((:UD (UD-LOCK-USED))))
     (INST "ENTER" (OP :OP #xC8)
           (ARG :OP1 '(I W) :OP2 '(I B))
-          'NIL
+          '(X86-ENTER)
           '((:UD (UD-LOCK-USED))))
     (INST "LEAVE"
           (OP :OP #xC9 :SUPERSCRIPTS '(:D64))

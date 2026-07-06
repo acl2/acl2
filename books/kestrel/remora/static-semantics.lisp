@@ -14,6 +14,7 @@
 (include-book "ispace-equivalence")
 (include-book "type-equivalence")
 (include-book "type-checking")
+(include-book "dimension-equivalence-rules")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -32,4 +33,5 @@
   :order-subtopics (static-environments
                     ispace-equivalence
                     type-equivalence
-                    type-checking))
+                    type-checking
+                    dimension-equivalence-rules))

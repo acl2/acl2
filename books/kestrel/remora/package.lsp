@@ -36,6 +36,7 @@
                     change-string-string-map-quadruple
                     chars=>nats
                     defmacro+
+                    defund-sk
                     defxdoc+
                     enable*
                     explode

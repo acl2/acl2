@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+(include-book "nat-set")
+
 (include-book "kestrel/fty/defomap" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -21,4 +23,12 @@
   :val-type nat
   :pred any-nat-mapp
   :fix any-nat-mfix
-  :equiv any-nat-mequiv)
+  :equiv any-nat-mequiv
+
+  ///
+
+  (defruled nat-setp-of-values-when-any-nat-mapp
+    (implies (any-nat-mapp map)
+             (nat-setp (omap::values map)))
+    :induct t
+    :enable omap::values))

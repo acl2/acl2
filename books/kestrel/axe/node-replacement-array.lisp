@@ -77,33 +77,33 @@
   (implies (bounded-darg-listp (strip-cdrs alist) bound)
            (bounded-darg-listp (strip-cdrs (cdr alist)) bound)))
 
-(defthm not-node-replacement-alistp
-  (implies (and (not (integerp (cdr (assoc-equal index alist))))
-                (cdr (assoc-equal index alist))
-                (not (consp (cdr (assoc-equal index alist)))))
-           (not (node-replacement-alistp alist bound)))
-  :hints (("Goal" :in-theory (enable node-replacement-alistp
-                                     assoc-equal))))
+;; (defthm not-node-replacement-alistp
+;;   (implies (and (not (integerp (cdr (assoc-equal index alist))))
+;;                 (cdr (assoc-equal index alist))
+;;                 (not (consp (cdr (assoc-equal index alist)))))
+;;            (not (node-replacement-alistp alist bound)))
+;;   :hints (("Goal" :in-theory (enable node-replacement-alistp
+;;                                      assoc-equal))))
 
-(defthm not-node-replacement-alistp-2
-  (implies (and (<= BOUND (CDR (ASSOC-EQUAL INDEX ALIST)))
-                (not (consp (CDR (ASSOC-EQUAL INDEX ALIST))))
-                (ASSOC-EQUAL INDEX ALIST)
-                ;(natp bound)
-                )
-           (not (node-replacement-alistp alist bound)))
-  :hints (("Goal" :in-theory (enable node-replacement-alistp
-                                     assoc-equal))))
+;; (defthm not-node-replacement-alistp-2
+;;   (implies (and (<= BOUND (CDR (ASSOC-EQUAL INDEX ALIST)))
+;;                 (not (consp (CDR (ASSOC-EQUAL INDEX ALIST))))
+;;                 (ASSOC-EQUAL INDEX ALIST)
+;;                 ;(natp bound)
+;;                 )
+;;            (not (node-replacement-alistp alist bound)))
+;;   :hints (("Goal" :in-theory (enable node-replacement-alistp
+;;                                      assoc-equal))))
 
-(defthm not-node-replacement-alistp-3
-  (implies (and (< (CDR (ASSOC-EQUAL INDEX ALIST)) 0)
-;                (not (consp (CDR (ASSOC-EQUAL INDEX ALIST))))
-                (ASSOC-EQUAL INDEX ALIST)
-                ;(natp bound)
-                )
-           (not (node-replacement-alistp alist bound)))
-  :hints (("Goal" :in-theory (enable node-replacement-alistp
-                                     assoc-equal))))
+;; (defthm not-node-replacement-alistp-3
+;;   (implies (and (< (CDR (ASSOC-EQUAL INDEX ALIST)) 0)
+;; ;                (not (consp (CDR (ASSOC-EQUAL INDEX ALIST))))
+;;                 (ASSOC-EQUAL INDEX ALIST)
+;;                 ;(natp bound)
+;;                 )
+;;            (not (node-replacement-alistp alist bound)))
+;;   :hints (("Goal" :in-theory (enable node-replacement-alistp
+;;                                      assoc-equal))))
 
 (defthm integerp-of-cdr-of-assoc-equal-when-node-replacement-alistp
   (implies (and (node-replacement-alistp alist bound)
@@ -800,16 +800,18 @@
                (eq *non-nil* (cdr pair)))
            (term-replacement-alistp (rest alist))))))
 
-(defthm term-replacement-alistp-forward-to-alistp
-  (implies (term-replacement-alistp alist)
-           (alistp alist))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable term-replacement-alistp alistp))))
+(local
+  (defthm term-replacement-alistp-forward-to-alistp
+    (implies (term-replacement-alistp alist)
+             (alistp alist))
+    :rule-classes :forward-chaining
+    :hints (("Goal" :in-theory (enable term-replacement-alistp alistp)))))
 
-(defthm term-replacement-alistp-of-cdr
-  (implies (term-replacement-alistp alist)
-           (term-replacement-alistp (cdr alist)))
-  :hints (("Goal" :in-theory (enable term-replacement-alistp))))
+(local
+  (defthm term-replacement-alistp-of-cdr
+    (implies (term-replacement-alistp alist)
+             (term-replacement-alistp (cdr alist)))
+    :hints (("Goal" :in-theory (enable term-replacement-alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -818,7 +820,7 @@
 ;; TODO: What else should we handle here (ifs that represent conjunctions, negated disjunctions?
 ;; See also update-node-replacement-array-for-assuming-possibly-negated-nodenums.
 ;; See also refine-assumption-for-matching.
-(defun term-replacement-alist-for-assumption (assumption known-booleans acc)
+(defund term-replacement-alist-for-assumption (assumption known-booleans acc)
   (declare (xargs :guard (and (pseudo-termp assumption)
                               (symbol-listp known-booleans)
                               (term-replacement-alistp acc))
@@ -876,17 +878,17 @@
 
 (defthm term-replacement-alistp-of-term-replacement-alist-for-assumption
   (implies (and (pseudo-termp assumption)
-                (symbol-listp known-booleans)
+                ;; (symbol-listp known-booleans)
                 (term-replacement-alistp acc))
            (term-replacement-alistp (term-replacement-alist-for-assumption assumption known-booleans acc)))
-  :hints (("Goal" :in-theory (e/d (term-replacement-alist-for-assumption
-                                   term-replacement-alistp)
+  :hints (("Goal" :in-theory (e/d (term-replacement-alist-for-assumption term-replacement-alistp)
                                   (quotep)))))
 
 (verify-guards term-replacement-alist-for-assumption :hints (("Goal" :in-theory (enable term-replacement-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Converts the ASSUMPTIONS into a term-replacement-alist.
 (defund term-replacement-alist-for-assumptions (assumptions known-booleans acc)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (symbol-listp known-booleans)

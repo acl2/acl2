@@ -184,7 +184,9 @@
      (see @(tsee init-denv)).")
    (xdoc::p
     "The names (the map keys) are the surface names [impl],
-     exactly as in @(tsee primop-types)."))
+     exactly as in @(tsee primop-types).
+     A polymorphic operation like @('length')
+     is associated to its uninstantiated stage."))
   (omap::from-alist
    (list (cons "+" (expr-value-primop (primop-value-int-add)))
          (cons "-" (expr-value-primop (primop-value-int-sub)))
@@ -232,7 +234,8 @@
          (cons "bool.==" (expr-value-primop (primop-value-bool-eq)))
          (cons "bool.!=" (expr-value-primop (primop-value-bool-neq)))
          (cons "bool->i" (expr-value-primop (primop-value-bool-to-int)))
-         (cons "bool->f" (expr-value-primop (primop-value-bool-to-float))))))
+         (cons "bool->f" (expr-value-primop (primop-value-bool-to-float)))
+         (cons "length" (expr-value-primop (primop-value-length))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

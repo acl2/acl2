@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Quan Luu (quan.luu@kestrel.edu)
+; Contributing Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -15,8 +16,13 @@
 (include-book "identityp")
 (include-book "injectivep")
 
+(local (include-book "assoc"))
 (local (include-book "extensionality"))
 (local (include-book "update"))
+
+; set-in-of-rlookup is enabled by assoc.lisp; keep it disabled here so it does
+; not perturb the other proofs, and enable it only where it is needed.
+(local (in-theory (disable set-in-of-rlookup)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -90,7 +96,7 @@
                       (and (set::in k (values x))
                            (cons k (set::head (rlookup k x))))))
     :enable (rlookup values set::expensive-rules))
-  
+
   (defruledl assoc-of-inverse-inverse
       (implies (injectivep x)
                (equal (assoc k (inverse (inverse x)))
@@ -116,10 +122,32 @@
              assoc-of-compose))
 
   (defrule identityp-compose-with-inverse
-      (implies (injectivep x)
-               (identityp (compose (inverse x) x)))
+    (implies (injectivep x)
+             (identityp (compose (inverse x) x)))
     :enable (assoc-of-compose-inverse
-             pick-a-point-identityp)))
+             pick-a-point-identityp))
 
+  (defruled lookup-inverse-in-keys-when-in-values-and-injective
+    (implies (and (injectivep map)
+                  (set::in y (values map)))
+             (set::in (lookup y (inverse map))
+                      (keys map)))
+    :enable (lookup
+             in-of-values-to-rlookup
+             set::expensive-rules)
+    :use (:instance set::in-head (x (rlookup y map)))
+    :disable set::in-head)
+
+  (defruled lookup-of-lookup-of-inverse
+    (implies (and (injectivep map)
+                  (set::in val (values map)))
+             (equal (lookup (lookup val (inverse map)) map)
+                    val))
+    :enable (lookup
+             assoc-of-inverse
+             in-of-values-to-rlookup
+             set-in-of-rlookup)
+    :use (:instance set::in-head (x (rlookup val map)))
+    :disable set::in-head))
 
 (in-theory (disable injectivep-implies-not-rlookup-head-val-tail))

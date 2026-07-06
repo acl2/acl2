@@ -26,4 +26,13 @@
         (t (set::insert (char-code (set::head chars))
                         (char-code-set (set::tail chars)))))
   :prepwork ((local (in-theory (enable emptyp-of-character-sfix))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defruled code-in-char-code-set-when-char-in-char-set
+    (implies (and (character-setp chs)
+                  (set::in ch chs))
+             (set::in (char-code ch) (char-code-set chs)))
+    :induct t
+    :enable char-code-set))
