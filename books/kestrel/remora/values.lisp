@@ -1004,6 +1004,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption expr-value-option
+  expr-value
+  :short "Fixtype of optional expression values."
+  :pred expr-value-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist expr-value-list-list
   :short "Fixtype of lists of lists of expression values."
   :elt-type expr-value-list
