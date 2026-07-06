@@ -16,6 +16,7 @@
 (include-book "kestrel/fty/nat-list-list-list" :dir :system)
 (include-book "kestrel/fty/nat-list-result" :dir :system)
 (include-book "kestrel/fty/nat-list-list-result" :dir :system)
+(include-book "std/typed-lists/cons-listp" :dir :system)
 
 (local (include-book "arithmetic"))
 
@@ -1045,6 +1046,13 @@
              nfix
              posp)
     :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+
+  (defrule expr-value-listp-of-car-list
+    (implies (expr-value-list-listp x)
+             (equal (expr-value-listp (car-list x))
+                    (cons-listp x)))
+    :induct t
+    :enable car-list)
 
   (defrule expr-value-list-listp-of-cdr-list
     (implies (expr-value-list-listp x)
