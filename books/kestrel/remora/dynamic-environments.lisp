@@ -466,6 +466,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define denv-lookup-ispace-var ((var ispace-varp) (denv denvp))
+  :returns (ispace-val? ispace-value-optionp
+                        :hints
+                        (("Goal" :in-theory (enable ispace-value-optionp))))
+  :short "Lookup an ispace variable in a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return the associated ispace value,
+     or @('nil') if the variable is not present."))
+  (cdr (omap::assoc (ispace-var-fix var) (denv->ispace-vars denv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define denv-lookup-type-var ((var type-varp) (denv denvp))
+  :returns (type-val? type-value-optionp
+                      :hints
+                      (("Goal" :in-theory (enable type-value-optionp))))
+  :short "Lookup a type variable in a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return the associated type value,
+     or @('nil') if the variable is not present."))
+  (cdr (omap::assoc (type-var-fix var) (denv->type-vars denv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define denv-lookup-expr-var ((var stringp) (denv denvp))
   :returns (expr-value? expr-value-optionp
                         :hints
