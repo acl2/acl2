@@ -463,3 +463,17 @@
                   (expr-value-list-wfp vals))
              (denv-wfp new-denv))
     :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define denv-lookup-expr-var ((var stringp) (denv denvp))
+  :returns (expr-value? expr-value-optionp
+                        :hints
+                        (("Goal" :in-theory (enable expr-value-optionp))))
+  :short "Lookup an expression variable in a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return the associated expression value,
+     or @('nil') if the variable is not present."))
+  (cdr (omap::assoc (str::str-fix var) (denv->expr-vars denv))))
