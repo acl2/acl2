@@ -128,6 +128,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ispace-values-match-ispace-vars-p ((ivals ispace-value-listp)
+                                           (vars ispace-var-listp))
+  :returns (yes/no booleanp)
+  :short "Check that ispace values match ispace variables
+          in number and sort."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two lists must have the same length,
+     and, element-wise, each ispace value must match
+     the sort of the corresponding ispace variable:
+     a @(':dim') ispace variable must be matched by a @(':dim') ispace value,
+     and a @(':shape') ispace variable by a @(':shape') ispace value.")
+   (xdoc::p
+    "This is used to evaluate ispace applications,
+     where the ispace values that an ispace lambda is applied to
+     must match the ispace parameters of the ispace lambda."))
+  (b* (((when (endp ivals)) (endp vars))
+       ((when (endp vars)) nil)
+       (ival (car ivals))
+       (var (car vars)))
+    (and (ispace-var-case var
+                          :dim (ispace-value-case ival :dim)
+                          :shape (ispace-value-case ival :shape))
+         (ispace-values-match-ispace-vars-p (cdr ivals) (cdr vars))))
+
+  ///
+
+  (defrule len-equal-when-ispace-values-match-ispace-vars-p
+    (implies (ispace-values-match-ispace-vars-p ivals vars)
+             (equal (len ivals) (len vars)))
+    :rule-classes :forward-chaining
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftypes type-values
   :short "Fixtypes of type values and lists of type values."
 
@@ -208,6 +244,73 @@
   :short "Fixtype of (i) lists of type values and (ii) errors."
   :ok type-value-list
   :pred type-value-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dims-of-type-value ((tval type-valuep))
+  :returns (dims nat-listp)
+  :short "Dimensions of a type value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Atom type values have the empty list of dimensions.
+     Array type values have explicit dimensions.")
+   (xdoc::p
+    "Recall that scalar (i.e. 0-rank) array types are
+     equivalent to their atom element types."))
+  (type-value-case
+   tval
+   :base nil
+   :array tval.dims
+   :fun nil
+   :forall nil
+   :pi nil
+   :sigma nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection dims-of-type-value-list ((x type-value-listp))
+  :returns (dimss nat-list-listp)
+  :short "Lift @(tsee dims-of-type-value) to lists."
+  (dims-of-type-value x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-values-match-type-vars-p ((tvals type-value-listp)
+                                       (vars type-var-listp))
+  :returns (yes/no booleanp)
+  :short "Check that type values match type variables
+          in number and kind."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two lists must have the same length,
+     and, element-wise, each type value must match
+     the kind of the corresponding type variable:
+     an @(':atom') type variable must be matched by an atom type value,
+     and an @(':array') type variable by an array type value.
+     A type value has the array kind when it is an @(':array');
+     every other type value has the atom kind.")
+   (xdoc::p
+    "This is used to evaluate type applications,
+     where the type values that a type lambda is applied to
+     must match the type parameters of the type lambda."))
+  (b* (((when (endp tvals)) (endp vars))
+       ((when (endp vars)) nil)
+       (tval (car tvals))
+       (var (car vars)))
+    (and (type-var-case var
+                        :atom (not (type-value-case tval :array))
+                        :array (type-value-case tval :array))
+         (type-values-match-type-vars-p (cdr tvals) (cdr vars))))
+
+  ///
+
+  (defrule len-equal-when-type-values-match-type-vars-p
+    (implies (type-values-match-type-vars-p tvals vars)
+             (equal (len tvals) (len vars)))
+    :rule-classes :forward-chaining
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -381,17 +484,55 @@
     "In Remora, the primitive operations (i.e. built-in functions)
      are denoted by certain variables implicitly in scope,
      whose types are given by @(tsee primop-types).
-     This fixtype enumerates the operations themselves,
-     one summand per operation,
-     in correspondence with the entries of @(tsee primop-types).")
+     This fixtype contains summands for the operations themselves,
+     in correspondence with the entries of @(tsee primop-types),
+     as well as summands for partially and fully instantiated
+     polymorphic operations (more details below).")
    (xdoc::p
-    "A value of this fixtype represents a primitive operation
+    "A value of this fixtype represents a primitive operation,
+     or an instantiation stage thereof,
      as a scalar (zero-rank array) function value,
-     analogously to how a lambda abstraction is a function value.
+     analogously to how the three kinds of lambda abstractions
+     are scalar function values.
      These are incorporated into @(tsee expr-value)
      as its @(':primop') summand;
      the operations they denote will be evaluated via
-     the ACL2 functions in @(see primitives-evaluation)."))
+     the ACL2 functions in @(see primitives-evaluation).")
+   (xdoc::p
+    "The operations from @(':int-add') to @(':bool-to-float') are monomorphic:
+     the element type of each operation's zero-rank array type
+     is a function type between base types.
+     Remora also has polymorphic primitive operations,
+     such as @('length'),
+     where the element type of the zero-rank array type
+     involves universal and product types;
+     [impl] calls these operations `intrinsics',
+     reserving `primitives' for the monomorphic ones,
+     but we call both `primitive operations',
+     in the sense that they are not defined with Remora code,
+     but are built-in.
+     (The current division between `primitives' and `intrinsics' in [impl]
+     as monomorphic and polymorphic functions is actually incidental:
+     by `primitive' [impl] means on integers and similar types,
+     and by `intrinsic' [impl] means the other built-ins;
+     but as mentioned already, we just use the term `primitive' for all.)
+     Since a polymorphic operation cannot be
+     directly applied to expression values,
+     but must first be applied to type values and/or ispace values,
+     this fixtype includes,
+     for each polymorphic operation,
+     a summand for each instantiation stage of the operation,
+     whose fields hold the instantiation values received so far.")
+   (xdoc::p
+    "Currently the only polymorphic operation is @('length'),
+     with three stages:
+     @(':length') is the uninstantiated operation;
+     @(':length-t') is the operation applied to
+     a type value for its type parameter;
+     @(':length-t-d-s') is the operation further applied to
+     ispace values for its ispace parameters,
+     i.e. a natural number for the dimension parameter
+     and a list of natural numbers for the shape parameter."))
   (:int-add ())
   (:int-sub ())
   (:int-mul ())
@@ -439,13 +580,126 @@
   (:bool-neq ())
   (:bool-to-int ())
   (:bool-to-float ())
+  (:length ())
+  (:length-t ((tval type-value)))
+  (:length-t-d-s ((tval type-value)
+                  (d nat)
+                  (s nat-list)))
   :pred primop-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define primop-type ((op primop-valuep))
+(define primop-value-funp ((op primop-valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a primitive operation value is
+          applicable to expression values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A primitive operation value (see @(tsee primop-value))
+     may be applicable to expression values (via term applications),
+     or to type values (via type applications),
+     or to ispace values (via ispace applications).
+     This predicate,
+     along with @(tsee primop-value-tfunp) and @(tsee primop-value-ifunp),
+     checks these applicabilities,
+     which are exhaustive and non-overlapping.
+     The three predicates mirror the three kinds of lambda abstraction values,
+     i.e. the @(':lambda'), @(':tlambda'), and @(':ilambda') summands
+     of @(tsee expr-value).")
+   (xdoc::p
+    "This predicate holds on the monomorphic primitive operations,
+     which need no instantiation,
+     and on the fully instantiated stages
+     of the polymorphic primitive operations,
+     currently the @(':length-t-d-s') stage of @('length')."))
+  (primop-value-case op
+                     :length nil
+                     :length-t nil
+                     :otherwise t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primop-value-tfunp ((op primop-valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a primitive operation value is
+          applicable to type values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee primop-value-funp) for
+     a description of the three applicability predicates.")
+   (xdoc::p
+    "This predicate holds on
+     the stages of polymorphic primitive operations
+     that expect type values next,
+     currently the uninstantiated @(':length') stage of @('length')."))
+  (primop-value-case op
+                     :length t
+                     :otherwise nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primop-value-ifunp ((op primop-valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a primitive operation value is applicable to ispace values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee primop-value-funp) for
+     a description of the three applicability predicates.")
+   (xdoc::p
+    "This predicate holds on
+     the stages of polymorphic primitive operations
+     that expect ispace values next,
+     currently the @(':length-t') stage of @('length')."))
+  (primop-value-case op
+                     :length-t t
+                     :otherwise nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection primop-value-applicability-theorems
+  :short "Theorems about the applicability predicates
+          for primitive operation values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The predicates
+     @(tsee primop-value-funp),
+     @(tsee primop-value-tfunp), and
+     @(tsee primop-value-ifunp)
+     are exhaustive and non-overlapping:
+     every primitive operation value satisfies exactly one of them."))
+
+  (defrule primop-value-applicability-exhaustive
+    (or (primop-value-funp op)
+        (primop-value-tfunp op)
+        (primop-value-ifunp op))
+    :rule-classes nil
+    :enable (primop-value-funp
+             primop-value-tfunp
+             primop-value-ifunp))
+
+  (defrule primop-value-applicability-non-overlapping
+    (and (not (and (primop-value-funp op)
+                   (primop-value-tfunp op)))
+         (not (and (primop-value-funp op)
+                   (primop-value-ifunp op)))
+         (not (and (primop-value-tfunp op)
+                   (primop-value-ifunp op))))
+    :rule-classes nil
+    :enable (primop-value-funp
+             primop-value-tfunp
+             primop-value-ifunp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-of-primop-value-fun ((op primop-valuep))
+  :guard (primop-value-funp op)
   :returns (type type-valuep)
-  :short "Type of a primitive operation, as a type value."
+  :short "Type of a primitive operation value applicable to expression values,
+          as a type value."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -454,7 +708,7 @@
      We keep this consistent with @(tsee primop-types) by construction;
      a theorem relating the two could be added later.")
    (xdoc::p
-    "Curerntly this type is always
+    "Currently this type is always
      a zero-rank array of the operation's function type,
      whose inputs and output are themselves
      zero-rank arrays of base types.
@@ -465,8 +719,21 @@
      uniformly with how the same information
      is obtained for lambda abstractions.")
    (xdoc::p
-    "Not all primitive operations in Remora have types of this form.
-     Those primitive operations will be handled later."))
+    "This function is restricted, via the guard,
+     to the primitive operation values applicable to expression values,
+     which are the ones used as function values.
+     For the fully instantiated stages
+     of polymorphic primitive operations,
+     the function type value is constructed
+     from the instantiation values in the fields:
+     for the @(':length-t-d-s') stage of @('length'),
+     the input is an array of the stored type value,
+     whose dimensions are the stored dimension
+     followed by the stored shape,
+     and the output is the zero-rank array of the integer type.
+     For the stages not applicable to expression values,
+     which are outside the guard,
+     we return an irrelevant type value."))
   (b* ((int-tv (make-type-value-array
                 :elem (type-value-base (base-type-int))
                 :dims nil))
@@ -576,21 +843,36 @@
      :bool-eq bool-binop-tv
      :bool-neq bool-binop-tv
      :bool-to-int bool-to-int-tv
-     :bool-to-float bool-to-float-tv))
+     :bool-to-float bool-to-float-tv
+     :length (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :length-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :length-t-d-s (make-type-value-array
+                    :elem (make-type-value-fun
+                           :in (list (make-type-value-array
+                                      :elem op.tval
+                                      :dims (cons op.d op.s)))
+                           :out int-tv)
+                    :dims nil)))
+  :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///
 
-  (defret type-value-kind-of-primop-type
-    (equal (type-value-kind type) :array))
+  (defret type-value-kind-of-type-of-primop-value-fun
+    (implies (primop-value-funp op)
+             (equal (type-value-kind type) :array))
+    :hints (("Goal" :in-theory (enable primop-value-funp))))
 
-  (defret type-value-kind-of-elem-of-primop-type
-    (equal (type-value-kind (type-value-array->elem type)) :fun)))
+  (defret type-value-kind-of-elem-of-type-of-primop-value-fun
+    (implies (primop-value-funp op)
+             (equal (type-value-kind (type-value-array->elem type)) :fun))
+    :hints (("Goal" :in-theory (enable primop-value-funp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define primop-arity ((op primop-valuep))
+(define arity-of-primop-value-fun ((op primop-valuep))
+  :guard (primop-value-funp op)
   :returns (arity natp)
-  :short "Arity of a primitive operation."
+  :short "Arity of a primitive operation value applicable to expression values."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -600,9 +882,13 @@
      1 for the unary operations, 2 for the binary ones.")
    (xdoc::p
     "We define this as the number of inputs
-     of the operation's function type (see @(tsee primop-type)),
-     so that the arity cannot diverge from the type."))
-  (len (type-value-fun->in (type-value-array->elem (primop-type op)))))
+     of the operation's function type (see @(tsee type-of-primop-value-fun)),
+     so that the arity cannot diverge from the type.
+     Like @(tsee type-of-primop-value-fun),
+     this function is restricted, via the guard,
+     to the values applicable to expression values."))
+  (len (type-value-fun->in
+        (type-value-array->elem (type-of-primop-value-fun op)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1128,7 +1414,10 @@
      and hence the frames over which the application is lifted.")
    (xdoc::p
     "It is an error if a non-function leaf is reached,
-     or if an empty vector is reached, which has no function to return.")
+     or if an empty vector is reached, which has no function to return.
+     A @(':primop') leaf must be applicable to expression values
+     (see @(tsee primop-value-funp));
+     otherwise, it is an error as well.")
    (xdoc::p
     "It should be an invariant that, in a well-formed expression value,
      all elements (if the expression value is not scalar) have equivalent types,
@@ -1143,7 +1432,9 @@
   (expr-value-case
    val
    :base (reserr nil)
-   :primop (expr-value-fix val)
+   :primop (if (primop-value-funp val.val)
+               (expr-value-fix val)
+             (reserr nil))
    :lambda (expr-value-fix val)
    :tlambda (reserr nil)
    :ilambda (reserr nil)
@@ -1152,7 +1443,17 @@
                (expr-value-first-fun (car val.elems))
              (reserr nil))
    :vector-empty (reserr nil))
-  :measure (expr-value-count val))
+  :measure (expr-value-count val)
+
+  ///
+
+  (defret primop-value-funp-of-expr-value-first-fun
+    (implies (and (not (reserrp fval))
+                  (expr-value-case fval :primop))
+             (primop-value-funp (expr-value-primop->val fval)))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable expr-value-first-fun)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1179,7 +1480,7 @@
      whose dimensions are returned.
      For a primitive operation,
      we likewise read the input types of its function type
-     (see @(tsee primop-type)),
+     (see @(tsee type-of-primop-value-fun)),
      which are all array types,
      and return their dimensions.
      It is an error if the value is not a function value,
@@ -1190,14 +1491,13 @@
     (expr-value-case
      fval
      :lambda (b* ((tvals (var+typevalue-list->type
-                          (expr-value-lambda->params fval)))
-                  ((unless (type-value-list-case-array tvals)) (reserr nil)))
-               (type-value-array-list->dims tvals))
+                          (expr-value-lambda->params fval))))
+               (dims-of-type-value-list tvals))
      :primop (b* ((tvals (type-value-fun->in
                           (type-value-array->elem
-                           (primop-type (expr-value-primop->val fval)))))
-                  ((unless (type-value-list-case-array tvals)) (reserr nil)))
-               (type-value-array-list->dims tvals))
+                           (type-of-primop-value-fun
+                            (expr-value-primop->val fval))))))
+               (dims-of-type-value-list tvals))
      :otherwise (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable expr-valuep-when-result-not-error))))
 
@@ -1219,7 +1519,7 @@
     "We read the codomain from a representative function leaf
      (see @(tsee expr-value-first-fun)):
      for a primitive operation, it is the output of its function type
-     (see @(tsee primop-type));
+     (see @(tsee type-of-primop-value-fun));
      for a lambda abstraction, it is the body type stored in the value,
      which must be present,
      because evaluation is only meaningful on
@@ -1237,7 +1537,7 @@
     (expr-value-case
      fval
      :primop (type-value-fun->out
-              (type-value-array->elem (primop-type fval.val)))
+              (type-value-array->elem (type-of-primop-value-fun fval.val)))
      :lambda (b* ((type? (expr-value-lambda->type? fval)))
                (type-value-option-case
                 type?
@@ -1251,6 +1551,9 @@
 (defines cells-at-depth-in-expr-values
   :short "Cells of an expression value, or list of expression values,
           at a given frame depth."
+  ;; The flag function is used by theorems in other books
+  ;; (see renaming-evaluation.lisp).
+  :flag-local nil
 
   (define cells-at-depth-in-expr-value ((val expr-valuep) (depth natp))
     :returns (cells expr-value-list-resultp)

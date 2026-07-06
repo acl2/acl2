@@ -12,6 +12,7 @@
 
 (include-book "evaluation")
 (include-book "parser-interface")
+(include-book "type-checking")
 (include-book "value-printing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -23,17 +24,22 @@
 (define eval-file ((filename stringp) state &key ((limit natp) '1000000))
   :parents (evaluation)
   :returns (mv result state)
-  :hooks nil
-  :guard-hints (("Goal" :in-theory (enable progp-when-result-not-error)))
-  :short "Parse a Remora file, evaluate it, and print the resulting value."
+  :guard-hints (("Goal" :in-theory (enable progp-when-result-not-error
+                                           type+prog-p-when-result-not-error)))
+  :short "Parse a Remora file, type-check it, evaluate it,
+          and print the resulting value."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Parses the Remora program in @('filename') (via @(tsee parse-from-file))
+    "Parses the Remora program in @('filename') (via @(tsee parse-from-file)),
+     type-checks it (via @(tsee check-program)),
      and evaluates it with @(tsee eval-prog), printing the resulting
      expression value in Remora concrete syntax via @(tsee print-expr-value).
      Returns @('(mv result state)'), where @('result') is the @(tsee expr-value)
-     of the program, or a @(tsee reserrp) when parsing or evaluation fails.")
+     of the program, or a @(tsee reserrp) when parsing, type checking,
+     or evaluation fails.
+     The program that is evaluated is the one returned by the type checker
+     (currently identical to the parsed one; see @(tsee check-program)).")
    (xdoc::p
     "Printing the value fails only for float values with no literal syntax
      (see @(tsee float-value-to-float-lit)); in that case the raw value is
@@ -46,7 +52,12 @@
        ((when (reserrp ast))
         (b* ((- (cw "Parse error in ~s0: ~x1~%" filename ast)))
           (mv ast state)))
-       (val (eval-prog ast limit))
+       (type+prog (check-program ast))
+       ((when (reserrp type+prog))
+        (b* ((- (cw "Type checking ~s0 failed: ~x1~%" filename type+prog)))
+          (mv type+prog state)))
+       ((type+prog tp) type+prog)
+       (val (eval-prog tp.prog limit))
        ((when (reserrp val))
         (b* ((- (cw "Evaluating ~s0 failed: ~x1~%" filename val)))
           (mv val state)))
