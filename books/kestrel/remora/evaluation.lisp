@@ -101,10 +101,8 @@
        we subtract all the ones after the first from the first."))
     (dim-case
      dim
-     :var (b* ((var+val (omap::assoc (ispace-var-dim dim.name)
-                                     (denv->ispace-vars denv)))
-               ((unless var+val) (reserr nil))
-               (val (cdr var+val))
+     :var (b* ((val (denv-lookup-ispace-var (ispace-var-dim dim.name) denv))
+               ((unless val) (reserr nil))
                ((unless (ispace-value-case val :dim)) (reserr nil)))
             (ispace-value-dim->val val))
      :const dim.val
@@ -202,10 +200,8 @@
        since the two constructs are in fact equivalent."))
     (shape-case
      shape
-     :var (b* ((var+val (omap::assoc (ispace-var-shape shape.name)
-                                     (denv->ispace-vars denv)))
-               ((unless var+val) (reserr nil))
-               (val (cdr var+val))
+     :var (b* ((val (denv-lookup-ispace-var (ispace-var-shape shape.name) denv))
+               ((unless val) (reserr nil))
                ((unless (ispace-value-case val :shape)) (reserr nil)))
             (ispace-value-shape->val val))
      :dims (b* (((ok ints) (eval-dim-list shape.dims denv))
@@ -312,9 +308,9 @@
        They are treated like lambda abstractions."))
     (type-case
      type
-     :var (b* ((var+val (omap::assoc type.var (denv->type-vars denv)))
-               ((unless var+val) (reserr nil)))
-            (cdr var+val))
+     :var (b* ((val (denv-lookup-type-var type.var denv))
+               ((unless val) (reserr nil)))
+            val)
      :base (type-value-base type.type)
      :array (b* (((ok elem-tval) (eval-type type.elem denv))
                  ((ok ival) (eval-ispace type.ispace denv))
@@ -1142,9 +1138,9 @@
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-case
        expr
-       :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
-                 ((unless var+val) (reserr nil)))
-              (cdr var+val))
+       :var (b* ((val (denv-lookup-expr-var expr.name denv))
+                 ((unless val) (reserr nil)))
+              val)
        :atom (eval-atom expr.atom denv (1- limit))
        :array (b* (((when (member-equal 0 expr.dims)) (reserr nil))
                    ((ok vals) (eval-atom-list expr.atoms denv (1- limit)))
