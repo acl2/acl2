@@ -504,4 +504,16 @@
    (xdoc::p
     "We return the associated expression value,
      or @('nil') if the variable is not present."))
-  (cdr (omap::assoc (str::str-fix var) (denv->expr-vars denv))))
+  (cdr (omap::assoc (str::str-fix var) (denv->expr-vars denv)))
+
+  ///
+
+  (defret expr-value-wfp-of-denv-lookup-expr-var
+    (implies expr-value?
+             (expr-value-wfp expr-value?))
+    :hyp (denv-wfp denv)
+    :hints
+    (("Goal"
+      :in-theory
+      (enable expr-value-wfp-of-cdr-of-assoc-when-string-expr-value-map-wfp
+              denv-wfp)))))
