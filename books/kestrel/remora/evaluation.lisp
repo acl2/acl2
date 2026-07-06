@@ -101,8 +101,8 @@
        we subtract all the ones after the first from the first."))
     (dim-case
      dim
-     :var (b* ((val (denv-lookup-ispace-var (ispace-var-dim dim.name) denv))
-               ((unless val) (reserr nil))
+     :var (b* (((ok val)
+                (denv-lookup-ispace-var (ispace-var-dim dim.name) denv))
                ((unless (ispace-value-case val :dim)) (reserr nil)))
             (ispace-value-dim->val val))
      :const dim.val
@@ -200,8 +200,8 @@
        since the two constructs are in fact equivalent."))
     (shape-case
      shape
-     :var (b* ((val (denv-lookup-ispace-var (ispace-var-shape shape.name) denv))
-               ((unless val) (reserr nil))
+     :var (b* (((ok val)
+                (denv-lookup-ispace-var (ispace-var-shape shape.name) denv))
                ((unless (ispace-value-case val :shape)) (reserr nil)))
             (ispace-value-shape->val val))
      :dims (b* (((ok ints) (eval-dim-list shape.dims denv))
@@ -308,9 +308,7 @@
        They are treated like lambda abstractions."))
     (type-case
      type
-     :var (b* ((val (denv-lookup-type-var type.var denv))
-               ((unless val) (reserr nil)))
-            val)
+     :var (denv-lookup-type-var type.var denv)
      :base (type-value-base type.type)
      :array (b* (((ok elem-tval) (eval-type type.elem denv))
                  ((ok ival) (eval-ispace type.ispace denv))
@@ -1138,9 +1136,7 @@
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-case
        expr
-       :var (b* ((val (denv-lookup-expr-var expr.name denv))
-                 ((unless val) (reserr nil)))
-              val)
+       :var (denv-lookup-expr-var expr.name denv)
        :atom (eval-atom expr.atom denv (1- limit))
        :array (b* (((when (member-equal 0 expr.dims)) (reserr nil))
                    ((ok vals) (eval-atom-list expr.atoms denv (1- limit)))

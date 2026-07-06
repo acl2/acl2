@@ -404,7 +404,7 @@
     "This may override an existing variable,
      which is intended hiding behavior."))
   (change-denv denv
-               :expr-vars (omap::update (str::str-fix var)
+               :expr-vars (omap::update (str-fix var)
                                         (expr-value-fix val)
                                         (denv->expr-vars denv)))
 
@@ -467,50 +467,50 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define denv-lookup-ispace-var ((var ispace-varp) (denv denvp))
-  :returns (ispace-val? ispace-value-optionp
-                        :hints
-                        (("Goal" :in-theory (enable ispace-value-optionp))))
+  :returns (ispace-val ispace-value-resultp)
   :short "Lookup an ispace variable in a dynamic environment."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We return the associated ispace value,
-     or @('nil') if the variable is not present."))
-  (cdr (omap::assoc (ispace-var-fix var) (denv->ispace-vars denv))))
+    "We return an error if the variable is not in the environment."))
+  (b* ((var+val (omap::assoc (ispace-var-fix var) (denv->ispace-vars denv))))
+    (if var+val
+        (cdr var+val)
+      (reserr nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define denv-lookup-type-var ((var type-varp) (denv denvp))
-  :returns (type-val? type-value-optionp
-                      :hints
-                      (("Goal" :in-theory (enable type-value-optionp))))
+  :returns (type-val type-value-resultp)
   :short "Lookup a type variable in a dynamic environment."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We return the associated type value,
-     or @('nil') if the variable is not present."))
-  (cdr (omap::assoc (type-var-fix var) (denv->type-vars denv))))
+    "We return an error if the variable is not in the environment."))
+  (b* ((var+val (omap::assoc (type-var-fix var) (denv->type-vars denv))))
+    (if var+val
+        (cdr var+val)
+      (reserr nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define denv-lookup-expr-var ((var stringp) (denv denvp))
-  :returns (expr-value? expr-value-optionp
-                        :hints
-                        (("Goal" :in-theory (enable expr-value-optionp))))
+  :returns (expr-value expr-value-resultp)
   :short "Lookup an expression variable in a dynamic environment."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We return the associated expression value,
-     or @('nil') if the variable is not present."))
-  (cdr (omap::assoc (str::str-fix var) (denv->expr-vars denv)))
+    "We return an error if the variable is not in the environment."))
+  (b* ((var+val (omap::assoc (str-fix var) (denv->expr-vars denv))))
+    (if var+val
+        (cdr var+val)
+      (reserr nil)))
 
   ///
 
   (defret expr-value-wfp-of-denv-lookup-expr-var
-    (implies expr-value?
-             (expr-value-wfp expr-value?))
+    (implies (not (reserrp expr-value))
+             (expr-value-wfp expr-value))
     :hyp (denv-wfp denv)
     :hints
     (("Goal"
