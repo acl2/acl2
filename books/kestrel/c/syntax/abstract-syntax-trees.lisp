@@ -113,14 +113,15 @@
     ") and that is calculated by "
     (xdoc::seetopic "validator" "validation")
     ". This information is stored in the abstract syntax for easy access,
-     e.g. access by tools to transform the abstract syntax.")
-   (xdoc::p
-    "This additional information can be also used, in the future,
+     e.g. access by tools to transform the abstract syntax.
+     This additional information can be also used, in the future,
      for other purposes than storing results from validation.
      This information in our fixtypes is untyped,
      which, in ACL2, can be regarded as analogous to
      using polymorphic types for the abstract syntax,
-     parameterized over the type of the additional information."))
+     parameterized over the type of the additional information.
+     In the definition of the AST fixtypes,
+     we uniformly use the name @('info') for slots for this information."))
   :order-subtopics t
   :default-parent t)
 
@@ -381,10 +382,7 @@
      As mentioned in @(tsee dec/oct/hex-const),
      our fixtypes are factored slightly differently.
      An integer constant consists of a decimal, octal, or hexadecimal constant,
-     and of an optional integer suffix.")
-   (xdoc::p
-    "Integer constants may be accompanied by some additional information,
-     such as the value calculated during validation."))
+     and of an optional integer suffix."))
   ((core dec/oct/hex-const)
    (suffix? isuffix-option)
    (info any))
@@ -1472,12 +1470,6 @@
        This means that our fixtypes are a bit more general,
        but we can use separate predicates to enforce restrictions.")
      (xdoc::p
-      "Some kinds of expressions may include some additional information
-       (e.g. identifiers),
-       such as types calculated during validation.
-       This is an instance of the additional information
-       discussed in @(tsee abstract-syntax).")
-     (xdoc::p
       "In order to capture
        possibly redundant parenthesization from the concrete syntax,
        we include, in this fixtype, a case @(':paren')
@@ -2528,10 +2520,7 @@
        So we prefer the shorter name.
        Note that we also combine it in other fixtype names,
        e.g. in @(tsee amb-expr/tyname),
-       where the shorter name pays off in readability.")
-     (xdoc::p
-      "Type names may be accompanied by some additional information,
-       such as the type calculated during validation."))
+       where the shorter name pays off in readability."))
     ((specquals spec/qual-list)
      (declor? absdeclor-option)
      (info any))
@@ -2643,11 +2632,7 @@
      (xdoc::p
       "To make this definition simpler,
        we allow an absent declarator and an absent expression,
-       even though this is disallowed in the concrete syntax.")
-     (xdoc::p
-      "Structure declarators may be accompanied
-       by some additional information,
-       e.g. from validation."))
+       even though this is disallowed in the concrete syntax."))
     ((declor? declor-option)
      (expr? const-expr-option)
      (info any))
@@ -2847,13 +2832,7 @@
       "As GCC extensions, we allow
        an optional assembler name specifier
        and a possibly empty of attribute specifiers.
-       See the ABNF grammar.")
-     (xdoc::p
-      "Initializer declarators may be accompanied
-       by some additional information,
-       such as the "
-      (xdoc::seetopic "uid" "unique-identifier")
-      " calculated during validation."))
+       See the ABNF grammar."))
     ((declor declor)
      (asm? asm-name-spec-option)
      (attribs attrib-spec-list)
@@ -3800,9 +3779,7 @@
     "As discussed in @(tsee trans-item),
      we allow other entities, besides external declaration.
      Thus, a translation unit, in our abstract syntax,
-     consists of zero or more translation items.")
-   (xdoc::p
-    "We also add a slot with additional information, e.g. from validation."))
+     consists of zero or more translation items."))
   ((items trans-item-list)
    (info any))
   :pred trans-unitp
