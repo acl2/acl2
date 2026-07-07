@@ -226,7 +226,7 @@
     (implies (and (expr-case expr :var)
                   (not (zp limit)))
              (equal (eval-expr expr denv limit)
-                    (denv-lookup-expr-var (expr-var->name expr) denv)))
+                    (expr-denv-lookup-expr (expr-var->name expr) denv)))
     :enable eval-expr)
 
   (defruled eval-expr-when-app
