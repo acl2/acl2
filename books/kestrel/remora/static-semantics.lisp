@@ -14,7 +14,7 @@
 (include-book "ispace-equivalence")
 (include-book "type-equivalence")
 (include-book "type-checking")
-(include-book "dimension-equivalence-rules")
+(include-book "dimension-equivalence-infrules")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,4 +34,4 @@
                     ispace-equivalence
                     type-equivalence
                     type-checking
-                    dimension-equivalence-rules))
+                    dimension-equivalence-inference-rules))

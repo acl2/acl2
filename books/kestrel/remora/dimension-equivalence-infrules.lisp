@@ -19,7 +19,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ dimension-equivalence-rules
+(defxdoc+ dimension-equivalence-inference-rules
   :parents (static-semantics)
   :short "Inference rules for dimension equivalence."
   :long
