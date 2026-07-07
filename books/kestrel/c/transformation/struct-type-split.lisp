@@ -34,10 +34,11 @@
 (include-book "utilities/context-msg")
 (include-book "utilities/fresh-ident")
 
+(local (acl2::controlled-configuration :hooks nil))
 (local (include-book "std/basic/controlled-configuration" :dir :system))
+
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "std/system/w" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -234,7 +235,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sts-error-in-translation-unit
-  ((msg maybe-msgp)
+  ((msg msgp)
    (st sts-split-statep))
   :returns (msg$ msgp)
   :short "Augment an error message with the file path
@@ -575,27 +576,17 @@
   :short "Best-effort type of an expression, read from its annotation."
   :long
   (xdoc::topstring-p
-   "This reads the type recorded by the validator
-    on the expression kinds that carry it,
-    returning the unknown type for the others.
-    Unlike @(tsee c$::expr-type), it does not require
-    the expression to be unambiguous,
-    so that it can be used in the transformation,
-    which is guarded only by the annotation predicates;
-    in exchange, it does not look through
-    parenthesized, comma, or conditional expressions.")
-  (c$::expr-case
-    expr
-    :ident (c$::var-vinfo->type expr.info)
-    :const (c$::type-vinfo->type expr.info)
-    :string (c$::type-vinfo->type expr.info)
-    :arrsub (c$::type-vinfo->type expr.info)
-    :funcall (c$::type-vinfo->type expr.info)
-    :member (c$::type-vinfo->type expr.info)
-    :memberp (c$::type-vinfo->type expr.info)
-    :unary (c$::type-vinfo->type expr.info)
-    :binary (c$::type-vinfo->type expr.info)
-    :otherwise (c$::type-unknown)))
+   "This delegates to @(tsee c$::expr-type) when the expression is
+    unambiguous, and returns the unknown type otherwise.
+    The unambiguity check is needed because @(tsee c$::expr-type) is
+    guarded by @(tsee c$::expr-unambp), while the transformation is
+    guarded only by the annotation predicates.
+    This is a temporary measure;
+    the long-term solution is to add an unambiguity guard to the
+    @(see sts-split) clique, and then call @(tsee c$::expr-type) directly.")
+  (if (c$::expr-unambp expr)
+      (c$::expr-type expr)
+    (c$::type-unknown)))
 
 (define sts-split-member-right-name
   ((arg-type c$::typep)
@@ -4254,6 +4245,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruledl msgp-when-maybe-msgp-and-non-nil
+  (implies (and (maybe-msgp x) x)
+           (msgp x))
+  :enable maybe-msgp)
+
 (define sts-split-trans-units
   ((tag identp)
    (primary-type c$::typep)
@@ -4347,9 +4343,16 @@
     (retok (omap::update filepath tunit rest) st))
   :guard-debug t
   :verify-guards :after-returns
+  ;; The errors passed to sts-error-in-translation-unit are known to be
+  ;; non-nil (and hence msgp, not just maybe-msgp) from the guarding tests:
+  ;; the return-type lemmas establish their maybe-msgp-ness, and
+  ;; msgp-when-maybe-msgp-and-non-nil then refines it to msgp.
   :guard-hints
   (("Goal" :in-theory (enable c$::filepath-trans-unit-map-annop
-                              c$::trans-unit-annop))))
+                              c$::trans-unit-annop
+                              maybe-msgp-of-sts-check-completions
+                              maybe-msgp-of-trans-unit-sts-split.er?
+                              msgp-when-maybe-msgp-and-non-nil))))
 
 (define sts-split-code-ensemble
   ((tag identp)
