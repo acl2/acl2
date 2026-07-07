@@ -1,0 +1,10 @@
+{"jsonrpc": "2.0",
+ "method": "struct-type-split",
+ "params": {"old-dir": "input-files",
+            "new-dir": "out",
+            "files": ["test1.c"],
+            "struct-tag": "point",
+            "right-members": ["z"],
+            "new-tag": "point_right",
+            "preprocess": false},
+ "id": 1}
