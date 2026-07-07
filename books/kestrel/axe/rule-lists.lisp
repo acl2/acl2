@@ -169,14 +169,15 @@
             ;; ifix can lead to problems (add rules to handle the expanded ifix in an argument position?)
 
             ;; TODO: eventually phase out myif in favor of if
+            myif-of-t
+            myif-of-nil
+            myif-same-branches
+            myif-of-t-and-nil-when-booleanp
+            myif-nil-t ; introduces NOT
+
             myif-becomes-boolif-axe
             myif-of-not
-            myif-of-nil
-            myif-of-t
             myif-of-constant-when-not-nil
-            myif-nil-t
-            myif-of-t-and-nil-when-booleanp
-            myif-same-branches
             myif-same-test
             myif-same-test2
             myif-same-arg1-arg2-when-booleanp
@@ -186,6 +187,9 @@
             if-of-nil
             if-same-branches
             if-of-t-and-nil-when-booleanp
+            if-nil-t ; introduces NOT
+            ;; if-becomes-boolif-axe ; try this?
+
             not-of-if
 
             fix-when-acl2-numberp
@@ -1340,7 +1344,7 @@
 ;todo: some of these are not bv rules?
 (defun more-rules-bv-misc ()
   (declare (xargs :guard t))
-  '(if-becomes-myif ;can ifs ever arise from simulation?  probably? ; todo: move
+  '(if-becomes-myif ;can ifs ever arise from simulation?  probably? ; todo: drop (but that caused problems!)
 
     bitnot-becomes-bitxor-with-1 ; todo: which way should we go here?
 
@@ -1364,6 +1368,9 @@
     bvand-with-small-arg1
     bvand-with-small-arg2
 
+    ;; if-becomes-bvif-1-axe ; todo: uncomment, but that caused problems
+    ;; if-becomes-bvif-2-axe
+    ;; if-becomes-bvif-3-axe
     myif-becomes-bvif-1-axe ; kill special case rules for this?
     myif-becomes-bvif-2-axe
     myif-becomes-bvif-3-axe

@@ -184,7 +184,9 @@
      (see @(tsee init-denv)).")
    (xdoc::p
     "The names (the map keys) are the surface names [impl],
-     exactly as in @(tsee primop-types)."))
+     exactly as in @(tsee primop-types).
+     A polymorphic operation like @('length')
+     is associated to its uninstantiated stage."))
   (omap::from-alist
    (list (cons "+" (expr-value-primop (primop-value-int-add)))
          (cons "-" (expr-value-primop (primop-value-int-sub)))
@@ -232,7 +234,8 @@
          (cons "bool.==" (expr-value-primop (primop-value-bool-eq)))
          (cons "bool.!=" (expr-value-primop (primop-value-bool-neq)))
          (cons "bool->i" (expr-value-primop (primop-value-bool-to-int)))
-         (cons "bool->f" (expr-value-primop (primop-value-bool-to-float))))))
+         (cons "bool->f" (expr-value-primop (primop-value-bool-to-float)))
+         (cons "length" (expr-value-primop (primop-value-length))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -401,7 +404,7 @@
     "This may override an existing variable,
      which is intended hiding behavior."))
   (change-denv denv
-               :expr-vars (omap::update (str::str-fix var)
+               :expr-vars (omap::update (str-fix var)
                                         (expr-value-fix val)
                                         (denv->expr-vars denv)))
 
@@ -460,3 +463,57 @@
                   (expr-value-list-wfp vals))
              (denv-wfp new-denv))
     :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define denv-lookup-ispace-var ((var ispace-varp) (denv denvp))
+  :returns (ispace-val ispace-value-resultp)
+  :short "Lookup an ispace variable in a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return an error if the variable is not in the environment."))
+  (b* ((var+val (omap::assoc (ispace-var-fix var) (denv->ispace-vars denv))))
+    (if var+val
+        (cdr var+val)
+      (reserr nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define denv-lookup-type-var ((var type-varp) (denv denvp))
+  :returns (type-val type-value-resultp)
+  :short "Lookup a type variable in a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return an error if the variable is not in the environment."))
+  (b* ((var+val (omap::assoc (type-var-fix var) (denv->type-vars denv))))
+    (if var+val
+        (cdr var+val)
+      (reserr nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define denv-lookup-expr-var ((var stringp) (denv denvp))
+  :returns (expr-value expr-value-resultp)
+  :short "Lookup an expression variable in a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return an error if the variable is not in the environment."))
+  (b* ((var+val (omap::assoc (str-fix var) (denv->expr-vars denv))))
+    (if var+val
+        (cdr var+val)
+      (reserr nil)))
+
+  ///
+
+  (defret expr-value-wfp-of-denv-lookup-expr-var
+    (implies (not (reserrp expr-value))
+             (expr-value-wfp expr-value))
+    :hyp (denv-wfp denv)
+    :hints
+    (("Goal"
+      :in-theory
+      (enable expr-value-wfp-of-cdr-of-assoc-when-string-expr-value-map-wfp
+              denv-wfp)))))

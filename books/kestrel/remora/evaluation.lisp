@@ -101,10 +101,8 @@
        we subtract all the ones after the first from the first."))
     (dim-case
      dim
-     :var (b* ((var+val (omap::assoc (ispace-var-dim dim.name)
-                                     (denv->ispace-vars denv)))
-               ((unless var+val) (reserr nil))
-               (val (cdr var+val))
+     :var (b* (((ok val)
+                (denv-lookup-ispace-var (ispace-var-dim dim.name) denv))
                ((unless (ispace-value-case val :dim)) (reserr nil)))
             (ispace-value-dim->val val))
      :const dim.val
@@ -202,10 +200,8 @@
        since the two constructs are in fact equivalent."))
     (shape-case
      shape
-     :var (b* ((var+val (omap::assoc (ispace-var-shape shape.name)
-                                     (denv->ispace-vars denv)))
-               ((unless var+val) (reserr nil))
-               (val (cdr var+val))
+     :var (b* (((ok val)
+                (denv-lookup-ispace-var (ispace-var-shape shape.name) denv))
                ((unless (ispace-value-case val :shape)) (reserr nil)))
             (ispace-value-shape->val val))
      :dims (b* (((ok ints) (eval-dim-list shape.dims denv))
@@ -312,9 +308,7 @@
        They are treated like lambda abstractions."))
     (type-case
      type
-     :var (b* ((var+val (omap::assoc type.var (denv->type-vars denv)))
-               ((unless var+val) (reserr nil)))
-            (cdr var+val))
+     :var (denv-lookup-type-var type.var denv)
      :base (type-value-base type.type)
      :array (b* (((ok elem-tval) (eval-type type.elem denv))
                  ((ok ival) (eval-ispace type.ispace denv))
@@ -968,80 +962,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-values-match-type-vars-p ((tvals type-value-listp)
-                                       (vars type-var-listp))
-  :returns (yes/no booleanp)
-  :short "Check that type values match type variables
-          in number and kind."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The two lists must have the same length,
-     and, element-wise, each type value must match
-     the kind of the corresponding type variable:
-     an @(':atom') type variable must be matched by an atom type value,
-     and an @(':array') type variable by an array type value.
-     A type value has the array kind when it is an @(':array');
-     every other type value has the atom kind.")
-   (xdoc::p
-    "This is used to evaluate type applications,
-     where the type values that a type lambda is applied to
-     must match the type parameters of the type lambda."))
-  (b* (((when (endp tvals)) (endp vars))
-       ((when (endp vars)) nil)
-       (tval (car tvals))
-       (var (car vars)))
-    (and (type-var-case var
-                        :atom (not (type-value-case tval :array))
-                        :array (type-value-case tval :array))
-         (type-values-match-type-vars-p (cdr tvals) (cdr vars))))
-
-  ///
-
-  (defrule len-equal-when-type-values-match-type-vars-p
-    (implies (type-values-match-type-vars-p tvals vars)
-             (equal (len tvals) (len vars)))
-    :rule-classes :forward-chaining
-    :induct t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ispace-values-match-ispace-vars-p ((ivals ispace-value-listp)
-                                           (vars ispace-var-listp))
-  :returns (yes/no booleanp)
-  :short "Check that ispace values match ispace variables
-          in number and sort."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The two lists must have the same length,
-     and, element-wise, each ispace value must match
-     the sort of the corresponding ispace variable:
-     a @(':dim') ispace variable must be matched by a @(':dim') ispace value,
-     and a @(':shape') ispace variable by a @(':shape') ispace value.")
-   (xdoc::p
-    "This is used to evaluate ispace applications,
-     where the ispace values that an ispace lambda is applied to
-     must match the ispace parameters of the ispace lambda."))
-  (b* (((when (endp ivals)) (endp vars))
-       ((when (endp vars)) nil)
-       (ival (car ivals))
-       (var (car vars)))
-    (and (ispace-var-case var
-                          :dim (ispace-value-case ival :dim)
-                          :shape (ispace-value-case ival :shape))
-         (ispace-values-match-ispace-vars-p (cdr ivals) (cdr vars))))
-
-  ///
-
-  (defrule len-equal-when-ispace-values-match-ispace-vars-p
-    (implies (ispace-values-match-ispace-vars-p ivals vars)
-             (equal (len ivals) (len vars)))
-    :rule-classes :forward-chaining
-    :induct t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define expr-values-match-type-values-p ((vals expr-value-listp)
                                          (tvals type-value-listp))
   :guard (expr-value-list-wfp vals)
@@ -1216,9 +1136,7 @@
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-case
        expr
-       :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
-                 ((unless var+val) (reserr nil)))
-              (cdr var+val))
+       :var (denv-lookup-expr-var expr.name denv)
        :atom (eval-atom expr.atom denv (1- limit))
        :array (b* (((when (member-equal 0 expr.dims)) (reserr nil))
                    ((ok vals) (eval-atom-list expr.atoms denv (1- limit)))
@@ -1612,10 +1530,11 @@
        and @('tvals') are the expression values of the type arguments.")
      (xdoc::p
       "The function value must be an array, of any rank,
-       whose elements are type lambda abstractions;
+       whose elements are type lambda abstractions
+       or primitive operation values applicable to type values;
        the type argument values must match
        the parameters in number and kinds.
-       Each such lambda abstraction is applied to the type argument values.")
+       Each such element is applied to the type argument values.")
      (xdoc::p
       "This ACL2 function performs that element-wise application.
        The base case is that of a scalar (i.e. 0-rank array) function value:
@@ -1624,7 +1543,11 @@
        to associate the arguments with the parameters
        (which may override existing associations,
        which is intended hiding behavior),
-       and we evaluate the body of the type lambda abstraction.")
+       and we evaluate the body of the type lambda abstraction.
+       If instead the scalar function value is
+       a primitive operation value applicable to type values,
+       it is applied to the type argument values
+       via @(tsee eval-primop-tfun).")
      (xdoc::p
       "A non-empty vector function value
        is applied via a separate ACL2 function that goes through the list.
@@ -1664,6 +1587,9 @@
              (reserr nil))
             (denv (denv-add-type-vars funval.params tvals denv)))
          (eval-expr funval.body denv (1- limit)))
+       :primop (if (primop-value-tfunp funval.val)
+                   (eval-primop-tfun funval.val tvals)
+                 (reserr nil))
        :vector
        (b* (((ok vals) (eval-tapp-list funval.elems tvals denv (1- limit)))
             ;; TODO: eliminate the next two checks via proof
@@ -1745,10 +1671,11 @@
        and @('ivals') are the expression values of the ispace arguments.")
      (xdoc::p
       "The function value must be an array, of any rank,
-       whose elements are ispace lambda abstractions;
+       whose elements are ispace lambda abstractions
+       or primitive operation values applicable to ispace values;
        the ispace argument values must match
        the parameters in number and sorts.
-       Each such lambda abstraction is applied to the ispace argument values.")
+       Each such element is applied to the ispace argument values.")
      (xdoc::p
       "This ACL2 function performs that element-wise application.
        The base case is that of a scalar (i.e. 0-rank array) function value:
@@ -1757,7 +1684,11 @@
        to associate the arguments with the parameters
        (which may override existing associations,
        which is intended hiding behavior),
-       and we evaluate the body of the ispace lambda abstraction.")
+       and we evaluate the body of the ispace lambda abstraction.
+       If instead the scalar function value is
+       a primitive operation value applicable to ispace values,
+       it is applied to the ispace argument values
+       via @(tsee eval-primop-ifun).")
      (xdoc::p
       "A non-empty vector function value
        is applied via a separate ACL2 function that goes through the list.
@@ -1797,6 +1728,9 @@
              (reserr nil))
             (denv (denv-add-ispace-vars funval.params ivals denv)))
          (eval-expr funval.body denv (1- limit)))
+       :primop (if (primop-value-ifunp funval.val)
+                   (eval-primop-ifun funval.val ivals)
+                 (reserr nil))
        :vector
        (b* (((ok vals) (eval-iapp-list funval.elems ivals denv (1- limit)))
             ;; TODO: eliminate the next two checks via proof
@@ -2005,9 +1939,10 @@
     (b* (((when (zp limit)) (reserr :limit))
          ((when (endp funcells)) nil)
          (argcell-lists (expr-value-list-list-fix argcell-lists))
+         ;; TODO: eliminate the next check via proof (may need a guard)
+         ((unless (cons-listp argcell-lists)) (reserr nil))
          (argcells (car-list argcell-lists))
-         ;; TODO: eliminate the next two checks via proof
-         ((unless (expr-value-listp argcells)) (reserr nil))
+         ;; TODO: eliminate the next check via proof
          ((unless (expr-value-list-wfp argcells)) (reserr nil))
          ((ok val) (eval-app-cell (car funcells) argcells denv (1- limit)))
          ((ok vals) (eval-app-list (cdr funcells)
@@ -2040,8 +1975,9 @@
        which is intended hiding behavior),
        and we evaluate the body of the lambda abstraction.")
      (xdoc::p
-      "If the function cell is a primitive operation,
-       it is applied to the argument cells via @(tsee eval-primop),
+      "If the function cell is
+       a primitive operation value applicable to expression values,
+       it is applied to the argument cells via @(tsee eval-primop-fun),
        which dispatches to the corresponding ACL2 function
        in @(see primitives-evaluation)."))
     (b* (((when (zp limit)) (reserr :limit)))
@@ -2057,7 +1993,9 @@
                    argcells
                    denv)))
          (eval-expr funcell.body denv (1- limit)))
-       :primop (eval-primop funcell.val argcells)
+       :primop (if (primop-value-funp funcell.val)
+                   (eval-primop-fun funcell.val argcells)
+                 (reserr nil))
        :otherwise (reserr nil)))
     :measure (nfix limit))
 
