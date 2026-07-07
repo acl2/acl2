@@ -35,12 +35,11 @@
      in [thesis], [arxiv], and [esop],
      which use beta reduction rules to substitute variables
      (for expressions, types, and ispaces).
-     Our dynamic environment seems needed
-     to express conveniently an interpretive dynamic semantics,
-     which we plan to do first;
+     Our dynamic environment is needed
+     to express conveniently an interpretive dynamic semantics;
      they may be also needed or convenient
      for a rule-based small-step operational semantics,
-     which we plan to do after that.
+     which we plan to do at some point.
      It may also facilitate expressing and proving type soundness.
      If Remora is extended with top-level definitions
      (now there are only @('let') expressions),
