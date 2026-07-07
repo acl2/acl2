@@ -1694,14 +1694,9 @@
               (enum-spec-sts-split type-spec.spec st)))
           (retok (c$::make-type-spec-enum :spec spec) nil st))
         :typedef
-        ;; A use of a typedef name denoting a splittable type
-        ;; is replaced, on the right, by the right typedef name
-        ;; recorded in the identifier map, keyed by the typedef's
-        ;; unique identifier; the typedef declaration, which is
-        ;; processed before any use, populates the map.
-        (b* (((type+uid-vinfo info) type-spec.info)
+        (b* (((c$::type-spec-typedef-info info) type-spec.info)
              ((unless (eq (sts-splittablep info.type
-                                           (sts-split-state->target-struct-uid st))
+                                           (sts-split-state->struct-uid st))
                           t))
               (retok (type-spec-fix type-spec) nil st))
              (right-ident? (omap::assoc info.uid
@@ -3224,13 +3219,6 @@
           (retok (cons left-struct-declon left-rest)
                  (cons right-struct-declon right-rest)
                  st))
-         ;; A member declaration with no declarators in the first place
-         ;; (i.e. an anonymous struct/union member or an unnamed bit field)
-         ;; stays in the left struct type
-         ;; (it cannot be listed in the right member set);
-         ;; it is not dropped from the left struct type,
-         ;; unlike member declarations
-         ;; whose declarators were all routed to the right.
          (orig-emptyp
            (and (struct-declon-case (car struct-declons) :member)
                 (atom (c$::struct-declon-member->declors

@@ -162,6 +162,16 @@
        and a use @('foo_p x;') is split into @('foo_p x;') and @('foo_p_0 x_0;').
        Typedef chains are handled as well.")
      (xdoc::li
+      "Typedefs whose denoted type is splittable
+       (the struct type itself, possibly behind pointers) are supported.
+       Each such typedef is split into a parallel right typedef
+       of the corresponding right type,
+       and uses of the typedef name are split accordingly.
+       For example, @('typedef struct foo *foo_p;') yields a right typedef
+       @('typedef struct foo_right *foo_p_0;'),
+       and a use @('foo_p x;') is split into @('foo_p x;') and @('foo_p_0 x_0;').
+       Typedef chains are handled as well.")
+     (xdoc::li
       "The struct type must not appear in certain expression contexts,
        such as @('sizeof') and @('_Alignof') expressions;
        such occurrences are detected and reported as errors.")
