@@ -864,7 +864,7 @@
              ;; Handle the various kinds of if:
              (if (or (eq 'if fn)
                      (eq 'myif fn))
-                 ;; First, try to resolve the if-test (todo: would like to do this in an iff context):
+                 ;; First, try to resolve the if-test (fixme would like to do this in an iff context):
                  (mv-let (erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                    (b* (((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                          (simplify-tree-and-add-to-dag (farg1 tree) ;the if-test
@@ -1348,8 +1348,8 @@
              ((when (not (dag-fns-include-anyp dag '(if myif boolif bvif)))) ; no benefit from using contexts
               (prog2$ (and print (cw "No IFs to provide context info.)~%"))   ; balances "(Simplifying DAG ...
                       (mv (erp-nil) dag limits state)))
-             (dag-len (+ 1 (top-nodenum dag)))
              (- (and print (cw "~%(Simplifying again with internal contexts (~x0 nodes)...~%" dag-len)))
+             (dag-len (+ 1 (top-nodenum dag)))
              (initial-array-size (+ (* 2 dag-len) external-context-array-len slack-amount)) ;the array starts out containing the dag; we leave space for another copy, plus the external context nodes, plus some slack
              ;;Load all the nodes into the dag-array (todo: could only include nodes that support internal contexts):
              ;; todo: should we start by pre-loading the context array into the dag-array, like we do above?  that might make it harder to figure out what contexts to use?
