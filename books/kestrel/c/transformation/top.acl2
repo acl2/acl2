@@ -15,4 +15,4 @@
 ; the default set in cert.acl2.  Including that book only defines the server
 ; functions; no socket is opened during certification.
 
-; cert-flags: ? t :ttags ((:quicklisp) (:quicklisp.shellpool) (:tshell) (:quicklisp.osicat) (:oslib) (:file-io!) (:jsonrpc-socket))
+; cert-flags: ? t :ttags ((:quicklisp) (:quicklisp.shellpool) (:tshell) (:quicklisp.osicat) (:oslib) (:file-io!) (:jsonrpc-socket) (:quicklisp.usocket))

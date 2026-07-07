@@ -1694,9 +1694,10 @@
               (enum-spec-sts-split type-spec.spec st)))
           (retok (c$::make-type-spec-enum :spec spec) nil st))
         :typedef
-        (b* (((c$::type-spec-typedef-info info) type-spec.info)
-             ((unless (eq (sts-splittablep info.type
-                                           (sts-split-state->struct-uid st))
+        (b* (((type+uid-vinfo info) type-spec.info)
+             ((unless (eq (sts-splittablep
+                            info.type
+                            (sts-split-state->target-struct-uid st))
                           t))
               (retok (type-spec-fix type-spec) nil st))
              (right-ident? (omap::assoc info.uid
