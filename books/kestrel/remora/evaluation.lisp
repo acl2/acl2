@@ -68,7 +68,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-dim ((dim dimp) (denv expr-denvp))
+  (define eval-dim ((dim dimp) (denv ispace-denvp))
     :returns (int integer-resultp)
     :parents (evaluation eval-dims)
     :short "Evaluate a dimension to an integer."
@@ -102,7 +102,7 @@
     (dim-case
      dim
      :var (b* (((ok val)
-                (expr-denv-lookup-ispace (ispace-var-dim dim.name) denv))
+                (ispace-denv-lookup-ispace (ispace-var-dim dim.name) denv))
                ((unless (ispace-value-case val :dim)) (reserr nil)))
             (ispace-value-dim->val val))
      :const dim.val
@@ -118,7 +118,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-dim-list ((dims dim-listp) (denv expr-denvp))
+  (define eval-dim-list ((dims dim-listp) (denv ispace-denvp))
     :returns (ints integer-list-resultp)
     :parents (evaluation eval-dims)
     :short "Evaluate a list of dimensions to a list of integers."
@@ -204,7 +204,9 @@
                 (expr-denv-lookup-ispace (ispace-var-shape shape.name) denv))
                ((unless (ispace-value-case val :shape)) (reserr nil)))
             (ispace-value-shape->val val))
-     :dims (b* (((ok ints) (eval-dim-list shape.dims denv))
+     :dims (b* (((ok ints) (eval-dim-list shape.dims
+                                          (type-denv->ienv
+                                           (expr-denv->tenv denv))))
                 ((unless (nat-listp ints)) (reserr nil)))
              ints)
      :append (b* (((ok natss) (eval-shape-list shape.shapes denv)))
@@ -245,7 +247,9 @@
       "For a shape, we embed the list of naturals into an ispace value."))
     (ispace-case
      ispace
-     :dim (b* (((ok int) (eval-dim ispace.dim denv))
+     :dim (b* (((ok int) (eval-dim ispace.dim
+                                   (type-denv->ienv
+                                    (expr-denv->tenv denv))))
                ((unless (natp int)) (reserr nil)))
             (ispace-value-dim int))
      :shape (b* (((ok nats) (eval-shape ispace.shape denv)))
