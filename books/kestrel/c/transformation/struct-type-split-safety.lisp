@@ -641,6 +641,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define struct-declor-info-sts-safep ((declor? declor-optionp)
+                                      (expr? const-expr-optionp)
+                                      info
+                                      (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a structure declarator
+          is safe for the STS transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since this is a member of a structure,
+     we are not at the top level,
+     so we call @(tsee type-sts-safep) with @('nested') set to @('t'),
+     instead of @(tsee top-type-sts-safep)."))
+  (and (or (type-vinfop info)
+           (raise "Internal error: malformed ~x0." info))
+       (or (type-sts-safep (type-vinfo->type info) t spec)
+           (sts-reject (struct-declor declor? expr? info))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define init-declor-info-sts-safep ((ideclor init-declorp)
                                     (spec sts-struct-specp))
   :returns (yes/no booleanp)
@@ -940,6 +962,13 @@
                                     param-declor.declor
                                     param-declor.info
                                     spec)))
+   (struct-declor (b* (((struct-declor struct-declor)))
+                    (and (declor-option-sts-safep struct-declor.declor? spec)
+                         (const-expr-option-sts-safep struct-declor.expr? spec)
+                         (struct-declor-info-sts-safep struct-declor.declor?
+                                                       struct-declor.expr?
+                                                       struct-declor.info
+                                                       spec))))
    (init-declor (b* (((init-declor init-declor)))
                   (and (declor-sts-safep init-declor.declor spec)
                        (attrib-spec-list-sts-safep init-declor.attribs spec)
