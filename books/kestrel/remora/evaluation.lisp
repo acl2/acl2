@@ -101,10 +101,8 @@
        we subtract all the ones after the first from the first."))
     (dim-case
      dim
-     :var (b* ((var+val (omap::assoc (ispace-var-dim dim.name)
-                                     (denv->ispace-vars denv)))
-               ((unless var+val) (reserr nil))
-               (val (cdr var+val))
+     :var (b* (((ok val)
+                (denv-lookup-ispace-var (ispace-var-dim dim.name) denv))
                ((unless (ispace-value-case val :dim)) (reserr nil)))
             (ispace-value-dim->val val))
      :const dim.val
@@ -202,10 +200,8 @@
        since the two constructs are in fact equivalent."))
     (shape-case
      shape
-     :var (b* ((var+val (omap::assoc (ispace-var-shape shape.name)
-                                     (denv->ispace-vars denv)))
-               ((unless var+val) (reserr nil))
-               (val (cdr var+val))
+     :var (b* (((ok val)
+                (denv-lookup-ispace-var (ispace-var-shape shape.name) denv))
                ((unless (ispace-value-case val :shape)) (reserr nil)))
             (ispace-value-shape->val val))
      :dims (b* (((ok ints) (eval-dim-list shape.dims denv))
@@ -312,9 +308,7 @@
        They are treated like lambda abstractions."))
     (type-case
      type
-     :var (b* ((var+val (omap::assoc type.var (denv->type-vars denv)))
-               ((unless var+val) (reserr nil)))
-            (cdr var+val))
+     :var (denv-lookup-type-var type.var denv)
      :base (type-value-base type.type)
      :array (b* (((ok elem-tval) (eval-type type.elem denv))
                  ((ok ival) (eval-ispace type.ispace denv))
@@ -1142,9 +1136,7 @@
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-case
        expr
-       :var (b* ((var+val (omap::assoc expr.name (denv->expr-vars denv)))
-                 ((unless var+val) (reserr nil)))
-              (cdr var+val))
+       :var (denv-lookup-expr-var expr.name denv)
        :atom (eval-atom expr.atom denv (1- limit))
        :array (b* (((when (member-equal 0 expr.dims)) (reserr nil))
                    ((ok vals) (eval-atom-list expr.atoms denv (1- limit)))
@@ -1947,9 +1939,10 @@
     (b* (((when (zp limit)) (reserr :limit))
          ((when (endp funcells)) nil)
          (argcell-lists (expr-value-list-list-fix argcell-lists))
+         ;; TODO: eliminate the next check via proof (may need a guard)
+         ((unless (cons-listp argcell-lists)) (reserr nil))
          (argcells (car-list argcell-lists))
-         ;; TODO: eliminate the next two checks via proof
-         ((unless (expr-value-listp argcells)) (reserr nil))
+         ;; TODO: eliminate the next check via proof
          ((unless (expr-value-list-wfp argcells)) (reserr nil))
          ((ok val) (eval-app-cell (car funcells) argcells denv (1- limit)))
          ((ok vals) (eval-app-list (cdr funcells)

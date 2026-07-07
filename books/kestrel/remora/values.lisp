@@ -16,6 +16,7 @@
 (include-book "kestrel/fty/nat-list-list-list" :dir :system)
 (include-book "kestrel/fty/nat-list-result" :dir :system)
 (include-book "kestrel/fty/nat-list-list-result" :dir :system)
+(include-book "std/typed-lists/cons-listp" :dir :system)
 
 (local (include-book "arithmetic"))
 
@@ -84,6 +85,13 @@
   (:dim ((val nat)))
   (:shape ((val nat-list)))
   :pred ispace-valuep)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption ispace-value-option
+  ispace-value
+  :short "Fixtype of optional ispace values."
+  :pred ispace-value-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1004,6 +1012,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption expr-value-option
+  expr-value
+  :short "Fixtype of optional expression values."
+  :pred expr-value-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist expr-value-list-list
   :short "Fixtype of lists of lists of expression values."
   :elt-type expr-value-list
@@ -1031,6 +1046,13 @@
              nfix
              posp)
     :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+
+  (defrule expr-value-listp-of-car-list
+    (implies (expr-value-list-listp x)
+             (equal (expr-value-listp (car-list x))
+                    (cons-listp x)))
+    :induct t
+    :enable car-list)
 
   (defrule expr-value-list-listp-of-cdr-list
     (implies (expr-value-list-listp x)

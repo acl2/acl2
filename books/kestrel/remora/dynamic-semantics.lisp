@@ -15,6 +15,7 @@
 (include-book "dynamic-environments")
 (include-book "primitives-evaluation")
 (include-book "evaluation")
+(include-book "evaluation-rules")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -32,4 +33,5 @@
                     type-value-equivalence
                     dynamic-environments
                     primitives-evaluation
-                    evaluation))
+                    evaluation
+                    evaluation-rules))
