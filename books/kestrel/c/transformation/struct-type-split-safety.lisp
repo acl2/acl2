@@ -934,10 +934,10 @@
      initializer declarators,
      and non-abstract parameter declarators.")
    (xdoc::p
-    "We exclude abstract declarators (@(tsee absdeclor) ASTs)
-     because in combination with type specifiers
-     they may give rise to arrays of the struct being split.
-     This is too coarse, and we will refine it.")
+    "Abstract declarators (@(tsee absdeclor) ASTs) are checked indirectly,
+     via the types of the ASTs where abstract declarators may appear:
+     abstract parameter declarators,
+     and type names.")
    (xdoc::p
     "We exclude assembly, because we do not know what it does exactly.")
    (xdoc::p
@@ -985,7 +985,6 @@
    (decl-spec :stdcall (sts-reject (decl-spec-fix decl-spec)))
    (decl-spec :declspec (sts-reject (decl-spec-fix decl-spec)))
    (desiniter (sts-reject (desiniter-fix desiniter)))
-   (absdeclor (sts-reject (absdeclor-fix absdeclor)))
    (param-declor :nonabstract (and (declor-sts-safep param-declor.declor spec)
                                    (param-declor-nonabstract-sts-safep
                                     param-declor.declor
