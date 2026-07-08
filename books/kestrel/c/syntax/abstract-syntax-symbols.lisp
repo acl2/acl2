@@ -323,6 +323,7 @@
     param-declor-nonabstract->declor
     param-declor-nonabstract->info
     param-declor-abstract
+    make-param-declor-abstract
     param-declor-none
 
     tynamep

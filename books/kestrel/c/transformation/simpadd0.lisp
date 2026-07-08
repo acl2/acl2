@@ -1402,7 +1402,9 @@
        :abstract (b* (((mv new-absdeclor (gout gout-absdeclor))
                        (simpadd0-absdeclor paramdeclor.declor gin))
                       (gin (gin-update gin gout-absdeclor)))
-                   (mv (param-declor-abstract new-absdeclor)
+                   (mv (make-param-declor-abstract
+                        :declor new-absdeclor
+                        :info paramdeclor.info)
                        (gout-no-thm gin)))
        :none (mv (param-declor-none) (gout-no-thm gin))
        :ambig (prog2$ (impossible) (mv (irr-param-declor) (irr-gout)))))

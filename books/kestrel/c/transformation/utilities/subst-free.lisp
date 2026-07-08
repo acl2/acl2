@@ -911,10 +911,11 @@
                                           :info param-declor.info)
            (ident-set-fix bound-vars)))
      :abstract
-     (mv (param-declor-abstract
-           (absdeclor-subst-free
-             (c$::param-declor-abstract->declor param-declor)
-             subst bound-vars))
+     (mv (make-param-declor-abstract
+          :declor (absdeclor-subst-free
+                   (c$::param-declor-abstract->declor param-declor)
+                   subst bound-vars)
+          :info param-declor.info)
          (ident-set-fix bound-vars))
      :none (mv (param-declor-fix param-declor) (ident-set-fix bound-vars))
      :ambig

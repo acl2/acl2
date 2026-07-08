@@ -2914,9 +2914,12 @@
         (b* (((erp left-absdeclor right-absdeclor? st)
               (absdeclor-sts-split param-declor.declor splitp st)))
           (retok (if right-absdeclor? t nil)
-                 (c$::make-param-declor-abstract :declor left-absdeclor)
                  (c$::make-param-declor-abstract
-                   :declor (or right-absdeclor? left-absdeclor))
+                  :declor left-absdeclor
+                  :info param-declor.info)
+                 (c$::make-param-declor-abstract
+                  :declor (or right-absdeclor? left-absdeclor)
+                  :info param-declor.info)
                  st))
         :none
         (retok nil

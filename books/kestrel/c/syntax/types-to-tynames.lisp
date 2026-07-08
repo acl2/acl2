@@ -452,7 +452,9 @@
           (type-to-spec/qual+declor (car types) ienv))
          (param-declor
           (if (absdeclor-option-case declor? :some)
-              (param-declor-abstract (absdeclor-option-some->val declor?))
+              (make-param-declor-abstract
+               :declor (absdeclor-option-some->val declor?)
+               :info nil)
             (param-declor-none)))
          (declon (make-param-declon
                    :specs (spec/qual-list-to-decl-spec-list specquals)

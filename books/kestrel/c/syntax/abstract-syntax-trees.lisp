@@ -2493,7 +2493,8 @@
        the declaration specifiers in a parameter declaration."))
     (:nonabstract ((declor declor)
                    (info any)))
-    (:abstract ((declor absdeclor)))
+    (:abstract ((declor absdeclor)
+                (info any)))
     (:none ())
     (:ambig ((declor amb-declor/absdeclor)))
     :pred param-declorp
