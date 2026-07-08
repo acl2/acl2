@@ -163,7 +163,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-shape ((shape shapep) (denv expr-denvp))
+  (define eval-shape ((shape shapep) (denv ispace-denvp))
     :returns (nats nat-list-resultp)
     :parents (evaluation eval-shapes/ispaces)
     :short "Evaluate a shape to a list of naturals."
@@ -201,12 +201,10 @@
     (shape-case
      shape
      :var (b* (((ok val)
-                (expr-denv-lookup-ispace (ispace-var-shape shape.name) denv))
+                (ispace-denv-lookup-ispace (ispace-var-shape shape.name) denv))
                ((unless (ispace-value-case val :shape)) (reserr nil)))
             (ispace-value-shape->val val))
-     :dims (b* (((ok ints) (eval-dim-list shape.dims
-                                          (type-denv->ienv
-                                           (expr-denv->tenv denv))))
+     :dims (b* (((ok ints) (eval-dim-list shape.dims denv))
                 ((unless (nat-listp ints)) (reserr nil)))
              ints)
      :append (b* (((ok natss) (eval-shape-list shape.shapes denv)))
@@ -217,7 +215,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-shape-list ((shapes shape-listp) (denv expr-denvp))
+  (define eval-shape-list ((shapes shape-listp) (denv ispace-denvp))
     :returns (natss nat-list-list-resultp)
     :parents (evaluation eval-shapes/ispaces)
     :short "Evaluate a list of shapes to a list of lists of naturals."
@@ -234,7 +232,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-ispace ((ispace ispacep) (denv expr-denvp))
+  (define eval-ispace ((ispace ispacep) (denv ispace-denvp))
     :returns (ival ispace-value-resultp)
     :parents (evaluation eval-shapes/ispaces)
     :short "Evaluate an ispace to an ispace value."
@@ -247,9 +245,7 @@
       "For a shape, we embed the list of naturals into an ispace value."))
     (ispace-case
      ispace
-     :dim (b* (((ok int) (eval-dim ispace.dim
-                                   (type-denv->ienv
-                                    (expr-denv->tenv denv))))
+     :dim (b* (((ok int) (eval-dim ispace.dim denv))
                ((unless (natp int)) (reserr nil)))
             (ispace-value-dim int))
      :shape (b* (((ok nats) (eval-shape ispace.shape denv)))
@@ -258,7 +254,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-ispace-list ((ispaces ispace-listp) (denv expr-denvp))
+  (define eval-ispace-list ((ispaces ispace-listp) (denv ispace-denvp))
     :returns (ivals ispace-value-list-resultp)
     :parents (evaluation eval-shapes/ispaces)
     :short "Evaluate a list of ispaces to a list of ispace values."
@@ -315,11 +311,15 @@
      :var (expr-denv-lookup-type type.var denv)
      :base (type-value-base type.type)
      :array (b* (((ok elem-tval) (eval-type type.elem denv))
-                 ((ok ival) (eval-ispace type.ispace denv))
+                 ((ok ival) (eval-ispace type.ispace
+                                         (type-denv->ienv
+                                          (expr-denv->tenv denv))))
                  (dims (ispace-value-to-dims ival)))
               (make-type-value-array :elem elem-tval :dims dims))
      :bracket (b* (((ok elem-tval) (eval-type type.elem denv))
-                   ((ok ivals) (eval-ispace-list type.ispaces denv))
+                   ((ok ivals) (eval-ispace-list type.ispaces
+                                                 (type-denv->ienv
+                                                  (expr-denv->tenv denv))))
                    (natss (ispace-value-list-to-dims ivals))
                    (nats (append-all natss)))
                 (make-type-value-array :elem elem-tval :dims nats))
@@ -1185,7 +1185,9 @@
                   ((ok tvals) (eval-type-list expr.args denv)))
                (eval-tapp funval tvals denv (1- limit)))
        :iapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
-                  ((ok ivals) (eval-ispace-list expr.args denv)))
+                  ((ok ivals) (eval-ispace-list expr.args
+                                                (type-denv->ienv
+                                                 (expr-denv->tenv denv)))))
                (eval-iapp funval ivals denv (1- limit)))
        :capp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                   ((ok funval)
@@ -1198,7 +1200,9 @@
                    (ispace-list-option-case
                     expr.iargs
                     :some (b* (((ok ivals)
-                                (eval-ispace-list expr.iargs.val denv)))
+                                (eval-ispace-list expr.iargs.val
+                                                  (type-denv->ienv
+                                                   (expr-denv->tenv denv)))))
                             (eval-iapp funval ivals denv (1- limit)))
                     :none funval))
                   ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
@@ -1298,7 +1302,9 @@
                                          :type? type?))
        :tlambda (make-expr-value-tlambda :params atom.params :body atom.body)
        :ilambda (make-expr-value-ilambda :params atom.params :body atom.body)
-       :box (b* (((ok ivals) (eval-ispace-list atom.ispaces denv))
+       :box (b* (((ok ivals) (eval-ispace-list atom.ispaces
+                                               (type-denv->ienv
+                                                (expr-denv->tenv denv))))
                  ((ok arrayval) (eval-expr atom.array denv (1- limit)))
                  ((ok tval) (eval-type atom.type denv)))
               (make-expr-value-box :ispaces ivals
@@ -1418,7 +1424,9 @@
     (b* (((when (zp limit)) (reserr :limit)))
       (bind-case
        bind
-       :ispace (b* (((ok ival) (eval-ispace bind.ispace denv)))
+       :ispace (b* (((ok ival) (eval-ispace bind.ispace
+                                            (type-denv->ienv
+                                             (expr-denv->tenv denv)))))
                  (expr-denv-add-ispace bind.var ival denv))
        :type (b* (((ok tval) (eval-type bind.type denv)))
                (expr-denv-add-type bind.var tval denv))
