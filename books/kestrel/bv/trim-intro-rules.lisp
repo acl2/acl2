@@ -11,18 +11,21 @@
 
 (in-package "ACL2")
 
-;; See also ../axe/trim-intro-rules-axe.lisp
+;; See ../axe/trim-intro-rules-axe.lisp for the Axe versions of these rules
+
+;; See trim-elim-rules-bv.lisp and trim-elim-rules-non-bv.lisp for the rules
+;; that finish the job (and remove TRIM).
 
 (include-book "bv-syntax")
 (include-book "trim")
 (include-book "bvsx-def")
 (include-book "leftrotate32")
 (include-book "bvnot")
-(include-book "bvcat")
+(include-book "bvcat-def")
 (include-book "bvif")
-(include-book "bvplus")
-(include-book "bvmult")
-(include-book "bvminus")
+(include-book "bvplus-def")
+(include-book "bvmult-def")
+(include-book "bvminus-def")
 (include-book "bvand-def")
 (include-book "bvor-def")
 (include-book "bvxor-def")
@@ -30,6 +33,7 @@
 (include-book "trim-elim-rules-bv") ; need these whenever we introduce trim
 (local (include-book "slice"))
 (local (include-book "getbit"))
+(local (include-book "bvcat"))
 
 ;; TODO: Should we only trim when the sizes involved are constants?
 
