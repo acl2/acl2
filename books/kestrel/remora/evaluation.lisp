@@ -368,7 +368,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-var+type? ((var+type? var+type?-p) (denv expr-denvp))
+(define eval-var+type? ((var+type? var+type?-p) (denv type-denvp))
   :returns (var+tval var+typevalue-resultp)
   :short "Evaluate a variable with an optional type
           to a variable with a type value."
@@ -378,12 +378,12 @@
     "The variable is unchanged;
      its associated type must be present, and is evaluated to a type value."))
   (b* (((ok type) (var+type?->type-or-err var+type?))
-       ((ok tval) (eval-type type (expr-denv->tenv denv))))
+       ((ok tval) (eval-type type denv)))
     (make-var+typevalue :var (var+type?->var var+type?) :type tval)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-var+type?-list ((var+types var+type?-listp) (denv expr-denvp))
+(define eval-var+type?-list ((var+types var+type?-listp) (denv type-denvp))
   :returns (var+tvals var+typevalue-list-resultp)
   :short "Evaluate a list of variables with optional types
           to a list of variables with type values."
@@ -1295,7 +1295,8 @@
       (atom-case
        atom
        :base (expr-value-base (eval-base-lit atom.lit))
-       :lambda (b* (((ok params) (eval-var+type?-list atom.params denv))
+       :lambda (b* (((ok params) (eval-var+type?-list atom.params
+                                                      (expr-denv->tenv denv)))
                     ((ok type?) (type-option-case
                                  atom.type?
                                  :none nil
@@ -1441,7 +1442,8 @@
                                            (expr-denv->tenv denv))
                           :none nil)))
               (expr-denv-add-expr bind.var val denv))
-       :fun (b* (((ok params) (eval-var+type?-list bind.params denv))
+       :fun (b* (((ok params) (eval-var+type?-list bind.params
+                                                   (expr-denv->tenv denv)))
                  (val (make-expr-value-lambda :params params
                                               :body bind.expr
                                               :type? nil))
