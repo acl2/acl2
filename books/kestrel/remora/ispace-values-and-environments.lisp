@@ -24,7 +24,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ ispace-values-and-environments
-  :parents (dynamic-environments)
+  :parents (dynamic-semantics)
   :short "Ispace values and ispace dynamic environments."
   :long
   (xdoc::topstring
