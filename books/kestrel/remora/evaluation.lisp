@@ -282,7 +282,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-type ((type typep) (denv expr-denvp))
+  (define eval-type ((type typep) (denv type-denvp))
     :returns (tval type-value-resultp)
     :parents (evaluation eval-types)
     :short "Evaluate a type to a type value."
@@ -308,18 +308,15 @@
        They are treated like lambda abstractions."))
     (type-case
      type
-     :var (expr-denv-lookup-type type.var denv)
+     :var (type-denv-lookup-type type.var denv)
      :base (type-value-base type.type)
      :array (b* (((ok elem-tval) (eval-type type.elem denv))
-                 ((ok ival) (eval-ispace type.ispace
-                                         (type-denv->ienv
-                                          (expr-denv->tenv denv))))
+                 ((ok ival) (eval-ispace type.ispace (type-denv->ienv denv)))
                  (dims (ispace-value-to-dims ival)))
               (make-type-value-array :elem elem-tval :dims dims))
      :bracket (b* (((ok elem-tval) (eval-type type.elem denv))
                    ((ok ivals) (eval-ispace-list type.ispaces
-                                                 (type-denv->ienv
-                                                  (expr-denv->tenv denv))))
+                                                 (type-denv->ienv denv)))
                    (natss (ispace-value-list-to-dims ivals))
                    (nats (append-all natss)))
                 (make-type-value-array :elem elem-tval :dims nats))
@@ -333,7 +330,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define eval-type-list ((types type-listp) (denv expr-denvp))
+  (define eval-type-list ((types type-listp) (denv type-denvp))
     :returns (tvals type-value-list-resultp)
     :parents (evaluation eval-types)
     :short "Evaluate a list of types to a list of type values."
@@ -381,7 +378,7 @@
     "The variable is unchanged;
      its associated type must be present, and is evaluated to a type value."))
   (b* (((ok type) (var+type?->type-or-err var+type?))
-       ((ok tval) (eval-type type denv)))
+       ((ok tval) (eval-type type (expr-denv->tenv denv))))
     (make-var+typevalue :var (var+type?->var var+type?) :type tval)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1150,7 +1147,8 @@
                     (reserr nil)))
                 (expr-value-with-nonempty-dims expr.dims vals))
        :array-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-                         ((ok elem) (eval-type expr.type denv))
+                         ((ok elem) (eval-type expr.type
+                                               (expr-denv->tenv denv)))
                          ((when (type-value-case elem :array)) (reserr nil)))
                       (expr-value-with-empty-dim expr.dims elem))
        :frame (b* (((when (member-equal 0 expr.dims)) (reserr nil))
@@ -1161,7 +1159,8 @@
                     (reserr nil)))
                 (expr-value-with-nonempty-dims expr.dims vals))
        :frame-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-                         ((ok tval) (eval-type expr.type denv))
+                         ((ok tval) (eval-type expr.type
+                                               (expr-denv->tenv denv)))
                          ((mv elem cell-dims)
                           (type-value-case
                            tval
@@ -1182,7 +1181,8 @@
                  ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
               (eval-app funval argvals denv (1- limit)))
        :tapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
-                  ((ok tvals) (eval-type-list expr.args denv)))
+                  ((ok tvals) (eval-type-list expr.args
+                                              (expr-denv->tenv denv))))
                (eval-tapp funval tvals denv (1- limit)))
        :iapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                   ((ok ivals) (eval-ispace-list expr.args
@@ -1193,7 +1193,9 @@
                   ((ok funval)
                    (type-list-option-case
                     expr.targs
-                    :some (b* (((ok tvals) (eval-type-list expr.targs.val denv)))
+                    :some (b* (((ok tvals)
+                                (eval-type-list expr.targs.val
+                                                (expr-denv->tenv denv))))
                             (eval-tapp funval tvals denv (1- limit)))
                     :none funval))
                   ((ok funval)
@@ -1210,7 +1212,8 @@
        :unbox (b* (((ok targetval) (eval-expr expr.target denv (1- limit)))
                    ((ok tval) (type-option-case
                                expr.type?
-                               :some (eval-type expr.type?.val denv)
+                               :some (eval-type expr.type?.val
+                                                (expr-denv->tenv denv))
                                :none (reserr nil))))
                 (eval-unbox targetval
                             expr.ispaces
@@ -1296,7 +1299,8 @@
                     ((ok type?) (type-option-case
                                  atom.type?
                                  :none nil
-                                 :some (eval-type atom.type?.val denv))))
+                                 :some (eval-type atom.type?.val
+                                                  (expr-denv->tenv denv)))))
                  (make-expr-value-lambda :params params
                                          :body atom.body
                                          :type? type?))
@@ -1306,7 +1310,7 @@
                                                (type-denv->ienv
                                                 (expr-denv->tenv denv))))
                  ((ok arrayval) (eval-expr atom.array denv (1- limit)))
-                 ((ok tval) (eval-type atom.type denv)))
+                 ((ok tval) (eval-type atom.type (expr-denv->tenv denv))))
               (make-expr-value-box :ispaces ivals
                                    :array arrayval
                                    :type tval))))
@@ -1428,12 +1432,13 @@
                                             (type-denv->ienv
                                              (expr-denv->tenv denv)))))
                  (expr-denv-add-ispace bind.var ival denv))
-       :type (b* (((ok tval) (eval-type bind.type denv)))
+       :type (b* (((ok tval) (eval-type bind.type (expr-denv->tenv denv))))
                (expr-denv-add-type bind.var tval denv))
        :val (b* (((ok val) (eval-expr bind.expr denv (1- limit)))
                  ((ok &) (type-option-case
                           bind.type?
-                          :some (eval-type bind.type?.val denv)
+                          :some (eval-type bind.type?.val
+                                           (expr-denv->tenv denv))
                           :none nil)))
               (expr-denv-add-expr bind.var val denv))
        :fun (b* (((ok params) (eval-var+type?-list bind.params denv))
@@ -1442,7 +1447,8 @@
                                               :type? nil))
                  ((ok &) (type-option-case
                           bind.type?
-                          :some (eval-type bind.type?.val denv)
+                          :some (eval-type bind.type?.val
+                                           (expr-denv->tenv denv))
                           :none nil)))
               (expr-denv-add-expr bind.var val denv))
        :tfun (b* ((val (make-expr-value-tlambda :params bind.params
@@ -1452,7 +1458,7 @@
                            :some (eval-type
                                   (make-type-forall :params bind.params
                                                     :body bind.type?.val)
-                                  denv)
+                                  (expr-denv->tenv denv))
                            :none nil)))
                (expr-denv-add-expr bind.var val denv))
        :ifun (b* ((val (make-expr-value-ilambda :params bind.params
@@ -1462,7 +1468,7 @@
                            :some (eval-type
                                   (make-type-pi :params bind.params
                                                 :body bind.type?.val)
-                                  denv)
+                                  (expr-denv->tenv denv))
                            :none nil)))
                (expr-denv-add-expr bind.var val denv))
        :cfun (b* ((lambda-expr (make-expr-array
@@ -1498,7 +1504,7 @@
                                                 :body itype))
                     :none (mv iexpr itype)))
                   ((ok val) (eval-expr cfun-expr denv (1- limit)))
-                  ((ok &) (eval-type cfun-type denv)))
+                  ((ok &) (eval-type cfun-type (expr-denv->tenv denv))))
                (expr-denv-add-expr bind.var val denv))))
     :measure (nfix limit))
 
@@ -1615,7 +1621,7 @@
         (b* (((unless (type-values-match-type-vars-p tvals funval.elem.params))
               (reserr nil))
              (denv (expr-denv-add-types funval.elem.params tvals denv))
-             ((ok tval) (eval-type funval.elem.body denv))
+             ((ok tval) (eval-type funval.elem.body (expr-denv->tenv denv)))
              ((mv elem body-dims)
               (type-value-case
                tval
@@ -1757,7 +1763,7 @@
                                                          funval.elem.params))
               (reserr nil))
              (denv (expr-denv-add-ispaces funval.elem.params ivals denv))
-             ((ok tval) (eval-type funval.elem.body denv))
+             ((ok tval) (eval-type funval.elem.body (expr-denv->tenv denv)))
              ((mv elem body-dims)
               (type-value-case
                tval
