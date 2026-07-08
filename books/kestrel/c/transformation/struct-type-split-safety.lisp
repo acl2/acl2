@@ -936,7 +936,7 @@
      we check (the types of) all its initializer declarators.
      If a declaration does not have initializer declarators,
      it must be a structure or union or enumeration declaration
-     (see @(tsee valid-declon));
+     (see @(tsee c$::valid-declon));
      these are checked by checking their structure declarators,
      which are the only cases in which the struct type being split
      might be nested inside other structure or union types.
