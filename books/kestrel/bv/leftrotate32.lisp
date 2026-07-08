@@ -217,6 +217,7 @@
                     0)))
   :hints (("Goal" :in-theory (enable leftrotate32))))
 
+;; use a more general trim rule?
 (defthm leftrotate32-normalize-amt
   (implies (and (syntaxp (quotep amt))
                 (not (and (<= 0 amt)

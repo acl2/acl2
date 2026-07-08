@@ -42,7 +42,7 @@
 
 ;enable?
 (defthmd bvnot-trim-all
-  (implies (and (syntaxp (term-should-be-trimmed size x :all))
+  (implies (and (syntaxp (term-should-be-trimmedp size x :all))
                 (natp size))
            (equal (bvnot size x)
                   (bvnot size (trim size x))))
@@ -258,19 +258,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;rename to indicate which arg is trimmed
-(defthm leftrotate32-trim
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
-                (< 5 xsize)
-                (integerp xsize))
-           (equal (leftrotate32 x y)
-                  (leftrotate32 (trim 5 x) y)))
-  :hints (("Goal" :in-theory (e/d (trim) (leftrotate32)))))
+;; ;rename to indicate which arg is trimmed
+;; (defthm leftrotate32-trim-arg1
+;;   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
+;;                 (< 5 xsize)
+;;                 (integerp xsize))
+;;            (equal (leftrotate32 x y)
+;;                   (leftrotate32 (trim 5 x) y)))
+;;   :hints (("Goal" :in-theory (e/d (trim) (leftrotate32)))))
+
+(defthm leftrotate32-trim-arg1
+  (implies (and (syntaxp (term-should-be-trimmedp ''5 amt :non-arithmetic))
+                (natp amt))
+           (equal (leftrotate32 amt val)
+                  (leftrotate32 (trim 5 amt) val)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;for this not to loop, we must simplify things like (bvchop 5 (bvplus 32 x y)) ??
+(defthm leftrotate32-trim-arg1-all
+  (implies (and (syntaxp (term-should-be-trimmedp ''5 amt :all))
+                (natp amt))
+           (equal (leftrotate32 amt val)
+                  (leftrotate32 (trim 5 amt) val)))
+  :hints (("Goal" :in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm bvsx-trim-all
-  (implies (syntaxp (term-should-be-trimmed old-size x :all))
+  (implies (syntaxp (term-should-be-trimmedp old-size x :all))
            (equal (bvsx new-size old-size x)
                   (bvsx new-size old-size (trim old-size x))))
   :hints (("Goal" :in-theory (enable trim))))
