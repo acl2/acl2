@@ -104,7 +104,15 @@
     :key-type type-var
     :val-type type-value
     :pred type-var-type-value-mapp
-    :measure (two-nats-measure (acl2-count x) 0))
+    :measure (two-nats-measure (acl2-count x) 0)
+
+    ///
+
+    (defrule type-var-type-value-mapp-of-restrict
+      (implies (type-var-type-value-mapp map)
+               (type-var-type-value-mapp (omap::restrict keys map)))
+      :induct t
+      :enable omap::restrict))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -392,3 +400,23 @@
     (if var+val
         (cdr var+val)
       (reserr nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-denv-restrict ((ivars ispace-var-setp)
+                            (tvars type-var-setp)
+                            (denv type-denvp))
+  :returns (new-denv type-denvp)
+  :short "Restrict a type dynamic environment
+          to a set of ispace variables and a set of type variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We restrict the underlying ispace dynamic environment
+     to the first given set,
+     and we remove from the environment
+     the type variables not in the second given set."))
+  (change-type-denv denv
+                    :ienv (ispace-denv-restrict ivars (type-denv->ienv denv))
+                    :types (omap::restrict (type-var-set-fix tvars)
+                                           (type-denv->types denv))))

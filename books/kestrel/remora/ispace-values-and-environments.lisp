@@ -140,7 +140,15 @@
   :short "Fixtype of maps from ispace variables to ispace values."
   :key-type ispace-var
   :val-type ispace-value
-  :pred ispace-var-ispace-value-mapp)
+  :pred ispace-var-ispace-value-mapp
+
+  ///
+
+  (defrule ispace-var-ispace-value-mapp-of-restrict
+    (implies (ispace-var-ispace-value-mapp map)
+             (ispace-var-ispace-value-mapp (omap::restrict keys map)))
+    :induct t
+    :enable omap::restrict))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -216,3 +224,18 @@
     (if var+val
         (cdr var+val)
       (reserr nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ispace-denv-restrict ((vars ispace-var-setp) (denv ispace-denvp))
+  :returns (new-denv ispace-denvp)
+  :short "Restrict an ispace dynamic environment
+          to a set of ispace variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We remove from the environment
+     the ispace variables not in the given set."))
+  (change-ispace-denv denv
+                      :ispaces (omap::restrict (ispace-var-set-fix vars)
+                                               (ispace-denv->ispaces denv))))
