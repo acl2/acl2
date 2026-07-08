@@ -19,7 +19,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ type-value-and-environments
+(defxdoc+ type-values-and-environments
   :parents (dynamic-semantics)
   :short "Type values and type dynamic environments."
   :long
@@ -39,7 +39,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum type-value
-    :parents (values type-values)
+    :parents (type-values-and-environments type-values)
     :short "Fixtype of type values."
     :long
     (xdoc::topstring
@@ -70,7 +70,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist type-value-list
-    :parents (values type-values)
+    :parents (type-values-and-environments type-values)
     :short "Fixtype of lists of type values."
     :elt-type type-value
     :true-listp t
