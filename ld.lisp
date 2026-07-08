@@ -4309,11 +4309,7 @@
                (value :invisible)))
       ((eq flg :none)
        (pprogn (f-put-global 'guard-checking-on :none state)
-               (fms "Turning off guard checking entirely.  To allow execution ~
-                     in raw Lisp for functions with guards other than T, ~
-                     while continuing to mask guard violations, ~
-                     :SET-GUARD-CHECKING NIL.  See :DOC ~
-                     set-guard-checking.~%~%"
+               (fms "Turning off guard checking entirely.~%~%"
                     nil (standard-co state) state nil)
                (value :invisible)))
       (t (pprogn

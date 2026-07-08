@@ -323,6 +323,7 @@
     param-declor-nonabstract->declor
     param-declor-nonabstract->info
     param-declor-abstract
+    make-param-declor-abstract
     param-declor-none
 
     tynamep
@@ -355,6 +356,7 @@
     struct-declor-count
     struct-declor
     make-struct-declor
+    struct-declor->info
 
     struct-declor-listp
     struct-declor-list-fix

@@ -32,7 +32,7 @@
      the contextual information needed to
      enforce the static semantics of some AST.
      It is the static counterpart of a "
-    (xdoc::seetopic "dynamic-environments" "dynamic environment")
+    (xdoc::seetopic "dynamic-semantics" "dynamic environment")
     ".")
    (xdoc::p
     "Our static environments correspond to the combination of
@@ -178,7 +178,8 @@
      (list (cons "+" int-binop-type)
            (cons "-" int-binop-type)
            (cons "*" int-binop-type)
-           (cons "div" int-binop-type)
+           (cons "/" int-binop-type)
+           (cons "^" int-binop-type)
            (cons "mod" int-binop-type)
            (cons "max" int-binop-type)
            (cons "min" int-binop-type)
@@ -205,6 +206,7 @@
            (cons "f.max" float-binop-type)
            (cons "f.min" float-binop-type)
            (cons "sqrt" float-unop-type)
+           (cons "f.sqrt" float-unop-type)
            (cons "f.==" float-relop-type)
            (cons "f.!=" float-relop-type)
            (cons "f.<" float-relop-type)
