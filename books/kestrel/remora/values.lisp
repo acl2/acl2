@@ -545,6 +545,7 @@
   (:int-sub ())
   (:int-mul ())
   (:int-div ())
+  (:int-expt ())
   (:int-mod ())
   (:int-max ())
   (:int-min ())
@@ -809,6 +810,7 @@
      :int-sub int-binop-tv
      :int-mul int-binop-tv
      :int-div int-binop-tv
+     :int-expt int-binop-tv
      :int-mod int-binop-tv
      :int-max int-binop-tv
      :int-min int-binop-tv
