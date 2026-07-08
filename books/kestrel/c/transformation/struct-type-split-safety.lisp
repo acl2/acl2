@@ -641,6 +641,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define param-declor-abstract-sts-safep ((declor absdeclorp)
+                                         info
+                                         (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if an abstract parameter declarator
+          is safe for the STS transformation."
+  (and (or (type-vinfop info)
+           (raise "Internal error: malformed ~x0." info))
+       (or (top-type-sts-safep (type-vinfo->type info) spec)
+           (sts-reject (param-declor-abstract declor info))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tyname-info-sts-safep ((tyname tynamep)
+                               (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a type name
+          is safe for the STS transformation."
+  (b* ((info (tyname->info tyname)))
+    (and (or (type-vinfop info)
+             (raise "Internal error: malformed ~x0." info))
+         (or (top-type-sts-safep (type-vinfo->type info) spec)
+             (sts-reject (tyname-fix tyname)))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define struct-declor-info-sts-safep ((sdeclor struct-declorp)
+                                      (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a structure declarator
+          is safe for the STS transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since this is a member of a structure,
+     we are not at the top level,
+     so we call @(tsee type-sts-safep) with @('nested') set to @('t'),
+     instead of @(tsee top-type-sts-safep)."))
+  (b* ((info (struct-declor->info sdeclor)))
+    (and (or (type-vinfop info)
+             (raise "Internal error: malformed ~x0." info))
+         (or (type-sts-safep (type-vinfo->type info) t spec)
+             (sts-reject (struct-declor-fix sdeclor)))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define init-declor-info-sts-safep ((ideclor init-declorp)
                                     (spec sts-struct-specp))
   :returns (yes/no booleanp)
@@ -758,12 +807,12 @@
      See those functions for details,
      which we do not repeat here.
      Here we only discuss the rationale for the constructs
-     whose handling is handled directly in the @(tsee fty::deffold-reduce).")
+     handled directly in the @(tsee fty::deffold-reduce).")
    (xdoc::p
     "Identifiers, constants, and strings are safe leaves.
      Although an identifier may be a variable of struct type,
      this is safe in isolation;
-      unsafety can only come from a larger construct containing the variable.
+     unsafety can only come from a larger construct containing the variable.
      So we keep the default for these.")
    (xdoc::p
     "A parenthesized expression is safe iff its inner expression is,
@@ -795,9 +844,6 @@
      This is the normal safe way to access structs.
      Note that the nesting of the struct type being split
      in other structs or in unions is excluded via @(tsee type-sts-safep).")
-   (xdoc::p
-    "We reject compound literals out of initial caution.
-     We need to think through them.")
    (xdoc::p
     "Taking the address of a label (a GCC/Clang extension) is safe;
      it does not involve structs.")
@@ -874,19 +920,28 @@
     "We reject initializers with optional designations for now,
      because they may affect the struct type being split.")
    (xdoc::p
-    "Initializers with optional designations are only reachable
-     from list initializers, which are excluded (see above).")
-   (xdoc::p
     "Declarators (@(tsee declor) ASTs) are checked indirectly,
      via the types of the ASTs where declarators may appear:
      function definitions,
      initializer declarators,
      and non-abstract parameter declarators.")
    (xdoc::p
-    "We exclude abstract declarators (@(tsee absdeclor) ASTs)
-     because in combination with type specifiers
-     they may give rise to arrays of the struct being split.
-     This is too coarse, and we will refine it.")
+    "Abstract declarators (@(tsee absdeclor) ASTs) are checked indirectly,
+     via the types of the ASTs where abstract declarators may appear:
+     abstract parameter declarators,
+     and type names.")
+   (xdoc::p
+    "Declarations are checked indirectly.
+     If a declaration has initializer declarators,
+     we check (the types of) all its initializer declarators.
+     If a declaration does not have initializer declarators,
+     it must be a structure or union or enumeration declaration
+     (see @(tsee valid-declon));
+     these are checked by checking their structure declarators,
+     which are the only cases in which the struct type being split
+     might be nested inside other structure or union types.
+     Declarations may also be static assertion declarations,
+     which are checked independently.")
    (xdoc::p
     "We exclude assembly, because we do not know what it does exactly.")
    (xdoc::p
@@ -909,7 +964,9 @@
    (type-qual :atomic (sts-reject (type-qual-fix type-qual)))
    (expr :gensel (sts-reject (expr-fix expr)))
    (expr :funcall (sts-reject (expr-fix expr)))
-   (expr :complit (sts-reject (expr-fix expr)))
+   (expr :complit (and (tyname-sts-safep expr.type spec)
+                       (desiniter-list-sts-safep expr.elems spec)
+                       (tyname-info-sts-safep expr.type spec)))
    (expr :unary (and (expr-sts-safep expr.arg spec)
                      (expr-unary-sts-safep expr.op expr.arg expr.info spec)))
    (expr :sizeof (and (tyname-sts-safep expr.type spec)
@@ -934,12 +991,24 @@
    (decl-spec :stdcall (sts-reject (decl-spec-fix decl-spec)))
    (decl-spec :declspec (sts-reject (decl-spec-fix decl-spec)))
    (desiniter (sts-reject (desiniter-fix desiniter)))
-   (absdeclor (sts-reject (absdeclor-fix absdeclor)))
    (param-declor :nonabstract (and (declor-sts-safep param-declor.declor spec)
                                    (param-declor-nonabstract-sts-safep
                                     param-declor.declor
                                     param-declor.info
                                     spec)))
+   (param-declor :abstract (and (absdeclor-sts-safep param-declor.declor spec)
+                                (param-declor-abstract-sts-safep
+                                 param-declor.declor
+                                 param-declor.info
+                                 spec)))
+   (tyname (b* (((tyname tyname)))
+             (and (spec/qual-list-sts-safep tyname.specquals spec)
+                  (absdeclor-option-sts-safep tyname.declor? spec)
+                  (tyname-info-sts-safep tyname spec))))
+   (struct-declor (b* (((struct-declor struct-declor)))
+                    (and (declor-option-sts-safep struct-declor.declor? spec)
+                         (const-expr-option-sts-safep struct-declor.expr? spec)
+                         (struct-declor-info-sts-safep struct-declor spec))))
    (init-declor (b* (((init-declor init-declor)))
                   (and (declor-sts-safep init-declor.declor spec)
                        (attrib-spec-list-sts-safep init-declor.attribs spec)

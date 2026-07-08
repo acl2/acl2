@@ -327,8 +327,9 @@
        does not actually declare a parameter.
        The type is present otherwise, and it is the type of the parameter.")
      (xdoc::p
-      "Non-abstract parameter declarators are annotated with
-       their types and their UIDs.")
+      "Non-abstract parameter declarators are annotated
+       with their types and their UIDs.
+       Abstract parameter declarators are annotated with their types.")
      (xdoc::p
       "Type names are annotated with the type they denote.")
      (xdoc::p
@@ -431,6 +432,12 @@
                                      (type+uid-vinfop
                                       (param-declor-nonabstract->info
                                        param-declor))))
+     (param-declor :abstract (and (absdeclor-annop
+                                   (param-declor-abstract->declor
+                                    param-declor))
+                                  (type-vinfop
+                                   (param-declor-abstract->info
+                                    param-declor))))
      (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
                   (absdeclor-option-annop (tyname->declor? tyname))
                   (type-vinfop (tyname->info tyname))))
@@ -599,6 +606,12 @@
            (and (declor-annop declor)
                 (type+uid-vinfop info)))
     :expand (param-declor-annop (param-declor-nonabstract declor info)))
+
+  (defruled param-declor-annop-of-param-declor-abstract
+    (equal (param-declor-annop (param-declor-abstract declor info))
+           (and (absdeclor-annop declor)
+                (type-vinfop info)))
+    :expand (param-declor-annop (param-declor-abstract declor info)))
 
   (defruled tyname-annop-of-tyname
     (equal (tyname-annop (tyname specquals declor? info))
@@ -856,6 +869,18 @@
               (param-declor-nonabstract->info param-declor)))
     :enable param-declor-annop)
 
+  (defruled absdeclor-annop-of-param-declor-abstract->declor
+    (implies (and (param-declor-annop param-declor)
+                  (param-declor-case param-declor :abstract))
+             (absdeclor-annop (param-declor-abstract->declor param-declor)))
+    :enable param-declor-annop)
+
+  (defruled type-vinfop-of-param-declor-abstract->info
+    (implies (and (param-declor-annop param-declor)
+                  (param-declor-case param-declor :abstract))
+             (type-vinfop (param-declor-abstract->info param-declor)))
+    :enable param-declor-annop)
+
   (defruled spec/qual-list-annop-of-tyname->specquals
     (implies (tyname-annop tyname)
              (spec/qual-list-annop (tyname->specquals tyname)))
@@ -976,6 +1001,7 @@
      desiniter-annop-of-desiniter
      param-declon-annop-of-param-declon
      param-declor-annop-of-param-declor-nonabstract
+     param-declor-annop-of-param-declor-abstract
      tyname-annop-of-tyname
      struct-declor-annop-of-struct-declor
      init-declor-annop-of-init-declor
@@ -1018,6 +1044,8 @@
      type-option-vinfop-of-param-declon->info
      declor-annop-of-param-declor-nonabstract->declor
      type+uid-vinfop-of-param-declor-nonabstract->info
+     absdeclor-annop-of-param-declor-abstract->declor
+     type-vinfop-of-param-declor-abstract->info
      spec/qual-list-annop-of-tyname->specquals
      absdeclor-option-annop-of-tyname->declor?
      type-vinfop-of-tyname->info
