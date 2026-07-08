@@ -807,12 +807,12 @@
      See those functions for details,
      which we do not repeat here.
      Here we only discuss the rationale for the constructs
-     whose handling is handled directly in the @(tsee fty::deffold-reduce).")
+     handled directly in the @(tsee fty::deffold-reduce).")
    (xdoc::p
     "Identifiers, constants, and strings are safe leaves.
      Although an identifier may be a variable of struct type,
      this is safe in isolation;
-      unsafety can only come from a larger construct containing the variable.
+     unsafety can only come from a larger construct containing the variable.
      So we keep the default for these.")
    (xdoc::p
     "A parenthesized expression is safe iff its inner expression is,
@@ -922,9 +922,6 @@
    (xdoc::p
     "We reject initializers with optional designations for now,
      because they may affect the struct type being split.")
-   (xdoc::p
-    "Initializers with optional designations are only reachable
-     from list initializers, which are excluded (see above).")
    (xdoc::p
     "Declarators (@(tsee declor) ASTs) are checked indirectly,
      via the types of the ASTs where declarators may appear:
