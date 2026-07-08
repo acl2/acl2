@@ -641,6 +641,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define param-declor-abstract-sts-safep ((declor absdeclorp)
+                                         info
+                                         (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if an abstract parameter declarator
+          is safe for the STS transformation."
+  (and (or (type-vinfop info)
+           (raise "Internal error: malformed ~x0." info))
+       (or (top-type-sts-safep (type-vinfo->type info) spec)
+           (sts-reject (param-declor-abstract declor info))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define struct-declor-info-sts-safep ((declor? declor-optionp)
                                       (expr? const-expr-optionp)
                                       info
@@ -962,6 +976,11 @@
                                     param-declor.declor
                                     param-declor.info
                                     spec)))
+   (param-declor :abstract (and (absdeclor-sts-safep param-declor.declor spec)
+                                (param-declor-abstract-sts-safep
+                                 param-declor.declor
+                                 param-declor.info
+                                 spec)))
    (struct-declor (b* (((struct-declor struct-declor)))
                     (and (declor-option-sts-safep struct-declor.declor? spec)
                          (const-expr-option-sts-safep struct-declor.expr? spec)
