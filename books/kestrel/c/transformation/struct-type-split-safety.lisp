@@ -845,9 +845,6 @@
      Note that the nesting of the struct type being split
      in other structs or in unions is excluded via @(tsee type-sts-safep).")
    (xdoc::p
-    "We reject compound literals out of initial caution.
-     We need to think through them.")
-   (xdoc::p
     "Taking the address of a label (a GCC/Clang extension) is safe;
      it does not involve structs.")
    (xdoc::p
@@ -967,7 +964,9 @@
    (type-qual :atomic (sts-reject (type-qual-fix type-qual)))
    (expr :gensel (sts-reject (expr-fix expr)))
    (expr :funcall (sts-reject (expr-fix expr)))
-   (expr :complit (sts-reject (expr-fix expr)))
+   (expr :complit (and (tyname-sts-safep expr.type spec)
+                       (desiniter-list-sts-safep expr.elems spec)
+                       (tyname-info-sts-safep expr.type spec)))
    (expr :unary (and (expr-sts-safep expr.arg spec)
                      (expr-unary-sts-safep expr.op expr.arg expr.info spec)))
    (expr :sizeof (and (tyname-sts-safep expr.type spec)
