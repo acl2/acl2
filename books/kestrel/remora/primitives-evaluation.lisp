@@ -11,7 +11,8 @@
 
 (in-package "REMORA")
 
-(include-book "values")
+(include-book "expression-values-and-environments")
+
 (include-book "kestrel/fty/boolean-result" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))

@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "values")
+(include-book "type-values-and-environments")
 (include-book "type-equivalence")
 
 (local (include-book "std/basic/inductions" :dir :system))

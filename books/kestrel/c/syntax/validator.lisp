@@ -6004,8 +6004,10 @@
                 vstate))
        :abstract
        (b* (((erp new-absdeclor type types vstate)
-             (valid-absdeclor paramdeclor.declor type vstate)))
-         (retok (param-declor-abstract new-absdeclor)
+             (valid-absdeclor paramdeclor.declor type vstate))
+            (info (make-type-vinfo :type type)))
+         (retok (make-param-declor-abstract :declor new-absdeclor
+                                            :info info)
                 type
                 nil
                 types

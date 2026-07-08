@@ -32,7 +32,7 @@
      the contextual information needed to
      enforce the static semantics of some AST.
      It is the static counterpart of a "
-    (xdoc::seetopic "dynamic-environments" "dynamic environment")
+    (xdoc::seetopic "dynamic-semantics" "dynamic environment")
     ".")
    (xdoc::p
     "Our static environments correspond to the combination of

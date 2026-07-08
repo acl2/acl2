@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "dynamic-environments")
+(include-book "expression-values-and-environments")
 (include-book "printer")
 
 (include-book "std/strings/dec-digit-char-listp" :dir :system)
@@ -26,7 +26,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We convert expression values (see @(see values)) back to
+    "We convert expression values
+     (see @(see expression-values-and-environments)) back to
      expression ASTs, which we then print with the pretty-printer
      (see @(see printer)).  The conversion is exact; it fails only for
      the float values with no literal syntax: infinities, not-a-number,

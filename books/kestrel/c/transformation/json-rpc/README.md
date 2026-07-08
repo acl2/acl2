@@ -7,9 +7,17 @@ interface in `books/kestrel/c/transformation/command-line`.  Each supported
 transformation is exposed as a JSON-RPC method.  Currently the only supported
 method is `struct-type-split`; further methods will be added over time.
 
+Setup:
+
+0. Build and install ACL2.  (See https://acl2.org/doc/?topic=ACL2____INSTALLATION.  You probably want to install the latest development snapshot, not a release tarball, so you can easily get access to updated transformations).
+
+1. Ensure you can run cert.pl.  (See https://acl2.org/doc/?topic=BUILD____PRELIMINARIES)
+
+2. Certify the books in this directory: cert.pl -j8 *.lisp
+
 Usage (socket transport):
 
-1. Start the server (it builds a saved ACL2 image on the first run, which is
+3. Start the server (it builds a saved ACL2 image on the first run, which is
    slow; subsequent runs are fast):
 
      ./server.sh [PORT]
@@ -19,7 +27,7 @@ Usage (socket transport):
    `files`) are resolved relative to the current working directory of the
    server process.
 
-2. Send a JSON-RPC 2.0 request.  Each message must be compact (single-line)
+4. Send a JSON-RPC 2.0 request.  Each message must be compact (single-line)
    JSON terminated by a newline.  For example (see tests/example-request.json
    for the multi-line, human-readable form of a struct-type-split request):
 

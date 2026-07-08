@@ -23,9 +23,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption maybe-error jsonrpc::error
-  :pred maybe-errorp
-  :short "An optional @(see jsonrpc::error).")
+(define maybe-errorp (x)
+  :returns (yes/no booleanp)
+  :parents (jsonrpc::error)
+  :short "Recognize an optional @(see jsonrpc::error)."
+  (or (not x)
+      (jsonrpc::errorp x)))
+
+(defrulel maybe-errorp-when-errorp
+  (implies (jsonrpc::errorp x)
+           (maybe-errorp x))
+  :enable maybe-errorp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -92,8 +100,10 @@
     (xdoc::desc
      "@('\"preprocess-args\"') &mdash; optional"
      (xdoc::p
-      "An array of strings denoting extra arguments
-       passed to the preprocessor."))
+      "Either an array of strings denoting extra arguments passed to the
+       preprocessor for every file, or an object whose member names are file
+       paths and whose member values are arrays of strings denoting the extra
+       arguments for the corresponding files."))
     (xdoc::desc
      "@('\"extensions\"') &mdash; optional, default @('\"gcc\"')"
      (xdoc::p
@@ -209,6 +219,71 @@
                               "Parameter " name " must be an array of strings.")))))
     (retok strs)))
 
+(define members->names ((members json::member-listp))
+  :returns (names string-listp)
+  :short "The list of member names in a JSON object member list."
+  (if (endp members)
+      nil
+    (cons (json::member->name (car members))
+          (members->names (cdr members)))))
+
+(define members-first-duplicate ((members json::member-listp))
+  :returns (dup acl2::maybe-stringp)
+  :short "The first member name that occurs more than once, or @('nil')."
+  (if (endp members)
+      nil
+    (if (member-equal (json::member->name (car members))
+                      (members->names (cdr members)))
+        (json::member->name (car members))
+      (members-first-duplicate (cdr members)))))
+
+(define members->string-stringlist-map ((members json::member-listp))
+  :returns (mv (erp maybe-errorp)
+               (map acl2::string-stringlist-mapp))
+  :short "Convert JSON object members to a string-to-string-list omap."
+  (b* (((reterr) nil)
+       ((when (endp members)) (retok nil))
+       (member (car members))
+       (name (json::member->name member))
+       (value (json::member->value member))
+       ((unless (json::value-case value :array))
+        (reterr (jsonrpc::make-invalid-params-error
+                 "Parameter preprocess-args object values must be arrays of strings.")))
+       ((mv erp strs) (value-list->strings (json::value-array->elements value)))
+       ((when erp)
+        (reterr (jsonrpc::make-invalid-params-error
+                 "Parameter preprocess-args object values must be arrays of strings.")))
+       ((erp rest) (members->string-stringlist-map (cdr members))))
+    (retok (omap::update name strs rest))))
+
+(define param->preprocess-args ((obj json::valuep))
+  :guard (json::value-case obj :object)
+  :returns (mv (erp maybe-errorp)
+               (preprocess-args
+                (or (string-listp preprocess-args)
+                    (acl2::string-stringlist-mapp preprocess-args))))
+  :short "Read the @('\"preprocess-args\"') parameter."
+  (b* (((reterr) nil)
+       ((mv presentp v) (get-member "preprocess-args" obj))
+       ((unless presentp) (retok nil))
+       ((when (json::value-case v :array))
+        (b* (((mv erp strs) (value-list->strings (json::value-array->elements v)))
+             ((when erp)
+              (reterr (jsonrpc::make-invalid-params-error
+                       "Parameter preprocess-args must be an array of strings or an object mapping strings to arrays of strings."))))
+          (retok strs)))
+       ((when (json::value-case v :object))
+        (b* ((members (json::value-object->members v))
+             (dup (members-first-duplicate members))
+             ((when dup)
+              (reterr (jsonrpc::make-invalid-params-error
+                       (concatenate 'string
+                                    "Duplicate preprocess-args entry: "
+                                    dup)))))
+          (members->string-stringlist-map members))))
+    (reterr (jsonrpc::make-invalid-params-error
+             "Parameter preprocess-args must be an array of strings or an object mapping strings to arrays of strings."))))
+
 (define param->preprocess ((obj json::valuep))
   :guard (json::value-case obj :object)
   :returns (mv (erp maybe-errorp)
@@ -257,26 +332,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define members->names ((members json::member-listp))
-  :returns (names string-listp)
-  :short "The list of member names in a JSON object member list."
-  (if (endp members)
-      nil
-    (cons (json::member->name (car members))
-          (members->names (cdr members)))))
-
-(define members-first-duplicate ((members json::member-listp))
-  :returns (dup acl2::maybe-stringp)
-  :short "The first member name that occurs more than once, or @('nil')."
-  (if (endp members)
-      nil
-    (if (member-equal (json::member->name (car members))
-                      (members->names (cdr members)))
-        (json::member->name (car members))
-      (members-first-duplicate (cdr members)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; The dispatched method must be in the JSONRPC package: the JSON-RPC interface
 ; interns the requested method name into that package to find the function.
 
@@ -302,7 +357,7 @@
        ((erp & new-dir) (param->string "new-dir" obj t))
        ((erp files) (param->string-list "files" obj t))
        ((erp preprocess) (param->preprocess obj))
-       ((erp preprocess-args) (param->string-list "preprocess-args" obj nil))
+       ((erp preprocess-args) (param->preprocess-args obj))
        ((erp ienv) (param->ienv obj))
        ;; Transformation-specific arguments:
        ((erp & struct-tag) (param->string "struct-tag" obj t))
