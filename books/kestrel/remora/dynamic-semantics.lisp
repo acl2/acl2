@@ -57,7 +57,7 @@
      in [thesis], [arxiv], and [esop],
      which use beta reduction rules to substitute variables
      (for expressions, types, and ispaces).
-     Our dynamic environments is needed
+     Our dynamic environments are needed
      to express conveniently an interpretive dynamic semantics;
      they may be also needed or convenient
      for a rule-based small-step operational semantics,
