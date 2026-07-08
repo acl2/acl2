@@ -1274,7 +1274,7 @@
                    (val1 expr-valuep))
   :guard (expr-value-wfp val1)
   :returns (val expr-value-resultp)
-  :short "Evaluation of array head."
+  :short "Evaluation of array tail."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1345,6 +1345,25 @@
     (expr-value-base (base-value-int (int-value d)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled list-repeatp-of-dims-of-expr-value-vector->elems
+  (implies (and (expr-value-wfp val)
+                (expr-value-case val :vector))
+           (list-repeatp (dims-of-expr-value-list (expr-value-vector->elems val))))
+  :enable (expr-value-wfp
+           expr-value-list-wfp-alt-def
+           check-dims-of-expr-value
+           check-dims-of-expr-value-list-when-expr-value-list-wfp))
+
+(defruled list-repeatp-of-dims-of-cdr-of-expr-value-vector->elems
+  (implies (and (expr-value-wfp val)
+                (expr-value-case val :vector))
+           (list-repeatp
+            (dims-of-expr-value-list (cdr (expr-value-vector->elems val)))))
+  :use (:instance list-repeatp-of-cdr
+                  (x (dims-of-expr-value-list (expr-value-vector->elems val))))
+  :enable (list-repeatp-of-dims-of-expr-value-vector->elems
+           cdr-of-dims-of-expr-value-list))
 
 (define eval-primop-fun ((op primop-valuep) (args expr-value-listp))
   :guard (and (primop-value-funp op)
@@ -1426,10 +1445,10 @@
      :bool-to-float (prim-bool-to-float (first args))
      :head (prog2$ (impossible) (reserr nil))
      :head-t (prog2$ (impossible) (reserr nil))
-     :head-t-d-s (prim-length op.tval op.d op.s (first args))
+     :head-t-d-s (prim-head op.tval op.d op.s (first args))
      :tail (prog2$ (impossible) (reserr nil))
      :tail-t (prog2$ (impossible) (reserr nil))
-     :tail-t-d-s (prim-length op.tval op.d op.s (first args))
+     :tail-t-d-s (prim-tail op.tval op.d op.s (first args))
      :length (prog2$ (impossible) (reserr nil))
      :length-t (prog2$ (impossible) (reserr nil))
      :length-t-d-s (prim-length op.tval op.d op.s (first args))))
@@ -1442,6 +1461,7 @@
   (defret expr-value-wfp-of-eval-primop-fun
     (implies (not (reserrp val))
              (expr-value-wfp val))
+    :hyp (expr-value-list-wfp args)
     :hints (("Goal" :in-theory (enable eval-primop-fun
                                        prim-int-add
                                        prim-int-sub
@@ -1492,7 +1512,8 @@
                                        prim-bool-to-float
                                        prim-head
                                        prim-tail
-                                       prim-length)))))
+                                       prim-length
+                                       list-repeatp-of-dims-of-cdr-of-expr-value-vector->elems)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1581,7 +1602,7 @@
                                 (ispace-var-shape "s"))))
                  (reserr nil)))
              (expr-value-primop
-              (make-primop-value-length-t-d-s
+              (make-primop-value-head-t-d-s
                :tval op.tval
                :d (ispace-value-dim->val (first ivals))
                :s (ispace-value-shape->val (second ivals)))))
@@ -1591,7 +1612,7 @@
                                 (ispace-var-shape "s"))))
                  (reserr nil)))
              (expr-value-primop
-              (make-primop-value-length-t-d-s
+              (make-primop-value-tail-t-d-s
                :tval op.tval
                :d (ispace-value-dim->val (first ivals))
                :s (ispace-value-shape->val (second ivals)))))
