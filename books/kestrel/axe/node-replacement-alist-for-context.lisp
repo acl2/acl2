@@ -147,30 +147,30 @@
 ;;                                   (nth-of-cdr)))))
 
 (defthm not-equal-of-1-and-len-of-nth-when-possibly-negated-nodenumsp-cheap
-  (implies (possibly-negated-nodenumsp predicates-or-negations)
-           (not (equal 1 (len (nth n predicates-or-negations)))))
+  (implies (possibly-negated-nodenumsp pnns)
+           (not (equal 1 (len (nth n pnns)))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (e/d (possibly-negated-nodenumsp
                                    nth
                                    possibly-negated-nodenump)
                                   (nth-of-cdr)))))
 
-(defthm node-replacement-alist-for-context-aux-helper
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (nth '0 predicates-or-negations)))
-                (natp (nth '0 predicates-or-negations))
-                (natp n)
-                (< n (len (dargs$inline (aref1 dag-array-name dag-array (nth '0 predicates-or-negations)))))
-                (not (consp (nth n (dargs (aref1 dag-array-name dag-array (nth '0 predicates-or-negations))))))
-                (not (equal 'quote (car (aref1 dag-array-name dag-array (nth '0 predicates-or-negations)))))
-                (possibly-negated-nodenumsp predicates-or-negations)
-                (consp predicates-or-negations)
-                )
-           (<= (nth n (dargs$inline (aref1 dag-array-name dag-array (nth '0 predicates-or-negations))))
-               (max-nodenum-in-possibly-negated-nodenums predicates-or-negations)))
-  :hints (("Goal" :use (:instance <-of-nth-of-dargs-of-aref1-when-pseudo-dag-arrayp (nodenum (nth '0 predicates-or-negations)))
-           :in-theory (e/d (car-becomes-nth-of-0)
-                           (<-of-nth-of-dargs-of-aref1-when-pseudo-dag-arrayp
-                            <-of-nth-of-dargs)))))
+;; (defthm node-replacement-alist-for-context-aux-helper
+;;   (implies (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (nth '0 predicates-or-negations)))
+;;                 (natp (nth '0 predicates-or-negations))
+;;                 (natp n)
+;;                 (< n (len (dargs$inline (aref1 dag-array-name dag-array (nth '0 predicates-or-negations)))))
+;;                 (not (consp (nth n (dargs (aref1 dag-array-name dag-array (nth '0 predicates-or-negations))))))
+;;                 (not (equal 'quote (car (aref1 dag-array-name dag-array (nth '0 predicates-or-negations)))))
+;;                 (possibly-negated-nodenumsp predicates-or-negations)
+;;                 (consp predicates-or-negations)
+;;                 )
+;;            (<= (nth n (dargs$inline (aref1 dag-array-name dag-array (nth '0 predicates-or-negations))))
+;;                (max-nodenum-in-possibly-negated-nodenums predicates-or-negations)))
+;;   :hints (("Goal" :use (:instance <-of-nth-of-dargs-of-aref1-when-pseudo-dag-arrayp (nodenum (nth '0 predicates-or-negations)))
+;;            :in-theory (e/d (car-becomes-nth-of-0)
+;;                            (<-of-nth-of-dargs-of-aref1-when-pseudo-dag-arrayp
+;;                             <-of-nth-of-dargs)))))
 
 (local (in-theory (enable natp-of-+-of-1-alt)))
 
@@ -185,93 +185,86 @@
                 (not (consp (nth 0 predicates-or-negations))))
            (natp (nth 0 predicates-or-negations)))
   :rule-classes (:rewrite :forward-chaining))
-(local (in-theory (enable  natp-of-nth-0-when-possibly-negated-nodenumsp)))
 
 ;PREDICATES-OR-NEGATIONS is a possibly-negated-nodenumsp (list of items of the form: <nodenum> or (not <nodenum>))
 ;extends ACC with a list of pairs of the form (<nodenum> . <nodenum-or-quotep>) where PREDICATES-OR-NEGATIONS imply that the car of each pair is equal to the cdr
 ;this function is similar to add-equality-pairs
-;fixme until Tue Sep  7 15:07:51 2010 this could return a pair whose car was a quoted constant (!) or whose car was an entire expression (!)
-;fixme really this is building an alist - use acons below?
 ;the booland case makes termination tricky
-(defun node-replacement-alist-for-context-aux (predicates-or-negations dag-array print known-booleans acc)
-  (declare (xargs :measure (make-ord 1
+;; See also update-node-replacement-array-for-assuming-possibly-negated-nodenums.
+(defund node-replacement-alist-for-context-aux (predicates-or-negations dag-array print known-booleans acc)
+  (declare (xargs :guard (and (possibly-negated-nodenumsp predicates-or-negations)
+                              (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (max-nodenum-in-possibly-negated-nodenums predicates-or-negations)))
+                              (symbol-listp known-booleans))
+                  :measure (make-ord 1
                                      (+ 1 (nfix (max-nodenum-in-possibly-negated-nodenums predicates-or-negations)))
                                      (len predicates-or-negations))
                   :hints (("Goal" :in-theory (enable car-becomes-nth-of-0)
                            :cases ((<= (nth 0 predicates-or-negations) (max-nodenum-in-possibly-negated-nodenums predicates-or-negations)))))
-                  :guard (and (possibly-negated-nodenumsp predicates-or-negations)
-                              (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (max-nodenum-in-possibly-negated-nodenums predicates-or-negations)))
-                              (symbol-listp known-booleans))
                   :guard-hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0
-                                                         consp-when-<-of-0-and-nth
-                                                         CONSP-WHEN-TRUE-LISTP
+                                                         ;consp-when-<-of-0-and-nth
+                                                         ;consp-when-true-listp
                                                          natp-of-nth-when-possibly-negated-nodenumsp-cheap
-                                                         integerp-when-natp)
+                                                         integerp-when-natp
+                                                         natp-of-nth-0-when-possibly-negated-nodenumsp)
                                                         (;<=-OF-NTH-0-AND-MAX-NODENUM-IN-POSSIBLY-NEGATED-NODENUMS
                                                          ;(:linear <=-OF-NTH-0-AND-MAX-NODENUM-IN-POSSIBLY-NEGATED-NODENUMS)
                                                          ;;PSEUDO-DAG-ARRAYP-MONOTONE
-                                                         node-replacement-alist-for-context-aux-helper
-                                                         <-OF-NTH-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP
+                                                         ;node-replacement-alist-for-context-aux-helper
+                                                         ;<-OF-NTH-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP
                                                          natp
-                                                         ))
-                                 :do-not '(generalize eliminate-destructors)
-                                 :use ((:instance <-OF-NTH-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP
-                                                  (NODENUM (NTH 0 PREDICATES-OR-NEGATIONS))
-                                                  (DAG-ARRAY DAG-ARRAY)
-                                                  (DAG-ARRAY-NAME 'DAG-ARRAY)
-                                                  (N 0))
-                                       (:instance <-OF-NTH-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP
-                                                  (NODENUM (NTH 0 PREDICATES-OR-NEGATIONS))
-                                                  (DAG-ARRAY DAG-ARRAY)
-                                                  (DAG-ARRAY-NAME 'DAG-ARRAY)
-                                                  (N 1))
-                                       (:instance node-replacement-alist-for-context-aux-helper
-                                                  (n 1)
-                                                  (DAG-ARRAY-name 'DAG-ARRAY)))))))
+                                                         myquotep
+                                                         ;; these 2 introduce myquotep out of nowhere:
+                                                         possibly-negated-nodenumsp-when-axe-disjunctionp
+                                                         possibly-negated-nodenumsp-when-axe-conjunctionp))))))
   (if (or (endp predicates-or-negations)
           (not (mbt (possibly-negated-nodenumsp predicates-or-negations))))
       acc
     (let* ((pred (first predicates-or-negations)))
-      (if (consp pred) ;any consp is a call of not, and (not x) becomes the pair (x . 'nil):
+      (if (consp pred) ; any cons is a call of not, and (not x) becomes the pair (x . 'nil):
           ;;todo: can we do better if the thing being negated is an OR?
-          (node-replacement-alist-for-context-aux (cdr predicates-or-negations) dag-array print
+          (node-replacement-alist-for-context-aux (rest predicates-or-negations) dag-array print
                                                   known-booleans
-                                                  (cons (cons (farg1 pred) *nil*)
-                                                        acc))
-        ;;pred is a nodenum:
+                                                  (acons-fast (farg1 pred) *nil* acc))
+        ;; pred is a nodenum:
         (let ((expr (aref1 'dag-array dag-array pred)))
           (if (atom expr) ; a variable (could add that the var is not nil?)
-              (prog2$ (and (eq :verbose print) (cw "node-replacement-alist-for-context-aux is skipping variable pred ~x0~%" expr))
-                      (node-replacement-alist-for-context-aux (cdr predicates-or-negations) dag-array print known-booleans acc))
+              (prog2$ (and (eq :verbose print) (cw "node-replacement-alist-for-context-aux is skipping variable ~x0~%" expr))
+                      (node-replacement-alist-for-context-aux (rest predicates-or-negations) dag-array print known-booleans acc))
             (let ((fn (ffn-symb expr)))
               (if (eq 'quote fn) ;if the constant is nil, what should happen?
-                  (prog2$ (and (eq :verbose print) (cw "node-replacement-alist-for-context-aux is skipping constant pred ~x0~%" expr))
-                          (node-replacement-alist-for-context-aux (cdr predicates-or-negations) dag-array print known-booleans acc))
-                ;;it's a real function call:
-                (if (and (eq 'equal fn) ;; (equal x y) may need to be turned around
+                  (prog2$ (and (eq :verbose print) (cw "node-replacement-alist-for-context-aux is skipping constant ~x0~%" expr))
+                          (node-replacement-alist-for-context-aux (rest predicates-or-negations) dag-array print known-booleans acc))
+                ;; expr is a function call:
+                (if (and (eq 'equal fn) ;; (equal arg1 arg2) ; may be turned around below
                          (= 2 (len (dargs expr))) ;for guards
                          )
                     (let ((arg1 (darg1 expr))
-                          (arg2 (darg2 expr)))
-                      (if (consp arg1)     ;tests for quotep
-                          (if (consp arg2) ;tests for quotep
+                          (arg2 (darg2 expr))
+                          ;; We always replace the equality itself with true:
+                          (acc (acons-fast pred *t* acc)) ; okay because EQUAL is a predicate
+                          ;; could add the reversed equality, but that would require adding nodes to the dag
+                          )
+                      (if (darg-is-quotep arg1)
+                          (if (darg-is-quotep arg2)
+                              ;; both are quoteps:
                               (prog2$ (and (eq :verbose print) (cw "node-replacement-alist-for-context-aux is skipping equality of quoteps ~x0~%" expr))
                                       (node-replacement-alist-for-context-aux (cdr predicates-or-negations) dag-array print known-booleans acc))
-                            (node-replacement-alist-for-context-aux (cdr predicates-or-negations)
+                            ;; only arg1 is a quotep:
+                            (node-replacement-alist-for-context-aux (rest predicates-or-negations)
                                                                     dag-array
                                                                     print
                                                                     known-booleans
-                                                                    (cons (cons arg2 arg1) ;reverse the order
-                                                                          acc)))
-                        ;;arg1 is not a quotep (consider more sophisticated tests when deciding whether to reverse the order:
-                        (node-replacement-alist-for-context-aux (cdr predicates-or-negations)
+                                                                    (acons-fast arg2 arg1 ; reverse order
+                                                                                acc)))
+                        ;; arg1 is not a quotep:
+                        ;; todo: consider more sophisticated tests when deciding whether to reverse the order, and consider how to avoid loops (similar tools only put in constants):
+                        (node-replacement-alist-for-context-aux (rest predicates-or-negations)
                                                                 dag-array
                                                                 print
                                                                 known-booleans
-                                                                (cons (cons pred *t*) ;new: we also replace the equality itself with true
-                                                                      (cons (cons arg1 arg2)
-                                                                            acc)))))
-                  (if (and (eq 'not fn) ;ffixme this should never happen?!
+                                                                (acons-fast arg1 arg2 ; normal order
+                                                                            acc))))
+                  (if (and (eq 'not fn) ; todo: this should never happen (context extraction should negate the PNN):
                            (= 1 (len (dargs expr))) ;for guards
                            )
                       (let ((arg (darg1 expr)))
@@ -281,28 +274,27 @@
                                                                     dag-array
                                                                     print
                                                                     known-booleans
-                                                                    (cons (cons arg *nil*)
-                                                                          acc))
+                                                                    (acons-fast arg *nil* acc))
                           (prog2$ (and (eq :verbose print) (cw "node-replacement-alist-for-context-aux is skipping the negation of a constant: ~x0~%" expr))
                                   (node-replacement-alist-for-context-aux (cdr predicates-or-negations) dag-array print known-booleans acc))))
-                    (if (and (eq 'booland fn) ;should not happen (the booland should have been opened when finding the context?)
+                    (if (and (eq 'booland fn) ; todo: should not happen (the booland should have been opened when finding the context?)
                              (= 2 (len (dargs expr)))    ;for termination
-                             (not (consp (darg1 expr))) ;nodenum (todo: handle a constant)
-                             (not (consp (darg2 expr))) ;nodenum (todo: handle a constant)
+                             (not (darg-is-quotep (darg1 expr))) ;nodenum (todo: handle a constant)
+                             (not (darg-is-quotep (darg2 expr))) ;nodenum (todo: handle a constant)
                              (mbt (< (darg1 expr) pred)) ;for termination
                              (mbt (< (darg2 expr) pred)) ;for termination
                              (mbt (pseudo-dag-arrayp 'dag-array dag-array (+ 1 pred))) ;for termination
                              )
                         ;; (booland x y) causes x and y to be processed recursively
-                        (node-replacement-alist-for-context-aux (cdr predicates-or-negations)
+                        (node-replacement-alist-for-context-aux (rest predicates-or-negations)
                                                                 dag-array
                                                                 print
                                                                 known-booleans
-                                                                (node-replacement-alist-for-context-aux (list (darg2 expr))
+                                                                (node-replacement-alist-for-context-aux (list (darg2 expr)) ; avoid this cons?
                                                                                                         dag-array
                                                                                                         print
                                                                                                         known-booleans
-                                                                                                        (node-replacement-alist-for-context-aux (list (darg1 expr))
+                                                                                                        (node-replacement-alist-for-context-aux (list (darg1 expr)) ; avoid this cons?
                                                                                                                                                 dag-array
                                                                                                                                                 print
                                                                                                                                                 known-booleans
@@ -313,8 +305,7 @@
                                                                   dag-array
                                                                   print
                                                                   known-booleans
-                                                                  (cons (cons pred *t*) ;yikes, had expr here instead of pred!
-                                                                        acc))
+                                                                  (acons-fast pred *t* acc))
                         (prog2$ (and print ;(eq :verbose print) ;could add the fact that it is not nil?
                                      (cw "NOTE: node-replacement-alist-for-context-aux is skipping expr ~x0 (not a call of a known predicate).~%" expr))
                                 (node-replacement-alist-for-context-aux (cdr predicates-or-negations)
@@ -323,54 +314,61 @@
                                                                         known-booleans
                                                                         acc))))))))))))))
 
-(defthm <-of-nth-of-+-1-of-max-nodenum-in-possibly-negated-nodenums-aux
-  (implies (and (possibly-negated-nodenumsp predicates-or-negations)
-                (natp n)
-                (not (consp (nth n predicates-or-negations)))
-                (< n (len predicates-or-negations)))
-           (< (nth n predicates-or-negations)
-              (binary-+ '1 (max-nodenum-in-possibly-negated-nodenums-aux predicates-or-negations acc))))
-  :hints (("Goal" :in-theory (e/d (max-nodenum-in-possibly-negated-nodenums-aux possibly-negated-nodenumsp nth)
-                                  (nth-of-cdr)))))
+;; todo: also show node-replacement-alistp, but that involves a bound
+;; todo: speed up?
+(local
+  (defthm nat-listp-of-strip-cars-of-node-replacement-alist-for-context-aux
+    (implies (and (possibly-negated-nodenumsp predicates-or-negations)
+                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (max-nodenum-in-possibly-negated-nodenums predicates-or-negations)))
+                  ;; (symbol-listp known-booleans)
+                  (nat-listp (strip-cars acc)) ; could move to conclusion, but that slows down the proof
+                  )
+             (nat-listp (strip-cars (node-replacement-alist-for-context-aux predicates-or-negations dag-array print known-booleans acc))))
+    :hints (("Goal" :in-theory (e/d (node-replacement-alist-for-context-aux natp-of-cadr-when-possibly-negated-nodenump)
+                                    (natp))))))
 
-(defthm <-of-nth-of-+-1-of-max-nodenum-in-possibly-negated-nodenums
-  (implies (and (possibly-negated-nodenumsp predicates-or-negations)
-                (natp n)
-                (not (consp (nth n predicates-or-negations)))
-                (< n (len predicates-or-negations)))
-           (< (nth n predicates-or-negations) (binary-+ '1 (max-nodenum-in-possibly-negated-nodenums predicates-or-negations))))
-  :hints (("Goal" :in-theory (e/d (max-nodenum-in-possibly-negated-nodenums max-nodenum-in-possibly-negated-nodenums-aux possibly-negated-nodenumsp nth)
-                                  (nth-of-cdr)))))
+;; (defthmd <-of-nth-of-+-1-of-max-nodenum-in-possibly-negated-nodenums-aux
+;;   (implies (and (possibly-negated-nodenumsp predicates-or-negations)
+;;                 (natp n)
+;;                 (not (consp (nth n predicates-or-negations)))
+;;                 (< n (len predicates-or-negations)))
+;;            (< (nth n predicates-or-negations)
+;;               (binary-+ '1 (max-nodenum-in-possibly-negated-nodenums-aux predicates-or-negations acc))))
+;;   :hints (("Goal" :in-theory (e/d (max-nodenum-in-possibly-negated-nodenums-aux possibly-negated-nodenumsp nth)
+;;                                   (nth-of-cdr)))))
 
-(defthm not-<-of-max-nodenum-in-possibly-negated-nodenums-aux-and-car
-  (implies (and (consp predicates-or-negations)
-                (not (consp (car predicates-or-negations))))
-           (<= (car predicates-or-negations)
-               (max-nodenum-in-possibly-negated-nodenums-aux predicates-or-negations acc)))
-  :hints (("Goal" :induct t
-           :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux))))
+;; (defthmd <-of-nth-of-+-1-of-max-nodenum-in-possibly-negated-nodenums
+;;   (implies (and (possibly-negated-nodenumsp predicates-or-negations)
+;;                 (natp n)
+;;                 (not (consp (nth n predicates-or-negations)))
+;;                 (< n (len predicates-or-negations)))
+;;            (< (nth n predicates-or-negations) (binary-+ '1 (max-nodenum-in-possibly-negated-nodenums predicates-or-negations))))
+;;   :hints (("Goal" :in-theory (e/d (max-nodenum-in-possibly-negated-nodenums max-nodenum-in-possibly-negated-nodenums-aux possibly-negated-nodenumsp nth)
+;;                                   (nth-of-cdr)))))
 
-(defthm not-<-of-max-nodenum-in-possibly-negated-nodenums-and-car
-  (implies (and (consp predicates-or-negations)
-                (not (consp (car predicates-or-negations))))
-           (not (< (max-nodenum-in-possibly-negated-nodenums predicates-or-negations)
-                   (car predicates-or-negations))))
-  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums))))
+;not used
+;; (defthmd not-<-of-max-nodenum-in-possibly-negated-nodenums-aux-and-car
+;;   (implies (and (consp predicates-or-negations)
+;;                 (not (consp (car predicates-or-negations))))
+;;            (<= (car predicates-or-negations)
+;;                (max-nodenum-in-possibly-negated-nodenums-aux predicates-or-negations acc)))
+;;   :hints (("Goal" :induct t
+;;            :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux))))
 
-;some of the above lemmas may not be needed
+;not used
+;; (defthmd not-<-of-max-nodenum-in-possibly-negated-nodenums-and-car
+;;   (implies (and (consp predicates-or-negations)
+;;                 (not (consp (car predicates-or-negations))))
+;;            (not (< (max-nodenum-in-possibly-negated-nodenums predicates-or-negations)
+;;                    (car predicates-or-negations))))
+;;   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums))))
 
-(verify-guards node-replacement-alist-for-context-aux :hints (("Goal" ;:in-theory (enable POSSIBLY-NEGATED-NODENUMSP)
-                                                   :in-theory (enable car-becomes-nth-of-0)
-                                                   :cases ((CONSP PREDICATES-OR-NEGATIONS))
-                                                   :expand ((possibly-negated-nodenumsp predicates-or-negations)
-                                                            ;(max-nodenum-in-possibly-negated-nodenums predicates-or-negations)
-                                                            ;;(max-nodenum-in-possibly-negated-nodenums-aux predicates-or-negations -1)
-                                                            ))))
+;todo: some of the above lemmas may not be needed
 
 ;context is a possibly-negated-nodenumsp (list of items of the form: <nodenum> or (not <nodenum>))
 ;fixme do we end up doing this over and over for the same context predicates?
 ;returns a list of "replacement pairs" of the form (<nodenum> . <nodenum-or-quotep>) where the context implies that the car of each pair is equal to the cdr
-(defun node-replacement-alist-for-context (context dag-array known-booleans print)
+(defund node-replacement-alist-for-context (context dag-array known-booleans print)
   (declare (xargs :guard (and (possibly-negated-nodenumsp context)
                               (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (max-nodenum-in-possibly-negated-nodenums context)))
                               (symbol-listp known-booleans))))
