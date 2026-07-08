@@ -98,11 +98,13 @@
      :member (c$::expr-member
                (expr-subst-free (c$::expr-member->arg expr)
                                 subst bound-vars)
-               (c$::expr-member->name expr))
+               (c$::expr-member->name expr)
+               (c$::expr-member->info expr))
      :memberp (c$::expr-memberp
                 (expr-subst-free (c$::expr-memberp->arg expr)
                                  subst bound-vars)
-                (c$::expr-memberp->name expr))
+                (c$::expr-memberp->name expr)
+                (c$::expr-memberp->info expr))
      :complit
      (c$::expr-complit
        (tyname-subst-free (c$::expr-complit->type expr)

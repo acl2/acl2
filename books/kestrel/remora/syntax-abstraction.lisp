@@ -1722,7 +1722,7 @@
        ((okf ty) (abs-type te-tree)))
     (make-bind-type :var tv :type ty)))
 
-;; ispace-bind = "extent" ws ispace-var ws ispace
+;; ispace-bind = "ispace" ws ispace-var ws ispace
 (define abs-ispace-bind ((tree abnf::treep))
   :returns (b bind-resultp)
   :short "Abstract an @('ispace-bind') to a @(tsee bind) @(':ispace')."

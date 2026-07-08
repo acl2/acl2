@@ -379,6 +379,10 @@
                          (type-vinfop expr.info)))
      (expr :unary (and (expr-annop expr.arg)
                        (type-vinfop expr.info)))
+     (expr :member (and (expr-annop expr.arg)
+                        (type-vinfop expr.info)))
+     (expr :memberp (and (expr-annop expr.arg)
+                         (type-vinfop expr.info)))
      (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                                 (expr-fix expr)))
      (expr :alignof-ambig (raise "Internal error: ambiguous ~x0."
@@ -528,6 +532,18 @@
            (and (expr-annop arg)
                 (type-vinfop info)))
     :expand (expr-annop (expr-unary op arg info)))
+
+  (defruled expr-annop-of-expr-member
+    (equal (expr-annop (expr-member arg name info))
+           (and (expr-annop arg)
+                (type-vinfop info)))
+    :expand (expr-annop (expr-member arg name info)))
+
+  (defruled expr-annop-of-expr-memberp
+    (equal (expr-annop (expr-memberp arg name info))
+           (and (expr-annop arg)
+                (type-vinfop info)))
+    :expand (expr-annop (expr-memberp arg name info)))
 
   (defruled expr-annop-of-expr-binary
     (equal (expr-annop (expr-binary op arg1 arg2 info))
@@ -707,6 +723,30 @@
     (implies (and (expr-annop expr)
                   (expr-case expr :unary))
              (type-vinfop (expr-unary->info expr)))
+    :enable expr-annop)
+
+  (defruled expr-annop-of-expr-member->arg
+    (implies (and (expr-annop expr)
+                  (expr-case expr :member))
+             (expr-annop (expr-member->arg expr)))
+    :enable expr-annop)
+
+  (defruled type-vinfop-of-expr-member->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :member))
+             (type-vinfop (expr-member->info expr)))
+    :enable expr-annop)
+
+  (defruled expr-annop-of-expr-memberp->arg
+    (implies (and (expr-annop expr)
+                  (expr-case expr :memberp))
+             (expr-annop (expr-memberp->arg expr)))
+    :enable expr-annop)
+
+  (defruled type-vinfop-of-expr-memberp->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :memberp))
+             (type-vinfop (expr-memberp->info expr)))
     :enable expr-annop)
 
   (defruled expr-annop-of-expr-binary->arg1
@@ -926,6 +966,8 @@
      expr-annop-of-expr-arrsub
      expr-annop-of-expr-funcall
      expr-annop-of-expr-unary
+     expr-annop-of-expr-member
+     expr-annop-of-expr-memberp
      expr-annop-of-expr-binary
      const-expr-annop-of-const-expr
      type-spec-annop-of-type-spec-struct
@@ -953,6 +995,10 @@
      type-vinfop-of-expr-funcall->info
      expr-annop-of-expr-unary->arg
      type-vinfop-of-expr-unary->info
+     expr-annop-of-expr-member->arg
+     type-vinfop-of-expr-member->info
+     expr-annop-of-expr-memberp->arg
+     type-vinfop-of-expr-memberp->info
      expr-annop-of-expr-binary->arg1
      expr-annop-of-expr-binary->arg2
      type-vinfop-of-expr-binary->info
@@ -1027,8 +1073,8 @@
    :gensel (type-unknown)
    :arrsub (type-vinfo->type expr.info)
    :funcall (type-vinfo->type expr.info)
-   :member (type-unknown)
-   :memberp (type-unknown)
+   :member (type-vinfo->type expr.info)
+   :memberp (type-vinfo->type expr.info)
    :complit (type-unknown)
    :unary (type-vinfo->type expr.info)
    :label-addr (type-pointer (type-void))

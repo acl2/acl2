@@ -218,6 +218,7 @@
   (:int-sub ())
   (:int-mul ())
   (:int-div ())
+  (:int-expt ())
   (:int-mod ())
   (:int-max ())
   (:int-min ())
@@ -482,6 +483,7 @@
      :int-sub int-binop-tv
      :int-mul int-binop-tv
      :int-div int-binop-tv
+     :int-expt int-binop-tv
      :int-mod int-binop-tv
      :int-max int-binop-tv
      :int-min int-binop-tv
@@ -1246,6 +1248,9 @@
 (defines cells-at-depth-in-expr-values
   :short "Cells of an expression value, or list of expression values,
           at a given frame depth."
+  ;; The flag function is used by theorems in other books
+  ;; (see renaming-evaluation.lisp).
+  :flag-local nil
 
   (define cells-at-depth-in-expr-value ((val expr-valuep) (depth natp))
     :returns (cells expr-value-list-resultp)
