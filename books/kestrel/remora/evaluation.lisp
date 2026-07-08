@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "dynamic-environments")
+(include-book "expression-values-and-environments")
 (include-book "primitives-evaluation")
 (include-book "nat-lists")
 (include-book "integer-lists")

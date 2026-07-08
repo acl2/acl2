@@ -12,9 +12,8 @@
 
 (include-book "ispace-values-and-environments")
 (include-book "type-values-and-environments")
-(include-book "values")
+(include-book "expression-values-and-environments")
 (include-book "type-value-equivalence")
-(include-book "dynamic-environments")
 (include-book "primitives-evaluation")
 (include-book "evaluation")
 (include-book "evaluation-rules")
@@ -50,9 +49,8 @@
      The difference is even more pronounced for floats."))
   :order-subtopics (ispace-values-and-environments
                     type-values-and-environments
-                    values
+                    expression-values-and-environments
                     type-value-equivalence
-                    dynamic-environments
                     primitives-evaluation
                     evaluation
                     evaluation-rules))

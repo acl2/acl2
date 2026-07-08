@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "dynamic-environments")
+(include-book "expression-values-and-environments")
 (include-book "printer")
 
 (include-book "std/strings/dec-digit-char-listp" :dir :system)
