@@ -314,7 +314,12 @@
        and put the resulting type values together into a function type value.")
      (xdoc::p
       "Universal, product, and sum types evaluate to themselves.
-       They are treated like lambda abstractions."))
+       They are treated like lambda abstractions.
+       The resulting type values include dynamic environments,
+       which should contain the bindings for
+       the free ispace and type variables of the bodies;
+       but for now we store empty environments,
+       which is a temporary limitation that we plan to remove."))
     (type-case
      type
      :var (type-denv-lookup-type type.var denv)
@@ -332,9 +337,21 @@
      :fun (b* (((ok in-tvals) (eval-type-list type.in denv))
                ((ok out-tval) (eval-type type.out denv)))
             (make-type-value-fun :in in-tvals :out out-tval))
-     :forall (make-type-value-forall :params type.params :body type.body)
-     :pi (make-type-value-pi :params type.params :body type.body)
-     :sigma (make-type-value-sigma :params type.params :body type.body))
+     :forall (make-type-value-forall
+              :params type.params
+              :body type.body
+              :denv (make-type-denv :ienv (make-ispace-denv :ispaces nil)
+                                    :types nil))
+     :pi (make-type-value-pi
+          :params type.params
+          :body type.body
+          :denv (make-type-denv :ienv (make-ispace-denv :ispaces nil)
+                                :types nil))
+     :sigma (make-type-value-sigma
+             :params type.params
+             :body type.body
+             :denv (make-type-denv :ienv (make-ispace-denv :ispaces nil)
+                                   :types nil)))
     :measure (type-count type))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

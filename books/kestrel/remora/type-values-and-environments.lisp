@@ -12,6 +12,9 @@
 
 (include-book "ispace-values-and-environments")
 
+(include-book "std/basic/two-nats-measure" :dir :system)
+
+(local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
@@ -33,13 +36,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftypes type-values
-  :short "Fixtypes of type values and lists of type values."
+(fty::deftypes type-values/denv
+  :short "Fixtypes of type values and type dynamic environments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Type values and type dynamic environments are mutually recursive
+     because some type values are (type-level) closures
+     that contain dynamic environments."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum type-value
-    :parents (type-values-and-environments type-values)
+    :parents (type-values-and-environments type-values/denv)
     :short "Fixtype of type values."
     :long
     (xdoc::topstring
@@ -52,32 +61,73 @@
        or a universal, product, or sum type.
        The latter three categories of types do not use type values in bodies,
        but they have the full type ASTs,
-       because the bindings ``shield'' the body,
-       like common lambda abstractions."))
+       because they are like lambda abstractions,
+       and their evaluation is deferred.")
+     (xdoc::p
+      "Critically, universal, product, and sum types
+       contain environments for their free ispace and type variables.
+       This fixtype currently does not enforce the constraint that
+       the environments contain exactly those free variables."))
     (:base ((type base-type)))
     (:array ((elem type-value)
              (dims nat-list)))
     (:fun ((in type-value-list)
            (out type-value)))
     (:forall ((params type-var-list)
-              (body type)))
+              (body type)
+              (denv type-denv)))
     (:pi ((params ispace-var-list)
-          (body type)))
+          (body type)
+          (denv type-denv)))
     (:sigma ((params ispace-var-list)
-             (body type)))
-    :pred type-valuep)
+             (body type)
+             (denv type-denv)))
+    :pred type-valuep
+    :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist type-value-list
-    :parents (type-values-and-environments type-values)
+    :parents (type-values-and-environments type-values/denv)
     :short "Fixtype of lists of type values."
     :elt-type type-value
     :true-listp t
     :elementp-of-nil nil
-    :pred type-value-listp))
+    :pred type-value-listp
+    :measure (two-nats-measure (acl2-count x) 0))
 
-;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::defomap type-var-type-value-map
+    :parents (type-values-and-environments type-values/denv)
+    :short "Fixtype of maps from type variables to type values."
+    :key-type type-var
+    :val-type type-value
+    :pred type-var-type-value-mapp
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::defprod type-denv
+    :parents (type-values-and-environments type-values/denv)
+    :short "Fixtype of type dynamic environments."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This includes an ispace environment,
+       because types contain ispaces.
+       And it has a map from type variables to type values,
+       which are the type variables in scope with the associated values.")
+     (xdoc::p
+      "We wrap the type map into a fixtype for abstraction.
+       We may want to replace this with two maps,
+       one for atom types and one for array types."))
+    ((ienv ispace-denv)
+     (types type-var-type-value-map))
+    :pred type-denvp
+    :measure (two-nats-measure (acl2-count x) 1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist type-value-list-case-array (x)
   :short "Check if all the type values in a list
@@ -113,6 +163,13 @@
   :short "Fixtype of (i) lists of type values and (ii) errors."
   :ok type-value-list
   :pred type-value-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type-denv-result
+  :short "Fixtype of type dynamic environments and errors."
+  :ok type-denv
+  :pred type-denv-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -236,40 +293,6 @@
   :short "Fixtype of (i) lists of variables with type values and (ii) errors."
   :ok var+typevalue-list
   :pred var+typevalue-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defomap type-var-type-value-map
-  :short "Fixtype of maps from type variables to type values."
-  :key-type type-var
-  :val-type type-value
-  :pred type-var-type-value-mapp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod type-denv
-  :short "Fixtype of type dynamic environments."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This includes an ispace environment,
-     because types contain ispaces.
-     And it has a map from type variables to type values,
-     which are the type variables in scope with the associated values.")
-   (xdoc::p
-    "We wrap the type map into a fixtype for abstraction.
-     We may want to replace this with two maps,
-     one for atom types and one for array types."))
-  ((ienv ispace-denv)
-   (types type-var-type-value-map))
-  :pred type-denvp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult type-denv-result
-  :short "Fixtype of type dynamic environments and errors."
-  :ok type-denv
-  :pred type-denv-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
