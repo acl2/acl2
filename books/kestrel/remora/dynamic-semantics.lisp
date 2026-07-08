@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "ispace-values-and-environments")
+(include-book "type-values-and-environments")
 (include-book "values")
 (include-book "type-value-equivalence")
 (include-book "dynamic-environments")
@@ -48,6 +49,7 @@
      is fairly straightforward).
      The difference is even more pronounced for floats."))
   :order-subtopics (ispace-values-and-environments
+                    type-values-and-environments
                     values
                     type-value-equivalence
                     dynamic-environments

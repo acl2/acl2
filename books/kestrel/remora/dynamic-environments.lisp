@@ -51,40 +51,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap type-var-type-value-map
-  :short "Fixtype of maps from type variables to type values."
-  :key-type type-var
-  :val-type type-value
-  :pred type-var-type-value-mapp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod type-denv
-  :short "Fixtype of type dynamic environments."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This includes an ispace environment,
-     because types contain ispaces.
-     And it has a map from type variables to type values,
-     which are the type variables in scope with the associated values.")
-   (xdoc::p
-    "We wrap the type map into a fixtype for abstraction.
-     We may want to replace this with two maps,
-     one for atom types and one for array types."))
-  ((ienv ispace-denv)
-   (types type-var-type-value-map))
-  :pred type-denvp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult type-denv-result
-  :short "Fixtype of type dynamic environments and errors."
-  :ok type-denv
-  :pred type-denv-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defomap string-expr-value-map
   :short "Fixtype of maps from strings to expression values."
   :key-type string
@@ -167,80 +133,6 @@
              (expr-value-wfp (cdr (omap::assoc key (expr-denv->exprs denv)))))
     :enable (expr-denv-wfp
              expr-value-wfp-of-cdr-of-assoc-when-string-expr-value-map-wfp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-denv-add-ispace ((var ispace-varp)
-                              (ival ispace-valuep)
-                              (denv type-denvp))
-  :returns (new-denv type-denvp)
-  :short "Add an ispace variable, with an associated ispace value,
-          to a type dynamic environment."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This may override an existing variable,
-     which is intended hiding behavior."))
-  (change-type-denv denv
-                    :ienv (ispace-denv-add-ispace var
-                                                  ival
-                                                  (type-denv->ienv denv))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define type-denv-add-ispaces ((vars ispace-var-listp)
-                               (ivals ispace-value-listp)
-                               (denv type-denvp))
-  :guard (equal (len vars) (len ivals))
-  :returns (new-denv type-denvp)
-  :short "Add zero or more ispace variables, with associated ispace values,
-          to a type dynamic environment."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This may override existing variables,
-     which is intended hiding behavior."))
-  (change-type-denv denv
-                    :ienv (ispace-denv-add-ispaces vars
-                                                   ivals
-                                                   (type-denv->ienv denv))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-denv-add-type ((var type-varp)
-                            (tval type-valuep)
-                            (denv type-denvp))
-  :returns (new-denv type-denvp)
-  :short "Add a type variable, with an associated type value,
-          to a type dynamic environment."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This may override an existing variable,
-     which is intended hiding behavior."))
-  (change-type-denv denv
-                    :types (omap::update (type-var-fix var)
-                                         (type-value-fix tval)
-                                         (type-denv->types denv))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define type-denv-add-types ((vars type-var-listp)
-                             (tvals type-value-listp)
-                             (denv type-denvp))
-  :guard (equal (len vars) (len tvals))
-  :returns (new-denv type-denvp)
-  :short "Add zero or more type variables, with associated type values,
-          to a type dynamic environment."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This may override existing variables,
-     which is intended hiding behavior."))
-  (b* (((when (endp vars)) (type-denv-fix denv))
-       ((unless (mbt (consp tvals))) (type-denv-fix denv))
-       (denv (type-denv-add-type (car vars) (car tvals) denv)))
-    (type-denv-add-types (cdr vars) (cdr tvals) denv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -400,31 +292,6 @@
     :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-denv-lookup-ispace ((var ispace-varp) (denv type-denvp))
-  :returns (ispace-val ispace-value-resultp)
-  :short "Lookup an ispace variable in a type dynamic environment."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We return an error if the variable is not in the environment."))
-  (ispace-denv-lookup-ispace var (type-denv->ienv denv)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define type-denv-lookup-type ((var type-varp) (denv type-denvp))
-  :returns (type-val type-value-resultp)
-  :short "Lookup a type variable in a type dynamic environment."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We return an error if the variable is not in the environment."))
-  (b* ((var+val (omap::assoc (type-var-fix var) (type-denv->types denv))))
-    (if var+val
-        (cdr var+val)
-      (reserr nil))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-denv-lookup-ispace ((var ispace-varp) (denv expr-denvp))
   :returns (ispace-val ispace-value-resultp)
