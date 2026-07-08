@@ -46,7 +46,7 @@
     "We define fixtypes for the values that
      Remora expressions and atoms evaluate to,
      as well as other categories of values
-     that ispaces and types evaluate to."))
+     that types evaluate to."))
   :order-subtopics t
   :default-parent t)
 
