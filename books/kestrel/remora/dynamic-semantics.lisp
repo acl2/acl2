@@ -10,6 +10,7 @@
 
 (in-package "REMORA")
 
+(include-book "ispace-values-and-environments")
 (include-book "values")
 (include-book "type-value-equivalence")
 (include-book "dynamic-environments")
@@ -46,7 +47,8 @@
      (although the mapping from the latter to the former
      is fairly straightforward).
      The difference is even more pronounced for floats."))
-  :order-subtopics (values
+  :order-subtopics (ispace-values-and-environments
+                    values
                     type-value-equivalence
                     dynamic-environments
                     primitives-evaluation

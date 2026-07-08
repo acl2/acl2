@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "abstract-syntax-trees")
+(include-book "ispace-values-and-environments")
 (include-book "abstract-syntax-structurals")
 
 (include-book "kestrel/fty/nat-list-list-list" :dir :system)
@@ -49,105 +49,6 @@
      that ispaces and types evaluate to."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum ispace-value
-  :short "Fixtype of ispace values."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is like a normalized ground form of ispace ASTs:
-     if there are no free variables,
-     a dimension can be reduced to a natural number,
-     and a shape can be reduced to a list of natural numbers."))
-  (:dim ((val nat)))
-  (:shape ((val nat-list)))
-  :pred ispace-valuep)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption ispace-value-option
-  ispace-value
-  :short "Fixtype of optional ispace values."
-  :pred ispace-value-optionp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult ispace-value-result
-  :short "Fixtype of ispace values and errors."
-  :ok ispace-value
-  :pred ispace-value-resultp
-  :prepwork ((local (in-theory (enable ispace-value-kind)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist ispace-value-list
-  :short "Fixtype of lists of ispace values."
-  :elt-type ispace-value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred ispace-value-listp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult ispace-value-list-result
-  :short "Fixtype of (i) lists of ispace values and (ii) errors."
-  :ok ispace-value-list
-  :pred ispace-value-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ispace-value-to-dims ((ival ispace-valuep))
-  :returns (dims nat-listp)
-  :short "Turn an ispace value into a list of dimensions."
-  (ispace-value-case
-   ival
-   :dim (list ival.val)
-   :shape ival.val))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection ispace-value-list-to-dims ((x ispace-value-listp))
-  :returns (dimss nat-list-listp)
-  :short "Lift @(tsee ispace-value-to-dims) to lists."
-  (ispace-value-to-dims x))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ispace-values-match-ispace-vars-p ((ivals ispace-value-listp)
-                                           (vars ispace-var-listp))
-  :returns (yes/no booleanp)
-  :short "Check that ispace values match ispace variables
-          in number and sort."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The two lists must have the same length,
-     and, element-wise, each ispace value must match
-     the sort of the corresponding ispace variable:
-     a @(':dim') ispace variable must be matched by a @(':dim') ispace value,
-     and a @(':shape') ispace variable by a @(':shape') ispace value.")
-   (xdoc::p
-    "This is used to evaluate ispace applications,
-     where the ispace values that an ispace lambda is applied to
-     must match the ispace parameters of the ispace lambda."))
-  (b* (((when (endp ivals)) (endp vars))
-       ((when (endp vars)) nil)
-       (ival (car ivals))
-       (var (car vars)))
-    (and (ispace-var-case var
-                          :dim (ispace-value-case ival :dim)
-                          :shape (ispace-value-case ival :shape))
-         (ispace-values-match-ispace-vars-p (cdr ivals) (cdr vars))))
-
-  ///
-
-  (defrule len-equal-when-ispace-values-match-ispace-vars-p
-    (implies (ispace-values-match-ispace-vars-p ivals vars)
-             (equal (len ivals) (len vars)))
-    :rule-classes :forward-chaining
-    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
