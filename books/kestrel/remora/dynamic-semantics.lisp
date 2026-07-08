@@ -28,7 +28,7 @@
     "The dynamic semantics of Remora is defined via inference rules,
      in the Remora publications [thesis] [arxiv] [esop].
      We plan to formalize those inference rules as directly as possible,
-     but we will start by providing an executable interpreter."))
+     but we start with an executable interpreter."))
   :order-subtopics (values
                     type-value-equivalence
                     dynamic-environments
