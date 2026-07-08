@@ -46,7 +46,23 @@
      not as ASTs with optional signs and sequences of digits
      (although the mapping from the latter to the former
      is fairly straightforward).
-     The difference is even more pronounced for floats."))
+     The difference is even more pronounced for floats.")
+   (xdoc::p
+    "Along with values,
+     we introduce and use dynamic environments,
+     which consist of the contextual information needed to execute ASTs.
+     They are the dynamic counterpart of "
+    (xdoc::seetopic "static-environments" "static environments")
+    ". Our dynamic environments have no direct counterpart
+     in [thesis], [arxiv], and [esop],
+     which use beta reduction rules to substitute variables
+     (for expressions, types, and ispaces).
+     Our dynamic environments is needed
+     to express conveniently an interpretive dynamic semantics;
+     they may be also needed or convenient
+     for a rule-based small-step operational semantics,
+     which we plan to do at some point.
+     They may also facilitate expressing and proving type soundness."))
   :order-subtopics (ispace-values-and-environments
                     type-values-and-environments
                     expression-values-and-environments
