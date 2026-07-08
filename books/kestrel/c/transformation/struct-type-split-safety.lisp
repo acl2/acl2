@@ -655,6 +655,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define tyname-info-sts-safep ((specquals spec/qual-listp)
+                               (declor? absdeclor-optionp)
+                               info
+                               (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a type name
+          is safe for the STS transformation."
+  (and (or (type-vinfop info)
+           (raise "Internal error: malformed ~x0." info))
+       (or (top-type-sts-safep (type-vinfo->type info) spec)
+           (sts-reject (tyname specquals declor? info))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define struct-declor-info-sts-safep ((declor? declor-optionp)
                                       (expr? const-expr-optionp)
                                       info
@@ -981,6 +996,13 @@
                                  param-declor.declor
                                  param-declor.info
                                  spec)))
+   (tyname (b* (((tyname tyname)))
+             (and (spec/qual-list-sts-safep tyname.specquals spec)
+                  (absdeclor-option-sts-safep tyname.declor? spec)
+                  (tyname-info-sts-safep tyname.specquals
+                                         tyname.declor?
+                                         tyname.info
+                                         spec))))
    (struct-declor (b* (((struct-declor struct-declor)))
                     (and (declor-option-sts-safep struct-declor.declor? spec)
                          (const-expr-option-sts-safep struct-declor.expr? spec)
