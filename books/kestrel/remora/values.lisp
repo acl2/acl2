@@ -46,28 +46,7 @@
     "We define fixtypes for the values that
      Remora expressions and atoms evaluate to,
      as well as other categories of values
-     that ispaces and types evaluate to.
-     [thesis], [arxiv], and [esop],
-     in line with much programming language literature,
-     define expression values as subsets of expressions and atoms,
-     namely the ones that cannot be further reduced.
-     While we could follow the same approach here,
-     instead we start by defining separate fixtypes for expression values.")
-   (xdoc::p
-    "This separation seems a bit cleaner,
-     also given the higher level of detail of our formalization
-     (compared to the aforementioned publications).
-     For instance, base literals in @(tsee base-lit)
-     contain syntactic information that is semantically irrelevant.
-     We normally think of integer values as mathematical integers,
-     not as ASTs with optional signs and sequences of digits
-     (although the mapping from the latter to the former
-     is fairly straightforward).
-     The difference is even more pronounced for floats.")
-   (xdoc::p
-    "Nonetheless, if we discover that it is more convenient
-     to define expression values as subsets of expressions and atoms,
-     we will switch to that approach."))
+     that ispaces and types evaluate to."))
   :order-subtopics t
   :default-parent t)
 
