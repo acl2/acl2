@@ -655,24 +655,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tyname-info-sts-safep ((specquals spec/qual-listp)
-                               (declor? absdeclor-optionp)
-                               info
+(define tyname-info-sts-safep ((tyname tynamep)
                                (spec sts-struct-specp))
   :returns (yes/no booleanp)
   :short "Check if a type name
           is safe for the STS transformation."
-  (and (or (type-vinfop info)
-           (raise "Internal error: malformed ~x0." info))
-       (or (top-type-sts-safep (type-vinfo->type info) spec)
-           (sts-reject (tyname specquals declor? info))))
+  (b* ((info (tyname->info tyname)))
+    (and (or (type-vinfop info)
+             (raise "Internal error: malformed ~x0." info))
+         (or (top-type-sts-safep (type-vinfo->type info) spec)
+             (sts-reject (tyname-fix tyname)))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define struct-declor-info-sts-safep ((declor? declor-optionp)
-                                      (expr? const-expr-optionp)
-                                      info
+(define struct-declor-info-sts-safep ((sdeclor struct-declorp)
                                       (spec sts-struct-specp))
   :returns (yes/no booleanp)
   :short "Check if a structure declarator
@@ -684,10 +681,11 @@
      we are not at the top level,
      so we call @(tsee type-sts-safep) with @('nested') set to @('t'),
      instead of @(tsee top-type-sts-safep)."))
-  (and (or (type-vinfop info)
-           (raise "Internal error: malformed ~x0." info))
-       (or (type-sts-safep (type-vinfo->type info) t spec)
-           (sts-reject (struct-declor declor? expr? info))))
+  (b* ((info (struct-declor->info sdeclor)))
+    (and (or (type-vinfop info)
+             (raise "Internal error: malformed ~x0." info))
+         (or (type-sts-safep (type-vinfo->type info) t spec)
+             (sts-reject (struct-declor-fix sdeclor)))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -998,17 +996,11 @@
    (tyname (b* (((tyname tyname)))
              (and (spec/qual-list-sts-safep tyname.specquals spec)
                   (absdeclor-option-sts-safep tyname.declor? spec)
-                  (tyname-info-sts-safep tyname.specquals
-                                         tyname.declor?
-                                         tyname.info
-                                         spec))))
+                  (tyname-info-sts-safep tyname spec))))
    (struct-declor (b* (((struct-declor struct-declor)))
                     (and (declor-option-sts-safep struct-declor.declor? spec)
                          (const-expr-option-sts-safep struct-declor.expr? spec)
-                         (struct-declor-info-sts-safep struct-declor.declor?
-                                                       struct-declor.expr?
-                                                       struct-declor.info
-                                                       spec))))
+                         (struct-declor-info-sts-safep struct-declor spec))))
    (init-declor (b* (((init-declor init-declor)))
                   (and (declor-sts-safep init-declor.declor spec)
                        (attrib-spec-list-sts-safep init-declor.attribs spec)

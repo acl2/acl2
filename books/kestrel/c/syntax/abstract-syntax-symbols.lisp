@@ -356,6 +356,7 @@
     struct-declor-count
     struct-declor
     make-struct-declor
+    struct-declor->info
 
     struct-declor-listp
     struct-declor-list-fix
