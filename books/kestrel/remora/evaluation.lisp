@@ -2369,13 +2369,13 @@
   (xdoc::topstring
    (xdoc::p
     "We evaluate the program's expression via @(tsee eval-expr)
-     in the initial dynamic environment (see @(tsee init-denv)),
+     in the initial dynamic environment (see @(tsee init-expr-denv)),
      which contains just the primitive operations in scope.")
    (xdoc::p
     "The @('limit') input bounds the depth of the evaluation recursion,
      as explained in @(see eval-exprs/atoms/binds);
      its exhaustion causes an error result."))
-  (eval-expr (prog->expr prog) (init-denv) limit)
+  (eval-expr (prog->expr prog) (init-expr-denv) limit)
 
   ///
 
