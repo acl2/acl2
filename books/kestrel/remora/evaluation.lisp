@@ -10,6 +10,7 @@
 
 (in-package "REMORA")
 
+(include-book "bound-and-free-variable-operations")
 (include-book "expression-values-and-environments")
 (include-book "primitives-evaluation")
 (include-book "nat-lists")
@@ -315,11 +316,11 @@
      (xdoc::p
       "Universal, product, and sum types evaluate to themselves.
        They are treated like lambda abstractions.
-       The resulting type values include dynamic environments,
-       which should contain the bindings for
-       the free ispace and type variables of the bodies;
-       but for now we store empty environments,
-       which is a temporary limitation that we plan to remove."))
+       The resulting type values include dynamic environments
+       with the bindings for
+       the free ispace and type variables of these types,
+       obtained by restricting the current dynamic environment
+       to those variables."))
     (type-case
      type
      :var (type-denv-lookup-type type.var denv)
@@ -340,18 +341,21 @@
      :forall (make-type-value-forall
               :params type.params
               :body type.body
-              :denv (make-type-denv :ienv (make-ispace-denv :ispaces nil)
-                                    :types nil))
+              :denv (type-denv-restrict (type-free-ispace-vars type)
+                                        (type-free-type-vars type)
+                                        denv))
      :pi (make-type-value-pi
           :params type.params
           :body type.body
-          :denv (make-type-denv :ienv (make-ispace-denv :ispaces nil)
-                                :types nil))
+          :denv (type-denv-restrict (type-free-ispace-vars type)
+                                    (type-free-type-vars type)
+                                    denv))
      :sigma (make-type-value-sigma
              :params type.params
              :body type.body
-             :denv (make-type-denv :ienv (make-ispace-denv :ispaces nil)
-                                   :types nil)))
+             :denv (type-denv-restrict (type-free-ispace-vars type)
+                                       (type-free-type-vars type)
+                                       denv)))
     :measure (type-count type))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
