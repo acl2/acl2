@@ -242,3 +242,19 @@
 
 ;; Note, currently the only place "[]" can occur is in shape and shape-lit.
 ;; We plan to add tests for that.
+
+;; ---- Let bindings: ispace-bind -> :ispace ----
+
+;; An ispace binding aliasing a dimension.
+(test-parse "(let ((ispace $d 3)) 0)"
+            (make-prog
+             :expr (make-expr-let
+                    :binds (list (make-bind-ispace
+                                  :var (make-ispace-var-dim :name "d")
+                                  :ispace (make-ispace-dim
+                                           :dim (make-dim-const :val 3))))
+                    :body (int-expr '(#\0)))))
+
+;; Dimension arithmetic and shape aliases in ispace bindings round-trip.
+(test-roundtrip "(let ((ispace $d (+ 5 (- 3)))) 0)")
+(test-roundtrip "(let ((ispace @s [2 3])) 0)")
