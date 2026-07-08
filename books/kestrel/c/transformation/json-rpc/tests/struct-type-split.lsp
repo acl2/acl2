@@ -80,6 +80,41 @@ int main(void) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; The preprocess-args parameter also accepts a per-file map.
+
+(make-event
+ (b* ((params
+       (value-object
+        (list (make-member :name "preprocess-args"
+                           :value
+                           (value-object
+                            (list
+                             (make-member
+                              :name "test1.c"
+                              :value (value-array
+                                      (list (value-string "-I include")
+                                            (value-string "-DDEBUG"))))
+                             (make-member
+                              :name "subdir/test2.c"
+                              :value (value-array
+                                      (list (value-string "-I subdir/include"))))))))))
+      ((mv erp preprocess-args) (c2c::param->preprocess-args params))
+      ((when erp)
+       (mv (msg "preprocess-args parser failed: ~x0" erp) nil state))
+      (expected (omap::update
+                 "subdir/test2.c"
+                 (list "-I subdir/include")
+                 (omap::update
+                  "test1.c"
+                  (list "-I include" "-DDEBUG")
+                  nil)))
+      ((unless (equal preprocess-args expected))
+       (mv (msg "Unexpected preprocess-args: ~x0" preprocess-args)
+           nil state)))
+   (mv nil '(value-triple :preprocess-args-map-parsed) state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; A duplicate parameter name is rejected with an invalid-params error,
 ;; rather than silently using the first occurrence.
 
