@@ -80,7 +80,12 @@
                     atomp-when-result-not-error
                     atom-listp-when-result-not-error
                     bindp-when-result-not-error
-                    bind-listp-when-result-not-error)))
+                    bind-listp-when-result-not-error
+                    importp-when-result-not-error
+                    import-listp-when-result-not-error
+                    declp-when-result-not-error
+                    decl-listp-when-result-not-error
+                    filep-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -124,7 +129,7 @@
      character.  Instead we UTF-8-encode the code points back into
      bytes and pack those bytes into the ACL2 string.  This is
      symmetric to the bytes-to-code-points decoding done by "
-    (xdoc::seetopic "post-parsing" "@('parse-program-from-bytes')")
+    (xdoc::seetopic "parser-interface" "@('decode-utf8-string')")
     ".")
    (xdoc::p
     "Consequence: for ASCII inputs, the resulting ACL2 string holds
@@ -2315,19 +2320,123 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Slice 6: program-level entry
+;; Slice 6: top-level expression entry
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; program = ws exp ws
-(define abs-prog ((tree abnf::treep))
-  :returns (p prog-resultp
-              :hints (("Goal" :in-theory (enable progp))))
-  :short "Abstract a @('program') CST to a @(tsee prog) AST."
+;; top-exp = ws exp ws
+(define abs-top-exp ((tree abnf::treep))
+  :returns (e expr-resultp)
+  :short "Abstract a @('top-exp') CST to an @(tsee expr) AST."
   (b* (((okf (abnf::tree-list-tuple3 sub))
-        (abnf::check-tree-nonleaf-3 tree "program"))
-       ((okf e-tree) (abnf::check-tree-list-1 sub.2nd))
-       ((okf e) (abs-exp e-tree)))
-    (make-prog :expr e)))
+        (abnf::check-tree-nonleaf-3 tree "top-exp"))
+       ((okf e-tree) (abnf::check-tree-list-1 sub.2nd)))
+    (abs-exp e-tree)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Slice 7: imports, declarations, and source files
+;;
+;; These come after the expression cluster because they reference
+;; abs-bind, abs-exp, and abs-fun-sig, but nothing references them back,
+;; so they are not mutually recursive with it.
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; import = "(" ws "import" ws string-lit ws ")"
+(define abs-import ((tree abnf::treep))
+  :returns (imp import-resultp)
+  :short "Abstract an @('import') to an @(tsee import)."
+  (b* (((okf (abnf::tree-list-tuple7 sub))
+        (abnf::check-tree-nonleaf-7 tree "import"))
+       ((okf str-tree) (abnf::check-tree-list-1 sub.5th))
+       ((okf chars) (abs-string-lit str-tree)))
+    (make-import :path chars)))
+
+(define abs-ws-import ((tree abnf::treep))
+  :returns (imp import-resultp)
+  :short "Abstract a @('( ws import )') wrapper to an @(tsee import)."
+  (b* (((okf (abnf::tree-list-tuple2 sub))
+        (abnf::check-tree-nonleaf-2 tree nil))
+       ((okf i-tree) (abnf::check-tree-list-1 sub.2nd)))
+    (abs-import i-tree)))
+
+(define abs-*-ws-import ((trees abnf::tree-listp))
+  :returns (imps import-list-resultp)
+  :short "Abstract @('*( ws import )') to an @(tsee import-list)."
+  (b* (((when (endp trees)) nil)
+       ((okf imp) (abs-ws-import (car trees)))
+       ((okf rest) (abs-*-ws-import (cdr trees))))
+    (cons imp rest)))
+
+;; def-decl = "def" ws bind
+(define abs-def-decl ((tree abnf::treep))
+  :returns (d decl-resultp)
+  :short "Abstract a @('def-decl') to a @(tsee decl) @(':def')."
+  (b* (((okf (abnf::tree-list-tuple3 sub))
+        (abnf::check-tree-nonleaf-3 tree "def-decl"))
+       ((okf b-tree) (abnf::check-tree-list-1 sub.3rd))
+       ((okf b) (abs-bind b-tree)))
+    (make-decl-def :bind b)))
+
+;; entry-decl = "entry" ws "(" ws fun-sig ws ")" ws exp
+(define abs-entry-decl ((tree abnf::treep))
+  :returns (d decl-resultp)
+  :short "Abstract an @('entry-decl') to a @(tsee decl) @(':entry')."
+  (b* (((okf (abnf::tree-list-tuple9 sub))
+        (abnf::check-tree-nonleaf-9 tree "entry-decl"))
+       ((okf sig-tree) (abnf::check-tree-list-1 sub.5th))
+       ((okf e-tree) (abnf::check-tree-list-1 sub.9th))
+       ((okf info) (abs-fun-sig sig-tree))
+       ((okf body) (abs-exp e-tree)))
+    (make-decl-entry :var (fun-sig-info->name info)
+                     :params (fun-sig-info->params info)
+                     :type? (fun-sig-info->ret-type info)
+                     :expr body)))
+
+(define abs-decl-body ((tree abnf::treep))
+  :returns (d decl-resultp)
+  :short "Abstract a @('decl-body') to a @(tsee decl)."
+  (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "decl-body"))
+       ((okf rulename?) (abnf::check-tree-nonleaf? inner)))
+    (cond ((equal rulename? "def-decl") (abs-def-decl inner))
+          ((equal rulename? "entry-decl") (abs-entry-decl inner))
+          (t (reserrf (list :unexpected-decl-body
+                            (abnf::tree-info-for-error inner)))))))
+
+(define abs-decl ((tree abnf::treep))
+  :returns (d decl-resultp)
+  :short "Abstract a @('decl') to a @(tsee decl)."
+  (b* (((okf (abnf::tree-list-tuple5 sub))
+        (abnf::check-tree-nonleaf-5 tree "decl"))
+       ((okf body-tree) (abnf::check-tree-list-1 sub.3rd)))
+    (abs-decl-body body-tree)))
+
+(define abs-ws-decl ((tree abnf::treep))
+  :returns (d decl-resultp)
+  :short "Abstract a @('( ws decl )') wrapper to a @(tsee decl)."
+  (b* (((okf (abnf::tree-list-tuple2 sub))
+        (abnf::check-tree-nonleaf-2 tree nil))
+       ((okf d-tree) (abnf::check-tree-list-1 sub.2nd)))
+    (abs-decl d-tree)))
+
+(define abs-*-ws-decl ((trees abnf::tree-listp))
+  :returns (ds decl-list-resultp)
+  :short "Abstract @('*( ws decl )') to a @(tsee decl-list)."
+  (b* (((when (endp trees)) nil)
+       ((okf d) (abs-ws-decl (car trees)))
+       ((okf rest) (abs-*-ws-decl (cdr trees))))
+    (cons d rest)))
+
+;; file = *( ws import ) *( ws decl ) ws
+(define abs-file ((tree abnf::treep))
+  :returns (f file-resultp
+              :hints (("Goal" :in-theory (enable filep))))
+  :short "Abstract a @('file') CST to a @(tsee file) AST."
+  (b* (((okf (abnf::tree-list-tuple3 sub))
+        (abnf::check-tree-nonleaf-3 tree "file"))
+       ((okf imports) (abs-*-ws-import sub.1st))
+       ((okf decls) (abs-*-ws-decl sub.2nd)))
+    (make-file :imports imports :decls decls)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

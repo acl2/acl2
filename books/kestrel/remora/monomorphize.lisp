@@ -66,8 +66,8 @@
    (xdoc::p
     "A termination fuel parameter bounds how many levels of nested cfun
      instantiation are performed. The fuel should never reach zero, so it is an
-     errorif it does. The top-level entry point @(tsee monomorphize-prog) supplies
-     @('(* 10 (expr-count (prog->expr prog)))') as the initial fuel: a margin
+     errorif it does. The top-level entry point @(tsee monomorphize-top-expr)
+     supplies @('(* 10 (expr-count expr))') as the initial fuel: a margin
      above the expression size, since each cfun instantiation grows the tree
      (the instance body is spliced in) and so the fuel must exceed the original
      size for nested instantiation to terminate without reunning out of fuel."))
@@ -310,8 +310,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :extra-args ((dim-var-map acl2::string-nat-mapp))
   :override
   ((dim :var (b* ((dim-var-map (acl2::string-nat-map-fix dim-var-map))
@@ -753,13 +752,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(define monomorphize-prog ((prog progp))
-  :returns (mv err (fn-info-map fn-info-mapp) (new-prog progp))
-  :short "Monomorphize a Remora program."
+(define monomorphize-top-expr ((expr exprp))
+  :returns (mv err (fn-info-map fn-info-mapp) (new-expr exprp))
+  :short "Monomorphize a standalone (top-level) Remora expression."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Top-level entry point.  Returns @('(mv error fn-info-map new-prog)').
+    "Top-level entry point.  Returns @('(mv error fn-info-map new-expr)').
      On success @('error') is @('nil') and @('fn-info-map') is a
      @(tsee fn-info-map) mapping each @(':cfun') and @(':ifun') name to a
      @(tsee bind+bind-map) pair, whose @('bind-map') component maps each
@@ -769,8 +768,8 @@
      @(':ispace-eval-error') (an ispace argument failed to evaluate to a nat),
      or @(':bad-ifun-entry') / @(':bad-cfun-entry') (a name registered as an
      @(':ifun') / @(':cfun') resolved to a binding of the wrong kind)."))
-  (b* ((prog (prog-singletonize-let prog))
-       (fuel (expr-count (prog->expr prog)))
+  (b* ((expr (expr-singletonize-let expr))
+       (fuel (expr-count expr))
        ((mv err fn-info-map new-expr)
-        (mono-expr (* 10 fuel) (prog->expr prog) nil nil nil)))
-    (mv err fn-info-map (prog-flatten-let (make-prog :expr new-expr)))))
+        (mono-expr (* 10 fuel) expr nil nil nil)))
+    (mv err fn-info-map (expr-flatten-let new-expr))))

@@ -22,10 +22,40 @@
 ; =========================================================================
 
 ; -------------------------------------------------------------------------
-; Top-level: a program is a single expression
+; Top-level: a standalone expression
 ; -------------------------------------------------------------------------
+;
+; A standalone expression surrounded by optional whitespace.  This is
+; the input format of the implementation's expression entry points
+; (interpret -e and the REPL); source files are covered by the `file`
+; rule below.
 
-program         = ws exp ws
+top-exp         = ws exp ws
+
+; -------------------------------------------------------------------------
+; Source files: imports followed by declarations
+; -------------------------------------------------------------------------
+;
+; A .remora source file is a sequence of imports followed by a sequence
+; of top-level declarations.  A declaration is either a definition
+; (def, wrapping any let-style bind) or an entry point (entry, whose
+; signature has the same shape as fun-sig).  The interpreter requires
+; exactly one entry named main; that is a semantic constraint, not a
+; grammatical one.
+
+file            = *( ws import ) *( ws decl ) ws
+
+import          = "(" ws %s"import" ws string-lit ws ")"
+                  ; the string literal is the path of the imported file
+
+decl            = "(" ws decl-body ws ")"
+
+decl-body       = def-decl / entry-decl
+
+def-decl        = %s"def" ws bind
+
+entry-decl      = %s"entry" ws "(" ws fun-sig ws ")" ws exp
+                  ; the signature has the same shape as a fun binding's
 
 ; -------------------------------------------------------------------------
 ; Expressions
@@ -384,6 +414,7 @@ keyword         = %s"array" / %s"frame"
                 / %s"Sigma" / %x03A3        ; Sigma or capital Sigma
                 / %s"let" / %s"type" / %s"ispace"
                 / %s"fun" / %s"t-fun" / %s"i-fun" / %s"val"
+                / %s"def" / %s"entry" / %s"import"
 
 ; -------------------------------------------------------------------------
 ; Lexical primitives

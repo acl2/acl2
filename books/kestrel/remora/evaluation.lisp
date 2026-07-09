@@ -2425,23 +2425,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-prog ((prog progp) (limit natp))
+(define eval-top-expr ((expr exprp) (limit natp))
   :returns (val expr-value-resultp)
-  :short "Evaluate a program to an expression value."
+  :short "Evaluate a standalone (top-level) expression
+          to an expression value."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We evaluate the program's expression via @(tsee eval-expr)
+    "We evaluate the expression via @(tsee eval-expr)
      in the initial dynamic environment (see @(tsee init-expr-denv)),
      which contains just the primitive operations in scope.")
    (xdoc::p
     "The @('limit') input bounds the depth of the evaluation recursion,
      as explained in @(see eval-exprs/atoms/binds);
      its exhaustion causes an error result."))
-  (eval-expr (prog->expr prog) (init-expr-denv) limit)
+  (eval-expr expr (init-expr-denv) limit)
 
   ///
 
-  (defret expr-value-wfp-of-eval-prog
+  (defret expr-value-wfp-of-eval-top-expr
     (implies (not (reserrp val))
              (expr-value-wfp val))))

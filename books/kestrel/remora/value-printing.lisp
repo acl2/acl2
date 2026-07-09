@@ -318,9 +318,9 @@
    (xdoc::p
     "We convert the expression value back to an expression
      via @(tsee expr-value-to-expr)
-     and print it with @(tsee print-prog).
+     and print it with @(tsee print-expr).
      Fails when the conversion does (i.e. only for float values
      with no literal syntax)."))
   (b* (((mv err expr) (expr-value-to-expr val))
        ((when err) (mv t "")))
-    (mv nil (print-prog (make-prog :expr expr) :width width))))
+    (mv nil (print-expr expr :width width))))

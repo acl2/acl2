@@ -22,6 +22,7 @@
                                        check-type
                                        function
                                        functionp
+                                       import
                                        prog
                                        sort
                                        termp

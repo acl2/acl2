@@ -76,7 +76,7 @@
      (each ASCII code point is a single @('UTF-8') byte).
      The encoding is performed by syntax abstraction by @('abs-nats-to-string'),
      and is symmetric to the @('UTF-8') decoding
-     performed by @('parse-program-from-bytes').
+     performed by the parsing entry points (see @('parser-interface')).
      Consumers that need code points back
      can decode the string with @('acl2::utf8=>ustring').
      String equality on names is bytewise,
@@ -998,13 +998,74 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod prog
-  :short "Fixtype of programs."
+(fty::defprod import
+  :short "Fixtype of imports."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to @('program') in the ABNF grammar.")
+    "This corresponds to @('import') in the ABNF grammar.")
    (xdoc::p
-    "Currently a program is just a (top-level) expression."))
-  ((expr expr))
-  :pred progp)
+    "An import names another Remora source file
+     whose declarations are in scope in the importing file.
+     The path is a string literal,
+     represented as a list of character literals
+     like the @(':string') summand of @(tsee expr)."))
+  ((path char-lit-list))
+  :pred importp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist import-list
+  :short "Fixtype of lists of imports."
+  :elt-type import
+  :true-listp t
+  :elementp-of-nil nil
+  :pred import-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum decl
+  :short "Fixtype of declarations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('decl') in the ABNF grammar.")
+   (xdoc::p
+    "A declaration is either
+     a definition, wrapping any of the binding forms
+     used in @('let') expressions,
+     or an entry point, whose signature has the same shape
+     as that of a function binding
+     (the @(':fun') summand of @(tsee bind)):
+     a name, value parameters, an optional return type,
+     and a body expression."))
+  (:def ((bind bind)))
+  (:entry ((var string)
+           (params var+type?-list)
+           (type? type-option)
+           (expr expr)))
+  :pred declp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist decl-list
+  :short "Fixtype of lists of declarations."
+  :elt-type decl
+  :true-listp t
+  :elementp-of-nil nil
+  :pred decl-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod file
+  :short "Fixtype of source files."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('file') in the ABNF grammar.")
+   (xdoc::p
+    "A source file is a sequence of imports
+     followed by a sequence of declarations."))
+  ((imports import-list)
+   (decls decl-list))
+  :pred filep)

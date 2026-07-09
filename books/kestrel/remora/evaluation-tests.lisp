@@ -14,34 +14,49 @@
 (include-book "type-checking")
 (include-book "evaluation")
 
+(include-book "std/util/defmacro-plus" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-eval-prog (code)
+(defmacro+ test-eval-top-expr (code)
+  :parents (evaluation)
+  :short "Test that a standalone Remora expression
+          parses, type-checks, and evaluates without error."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "@('code') is a string of Remora source for a standalone expression.
+     The expansion is an @(tsee assert-event) that runs the full pipeline
+     &mdash; @(tsee parse-top-exp-from-string), @(tsee check-top-expr),
+     @(tsee eval-top-expr) (with an evaluation limit of one million)
+     &mdash; and passes when the resulting value is not an error.
+     The value is printed to the comment window for manual inspection;
+     the expected value is not checked."))
   `(assert-event
     (b* ((code ,code)
-         (ast (parse-from-string code))
-         (tast (check-program ast))
-         (prog (type+prog->prog tast))
-         (val (eval-prog prog 1000000)))
+         (ast (parse-top-exp-from-string code))
+         (tast (check-top-expr ast))
+         (expr (type+expr->expr tast))
+         (val (eval-top-expr expr 1000000)))
       (and (not (cw "~x0~%" val))
            (not (reserrp val))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-eval-prog "3")
+(test-eval-top-expr "3")
 
-(test-eval-prog
+(test-eval-top-expr
  "(let ((val x 4)) x)")
 
-(test-eval-prog
+(test-eval-top-expr
  "(let ((val x 10) (val y 20)) (+ x y))")
 
-(test-eval-prog
+(test-eval-top-expr
  "
 (i-app (t-app (frame [0] (Forall (&t) (Pi ($d) (-> ((A &t $d)) Int)))) Int) 3)
 ")
 
-(test-eval-prog
+(test-eval-top-expr
  "
 (t-app (i-app (frame [0] (Pi ($d) (Forall (&t) (-> ((A &t $d)) Int)))) 3) Int)
 ")
