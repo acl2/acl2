@@ -35,3 +35,13 @@
 
 (test-eval-prog
  "(let ((val x 10) (val y 20)) (+ x y))")
+
+(test-eval-prog
+ "
+(i-app (t-app (frame [0] (Forall (&t) (Pi ($d) (-> ((A &t $d)) Int)))) Int) 3)
+")
+
+(test-eval-prog
+ "
+(t-app (i-app (frame [0] (Pi ($d) (Forall (&t) (-> ((A &t $d)) Int)))) 3) Int)
+")
