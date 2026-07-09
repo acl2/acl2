@@ -1840,7 +1840,7 @@
     "Currently we only support translation ensembles
      consisting of a single translation unit.
      We map that to a @(tsee c::trans-ensemblep)
-     without header, just with a source file
+     without @('.h') header file, just with a @('.c') source file
      that corresponds to the translation unit.
      We set the path of the @(tsee c::trans-ensemble)
      to the empty string for now,
