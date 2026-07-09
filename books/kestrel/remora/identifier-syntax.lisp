@@ -268,7 +268,7 @@
         (list #x03A3)            ; Greek capital letter Sigma
         (string=>nats "let")
         (string=>nats "type")
-        (string=>nats "extent")
+        (string=>nats "ispace")
         (string=>nats "fun")
         (string=>nats "t-fun")
         (string=>nats "i-fun")

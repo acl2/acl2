@@ -11,18 +11,21 @@
 
 (in-package "ACL2")
 
-;; See also ../axe/trim-intro-rules-axe.lisp
+;; See ../axe/trim-intro-rules-axe.lisp for the Axe versions of these rules
+
+;; See trim-elim-rules-bv.lisp and trim-elim-rules-non-bv.lisp for the rules
+;; that finish the job (and remove TRIM).
 
 (include-book "bv-syntax")
 (include-book "trim")
 (include-book "bvsx-def")
 (include-book "leftrotate32")
 (include-book "bvnot")
-(include-book "bvcat")
+(include-book "bvcat-def")
 (include-book "bvif")
-(include-book "bvplus")
-(include-book "bvmult")
-(include-book "bvminus")
+(include-book "bvplus-def")
+(include-book "bvmult-def")
+(include-book "bvminus-def")
 (include-book "bvand-def")
 (include-book "bvor-def")
 (include-book "bvxor-def")
@@ -30,6 +33,7 @@
 (include-book "trim-elim-rules-bv") ; need these whenever we introduce trim
 (local (include-book "slice"))
 (local (include-book "getbit"))
+(local (include-book "bvcat"))
 
 ;; TODO: Should we only trim when the sizes involved are constants?
 
@@ -42,7 +46,7 @@
 
 ;enable?
 (defthmd bvnot-trim-all
-  (implies (and (syntaxp (term-should-be-trimmed size x :all))
+  (implies (and (syntaxp (term-should-be-trimmedp size x :all))
                 (natp size))
            (equal (bvnot size x)
                   (bvnot size (trim size x))))
@@ -258,19 +262,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;rename to indicate which arg is trimmed
-(defthm leftrotate32-trim
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
-                (< 5 xsize)
-                (integerp xsize))
-           (equal (leftrotate32 x y)
-                  (leftrotate32 (trim 5 x) y)))
-  :hints (("Goal" :in-theory (e/d (trim) (leftrotate32)))))
+;; ;rename to indicate which arg is trimmed
+;; (defthm leftrotate32-trim-arg1
+;;   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
+;;                 (< 5 xsize)
+;;                 (integerp xsize))
+;;            (equal (leftrotate32 x y)
+;;                   (leftrotate32 (trim 5 x) y)))
+;;   :hints (("Goal" :in-theory (e/d (trim) (leftrotate32)))))
+
+(defthm leftrotate32-trim-arg1
+  (implies (and (syntaxp (term-should-be-trimmedp ''5 amt :non-arithmetic))
+                (natp amt))
+           (equal (leftrotate32 amt val)
+                  (leftrotate32 (trim 5 amt) val)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;for this not to loop, we must simplify things like (bvchop 5 (bvplus 32 x y)) ??
+(defthm leftrotate32-trim-arg1-all
+  (implies (and (syntaxp (term-should-be-trimmedp ''5 amt :all))
+                (natp amt))
+           (equal (leftrotate32 amt val)
+                  (leftrotate32 (trim 5 amt) val)))
+  :hints (("Goal" :in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm bvsx-trim-all
-  (implies (syntaxp (term-should-be-trimmed old-size x :all))
+  (implies (syntaxp (term-should-be-trimmedp old-size x :all))
            (equal (bvsx new-size old-size x)
                   (bvsx new-size old-size (trim old-size x))))
   :hints (("Goal" :in-theory (enable trim))))

@@ -19,6 +19,8 @@
 (include-book "dynamic-semantics")
 (include-book "monomorphize")
 (include-book "monomorphize-file")
+(include-book "eval-file")
+(include-book "unique-names")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1188,26 +1188,58 @@
   (define parse-arrow-type ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp) (rest-input nat-listp))
     :short "Parse an @('arrow-type')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The grammar has two alternatives:
+       @({
+         arrow-type = ( \"->\" / %x2192 ) ws
+                      \"(\" *( ws type ) ws \")\" ws type
+                    / ( \"->\" / %x2192 ) ws type ws type
+       })
+       The parenthesized-list form (alt 1) produces 8 tree-lists; the
+       single-argument form (alt 2) produces 5 tree-lists.  The
+       downstream abstractor dispatches on tree-list count."))
     (b* ((orig-input input)
+         ((try tree rest)
+          ;; Alt 1: arrow ws "(" *( ws type ) ws ")" ws type
+          (b* (((pok< tree-kw) (parse-group-arrow input))
+               ((pok tree-ws1) (parse-ws input))
+               ((pok< tree-open) (abnf::parse-ichars "(" input))
+               ((pok trees-tes) (parse-*-ws-type input))
+               ((pok tree-ws2) (parse-ws input))
+               ((pok< tree-close) (abnf::parse-ichars ")" input))
+               ((pok tree-ws3) (parse-ws input))
+               ((unless (mbt (< (len input) (len orig-input))))
+                (mv (reserrf :impossible) (nat-list-fix orig-input)))
+               ((pok< tree-te) (parse-type input)))
+            (mv (abnf::make-tree-nonleaf
+                 :rulename? (abnf::rulename "arrow-type")
+                 :branches (list (list tree-kw)
+                                 (list tree-ws1)
+                                 (list tree-open)
+                                 trees-tes
+                                 (list tree-ws2)
+                                 (list tree-close)
+                                 (list tree-ws3)
+                                 (list tree-te)))
+                input)))
+         ;; Alt 2: arrow ws type ws type
          ((pok< tree-kw) (parse-group-arrow input))
          ((pok tree-ws1) (parse-ws input))
-         ((pok< tree-open) (abnf::parse-ichars "(" input))
-         ((pok trees-tes) (parse-*-ws-type input))
-         ((pok tree-ws2) (parse-ws input))
-         ((pok< tree-close) (abnf::parse-ichars ")" input))
-         ((pok tree-ws3) (parse-ws input))
          ((unless (mbt (< (len input) (len orig-input))))
           (mv (reserrf :impossible) (nat-list-fix orig-input)))
-         ((pok< tree-te) (parse-type input)))
+         ((pok< tree-te1) (parse-type input))
+         ((pok tree-ws2) (parse-ws input))
+         ((unless (mbt (< (len input) (len orig-input))))
+          (mv (reserrf :impossible) (nat-list-fix orig-input)))
+         ((pok< tree-te2) (parse-type input)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "arrow-type")
            :branches (list (list tree-kw)
                            (list tree-ws1)
-                           (list tree-open)
-                           trees-tes
+                           (list tree-te1)
                            (list tree-ws2)
-                           (list tree-close)
-                           (list tree-ws3)
-                           (list tree-te)))
+                           (list tree-te2)))
           input))
     :measure (two-nats-measure (len input) 0))
 

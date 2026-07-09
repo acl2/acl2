@@ -135,8 +135,8 @@
                    (endp (rest params))
                    (equal (c$::param-declon->specs (first params))
                           (list (decl-spec-typespec (c$::type-spec-void))))
-                   (equal (c$::param-declon->declor (first params))
-                          (param-declor-none))
+                   (param-declor-case (c$::param-declon->declor (first params))
+                                      :none)
                    (not (c$::param-declon->attribs (first params)))))
         ;; Special (void) case
         (retok blacklist params nil)))

@@ -47490,9 +47490,7 @@ current fast alists."
 
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -47584,9 +47582,7 @@ current fast alists."
   1
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -47693,9 +47689,7 @@ current fast alists."
 
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -47903,9 +47897,7 @@ current fast alists."
 
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -47993,9 +47985,7 @@ current fast alists."
   1
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -48087,9 +48077,7 @@ current fast alists."
   1
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -109762,6 +109750,10 @@ it."
  symbol.  Thanks to Jerome Dubois and Eric Smith for a Zulip discussion leading
  to this change.</p>
 
+ <p>The message printed by @(':set-guard-checking :none') was somewhat
+ misleading but has been fixed.  Thanks to Eric Smith for noticing this
+ problem.</p>
+
  <h3>New Features</h3>
 
  <p>For @(tsee defstobj) fields of hash-table type, a new &ldquo;keys&rdquo;
@@ -137534,9 +137526,7 @@ work on <tt>(q x)</tt>.</p>
   [1] ACL2(1): [RAW LISP] :pop
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(foo 3)
   NIL

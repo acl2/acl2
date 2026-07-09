@@ -33,6 +33,7 @@
 (include-book "struct-type-split")
 (include-book "struct-type-split-doc")
 (include-book "struct-type-split-safety")
+(include-book "json-rpc/top")
 (include-book "utilities/top")
 (include-book "wrap-fn")
 (include-book "wrap-fn-doc")

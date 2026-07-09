@@ -162,10 +162,9 @@ ifun-sig        = identifier ws "(" *( ws ispace-var ) ws ")"
 
 type-bind       = %s"type" ws type-var ws type
 
-ispace-bind     = %s"extent" ws ispace-var ws ispace
-                 ; NOTE: the surface keyword "extent" comes from the
-                 ; Haskell Remora parser. The paper (linked above) uses
-                 ; the word "index".  Now this concept is called "ispace".
+ispace-bind     = %s"ispace" ws ispace-var ws ispace
+                 ; NOTE: the paper (linked above) calls this concept
+                 ; "index".
 
 at-fun-bind     = %s"fun" ws "(" ws at-fun-sig ws ")" ws exp
 
@@ -209,6 +208,13 @@ array-type      = %s"A" ws type ws ispace
 
 arrow-type      = ( "->" / %x2192 ) ws       ; -> or <arrow>
                   "(" *( ws type ) ws ")" ws type
+                / ( "->" / %x2192 ) ws type ws type
+                  ; single argument type, without the parenthesized list.
+                  ; The two alternatives are disjoint: a single argument
+                  ; type that starts with "(" must continue with one of
+                  ; A, ->, Forall, Pi, Sigma (see type-paren), and none
+                  ; of those tokens can start a type in the first
+                  ; alternative's list (nor match its immediate ")").
 
 forall-type     = ( %s"Forall" / %x2200 ) ws   ; Forall or <forall>
                   "(" *( ws type-var ) ws ")" ws type
@@ -376,7 +382,7 @@ keyword         = %s"array" / %s"frame"
                 / %s"Forall" / %x2200       ; Forall or for-all
                 / %s"Pi" / %x03A0           ; Pi or capital Pi
                 / %s"Sigma" / %x03A3        ; Sigma or capital Sigma
-                / %s"let" / %s"type" / %s"extent"
+                / %s"let" / %s"type" / %s"ispace"
                 / %s"fun" / %s"t-fun" / %s"i-fun" / %s"val"
 
 ; -------------------------------------------------------------------------

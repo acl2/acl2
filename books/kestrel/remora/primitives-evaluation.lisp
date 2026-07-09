@@ -11,9 +11,11 @@
 
 (in-package "REMORA")
 
-(include-book "values")
+(include-book "expression-values-and-environments")
+
 (include-book "kestrel/fty/boolean-result" :dir :system)
 
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/abs" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -58,8 +60,8 @@
    (xdoc::ul
     (xdoc::li "@(tsee prim-int-add), @(tsee prim-int-sub),
                @(tsee prim-int-mul), @(tsee prim-int-div),
-               @(tsee prim-int-mod), @(tsee prim-int-max),
-               @(tsee prim-int-min).")
+               @(tsee prim-int-expt), @(tsee prim-int-mod),
+               @(tsee prim-int-max), @(tsee prim-int-min).")
     (xdoc::li "@(tsee prim-int-bit-and), @(tsee prim-int-bit-or),
                @(tsee prim-int-bit-xor), @(tsee prim-int-bit-not),
                @(tsee prim-int-shl), @(tsee prim-int-shr),
@@ -200,6 +202,23 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (= i2.int 0)) (reserr nil)) ;; ERROR: division by zero
        (ival (int-value (floor i1.int i2.int))))
+    (expr-value-base (base-value-int ival))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define prim-int-expt ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer exponentiation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A negative exponent is an error.
+     This is consistent with [impl],
+     which uses Haskell's @('^')."))
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       ((when (< i2.int 0)) (reserr nil)) ;; ERROR: negative exponent
+       (ival (int-value (expt i1.int i2.int))))
     (expr-value-base (base-value-int ival))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1299,6 +1318,7 @@
      :int-sub (prim-int-sub (first args) (second args))
      :int-mul (prim-int-mul (first args) (second args))
      :int-div (prim-int-div (first args) (second args))
+     :int-expt (prim-int-expt (first args) (second args))
      :int-mod (prim-int-mod (first args) (second args))
      :int-max (prim-int-max (first args) (second args))
      :int-min (prim-int-min (first args) (second args))
@@ -1359,6 +1379,7 @@
                                        prim-int-sub
                                        prim-int-mul
                                        prim-int-div
+                                       prim-int-expt
                                        prim-int-mod
                                        prim-int-max
                                        prim-int-min

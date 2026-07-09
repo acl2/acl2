@@ -30,6 +30,9 @@
       Objects of the struct type are split into two objects accordingly,
       with declarations, initializers, and member access expressions
       routed to the appropriate side.
+      Members of other struct types that have it (possibly behind pointers)
+      as their type are likewise split in place into a left and a right member,
+      while the containing struct types are otherwise left unchanged.
       Struct types with the same tag in other translation units
       which are compatible with the targeted struct type
       are also split, consistently,
@@ -126,13 +129,38 @@
        Function parameters of such types are supported,
        and are split in place,
        in function definitions, function declarations, and call sites.
-       The struct type may not otherwise appear within other types:
-       not in array types,
-       not in function return types,
-       and not in the members of other struct or union types
-       (including the members of the struct type itself,
-       so the struct type may not be self-referential).
-       Such occurrences are detected and reported as errors.")
+       The struct type may not appear in an array type
+       or a function return type;
+       such occurrences are detected and reported as errors.")
+     (xdoc::li
+      "A member of another struct type whose type is splittable
+       (the struct type itself, possibly behind pointers) is supported:
+       each such member is split in place into a left and a right member,
+       in the definition of the containing struct type
+       and in its initializers and member access expressions.
+       The containing struct type may be tagged or untagged
+       (e.g. defined via a typedef),
+       and the member may be promoted from an anonymous struct member,
+       in which case the split members are registered under,
+       and promoted into, the enclosing struct type.
+       A struct type that contains the split struct type only transitively,
+       through a member of another struct type,
+       is left unchanged.
+       The struct type may not, however,
+       be a member of a union type
+       (whether directly or as an anonymous union member),
+       or be a member of itself (i.e. be self-referential);
+       such occurrences are detected and reported as errors.")
+     (xdoc::li
+      "Typedefs whose denoted type is splittable
+       (the struct type itself, possibly behind pointers) are supported.
+       Each such typedef is split into a parallel right typedef
+       of the corresponding right type,
+       and uses of the typedef name are split accordingly.
+       For example, @('typedef struct foo *foo_p;') yields a right typedef
+       @('typedef struct foo_right *foo_p_0;'),
+       and a use @('foo_p x;') is split into @('foo_p x;') and @('foo_p_0 x_0;').
+       Typedef chains are handled as well.")
      (xdoc::li
       "Typedefs whose denoted type is splittable
        (the struct type itself, possibly behind pointers) are supported.
@@ -155,9 +183,12 @@
        in the @(':right-members') input,
        which assigns members to the right struct type by name.")
      (xdoc::li
-      "Initializer lists of the struct type must consist of
-       pure (i.e. side-effect-free) initializers,
-       since splitting the initializer list reorders them.
+      "Initializers that are split apart must be pure
+       (i.e. side-effect-free),
+       since splitting reorders and, for split members, duplicates them.
+       This applies to the initializer lists of the struct type itself,
+       and to the initializers of members of splittable type
+       in other struct types.
        Initializers which are split apart
        are given explicit member designations,
        since the implicit positional order

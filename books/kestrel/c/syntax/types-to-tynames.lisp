@@ -429,7 +429,7 @@
                          (retok (list (make-param-declon
                                         :specs (list (decl-spec-typespec
                                                        (type-spec-void)))
-                                        :declor (param-declor-none)
+                                        :declor (param-declor-none nil)
                                         :attribs nil
                                         :info nil))
                                 nil))
@@ -452,8 +452,10 @@
           (type-to-spec/qual+declor (car types) ienv))
          (param-declor
           (if (absdeclor-option-case declor? :some)
-              (param-declor-abstract (absdeclor-option-some->val declor?))
-            (param-declor-none)))
+              (make-param-declor-abstract
+               :declor (absdeclor-option-some->val declor?)
+               :info nil)
+            (param-declor-none nil)))
          (declon (make-param-declon
                    :specs (spec/qual-list-to-decl-spec-list specquals)
                    :declor param-declor

@@ -2963,8 +2963,11 @@
                     ((erp type)
                      (valid-member expr
                                    type-arg
-                                   (vstate->completions vstate))))
-                 (retok (make-expr-member :arg new-arg :name expr.name)
+                                   (vstate->completions vstate)))
+                    (info (make-type-vinfo :type type)))
+                 (retok (make-expr-member :arg new-arg
+                                          :name expr.name
+                                          :info info)
                         type
                         types-arg
                         vstate))
@@ -2973,8 +2976,11 @@
                      ((erp type)
                       (valid-memberp expr
                                      type-arg
-                                     (vstate->completions vstate))))
-                  (retok (make-expr-memberp :arg new-arg :name expr.name)
+                                     (vstate->completions vstate)))
+                     (info (make-type-vinfo :type type)))
+                  (retok (make-expr-memberp :arg new-arg
+                                            :name expr.name
+                                            :info info)
                          type
                          types-arg
                          vstate))
@@ -4694,8 +4700,14 @@
                   ((and (or (type-aggregatep target-type)
                             (type-case target-type :union))
                         (initer-case initer :list))
+                   ;; A brace-enclosed initializer starts a new brace level.
+                   ;; We enter a fresh subobjects stack rooted at the current
+                   ;; object (rather than pushing onto the enclosing stack),
+                   ;; since brace elision does not cross an explicit brace.
+                   ;; This keeps the recorded designations relative to the
+                   ;; current object (see @(tsee valid-desiniter)).
                    (b* (((erp subobjects-stack)
-                         (initer-context-enter ctx
+                         (initer-context-enter (initer-context-top target-type)
                                                (vstate->completions vstate)))
                         ((erp new-elems types vstate)
                          (valid-desiniter-list (initer-list->elems initer)
@@ -4822,6 +4834,14 @@
        reflecting the position in the objects described by the designators.
        If no designation is present, we use the existing subobjects stack
        [C17:6.7.9/17].")
+     (xdoc::p
+      "When no designation is present in the syntax,
+       we record one in the validation information.
+       The subobjects stack of a brace-enclosed initializer is rooted at
+       the object being initialized at the current brace level
+       (see @(tsee valid-initer)),
+       so the recorded designation is relative to that object,
+       rather than to the outermost initialized object.")
      (xdoc::p
       "After validating the initializer with this subobjects stack,
        we then advance the stack forward one position
@@ -5345,7 +5365,9 @@
        which is therefore popped.")
      (xdoc::p
       "For the function declarator with a parameter type list,
-       we handle the special case of a single @('void') [C17:6.7.6.3/10].")
+       we handle the special case of a single @('void') [C17:6.7.6.3/10].
+       In this case, we annotate the (@(':none')) parameter declarator
+       with the type @('void'), as explained in @(tsee abstract-syntax-annop).")
      (xdoc::p
       "A function declarator with a non-empty name list can only occur
        as the parameters of a function being defined [C17:6.7.6.3/3]
@@ -5480,14 +5502,18 @@
                                       (first dirdeclor.params))
                                      (list (decl-spec-typespec
                                             (type-spec-void))))
-                              (equal (param-declon->declor
-                                      (first dirdeclor.params))
-                                     (param-declor-none))
+                              (param-declor-case (param-declon->declor
+                                                  (first dirdeclor.params))
+                                                 :none)
                               (not (param-declon->attribs
                                     (first dirdeclor.params)))))
-                   (retok (list (change-param-declon
-                                 (first dirdeclor.params)
-                                 :info (make-type-option-vinfo :type? nil)))
+                   (retok (list (make-param-declon
+                                 :specs (list (decl-spec-typespec
+                                               (type-spec-void)))
+                                 :declor (param-declor-none
+                                          (type-vinfo (type-void)))
+                                 :attribs nil
+                                 :info (type-option-vinfo nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -5749,14 +5775,18 @@
                                       (first dirabsdeclor.params))
                                      (list (decl-spec-typespec
                                             (type-spec-void))))
-                              (equal (param-declon->declor
-                                      (first dirabsdeclor.params))
-                                     (param-declor-none))
+                              (param-declor-case (param-declon->declor
+                                                  (first dirabsdeclor.params))
+                                                 :none)
                               (not (param-declon->attribs
                                     (first dirabsdeclor.params)))))
-                   (retok (list (change-param-declon
-                                 (first dirabsdeclor.params)
-                                 :info (make-type-option-vinfo :type? nil)))
+                   (retok (list (make-param-declon
+                                 :specs (list (decl-spec-typespec
+                                               (type-spec-void)))
+                                 :declor (param-declor-none
+                                          (type-vinfo (type-void)))
+                                 :attribs nil
+                                 :info (type-option-vinfo nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -5984,20 +6014,23 @@
                 vstate))
        :abstract
        (b* (((erp new-absdeclor type types vstate)
-             (valid-absdeclor paramdeclor.declor type vstate)))
-         (retok (param-declor-abstract new-absdeclor)
+             (valid-absdeclor paramdeclor.declor type vstate))
+            (info (make-type-vinfo :type type)))
+         (retok (make-param-declor-abstract :declor new-absdeclor
+                                            :info info)
                 type
                 nil
                 types
                 nil
                 vstate))
        :none
-       (retok (param-declor-none)
-              (type-fix type)
-              nil
-              nil
-              nil
-              (vstate-fix vstate))
+       (b* ((info (type-vinfo type)))
+         (retok (param-declor-none info)
+                (type-fix type)
+                nil
+                nil
+                nil
+                (vstate-fix vstate)))
        :ambig
        (prog2$ (impossible) (retmsg$ ""))))
     :measure (acl2::two-nats-measure (param-declor-count paramdeclor) 0)

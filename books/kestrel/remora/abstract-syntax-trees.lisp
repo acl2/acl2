@@ -44,7 +44,7 @@
     (xdoc::seetopic "grammar" "ABNF grammar of Remora")
     ", which is derived from [impl].
      We use the term `ispace' to refer to what [thesis] calls `index';
-     [impl] currently uses the term `extent', but it will use `ispace' soon.
+     [impl] also uses `ispace'.
      The rationale for `ispace' is that it denotes an index space,
      i.e. a space where indices range;
      one index over a dimension, zero or more indices over a shape.")

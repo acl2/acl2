@@ -462,7 +462,7 @@
  ;; Returns (mv erp new-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
  (defund try-to-apply-rules (stored-rules ;the list of rules for the fn in question
                             rewriter-rule-alist args-to-match
-                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                             refined-assumption-alist ;can be assumed for all nodes
                             equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                             embedded-dag-depth work-hard-when-instructedp tag limits state)

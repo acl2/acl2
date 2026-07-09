@@ -1299,12 +1299,34 @@
   (define abs-arrow-type ((tree abnf::treep))
     :returns (ty type-resultp)
     :short "Abstract an @('arrow-type') to a @(tsee type) @(':fun')."
-    (b* (((okf (abnf::tree-list-tuple8 sub))
-          (abnf::check-tree-nonleaf-8 tree "arrow-type"))
-         ((okf in) (abs-*-ws-type sub.4th))
-         ((okf out-tree) (abnf::check-tree-list-1 sub.8th))
-         ((okf out) (abs-type out-tree)))
-      (make-type-fun :in in :out out))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The grammar has two alternatives
+       (see the parser's @('parse-arrow-type')):
+       the parenthesized-list form produces 8 tree-lists,
+       while the single-argument form produces 5;
+       we dispatch on the count.
+       The single-argument form abstracts to
+       a @(':fun') with a singleton input list,
+       so @('(-> T R)') and @('(-> (T) R)') have the same AST."))
+    (b* (((okf treess) (abnf::check-tree-nonleaf tree "arrow-type")))
+      (case (len treess)
+        (8 (b* (((okf (abnf::tree-list-tuple8 sub))
+                 (abnf::check-tree-list-list-8 treess))
+                ((okf in) (abs-*-ws-type sub.4th))
+                ((okf out-tree) (abnf::check-tree-list-1 sub.8th))
+                ((okf out) (abs-type out-tree)))
+             (make-type-fun :in in :out out)))
+        (5 (b* (((okf (abnf::tree-list-tuple5 sub))
+                 (abnf::check-tree-list-list-5 treess))
+                ((okf in-tree) (abnf::check-tree-list-1 sub.3rd))
+                ((okf in) (abs-type in-tree))
+                ((okf out-tree) (abnf::check-tree-list-1 sub.5th))
+                ((okf out) (abs-type out-tree)))
+             (make-type-fun :in (list in) :out out)))
+        (otherwise
+         (reserrf (list :arrow-type-shape (len treess))))))
     :measure (abnf::tree-count tree))
 
   ;; forall-type = ( "Forall" / %x2200 ) ws "(" *( ws type-var ) ws ")"
@@ -1722,7 +1744,7 @@
        ((okf ty) (abs-type te-tree)))
     (make-bind-type :var tv :type ty)))
 
-;; ispace-bind = "extent" ws ispace-var ws ispace
+;; ispace-bind = "ispace" ws ispace-var ws ispace
 (define abs-ispace-bind ((tree abnf::treep))
   :returns (b bind-resultp)
   :short "Abstract an @('ispace-bind') to a @(tsee bind) @(':ispace')."

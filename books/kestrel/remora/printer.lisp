@@ -1339,7 +1339,7 @@
     :returns (out pdoc-resultp)
     (bind-case b
       :ispace (pdoc-paren
-               (pdoc-concat (pdoc-ascii "extent")
+               (pdoc-concat (pdoc-ascii "ispace")
                             (pdoc-concat (pdoc-ascii " ")
                                          (pdoc-concat
                                           (ispace-var-to-pdoc b.var)

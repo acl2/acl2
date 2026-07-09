@@ -305,19 +305,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-param-declor
+  :short "An irrelevant parameter declarator."
+  :type param-declorp
+  :body (param-declor-none nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-param-declon
   :short "An irrelevant parameter declaration."
   :type param-declonp
   :body (make-param-declon :specs nil
-                           :declor (param-declor-none)
+                           :declor (irr-param-declor)
                            :attribs nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-param-declor
-  :short "An irrelevant parameter declarator."
-  :type param-declorp
-  :body (param-declor-none))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
