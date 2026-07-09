@@ -961,7 +961,14 @@
         ]\!!]$)
      in [thesis]."))
   (b* (((ok cells) (cells-at-depth-in-expr-value val (len frame))))
-    (repeat-each (nat-list-product (nthcdr (len frame) pframe)) cells)))
+    (repeat-each (nat-list-product (nthcdr (len frame) pframe)) cells))
+
+  ///
+
+  (defret expr-value-list-wfp-of-lift-expr-value-to-frame
+    (implies (and (expr-value-wfp val)
+                  (not (reserrp cells)))
+             (expr-value-list-wfp cells))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1648,11 +1655,10 @@
       "This ACL2 function performs that element-wise application.
        The base case is that of a scalar (i.e. 0-rank array) function value:
        we check that the arguments match the parameters,
-       we extend the dynamic environment
-       to associate the arguments with the parameters
-       (which may override existing associations,
-       which is intended hiding behavior),
-       and we evaluate the body of the type lambda abstraction.
+       we extend the dynamic environment contained in the type lambda value
+       to associate the arguments with the parameters,
+       and we evaluate the body of the type lambda abstraction
+       in the extended environment.
        If instead the scalar function value is
        a primitive operation value applicable to type values,
        it is applied to the type argument values
@@ -1695,7 +1701,7 @@
        :tlambda
        (b* (((unless (type-values-match-type-vars-p tvals funval.params))
              (reserr nil))
-            (denv (expr-denv-add-types funval.params tvals denv)))
+            (denv (expr-denv-add-types funval.params tvals funval.denv)))
          (eval-expr funval.body denv (1- limit)))
        :primop (if (primop-value-tfunp funval.val)
                    (eval-primop-tfun funval.val tvals)
@@ -1792,11 +1798,10 @@
       "This ACL2 function performs that element-wise application.
        The base case is that of a scalar (i.e. 0-rank array) function value:
        we check that the arguments match the parameters,
-       we extend the dynamic environment
-       to associate the arguments with the parameters
-       (which may override existing associations,
-       which is intended hiding behavior),
-       and we evaluate the body of the ispace lambda abstraction.
+       we extend the dynamic environment contained in the ispace lambda value
+       to associate the arguments with the parameters,
+       and we evaluate the body of the ispace lambda abstraction
+       in the extended environment.
        If instead the scalar function value is
        a primitive operation value applicable to ispace values,
        it is applied to the ispace argument values
@@ -1839,7 +1844,7 @@
        :ilambda
        (b* (((unless (ispace-values-match-ispace-vars-p ivals funval.params))
              (reserr nil))
-            (denv (expr-denv-add-ispaces funval.params ivals denv)))
+            (denv (expr-denv-add-ispaces funval.params ivals funval.denv)))
          (eval-expr funval.body denv (1- limit)))
        :primop (if (primop-value-ifunp funval.val)
                    (eval-primop-ifun funval.val ivals)
@@ -2030,7 +2035,8 @@
                          (argcell-lists expr-value-list-listp)
                          (denv expr-denvp)
                          (limit natp))
-    :guard (expr-denv-wfp denv)
+    :guard (and (expr-value-list-wfp funcells)
+                (expr-denv-wfp denv))
     :returns (vals expr-value-list-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Apply function cells to argument cells, position-wise."
@@ -2072,7 +2078,8 @@
                          (argcells expr-value-listp)
                          (denv expr-denvp)
                          (limit natp))
-    :guard (and (expr-value-list-wfp argcells)
+    :guard (and (expr-value-wfp funcell)
+                (expr-value-list-wfp argcells)
                 (expr-denv-wfp denv))
     :returns (val expr-value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
@@ -2084,17 +2091,17 @@
        used by @(tsee eval-app-list) at each application position.
        The function cell must be a (scalar) lambda abstraction;
        the argument cells must match its parameters in number and types.
-       We extend the dynamic environment
-       to associate the arguments with the parameters
-       (which may override existing associations,
-       which is intended hiding behavior),
-       and we evaluate the body of the lambda abstraction.")
+       We extend the dynamic environment contained in the lambda value
+       to associate the arguments with the parameters,
+       and we evaluate the body of the lambda abstraction
+       in the extended environment.")
      (xdoc::p
       "If the function cell is
        a primitive operation value applicable to expression values,
        it is applied to the argument cells via @(tsee eval-primop-fun),
        which dispatches to the corresponding ACL2 function
        in @(see primitives-evaluation)."))
+    (declare (ignore denv))
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-value-case
        funcell
@@ -2106,7 +2113,7 @@
             (denv (expr-denv-add-exprs
                    (var+typevalue-list->var funcell.params)
                    argcells
-                   denv)))
+                   funcell.denv)))
          (eval-expr funcell.body denv (1- limit)))
        :primop (if (primop-value-funp funcell.val)
                    (eval-primop-fun funcell.val argcells)
@@ -2363,36 +2370,43 @@
       :fn eval-bind-list)
     (defret expr-value-wfp-of-eval-tapp
       (implies (and (expr-denv-wfp denv)
+                    (expr-value-wfp funval)
                     (not (reserrp val)))
                (expr-value-wfp val))
       :fn eval-tapp)
     (defret expr-value-list-wfp-of-eval-tapp-list
       (implies (and (expr-denv-wfp denv)
+                    (expr-value-list-wfp funvals)
                     (not (reserrp vals)))
                (expr-value-list-wfp vals))
       :fn eval-tapp-list)
     (defret expr-value-wfp-of-eval-iapp
       (implies (and (expr-denv-wfp denv)
+                    (expr-value-wfp funval)
                     (not (reserrp val)))
                (expr-value-wfp val))
       :fn eval-iapp)
     (defret expr-value-list-wfp-of-eval-iapp-list
       (implies (and (expr-denv-wfp denv)
+                    (expr-value-list-wfp funvals)
                     (not (reserrp vals)))
                (expr-value-list-wfp vals))
       :fn eval-iapp-list)
     (defret expr-value-wfp-of-eval-app
       (implies (and (expr-denv-wfp denv)
+                    (expr-value-wfp funval)
                     (not (reserrp val)))
                (expr-value-wfp val))
       :fn eval-app)
     (defret expr-value-list-wfp-of-eval-app-list
       (implies (and (expr-denv-wfp denv)
+                    (expr-value-list-wfp funcells)
                     (not (reserrp vals)))
                (expr-value-list-wfp vals))
       :fn eval-app-list)
     (defret expr-value-wfp-of-eval-app-cell
       (implies (and (expr-denv-wfp denv)
+                    (expr-value-wfp funcell)
                     (expr-value-list-wfp argcells)
                     (not (reserrp val)))
                (expr-value-wfp val))
