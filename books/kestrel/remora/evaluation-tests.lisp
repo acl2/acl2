@@ -61,7 +61,7 @@
 (t-app (i-app (frame [0] (Pi ($d) (Forall (&t) (-> ((A &t $d)) Int)))) 3) Int)
 ")
 
-(test-eval-prog
+(test-eval-top-expr
  "
 ((i-app (t-app (t-fn (&t) (i-fn ($d) (fn ((x (A &t $d))) x))) Int) 3) [1 2 3])
 ")
