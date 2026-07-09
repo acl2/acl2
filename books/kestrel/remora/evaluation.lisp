@@ -1617,6 +1617,7 @@
        the type argument values must match
        its parameters in number and kinds.
        We extend the dynamic environment
+       contained in the universal type value
        to associate the arguments with the parameters,
        and we evaluate the body of the universal type value,
        which yields the type value of the would-be results
@@ -1655,8 +1656,10 @@
         :forall
         (b* (((unless (type-values-match-type-vars-p tvals funval.elem.params))
               (reserr nil))
-             (denv (expr-denv-add-types funval.elem.params tvals denv))
-             ((ok tval) (eval-type funval.elem.body (expr-denv->tenv denv)))
+             (tenv (type-denv-add-types funval.elem.params
+                                        tvals
+                                        funval.elem.denv))
+             ((ok tval) (eval-type funval.elem.body tenv))
              ((mv elem body-dims)
               (type-value-case
                tval
@@ -1758,6 +1761,7 @@
        the ispace argument values must match
        its parameters in number and sorts.
        We extend the dynamic environment
+       contained in the product type value
        to associate the arguments with the parameters,
        and we evaluate the body of the product type value,
        which yields the type value of the would-be results
@@ -1797,8 +1801,10 @@
         (b* (((unless (ispace-values-match-ispace-vars-p ivals
                                                          funval.elem.params))
               (reserr nil))
-             (denv (expr-denv-add-ispaces funval.elem.params ivals denv))
-             ((ok tval) (eval-type funval.elem.body (expr-denv->tenv denv)))
+             (tenv (type-denv-add-ispaces funval.elem.params
+                                          ivals
+                                          funval.elem.denv))
+             ((ok tval) (eval-type funval.elem.body tenv))
              ((mv elem body-dims)
               (type-value-case
                tval
