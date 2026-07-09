@@ -88,8 +88,8 @@
     (xdoc::li "@(tsee prim-float-truncate), @(tsee prim-float-round),
                @(tsee prim-float-ceiling), @(tsee prim-float-floor)."))
    (xdoc::p
-    "The polymorphic primitive currently implemented is
-     @(tsee prim-length).")
+    "The polymorphic primitives currently implemented are
+     @(tsee prim-head), @(tsee prim-tail), and @(tsee prim-length).")
    (xdoc::p
     "For integers, we currently model Remora integer values as unbounded
      mathematical integers, matching ACL2's own integer type.
@@ -1248,6 +1248,88 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define prim-head ((tval type-valuep)
+                   (d natp)
+                   (s nat-listp)
+                   (val1 expr-valuep))
+  :guard (expr-value-wfp val1)
+  :returns (val expr-value-resultp)
+  :short "Evaluation of array head."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('head') operation
+     (see the @(':head-t-d-s') summand of @(tsee primop-value)):
+     @('tval'), @('d'), and @('s') are the instantiation values,
+     and @('val1') is the argument cell.
+     According to the instantiated type of the operation,
+     the argument cell is an array
+     whose dimensions are the dimension @('d+1') followed by the shape @('s'),
+     and the result is the first element, which is of shape @('s').
+     The guard requires the argument cell to be well-formed;
+     we defensively check that it has the expected dimensions.")
+   (xdoc::p
+    "The type value @('tval') is currently unused,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cell
+     when those checks are extended to types."))
+  (declare (ignore tval))
+  (b* ((d (lnfix d))
+       (s (nat-list-fix s))
+       ((unless (equal (dims-of-expr-value val1) (cons (1+ d) s)))
+        (reserr nil))
+       ((unless (expr-value-case val1 :vector))
+        (reserr nil))
+       (elems (expr-value-vector->elems val1))
+       ((unless (consp elems)) (reserr nil)))
+    (car elems)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-tail ((tval type-valuep)
+                   (d natp)
+                   (s nat-listp)
+                   (val1 expr-valuep))
+  :guard (expr-value-wfp val1)
+  :returns (val expr-value-resultp)
+  :short "Evaluation of array tail."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('tail') operation
+     (see the @(':tail-t-d-s') summand of @(tsee primop-value)):
+     @('tval'), @('d'), and @('s') are the instantiation values,
+     and @('val1') is the argument cell.
+     According to the instantiated type of the operation,
+     the argument cell is an array
+     whose dimensions are the dimension @('d+1') followed by the shape @('s'),
+     and the result is the array after removing the first element, whose dimensions are
+     the dimension @('d') followed by the shape @('s').
+     The guard requires the argument cell to be well-formed;
+     we defensively check that it has the expected dimensions.")
+   (xdoc::p
+    "The type value @('tval') is currently only used for when the output is an empty array
+     and not for checking well-formedness,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cell
+     when those checks are extended to types."))
+  (b* ((d (lnfix d))
+       (s (nat-list-fix s))
+       ((unless (equal (dims-of-expr-value val1) (cons (1+ d) s)))
+        (reserr nil))
+       ((unless (expr-value-case val1 :vector))
+        (reserr nil))
+       (elems (expr-value-vector->elems val1))
+       ((unless (consp elems)) (reserr nil))
+       (tail (cdr elems)))
+    (if (consp tail)
+        (expr-value-vector tail)
+      (expr-value-vector-empty s tval))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define prim-length ((tval type-valuep)
                      (d natp)
                      (s nat-listp)
@@ -1282,6 +1364,25 @@
     (expr-value-base (base-value-int (int-value d)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled list-repeatp-of-dims-of-expr-value-vector->elems
+  (implies (and (expr-value-wfp val)
+                (expr-value-case val :vector))
+           (list-repeatp (dims-of-expr-value-list (expr-value-vector->elems val))))
+  :enable (expr-value-wfp
+           expr-value-list-wfp-alt-def
+           check-dims-of-expr-value
+           check-dims-of-expr-value-list-when-expr-value-list-wfp))
+
+(defruled list-repeatp-of-dims-of-cdr-of-expr-value-vector->elems
+  (implies (and (expr-value-wfp val)
+                (expr-value-case val :vector))
+           (list-repeatp
+            (dims-of-expr-value-list (cdr (expr-value-vector->elems val)))))
+  :use (:instance list-repeatp-of-cdr
+                  (x (dims-of-expr-value-list (expr-value-vector->elems val))))
+  :enable (list-repeatp-of-dims-of-expr-value-vector->elems
+           cdr-of-dims-of-expr-value-list))
 
 (define eval-primop-fun ((op primop-valuep) (args expr-value-listp))
   :guard (and (primop-value-funp op)
@@ -1362,6 +1463,12 @@
      :bool-neq (prim-bool-neq (first args) (second args))
      :bool-to-int (prim-bool-to-int (first args))
      :bool-to-float (prim-bool-to-float (first args))
+     :head (prog2$ (impossible) (reserr nil))
+     :head-t (prog2$ (impossible) (reserr nil))
+     :head-t-d-s (prim-head op.tval op.d op.s (first args))
+     :tail (prog2$ (impossible) (reserr nil))
+     :tail-t (prog2$ (impossible) (reserr nil))
+     :tail-t-d-s (prim-tail op.tval op.d op.s (first args))
      :length (prog2$ (impossible) (reserr nil))
      :length-t (prog2$ (impossible) (reserr nil))
      :length-t-d-s (prim-length op.tval op.d op.s (first args))))
@@ -1374,6 +1481,7 @@
   (defret expr-value-wfp-of-eval-primop-fun
     (implies (not (reserrp val))
              (expr-value-wfp val))
+    :hyp (expr-value-list-wfp args)
     :hints (("Goal" :in-theory (enable eval-primop-fun
                                        prim-int-add
                                        prim-int-sub
@@ -1423,7 +1531,10 @@
                                        prim-bool-neq
                                        prim-bool-to-int
                                        prim-bool-to-float
-                                       prim-length)))))
+                                       prim-head
+                                       prim-tail
+                                       prim-length
+                                       list-repeatp-of-dims-of-cdr-of-expr-value-vector->elems)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1451,6 +1562,16 @@
      Anything else is an error."))
   (primop-value-case
    op
+   :head (b* (((unless (type-values-match-type-vars-p
+                        tvals
+                        (list (type-var-atom "t"))))
+               (reserr nil)))
+           (expr-value-primop (primop-value-head-t (first tvals))))
+   :tail (b* (((unless (type-values-match-type-vars-p
+                        tvals
+                        (list (type-var-atom "t"))))
+               (reserr nil)))
+           (expr-value-primop (primop-value-tail-t (first tvals))))
    :length (b* (((unless (type-values-match-type-vars-p
                           tvals
                           (list (type-var-atom "t"))))
@@ -1491,11 +1612,31 @@
      i.e. the ones in the operation's type in @(tsee primop-types);
      then we construct the next instantiation stage of the operation,
      which stores the ispace values received
-     (for @('length'), a dimension and a shape),
+     (for @('head'), @('tail'), and @('length'), a dimension and a shape),
      along with the previously received type values.
      Anything else is an error."))
   (primop-value-case
    op
+   :head-t (b* (((unless (ispace-values-match-ispace-vars-p
+                          ivals
+                          (list (ispace-var-dim "d")
+                                (ispace-var-shape "s"))))
+                 (reserr nil)))
+             (expr-value-primop
+              (make-primop-value-head-t-d-s
+               :tval op.tval
+               :d (ispace-value-dim->val (first ivals))
+               :s (ispace-value-shape->val (second ivals)))))
+   :tail-t (b* (((unless (ispace-values-match-ispace-vars-p
+                          ivals
+                          (list (ispace-var-dim "d")
+                                (ispace-var-shape "s"))))
+                 (reserr nil)))
+             (expr-value-primop
+              (make-primop-value-tail-t-d-s
+               :tval op.tval
+               :d (ispace-value-dim->val (first ivals))
+               :s (ispace-value-shape->val (second ivals)))))
    :length-t (b* (((unless (ispace-values-match-ispace-vars-p
                             ivals
                             (list (ispace-var-dim "d")

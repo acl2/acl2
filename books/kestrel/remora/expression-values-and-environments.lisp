@@ -1304,7 +1304,7 @@
    (xdoc::p
     "The names (the map keys) are the surface names [impl],
      exactly as in @(tsee primop-types).
-     A polymorphic operation like @('length')
+     A polymorphic operation like @('head'), @('tail'), or @('length')
      is associated to its uninstantiated stage."))
   (omap::from-alist
    (list (cons "+" (expr-value-primop (primop-value-int-add)))
@@ -1356,6 +1356,8 @@
          (cons "bool.!=" (expr-value-primop (primop-value-bool-neq)))
          (cons "bool->i" (expr-value-primop (primop-value-bool-to-int)))
          (cons "bool->f" (expr-value-primop (primop-value-bool-to-float)))
+         (cons "head" (expr-value-primop (primop-value-head)))
+         (cons "tail" (expr-value-primop (primop-value-tail)))
          (cons "length" (expr-value-primop (primop-value-length))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
