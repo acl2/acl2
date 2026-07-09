@@ -182,7 +182,15 @@
     :key-type string
     :val-type expr-value
     :pred string-expr-value-mapp
-    :measure (two-nats-measure (acl2-count x) 0))
+    :measure (two-nats-measure (acl2-count x) 0)
+
+    ///
+
+    (defrule string-expr-value-mapp-of-restrict
+      (implies (string-expr-value-mapp map)
+               (string-expr-value-mapp (omap::restrict keys map)))
+      :induct t
+      :enable omap::restrict))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -541,7 +549,16 @@
                   (expr-value-wfp val))
              (string-expr-value-map-wfp (omap::update key val map)))
     :induct (string-expr-value-map-wfp map)
-    :expand ((string-expr-value-map-wfp (omap::update key val map)))))
+    :expand ((string-expr-value-map-wfp (omap::update key val map))))
+
+  (defruled string-expr-value-map-wfp-of-restrict
+    (implies (and (string-expr-value-mapp map)
+                  (string-expr-value-map-wfp map))
+             (string-expr-value-map-wfp (omap::restrict keys map)))
+    :induct t
+    :enable (omap::restrict
+             string-expr-value-map-wfp
+             string-expr-value-map-wfp-of-update)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1202,6 +1219,41 @@
       :in-theory
       (enable expr-value-wfp-of-cdr-of-assoc-when-string-expr-value-map-wfp
               expr-denv-wfp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-denv-restrict ((ivars ispace-var-setp)
+                            (tvars type-var-setp)
+                            (evars string-setp)
+                            (denv expr-denvp))
+  :returns (new-denv expr-denvp)
+  :short "Restrict an expression dynamic environment
+          to a set of ispace variables,
+          a set of type variables,
+          and a set of expression variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We restrict the underlying type dynamic environment
+     to the first and second given sets,
+     and we remove from the environment
+     the expression variables not in the third given set."))
+  (change-expr-denv denv
+                    :tenv (type-denv-restrict ivars
+                                              tvars
+                                              (expr-denv->tenv denv))
+                    :exprs (omap::restrict (string-sfix evars)
+                                           (expr-denv->exprs denv)))
+
+  ///
+
+  (defret expr-denv-wfp-of-expr-denv-restrict
+    (implies (expr-denv-wfp denv)
+             (expr-denv-wfp new-denv))
+    :hints
+    (("Goal"
+      :in-theory (enable expr-denv-wfp
+                         string-expr-value-map-wfp-of-restrict)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
