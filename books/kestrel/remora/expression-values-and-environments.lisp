@@ -23,8 +23,6 @@
 
 (local (include-book "arithmetic"))
 
-(local (include-book "std/basic/ifix" :dir :system))
-(local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
