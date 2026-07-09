@@ -425,7 +425,7 @@
     :returns (unit unit-resultp)
     :parents (expression-values-and-environments check-dims-of-expr-values/denv)
     :short "Check dimension constraints on (the expression values in)
-            an  expression dynamic environments."
+            an expression dynamic environment."
     (check-dims-of-string-expr-value-map (expr-denv->exprs denv))
     :measure (expr-denv-count denv))
 
