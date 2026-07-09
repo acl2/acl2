@@ -1219,16 +1219,16 @@
                   :elem (type-value-base (base-type-int))))
        :app (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                  ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
-              (eval-app funval argvals denv (1- limit)))
+              (eval-app funval argvals (1- limit)))
        :tapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                   ((ok tvals) (eval-type-list expr.args
                                               (expr-denv->tenv denv))))
-               (eval-tapp funval tvals denv (1- limit)))
+               (eval-tapp funval tvals (1- limit)))
        :iapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                   ((ok ivals) (eval-ispace-list expr.args
                                                 (type-denv->ienv
                                                  (expr-denv->tenv denv)))))
-               (eval-iapp funval ivals denv (1- limit)))
+               (eval-iapp funval ivals (1- limit)))
        :capp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                   ((ok funval)
                    (type-list-option-case
@@ -1236,7 +1236,7 @@
                     :some (b* (((ok tvals)
                                 (eval-type-list expr.targs.val
                                                 (expr-denv->tenv denv))))
-                            (eval-tapp funval tvals denv (1- limit)))
+                            (eval-tapp funval tvals (1- limit)))
                     :none funval))
                   ((ok funval)
                    (ispace-list-option-case
@@ -1245,10 +1245,10 @@
                                 (eval-ispace-list expr.iargs.val
                                                   (type-denv->ienv
                                                    (expr-denv->tenv denv)))))
-                            (eval-iapp funval ivals denv (1- limit)))
+                            (eval-iapp funval ivals (1- limit)))
                     :none funval))
                   ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
-               (eval-app funval argvals denv (1- limit)))
+               (eval-app funval argvals (1- limit)))
        :unbox (b* (((ok targetval) (eval-expr expr.target denv (1- limit)))
                    ((ok tval) (type-option-case
                                expr.type?
@@ -1630,10 +1630,8 @@
 
   (define eval-tapp ((funval expr-valuep)
                      (tvals type-value-listp)
-                     (denv expr-denvp)
                      (limit natp))
-    :guard (and (expr-value-wfp funval)
-                (expr-denv-wfp denv))
+    :guard (expr-value-wfp funval)
     :returns (val expr-value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Apply an expression value to type values."
@@ -1707,7 +1705,7 @@
                    (eval-primop-tfun funval.val tvals)
                  (reserr nil))
        :vector
-       (b* (((ok vals) (eval-tapp-list funval.elems tvals denv (1- limit)))
+       (b* (((ok vals) (eval-tapp-list funval.elems tvals (1- limit)))
             ;; TODO: eliminate the next two checks via proof
             ((unless (consp vals)) (reserr nil))
             ((unless (list-repeatp (dims-of-expr-value-list vals))) (reserr nil)))
@@ -1738,10 +1736,8 @@
 
   (define eval-tapp-list ((funvals expr-value-listp)
                           (tvals type-value-listp)
-                          (denv expr-denvp)
                           (limit natp))
-    :guard (and (expr-value-list-wfp funvals)
-                (expr-denv-wfp denv))
+    :guard (expr-value-list-wfp funvals)
     :returns (vals expr-value-list-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Lift @(tsee eval-tapp) to a list of function values."
@@ -1754,8 +1750,8 @@
        a vector of type lambda values (see @(tsee eval-tapp))."))
     (b* (((when (zp limit)) (reserr :limit))
          ((when (endp funvals)) nil)
-         ((ok val) (eval-tapp (car funvals) tvals denv (1- limit)))
-         ((ok vals) (eval-tapp-list (cdr funvals) tvals denv (1- limit))))
+         ((ok val) (eval-tapp (car funvals) tvals (1- limit)))
+         ((ok vals) (eval-tapp-list (cdr funvals) tvals (1- limit))))
       (cons val vals))
     :measure (nfix limit)
 
@@ -1773,10 +1769,8 @@
 
   (define eval-iapp ((funval expr-valuep)
                      (ivals ispace-value-listp)
-                     (denv expr-denvp)
                      (limit natp))
-    :guard (and (expr-value-wfp funval)
-                (expr-denv-wfp denv))
+    :guard (expr-value-wfp funval)
     :returns (val expr-value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Apply an expression value to ispace values."
@@ -1850,7 +1844,7 @@
                    (eval-primop-ifun funval.val ivals)
                  (reserr nil))
        :vector
-       (b* (((ok vals) (eval-iapp-list funval.elems ivals denv (1- limit)))
+       (b* (((ok vals) (eval-iapp-list funval.elems ivals (1- limit)))
             ;; TODO: eliminate the next two checks via proof
             ((unless (consp vals)) (reserr nil))
             ((unless (list-repeatp (dims-of-expr-value-list vals))) (reserr nil)))
@@ -1882,10 +1876,8 @@
 
   (define eval-iapp-list ((funvals expr-value-listp)
                           (ivals ispace-value-listp)
-                          (denv expr-denvp)
                           (limit natp))
-    :guard (and (expr-value-list-wfp funvals)
-                (expr-denv-wfp denv))
+    :guard (expr-value-list-wfp funvals)
     :returns (vals expr-value-list-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Lift @(tsee eval-iapp) to a list of function values."
@@ -1898,8 +1890,8 @@
        a vector of ispace lambda values (see @(tsee eval-iapp))."))
     (b* (((when (zp limit)) (reserr :limit))
          ((when (endp funvals)) nil)
-         ((ok val) (eval-iapp (car funvals) ivals denv (1- limit)))
-         ((ok vals) (eval-iapp-list (cdr funvals) ivals denv (1- limit))))
+         ((ok val) (eval-iapp (car funvals) ivals (1- limit)))
+         ((ok vals) (eval-iapp-list (cdr funvals) ivals (1- limit))))
       (cons val vals))
     :measure (nfix limit)
 
@@ -1917,11 +1909,9 @@
 
   (define eval-app ((funval expr-valuep)
                     (argvals expr-value-listp)
-                    (denv expr-denvp)
                     (limit natp))
     :guard (and (expr-value-wfp funval)
-                (expr-value-list-wfp argvals)
-                (expr-denv-wfp denv))
+                (expr-value-list-wfp argvals))
     :returns (val expr-value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Apply an expression value to argument expression values."
@@ -2019,7 +2009,7 @@
          ((ok arg-cell-lists)
           (lift-expr-value-list-to-frame argvals arg-frames pframe))
          ((ok result-cells)
-          (eval-app-list fun-cells arg-cell-lists denv (1- limit)))
+          (eval-app-list fun-cells arg-cell-lists (1- limit)))
          ;; TODO: eliminate the next three checks via proof
          ((unless (equal (len result-cells) (nat-list-product pframe)))
           (reserr nil))
@@ -2033,10 +2023,8 @@
 
   (define eval-app-list ((funcells expr-value-listp)
                          (argcell-lists expr-value-list-listp)
-                         (denv expr-denvp)
                          (limit natp))
-    :guard (and (expr-value-list-wfp funcells)
-                (expr-denv-wfp denv))
+    :guard (expr-value-list-wfp funcells)
     :returns (vals expr-value-list-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Apply function cells to argument cells, position-wise."
@@ -2065,10 +2053,10 @@
          (argcells (car-list argcell-lists))
          ;; TODO: eliminate the next check via proof
          ((unless (expr-value-list-wfp argcells)) (reserr nil))
-         ((ok val) (eval-app-cell (car funcells) argcells denv (1- limit)))
+         ((ok val) (eval-app-cell (car funcells) argcells (1- limit)))
          ((ok vals) (eval-app-list (cdr funcells)
                                    (cdr-list argcell-lists)
-                                   denv (1- limit))))
+                                   (1- limit))))
       (cons val vals))
     :measure (nfix limit))
 
@@ -2076,11 +2064,9 @@
 
   (define eval-app-cell ((funcell expr-valuep)
                          (argcells expr-value-listp)
-                         (denv expr-denvp)
                          (limit natp))
     :guard (and (expr-value-wfp funcell)
-                (expr-value-list-wfp argcells)
-                (expr-denv-wfp denv))
+                (expr-value-list-wfp argcells))
     :returns (val expr-value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Apply a single (scalar) function cell to its argument cells."
@@ -2101,7 +2087,6 @@
        it is applied to the argument cells via @(tsee eval-primop-fun),
        which dispatches to the corresponding ACL2 function
        in @(see primitives-evaluation)."))
-    (declare (ignore denv))
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-value-case
        funcell
@@ -2269,44 +2254,36 @@
                       (eval-bind-list binds denv limit)
                       (eval-bind-list (bind-list-fix binds) denv limit)
                       (eval-bind-list binds (expr-denv-fix denv) limit)
-                      (eval-tapp funval tvals denv limit)
-                      (eval-tapp (expr-value-fix funval) tvals denv limit)
-                      (eval-tapp funval (type-value-list-fix tvals) denv limit)
-                      (eval-tapp funval tvals (expr-denv-fix denv) limit)
-                      (eval-tapp-list funvals tvals denv limit)
+                      (eval-tapp funval tvals limit)
+                      (eval-tapp (expr-value-fix funval) tvals limit)
+                      (eval-tapp funval (type-value-list-fix tvals) limit)
+                      (eval-tapp-list funvals tvals limit)
                       (eval-tapp-list (expr-value-list-fix funvals)
-                                      tvals denv limit)
+                                      tvals limit)
                       (eval-tapp-list funvals
-                                      (type-value-list-fix tvals) denv limit)
-                      (eval-tapp-list funvals tvals (expr-denv-fix denv) limit)
-                      (eval-iapp funval ivals denv limit)
-                      (eval-iapp (expr-value-fix funval) ivals denv limit)
+                                      (type-value-list-fix tvals) limit)
+                      (eval-iapp funval ivals limit)
+                      (eval-iapp (expr-value-fix funval) ivals limit)
                       (eval-iapp funval
-                                 (ispace-value-list-fix ivals) denv limit)
-                      (eval-iapp funval ivals (expr-denv-fix denv) limit)
-                      (eval-iapp-list funvals ivals denv limit)
+                                 (ispace-value-list-fix ivals) limit)
+                      (eval-iapp-list funvals ivals limit)
                       (eval-iapp-list (expr-value-list-fix funvals)
-                                      ivals denv limit)
+                                      ivals limit)
                       (eval-iapp-list funvals
-                                      (ispace-value-list-fix ivals) denv limit)
-                      (eval-iapp-list funvals ivals (expr-denv-fix denv) limit)
-                      (eval-app funval argvals denv limit)
-                      (eval-app (expr-value-fix funval) argvals denv limit)
-                      (eval-app funval (expr-value-list-fix argvals) denv limit)
-                      (eval-app funval argvals (expr-denv-fix denv) limit)
-                      (eval-app-list funcells argcell-lists denv limit)
+                                      (ispace-value-list-fix ivals) limit)
+                      (eval-app funval argvals limit)
+                      (eval-app (expr-value-fix funval) argvals limit)
+                      (eval-app funval (expr-value-list-fix argvals) limit)
+                      (eval-app-list funcells argcell-lists limit)
                       (eval-app-list (expr-value-list-fix funcells)
-                                     argcell-lists denv limit)
+                                     argcell-lists limit)
                       (eval-app-list funcells
                                      (expr-value-list-list-fix argcell-lists)
-                                     denv limit)
-                      (eval-app-list funcells argcell-lists
-                                     (expr-denv-fix denv) limit)
-                      (eval-app-cell funcell argcells denv limit)
-                      (eval-app-cell (expr-value-fix funcell) argcells denv limit)
+                                     limit)
+                      (eval-app-cell funcell argcells limit)
+                      (eval-app-cell (expr-value-fix funcell) argcells limit)
                       (eval-app-cell funcell (expr-value-list-fix argcells)
-                                     denv limit)
-                      (eval-app-cell funcell argcells (expr-denv-fix denv) limit)
+                                     limit)
                       (eval-unbox target ispaces var body type denv limit)
                       (eval-unbox (expr-value-fix target)
                                   ispaces var body type denv limit)
@@ -2369,44 +2346,37 @@
                (expr-denv-wfp new-denv))
       :fn eval-bind-list)
     (defret expr-value-wfp-of-eval-tapp
-      (implies (and (expr-denv-wfp denv)
-                    (expr-value-wfp funval)
+      (implies (and (expr-value-wfp funval)
                     (not (reserrp val)))
                (expr-value-wfp val))
       :fn eval-tapp)
     (defret expr-value-list-wfp-of-eval-tapp-list
-      (implies (and (expr-denv-wfp denv)
-                    (expr-value-list-wfp funvals)
+      (implies (and (expr-value-list-wfp funvals)
                     (not (reserrp vals)))
                (expr-value-list-wfp vals))
       :fn eval-tapp-list)
     (defret expr-value-wfp-of-eval-iapp
-      (implies (and (expr-denv-wfp denv)
-                    (expr-value-wfp funval)
+      (implies (and (expr-value-wfp funval)
                     (not (reserrp val)))
                (expr-value-wfp val))
       :fn eval-iapp)
     (defret expr-value-list-wfp-of-eval-iapp-list
-      (implies (and (expr-denv-wfp denv)
-                    (expr-value-list-wfp funvals)
+      (implies (and (expr-value-list-wfp funvals)
                     (not (reserrp vals)))
                (expr-value-list-wfp vals))
       :fn eval-iapp-list)
     (defret expr-value-wfp-of-eval-app
-      (implies (and (expr-denv-wfp denv)
-                    (expr-value-wfp funval)
+      (implies (and (expr-value-wfp funval)
                     (not (reserrp val)))
                (expr-value-wfp val))
       :fn eval-app)
     (defret expr-value-list-wfp-of-eval-app-list
-      (implies (and (expr-denv-wfp denv)
-                    (expr-value-list-wfp funcells)
+      (implies (and (expr-value-list-wfp funcells)
                     (not (reserrp vals)))
                (expr-value-list-wfp vals))
       :fn eval-app-list)
     (defret expr-value-wfp-of-eval-app-cell
-      (implies (and (expr-denv-wfp denv)
-                    (expr-value-wfp funcell)
+      (implies (and (expr-value-wfp funcell)
                     (expr-value-list-wfp argcells)
                     (not (reserrp val)))
                (expr-value-wfp val))
@@ -2436,13 +2406,13 @@
                (eval-atom-list atoms denv limit)
                (eval-bind bind denv limit)
                (eval-bind-list binds denv limit)
-               (eval-tapp funval tvals denv limit)
-               (eval-tapp-list funvals tvals denv limit)
-               (eval-iapp funval ivals denv limit)
-               (eval-iapp-list funvals ivals denv limit)
-               (eval-app funval argvals denv limit)
-               (eval-app-list funcells argcell-lists denv limit)
-               (eval-app-cell funcell argcells denv limit)
+               (eval-tapp funval tvals limit)
+               (eval-tapp-list funvals tvals limit)
+               (eval-iapp funval ivals limit)
+               (eval-iapp-list funvals ivals limit)
+               (eval-app funval argvals limit)
+               (eval-app-list funcells argcell-lists limit)
+               (eval-app-cell funcell argcells limit)
                (eval-unbox target ispaces var body type denv limit)
                (eval-unbox-list targets ispaces var body type denv limit)))))
 

@@ -124,7 +124,7 @@
                   (equal intval1 (base-value-int->val baseval1))
                   (equal intval2 (base-value-int->val baseval2))
                   (not (zp limit)))
-             (equal (eval-app-cell funval argvals denv limit)
+             (equal (eval-app-cell funval argvals limit)
                     (expr-value-base
                      (base-value-int
                       (int-value (+ (int-value->int intval1)
@@ -147,7 +147,7 @@
   (defruled eval-app-list-when-atom
     (implies (and (acl2::atom funvals)
                   (not (zp limit)))
-             (equal (eval-app-list funvals argvalss denv limit)
+             (equal (eval-app-list funvals argvalss limit)
                     nil))
     :enable eval-app-list)
 
@@ -161,15 +161,13 @@
                   (expr-value-list-wfp argvals)
                   (equal val (eval-app-cell (car funvals)
                                             argvals
-                                            denv
                                             (1- limit)))
                   (expr-valuep val)
                   (equal vals (eval-app-list (cdr funvals)
                                              (cdr-list argvalss)
-                                             denv
                                              (1- limit)))
                   (expr-value-listp vals))
-             (equal (eval-app-list funvals argvalss denv limit)
+             (equal (eval-app-list funvals argvalss limit)
                     (cons val vals)))
     :enable (eval-app-list
              not-reserrp-when-expr-valuep
@@ -195,7 +193,7 @@
                   (equal intval2 (base-value-int->val baseval2))
                   (integerp limit)
                   (>= limit 3))
-             (equal (eval-app funval argvals denv limit)
+             (equal (eval-app funval argvals limit)
                     (expr-value-base
                      (base-value-int
                       (int-value (+ (int-value->int intval1)
@@ -239,7 +237,7 @@
                          (eval-expr-list (expr-app->args expr) denv (1- limit)))
                   (expr-value-listp argvals))
              (equal (eval-expr expr denv limit)
-                    (eval-app funval argvals denv (1- limit))))
+                    (eval-app funval argvals (1- limit))))
     :enable (eval-expr
              not-reserrp-when-expr-valuep
              not-reserrp-when-expr-value-listp))
