@@ -158,7 +158,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist expr-value-list
-    :parents (expression-values-and-environments expr-values)
+    :parents (expression-values-and-environments expr-values/denv)
     :short "Fixtype of lists of expression values."
     :elt-type expr-value
     :true-listp t
