@@ -1320,6 +1320,13 @@
        with the same parameters and body,
        which are not evaluated here but only when the abstraction is applied.")
      (xdoc::p
+      "All three kinds of lambda values are closures:
+       they include dynamic environments
+       with the bindings for the free variables of their bodies
+       (excluding the variables bound by their parameters),
+       obtained by restricting the current dynamic environment
+       to those variables.")
+     (xdoc::p
       "A box evaluates to a box value:
        the ispaces are evaluated to ispace values,
        the array is evaluated to an expression value,
@@ -1334,34 +1341,32 @@
                                  atom.type?
                                  :none nil
                                  :some (eval-type atom.type?.val
-                                                  (expr-denv->tenv denv)))))
+                                                  (expr-denv->tenv denv))))
+                    (denv (expr-denv-restrict
+                           (expr-free-ispace-vars atom.body)
+                           (expr-free-type-vars atom.body)
+                           (atom-free-expr-vars atom)
+                           denv)))
                  (make-expr-value-lambda :params params
                                          :body atom.body
                                          :type? type?
-                                         :denv (make-expr-denv
-                                                :tenv (make-type-denv
-                                                       :ienv (make-ispace-denv
-                                                              :ispaces nil)
-                                                       :types nil)
-                                                :exprs nil)))
+                                         :denv denv))
        :tlambda (make-expr-value-tlambda
                  :params atom.params
                  :body atom.body
-                 :denv (make-expr-denv
-                        :tenv (make-type-denv
-                               :ienv (make-ispace-denv
-                                      :ispaces nil)
-                               :types nil)
-                        :exprs nil))
+                 :denv (expr-denv-restrict
+                        (expr-free-ispace-vars atom.body)
+                        (atom-free-type-vars atom)
+                        (expr-free-expr-vars atom.body)
+                        denv))
        :ilambda (make-expr-value-ilambda
                  :params atom.params
                  :body atom.body
-                 :denv (make-expr-denv
-                        :tenv (make-type-denv
-                               :ienv (make-ispace-denv
-                                      :ispaces nil)
-                               :types nil)
-                        :exprs nil))
+                 :denv (expr-denv-restrict
+                        (atom-free-ispace-vars atom)
+                        (expr-free-type-vars atom.body)
+                        (expr-free-expr-vars atom.body)
+                        denv))
        :box (b* (((ok ivals) (eval-ispace-list atom.ispaces
                                                (type-denv->ienv
                                                 (expr-denv->tenv denv))))
@@ -1480,7 +1485,11 @@
        after being desugared to a value binding.
        As for the other bindings,
        we also form the corresponding nested type and evaluate it,
-       ignoring the resulting type value for now."))
+       ignoring the resulting type value for now.")
+     (xdoc::p
+      "The lambda values formed for the function bindings
+       are closures with restricted dynamic environments,
+       as in @(tsee eval-atom)."))
     (b* (((when (zp limit)) (reserr :limit)))
       (bind-case
        bind
@@ -1503,12 +1512,14 @@
                        :params params
                        :body bind.expr
                        :type? nil
-                       :denv (make-expr-denv
-                              :tenv (make-type-denv
-                                     :ienv (make-ispace-denv
-                                            :ispaces nil)
-                                     :types nil)
-                              :exprs nil)))
+                       :denv (expr-denv-restrict
+                              (expr-free-ispace-vars bind.expr)
+                              (expr-free-type-vars bind.expr)
+                              (set::difference
+                               (expr-free-expr-vars bind.expr)
+                               (set::mergesort
+                                (var+type?-list->var bind.params)))
+                              denv)))
                  ((ok &) (type-option-case
                           bind.type?
                           :some (eval-type bind.type?.val
@@ -1518,12 +1529,13 @@
        :tfun (b* ((val (make-expr-value-tlambda
                         :params bind.params
                         :body bind.expr
-                        :denv (make-expr-denv
-                               :tenv (make-type-denv
-                                      :ienv (make-ispace-denv
-                                             :ispaces nil)
-                                      :types nil)
-                               :exprs nil)))
+                        :denv (expr-denv-restrict
+                               (expr-free-ispace-vars bind.expr)
+                               (set::difference
+                                (expr-free-type-vars bind.expr)
+                                (set::mergesort bind.params))
+                               (expr-free-expr-vars bind.expr)
+                               denv)))
                   ((ok &) (type-option-case
                            bind.type?
                            :some (eval-type
@@ -1535,12 +1547,13 @@
        :ifun (b* ((val (make-expr-value-ilambda
                         :params bind.params
                         :body bind.expr
-                        :denv (make-expr-denv
-                               :tenv (make-type-denv
-                                      :ienv (make-ispace-denv
-                                             :ispaces nil)
-                                      :types nil)
-                               :exprs nil)))
+                        :denv (expr-denv-restrict
+                               (set::difference
+                                (expr-free-ispace-vars bind.expr)
+                                (set::mergesort bind.params))
+                               (expr-free-type-vars bind.expr)
+                               (expr-free-expr-vars bind.expr)
+                               denv)))
                   ((ok &) (type-option-case
                            bind.type?
                            :some (eval-type
