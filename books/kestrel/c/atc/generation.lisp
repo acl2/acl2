@@ -157,24 +157,25 @@
   (xdoc::topstring
    (xdoc::p
     "If the @(':header') input is @('t'), we generate two declarations:
-     one for the header, with @('extern') and without initializer
+     one for the header file, with @('extern') and without initializer
      (whether the @(tsee defobject) has an initializer or not);
-     and one for the source file, without @('extern'),
+     and one for the @('.c') source file, without @('extern'),
      and with or without the intiializer
      depending of whether the @(tsee defobject) has it or not.
      If instead the @(':header') input is @('nil'),
-     we generate one declaration, for the source file,
+     we generate one declaration, for the @('.c') source file,
      without @('extern'),
      and with or without the intiializer
      depending of whether the @(tsee defobject) has it or not.
-     In other words, we always generate a declaration for the source file,
+     In other words,
+     we always generate a declaration for the @('.c') source file,
      the same regardless of @(':header'),
-     and we optionally generate an @('extern') one for the header,
+     and we optionally generate an @('extern') one for the header file,
      always without initializer.
      The @('extern') serves so that the declaration
      does not count like a tentative definition,
      and the only definition (tentative if it has no initializer)
-     is in the source file."))
+     is in the @('.c') source file."))
   (b* ((id (defobject-info->name-ident info))
        (type (defobject-info->type info))
        (initer? (defobject-info->init info))
@@ -226,20 +227,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The first list, @('exts-h'), is for the generated header;
-     the second list, @('exts-c'), is for the generated source file.
-     The flag @('header') controls whether the header is generated or not:
+    "The first list, @('exts-h'), is for the generated header file;
+     the second list, @('exts-c'), is for the generated @('.c') source file.
+     The flag @('header') controls whether the header file is generated or not:
      if the flag is @('nil'), @('exts-h') is empty,
-     i.e. we only generate external declarations for the source file.")
+     i.e. we only generate external declarations for the @('.c') source file.")
    (xdoc::p
-    "If the header is generated,
+    "If the header file is generated,
      all the structs and external objects go there,
      while only declarations for the functions go there;
      furthermore, the external objects have no initializers there.
-     The function definitions go into the source file,
+     The function definitions go into the @('.c') source file,
      together with the external objects that have initializers.
-     If the header is not generated,
-     everything goes into the source file."))
+     If the header file is not generated,
+     everything goes into the @('.c') source file."))
   (b* (((reterr) nil nil nil nil)
        (wrld (w state))
        ((when (endp targets)) (retok nil nil nil names-to-avoid))
