@@ -1478,7 +1478,7 @@
                          :declor unwrap
                          :info paramdeclor.info)
                         env))
-        :none (mv (param-declor-none) env)
+        :none (mv (param-declor-none paramdeclor.info) env)
         :ambig (prog2$ (raise "Misusage error: ~x0."
                               (param-declor-fix paramdeclor))
                        (mv (param-declor-fix paramdeclor)

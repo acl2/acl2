@@ -1079,14 +1079,12 @@
    (xdoc::p
     "For now, a translation ensemble consists of
      one or two translation units (see @(tsee trans-unit)),
-     one for an optional header and one for a source file,
-     which have the same name except for the extension.
-     (The preceding sentence uses the terminology in [C17:5.1.1/1],
-     which appears to call `headers' the @('.h') files
-     and `source files' the @('.c') files.)
+     one for an optional @('.h') file
+     and one for a mandatory @('.c') file.
      The idea is that for now we model (portions of) programs
      that consist of a single source file,
-     optionally with its own header that is @('#include')d in the source file.
+     optionally with its own header file
+     that is @('#include')d in the source file.
      We do not explicitly model the @('#include') directive: it is implicit.
      The @('path-wo-ext') component of this fixtype
      is the common path of both files without the extension.
@@ -1095,7 +1093,7 @@
      where the first one is optional.")
    (xdoc::p
     "Technically, the (implicit) presence of the @('#include') directive
-     in the source file when the header is present
+     in the source file when the header file is present
      makes the translation unit for the source file
      actually a preprocessing translation unit [C17:5.1.1.1/1],
      but we take the term `translation unit', in this context,

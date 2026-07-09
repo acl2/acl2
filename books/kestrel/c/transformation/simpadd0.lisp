@@ -1406,7 +1406,7 @@
                         :declor new-absdeclor
                         :info paramdeclor.info)
                        (gout-no-thm gin)))
-       :none (mv (param-declor-none) (gout-no-thm gin))
+       :none (mv (param-declor-none paramdeclor.info) (gout-no-thm gin))
        :ambig (prog2$ (impossible) (mv (irr-param-declor) (irr-gout)))))
     :measure (param-declor-count paramdeclor))
 
