@@ -498,7 +498,13 @@
     :induct t
     :enable (check-dims-of-expr-value-list
              expr-value-wfp
-             acl2::not-reserrp-when-nat-list-listp)))
+             acl2::not-reserrp-when-nat-list-listp))
+
+  (defrule expr-value-list-wfp-of-repeat-each
+    (implies (expr-value-list-wfp vals)
+             (expr-value-list-wfp (repeat-each n vals)))
+    :induct (repeat-each n vals)
+    :enable (repeat-each expr-value-list-wfp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -683,6 +689,14 @@
     :expand (check-dims-of-expr-value
              (expr-value-lambda params body type? denv)))
 
+  (defrule expr-denv-wfp-of-expr-value-lambda->denv
+    (implies (and (expr-value-wfp val)
+                  (expr-value-case val :lambda))
+             (expr-denv-wfp (expr-value-lambda->denv val)))
+    :enable (expr-value-wfp
+             expr-denv-wfp-alt-def)
+    :expand (check-dims-of-expr-value val))
+
   (defrule expr-value-wfp-of-expr-value-tlambda
     (implies (expr-denv-wfp denv)
              (expr-value-wfp (expr-value-tlambda params body denv)))
@@ -690,12 +704,28 @@
              expr-denv-wfp-alt-def)
     :expand (check-dims-of-expr-value (expr-value-tlambda params body denv)))
 
+  (defrule expr-denv-wfp-of-expr-value-tlambda->denv
+    (implies (and (expr-value-wfp val)
+                  (expr-value-case val :tlambda))
+             (expr-denv-wfp (expr-value-tlambda->denv val)))
+    :enable (expr-value-wfp
+             expr-denv-wfp-alt-def)
+    :expand (check-dims-of-expr-value val))
+
   (defrule expr-value-wfp-of-expr-value-ilambda
     (implies (expr-denv-wfp denv)
              (expr-value-wfp (expr-value-ilambda params body denv)))
     :enable (expr-value-wfp
              expr-denv-wfp-alt-def)
     :expand (check-dims-of-expr-value (expr-value-ilambda params body denv)))
+
+  (defrule expr-denv-wfp-of-expr-value-ilambda->denv
+    (implies (and (expr-value-wfp val)
+                  (expr-value-case val :ilambda))
+             (expr-denv-wfp (expr-value-ilambda->denv val)))
+    :enable (expr-value-wfp
+             expr-denv-wfp-alt-def)
+    :expand (check-dims-of-expr-value val))
 
   (defrule expr-value-wfp-of-expr-value-box
     (equal (expr-value-wfp (expr-value-box ispaces array type))
