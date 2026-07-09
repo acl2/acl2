@@ -66,9 +66,6 @@
 
 (defines eval-dims
   :short "Evaluate dimensions and lists of dimensions."
-  ;; The flag function is used by theorems in other books
-  ;; (see renaming-evaluation.lisp).
-  :flag-local nil
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -141,6 +138,8 @@
 
   :verify-guards :after-returns
 
+  :flag-local nil
+
   ///
 
   (fty::deffixequiv-mutual eval-dims))
@@ -164,9 +163,6 @@
 
 (defines eval-shapes/ispaces
   :short "Evaluate shapes and ispaces."
-  ;; The flag function is used by theorems in other books
-  ;; (see renaming-evaluation.lisp).
-  :flag-local nil
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -275,6 +271,8 @@
 
   :verify-guards :after-returns
 
+  :flag-local nil
+
   :guard-hints
   (("Goal" :in-theory (enable acl2::true-list-listp-when-nat-list-listp)))
 
@@ -286,9 +284,6 @@
 
 (defines eval-types
   :short "Evaluate types and lists of types."
-  ;; The flag function is used by theorems in other books
-  ;; (see renaming-evaluation.lisp).
-  :flag-local nil
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -388,6 +383,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :verify-guards :after-returns
+
+  :flag-local nil
 
   :guard-hints
   (("Goal" :in-theory (enable acl2::true-list-listp-when-nat-list-listp)))
@@ -646,9 +643,6 @@
 
 (defines expr-values-with-nonempty-dims
   :short "Build expression values with non-empty dimensions and with given elements."
-  ;; The flag function is used by theorems in other books
-  ;; (see renaming-evaluation.lisp).
-  :flag-local nil
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -768,6 +762,8 @@
                               dims-of-expr-value-list-list-of-cdr)
                              (cdr-of-dims-of-expr-value-list-list))
                  :use nat-list-product-divided-by-car))
+
+  :flag-local nil
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

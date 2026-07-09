@@ -940,9 +940,6 @@
 (defines cells-at-depth-in-expr-values
   :short "Cells of an expression value, or list of expression values,
           at a given frame depth."
-  ;; The flag function is used by theorems in other books
-  ;; (see renaming-evaluation.lisp).
-  :flag-local nil
 
   (define cells-at-depth-in-expr-value ((val expr-valuep) (depth natp))
     :returns (cells expr-value-list-resultp)
@@ -1026,6 +1023,8 @@
 
   :prepwork
   ((local (in-theory (enable expr-value-listp-when-result-not-error))))
+
+  :flag-local nil
 
   ///
 
