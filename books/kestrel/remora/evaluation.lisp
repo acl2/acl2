@@ -1337,9 +1337,31 @@
                                                   (expr-denv->tenv denv)))))
                  (make-expr-value-lambda :params params
                                          :body atom.body
-                                         :type? type?))
-       :tlambda (make-expr-value-tlambda :params atom.params :body atom.body)
-       :ilambda (make-expr-value-ilambda :params atom.params :body atom.body)
+                                         :type? type?
+                                         :denv (make-expr-denv
+                                                :tenv (make-type-denv
+                                                       :ienv (make-ispace-denv
+                                                              :ispaces nil)
+                                                       :types nil)
+                                                :exprs nil)))
+       :tlambda (make-expr-value-tlambda
+                 :params atom.params
+                 :body atom.body
+                 :denv (make-expr-denv
+                        :tenv (make-type-denv
+                               :ienv (make-ispace-denv
+                                      :ispaces nil)
+                               :types nil)
+                        :exprs nil))
+       :ilambda (make-expr-value-ilambda
+                 :params atom.params
+                 :body atom.body
+                 :denv (make-expr-denv
+                        :tenv (make-type-denv
+                               :ienv (make-ispace-denv
+                                      :ispaces nil)
+                               :types nil)
+                        :exprs nil))
        :box (b* (((ok ivals) (eval-ispace-list atom.ispaces
                                                (type-denv->ienv
                                                 (expr-denv->tenv denv))))
@@ -1477,17 +1499,31 @@
               (expr-denv-add-expr bind.var val denv))
        :fun (b* (((ok params) (eval-var+type?-list bind.params
                                                    (expr-denv->tenv denv)))
-                 (val (make-expr-value-lambda :params params
-                                              :body bind.expr
-                                              :type? nil))
+                 (val (make-expr-value-lambda
+                       :params params
+                       :body bind.expr
+                       :type? nil
+                       :denv (make-expr-denv
+                              :tenv (make-type-denv
+                                     :ienv (make-ispace-denv
+                                            :ispaces nil)
+                                     :types nil)
+                              :exprs nil)))
                  ((ok &) (type-option-case
                           bind.type?
                           :some (eval-type bind.type?.val
                                            (expr-denv->tenv denv))
                           :none nil)))
               (expr-denv-add-expr bind.var val denv))
-       :tfun (b* ((val (make-expr-value-tlambda :params bind.params
-                                                :body bind.expr))
+       :tfun (b* ((val (make-expr-value-tlambda
+                        :params bind.params
+                        :body bind.expr
+                        :denv (make-expr-denv
+                               :tenv (make-type-denv
+                                      :ienv (make-ispace-denv
+                                             :ispaces nil)
+                                      :types nil)
+                               :exprs nil)))
                   ((ok &) (type-option-case
                            bind.type?
                            :some (eval-type
@@ -1496,8 +1532,15 @@
                                   (expr-denv->tenv denv))
                            :none nil)))
                (expr-denv-add-expr bind.var val denv))
-       :ifun (b* ((val (make-expr-value-ilambda :params bind.params
-                                                :body bind.expr))
+       :ifun (b* ((val (make-expr-value-ilambda
+                        :params bind.params
+                        :body bind.expr
+                        :denv (make-expr-denv
+                               :tenv (make-type-denv
+                                      :ienv (make-ispace-denv
+                                             :ispaces nil)
+                                      :types nil)
+                               :exprs nil)))
                   ((ok &) (type-option-case
                            bind.type?
                            :some (eval-type

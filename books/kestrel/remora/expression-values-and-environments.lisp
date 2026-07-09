@@ -15,6 +15,7 @@
 (include-book "abstract-syntax-structurals")
 (include-book "base-values")
 (include-book "primitive-operation-values")
+(include-book "unit-types")
 
 (include-book "kestrel/fty/nat-list-list-list" :dir :system)
 (include-book "kestrel/fty/nat-list-result" :dir :system)
@@ -23,6 +24,7 @@
 
 (local (include-book "arithmetic"))
 
+(local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
@@ -53,13 +55,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftypes expr-values
-  :short "Fixtypes of expression values and lists of expression values."
+(fty::deftypes expr-values/denv
+  :short "Fixtypes of expression values and expression dynamic environments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Expression values and expression dynamic environments
+     are mutually recursive because
+     some expression values are closures that contain dynamic environments."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum expr-value
-    :parents (expression-values-and-environments expr-values)
+    :parents (expression-values-and-environments expr-values/denv)
     :short "Fixtype of expression values."
     :long
     (xdoc::topstring
@@ -120,23 +128,32 @@
       "This fixtype does not capture constraints like
        the non-emptiness of the expression value list in @(':vector'),
        and the dimension and type consistency of the elements of a @(':vector').
-       These constraints are captured separately."))
+       These constraints are captured separately.")
+     (xdoc::p
+      "Critically, all three kinds of lambda abstractions contain
+       environments for their free ispace, type, and expression variables.
+       This fixtype currently does not enforce the constraint that
+       the environment contains exactly those free variables."))
     (:base ((val base-value)))
     (:primop ((val primop-value)))
     (:lambda ((params var+typevalue-list)
               (body expr)
-              (type? type-value-option)))
+              (type? type-value-option)
+              (denv expr-denv)))
     (:tlambda ((params type-var-list)
-               (body expr)))
+               (body expr)
+               (denv expr-denv)))
     (:ilambda ((params ispace-var-list)
-               (body expr)))
+               (body expr)
+               (denv expr-denv)))
     (:box ((ispaces ispace-value-list)
            (array expr-value)
            (type type-value)))
     (:vector ((elems expr-value-list)))
     (:vector-empty ((dims nat-list)
                     (elem type-value)))
-    :pred expr-valuep)
+    :pred expr-valuep
+    :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -147,6 +164,7 @@
     :true-listp t
     :elementp-of-nil nil
     :pred expr-value-listp
+    :measure (two-nats-measure (acl2-count x) 0)
 
     ///
 
@@ -154,9 +172,39 @@
       (implies (expr-value-listp vals)
                (expr-value-listp (repeat-each n vals)))
       :induct (repeat-each n vals)
-      :enable (repeat-each expr-value-listp))))
+      :enable (repeat-each expr-value-listp)))
 
-;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::defomap string-expr-value-map
+    :parents (expression-values-and-environments expr-values/denv)
+    :short "Fixtype of maps from strings to expression values."
+    :key-type string
+    :val-type expr-value
+    :pred string-expr-value-mapp
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::defprod expr-denv
+    :parents (expression-values-and-environments expr-values/denv)
+    :short "Fixtype of expression dynamic environments."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This includes a type dynamic environment,
+       because expressions contain types;
+       and the type dynamic environment includes an ispace dynamic environment.
+       Additionally,
+       we have a map from expression variables to expression values,
+       which are the expression variables in scope
+       with the associated values."))
+    ((tenv type-denv)
+     (exprs string-expr-value-map))
+    :pred expr-denvp
+    :measure (two-nats-measure (acl2-count x) 1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection expr-value-base-list ((x base-value-listp))
   :returns (vals expr-value-listp)
@@ -234,11 +282,18 @@
   :ok expr-value-list-list
   :pred expr-value-list-list-resultp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult expr-denv-result
+  :short "Fixtype of expression dynamic environments and errors."
+  :ok expr-denv
+  :pred expr-denv-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines check-dims-of-expr-values
+(defines check-dims-of-expr-values/denv
   :short "Check dimension constraints on
-          expression values and lists of expression values."
+          expression values and expression dynamic environments."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -251,13 +306,21 @@
      So these functions define, simultaneously,
      predicates on expression values saying whether
      the expression values are well-formed,
-     and functions returning dimensions of well-formed expression values."))
+     and functions returning dimensions of well-formed expression values.")
+   (xdoc::p
+    "Since expression values are mutually recursive
+     with expression dynamic environments,
+     these functions also operate on the latter,
+     because they need to check the expression values inside them.
+     But an environment as such does not have dimensions,
+     so no dimensions are returned by the checking function on environments
+     (and on the underlying maps)."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define check-dims-of-expr-value ((val expr-valuep))
     :returns (dims nat-list-resultp)
-    :parents (expression-values-and-environments check-dims-of-expr-values)
+    :parents (expression-values-and-environments check-dims-of-expr-values/denv)
     :short "Check dimension constraints on expression values."
     :long
     (xdoc::topstring
@@ -291,9 +354,12 @@
      val
      :base nil
      :primop nil
-     :lambda nil
-     :tlambda nil
-     :ilambda nil
+     :lambda (b* (((ok &) (check-dims-of-expr-denv val.denv)))
+               nil)
+     :tlambda (b* (((ok &) (check-dims-of-expr-denv val.denv)))
+                nil)
+     :ilambda (b* (((ok &) (check-dims-of-expr-denv val.denv)))
+                nil)
      :box (b* (((ok &) (check-dims-of-expr-value val.array)))
             nil)
      :vector (b* (((ok dimss) (check-dims-of-expr-value-list val.elems))
@@ -307,7 +373,7 @@
 
   (define check-dims-of-expr-value-list ((vals expr-value-listp))
     :returns (dimss nat-list-list-resultp)
-    :parents (expression-values-and-environments check-dims-of-expr-values)
+    :parents (expression-values-and-environments check-dims-of-expr-values/denv)
     :short "Check dimension constraints on lists of expression values."
     :long
     (xdoc::topstring
@@ -341,6 +407,30 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define check-dims-of-string-expr-value-map ((map string-expr-value-mapp))
+    :returns (unit unit-resultp)
+    :parents (expression-values-and-environments check-dims-of-expr-values/denv)
+    :short "Check dimension constraints on (the expression values in)
+            a map from strings to expression values."
+    (b* (((when (omap::emptyp (string-expr-value-map-fix map))) :unit)
+         (eval (omap::head-val map))
+         ((ok &) (check-dims-of-expr-value eval))
+         ((ok &) (check-dims-of-string-expr-value-map (omap::tail map))))
+      :unit)
+    :measure (string-expr-value-map-count map))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-dims-of-expr-denv ((denv expr-denvp))
+    :returns (unit unit-resultp)
+    :parents (expression-values-and-environments check-dims-of-expr-values/denv)
+    :short "Check dimension constraints on (the expression values in)
+            an  expression dynamic environments."
+    (check-dims-of-string-expr-value-map (expr-denv->exprs denv))
+    :measure (expr-denv-count denv))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :prepwork
   ((local (in-theory (enable acl2::true-listp-when-nat-list-listp
                              acl2::nat-listp-of-car-when-nat-list-listp))))
@@ -349,7 +439,7 @@
 
   ///
 
-  (fty::deffixequiv-mutual check-dims-of-expr-values)
+  (fty::deffixequiv-mutual check-dims-of-expr-values/denv)
 
   (defruled check-dims-of-expr-value-list-of-repeat
     (b* ((dims (check-dims-of-expr-value val))
@@ -416,6 +506,73 @@
              (expr-value-list-list-wfp (list-split vals n)))
     :induct t
     :enable list-split))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define string-expr-value-map-wfp ((map string-expr-value-mapp))
+  :returns (yes/no booleanp)
+  :short "Check that all the expression values
+          in a string-to-expression-value map
+          are well-formed."
+  (or (omap::emptyp (string-expr-value-map-fix map))
+      (and (expr-value-wfp (omap::head-val map))
+           (string-expr-value-map-wfp (omap::tail map))))
+
+  ///
+
+  (defruled string-expr-value-map-wfp-alt-def
+    (equal (string-expr-value-map-wfp map)
+           (not (reserrp (check-dims-of-string-expr-value-map map))))
+    :induct t
+    :enable (expr-value-wfp
+             check-dims-of-string-expr-value-map))
+
+  (defruled expr-value-wfp-of-cdr-of-assoc-when-string-expr-value-map-wfp
+    (implies (and (string-expr-value-mapp map)
+                  (string-expr-value-map-wfp map)
+                  (omap::assoc key map))
+             (expr-value-wfp (cdr (omap::assoc key map))))
+    :induct t
+    :enable omap::assoc)
+
+  (defruled string-expr-value-map-wfp-of-update
+    (implies (and (string-expr-value-mapp map)
+                  (string-expr-value-map-wfp map)
+                  (expr-value-wfp val))
+             (string-expr-value-map-wfp (omap::update key val map)))
+    :induct (string-expr-value-map-wfp map)
+    :expand ((string-expr-value-map-wfp (omap::update key val map)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-denv-wfp ((denv expr-denvp))
+  :returns (yes/no booleanp)
+  :short "Check that the expression values in an expression dynamic environment
+          are well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is an initial notion of well-formedness,
+     concerning just the expression values bound to expression variables.
+     We may extend it, or fold it into a broader notion,
+     when we introduce well-formedness conditions
+     on the ispace and type variables as well."))
+  (string-expr-value-map-wfp (expr-denv->exprs denv))
+
+  ///
+
+  (defruled expr-denv-wfp-alt-def
+    (equal (expr-denv-wfp denv)
+           (not (reserrp (check-dims-of-expr-denv denv))))
+    :enable (check-dims-of-expr-denv
+             string-expr-value-map-wfp-alt-def))
+
+  (defruled expr-value-wfp-of-cdr-of-assoc-when-expr-denv-wfp
+    (implies (and (expr-denv-wfp denv)
+                  (omap::assoc key (expr-denv->exprs denv)))
+             (expr-value-wfp (cdr (omap::assoc key (expr-denv->exprs denv)))))
+    :enable (expr-denv-wfp
+             expr-value-wfp-of-cdr-of-assoc-when-string-expr-value-map-wfp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -502,16 +659,26 @@
     :enable (expr-value-wfp check-dims-of-expr-value))
 
   (defrule expr-value-wfp-of-expr-value-lambda
-    (expr-value-wfp (expr-value-lambda params body type?))
-    :enable (expr-value-wfp check-dims-of-expr-value))
+    (implies (expr-denv-wfp denv)
+             (expr-value-wfp (expr-value-lambda params body type? denv)))
+    :enable (expr-value-wfp
+             expr-denv-wfp-alt-def)
+    :expand (check-dims-of-expr-value
+             (expr-value-lambda params body type? denv)))
 
   (defrule expr-value-wfp-of-expr-value-tlambda
-    (expr-value-wfp (expr-value-tlambda params body))
-    :enable (expr-value-wfp check-dims-of-expr-value))
+    (implies (expr-denv-wfp denv)
+             (expr-value-wfp (expr-value-tlambda params body denv)))
+    :enable (expr-value-wfp
+             expr-denv-wfp-alt-def)
+    :expand (check-dims-of-expr-value (expr-value-tlambda params body denv)))
 
   (defrule expr-value-wfp-of-expr-value-ilambda
-    (expr-value-wfp (expr-value-ilambda params body))
-    :enable (expr-value-wfp check-dims-of-expr-value))
+    (implies (expr-denv-wfp denv)
+             (expr-value-wfp (expr-value-ilambda params body denv)))
+    :enable (expr-value-wfp
+             expr-denv-wfp-alt-def)
+    :expand (check-dims-of-expr-value (expr-value-ilambda params body denv)))
 
   (defrule expr-value-wfp-of-expr-value-box
     (equal (expr-value-wfp (expr-value-box ispaces array type))
@@ -830,91 +997,6 @@
                (expr-value-list-wfp cells))
       :fn cells-at-depth-in-expr-value-list)
     :mutual-recursion cells-at-depth-in-expr-values))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defomap string-expr-value-map
-  :short "Fixtype of maps from strings to expression values."
-  :key-type string
-  :val-type expr-value
-  :pred string-expr-value-mapp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod expr-denv
-  :short "Fixtype of expression dynamic environments."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This includes a type dynamic environment,
-     because expressions contain types;
-     and the type dynamic environment includes an ispace dynamic environment.
-     Additionally, we have a map from expression variables to expression values,
-     which are the expression variables in scope with the associated values."))
-  ((tenv type-denv)
-   (exprs string-expr-value-map))
-  :pred expr-denvp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult expr-denv-result
-  :short "Fixtype of expression dynamic environments and errors."
-  :ok expr-denv
-  :pred expr-denv-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define string-expr-value-map-wfp ((map string-expr-value-mapp))
-  :returns (yes/no booleanp)
-  :short "Check that all the expression values
-          in a string-to-expression-value map
-          are well-formed."
-  (or (omap::emptyp (string-expr-value-map-fix map))
-      (and (expr-value-wfp (omap::head-val map))
-           (string-expr-value-map-wfp (omap::tail map))))
-
-  ///
-
-  (defruled expr-value-wfp-of-cdr-of-assoc-when-string-expr-value-map-wfp
-    (implies (and (string-expr-value-mapp map)
-                  (string-expr-value-map-wfp map)
-                  (omap::assoc key map))
-             (expr-value-wfp (cdr (omap::assoc key map))))
-    :induct t
-    :enable omap::assoc)
-
-  (defruled string-expr-value-map-wfp-of-update
-    (implies (and (string-expr-value-mapp map)
-                  (string-expr-value-map-wfp map)
-                  (expr-value-wfp val))
-             (string-expr-value-map-wfp (omap::update key val map)))
-    :induct (string-expr-value-map-wfp map)
-    :expand ((string-expr-value-map-wfp (omap::update key val map)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define expr-denv-wfp ((denv expr-denvp))
-  :returns (yes/no booleanp)
-  :short "Check that the expression values in an expression dynamic environment
-          are well-formed."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is an initial notion of well-formedness,
-     concerning just the expression values bound to expression variables.
-     We may extend it, or fold it into a broader notion,
-     when we introduce well-formedness conditions
-     on the ispace and type variables as well."))
-  (string-expr-value-map-wfp (expr-denv->exprs denv))
-
-  ///
-
-  (defruled expr-value-wfp-of-cdr-of-assoc-when-expr-denv-wfp
-    (implies (and (expr-denv-wfp denv)
-                  (omap::assoc key (expr-denv->exprs denv)))
-             (expr-value-wfp (cdr (omap::assoc key (expr-denv->exprs denv)))))
-    :enable (expr-denv-wfp
-             expr-value-wfp-of-cdr-of-assoc-when-string-expr-value-map-wfp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
