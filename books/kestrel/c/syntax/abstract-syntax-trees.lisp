@@ -2495,7 +2495,7 @@
                    (info any)))
     (:abstract ((declor absdeclor)
                 (info any)))
-    (:none ())
+    (:none ((info any)))
     (:ambig ((declor amb-declor/absdeclor)))
     :pred param-declorp
     :layout :fulltree

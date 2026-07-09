@@ -5365,7 +5365,9 @@
        which is therefore popped.")
      (xdoc::p
       "For the function declarator with a parameter type list,
-       we handle the special case of a single @('void') [C17:6.7.6.3/10].")
+       we handle the special case of a single @('void') [C17:6.7.6.3/10].
+       In this case, we annotate the (@(':none')) parameter declarator
+       with the type @('void'), as explained in @(tsee abstract-syntax-annop).")
      (xdoc::p
       "A function declarator with a non-empty name list can only occur
        as the parameters of a function being defined [C17:6.7.6.3/3]
@@ -5500,14 +5502,18 @@
                                       (first dirdeclor.params))
                                      (list (decl-spec-typespec
                                             (type-spec-void))))
-                              (equal (param-declon->declor
-                                      (first dirdeclor.params))
-                                     (param-declor-none))
+                              (param-declor-case (param-declon->declor
+                                                  (first dirdeclor.params))
+                                                 :none)
                               (not (param-declon->attribs
                                     (first dirdeclor.params)))))
-                   (retok (list (change-param-declon
-                                 (first dirdeclor.params)
-                                 :info (make-type-option-vinfo :type? nil)))
+                   (retok (list (make-param-declon
+                                 :specs (list (decl-spec-typespec
+                                               (type-spec-void)))
+                                 :declor (param-declor-none
+                                          (type-vinfo (type-void)))
+                                 :attribs nil
+                                 :info (type-option-vinfo nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -5769,14 +5775,18 @@
                                       (first dirabsdeclor.params))
                                      (list (decl-spec-typespec
                                             (type-spec-void))))
-                              (equal (param-declon->declor
-                                      (first dirabsdeclor.params))
-                                     (param-declor-none))
+                              (param-declor-case (param-declon->declor
+                                                  (first dirabsdeclor.params))
+                                                 :none)
                               (not (param-declon->attribs
                                     (first dirabsdeclor.params)))))
-                   (retok (list (change-param-declon
-                                 (first dirabsdeclor.params)
-                                 :info (make-type-option-vinfo :type? nil)))
+                   (retok (list (make-param-declon
+                                 :specs (list (decl-spec-typespec
+                                               (type-spec-void)))
+                                 :declor (param-declor-none
+                                          (type-vinfo (type-void)))
+                                 :attribs nil
+                                 :info (type-option-vinfo nil)))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -6014,12 +6024,13 @@
                 nil
                 vstate))
        :none
-       (retok (param-declor-none)
-              (type-fix type)
-              nil
-              nil
-              nil
-              (vstate-fix vstate))
+       (b* ((info (type-vinfo type)))
+         (retok (param-declor-none info)
+                (type-fix type)
+                nil
+                nil
+                nil
+                (vstate-fix vstate)))
        :ambig
        (prog2$ (impossible) (retmsg$ ""))))
     :measure (acl2::two-nats-measure (param-declor-count paramdeclor) 0)
