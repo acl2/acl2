@@ -186,7 +186,13 @@
             if-of-nil
             if-same-branches
             if-of-t-and-nil-when-booleanp
+            if-nil-t ; introduces NOT
+            ;; if-x-x-y-when-booleanp ; todo: uncomment
             not-of-if
+            ;; try these:
+            ;; if-x-y-x
+            ;; if-of-not-same-arg2
+            ;; if-of-not-same-arg3
 
             fix-when-acl2-numberp
             = ; introduces EQUAL
