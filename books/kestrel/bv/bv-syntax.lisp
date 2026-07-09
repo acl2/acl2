@@ -177,7 +177,7 @@
 ;OPERATORS should be ':all or ':non-arithmetic
 ;maybe we should add the option to not trim logical ops?  but that's not as dangerous as trimming arithmetic ops...
 ;; not used much (yet)
-;; todo: rename to term-should-be-trimmedp
+;; todo: rename to term-should-be-trimmedp-aux
 (defund term-should-be-trimmed (width-term term operators)
   (declare (xargs :guard (and (pseudo-termp width-term)
                               (pseudo-termp term)
@@ -194,6 +194,18 @@
            (term-should-be-trimmed-helper width term operators))))
   ;; )
   )
+
+;; This wrapper has guard t, because guard violations when syntaxp functions are
+;; called seem to be masked.
+(defund term-should-be-trimmedp (width-term term operators)
+  (declare (xargs :guard t))
+  (if (and (pseudo-termp width-term)
+           (pseudo-termp term)
+           (member-eq operators '(:all :non-arithmetic)))
+      (term-should-be-trimmed width-term term operators)
+    ;; todo: this error doesn't fire
+    ;; (er hard? 'term-should-be-trimmedp "Bad inputs: ~x0 ~x1 ~x2."  width-term term operators)
+    (cw "ERROR: Bad input to term-should-be-trimmedp: ~x0 ~x1 ~x2.~%" width-term term operators)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

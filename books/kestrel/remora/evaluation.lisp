@@ -10,6 +10,7 @@
 
 (in-package "REMORA")
 
+(include-book "bound-and-free-variable-operations")
 (include-book "expression-values-and-environments")
 (include-book "primitives-evaluation")
 (include-book "nat-lists")
@@ -314,7 +315,12 @@
        and put the resulting type values together into a function type value.")
      (xdoc::p
       "Universal, product, and sum types evaluate to themselves.
-       They are treated like lambda abstractions."))
+       They are treated like lambda abstractions.
+       The resulting type values include dynamic environments
+       with the bindings for
+       the free ispace and type variables of these types,
+       obtained by restricting the current dynamic environment
+       to those variables."))
     (type-case
      type
      :var (type-denv-lookup-type type.var denv)
@@ -332,9 +338,24 @@
      :fun (b* (((ok in-tvals) (eval-type-list type.in denv))
                ((ok out-tval) (eval-type type.out denv)))
             (make-type-value-fun :in in-tvals :out out-tval))
-     :forall (make-type-value-forall :params type.params :body type.body)
-     :pi (make-type-value-pi :params type.params :body type.body)
-     :sigma (make-type-value-sigma :params type.params :body type.body))
+     :forall (make-type-value-forall
+              :params type.params
+              :body type.body
+              :denv (type-denv-restrict (type-free-ispace-vars type)
+                                        (type-free-type-vars type)
+                                        denv))
+     :pi (make-type-value-pi
+          :params type.params
+          :body type.body
+          :denv (type-denv-restrict (type-free-ispace-vars type)
+                                    (type-free-type-vars type)
+                                    denv))
+     :sigma (make-type-value-sigma
+             :params type.params
+             :body type.body
+             :denv (type-denv-restrict (type-free-ispace-vars type)
+                                       (type-free-type-vars type)
+                                       denv)))
     :measure (type-count type))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1596,6 +1617,7 @@
        the type argument values must match
        its parameters in number and kinds.
        We extend the dynamic environment
+       contained in the universal type value
        to associate the arguments with the parameters,
        and we evaluate the body of the universal type value,
        which yields the type value of the would-be results
@@ -1634,8 +1656,10 @@
         :forall
         (b* (((unless (type-values-match-type-vars-p tvals funval.elem.params))
               (reserr nil))
-             (denv (expr-denv-add-types funval.elem.params tvals denv))
-             ((ok tval) (eval-type funval.elem.body (expr-denv->tenv denv)))
+             (tenv (type-denv-add-types funval.elem.params
+                                        tvals
+                                        funval.elem.denv))
+             ((ok tval) (eval-type funval.elem.body tenv))
              ((mv elem body-dims)
               (type-value-case
                tval
@@ -1737,6 +1761,7 @@
        the ispace argument values must match
        its parameters in number and sorts.
        We extend the dynamic environment
+       contained in the product type value
        to associate the arguments with the parameters,
        and we evaluate the body of the product type value,
        which yields the type value of the would-be results
@@ -1776,8 +1801,10 @@
         (b* (((unless (ispace-values-match-ispace-vars-p ivals
                                                          funval.elem.params))
               (reserr nil))
-             (denv (expr-denv-add-ispaces funval.elem.params ivals denv))
-             ((ok tval) (eval-type funval.elem.body (expr-denv->tenv denv)))
+             (tenv (type-denv-add-ispaces funval.elem.params
+                                          ivals
+                                          funval.elem.denv))
+             ((ok tval) (eval-type funval.elem.body tenv))
              ((mv elem body-dims)
               (type-value-case
                tval
