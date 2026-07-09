@@ -1341,16 +1341,16 @@
                                  atom.type?
                                  :none nil
                                  :some (eval-type atom.type?.val
-                                                  (expr-denv->tenv denv))))
-                    (denv (expr-denv-restrict
-                           (expr-free-ispace-vars atom.body)
-                           (expr-free-type-vars atom.body)
-                           (atom-free-expr-vars atom)
-                           denv)))
-                 (make-expr-value-lambda :params params
-                                         :body atom.body
-                                         :type? type?
-                                         :denv denv))
+                                                  (expr-denv->tenv denv)))))
+                 (make-expr-value-lambda
+                  :params params
+                  :body atom.body
+                  :type? type?
+                  :denv (expr-denv-restrict
+                         (expr-free-ispace-vars atom.body)
+                         (expr-free-type-vars atom.body)
+                         (atom-free-expr-vars atom)
+                         denv)))
        :tlambda (make-expr-value-tlambda
                  :params atom.params
                  :body atom.body
