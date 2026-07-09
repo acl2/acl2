@@ -1,0 +1,20 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Grant Jurgensen (grant@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The books here define a method in the JSONRPC package that drives the C2C
+; struct-type-split transformation, so the certification world needs both the
+; JSONRPC package and the C packages (C, C$, C2C).
+
+(include-book "kestrel/jsonrpc/portcullis" :dir :system)
+(include-book "kestrel/c/transformation/portcullis" :dir :system)
+
+(in-package "C2C")
+
+; cert-flags: ? t :ttags :all

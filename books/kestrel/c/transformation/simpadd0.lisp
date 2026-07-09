@@ -344,14 +344,16 @@
              (simpadd0-expr expr.arg gin))
             (gin (gin-update gin gout-arg)))
          (mv (make-expr-member :arg new-arg
-                               :name expr.name)
+                               :name expr.name
+                               :info expr.info)
              (gout-no-thm gin)))
        :memberp
        (b* (((mv new-arg (gout gout-arg))
              (simpadd0-expr expr.arg gin))
             (gin (gin-update gin gout-arg)))
          (mv (make-expr-memberp :arg new-arg
-                                :name expr.name)
+                                :name expr.name
+                                :info expr.info)
              (gout-no-thm gin)))
        :complit
        (b* (((mv new-type (gout gout-type))
@@ -1400,7 +1402,9 @@
        :abstract (b* (((mv new-absdeclor (gout gout-absdeclor))
                        (simpadd0-absdeclor paramdeclor.declor gin))
                       (gin (gin-update gin gout-absdeclor)))
-                   (mv (param-declor-abstract new-absdeclor)
+                   (mv (make-param-declor-abstract
+                        :declor new-absdeclor
+                        :info paramdeclor.info)
                        (gout-no-thm gin)))
        :none (mv (param-declor-none) (gout-no-thm gin))
        :ambig (prog2$ (impossible) (mv (irr-param-declor) (irr-gout)))))
@@ -1525,7 +1529,8 @@
           (simpadd0-const-expr-option structdeclor.expr? gin))
          (gin (gin-update gin gout-expr?)))
       (mv (make-struct-declor :declor? new-declor?
-                              :expr? new-expr?)
+                              :expr? new-expr?
+                              :info structdeclor.info)
           (gout-no-thm gin)))
     :measure (struct-declor-count structdeclor))
 

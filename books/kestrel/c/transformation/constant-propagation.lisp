@@ -1474,7 +1474,10 @@
                            env))
         :abstract (b* (((mv unwrap env)
                         (const-prop-absdeclor paramdeclor.declor env)))
-                    (mv (param-declor-abstract unwrap) env))
+                    (mv (make-param-declor-abstract
+                         :declor unwrap
+                         :info paramdeclor.info)
+                        env))
         :none (mv (param-declor-none) env)
         :ambig (prog2$ (raise "Misusage error: ~x0."
                               (param-declor-fix paramdeclor))
@@ -1576,7 +1579,8 @@
           (const-prop-const-expr-option structdeclor.expr? env)))
       (mv (make-struct-declor
             :declor? declor?
-            :expr? expr?)
+            :expr? expr?
+            :info structdeclor.info)
           env))
     :measure (struct-declor-count structdeclor))
 

@@ -2,12 +2,16 @@ Set-theoretic Foundations for ACL2(zfc): The ZFC Theory of an ACL2 Session
 Copyright (C) 2025, Matt Kaufmann
 License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-This note sketches the logical foundation for our integration of ZFG
-(Zermelo Fraenkel set theory with global choice) with ACL2, which we
-may call ACL2(zfc).  We assume familiarity with ACL2 and ZF as well as
-the basics of the file base.lisp in this directory.  Note: It is
-well-known that ZFG is conservative over ZFC (Zermelo Fraenkel set
-theory with local choice) and hence over ZF.  We assume that ZF is
+This note assumes familiarity with ACL2, ZFC, the documentation topics
+zfc and zfc-model, and the basics of the file base.lisp in this
+directory.  It sketches the logical foundation for the logic view of
+ACL2(zfc).
+
+Below, "ZFG" refers to any appropriate formalization of ZF plus a
+global choice axiom.  It is well known (Ulrich Felgner, "Comparison of
+the axioms of local and universal choice", Fundamenta Mathematicae
+(1971) Volume 71, Issue 1, pages 43-62) that ZFG is conservative over
+ZFC, which is relatively consistent with ZF.  We assume that ZF is
 consistent.
 
 It may seem that no such foundation is necessary; after all, the
@@ -35,8 +39,9 @@ an encapsulate in base.lisp with a local witness of nil!  So how is it
 that the theorem in-union2 means anything non-trivial?
 
 This note outlines how we can view (zfc) as being true in a suitable
-setting.  More generally, this note outlines how we can interpret
-defthmz as being simply defthm in that setting.
+setting, which is called the "logic view" in :DOC zfc.  More
+generally, this note outlines how we can interpret defthmz as being
+simply defthm in the logic view.
 
 We introduce the following notions before presenting the key theorems.
 

@@ -1607,9 +1607,7 @@ ACL2 !>>(F9-LOGIC 7/2)
 #d-10.5
 ACL2 !>>(SET-GUARD-CHECKING :NONE)
 
-Turning off guard checking entirely.  To allow execution in raw Lisp
-for functions with guards other than T, while continuing to mask guard
-violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+Turning off guard checking entirely.
 
 ACL2 >>(F7 7/2)
 (#d-3.5 #d-3.5 #d-3.5)

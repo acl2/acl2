@@ -399,8 +399,9 @@
             :some (make-struct-declor
                     :declor? (absdeclor-option-to-declor declor?
                                                          member.name?.val)
-                    :expr? nil)
-            :none (make-struct-declor :declor? nil :expr? nil))))
+                    :expr? nil
+                    :info nil)
+            :none (make-struct-declor :declor? nil :expr? nil :info nil))))
       (retok
        (make-struct-declon-member :extension nil
                                   :specquals specquals
@@ -451,7 +452,9 @@
           (type-to-spec/qual+declor (car types) ienv))
          (param-declor
           (if (absdeclor-option-case declor? :some)
-              (param-declor-abstract (absdeclor-option-some->val declor?))
+              (make-param-declor-abstract
+               :declor (absdeclor-option-some->val declor?)
+               :info nil)
             (param-declor-none)))
          (declon (make-param-declon
                    :specs (spec/qual-list-to-decl-spec-list specquals)
