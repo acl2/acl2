@@ -258,3 +258,40 @@
 ;; Dimension arithmetic and shape aliases in ispace bindings round-trip.
 (test-roundtrip "(let ((ispace $d (+ 5 (- 3)))) 0)")
 (test-roundtrip "(let ((ispace @s [2 3])) 0)")
+
+;; ---- Arrow types: single argument type without parentheses ----
+
+;; (-> T R) abbreviates (-> (T) R): both abstract to the same :fun AST
+;; with a singleton input list.
+(test-parse "(array [0] (-> Int Bool))"
+            (make-prog
+             :expr (make-expr-array-empty
+                    :dims '(0)
+                    :type (make-type-fun
+                           :in (list (make-type-base :type (base-type-int)))
+                           :out (make-type-base :type (base-type-bool))))))
+
+;; A single argument type that itself starts with "(" backtracks out of
+;; the parenthesized-list alternative and parses as one type.
+(test-roundtrip "(array [0] (-> (A Int 3) Int))")
+(test-roundtrip "(array [0] (-> (-> Int Int) Int))")
+(test-roundtrip "(array [0] (-> [Int 3] Int))")
+
+;; ---- Combined application (@) with no value arguments ----
+
+;; The value arguments of the @ sugar may be absent entirely, leaving
+;; just the instantiation: (@iota/static _ ([5])) means
+;; (i-app iota/static [5]).  The :capp AST records an empty args list.
+(test-parse "(@iota/static _ ([5]))"
+            (make-prog
+             :expr (make-expr-capp
+                    :fun (make-expr-var :name "iota/static")
+                    :targs (type-list-option-none)
+                    :iargs (make-ispace-list-option-some
+                            :val (list (make-ispace-shape
+                                        :shape (make-shape-splice
+                                                :ispaces (list
+                                                          (make-ispace-dim
+                                                           :dim (make-dim-const
+                                                                 :val 5)))))))
+                    :args nil)))
