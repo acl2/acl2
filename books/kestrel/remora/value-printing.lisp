@@ -14,11 +14,6 @@
 (include-book "values-to-abstract-syntax")
 (include-book "printer")
 
-(include-book "std/strings/dec-digit-char-listp" :dir :system)
-
-(local (include-book "std/omaps/top" :dir :system))
-(local (include-book "arithmetic-3/top" :dir :system))
-
 ; cert_param: (non-acl2r)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
