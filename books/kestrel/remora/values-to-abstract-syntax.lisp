@@ -70,13 +70,13 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define type-value-to-type ((tval type-valuep))
+    :returns (type typep)
     :parents (values-to-abstract-syntax type-values-to-types)
     :short "Convert a type value to a type."
     :long
     (xdoc::topstring
      (xdoc::p
       "This needs to be extended to handle closures."))
-    :returns (type typep)
     (type-value-case
      tval
      :base (type-base tval.type)
