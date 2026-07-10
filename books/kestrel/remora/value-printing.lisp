@@ -24,7 +24,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ value-printing
-  :parents (remora)
+  :parents (parsing-and-printing)
   :short "Printing of expression values in Remora concrete syntax."
   :long
   (xdoc::topstring
