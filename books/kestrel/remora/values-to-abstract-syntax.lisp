@@ -25,7 +25,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ values-to-abstract-syntax
-  :parents (dynamic semantics)
+  :parents (dynamic-semantics)
   :short "Mapping of values to ASTs."
   :long
   (xdoc::topstring
@@ -70,7 +70,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define type-value-to-type ((tval type-valuep))
-    :parents (values-to-abstract-syntax type-value-to-type)
+    :parents (values-to-abstract-syntax type-values-to-types)
     :short "Convert a type value to a type."
     :long
     (xdoc::topstring
@@ -94,7 +94,7 @@
 
   (define type-value-list-to-type-list ((tvals type-value-listp))
     :returns (types type-listp)
-    :parents (values-to-abstract-syntax type-value-to-type)
+    :parents (values-to-abstract-syntax type-values-to-types)
     :short "Convert a list of type values to a list of types."
     (if (endp tvals)
         nil
@@ -315,7 +315,7 @@
 
   (define expr-value-to-expr ((val expr-valuep))
     :returns (mv (err booleanp) (expr exprp))
-    :parents (values-to-abstract-syntax expr-value-to-expr)
+    :parents (values-to-abstract-syntax expr-values-to-exprs)
     :short "Convert an expression value to an expression."
     :long
     (xdoc::topstring
@@ -353,7 +353,7 @@
 
   (define expr-value-list-to-exprs ((vals expr-value-listp))
     :returns (mv (err booleanp) (exprs expr-listp))
-    :parents (values-to-abstract-syntax expr-value-to-expr)
+    :parents (values-to-abstract-syntax expr-values-to-exprs)
     :short "Convert a list of expression values to a list of expressions."
     (b* (((when (endp vals)) (mv nil nil))
          ((mv err expr) (expr-value-to-expr (car vals)))
