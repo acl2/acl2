@@ -194,11 +194,11 @@
                           (int-atom '(#\2 #\0))
                           (int-atom '(#\3 #\0)))))
 
-;; Zero atoms with a 0 shape and *no* element type: this is the non-empty
-;; `array' form with an empty atom list (distinct from :array-empty, which
-;; carries a type).  Non-emptiness is a separate semantic check.
-(test-parse "(array [0])"
-            (make-expr-array :dims '(0) :atoms nil))
+;; Zero atoms with *no* element type is rejected: the non-empty `array'
+;; form requires at least one atom (1*( ws atom )), and the empty form
+;; requires a type.  The Haskell implementation rejects this identically.
+(assert-event
+ (reserrp (parse-top-exp-from-string "(array [0])")))
 
 ;; ---- Empty frames: (frame <shape> <element-type>) -> :frame-empty ----
 
@@ -290,6 +290,77 @@
                                                     :dim (make-dim-const
                                                           :val 5)))))))
              :args nil))
+
+;; ---- Minimum arities ----
+;;
+;; The parameter/argument lists of these forms must be non-empty,
+;; matching the Haskell implementation (which rejects every input
+;; below); the exceptions, tested positively at the end, are the
+;; @ sugar's value arguments (tested in the @ section below), the
+;; parenthesized argument list of an arrow type, and the parameters
+;; of fun/t-fun/i-fun let bindings.
+
+(assert-event
+ (reserrp (parse-top-exp-from-string "(let ((val f (fn () 3))) 0)")))
+(assert-event
+ (reserrp (parse-top-exp-from-string "(let ((val f (t-fn () 3))) 0)")))
+(assert-event
+ (reserrp (parse-top-exp-from-string "(let ((val f (i-fn () 3))) 0)")))
+(assert-event
+ (reserrp (parse-top-exp-from-string "(let () 3)")))
+(assert-event
+ (reserrp (parse-top-exp-from-string "(let ((val b (box () 3 Int))) 0)")))
+(assert-event
+ (reserrp (parse-top-exp-from-string "(array [2])")))
+(assert-event
+ (reserrp (parse-top-exp-from-string "(frame [2])")))
+(assert-event
+ (reserrp (parse-top-exp-from-string "(f)")))
+(assert-event
+ (reserrp (parse-top-exp-from-string "(t-app f)")))
+(assert-event
+ (reserrp (parse-top-exp-from-string "(i-app f)")))
+(assert-event
+ (reserrp (parse-top-exp-from-string "(array [0] (Forall () Int))")))
+(assert-event
+ (reserrp (parse-top-exp-from-string "(array [0] (Pi () Int))")))
+(assert-event
+ (reserrp (parse-top-exp-from-string "(array [0] (Sigma () Int))")))
+
+;; A zero-argument arrow type IS legal (the implementation's arrow
+;; parser uses a possibly-empty parenthesized list).
+(test-roundtrip "(array [0] (-> () Int))")
+
+;; Zero-parameter fun/t-fun/i-fun let bindings are also legal
+;; (their signatures use possibly-empty parameter lists).
+(test-roundtrip "(let ((fun (f) 3)) 0)")
+(test-roundtrip "(let ((t-fun (f () : Int) 3)) 0)")
+(test-roundtrip "(let ((i-fun (f () : Int) 3)) 0)")
+
+;; ---- Unbox expressions ----
+
+;; A single-witness unbox round-trips.
+(test-roundtrip
+ "(unbox ($d xs (box (3) [1 2 3] (Sigma ($n) [Int $n]))) 0)")
+
+;; Multiple witnesses are allowed.
+(test-roundtrip
+ "(unbox ($m $n xs (box (2 3) [1 2 3] (Sigma ($a $b) [Int $b]))) 0)")
+
+;; A zero-witness unbox is rejected: the grammar requires at least one
+;; ispace-var (1*( ispace-var ws ) in unbox-spec), as does the Haskell
+;; implementation.
+(assert-event
+ (reserrp (parse-top-exp-from-string
+           "(unbox (x (box (3) [1 2 3] (Sigma ($n) [Int $n]))) 0)")))
+
+;; A value binder that is ispace-var-shaped (an identifier starting
+;; with "$") is consumed by the greedy ispace-var repetition, so the
+;; parse fails; the Haskell implementation rejects this identically.
+;; See side condition [SC4] in grammar.abnf.
+(assert-event
+ (reserrp (parse-top-exp-from-string
+           "(unbox ($d $x (box (3) [1 2 3] (Sigma ($n) [Int $n]))) 0)")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -1254,6 +1254,9 @@
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((mv trees-tps input) (parse-repetition-*-ws-type-var input))
+         ((unless (consp trees-tps))
+          (mv (reserrf (list :forall-type-requires-a-type-var))
+              (nat-list-fix input)))
          ((pok tree-ws2) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
          ((pok tree-ws3) (parse-ws input))
@@ -1277,6 +1280,9 @@
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((mv trees-eps input) (parse-repetition-*-ws-ispace-var input))
+         ((unless (consp trees-eps))
+          (mv (reserrf (list :pi-type-requires-an-ispace-var))
+              (nat-list-fix input)))
          ((pok tree-ws2) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
          ((pok tree-ws3) (parse-ws input))
@@ -1300,6 +1306,9 @@
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((mv trees-eps input) (parse-repetition-*-ws-ispace-var input))
+         ((unless (consp trees-eps))
+          (mv (reserrf (list :sigma-type-requires-an-ispace-var))
+              (nat-list-fix input)))
          ((pok tree-ws2) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
          ((pok tree-ws3) (parse-ws input))
@@ -1597,7 +1606,10 @@
     :returns (mv (tree abnf::tree-resultp) (rest-input nat-listp))
     :short "Parse an @('app-exp')."
     (b* (((pok< tree-e) (parse-exp input))
-         ((pok trees-more) (parse-*-ws-exp input)))
+         ((pok trees-more) (parse-*-ws-exp input))
+         ((unless (consp trees-more))
+          (mv (reserrf (list :app-exp-requires-an-argument))
+              (nat-list-fix input))))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "app-exp")
            :branches (list (list tree-e) trees-more))
           input))
@@ -1613,7 +1625,7 @@
        prefix.  We first try the empty-array alternative @('ws type'),
        which gives the element type explicitly (since there are no atoms
        to carry it); if the @('type') does not parse, we fall back to
-       the @('*( ws atom )') alternative.  The two produce CSTs with
+       the @('1*( ws atom )') alternative.  The two produce CSTs with
        distinct branch counts (5 vs. 4), which the abstractor dispatches
        on."))
     (b* (((pok< tree-kw) (abnf::parse-schars "array" input))
@@ -1634,9 +1646,12 @@
                                (list tree-ws2)
                                (list tree-te)))
               input-b))
-         ;; Alternative 1 (non-empty): *( ws atom )
+         ;; Alternative 1 (non-empty): 1*( ws atom )
          ;; (pok shadows `input` with the remaining input after the atoms)
-         ((pok trees-more) (parse-*-ws-atom input-after-prefix)))
+         ((pok trees-more) (parse-*-ws-atom input-after-prefix))
+         ((unless (consp trees-more))
+          (mv (reserrf (list :array-exp-requires-an-atom))
+              (nat-list-fix input))))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "array-exp")
            :branches (list (list tree-kw)
                            (list tree-ws1)
@@ -1654,7 +1669,7 @@
       "Like @(tsee parse-array-exp), there are two alternatives sharing the
        @('frame ws shape-lit') prefix.  We first try the empty-frame
        alternative @('ws type'); if @('type') does not parse, we
-       fall back to @('*( ws exp )').  The CSTs have distinct branch counts
+       fall back to @('1*( ws exp )').  The CSTs have distinct branch counts
        (5 vs. 4)."))
     (b* (((pok< tree-kw) (abnf::parse-schars "frame" input))
          ((pok tree-ws1) (parse-ws input))
@@ -1674,9 +1689,12 @@
                                (list tree-ws2)
                                (list tree-te)))
               input-b))
-         ;; Alternative 1 (non-empty): *( ws exp )
+         ;; Alternative 1 (non-empty): 1*( ws exp )
          ;; (pok shadows `input` with the remaining input after the exprs)
-         ((pok trees-more) (parse-*-ws-exp input-after-prefix)))
+         ((pok trees-more) (parse-*-ws-exp input-after-prefix))
+         ((unless (consp trees-more))
+          (mv (reserrf (list :frame-exp-requires-an-exp))
+              (nat-list-fix input))))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "frame-exp")
            :branches (list (list tree-kw)
                            (list tree-ws1)
@@ -1691,7 +1709,10 @@
     (b* (((pok< tree-kw) (abnf::parse-schars "t-app" input))
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-e) (parse-exp input))
-         ((mv trees-tes input) (parse-repetition-*-ws-type input)))
+         ((mv trees-tes input) (parse-repetition-*-ws-type input))
+         ((unless (consp trees-tes))
+          (mv (reserrf (list :tapp-exp-requires-a-type-argument))
+              (nat-list-fix input))))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "tapp-exp")
            :branches (list (list tree-kw)
                            (list tree-ws1)
@@ -1706,7 +1727,10 @@
     (b* (((pok< tree-kw) (abnf::parse-schars "i-app" input))
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-e) (parse-exp input))
-         ((mv trees-exts input) (parse-repetition-*-ws-ispace input)))
+         ((mv trees-exts input) (parse-repetition-*-ws-ispace input))
+         ((unless (consp trees-exts))
+          (mv (reserrf (list :iapp-exp-requires-an-ispace-argument))
+              (nat-list-fix input))))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "iapp-exp")
            :branches (list (list tree-kw)
                            (list tree-ws1)
@@ -1741,17 +1765,21 @@
           input))
     :measure (two-nats-measure (len input) 20))
 
-  ;; [SC4] The Haskell parser guards each ispace-var (which it calls
-  ;; extent-param) with notFollowedBy ")".  Our parser uses
-  ;; greedy *( ispace-var ws ) without lookahead, which produces the
-  ;; same result for well-formed input.
+  ;; [SC4] The ispace-var repetition is matched greedily, without
+  ;; backtracking, so a value binder that is ispace-var-shaped (an
+  ;; identifier starting with "$") is consumed by the repetition and
+  ;; the parse fails.  The Haskell parser (someNE pISpaceParam followed
+  ;; by lId) behaves identically.  See grammar.abnf for details.
   ;;
-  ;; unbox-spec = *( ispace-var ws ) identifier ws exp
+  ;; unbox-spec = 1*( ispace-var ws ) identifier ws exp
   (define parse-unbox-spec ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp) (rest-input nat-listp))
     :short "Parse an @('unbox-spec')."
     (b* ((orig-input input)
          ((pok trees-eps) (parse-*-ispace-var-ws input))
+         ((unless (consp trees-eps))
+          (mv (reserrf (list :unbox-spec-requires-an-ispace-var))
+              (nat-list-fix orig-input)))
          ((pok< tree-id) (parse-identifier input))
          ((pok tree-ws) (parse-ws input))
          ((unless (mbt (< (len input) (len orig-input))))
@@ -1775,6 +1803,9 @@
          ((unless (mbt (< (len input) (len orig-input))))
           (mv (reserrf :impossible) (nat-list-fix orig-input)))
          ((pok trees-binds) (parse-*-ws-bind input))
+         ((unless (consp trees-binds))
+          (mv (reserrf (list :let-exp-requires-a-bind))
+              (nat-list-fix input)))
          ((pok tree-ws2) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
          ((pok tree-ws3) (parse-ws input))
@@ -1857,6 +1888,9 @@
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((mv trees-pats input) (parse-repetition-*-ws-pat input))
+         ((unless (consp trees-pats))
+          (mv (reserrf (list :lambda-requires-a-pat))
+              (nat-list-fix input)))
          ((pok tree-ws2) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
          ((pok tree-ws3) (parse-ws input))
@@ -1880,6 +1914,9 @@
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((mv trees-tps input) (parse-repetition-*-ws-type-var input))
+         ((unless (consp trees-tps))
+          (mv (reserrf (list :type-lambda-requires-a-type-var))
+              (nat-list-fix input)))
          ((pok tree-ws2) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
          ((pok tree-ws3) (parse-ws input))
@@ -1903,6 +1940,9 @@
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((mv trees-eps input) (parse-repetition-*-ws-ispace-var input))
+         ((unless (consp trees-eps))
+          (mv (reserrf (list :ispace-lambda-requires-an-ispace-var))
+              (nat-list-fix input)))
          ((pok tree-ws2) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
          ((pok tree-ws3) (parse-ws input))
@@ -1926,6 +1966,9 @@
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((mv trees-exts input) (parse-repetition-*-ws-ispace input))
+         ((unless (consp trees-exts))
+          (mv (reserrf (list :box-expr-requires-an-ispace))
+              (nat-list-fix input)))
          ((pok tree-ws2) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
          ((pok tree-ws3) (parse-ws input))

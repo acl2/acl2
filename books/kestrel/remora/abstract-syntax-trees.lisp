@@ -430,7 +430,11 @@
        function types (with zero or more input types and an output type),
        universal types (quantified over kinded variables),
        product types (quantified over ispace parameters),
-       and sum types (quantified over ispace parameters)."))
+       and sum types (quantified over ispace parameters).")
+     (xdoc::p
+      "The concrete syntax requires the parameter lists of
+       @(':forall'), @(':pi'), and @(':sigma') to be non-empty;
+       this is not captured in this fixtype."))
     (:var ((var type-var)))
     (:base ((type base-type)))
     (:array ((elem type)
@@ -797,14 +801,18 @@
        bracketed expressions,
        and @('let') expressions.
        An unboxing expression
-       binds zero or more variables to ispaces,
+       binds one or more variables to ispaces,
        binds a variable to the boxed expression,
        and returns the body expression;
        it is optionally annotated by its type
        (the type of the whole unboxing expression).")
      (xdoc::p
-      "The non-emptiness of the atom list in @(':array')
-       and of the expression list in @(':frame')
+      "The non-emptiness of the atom list in @(':array'),
+       of the expression list in @(':frame'),
+       of the argument lists of @(':app'), @(':tapp'), and @(':iapp')
+       (but not of @(':capp'), whose value arguments may be absent),
+       of the bind list in @(':let'),
+       and of the ispace-var list in @(':unbox')
        is not captured in this fixtype.
        The FTY @(':require') feature does not seem to work here,
        perhaps because of the interaction with the mutually recursive fixtypes.
@@ -879,6 +887,10 @@
        we could enforce this syntactically,
        but we follow [arxiv], [thesis], and [impl],
        which all use a generic type.")
+     (xdoc::p
+      "The concrete syntax requires the parameter lists of the three
+       lambda summands and the ispace list of @(':box') to be non-empty;
+       this is not captured in this fixtype.")
      (xdoc::p
       "The optional type of the body of a lambda abstraction
        is calculated and stored by the type checker.
