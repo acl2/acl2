@@ -275,7 +275,7 @@
 
 (define primop-name-lookup ((pval primop-valuep) (map string-expr-value-mapp))
   :returns (mv (err booleanp) (name stringp))
-  :short "Find the name associated to a primop value in a map."
+  :short "Find the name associated to a primitive operation value in a map."
   (b* (((when (omap::emptyp (string-expr-value-map-fix map))) (mv t ""))
        ((mv key val) (omap::head map))
        ((when (equal val (expr-value-primop pval))) (mv nil (str-fix key))))
@@ -285,13 +285,76 @@
 
 (define primop-value-name ((pval primop-valuep))
   :returns (mv (err booleanp) (name stringp))
-  :short "Name of the variable that denotes a primop value."
+  :short "Name of the variable that denotes a primitive operation value."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This needs to be generalized to handle
-     all the instantiations stages of primitive values."))
-  (primop-name-lookup pval (primop-values)))
+    "For an instantiated stage of a polymorphic primitive operation,
+     this is the name of the variable that denotes
+     the uninstantiated operation."))
+  (primop-name-lookup (primop-value-uninstantiated pval) (primop-values)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primop-value-to-expr ((pval primop-valuep))
+  :returns (mv (err booleanp) (expr exprp))
+  :short "Convert a primitive operation value to an expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An uninstantiated primitive operation value,
+     which includes every monomorphic primitive operation,
+     becomes the variable that denotes the operation.
+     A partially instantiated primitive operation value becomes
+     a type application of that variable
+     to the type converted from the type value in the stage.
+     A totally instantiated primitive operation value becomes
+     an ispace application of that type application
+     to the dimension and the shape in the stage.
+     As we add more polymorphic primitive operations,
+     we will need to generalize this."))
+  (b* (((mv err name) (primop-value-name pval))
+       (opvar (expr-var name))
+       ((when err) (mv t opvar)))
+    (primop-value-case
+     pval
+     :head-t (mv nil
+                 (make-expr-tapp
+                  :fun opvar
+                  :args (list (type-value-to-type pval.tval))))
+     :head-t-d-s (mv nil
+                     (make-expr-iapp
+                      :fun (make-expr-tapp
+                            :fun opvar
+                            :args (list (type-value-to-type pval.tval)))
+                      :args (list (ispace-dim (dim-const pval.d))
+                                  (ispace-shape
+                                   (shape-dims (dim-const-list pval.s))))))
+     :tail-t (mv nil
+                 (make-expr-tapp
+                  :fun opvar
+                  :args (list (type-value-to-type pval.tval))))
+     :tail-t-d-s (mv nil
+                     (make-expr-iapp
+                      :fun (make-expr-tapp
+                            :fun opvar
+                            :args (list (type-value-to-type pval.tval)))
+                      :args (list (ispace-dim (dim-const pval.d))
+                                  (ispace-shape
+                                   (shape-dims (dim-const-list pval.s))))))
+     :length-t (mv nil
+                   (make-expr-tapp
+                    :fun opvar
+                    :args (list (type-value-to-type pval.tval))))
+     :length-t-d-s (mv nil
+                       (make-expr-iapp
+                        :fun (make-expr-tapp
+                              :fun opvar
+                              :args (list (type-value-to-type pval.tval)))
+                        :args (list (ispace-dim (dim-const pval.d))
+                                    (ispace-shape
+                                     (shape-dims (dim-const-list pval.s))))))
+     :otherwise (mv nil opvar))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -301,8 +364,10 @@
   (xdoc::topstring
    (xdoc::p
     "Base values become literal atoms;
-     primop values become the variables that denote them
-     (this needs to be generalized/extended);
+     primitive operation values become the variables that denote the operations,
+     wrapped in type and ispace applications
+     if the operations are partially or totally instantiated
+     (see @(tsee primop-value-to-expr));
      lambda values become lambda abstraction atoms
      (with the parameter and result type values converted to types);
      boxes become box atoms;
@@ -325,8 +390,7 @@
      val
      :base (b* (((mv err blit) (base-value-to-base-lit val.val)))
              (mv err (expr-atom (atom-base blit))))
-     :primop (b* (((mv err name) (primop-value-name val.val)))
-               (mv err (expr-var name)))
+     :primop (primop-value-to-expr val.val)
      :lambda (mv nil
                  (expr-atom
                   (make-atom-lambda
