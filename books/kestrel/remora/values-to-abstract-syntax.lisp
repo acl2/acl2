@@ -12,6 +12,7 @@
 (in-package "REMORA")
 
 (include-book "expression-values-and-environments")
+(include-book "variable-substitution-alpha-operations")
 
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "std/basic/fix" :dir :system))
@@ -62,6 +63,55 @@
   :short "Lift @(tsee ispace-value-to-ispace) to lists."
   (ispace-value-to-ispace x))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ispace-var-ispace-value-map-to-substs ((map
+                                                ispace-var-ispace-value-mapp))
+  :returns (mv (dim-subst string-dim-mapp)
+               (shape-subst string-shape-mapp))
+  :short "Convert (i) a map from ispace variables to ispace values
+          to (ii) dimension and shape substitutions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The entries that associate dimension values to dimension variables
+     yield the dimension substitution,
+     and the entries that associate shape values to shape variables
+     yield the shape substitution;
+     the variables are turned into their names,
+     and the values are converted to dimension and shape ASTs.
+     Entries with mismatched sorts should never occur,
+     but currently we do not have that invariant available."))
+  (b* (((when (omap::emptyp (ispace-var-ispace-value-map-fix map)))
+        (mv nil nil))
+       ((mv key val) (omap::head map))
+       ((mv dim-subst shape-subst)
+        (ispace-var-ispace-value-map-to-substs (omap::tail map))))
+    (ispace-var-case
+     key
+     :dim (ispace-value-case
+           val
+           :dim (mv (omap::update key.name (dim-const val.val) dim-subst)
+                    shape-subst)
+           :shape (prog2$
+                   (raise "Internal error: ~
+                           ~x0 and ~x1 have different sorts."
+                          key val)
+                   (mv nil nil)))
+     :shape (ispace-value-case
+             val
+             :dim (prog2$
+                   (raise "Internal error: ~
+                                 ~x0 and ~x1 have different sorts."
+                          key val)
+                   (mv nil nil))
+             :shape (mv dim-subst
+                        (omap::update key.name
+                                      (shape-dims (dim-const-list val.val))
+                                      shape-subst)))))
+  :no-function nil
+  :verify-guards :after-returns)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines type-values-to-types
@@ -76,7 +126,11 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This needs to be extended to handle closures."))
+      "Universal, product, and sum type values are closures:
+       we substitute the bindings of the captured dynamic environment
+       into the body (see @(tsee type-subst-type-denv)),
+       and we rebuild the (universal, product, or sum) type
+       with the parameters and the resulting body."))
     (type-value-case
      tval
      :base (type-base tval.type)
@@ -85,9 +139,15 @@
              :ispace (ispace-shape (shape-dims (dim-const-list tval.dims))))
      :fun (make-type-fun :in (type-value-list-to-type-list tval.in)
                          :out (type-value-to-type tval.out))
-     :forall (make-type-forall :params tval.params :body tval.body)
-     :pi (make-type-pi :params tval.params :body tval.body)
-     :sigma (make-type-sigma :params tval.params :body tval.body))
+     :forall (make-type-forall
+              :params tval.params
+              :body (type-subst-type-denv tval.body tval.denv))
+     :pi (make-type-pi
+          :params tval.params
+          :body (type-subst-type-denv tval.body tval.denv))
+     :sigma (make-type-sigma
+             :params tval.params
+             :body (type-subst-type-denv tval.body tval.denv)))
     :measure (type-value-count tval))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -101,6 +161,65 @@
       (cons (type-value-to-type (car tvals))
             (type-value-list-to-type-list (cdr tvals))))
     :measure (type-value-list-count tvals))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define type-var-type-value-map-to-substs ((map type-var-type-value-mapp))
+    :returns (mv (atom-subst string-type-mapp)
+                 (array-subst string-type-mapp))
+    :parents (values-to-abstract-syntax type-values-to-types)
+    :short "Convert (i) a map from type variables to type values
+            to (ii) atom and array type substitutions."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The entries for atom-kinded type variables
+       yield the first substitution,
+       and the entries for array-kinded type variables
+       yield the second substitution;
+       the variables are mapped to their names,
+       and the type values are converted to types.")
+     (xdoc::p
+      "This is mutually recursive with @(tsee type-value-to-type)
+       because it has to turn the type values in the environment to types,
+       and those may recursively be closures."))
+    (b* (((when (omap::emptyp (type-var-type-value-map-fix map))) (mv nil nil))
+         ((mv key val) (omap::head map))
+         ((mv atom-subst array-subst)
+          (type-var-type-value-map-to-substs (omap::tail map)))
+         (type (type-value-to-type val)))
+      (type-var-case key
+                     :atom (mv (omap::update key.name type atom-subst)
+                               array-subst)
+                     :array (mv atom-subst
+                                (omap::update key.name type array-subst))))
+    :measure (type-var-type-value-map-count map))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define type-subst-type-denv ((type typep) (denv type-denvp))
+    :returns (new-type typep)
+    :parents (values-to-abstract-syntax type-values-to-types)
+    :short "Substitute the bindings of a type dynamic environment in a type."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The ispace bindings are substituted as dimensions and shapes,
+       and the type bindings are substituted as types
+       converted from the type values.
+       This is used to convert type value closures to types:
+       since the environment of a closure has bindings for
+       the free variables of the closure's body,
+       the resulting type has no free variables
+       other than the closure's parameters."))
+    (b* (((mv dim-subst shape-subst)
+          (ispace-var-ispace-value-map-to-substs
+           (ispace-denv->ispaces (type-denv->ienv denv))))
+         ((mv atom-subst array-subst)
+          (type-var-type-value-map-to-substs (type-denv->types denv)))
+         (type (type-subst-ispace-vars-alpha type dim-subst shape-subst)))
+      (type-subst-type-vars-alpha type atom-subst array-subst))
+    :measure (type-denv-count denv))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
