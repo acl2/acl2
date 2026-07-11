@@ -1,7 +1,7 @@
 ; A utility to check whether all values in a list are less than a given value
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -122,7 +122,15 @@
            (< (nth n l) bound))
   :hints (("Goal" :in-theory (enable all-< nth))))
 
+;; improve?
 (defthmd all-<-when-all-<-of-take-and-all-<-of-nthcdr
   (implies (and (all-< (take n x) bound)
                 (all-< (nthcdr n x) bound))
            (all-< x bound)))
+
+(defthm all-<-of-take-when-all-<-of-take
+  (implies (and (all-< (take num2 l) n) ; num2 is a free var
+                (<= num num2)
+                ;; (integerp num)
+                (integerp num2))
+           (all-< (take num l) n)))
