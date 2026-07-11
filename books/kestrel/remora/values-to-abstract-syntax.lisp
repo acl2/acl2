@@ -257,7 +257,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection var+typevalue-list-to-var+type?s ((x var+typevalue-listp))
+(std::defprojection var+typevalue-list-to-var+type?-list ((x var+typevalue-listp))
   :returns (var+type?s var+type?-listp)
   :short "Lift @(tsee var+typevalue-to-var+type?) to lists."
   (var+typevalue-to-var+type? x))
@@ -524,10 +524,11 @@
      :base (b* (((mv err blit) (base-value-to-base-lit val.val)))
              (mv err (expr-atom (atom-base blit))))
      :primop (primop-value-to-expr val.val)
-     :lambda (b* ((atom (make-atom-lambda
-                         :params (var+typevalue-list-to-var+type?s val.params)
-                         :body val.body
-                         :type? (type-value-option-to-type-option val.type?)))
+     :lambda (b* ((atom
+                   (make-atom-lambda
+                    :params (var+typevalue-list-to-var+type?-list val.params)
+                    :body val.body
+                    :type? (type-value-option-to-type-option val.type?)))
                   ((mv err atom) (atom-subst-expr-denv atom val.denv)))
                (mv err (expr-atom atom)))
      :tlambda (b* ((atom (atom-tlambda val.params val.body))
