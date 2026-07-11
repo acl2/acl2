@@ -12,7 +12,7 @@
 (in-package "REMORA")
 
 (include-book "expression-values-and-environments")
-(include-book "variable-substitution-alpha-operations")
+(include-book "variable-substitution-operations")
 
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "std/basic/fix" :dir :system))
@@ -211,14 +211,22 @@
        since the environment of a closure has bindings for
        the free variables of the closure's body,
        the resulting type has no free variables
-       other than the closure's parameters."))
+       other than the closure's parameters.")
+     (xdoc::p
+      "We use the substitution operations without alpha renaming:
+       the dimensions and shapes that we substitute are constants,
+       and the types that we substitute are converted from type values,
+       and thus have no free variables
+       (given the invariant on closure environments mentioned above);
+       so no variable capture is possible,
+       and alpha renaming would never actually apply."))
     (b* (((mv dim-subst shape-subst)
           (ispace-var-ispace-value-map-to-substs
            (ispace-denv->ispaces (type-denv->ienv denv))))
          ((mv atom-subst array-subst)
           (type-var-type-value-map-to-substs (type-denv->types denv)))
-         (type (type-subst-ispace-vars-alpha type dim-subst shape-subst)))
-      (type-subst-type-vars-alpha type atom-subst array-subst))
+         (type (type-subst-ispace-vars type dim-subst shape-subst)))
+      (type-subst-type-vars type atom-subst array-subst))
     :measure (type-denv-count denv))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
