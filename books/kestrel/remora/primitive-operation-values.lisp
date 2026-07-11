@@ -82,8 +82,10 @@
      a summand for each instantiation stage of the operation,
      whose fields hold the instantiation values received so far.")
    (xdoc::p
-    "Currently the only polymorphic operations are @('head'), @('tail'), and @('length'),
-     each with three similar stages. For example, here are the stages of @('length'):
+    "Currently the only polymorphic operations are
+     @('head'), @('tail'), and @('length'),
+     each with three similar stages.
+     For example, here are the stages of @('length'):
      @(':length') is the uninstantiated operation;
      @(':length-t') is the operation applied to
      a type value for its type parameter;
@@ -266,6 +268,27 @@
     :enable (primop-value-funp
              primop-value-tfunp
              primop-value-ifunp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primop-value-uninstantiated ((op primop-valuep))
+  :returns (uninst primop-valuep)
+  :short "Uninstantiated stage of a primitive operation value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This maps each stage of a polymorphic primitive operation
+     to the uninstantiated stage of the same operation,
+     discarding the instantiation values (if any);
+     it maps every other primitive operation value to itself."))
+  (primop-value-case op
+                     :head-t (primop-value-head)
+                     :head-t-d-s (primop-value-head)
+                     :tail-t (primop-value-tail)
+                     :tail-t-d-s (primop-value-tail)
+                     :length-t (primop-value-length)
+                     :length-t-d-s (primop-value-length)
+                     :otherwise (primop-value-fix op)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
