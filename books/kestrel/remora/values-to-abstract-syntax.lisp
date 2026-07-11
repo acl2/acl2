@@ -12,7 +12,7 @@
 (in-package "REMORA")
 
 (include-book "expression-values-and-environments")
-(include-book "variable-substitution-operations")
+(include-book "variable-substitution-alpha-operations")
 
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "std/basic/fix" :dir :system))
@@ -496,7 +496,9 @@
      if the operations are partially or totally instantiated
      (see @(tsee primop-value-to-expr));
      lambda values become lambda abstraction atoms
-     (with the parameter and result type values converted to types);
+     (with the parameter and result type values converted to types,
+     and with the bindings of the captured dynamic environments
+     substituted in, via @(tsee atom-subst-expr-denv));
      boxes become box atoms;
      non-empty vectors become bracket expressions;
      and empty vectors become empty array expressions.
@@ -512,20 +514,28 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This needs to be extended to handle closures."))
+      "All three kinds of lambda values are closures:
+       we rebuild the lambda abstraction atom from the components,
+       and we substitute into it
+       the bindings of the captured dynamic environment
+       (see @(tsee atom-subst-expr-denv))."))
     (expr-value-case
      val
      :base (b* (((mv err blit) (base-value-to-base-lit val.val)))
              (mv err (expr-atom (atom-base blit))))
      :primop (primop-value-to-expr val.val)
-     :lambda (mv nil
-                 (expr-atom
-                  (make-atom-lambda
-                   :params (var+typevalue-list-to-var+type?s val.params)
-                   :body val.body
-                   :type? (type-value-option-to-type-option val.type?))))
-     :tlambda (mv nil (expr-atom (atom-tlambda val.params val.body)))
-     :ilambda (mv nil (expr-atom (atom-ilambda val.params val.body)))
+     :lambda (b* ((atom (make-atom-lambda
+                         :params (var+typevalue-list-to-var+type?s val.params)
+                         :body val.body
+                         :type? (type-value-option-to-type-option val.type?)))
+                  ((mv err atom) (atom-subst-expr-denv atom val.denv)))
+               (mv err (expr-atom atom)))
+     :tlambda (b* ((atom (atom-tlambda val.params val.body))
+                   ((mv err atom) (atom-subst-expr-denv atom val.denv)))
+                (mv err (expr-atom atom)))
+     :ilambda (b* ((atom (atom-ilambda val.params val.body))
+                   ((mv err atom) (atom-subst-expr-denv atom val.denv)))
+                (mv err (expr-atom atom)))
      :box (b* (((mv err array) (expr-value-to-expr val.array)))
             (mv err
                 (expr-atom
@@ -552,6 +562,81 @@
          ((mv err exprs) (expr-value-list-to-exprs (cdr vals))))
       (mv err (cons expr exprs)))
     :measure (expr-value-list-count vals))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define string-expr-value-map-to-subst ((map string-expr-value-mapp))
+    :returns (mv (err booleanp) (subst string-expr-mapp))
+    :parents (values-to-abstract-syntax expr-values-to-exprs)
+    :short "Convert (i) a map from expression variables to expression values
+            to (ii) an expression substitution."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The expression values are converted to expressions;
+       the conversion of the map fails
+       if the conversion of any expression value fails.")
+     (xdoc::p
+      "This is mutually recursive with @(tsee expr-value-to-expr)
+       because it has to turn
+       the expression values in the environment to expressions,
+       and those may recursively be closures."))
+    (b* (((when (omap::emptyp (string-expr-value-map-fix map))) (mv nil nil))
+         ((mv key val) (omap::head map))
+         ((mv err subst) (string-expr-value-map-to-subst (omap::tail map)))
+         ((when err) (mv t nil))
+         ((mv err expr) (expr-value-to-expr val))
+         ((when err) (mv t nil)))
+      (mv nil (omap::update (str-fix key) expr subst)))
+    :measure (string-expr-value-map-count map))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define atom-subst-expr-denv ((atom atomp) (denv expr-denvp))
+    :returns (mv (err booleanp) (new-atom atomp))
+    :parents (values-to-abstract-syntax expr-values-to-exprs)
+    :short "Substitute the bindings of an expression dynamic environment
+            in an atom."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The ispace bindings are substituted as dimensions and shapes,
+       the type bindings are substituted as types
+       converted from the type values,
+       and the expression bindings are substituted as expressions
+       converted from the expression values.
+       This is used to convert lambda closures
+       to lambda abstraction atoms:
+       we substitute into the whole atom, not just into its body,
+       so that also the parameters of the lambda abstraction
+       are alpha-renamed if needed (see below).")
+     (xdoc::p
+      "For dimensions, shapes, and types,
+       we use the substitution operations without alpha renaming,
+       as in @(tsee type-subst-type-denv) and for the same reason:
+       the substituted ASTs have no (free) variables.
+       For expressions, instead,
+       we use the substitution operation with alpha renaming:
+       the substituted expressions may contain
+       free occurrences of the variables
+       that denote primitive operations
+       (see @(tsee primop-value-to-expr)),
+       which must not be captured by
+       the parameters of the lambda abstraction
+       or by binders in its body."))
+    (b* (((mv dim-subst shape-subst)
+          (ispace-var-ispace-value-map-to-substs
+           (ispace-denv->ispaces (type-denv->ienv (expr-denv->tenv denv)))))
+         ((mv atom-subst array-subst)
+          (type-var-type-value-map-to-substs
+           (type-denv->types (expr-denv->tenv denv))))
+         ((mv err expr-subst)
+          (string-expr-value-map-to-subst (expr-denv->exprs denv)))
+         ((when err) (mv t (atom-fix atom)))
+         (atom (atom-subst-ispace-vars atom dim-subst shape-subst))
+         (atom (atom-subst-type-vars atom atom-subst array-subst)))
+      (mv nil (atom-subst-expr-vars-alpha atom expr-subst)))
+    :measure (expr-denv-count denv))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
