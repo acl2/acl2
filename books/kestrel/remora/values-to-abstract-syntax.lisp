@@ -454,9 +454,9 @@
                       :fun (make-expr-tapp
                             :fun opvar
                             :args (list (type-value-to-type pval.tval)))
-                      :args (list (ispace-dim (dim-const pval.d))
+                      :args (list (ispace-dim (dim-const pval.dval))
                                   (ispace-shape
-                                   (shape-dims (dim-const-list pval.s))))))
+                                   (shape-dims (dim-const-list pval.sval))))))
      :tail-t (mv nil
                  (make-expr-tapp
                   :fun opvar
@@ -466,9 +466,9 @@
                       :fun (make-expr-tapp
                             :fun opvar
                             :args (list (type-value-to-type pval.tval)))
-                      :args (list (ispace-dim (dim-const pval.d))
+                      :args (list (ispace-dim (dim-const pval.dval))
                                   (ispace-shape
-                                   (shape-dims (dim-const-list pval.s))))))
+                                   (shape-dims (dim-const-list pval.sval))))))
      :length-t (mv nil
                    (make-expr-tapp
                     :fun opvar
@@ -478,9 +478,9 @@
                         :fun (make-expr-tapp
                               :fun opvar
                               :args (list (type-value-to-type pval.tval)))
-                        :args (list (ispace-dim (dim-const pval.d))
+                        :args (list (ispace-dim (dim-const pval.dval))
                                     (ispace-shape
-                                     (shape-dims (dim-const-list pval.s))))))
+                                     (shape-dims (dim-const-list pval.sval))))))
      :otherwise (mv nil opvar))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
