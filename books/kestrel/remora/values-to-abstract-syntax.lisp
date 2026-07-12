@@ -301,7 +301,17 @@
      (implies (and (integerp p) (<= 2 p))
               (< (/ p) 1))
      :rule-classes :linear
-     :hints (("Goal" :nonlinearp t)))))
+     :hints (("Goal" :nonlinearp t))))
+
+  ///
+
+  (defret count-factor-decomposition
+    (implies (<= 2 (ifix p))
+             (equal (* (expt (ifix p) count) rest)
+                    (pos-fix n)))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable expt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -337,7 +347,12 @@
      In that case we return the literal @('<whole>.<frac>'),
      with a minus sign for negative rationals
      and with the minimum number of fractional digits (at least one);
-     otherwise we fail."))
+     otherwise we fail.")
+   (xdoc::p
+    "Guard verification includes the fact that
+     the @('w') and @('f') calculated below are natural numbers,
+     which is proved via a series of local lemmas
+     that culminate in @('rational-to-float-lit-guard-lemma')."))
   (b* ((r (rfix r))
        (neg (< r 0))
        (a (abs r))
@@ -350,18 +365,153 @@
        ((unless (eql rest 1)) (mv t dummy))
        (k (max c2 c5))
        (w (floor a 1))
-       (f (* (- a w) (expt 10 k)))
-       ;; The following checks on W and F never fail;
-       ;; they just simplify guard proofs.
-       ;; TODO: eliminate these
-       ((unless (and (natp w) (natp f))) (mv t dummy)))
+       (f (* (- a w) (expt 10 k))))
     (mv nil
         (make-float-lit :sign? (if neg (sign-minus) nil)
                         :whole-digits (str::nat-to-dec-chars w)
                         :frac-digits (pad-zeros-left (str::nat-to-dec-chars f)
                                                      (max k 1))
                         :expo? nil)))
-  :guard-hints (("Goal" :in-theory (enable abs))))
+  :guard-hints (("Goal"
+                 :in-theory (enable abs)
+                 :use (:instance rational-to-float-lit-guard-lemma
+                                 (a (abs (rfix r))))))
+  :prepwork
+
+  ((defruledl expt10-as-expt2-expt5
+     (equal (expt 10 k)
+            (* (expt 2 k) (expt 5 k)))
+     :induct t
+     :enable expt)
+
+   (defruledl integerp-of-expt-quotient
+     (implies (and (integerp b)
+                   (< 0 b)
+                   (natp c)
+                   (natp k)
+                   (<= c k))
+              (integerp (* (expt b k)
+                           (/ (expt b c)))))
+     :use (:instance acl2::exponents-add (r b) (i c) (j (- k c)))
+     :disable acl2::exponents-add)
+
+   (defruledl integerp-of-rational-times-multiple-of-denominator
+     (implies (and (rationalp a)
+                   (integerp m)
+                   (integerp (* m (/ (denominator a)))))
+              (integerp (* a m)))
+     :use ((:instance acl2::rational-implies2 (x a))
+           (:instance
+            (:theorem (implies (and (integerp x)
+                                    (integerp y))
+                               (integerp (* x y))))
+            (x (numerator a))
+            (y (* m (/ (denominator a))))))
+     :disable (acl2::rational-implies2 acl2::*-r-denominator-r))
+
+   (defruledl integerp-of-expt10-over-2-5-product
+     (implies (and (natp c2)
+                   (natp c5)
+                   (natp k)
+                   (<= c2 k)
+                   (<= c5 k))
+              (integerp (* (expt 10 k)
+                           (/ (* (expt 2 c2) (expt 5 c5))))))
+     :use ((:instance integerp-of-expt-quotient (b 2) (c c2))
+           (:instance integerp-of-expt-quotient (b 5) (c c5))
+           (:instance
+            (:theorem (implies (and (integerp x)
+                                    (integerp y))
+                               (integerp (* x y))))
+            (x (* (expt 2 k) (/ (expt 2 c2))))
+            (y (* (expt 5 k) (/ (expt 5 c5))))))
+     :enable expt10-as-expt2-expt5)
+
+   (defruledl integerp-of-rational-times-expt10
+     (implies (and (rationalp a)
+                   (natp c2)
+                   (natp c5)
+                   (natp k)
+                   (<= c2 k)
+                   (<= c5 k)
+                   (equal (denominator a)
+                          (* (expt 2 c2) (expt 5 c5))))
+              (integerp (* a (expt 10 k))))
+     :use ((:instance integerp-of-rational-times-multiple-of-denominator
+                      (m (expt 10 k)))
+           (:instance integerp-of-expt10-over-2-5-product)))
+
+   (defruledl natp-of-floor-1-when-nonneg
+     (implies (and (rationalp a) (<= 0 a))
+              (natp (floor a 1)))
+     :enable floor)
+
+   (defruledl niq-upper-bound-linear
+     (implies (and (natp n) (posp d))
+              (<= (* d (nonnegative-integer-quotient n d)) n))
+     :rule-classes ((:linear
+                     :trigger-terms ((nonnegative-integer-quotient n d))))
+     :induct t
+     :enable nonnegative-integer-quotient)
+
+   (defruledl floor-1-upper-bound
+     (implies (and (rationalp a)
+                   (<= 0 a))
+              (<= (floor a 1) a))
+     :enable floor
+     :disable (acl2::rational-implies2
+               acl2::*-r-denominator-r)
+     :use ((:instance niq-upper-bound-linear
+                      (n (numerator a))
+                      (d (denominator a)))
+           (:instance acl2::rational-implies2 (x a)))
+     :nonlinearp t)
+
+   (defruledl natp-of-frac-times-expt10
+     (implies (and (rationalp a)
+                   (<= 0 a)
+                   (natp c2)
+                   (natp c5)
+                   (natp k)
+                   (<= c2 k)
+                   (<= c5 k)
+                   (equal (denominator a)
+                          (* (expt 2 c2) (expt 5 c5))))
+              (natp (* (- a (floor a 1)) (expt 10 k))))
+     :use ((:instance integerp-of-rational-times-expt10)
+           (:instance floor-1-upper-bound)
+           (:instance natp-of-floor-1-when-nonneg))
+     :nonlinearp t)
+
+   (defruledl rational-to-float-lit-guard-lemma
+     (implies (and (rationalp a)
+                   (<= 0 a))
+              (b* (((mv c2 rest1) (count-factor 2 (denominator a)))
+                   ((mv c5 rest) (count-factor 5 rest1)))
+                (implies (equal rest 1)
+                         (and (natp (floor a 1))
+                              (natp (* (- a (floor a 1))
+                                       (expt 10 (max c2 c5))))))))
+     :in-theory (e/d (max) (floor count-factor-decomposition))
+     :use ((:instance count-factor-decomposition
+                      (p 2) (n (denominator a)))
+           (:instance count-factor-decomposition
+                      (p 5)
+                      (n (mv-nth 1 (count-factor 2 (denominator a)))))
+           (:instance natp-of-floor-1-when-nonneg)
+           (:instance natp-of-frac-times-expt10
+                      (c2 (mv-nth 0 (count-factor 2 (denominator a))))
+                      (c5 (mv-nth 0 (count-factor
+                                     5
+                                     (mv-nth 1 (count-factor
+                                                2
+                                                (denominator a))))))
+                      (k (max (mv-nth 0 (count-factor 2 (denominator a)))
+                              (mv-nth 0 (count-factor
+                                         5
+                                         (mv-nth 1 (count-factor
+                                                    2
+                                                    (denominator a))))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
