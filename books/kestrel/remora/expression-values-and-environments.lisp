@@ -784,7 +784,17 @@
              (expr-value-list-wfp (expr-value-vector->elems val)))
     :enable (expr-value-wfp
              expr-value-list-wfp-alt-def)
-    :expand (check-dims-of-expr-value val)))
+    :expand (check-dims-of-expr-value val))
+
+  (defrule list-repeatp-of-dims-of-expr-value-vector->elems
+    (implies (and (expr-value-wfp val)
+                  (expr-value-case val :vector))
+             (list-repeatp
+              (dims-of-expr-value-list (expr-value-vector->elems val))))
+    :enable (expr-value-wfp
+             expr-value-list-wfp-alt-def
+             check-dims-of-expr-value
+             check-dims-of-expr-value-list-when-expr-value-list-wfp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
