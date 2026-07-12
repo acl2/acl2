@@ -1368,21 +1368,12 @@
 (defruled list-repeatp-of-dims-of-expr-value-vector->elems
   (implies (and (expr-value-wfp val)
                 (expr-value-case val :vector))
-           (list-repeatp (dims-of-expr-value-list (expr-value-vector->elems val))))
+           (list-repeatp
+            (dims-of-expr-value-list (expr-value-vector->elems val))))
   :enable (expr-value-wfp
            expr-value-list-wfp-alt-def
            check-dims-of-expr-value
            check-dims-of-expr-value-list-when-expr-value-list-wfp))
-
-(defruled list-repeatp-of-dims-of-cdr-of-expr-value-vector->elems
-  (implies (and (expr-value-wfp val)
-                (expr-value-case val :vector))
-           (list-repeatp
-            (dims-of-expr-value-list (cdr (expr-value-vector->elems val)))))
-  :use (:instance list-repeatp-of-cdr
-                  (x (dims-of-expr-value-list (expr-value-vector->elems val))))
-  :enable (list-repeatp-of-dims-of-expr-value-vector->elems
-           cdr-of-dims-of-expr-value-list))
 
 (define eval-primop-fun ((op primop-valuep) (args expr-value-listp))
   :guard (and (primop-value-funp op)
@@ -1482,59 +1473,62 @@
     (implies (not (reserrp val))
              (expr-value-wfp val))
     :hyp (expr-value-list-wfp args)
-    :hints (("Goal" :in-theory (enable eval-primop-fun
-                                       prim-int-add
-                                       prim-int-sub
-                                       prim-int-mul
-                                       prim-int-div
-                                       prim-int-expt
-                                       prim-int-mod
-                                       prim-int-max
-                                       prim-int-min
-                                       prim-int-bit-and
-                                       prim-int-bit-or
-                                       prim-int-bit-xor
-                                       prim-int-shl
-                                       prim-int-shr
-                                       prim-int-bit-not
-                                       prim-int-popc
-                                       prim-int-eq
-                                       prim-int-neq
-                                       prim-int-lt
-                                       prim-int-gt
-                                       prim-int-leq
-                                       prim-int-geq
-                                       prim-int-to-float
-                                       prim-int-to-bool
-                                       prim-float-add
-                                       prim-float-sub
-                                       prim-float-mul
-                                       prim-float-div
-                                       prim-float-expt
-                                       prim-float-max
-                                       prim-float-min
-                                       prim-float-sqrt
-                                       prim-float-eq
-                                       prim-float-neq
-                                       prim-float-lt
-                                       prim-float-gt
-                                       prim-float-leq
-                                       prim-float-geq
-                                       prim-float-truncate
-                                       prim-float-round
-                                       prim-float-ceiling
-                                       prim-float-floor
-                                       prim-bool-not
-                                       prim-bool-and
-                                       prim-bool-or
-                                       prim-bool-eq
-                                       prim-bool-neq
-                                       prim-bool-to-int
-                                       prim-bool-to-float
-                                       prim-head
-                                       prim-tail
-                                       prim-length
-                                       list-repeatp-of-dims-of-cdr-of-expr-value-vector->elems)))))
+    :hints
+    (("Goal" :in-theory (e/d (eval-primop-fun
+                              prim-int-add
+                              prim-int-sub
+                              prim-int-mul
+                              prim-int-div
+                              prim-int-expt
+                              prim-int-mod
+                              prim-int-max
+                              prim-int-min
+                              prim-int-bit-and
+                              prim-int-bit-or
+                              prim-int-bit-xor
+                              prim-int-shl
+                              prim-int-shr
+                              prim-int-bit-not
+                              prim-int-popc
+                              prim-int-eq
+                              prim-int-neq
+                              prim-int-lt
+                              prim-int-gt
+                              prim-int-leq
+                              prim-int-geq
+                              prim-int-to-float
+                              prim-int-to-bool
+                              prim-float-add
+                              prim-float-sub
+                              prim-float-mul
+                              prim-float-div
+                              prim-float-expt
+                              prim-float-max
+                              prim-float-min
+                              prim-float-sqrt
+                              prim-float-eq
+                              prim-float-neq
+                              prim-float-lt
+                              prim-float-gt
+                              prim-float-leq
+                              prim-float-geq
+                              prim-float-truncate
+                              prim-float-round
+                              prim-float-ceiling
+                              prim-float-floor
+                              prim-bool-not
+                              prim-bool-and
+                              prim-bool-or
+                              prim-bool-eq
+                              prim-bool-neq
+                              prim-bool-to-int
+                              prim-bool-to-float
+                              prim-head
+                              prim-tail
+                              prim-length
+                              dims-of-expr-value-list-of-cdr
+                              list-repeatp-of-dims-of-expr-value-vector->elems)
+                             (cdr-of-dims-of-expr-value-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
