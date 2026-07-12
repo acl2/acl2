@@ -14,7 +14,7 @@
 (include-book "expression-values-and-environments")
 (include-book "variable-substitution-alpha-operations")
 
-(local (include-book "arithmetic/top" :dir :system))
+(local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "std/basic/fix" :dir :system))
 (local (include-book "std/basic/ifix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
@@ -378,22 +378,24 @@
                                  (a (abs (rfix r))))))
   :prepwork
 
-  ((defruledl expt10-as-expt2-expt5
-     (equal (expt 10 k)
-            (* (expt 2 k) (expt 5 k)))
+  ((defruledl expt10-quotient-normal-form
+     (implies (and (integerp c2)
+                   (integerp c5)
+                   (natp k))
+              (equal (* (expt 10 k) (expt 2 (- c2)) (expt 5 (- c5)))
+                     (* (expt 2 (- k c2)) (expt 5 (- k c5)))))
      :induct t
      :enable expt)
 
-   (defruledl integerp-of-expt-quotient
-     (implies (and (integerp b)
-                   (< 0 b)
-                   (natp c)
+   (defruledl integerp-of-expt10-over-2-5-product
+     (implies (and (natp c2)
+                   (natp c5)
                    (natp k)
-                   (<= c k))
-              (integerp (* (expt b k)
-                           (/ (expt b c)))))
-     :use (:instance acl2::exponents-add (r b) (i c) (j (- k c)))
-     :disable acl2::exponents-add)
+                   (<= c2 k)
+                   (<= c5 k))
+              (integerp (* (expt 10 k)
+                           (/ (* (expt 2 c2) (expt 5 c5))))))
+     :use expt10-quotient-normal-form)
 
    (defruledl integerp-of-rational-times-multiple-of-denominator
      (implies (and (rationalp a)
@@ -407,25 +409,7 @@
                                (integerp (* x y))))
             (x (numerator a))
             (y (* m (/ (denominator a))))))
-     :disable (acl2::rational-implies2 acl2::*-r-denominator-r))
-
-   (defruledl integerp-of-expt10-over-2-5-product
-     (implies (and (natp c2)
-                   (natp c5)
-                   (natp k)
-                   (<= c2 k)
-                   (<= c5 k))
-              (integerp (* (expt 10 k)
-                           (/ (* (expt 2 c2) (expt 5 c5))))))
-     :use ((:instance integerp-of-expt-quotient (b 2) (c c2))
-           (:instance integerp-of-expt-quotient (b 5) (c c5))
-           (:instance
-            (:theorem (implies (and (integerp x)
-                                    (integerp y))
-                               (integerp (* x y))))
-            (x (* (expt 2 k) (/ (expt 2 c2))))
-            (y (* (expt 5 k) (/ (expt 5 c5))))))
-     :enable expt10-as-expt2-expt5)
+     :disable (acl2::rational-implies2 acl2::|(* r (denominator r))|))
 
    (defruledl integerp-of-rational-times-expt10
      (implies (and (rationalp a)
@@ -441,48 +425,6 @@
                       (m (expt 10 k)))
            (:instance integerp-of-expt10-over-2-5-product)))
 
-   (defruledl natp-of-floor-1-when-nonneg
-     (implies (and (rationalp a) (<= 0 a))
-              (natp (floor a 1)))
-     :enable floor)
-
-   (defruledl niq-upper-bound-linear
-     (implies (and (natp n) (posp d))
-              (<= (* d (nonnegative-integer-quotient n d)) n))
-     :rule-classes ((:linear
-                     :trigger-terms ((nonnegative-integer-quotient n d))))
-     :induct t
-     :enable nonnegative-integer-quotient)
-
-   (defruledl floor-1-upper-bound
-     (implies (and (rationalp a)
-                   (<= 0 a))
-              (<= (floor a 1) a))
-     :enable floor
-     :disable (acl2::rational-implies2
-               acl2::*-r-denominator-r)
-     :use ((:instance niq-upper-bound-linear
-                      (n (numerator a))
-                      (d (denominator a)))
-           (:instance acl2::rational-implies2 (x a)))
-     :nonlinearp t)
-
-   (defruledl natp-of-frac-times-expt10
-     (implies (and (rationalp a)
-                   (<= 0 a)
-                   (natp c2)
-                   (natp c5)
-                   (natp k)
-                   (<= c2 k)
-                   (<= c5 k)
-                   (equal (denominator a)
-                          (* (expt 2 c2) (expt 5 c5))))
-              (natp (* (- a (floor a 1)) (expt 10 k))))
-     :use ((:instance integerp-of-rational-times-expt10)
-           (:instance floor-1-upper-bound)
-           (:instance natp-of-floor-1-when-nonneg))
-     :nonlinearp t)
-
    (defruledl rational-to-float-lit-guard-lemma
      (implies (and (rationalp a)
                    (<= 0 a))
@@ -492,14 +434,12 @@
                          (and (natp (floor a 1))
                               (natp (* (- a (floor a 1))
                                        (expt 10 (max c2 c5))))))))
-     :in-theory (e/d (max) (floor count-factor-decomposition))
      :use ((:instance count-factor-decomposition
                       (p 2) (n (denominator a)))
            (:instance count-factor-decomposition
                       (p 5)
                       (n (mv-nth 1 (count-factor 2 (denominator a)))))
-           (:instance natp-of-floor-1-when-nonneg)
-           (:instance natp-of-frac-times-expt10
+           (:instance integerp-of-rational-times-expt10
                       (c2 (mv-nth 0 (count-factor 2 (denominator a))))
                       (c5 (mv-nth 0 (count-factor
                                      5
@@ -511,7 +451,8 @@
                                          5
                                          (mv-nth 1 (count-factor
                                                     2
-                                                    (denominator a))))))))))))
+                                                    (denominator a)))))))))
+     :enable max)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
