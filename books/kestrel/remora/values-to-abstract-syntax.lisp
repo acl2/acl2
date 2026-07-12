@@ -15,6 +15,7 @@
 (include-book "variable-substitution-alpha-operations")
 
 (local (include-book "arithmetic-5/top" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "std/basic/fix" :dir :system))
 (local (include-book "std/basic/ifix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
@@ -22,6 +23,10 @@
 (local (include-book "std/lists/len" :dir :system))
 
 (acl2::controlled-configuration)
+
+; This rule from [books]/kestrel/arithmetic-light/times.lisp
+; loops with the arithmetic-5 product normalization rules.
+(local (in-theory (disable acl2::commutativity-2-of-*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -403,13 +408,12 @@
                    (integerp (* m (/ (denominator a)))))
               (integerp (* a m)))
      :use ((:instance acl2::rational-implies2 (x a))
-           (:instance
-            (:theorem (implies (and (integerp x)
-                                    (integerp y))
-                               (integerp (* x y))))
-            (x (numerator a))
-            (y (* m (/ (denominator a))))))
-     :disable (acl2::rational-implies2 acl2::|(* r (denominator r))|))
+           (:instance acl2::integerp-of-*
+                      (x (numerator a))
+                      (y (* m (/ (denominator a))))))
+     :disable (acl2::rational-implies2
+               acl2::|(* r (denominator r))|
+               acl2::integerp-of-*))
 
    (defruledl integerp-of-rational-times-expt10
      (implies (and (rationalp a)
