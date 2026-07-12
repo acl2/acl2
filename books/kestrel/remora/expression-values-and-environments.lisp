@@ -618,6 +618,13 @@
 
   ///
 
+  (defruled dims-of-expr-value-list-of-cdr
+    (equal (dims-of-expr-value-list (cdr vals))
+           (cdr (dims-of-expr-value-list vals))))
+
+  (theory-invariant (incompatible (:rewrite dims-of-expr-value-list-of-cdr)
+                                  (:rewrite cdr-of-dims-of-expr-value-list)))
+
   (defrule dims-of-expr-value-list-of-repeat
     (equal (dims-of-expr-value-list (repeat n val))
            (repeat n (dims-of-expr-value val)))
@@ -662,8 +669,9 @@
     (equal (dims-of-expr-value-list-list (cdr valss))
            (cdr (dims-of-expr-value-list-list valss))))
 
-  (theory-invariant (incompatible (:rewrite dims-of-expr-value-list-list-of-cdr)
-                                  (:rewrite cdr-of-dims-of-expr-value-list-list)))
+  (theory-invariant (incompatible
+                     (:rewrite dims-of-expr-value-list-list-of-cdr)
+                     (:rewrite cdr-of-dims-of-expr-value-list-list)))
 
   (defrule dims-of-expr-value-list-list-of-list-split
     (equal (dims-of-expr-value-list-list (list-split vals n))
