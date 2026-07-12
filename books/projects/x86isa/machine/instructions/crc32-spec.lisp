@@ -380,4 +380,17 @@
                (crc *crc32-polynomial*
                     (bit-reflect 32 crc)
                     (bit-reflect data-width data)
-                    data-width)))
+                    data-width))
+
+  ///
+
+  ;; This variant of the return type theorem is useful
+  ;; when the result is stored in a wider (e.g. 64-bit) location:
+  (defret unsigned-byte-p-of-crc32
+    (implies (and (integerp n) (<= 32 n))
+             (unsigned-byte-p n new-crc))
+    :hints (("Goal"
+             :use return-type-of-crc32
+             :in-theory (disable crc32
+                                 return-type-of-crc32
+                                 unsigned-byte-p)))))
