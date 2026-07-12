@@ -218,8 +218,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :extra-args ((dim-subst string-dim-mapp)
                (shape-subst string-shape-mapp))
   :result booleanp
@@ -385,8 +384,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :extra-args ((atom-subst string-type-mapp)
                (array-subst string-type-mapp))
   :result booleanp
@@ -521,8 +519,7 @@
     "This is a conservative check:
      it does not depend on which keys of the substitution
      are actually free in the body of each binder."))
-  :types (exprs/atoms/binds
-          prog)
+  :types (exprs/atoms/binds)
   :extra-args ((subst string-expr-mapp))
   :result booleanp
   :default t
@@ -603,8 +600,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :extra-args ((dim-subst string-dim-mapp)
                (shape-subst string-shape-mapp))
   :override
@@ -756,8 +752,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :extra-args ((atom-subst string-type-mapp)
                (array-subst string-type-mapp))
   :override
@@ -881,8 +876,7 @@
      but currently @(tsee fty::deffold-map) does not support such guards.
      One should call the @(tsee ast-subst-expr-vars-no-capture-p) predicates
      prior to applying these substitution operations, for the time being."))
-  :types (exprs/atoms/binds
-          prog)
+  :types (exprs/atoms/binds)
   :extra-args ((subst string-expr-mapp))
   :override
   ((expr :var (b* ((subst (string-expr-map-fix subst))

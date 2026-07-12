@@ -327,8 +327,17 @@
        does not actually declare a parameter.
        The type is present otherwise, and it is the type of the parameter.")
      (xdoc::p
-      "Non-abstract parameter declarators are annotated with
-       their types and their UIDs.")
+      "Non-abstract parameter declarators are annotated
+       with their types and their UIDs.
+       Abstract parameter declarators are annotated with their types.
+       Absent (i.e. @(':none')) parameter declarators
+       are annotated with their types;
+       in the case of this being part of
+       a single @('void') parameter declaration,
+       which has a special meaning (i.e. a function with zero parameters),
+       we annotate the parameter declarator with the @('void') type.
+       Note that @('void') can never be confused with
+       the type of a function parameter, which cannot be @('void').")
      (xdoc::p
       "Type names are annotated with the type they denote.")
      (xdoc::p
@@ -379,6 +388,10 @@
                          (type-vinfop expr.info)))
      (expr :unary (and (expr-annop expr.arg)
                        (type-vinfop expr.info)))
+     (expr :member (and (expr-annop expr.arg)
+                        (type-vinfop expr.info)))
+     (expr :memberp (and (expr-annop expr.arg)
+                         (type-vinfop expr.info)))
      (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                                 (expr-fix expr)))
      (expr :alignof-ambig (raise "Internal error: ambiguous ~x0."
@@ -427,6 +440,13 @@
                                      (type+uid-vinfop
                                       (param-declor-nonabstract->info
                                        param-declor))))
+     (param-declor :abstract (and (absdeclor-annop
+                                   (param-declor-abstract->declor
+                                    param-declor))
+                                  (type-vinfop
+                                   (param-declor-abstract->info
+                                    param-declor))))
+     (param-declor :none (type-vinfop param-declor.info))
      (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
                   (absdeclor-option-annop (tyname->declor? tyname))
                   (type-vinfop (tyname->info tyname))))
@@ -529,6 +549,18 @@
                 (type-vinfop info)))
     :expand (expr-annop (expr-unary op arg info)))
 
+  (defruled expr-annop-of-expr-member
+    (equal (expr-annop (expr-member arg name info))
+           (and (expr-annop arg)
+                (type-vinfop info)))
+    :expand (expr-annop (expr-member arg name info)))
+
+  (defruled expr-annop-of-expr-memberp
+    (equal (expr-annop (expr-memberp arg name info))
+           (and (expr-annop arg)
+                (type-vinfop info)))
+    :expand (expr-annop (expr-memberp arg name info)))
+
   (defruled expr-annop-of-expr-binary
     (equal (expr-annop (expr-binary op arg1 arg2 info))
            (and (expr-annop arg1)
@@ -583,6 +615,12 @@
            (and (declor-annop declor)
                 (type+uid-vinfop info)))
     :expand (param-declor-annop (param-declor-nonabstract declor info)))
+
+  (defruled param-declor-annop-of-param-declor-abstract
+    (equal (param-declor-annop (param-declor-abstract declor info))
+           (and (absdeclor-annop declor)
+                (type-vinfop info)))
+    :expand (param-declor-annop (param-declor-abstract declor info)))
 
   (defruled tyname-annop-of-tyname
     (equal (tyname-annop (tyname specquals declor? info))
@@ -709,6 +747,30 @@
              (type-vinfop (expr-unary->info expr)))
     :enable expr-annop)
 
+  (defruled expr-annop-of-expr-member->arg
+    (implies (and (expr-annop expr)
+                  (expr-case expr :member))
+             (expr-annop (expr-member->arg expr)))
+    :enable expr-annop)
+
+  (defruled type-vinfop-of-expr-member->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :member))
+             (type-vinfop (expr-member->info expr)))
+    :enable expr-annop)
+
+  (defruled expr-annop-of-expr-memberp->arg
+    (implies (and (expr-annop expr)
+                  (expr-case expr :memberp))
+             (expr-annop (expr-memberp->arg expr)))
+    :enable expr-annop)
+
+  (defruled type-vinfop-of-expr-memberp->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :memberp))
+             (type-vinfop (expr-memberp->info expr)))
+    :enable expr-annop)
+
   (defruled expr-annop-of-expr-binary->arg1
     (implies (and (expr-annop expr)
                   (expr-case expr :binary))
@@ -814,6 +876,18 @@
                   (param-declor-case param-declor :nonabstract))
              (type+uid-vinfop
               (param-declor-nonabstract->info param-declor)))
+    :enable param-declor-annop)
+
+  (defruled absdeclor-annop-of-param-declor-abstract->declor
+    (implies (and (param-declor-annop param-declor)
+                  (param-declor-case param-declor :abstract))
+             (absdeclor-annop (param-declor-abstract->declor param-declor)))
+    :enable param-declor-annop)
+
+  (defruled type-vinfop-of-param-declor-abstract->info
+    (implies (and (param-declor-annop param-declor)
+                  (param-declor-case param-declor :abstract))
+             (type-vinfop (param-declor-abstract->info param-declor)))
     :enable param-declor-annop)
 
   (defruled spec/qual-list-annop-of-tyname->specquals
@@ -926,6 +1000,8 @@
      expr-annop-of-expr-arrsub
      expr-annop-of-expr-funcall
      expr-annop-of-expr-unary
+     expr-annop-of-expr-member
+     expr-annop-of-expr-memberp
      expr-annop-of-expr-binary
      const-expr-annop-of-const-expr
      type-spec-annop-of-type-spec-struct
@@ -934,6 +1010,7 @@
      desiniter-annop-of-desiniter
      param-declon-annop-of-param-declon
      param-declor-annop-of-param-declor-nonabstract
+     param-declor-annop-of-param-declor-abstract
      tyname-annop-of-tyname
      struct-declor-annop-of-struct-declor
      init-declor-annop-of-init-declor
@@ -953,6 +1030,10 @@
      type-vinfop-of-expr-funcall->info
      expr-annop-of-expr-unary->arg
      type-vinfop-of-expr-unary->info
+     expr-annop-of-expr-member->arg
+     type-vinfop-of-expr-member->info
+     expr-annop-of-expr-memberp->arg
+     type-vinfop-of-expr-memberp->info
      expr-annop-of-expr-binary->arg1
      expr-annop-of-expr-binary->arg2
      type-vinfop-of-expr-binary->info
@@ -972,6 +1053,8 @@
      type-option-vinfop-of-param-declon->info
      declor-annop-of-param-declor-nonabstract->declor
      type+uid-vinfop-of-param-declor-nonabstract->info
+     absdeclor-annop-of-param-declor-abstract->declor
+     type-vinfop-of-param-declor-abstract->info
      spec/qual-list-annop-of-tyname->specquals
      absdeclor-option-annop-of-tyname->declor?
      type-vinfop-of-tyname->info
@@ -1027,8 +1110,8 @@
    :gensel (type-unknown)
    :arrsub (type-vinfo->type expr.info)
    :funcall (type-vinfo->type expr.info)
-   :member (type-unknown)
-   :memberp (type-unknown)
+   :member (type-vinfo->type expr.info)
+   :memberp (type-vinfo->type expr.info)
    :complit (type-unknown)
    :unary (type-vinfo->type expr.info)
    :label-addr (type-pointer (type-void))

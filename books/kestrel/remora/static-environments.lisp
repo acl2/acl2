@@ -32,7 +32,7 @@
      the contextual information needed to
      enforce the static semantics of some AST.
      It is the static counterpart of a "
-    (xdoc::seetopic "dynamic-environments" "dynamic environment")
+    (xdoc::seetopic "dynamic-semantics" "dynamic environment")
     ".")
    (xdoc::p
     "Our static environments correspond to the combination of
@@ -122,7 +122,8 @@
    (xdoc::p
     "The operations from @('+') to @('bool->f') have monomorphic types:
      zero-rank array types of function types between base types.
-     The @('length') operation is the first one with a polymorphic type:
+     The @('head'), @('tail'), and @('length') operations
+     have polymorphic types:
      a universal type of a product type of a function type, as in [impl].
      Like the monomorphic types,
      the whole type is a zero-rank array type,
@@ -155,6 +156,18 @@
         (t[] (t-> (:bool) :int) (shp)))
        (bool-to-float-type
         (t[] (t-> (:bool) :float) (shp)))
+       (head-type
+        (t[] (tforall ("&t")
+                      (tpi ("$d" "@s")
+                           (t-> ((t[] "&t" (shape++ (dim+ 1 "$d") "@s")))
+                                (t[] "&t" "@s"))))
+             (shp)))
+       (tail-type
+        (t[] (tforall ("&t")
+                      (tpi ("$d" "@s")
+                           (t-> ((t[] "&t" (shape++ (dim+ 1 "$d") "@s")))
+                                (t[] "&t" (shape++ "$d" "@s")))))
+             (shp)))
        (length-type
         (t[] (tforall ("&t")
                       (tpi ("$d" "@s")
@@ -165,7 +178,8 @@
      (list (cons "+" int-binop-type)
            (cons "-" int-binop-type)
            (cons "*" int-binop-type)
-           (cons "div" int-binop-type)
+           (cons "/" int-binop-type)
+           (cons "^" int-binop-type)
            (cons "mod" int-binop-type)
            (cons "max" int-binop-type)
            (cons "min" int-binop-type)
@@ -192,6 +206,7 @@
            (cons "f.max" float-binop-type)
            (cons "f.min" float-binop-type)
            (cons "sqrt" float-unop-type)
+           (cons "f.sqrt" float-unop-type)
            (cons "f.==" float-relop-type)
            (cons "f.!=" float-relop-type)
            (cons "f.<" float-relop-type)
@@ -209,6 +224,8 @@
            (cons "bool.!=" bool-binop-type)
            (cons "bool->i" bool-to-int-type)
            (cons "bool->f" bool-to-float-type)
+           (cons "head" head-type)
+           (cons "tail" tail-type)
            (cons "length" length-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

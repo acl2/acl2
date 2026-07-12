@@ -22,10 +22,40 @@
 ; =========================================================================
 
 ; -------------------------------------------------------------------------
-; Top-level: a program is a single expression
+; Top-level: a standalone expression
 ; -------------------------------------------------------------------------
+;
+; A standalone expression surrounded by optional whitespace.  This is
+; the input format of the implementation's expression entry points
+; (interpret -e and the REPL); source files are covered by the `file`
+; rule below.
 
-program         = ws exp ws
+top-exp         = ws exp ws
+
+; -------------------------------------------------------------------------
+; Source files: imports followed by declarations
+; -------------------------------------------------------------------------
+;
+; A .remora source file is a sequence of imports followed by a sequence
+; of top-level declarations.  A declaration is either a definition
+; (def, wrapping any let-style bind) or an entry point (entry, whose
+; signature has the same shape as fun-sig).  The interpreter requires
+; exactly one entry named main; that is a semantic constraint, not a
+; grammatical one.
+
+file            = *( ws import ) *( ws decl ) ws
+
+import          = "(" ws %s"import" ws string-lit ws ")"
+                  ; the string literal is the path of the imported file
+
+decl            = "(" ws decl-body ws ")"
+
+decl-body       = def-decl / entry-decl
+
+def-decl        = %s"def" ws bind
+
+entry-decl      = %s"entry" ws "(" ws fun-sig ws ")" ws exp
+                  ; the signature has the same shape as a fun binding's
 
 ; -------------------------------------------------------------------------
 ; Expressions
@@ -60,26 +90,27 @@ paren-exp-body  = array-exp
                 / at-app-exp         ; @f sugar
                 / app-exp            ; [SC3] must be last
 
-array-exp       = %s"array" ws shape-lit *( ws atom )
+array-exp       = %s"array" ws shape-lit 1*( ws atom )
                 / %s"array" ws shape-lit ws type
 
-frame-exp       = %s"frame" ws shape-lit *( ws exp )
+frame-exp       = %s"frame" ws shape-lit 1*( ws exp )
                 / %s"frame" ws shape-lit ws type
 
-app-exp         = exp *( ws exp )      ; [SC1]
+app-exp         = exp 1*( ws exp )     ; [SC1]
                   ; (f e1 ... en): first exp is the function
 
-tapp-exp        = %s"t-app" ws exp *( ws type )
+tapp-exp        = %s"t-app" ws exp 1*( ws type )
 
-iapp-exp        = %s"i-app" ws exp *( ws ispace )
+iapp-exp        = %s"i-app" ws exp 1*( ws ispace )
 
 unbox-exp       = %s"unbox" ws "(" ws unbox-spec ws ")" ws exp
 
-unbox-spec      = *( ispace-var ws ) identifier ws exp   ; [SC4]
-                  ; binders for the unboxed ispaces and value, plus the
-                  ; expression that yields the box being unboxed.
+unbox-spec      = 1*( ispace-var ws ) identifier ws exp   ; [SC4]
+                  ; binders for the unboxed ispaces (at least one) and
+                  ; the value, plus the expression that yields the box
+                  ; being unboxed.
 
-let-exp         = %s"let" ws "(" *( ws bind ) ws ")" ws exp
+let-exp         = %s"let" ws "(" 1*( ws bind ) ws ")" ws exp
 
 at-app-exp      = "@" ws exp ws type-args ws ispace-args *( ws exp )
 
@@ -102,18 +133,18 @@ atom-body       = lambda
                 / box-expr
 
 lambda          = ( %s"fn" / %x03BB ) ws            ; fn or <lambda>
-                  "(" *( ws pat ) ws ")" ws
+                  "(" 1*( ws pat ) ws ")" ws
                   exp
 
 type-lambda     = ( %s"t-fn" / ( %s"t" %x03BB ) ) ws  ; t-fn or t<lambda>
-                  "(" *( ws type-var ) ws ")" ws
+                  "(" 1*( ws type-var ) ws ")" ws
                   exp
 
 ispace-lambda   = ( %s"i-fn" / ( %s"i" %x03BB ) ) ws  ; i-fn or i<lambda>
-                  "(" *( ws ispace-var ) ws ")" ws
+                  "(" 1*( ws ispace-var ) ws ")" ws
                   exp
 
-box-expr        = %s"box" ws "(" *( ws ispace ) ws ")" ws exp ws type
+box-expr        = %s"box" ws "(" 1*( ws ispace ) ws ")" ws exp ws type
 
 ; -------------------------------------------------------------------------
 ; Patterns (used in lambda parameters)
@@ -162,10 +193,9 @@ ifun-sig        = identifier ws "(" *( ws ispace-var ) ws ")"
 
 type-bind       = %s"type" ws type-var ws type
 
-ispace-bind     = %s"extent" ws ispace-var ws ispace
-                 ; NOTE: the surface keyword "extent" comes from the
-                 ; Haskell Remora parser. The paper (linked above) uses
-                 ; the word "index".  Now this concept is called "ispace".
+ispace-bind     = %s"ispace" ws ispace-var ws ispace
+                 ; NOTE: the paper (linked above) calls this concept
+                 ; "index".
 
 at-fun-bind     = %s"fun" ws "(" ws at-fun-sig ws ")" ws exp
 
@@ -209,15 +239,22 @@ array-type      = %s"A" ws type ws ispace
 
 arrow-type      = ( "->" / %x2192 ) ws       ; -> or <arrow>
                   "(" *( ws type ) ws ")" ws type
+                / ( "->" / %x2192 ) ws type ws type
+                  ; single argument type, without the parenthesized list.
+                  ; The two alternatives are disjoint: a single argument
+                  ; type that starts with "(" must continue with one of
+                  ; A, ->, Forall, Pi, Sigma (see type-paren), and none
+                  ; of those tokens can start a type in the first
+                  ; alternative's list (nor match its immediate ")").
 
 forall-type     = ( %s"Forall" / %x2200 ) ws   ; Forall or <forall>
-                  "(" *( ws type-var ) ws ")" ws type
+                  "(" 1*( ws type-var ) ws ")" ws type
 
 pi-type         = ( %s"Pi" / %x03A0 ) ws        ; Pi or <Pi>
-                  "(" *( ws ispace-var ) ws ")" ws type
+                  "(" 1*( ws ispace-var ) ws ")" ws type
 
 sigma-type      = ( %s"Sigma" / %x03A3 ) ws     ; Sigma or <sigma>
-                  "(" *( ws ispace-var ) ws ")" ws type
+                  "(" 1*( ws ispace-var ) ws ")" ws type
 
 ; -------------------------------------------------------------------------
 ; Type parameters
@@ -376,8 +413,9 @@ keyword         = %s"array" / %s"frame"
                 / %s"Forall" / %x2200       ; Forall or for-all
                 / %s"Pi" / %x03A0           ; Pi or capital Pi
                 / %s"Sigma" / %x03A3        ; Sigma or capital Sigma
-                / %s"let" / %s"type" / %s"extent"
+                / %s"let" / %s"type" / %s"ispace"
                 / %s"fun" / %s"t-fun" / %s"i-fun" / %s"val"
+                / %s"def" / %s"entry" / %s"import"
 
 ; -------------------------------------------------------------------------
 ; Lexical primitives
@@ -555,17 +593,21 @@ HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
 ;   (App appears early), but this works because lId rejects keywords,
 ;   causing App to fail on keyword-headed forms.
 ;
-; [SC4] unbox-spec ispace-var lookahead (tagged on: unbox-spec)
+; [SC4] unbox-spec greedy ispace-var repetition (tagged on: unbox-spec)
 ;
-;   In the Haskell parser for unbox-exp, each ispace-var (called
-;   extent-param there) is guarded by notFollowedBy (symbol ")"), so
-;   that the last ispace-var-like token preceding the closing paren is
-;   left for the mandatory "identifier" to match instead.  ABNF cannot
-;   express this one-token lookahead; the grammar uses a plain
-;   *( ispace-var ws ) repetition (now factored into the unbox-spec rule).
-;   For well-formed input the two approaches produce identical parse
-;   trees.  The difference is visible only in error messages for
-;   malformed input.
+;   An identifier may begin with "$" (see id-start), so the value binder
+;   of an unbox-spec can be indistinguishable from a dimension ispace-var
+;   at the token level (e.g. "$x").  A parser must match the
+;   1*( ispace-var ws ) repetition greedily, without backtracking:
+;   every ispace-var-shaped token is consumed by the repetition, so the
+;   identifier that follows must not be ispace-var-shaped.  Consequently
+;   a few strings derivable from this rule as written -- those whose
+;   value binder starts with "$" -- are rejected by the parser.
+;   The Haskell reference implementation behaves identically: its
+;   unbox parser is (someNE pISpaceParam) followed by lId, with no
+;   backtracking between them, so for example ($d $x e) fails there
+;   too, with both "$d" and "$x" consumed as ispace binders.
+;   For all other input the two parsers produce identical parse trees.
 
 
 ; =========================================================================

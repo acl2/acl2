@@ -84,8 +84,8 @@
     (xdoc::li
      "The AST-level well-formedness predicates @('xxx-wf-ast-p') consult
       @(tsee valid-identifier-string-p) on the identifiers stored inside
-      AST nodes.  For example, @(tsee bind-wf-ast-p).  For the whole program,
-      @(tsee prog-wf-ast-p).")))
+      AST nodes.  For example, @(tsee bind-wf-ast-p) and
+      @(tsee expr-wf-ast-p).")))
   :order-subtopics t
   :default-parent t)
 
@@ -268,11 +268,14 @@
         (list #x03A3)            ; Greek capital letter Sigma
         (string=>nats "let")
         (string=>nats "type")
-        (string=>nats "extent")
+        (string=>nats "ispace")
         (string=>nats "fun")
         (string=>nats "t-fun")
         (string=>nats "i-fun")
-        (string=>nats "val")))
+        (string=>nats "val")
+        (string=>nats "def")
+        (string=>nats "entry")
+        (string=>nats "import")))
 
 (define remora-keyword-p (nats)
   :returns (yes/no booleanp)

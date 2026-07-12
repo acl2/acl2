@@ -65,14 +65,12 @@
       @(':dim') ispace arguments."))
    (xdoc::p
     "A termination fuel parameter bounds how many levels of nested cfun
-     instantiation are performed.  When the fuel reaches zero the body of a
-     new instance is obtained by dimension-substitution only (via
-     @(tsee ast-partial-eval-dims)) rather than full recursive monomorphization.
-     The top-level entry point @(tsee monomorphize-prog) supplies
-     @('(* 10 (expr-count (prog->expr prog)))') as the initial fuel: a margin
+     instantiation are performed. The fuel should never reach zero, so it is an
+     errorif it does. The top-level entry point @(tsee monomorphize-top-expr)
+     supplies @('(* 10 (expr-count expr))') as the initial fuel: a margin
      above the expression size, since each cfun instantiation grows the tree
      (the instance body is spliced in) and so the fuel must exceed the original
-     size for nested instantiation to terminate."))
+     size for nested instantiation to terminate without reunning out of fuel."))
   :order-subtopics t
   :default-parent t)
 
@@ -285,38 +283,6 @@
      @('(mv nil nats)')."))
   (eval-leaf-dims (ispace-list-leaf-dims isps) dim-var-map))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Logic-mode helpers for constant-folding dimension arithmetic.
-
-(define all-dim-const-p ((dims dim-listp))
-  :returns (yes/no booleanp)
-  :short "Check whether every dimension in a list is a @(':const') dimension."
-  (if (endp dims)
-      t
-    (b* ((d (car dims)))
-      (and (dim-case d :const t :otherwise nil)
-           (all-dim-const-p (cdr dims))))))
-
-(define dim-const-val* ((d dimp))
-  :returns (v natp)
-  :short "Extract the nat value from a @(':const') dim, returning 0 otherwise."
-  (dim-case d :const d.val :otherwise 0))
-
-(define dim-list-const-vals ((dims dim-listp))
-  :returns (vals nat-listp)
-  :short "Collect @(':const') values from a dim-list; caller ensures all-dim-const-p."
-  (if (endp dims)
-      nil
-    (cons (dim-const-val* (car dims))
-          (dim-list-const-vals (cdr dims))))
-  ///
-  ; Needed to discharge the (consp nats) guard of NAT-LIST-SUBTRACTION at the
-  ; :sub case of the fold below, where (consp new-dims) is known.
-  (defret consp-of-dim-list-const-vals
-    (equal (consp vals) (consp dims))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Fold: substitute dimension variables with their nat values, constant-fold
 ; arithmetic operators when all sub-dimensions become :const, and propagate this
@@ -344,8 +310,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :extra-args ((dim-var-map acl2::string-nat-mapp))
   :override
   ((dim :var (b* ((dim-var-map (acl2::string-nat-map-fix dim-var-map))
@@ -353,16 +318,16 @@
                   ((unless pair) (dim-var dim.name)))
                (dim-const (nfix (cdr pair)))))
    (dim :add (b* ((new-dims (dim-list-partial-eval-dims dim.dims dim-var-map))
-                  ((unless (all-dim-const-p new-dims)) (dim-add new-dims)))
-               (dim-const (nat-list-sum (dim-list-const-vals new-dims)))))
+                  ((unless (dim-list-case-const new-dims)) (dim-add new-dims)))
+               (dim-const (nat-list-sum (dim-const-list->val new-dims)))))
    (dim :mul (b* ((new-dims (dim-list-partial-eval-dims dim.dims dim-var-map))
-                  ((unless (all-dim-const-p new-dims)) (dim-mul new-dims)))
-               (dim-const (nat-list-product (dim-list-const-vals new-dims)))))
+                  ((unless (dim-list-case-const new-dims)) (dim-mul new-dims)))
+               (dim-const (nat-list-product (dim-const-list->val new-dims)))))
    (dim :sub (b* ((new-dims (dim-list-partial-eval-dims dim.dims dim-var-map))
                   ((unless (and (consp new-dims)
-                                (all-dim-const-p new-dims)))
+                                (dim-list-case-const new-dims)))
                    (dim-sub new-dims))
-                  (result (nat-list-subtraction (dim-list-const-vals new-dims)))
+                  (result (nat-list-subtraction (dim-const-list->val new-dims)))
                   ((unless (natp result)) (dim-sub new-dims)))
                (dim-const (nfix result)))))
   :name ast-partial-eval-dims)
@@ -418,10 +383,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Helper: look up a cfun name in the fn-info-map and return its instance
+; Helper: look up a fun name in the fn-info-map and return its instance
 ; binds (the range of the bind-map), or nil if the name is not present.
 
-(define cfun-instance-binds ((fn-info-map fn-info-mapp) (cfun-name stringp))
+(define c-or-i-fun-instance-binds ((fn-info-map fn-info-mapp) (fun-name stringp))
   :returns (binds bind-listp :hyp :guard)
   :prepwork
   ((local
@@ -429,9 +394,9 @@
       (implies (bind-mapp x)
                (bind-listp (strip-cdrs x)))
       :hints (("Goal" :in-theory (enable strip-cdrs))))))
-  :short "Return the list of instance @(tsee bind) nodes recorded for @('cfun-name'),
-          or @('nil') if @('cfun-name') is not in @('fn-info-map')."
-  (b* ((entry (assoc-equal cfun-name fn-info-map))
+  :short "Return the list of instance @(tsee bind) nodes recorded for @('fun-name'),
+          or @('nil') if @('fun-name') is not in @('fn-info-map')."
+  (b* ((entry (assoc-equal fun-name fn-info-map))
        ((unless entry) nil)
        (pair     (cdr entry))
        (bind-map (bind+bind-map->bind-map pair)))
@@ -441,17 +406,22 @@
 
 ; Main monomorphization traversal.
 ;
-; Each function takes:
-;   fuel          : natp       — limits depth of cfun-body recursion
-;   x             : AST node   — the node being processed
-;   fn-info-map   : fn-info-mapp — accumulated cfun/instance info (threaded through)
-;   dim-var-map   : acl2::string-nat-mapp — ispace dimension-variable bindings
+; The traversal functions (MONO-EXPR and friends) take:
+;   fuel        : natp                  — limits depth of cfun/ifun-body recursion
+;   x           : AST node              — the node being processed
+;   fn-info-map : fn-info-mapp          — accumulated cfun/ifun instance info
+;   dim-var-map : acl2::string-nat-mapp — ispace dimension-variable -> nat bindings
+;   type-map    : string-type-mapp      — type-variable -> type bindings
+; and return (mv err fn-info-map new-x).
 ;
-; Each function returns (mv err fn-info-map new-x).
+; The two instance generators MONO-CFUN-INSTANCE / MONO-IFUN-INSTANCE are part of
+; the same clique (they monomorphize a cfun/ifun body); they return (mv err
+; fn-info-map) and do the only non-structural, fuel-decrementing recursion.
 ;
 ; The :measure (two-nats-measure fuel (count x)) lets ACL2 verify termination:
 ;   - structural recursive calls keep fuel fixed and decrease the count;
-;   - the non-structural recursive call on a cfun body decrements fuel.
+;   - the instance generators have measure (two-nats-measure fuel 0) and call
+;     MONO-EXPR on the instance body with fuel decremented.
 
 ; For the :let case with a single bind, MONO-EXPR calls MONO-BIND on the car of
 ; the binds list.  Its measure is (two-nats-measure fuel (bind-count ...)), so
@@ -473,256 +443,129 @@
       :var
       (mv nil fn-info-map (expr-fix x))
 
-      :atom
-      (b* (((mv err fn-info-map new-a) (mono-atom fuel x.atom fn-info-map dim-var-map type-map)))
-        (mv err fn-info-map (expr-atom new-a)))
+      :atom (b* (((mv err fn-info-map new-a) (mono-atom fuel x.atom fn-info-map dim-var-map type-map)))
+              (mv err fn-info-map (expr-atom new-a)))
 
-      :array
-      (b* (((mv err fn-info-map new-atoms)
-            (mono-atom-list fuel x.atoms fn-info-map dim-var-map type-map)))
-        (mv err fn-info-map (expr-array x.dims new-atoms)))
+      :array (b* (((mv err fn-info-map new-atoms)
+                   (mono-atom-list fuel x.atoms fn-info-map dim-var-map type-map)))
+               (mv err fn-info-map (expr-array x.dims new-atoms)))
 
-      :array-empty
-      (mv nil fn-info-map (expr-fix x))
+      :array-empty (mv nil fn-info-map (expr-fix x))
 
-      :frame
-      (b* (((mv err fn-info-map new-es)
-            (mono-expr-list fuel x.exprs fn-info-map dim-var-map type-map)))
-        (mv err fn-info-map (expr-frame x.dims new-es)))
+       :frame (b* (((mv err fn-info-map new-es)
+                   (mono-expr-list fuel x.exprs fn-info-map dim-var-map type-map)))
+               (mv err fn-info-map (expr-frame x.dims new-es)))
 
-      :frame-empty
-      (mv nil fn-info-map (expr-fix x))
+      :frame-empty (mv nil fn-info-map (expr-fix x))
 
-      :string
-      (mv nil fn-info-map (expr-fix x))
+      :string (mv nil fn-info-map (expr-fix x))
 
-      :app
-      (b* (((mv err fn-info-map new-fun)
-            (mono-expr fuel x.fun fn-info-map dim-var-map type-map))
-           ((when err) (mv err fn-info-map (expr-app new-fun x.args)))
-           ((mv err fn-info-map new-args)
-            (mono-expr-list fuel x.args fn-info-map dim-var-map type-map)))
-        (mv err fn-info-map (expr-app new-fun new-args)))
+      :app (b* (((mv err fn-info-map new-fun)
+                 (mono-expr fuel x.fun fn-info-map dim-var-map type-map))
+                ((when err) (mv err fn-info-map (expr-app new-fun x.args)))
+                ((mv err fn-info-map new-args)
+                 (mono-expr-list fuel x.args fn-info-map dim-var-map type-map)))
+             (mv err fn-info-map (expr-app new-fun new-args)))
 
-      :tapp
-      (b* (((mv err fn-info-map new-fun)
-            (mono-expr fuel x.fun fn-info-map dim-var-map type-map)))
-        (mv err fn-info-map (expr-tapp new-fun x.args)))
+      :tapp (b* (((mv err fn-info-map new-fun)
+                  (mono-expr fuel x.fun fn-info-map dim-var-map type-map)))
+              (mv err fn-info-map (expr-tapp new-fun x.args)))
 
       :iapp
       (b* (((mv err fn-info-map new-fun)
             (mono-expr fuel x.fun fn-info-map dim-var-map type-map))
            ((when err) (mv err fn-info-map (expr-iapp new-fun x.args)))
            (fun new-fun)
-           ; Only monomorphize :iapp to a :var with non-empty ispace args.
+           ; Only monomorphize an :iapp of a known :ifun :var to non-empty ispace args.
            ((mv err fn-info-map new-expr)
             (if (not (consp x.args))
                 (mv nil fn-info-map (expr-iapp fun x.args))
               (expr-case fun
-                :var
-                (b* ((ifun-name fun.name)
-                     (entry     (assoc-equal ifun-name fn-info-map))
-                     ((unless entry)
-                      (mv nil fn-info-map (expr-iapp fun x.args)))
-                     ; Evaluate ispace arguments to nats.
-                     ((mv eval-err nats)
-                      (eval-iargs x.args dim-var-map))
-                     ((when eval-err)
-                      (mv :ispace-eval-error fn-info-map
-                          (expr-iapp fun x.args)))
-                     (inst-name   (cfun-inst-name ifun-name nil nats))
-                     (pair        (cdr entry))
-                     (ifun-bind   (bind+bind-map->bind pair))
-                     (inst-alist  (bind+bind-map->bind-map pair))
-                     (existing    (assoc-equal inst-name inst-alist))
-                     ; If the instance already exists, just replace the call.
-                     ((mv err fn-info-map)
-                      (if existing
-                          (mv nil fn-info-map)
-                        ; Create a new monomorphized :val instance.
-                        (bind-case ifun-bind
-                          :ifun
-                          (b* ((iparams ifun-bind.params)
-                               ; Extend dim-var-map with ifun iparams -> evaluated nats.
-                               (ext-dim-var-map
-                                (extend-ispace-val-map iparams nats dim-var-map))
-                               ; Partially evaluate the ifun's return type.
-                               (new-type?
-                                (type-option-partial-eval-dims
-                                  ifun-bind.type? ext-dim-var-map))
-                               ; Monomorphize the ifun body (with decremented fuel).
-                               ((mv body-err fn-info-map new-body)
-                                (mono-instance-body
-                                 fuel
-                                 (expr-partial-eval-dims
-                                   ifun-bind.expr ext-dim-var-map)
-                                 fn-info-map ext-dim-var-map type-map))
-                               ((when body-err) (mv body-err fn-info-map))
-                               ; Wrap as a :val bind (no value params remain).
-                               (new-val-bind
-                                (bind-val inst-name new-type? new-body))
-                               ; Update fn-info-map: add instance under ifun-name.
-                               (fn-info-map
-                                (fn-info-map-add-instance
-                                 fn-info-map ifun-name inst-name new-val-bind)))
-                            (mv nil fn-info-map))
-                          :otherwise
-                          ; Not an :ifun under an ifun-name: malformed call.
-                          ; Fail loudly rather than emit a dangling inst-name ref.
-                          (mv :bad-ifun-entry fn-info-map))))
-                     ((when err)
-                      (mv err fn-info-map (expr-iapp fun x.args))))
-                  (mv nil fn-info-map (expr-var inst-name)))
-                :otherwise
-                (mv nil fn-info-map (expr-iapp fun x.args)))))
+                :var (b* ((ifun-name fun.name)
+                          ((unless (assoc-equal ifun-name fn-info-map))
+                           (mv nil fn-info-map (expr-iapp fun x.args)))
+                          ((mv eval-err nats) (eval-iargs x.args dim-var-map))
+                          ((when eval-err)
+                           (mv :ispace-eval-error fn-info-map (expr-iapp fun x.args)))
+                          (inst-name (cfun-inst-name ifun-name nil nats))
+                          ((mv err fn-info-map)
+                           (mono-ifun-instance fuel ifun-name inst-name nats
+                                               fn-info-map dim-var-map type-map))
+                          ((when err) (mv err fn-info-map (expr-iapp fun x.args))))
+                       (mv nil fn-info-map (expr-var inst-name)))
+                :otherwise (mv nil fn-info-map (expr-iapp fun x.args)))))
            ((when err) (mv err fn-info-map new-expr)))
         (mv nil fn-info-map new-expr))
 
       :capp
       (b* (((mv err fn-info-map new-fun)
             (mono-expr fuel x.fun fn-info-map dim-var-map type-map))
-           ((when err)
-            (mv err fn-info-map (expr-capp new-fun x.targs x.iargs x.args)))
+           ((when err) (mv err fn-info-map (expr-capp new-fun x.targs x.iargs x.args)))
            ((mv err fn-info-map new-args)
             (mono-expr-list fuel x.args fn-info-map dim-var-map type-map))
            ((when err) (mv err fn-info-map (expr-capp new-fun x.targs x.iargs new-args)))
            (fun new-fun)
-           ; Only monomorphize :capp to a :var with non-empty :some iargs.
+           ; Only monomorphize a :capp of a :var to non-empty :some iargs.
            ((mv err fn-info-map new-expr)
             (ispace-list-option-case x.iargs
-              :none
-              (mv nil fn-info-map (expr-capp fun x.targs x.iargs new-args))
-              :some
-              (if (not (consp x.iargs.val))
-                  (mv nil fn-info-map (expr-capp fun x.targs x.iargs new-args))
-                (expr-case fun
-                  :var
-                  (b* ((cfun-name fun.name)
-                       (entry     (assoc-equal cfun-name fn-info-map))
-                       ((unless entry)
-                        (mv nil fn-info-map
-                            (expr-capp fun x.targs x.iargs new-args)))
-                       ; Evaluate ispace arguments to nats.
-                       ((mv eval-err nats)
-                        (eval-iargs x.iargs.val dim-var-map))
-                       ((when eval-err)
-                        (mv :ispace-eval-error fn-info-map
-                            (expr-capp fun x.targs x.iargs new-args)))
-                       (tnames      (type-list-option-case x.targs
-                                      :some (name-for-type-list x.targs.val type-map)
-                                      :none nil))
-                       (inst-name   (cfun-inst-name cfun-name tnames nats))
-                       (pair        (cdr entry))
-                       (cfun-bind   (bind+bind-map->bind pair))
-                       (inst-alist  (bind+bind-map->bind-map pair))
-                       (existing    (assoc-equal inst-name inst-alist))
-                       ; If the instance already exists, just replace the call.
-                       ((mv err fn-info-map)
-                        (if existing
-                            (mv nil fn-info-map)
-                          ; Create a new monomorphized :fun instance.
-                          (bind-case cfun-bind
-                            :cfun
-                            (b* ((iparams-opt cfun-bind.iparams?)
-                                 (iparams
-                                  (ispace-var-list-option-case iparams-opt
-                                    :some iparams-opt.val
-                                    :none nil))
-                                 ; Extend dim-var-map with cfun iparams -> evaluated nats.
-                                 (ext-dim-var-map
-                                  (extend-ispace-val-map iparams nats dim-var-map))
-                                 ; Extend type-map with cfun tparams -> type arguments.
-                                 (tparams
-                                  (type-var-list-option-case cfun-bind.tparams?
-                                    :some cfun-bind.tparams?.val
-                                    :none nil))
-                                 (targ-tys
-                                  (type-list-option-case x.targs
-                                    :some x.targs.val
-                                    :none nil))
-                                 (ext-type-map
-                                  (extend-type-var-map tparams targ-tys type-map))
-                                 ; Partially evaluate the cfun's param and return types.
-                                 (params cfun-bind.params)
-                                 (new-params
-                                   (var+type?-list-subst-type-vars (var+type?-list-partial-eval-dims params
-                                                                                                     ext-dim-var-map)
-                                                                  ext-type-map ext-type-map))
-                                 (new-type
-                                   (type-subst-type-vars (type-partial-eval-dims cfun-bind.type ext-dim-var-map)
-                                                         ext-type-map ext-type-map))
-                                 ; Monomorphize the cfun body (with decremented fuel).
-                                 ((mv body-err fn-info-map new-body)
-                                  (mono-instance-body
-                                   fuel
-                                   (expr-subst-type-vars
-                                    (expr-partial-eval-dims
-                                      cfun-bind.expr ext-dim-var-map)
-                                    ext-type-map ext-type-map)
-                                   fn-info-map ext-dim-var-map ext-type-map))
-                                 ((when body-err) (mv body-err fn-info-map))
-                                 ; Wrap as a :fun bind using the cfun's value params.
-                                 (new-fun-bind
-                                  (bind-fun inst-name new-params new-type new-body))
-                                 ; Update fn-info-map: add instance under cfun-name.
-                                 (fn-info-map
-                                  (fn-info-map-add-instance
-                                   fn-info-map cfun-name inst-name new-fun-bind)))
-                              (mv nil fn-info-map))
-                            :otherwise
-                            ; Not a :cfun under a cfun-name: malformed call.
-                            ; Fail loudly rather than emit a dangling inst-name ref.
-                            (mv :bad-cfun-entry fn-info-map))))
-                       ((when err)
-                        (mv err fn-info-map
-                            (expr-capp fun x.targs x.iargs new-args))))
-                    (mv nil fn-info-map
-                        (expr-app (expr-var inst-name) new-args)))
-                  :otherwise
-                  (mv nil fn-info-map (expr-capp fun x.targs x.iargs new-args))))))
+              :none (mv nil fn-info-map (expr-capp fun x.targs x.iargs new-args))
+              :some (if (not (consp x.iargs.val))
+                        (mv nil fn-info-map (expr-capp fun x.targs x.iargs new-args))
+                      (expr-case fun
+                        :var (b* ((cfun-name fun.name)
+                                  ((mv eval-err nats) (eval-iargs x.iargs.val dim-var-map))
+                                  ((when eval-err)
+                                   (mv :ispace-eval-error fn-info-map
+                                       (expr-capp fun x.targs x.iargs new-args)))
+                                  (tnames    (type-list-option-case x.targs
+                                               :some (name-for-type-list x.targs.val type-map)
+                                               :none nil))
+                                  (inst-name (cfun-inst-name cfun-name tnames nats))
+                                  (targ-tys  (type-list-option-case x.targs
+                                               :some x.targs.val :none nil))
+                                  (mono-expr (expr-app (expr-var inst-name) new-args))
+                                  ; An unknown cfun is built-in: emit the same instance call
+                                  ; as for a known cfun, but do not build/register an instance.
+                                  ((unless (assoc-equal cfun-name fn-info-map))
+                                   (mv nil fn-info-map mono-expr))
+                                  ((mv err fn-info-map)
+                                   (mono-cfun-instance fuel cfun-name inst-name nats targ-tys
+                                                       fn-info-map dim-var-map type-map))
+                                  ((when err)
+                                   (mv err fn-info-map (expr-capp fun x.targs x.iargs new-args))))
+                                (mv nil fn-info-map mono-expr))
+                        :otherwise (mv nil fn-info-map (expr-capp fun x.targs x.iargs new-args))))))
            ((when err) (mv err fn-info-map new-expr)))
         (mv nil fn-info-map new-expr))
 
-      :unbox
-      (b* (((mv err fn-info-map new-target)
-            (mono-expr fuel x.target fn-info-map dim-var-map type-map))
-           ((when err)
-            (mv err fn-info-map (expr-unbox x.ispaces x.var new-target x.body x.type?)))
-           ((mv err fn-info-map new-body)
-            (mono-expr fuel x.body fn-info-map dim-var-map type-map)))
-        (mv err fn-info-map (expr-unbox x.ispaces x.var new-target new-body x.type?)))
+      :unbox (b* (((mv err fn-info-map new-target)
+                   (mono-expr fuel x.target fn-info-map dim-var-map type-map))
+                  ((when err) (mv err fn-info-map (expr-unbox x.ispaces x.var new-target x.body x.type?)))
+                  ((mv err fn-info-map new-body) (mono-expr fuel x.body fn-info-map dim-var-map type-map)))
+               (mv err fn-info-map (expr-unbox x.ispaces x.var new-target new-body x.type?)))
 
-      :bracket
-      (b* (((mv err fn-info-map new-es)
-            (mono-expr-list fuel x.exprs fn-info-map dim-var-map type-map)))
-        (mv err fn-info-map (expr-bracket new-es)))
+      :bracket (b* (((mv err fn-info-map new-es)
+                     (mono-expr-list fuel x.exprs fn-info-map dim-var-map type-map)))
+                 (mv err fn-info-map (expr-bracket new-es)))
 
-      :let
-      (if (and (consp x.binds) (endp (cdr x.binds)))
-          (b* (((mv err fn-info-map new-bind)
-                (mono-bind fuel (car x.binds)
-                           fn-info-map dim-var-map type-map))
-               ((when err)
-                (mv err fn-info-map (expr-let (list new-bind) x.body)))
-               ((mv err fn-info-map new-body)
-                (mono-expr fuel x.body fn-info-map dim-var-map type-map)))
-            (cond
-             ((bind-case new-bind :cfun)
-              (b* ((new-funs (cfun-instance-binds fn-info-map (bind-cfun->var new-bind))))
-                (mv err fn-info-map
-                    (expr-let (if (consp new-funs)
-                                  new-funs (list new-bind))
-                              new-body))))
-             ((bind-case new-bind :ifun)
-              (b* ((new-funs (cfun-instance-binds fn-info-map (bind-ifun->var new-bind))))
-                (mv err fn-info-map
-                    (expr-let (if (consp new-funs)
-                                  new-funs (list new-bind))
-                              new-body))))
-             (t
-              (mv err fn-info-map
-                  (expr-let (list new-bind) new-body)))))
-        (mv t fn-info-map x))))
+      :let (if (and (consp x.binds) (endp (cdr x.binds)))
+               ;; Lets should have been normalized before calling this to have obly one bind
+               (b* (((mv err fn-info-map new-bind)
+                     (mono-bind fuel (car x.binds)
+                                fn-info-map dim-var-map type-map))
+                    ((when err) (mv err fn-info-map (expr-let (list new-bind) x.body)))
+                    ((mv err fn-info-map new-body)
+                     (mono-expr fuel x.body fn-info-map dim-var-map type-map))
+                    ;; For a :cfun/:ifun bind, splice in the instances generated for it
+                    ;; (replacing the now-unused definition); otherwise keep the bind.
+                    (new-binds (bind-case new-bind
+                                          :cfun (c-or-i-fun-instance-binds fn-info-map new-bind.var)
+                                          :ifun (c-or-i-fun-instance-binds fn-info-map new-bind.var)
+                                          :otherwise nil)))
+                 (mv err fn-info-map
+                     (expr-let (if (consp new-binds) new-binds (list new-bind))
+                               new-body)))
+             (mv t fn-info-map x))))
 
   (define mono-expr-list ((fuel natp) (x expr-listp)
                           (fn-info-map fn-info-mapp) (dim-var-map acl2::string-nat-mapp) (type-map string-type-mapp))
@@ -733,8 +576,7 @@
         (mv nil fn-info-map nil)
       (b* (((mv err fn-info-map new-e)
             (mono-expr fuel (car x) fn-info-map dim-var-map type-map))
-           ((when err)
-            (mv err fn-info-map (list* new-e (expr-list-fix (cdr x)))))
+           ((when err) (mv err fn-info-map (list* new-e (expr-list-fix (cdr x)))))
            ((mv err fn-info-map new-rest)
             (mono-expr-list fuel (cdr x) fn-info-map dim-var-map type-map)))
         (mv err fn-info-map (cons new-e new-rest)))))
@@ -767,8 +609,7 @@
         (mv nil fn-info-map nil)
       (b* (((mv err fn-info-map new-a)
             (mono-atom fuel (car x) fn-info-map dim-var-map type-map))
-           ((when err)
-            (mv err fn-info-map (list* new-a (atom-list-fix (cdr x)))))
+           ((when err) (mv err fn-info-map (list* new-a (atom-list-fix (cdr x)))))
            ((mv err fn-info-map new-rest)
             (mono-atom-list fuel (cdr x) fn-info-map dim-var-map type-map)))
         (mv err fn-info-map (cons new-a new-rest)))))
@@ -810,37 +651,114 @@
                   )
                 (mv nil fn-info-map (bind-fix x)))))
 
-  (define mono-instance-body ((fuel natp) (body exprp)
+  ; Instance generators for the :capp / :iapp cases of mono-expr.  Each builds
+  ; the monomorphized instance body by recursing with the fuel decremented.
+  ; It is and error for fuel to be exhausted.
+
+  (define mono-cfun-instance ((fuel natp) (cfun-name stringp) (inst-name stringp)
+                              (nats nat-listp) (targ-tys type-listp)
                               (fn-info-map fn-info-mapp)
                               (dim-var-map acl2::string-nat-mapp)
                               (type-map string-type-mapp))
-    :short "Recurse into an instance body, or return it unchanged when fuel runs out."
+    :short "Generate and register the monomorphized @(':fun') instance for a
+            @(':capp') call to @('cfun-name'), unless it already exists."
     :long
     (xdoc::topstring
      (xdoc::p
-      "Shared by the @(':iapp') and @(':capp') cases of @(tsee mono-expr).  The
-       @('body') passed in has already been dimension-substituted (and, for
-       @(':capp'), type-substituted) by the caller.  When @('fuel') is positive,
-       the body is monomorphized with @('fuel') decremented; when @('fuel') is
-       exhausted, the (already substituted) body is returned as is, so the
-       resulting instance may still contain un-inlined @(':capp')/@(':iapp')
-       calls."))
-    :returns (mv err (new-fn-info-map fn-info-mapp :hyp :guard) (new-body exprp :hyp :guard))
+      "@('cfun-name') is assumed to be registered in @('fn-info-map').  If
+       @('inst-name') is already among its instances, this is a no-op.
+       Otherwise the @(':cfun')'s ispace parameters are bound to @('nats') and
+       its type parameters to @('targ-tys'); its value parameters, return type,
+       and body are partially evaluated and type-substituted accordingly; and
+       the resulting @(':fun') @(tsee bind) is registered under @('cfun-name').
+       Fails with @(':bad-cfun-entry') if @('cfun-name') is not bound to a
+       @(':cfun')."))
+    :returns (mv err (new-fn-info-map fn-info-mapp :hyp :guard))
     :measure (two-nats-measure fuel 0)
-    (if (posp fuel)
-        (mono-expr (1- fuel) body fn-info-map dim-var-map type-map)
-      (mv nil fn-info-map (expr-fix body)))))
+    (b* ((entry (assoc-equal cfun-name fn-info-map))
+         ((unless entry) (mv nil fn-info-map))
+         (pair       (cdr entry))
+         (cfun-bind  (bind+bind-map->bind pair))
+         (inst-alist (bind+bind-map->bind-map pair))
+         ((when (assoc-equal inst-name inst-alist)) (mv nil fn-info-map)))
+      (bind-case cfun-bind
+        :cfun
+        (b* ((iparams (ispace-var-list-option-case cfun-bind.iparams?
+                        :some cfun-bind.iparams?.val :none nil))
+             (ext-dim-var-map (extend-ispace-val-map iparams nats dim-var-map))
+             (tparams (type-var-list-option-case cfun-bind.tparams?
+                        :some cfun-bind.tparams?.val :none nil))
+             (ext-type-map (extend-type-var-map tparams targ-tys type-map))
+             (new-params (var+type?-list-subst-type-vars
+                          (var+type?-list-partial-eval-dims cfun-bind.params ext-dim-var-map)
+                          ext-type-map ext-type-map))
+             (new-type (type-subst-type-vars
+                        (type-partial-eval-dims cfun-bind.type ext-dim-var-map)
+                        ext-type-map ext-type-map))
+             (body-in (expr-subst-type-vars
+                       (expr-partial-eval-dims cfun-bind.expr ext-dim-var-map)
+                       ext-type-map ext-type-map))
+             ; Monomorphize the cfun body (with decremented fuel; error on exhaustion).
+             ((mv body-err fn-info-map new-body)
+              (if (posp fuel)
+                  (mono-expr (1- fuel) body-in fn-info-map ext-dim-var-map ext-type-map)
+                (mv :fuel-exhausted fn-info-map body-in)))
+             ((when body-err) (mv body-err fn-info-map))
+             (new-fun-bind (bind-fun inst-name new-params new-type new-body)))
+          (mv nil (fn-info-map-add-instance fn-info-map cfun-name inst-name new-fun-bind)))
+        :otherwise
+        ; Not a :cfun under a cfun-name: malformed call; fail loudly.
+        (mv :bad-cfun-entry fn-info-map))))
+
+  (define mono-ifun-instance ((fuel natp) (ifun-name stringp) (inst-name stringp)
+                              (nats nat-listp)
+                              (fn-info-map fn-info-mapp)
+                              (dim-var-map acl2::string-nat-mapp)
+                              (type-map string-type-mapp))
+    :short "Generate and register the monomorphized @(':val') instance for an
+            @(':iapp') call to @('ifun-name'), unless it already exists."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Like @(tsee mono-cfun-instance), but for an @(':ifun'), which abstracts
+       only ispace parameters: the instance is a @(':val') (no value parameters
+       remain) rather than a @(':fun'), and only dimension substitution is
+       applied.  Fails with @(':bad-ifun-entry') if @('ifun-name') is not bound
+       to an @(':ifun')."))
+    :returns (mv err (new-fn-info-map fn-info-mapp :hyp :guard))
+    :measure (two-nats-measure fuel 0)
+    (b* ((entry (assoc-equal ifun-name fn-info-map))
+         ((unless entry) (mv nil fn-info-map))
+         (pair       (cdr entry))
+         (ifun-bind  (bind+bind-map->bind pair))
+         (inst-alist (bind+bind-map->bind-map pair))
+         ((when (assoc-equal inst-name inst-alist)) (mv nil fn-info-map)))
+      (bind-case ifun-bind
+        :ifun
+        (b* ((ext-dim-var-map (extend-ispace-val-map ifun-bind.params nats dim-var-map))
+             (new-type? (type-option-partial-eval-dims ifun-bind.type? ext-dim-var-map))
+             (body-in (expr-partial-eval-dims ifun-bind.expr ext-dim-var-map))
+             ((mv body-err fn-info-map new-body)
+              (if (posp fuel)
+                  (mono-expr (1- fuel) body-in fn-info-map ext-dim-var-map type-map)
+                (mv :fuel-exhausted fn-info-map body-in)))
+             ((when body-err) (mv body-err fn-info-map))
+             (new-val-bind (bind-val inst-name new-type? new-body)))
+          (mv nil (fn-info-map-add-instance fn-info-map ifun-name inst-name new-val-bind)))
+        :otherwise
+        ; Not an :ifun under an ifun-name: malformed call; fail loudly.
+        (mv :bad-ifun-entry fn-info-map)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(define monomorphize-prog ((prog progp))
-  :returns (mv err (fn-info-map fn-info-mapp) (new-prog progp))
-  :short "Monomorphize a Remora program."
+(define monomorphize-top-expr ((expr exprp))
+  :returns (mv err (fn-info-map fn-info-mapp) (new-expr exprp))
+  :short "Monomorphize a standalone (top-level) Remora expression."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Top-level entry point.  Returns @('(mv error fn-info-map new-prog)').
+    "Top-level entry point.  Returns @('(mv error fn-info-map new-expr)').
      On success @('error') is @('nil') and @('fn-info-map') is a
      @(tsee fn-info-map) mapping each @(':cfun') and @(':ifun') name to a
      @(tsee bind+bind-map) pair, whose @('bind-map') component maps each
@@ -850,8 +768,8 @@
      @(':ispace-eval-error') (an ispace argument failed to evaluate to a nat),
      or @(':bad-ifun-entry') / @(':bad-cfun-entry') (a name registered as an
      @(':ifun') / @(':cfun') resolved to a binding of the wrong kind)."))
-  (b* ((prog (prog-singletonize-let prog))
-       (fuel (expr-count (prog->expr prog)))
+  (b* ((expr (expr-singletonize-let expr))
+       (fuel (expr-count expr))
        ((mv err fn-info-map new-expr)
-        (mono-expr (* 10 fuel) (prog->expr prog) nil nil nil)))
-    (mv err fn-info-map (prog-flatten-let (make-prog :expr new-expr)))))
+        (mono-expr (* 10 fuel) expr nil nil nil)))
+    (mv err fn-info-map (expr-flatten-let new-expr))))

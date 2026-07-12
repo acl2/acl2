@@ -10,18 +10,13 @@
 
 (in-package "REMORA")
 
-(include-book "values")
+(include-book "values-to-abstract-syntax")
 (include-book "type-equivalence")
 
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
 (acl2::controlled-configuration)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local
- (in-theory (enable acl2::string-string-map-quadruplep-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,10 +69,18 @@
       "In the case of two function type values,
        the input and output type values must be equivalent.")
      (xdoc::p
-      "Universal, product, and sum type values are the same as
-       universal, product, and sum types,
-       so we check their equivalence in the same way:
-       see @(tsee type-equivp)."))
+      "Universal, product, and sum type values are closures.
+       We convert them to types via @(tsee type-value-to-type),
+       which substitutes the captured dynamic environments into the bodies,
+       and we compare the resulting types via @(tsee type-equivp),
+       which handles the renaming of the parameters.
+       Thus, closures are compared according to
+       the meaning of the bodies in their environments;
+       for example, a universal type value whose body is
+       an atom type variable bound to the integer type
+       in the captured environment
+       is equivalent to
+       a universal type value whose body is the integer type."))
     (type-value-case
      tval1
      :base (type-value-case
@@ -96,63 +99,18 @@
            :otherwise nil)
      :forall (type-value-case
               tval2
-              :forall (b* ((used (set::union
-                                  (set::union (set::mergesort tval1.params)
-                                              (set::mergesort tval2.params))
-                                  (set::union (type-all-type-vars tval1.body)
-                                              (type-all-type-vars tval2.body))))
-                           (maps (fresh-type-var-renaming tval1.params
-                                                          tval2.params
-                                                          used))
-                           ((when (reserrp maps)) nil)
-                           ((string-string-map-quadruple maps) maps)
-                           (body1 (type-rename-type-vars tval1.body
-                                                         maps.1st
-                                                         maps.2nd))
-                           (body2 (type-rename-type-vars tval2.body
-                                                         maps.3rd
-                                                         maps.4th)))
-                        (type-equivp body1 body2))
+              :forall (type-equivp (type-value-to-type tval1)
+                                   (type-value-to-type tval2))
               :otherwise nil)
      :pi (type-value-case
           tval2
-          :pi (b* ((used (set::union
-                          (set::union (set::mergesort tval1.params)
-                                      (set::mergesort tval2.params))
-                          (set::union (type-all-ispace-vars tval1.body)
-                                      (type-all-ispace-vars tval2.body))))
-                   (maps (fresh-ispace-var-renaming tval1.params
-                                                    tval2.params
-                                                    used))
-                   ((when (reserrp maps)) nil)
-                   ((string-string-map-quadruple maps) maps)
-                   (body1 (type-rename-ispace-vars tval1.body
-                                                   maps.1st
-                                                   maps.2nd))
-                   (body2 (type-rename-ispace-vars tval2.body
-                                                   maps.3rd
-                                                   maps.4th)))
-                (type-equivp body1 body2))
+          :pi (type-equivp (type-value-to-type tval1)
+                           (type-value-to-type tval2))
           :otherwise nil)
      :sigma (type-value-case
              tval2
-             :sigma (b* ((used (set::union
-                                (set::union (set::mergesort tval1.params)
-                                            (set::mergesort tval2.params))
-                                (set::union (type-all-ispace-vars tval1.body)
-                                            (type-all-ispace-vars tval2.body))))
-                         (maps (fresh-ispace-var-renaming tval1.params
-                                                          tval2.params
-                                                          used))
-                         ((when (reserrp maps)) nil)
-                         ((string-string-map-quadruple maps) maps)
-                         (body1 (type-rename-ispace-vars tval1.body
-                                                         maps.1st
-                                                         maps.2nd))
-                         (body2 (type-rename-ispace-vars tval2.body
-                                                         maps.3rd
-                                                         maps.4th)))
-                      (type-equivp body1 body2))
+             :sigma (type-equivp (type-value-to-type tval1)
+                                 (type-value-to-type tval2))
              :otherwise nil))
     :measure (+ (type-value-count tval1) (type-value-count tval2)))
 
