@@ -48,6 +48,7 @@
                     integer-list-resultp
                     lifix
                     lnfix
+                    lposfix
                     make-string-string-map-pair
                     make-string-string-map-quadruple
                     nat

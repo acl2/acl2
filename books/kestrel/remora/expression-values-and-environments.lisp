@@ -618,6 +618,13 @@
 
   ///
 
+  (defruled dims-of-expr-value-list-of-cdr
+    (equal (dims-of-expr-value-list (cdr vals))
+           (cdr (dims-of-expr-value-list vals))))
+
+  (theory-invariant (incompatible (:rewrite dims-of-expr-value-list-of-cdr)
+                                  (:rewrite cdr-of-dims-of-expr-value-list)))
+
   (defrule dims-of-expr-value-list-of-repeat
     (equal (dims-of-expr-value-list (repeat n val))
            (repeat n (dims-of-expr-value val)))
@@ -662,8 +669,9 @@
     (equal (dims-of-expr-value-list-list (cdr valss))
            (cdr (dims-of-expr-value-list-list valss))))
 
-  (theory-invariant (incompatible (:rewrite dims-of-expr-value-list-list-of-cdr)
-                                  (:rewrite cdr-of-dims-of-expr-value-list-list)))
+  (theory-invariant (incompatible
+                     (:rewrite dims-of-expr-value-list-list-of-cdr)
+                     (:rewrite cdr-of-dims-of-expr-value-list-list)))
 
   (defrule dims-of-expr-value-list-list-of-list-split
     (equal (dims-of-expr-value-list-list (list-split vals n))
@@ -776,7 +784,17 @@
              (expr-value-list-wfp (expr-value-vector->elems val)))
     :enable (expr-value-wfp
              expr-value-list-wfp-alt-def)
-    :expand (check-dims-of-expr-value val)))
+    :expand (check-dims-of-expr-value val))
+
+  (defrule list-repeatp-of-dims-of-expr-value-vector->elems
+    (implies (and (expr-value-wfp val)
+                  (expr-value-case val :vector))
+             (list-repeatp
+              (dims-of-expr-value-list (expr-value-vector->elems val))))
+    :enable (expr-value-wfp
+             expr-value-list-wfp-alt-def
+             check-dims-of-expr-value
+             check-dims-of-expr-value-list-when-expr-value-list-wfp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

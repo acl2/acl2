@@ -52,8 +52,8 @@
                    (list (ispace-value-dim 2)
                          (ispace-value-shape (list 3))))
  (expr-value-primop (make-primop-value-length-t-d-s :tval *tv-int*
-                                                    :d 2
-                                                    :s (list 3))))
+                                                    :dval 2
+                                                    :sval (list 3))))
 
 ; Dimension and shape in the wrong order.
 (acl2::assert-event
@@ -92,16 +92,16 @@
 
 (acl2::assert-equal
  (eval-primop-fun (make-primop-value-length-t-d-s :tval *tv-int*
-                                                  :d 3
-                                                  :s nil)
+                                                  :dval 3
+                                                  :sval nil)
                   (list *vec3*))
  (iv 3))
 
 ; Wrong number of argument cells.
 (acl2::assert-event
  (reserrp (eval-primop-fun (make-primop-value-length-t-d-s :tval *tv-int*
-                                                           :d 3
-                                                           :s nil)
+                                                           :dval 3
+                                                           :sval nil)
                            (list *vec3* *vec3*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -136,8 +136,8 @@
                    (list (ispace-value-dim 1)
                          (ispace-value-shape (list 3))))
  (expr-value-primop (make-primop-value-head-t-d-s :tval *tv-int*
-                                                  :d 1
-                                                  :s (list 3))))
+                                                  :dval 1
+                                                  :sval (list 3))))
 
 ; Dimension and shape in the wrong order.
 (acl2::assert-event
@@ -174,16 +174,16 @@
 
 (acl2::assert-equal
  (eval-primop-fun (make-primop-value-head-t-d-s :tval *tv-int*
-                                                :d 2
-                                                :s nil)
+                                                :dval 2
+                                                :sval nil)
                   (list *vec3*))
  (iv 1))
 
 ; Wrong number of argument cells.
 (acl2::assert-event
  (reserrp (eval-primop-fun (make-primop-value-head-t-d-s :tval *tv-int*
-                                                         :d 2
-                                                         :s nil)
+                                                         :dval 2
+                                                         :sval nil)
                            (list *vec3* *vec3*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -215,8 +215,8 @@
                    (list (ispace-value-dim 1)
                          (ispace-value-shape (list 3))))
  (expr-value-primop (make-primop-value-tail-t-d-s :tval *tv-int*
-                                                  :d 1
-                                                  :s (list 3))))
+                                                  :dval 1
+                                                  :sval (list 3))))
 
 ; Dimension and shape in the wrong order.
 (acl2::assert-event
@@ -258,14 +258,14 @@
 
 (acl2::assert-equal
  (eval-primop-fun (make-primop-value-tail-t-d-s :tval *tv-int*
-                                                :d 2
-                                                :s nil)
+                                                :dval 2
+                                                :sval nil)
                   (list *vec3*))
  (expr-value-vector (list (iv 2) (iv 3))))
 
 ; Wrong number of argument cells.
 (acl2::assert-event
  (reserrp (eval-primop-fun (make-primop-value-tail-t-d-s :tval *tv-int*
-                                                         :d 2
-                                                         :s nil)
+                                                         :dval 2
+                                                         :sval nil)
                            (list *vec3* *vec3*))))

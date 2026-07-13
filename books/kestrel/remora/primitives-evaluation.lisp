@@ -1365,25 +1365,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled list-repeatp-of-dims-of-expr-value-vector->elems
-  (implies (and (expr-value-wfp val)
-                (expr-value-case val :vector))
-           (list-repeatp (dims-of-expr-value-list (expr-value-vector->elems val))))
-  :enable (expr-value-wfp
-           expr-value-list-wfp-alt-def
-           check-dims-of-expr-value
-           check-dims-of-expr-value-list-when-expr-value-list-wfp))
-
-(defruled list-repeatp-of-dims-of-cdr-of-expr-value-vector->elems
-  (implies (and (expr-value-wfp val)
-                (expr-value-case val :vector))
-           (list-repeatp
-            (dims-of-expr-value-list (cdr (expr-value-vector->elems val)))))
-  :use (:instance list-repeatp-of-cdr
-                  (x (dims-of-expr-value-list (expr-value-vector->elems val))))
-  :enable (list-repeatp-of-dims-of-expr-value-vector->elems
-           cdr-of-dims-of-expr-value-list))
-
 (define eval-primop-fun ((op primop-valuep) (args expr-value-listp))
   :guard (and (primop-value-funp op)
               (expr-value-list-wfp args))
@@ -1465,13 +1446,13 @@
      :bool-to-float (prim-bool-to-float (first args))
      :head (prog2$ (impossible) (reserr nil))
      :head-t (prog2$ (impossible) (reserr nil))
-     :head-t-d-s (prim-head op.tval op.d op.s (first args))
+     :head-t-d-s (prim-head op.tval op.dval op.sval (first args))
      :tail (prog2$ (impossible) (reserr nil))
      :tail-t (prog2$ (impossible) (reserr nil))
-     :tail-t-d-s (prim-tail op.tval op.d op.s (first args))
+     :tail-t-d-s (prim-tail op.tval op.dval op.sval (first args))
      :length (prog2$ (impossible) (reserr nil))
      :length-t (prog2$ (impossible) (reserr nil))
-     :length-t-d-s (prim-length op.tval op.d op.s (first args))))
+     :length-t-d-s (prim-length op.tval op.dval op.sval (first args))))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp
                                            arity-of-primop-value-fun
                                            type-of-primop-value-fun)))
@@ -1482,59 +1463,61 @@
     (implies (not (reserrp val))
              (expr-value-wfp val))
     :hyp (expr-value-list-wfp args)
-    :hints (("Goal" :in-theory (enable eval-primop-fun
-                                       prim-int-add
-                                       prim-int-sub
-                                       prim-int-mul
-                                       prim-int-div
-                                       prim-int-expt
-                                       prim-int-mod
-                                       prim-int-max
-                                       prim-int-min
-                                       prim-int-bit-and
-                                       prim-int-bit-or
-                                       prim-int-bit-xor
-                                       prim-int-shl
-                                       prim-int-shr
-                                       prim-int-bit-not
-                                       prim-int-popc
-                                       prim-int-eq
-                                       prim-int-neq
-                                       prim-int-lt
-                                       prim-int-gt
-                                       prim-int-leq
-                                       prim-int-geq
-                                       prim-int-to-float
-                                       prim-int-to-bool
-                                       prim-float-add
-                                       prim-float-sub
-                                       prim-float-mul
-                                       prim-float-div
-                                       prim-float-expt
-                                       prim-float-max
-                                       prim-float-min
-                                       prim-float-sqrt
-                                       prim-float-eq
-                                       prim-float-neq
-                                       prim-float-lt
-                                       prim-float-gt
-                                       prim-float-leq
-                                       prim-float-geq
-                                       prim-float-truncate
-                                       prim-float-round
-                                       prim-float-ceiling
-                                       prim-float-floor
-                                       prim-bool-not
-                                       prim-bool-and
-                                       prim-bool-or
-                                       prim-bool-eq
-                                       prim-bool-neq
-                                       prim-bool-to-int
-                                       prim-bool-to-float
-                                       prim-head
-                                       prim-tail
-                                       prim-length
-                                       list-repeatp-of-dims-of-cdr-of-expr-value-vector->elems)))))
+    :hints
+    (("Goal" :in-theory (e/d (eval-primop-fun
+                              prim-int-add
+                              prim-int-sub
+                              prim-int-mul
+                              prim-int-div
+                              prim-int-expt
+                              prim-int-mod
+                              prim-int-max
+                              prim-int-min
+                              prim-int-bit-and
+                              prim-int-bit-or
+                              prim-int-bit-xor
+                              prim-int-shl
+                              prim-int-shr
+                              prim-int-bit-not
+                              prim-int-popc
+                              prim-int-eq
+                              prim-int-neq
+                              prim-int-lt
+                              prim-int-gt
+                              prim-int-leq
+                              prim-int-geq
+                              prim-int-to-float
+                              prim-int-to-bool
+                              prim-float-add
+                              prim-float-sub
+                              prim-float-mul
+                              prim-float-div
+                              prim-float-expt
+                              prim-float-max
+                              prim-float-min
+                              prim-float-sqrt
+                              prim-float-eq
+                              prim-float-neq
+                              prim-float-lt
+                              prim-float-gt
+                              prim-float-leq
+                              prim-float-geq
+                              prim-float-truncate
+                              prim-float-round
+                              prim-float-ceiling
+                              prim-float-floor
+                              prim-bool-not
+                              prim-bool-and
+                              prim-bool-or
+                              prim-bool-eq
+                              prim-bool-neq
+                              prim-bool-to-int
+                              prim-bool-to-float
+                              prim-head
+                              prim-tail
+                              prim-length
+                              dims-of-expr-value-list-of-cdr)
+                             (cdr-of-dims-of-expr-value-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1625,8 +1608,8 @@
              (expr-value-primop
               (make-primop-value-head-t-d-s
                :tval op.tval
-               :d (ispace-value-dim->val (first ivals))
-               :s (ispace-value-shape->val (second ivals)))))
+               :dval (ispace-value-dim->val (first ivals))
+               :sval (ispace-value-shape->val (second ivals)))))
    :tail-t (b* (((unless (ispace-values-match-ispace-vars-p
                           ivals
                           (list (ispace-var-dim "d")
@@ -1635,8 +1618,8 @@
              (expr-value-primop
               (make-primop-value-tail-t-d-s
                :tval op.tval
-               :d (ispace-value-dim->val (first ivals))
-               :s (ispace-value-shape->val (second ivals)))))
+               :dval (ispace-value-dim->val (first ivals))
+               :sval (ispace-value-shape->val (second ivals)))))
    :length-t (b* (((unless (ispace-values-match-ispace-vars-p
                             ivals
                             (list (ispace-var-dim "d")
@@ -1645,8 +1628,8 @@
                (expr-value-primop
                 (make-primop-value-length-t-d-s
                  :tval op.tval
-                 :d (ispace-value-dim->val (first ivals))
-                 :s (ispace-value-shape->val (second ivals)))))
+                 :dval (ispace-value-dim->val (first ivals))
+                 :sval (ispace-value-shape->val (second ivals)))))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp
                                            ispace-values-match-ispace-vars-p)))
