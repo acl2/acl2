@@ -67,8 +67,7 @@
 ;takes and returns USBs
 (defund sbvdiv (n x y)
   (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y)
+           (type integer x y)
            (xargs :guard (not (equal 0 (bvchop n y)))))
   (bvchop n (truncate (logext n x) (logext n y))))
 
@@ -136,8 +135,7 @@
 ;logically this is equal to sbvdiv (see theorem sbvdiv-total-becomes-sbvdiv)
 (defund sbvdiv-total (n x y)
   (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y))
+           (type integer x y))
   (if (equal 0 (logext n y))
       (logext n 0)
     (sbvdiv n x y)))
