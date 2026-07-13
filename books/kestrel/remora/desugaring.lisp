@@ -159,8 +159,7 @@
           type-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :override
   ((shape :dims (cond ((endp shape.dims) ; no dimensions
                        (shape-append nil))
@@ -421,12 +420,7 @@
                           bind-desugar
                           bind-list-desugar
                           ast-desugar-rules
-                          type-list-corep-of-var+type?-list->type-list))))
-
-  (defret prog-corep-of-prog-desugar
-    (prog-corep result)
-    :fn prog-desugar
-    :hints (("Goal" :in-theory (enable prog-desugar)))))
+                          type-list-corep-of-var+type?-list->type-list)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -530,13 +524,7 @@
                                         bind-desugar
                                         bind-list-desugar
                                         expr-corep
-                                        ast-corep-rules))))
-
-  (defret prog-desugar-when-prog-corep
-    (equal result (prog-fix prog))
-    :hyp (prog-corep prog)
-    :fn prog-desugar
-    :hints (("Goal" :in-theory (enable prog-desugar)))))
+                                        ast-corep-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -602,8 +590,4 @@
 
   (defrule atom-list-desugar-idempotent
     (equal (atom-list-desugar (atom-list-desugar atoms))
-           (atom-list-desugar atoms)))
-
-  (defrule prog-desugar-idempotent
-    (equal (prog-desugar (prog-desugar prog))
-           (prog-desugar prog))))
+           (atom-list-desugar atoms))))

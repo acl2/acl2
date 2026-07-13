@@ -183,8 +183,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :extra-args ((dim-renam string-string-mapp)
                (shape-renam string-string-mapp))
   :result booleanp
@@ -344,8 +343,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :extra-args ((atom-renam string-string-mapp)
                (array-renam string-string-mapp))
   :result booleanp
@@ -477,8 +475,7 @@
     "This is a conservative check:
      it does not depend on which keys of the renaming
      are actually free in the body of each binder."))
-  :types (exprs/atoms/binds
-          prog)
+  :types (exprs/atoms/binds)
   :extra-args ((renam string-string-mapp))
   :result booleanp
   :default t
@@ -560,8 +557,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :extra-args ((dim-renam string-string-mapp)
                (shape-renam string-string-mapp))
   :override
@@ -735,8 +731,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :extra-args ((atom-renam string-string-mapp)
                (array-renam string-string-mapp))
   :override
@@ -880,8 +875,7 @@
      but currently @(tsee fty::deffold-map) does not support such guards.
      One should call the @(tsee ast-rename-expr-vars-no-capture-p) predicates
      prior to applying these renaming operations, for the time being."))
-  :types (exprs/atoms/binds
-          prog)
+  :types (exprs/atoms/binds)
   :extra-args ((renam string-string-mapp))
   :override
   ((expr :var (b* ((renam (string-string-map-fix renam))

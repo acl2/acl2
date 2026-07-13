@@ -489,6 +489,56 @@ the @('fault') field instead.</li>
   :parents (decoding-and-spec-utils)
   :short "Operations to manipulate stack pointers."
 
+  (define select-stack-address-size
+    ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+     x86)
+    :returns (size (member-equal size '(2 4 8)))
+    :parents (stack-pointer-operations)
+    :short "Address size of the stack, in bytes."
+    :long
+    "<p>
+     This is the @('StackAddrSize') attribute
+     in Intel manual, June 2026, Vol. 2, Sec. 3.1.1.9,
+     which is also called @('StackAddressSize') or @('StackSize')
+     in the pseudocode of some instructions that operate on the stack.
+     </p>
+     <p>
+     In 64-bit mode, the stack address size is always 64 bits.
+     In 32-bit mode, it is 32 or 16 bits,
+     based on the SS.B bit,
+     i.e. the B bit of the current stack segment descriptor.
+     See Intel manual, Jun 2026, Vol. 1, Sec. 6.2.3 and Sec. 6.2.5,
+     and AMD manual, Jun'23, Vol. 2, Sec. 2.4.5 and Sec. 4.7.3.
+     The address-size override prefix does not affect
+     the stack address size (see @(tsee read-*sp)).
+     </p>"
+    (case proc-mode
+      (#.*64-bit-mode* 8)
+      (#.*compatibility-mode*
+       (b* (((the (unsigned-byte 16) ss-attr) (seg-hidden-attri #.*ss* x86))
+            (ss.b (data-segment-descriptor-attributesBits->d/b ss-attr)))
+         (if (= ss.b 1) 4 2)))
+      (otherwise
+       ;; Unimplemented for other modes,
+       ;; but we return the stack address size of
+       ;; real-address and virtual-8086 modes (i.e. 16 bits),
+       ;; to keep the return type of this function simple.
+       2))
+    :inline t
+    :no-function t
+    ///
+
+    (defrule select-stack-address-size-when-64-bit-modep
+      (equal (select-stack-address-size #.*64-bit-mode* x86) 8))
+
+    (defrule select-stack-address-size-lower-bound
+      (<= 2 (select-stack-address-size proc-mode x86))
+      :rule-classes :linear)
+
+    (defrule select-stack-address-size-upper-bound
+      (<= (select-stack-address-size proc-mode x86) 8)
+      :rule-classes :linear))
+
   (define read-*sp ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
                     x86)
     :returns (*sp i64p :hyp (x86p x86))

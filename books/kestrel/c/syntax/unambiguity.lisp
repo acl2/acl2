@@ -200,6 +200,11 @@
              (dirdeclor-unambp dirdeclor))
     :enable dirdeclor-unambp)
 
+  (defruled param-declor-unambp-when-none
+    (implies (param-declor-case param-declor :none)
+             (param-declor-unambp param-declor))
+    :enable param-declor-unambp)
+
   (defruled label-unambp-when-name
     (implies (label-case label :name)
              (label-unambp label))
@@ -349,6 +354,7 @@
                     spec/qual-unambp-when-attrib
                     designor-unambp-when-dot
                     dirdeclor-unambp-when-ident
+                    param-declor-unambp-when-none
                     label-unambp-when-name
                     stmt-unambp-when-null-attrib
                     stmt-unambp-when-goto

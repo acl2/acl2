@@ -187,7 +187,6 @@
           var+type?
           var+type?-list
           exprs/atoms/binds
-          prog
           string-dim-map
           string-shape-map)
   :result ispace-var-setp
@@ -262,7 +261,6 @@
           var+type?
           var+type?-list
           exprs/atoms/binds
-          prog
           string-type-map)
   :result type-var-setp
   :default nil
@@ -321,7 +319,6 @@
      For the body of a @('let') expression,
      we just remove all the variables bound in the bindings."))
   :types (exprs/atoms/binds
-          prog
           string-expr-map)
   :result string-setp
   :default nil
@@ -372,8 +369,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :result ispace-var-setp
   :default nil
   :combine set::union
@@ -416,8 +412,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :result type-var-setp
   :default nil
   :combine set::union
@@ -454,8 +449,7 @@
      the parameters of function bindings,
      and the expression variables introduced by
      @('let') bindings and unboxing expressions."))
-  :types (exprs/atoms/binds
-          prog)
+  :types (exprs/atoms/binds)
   :result string-setp
   :default nil
   :combine set::union

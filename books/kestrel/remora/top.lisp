@@ -18,7 +18,9 @@
 (include-book "static-semantics")
 (include-book "dynamic-semantics")
 (include-book "monomorphize")
-(include-book "monomorphize-file")
+(include-book "monomorphize-from-file")
+(include-book "eval-from-file")
+(include-book "unique-names")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -98,4 +100,4 @@
                     parsing-and-printing
                     static-semantics
                     dynamic-semantics
-                    monomorphize-prog))
+                    monomorphize-top-expr))

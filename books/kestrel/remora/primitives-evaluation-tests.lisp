@@ -58,6 +58,15 @@
 ; mismatch: Haskell raises arithmetic overflow (minBound div -1 is not a 64-bit Int)
 (acl2::assert-equal (prim-int-div (iv *int-min*) (iv -1)) (iv (- *int-min*)))
 
+(acl2::assert-equal (prim-int-expt (iv 2) (iv 10)) (iv 1024))
+(acl2::assert-equal (prim-int-expt (iv -2) (iv 3)) (iv -8))
+(acl2::assert-equal (prim-int-expt (iv 5) (iv 0)) (iv 1))
+(acl2::assert-equal (prim-int-expt (iv 0) (iv 0)) (iv 1))
+(acl2::assert-event (reserrp (prim-int-expt (iv 2) (iv -1))))
+(acl2::assert-event (reserrp (prim-int-expt (bv t) (iv 1))))
+; mismatch: Haskell's 64-bit Int overflows, wrapping to 0
+(acl2::assert-equal (prim-int-expt (iv 2) (iv 64)) (iv (expt 2 64)))
+
 (acl2::assert-equal (prim-int-mod (iv 7) (iv 3)) (iv 1))
 (acl2::assert-equal (prim-int-mod (iv -7) (iv 3)) (iv 2))
 (acl2::assert-equal (prim-int-mod (iv 7) (iv -3)) (iv -2))

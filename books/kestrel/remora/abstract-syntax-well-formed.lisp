@@ -69,8 +69,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :result booleanp
   :default t
   :combine and

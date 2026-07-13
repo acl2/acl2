@@ -516,8 +516,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :extra-args ((dim-subst string-dim-mapp)
                (shape-subst string-shape-mapp)
                (avoid ispace-var-setp))
@@ -754,21 +753,6 @@
      can be started empty here."))
   (atom-subst-ispace-vars-alpha-aux atom dim-subst shape-subst nil))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define prog-subst-ispace-vars-alpha ((prog progp)
-                                      (dim-subst string-dim-mapp)
-                                      (shape-subst string-shape-mapp))
-  :returns (new-prog progp)
-  :short "Substitute ispace variables in a program,
-          with automatic alpha renaming to avoid capture."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the top-level entry point for programs;
-     see @(tsee type-subst-ispace-vars-alpha) for why the @('avoid') set
-     can be started empty here."))
-  (prog-subst-ispace-vars-alpha-aux prog dim-subst shape-subst nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -853,8 +837,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :extra-args ((atom-subst string-type-mapp)
                (array-subst string-type-mapp)
                (avoid type-var-setp))
@@ -1071,21 +1054,6 @@
      can be started empty here."))
   (atom-subst-type-vars-alpha-aux atom atom-subst array-subst nil))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define prog-subst-type-vars-alpha ((prog progp)
-                                    (atom-subst string-type-mapp)
-                                    (array-subst string-type-mapp))
-  :returns (new-prog progp)
-  :short "Substitute type variables in a program,
-          with automatic alpha renaming to avoid capture."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the top-level entry point for programs;
-     see @(tsee type-subst-type-vars-alpha) for why the @('avoid') set
-     can be started empty here."))
-  (prog-subst-type-vars-alpha-aux prog atom-subst array-subst nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1171,8 +1139,7 @@
      (nothing in the substitution maps to it any more,
      and, being fresh, it does not occur in the original ASTs),
      so reusing it cannot cause capture."))
-  :types (exprs/atoms/binds
-          prog)
+  :types (exprs/atoms/binds)
   :extra-args ((subst string-expr-mapp)
                (avoid string-setp))
   :override
@@ -1310,16 +1277,3 @@
      can be started empty here."))
   (atom-subst-expr-vars-alpha-aux atom subst nil))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define prog-subst-expr-vars-alpha ((prog progp) (subst string-expr-mapp))
-  :returns (new-prog progp)
-  :short "Substitute expression variables in a program,
-          with automatic alpha renaming to avoid capture."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the top-level entry point for programs;
-     see @(tsee expr-subst-expr-vars-alpha) for why the @('avoid') set
-     can be started empty here."))
-  (prog-subst-expr-vars-alpha-aux prog subst nil))
