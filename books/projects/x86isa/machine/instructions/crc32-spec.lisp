@@ -257,7 +257,7 @@
      the textbook CRC definition.
      Absorbing a message piecewise, via repeated calls of this function,
      yields the same result as absorbing it in one call:
-     this is the theorem @(tsee crc-of-crc).")
+     this is the theorem @('crc-of-crc').")
    (xdoc::p
     "Common CRC conventions
      (initial CRC values such as @('FFFFFFFFh'),
