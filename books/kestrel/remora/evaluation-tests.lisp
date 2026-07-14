@@ -14,24 +14,20 @@
 (include-book "type-checking")
 (include-book "evaluation")
 
-(include-book "std/util/defmacro-plus" :dir :system)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ test-eval-top-expr (code)
-  :parents (evaluation)
-  :short "Test that a standalone Remora expression
-          parses, type-checks, and evaluates without error."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "@('code') is a string of Remora source for a standalone expression.
-     The expansion is an @(tsee assert-event) that runs the full pipeline
-     &mdash; @(tsee parse-top-exp-from-string), @(tsee check-top-expr),
-     @(tsee eval-top-expr) (with an evaluation limit of one million)
-     &mdash; and passes when the resulting value is not an error.
-     The value is printed to the comment window for manual inspection;
-     the expected value is not checked."))
+; Test that a standalone Remora expression
+; parses, type-checks, and evaluates without error.
+; The argument is a string of Remora source for a standalone expression.
+; The macro expands to an assert-event that runs the full pipeline
+; (parse-top-exp-from-string,
+; check-top-expr,
+; and eval-top-expr with an evaluation limit of one million)
+; and passes when the resulting value is not an error.
+; The value is printed to the comment window for manual inspection;
+; the expected value is not checked.
+
+(defmacro test-eval-top-expr (code)
   `(assert-event
     (b* ((code ,code)
          (ast (parse-top-exp-from-string code))
