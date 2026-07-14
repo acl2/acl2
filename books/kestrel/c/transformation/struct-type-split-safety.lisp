@@ -835,10 +835,11 @@
      involving the struct being split
      (unless one writes @('s[0]') instead of @('*s')).")
    (xdoc::p
-    "We reject function calls for now,
-     because we need to make sure that those are safe too,
-     and that may include some built-in functions
-     which need to be examined case by case.")
+    "Function calls are allowed
+     (so long as the arguments satisfy the safety checks),
+     but this relies on the assumption that
+     we are safety-checking all the called functions.
+     We plan to do this as a complementary safety check.")
    (xdoc::p
     "We allow member access, by value or by pointer.
      This is the normal safe way to access structs.
@@ -969,7 +970,6 @@
   ((stor-spec :auto (sts-reject (stor-spec-fix stor-spec)))
    (type-qual :atomic (sts-reject (type-qual-fix type-qual)))
    (expr :gensel (sts-reject (expr-fix expr)))
-   (expr :funcall (sts-reject (expr-fix expr)))
    (expr :complit (and (tyname-sts-safep expr.type spec)
                        (desiniter-list-sts-safep expr.elems spec)
                        (tyname-info-sts-safep expr.type spec)))
