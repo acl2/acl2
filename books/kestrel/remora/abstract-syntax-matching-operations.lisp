@@ -114,14 +114,33 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-product ((type typep))
-  :returns (vars+type ispacevarlist+type-resultp)
+  :returns (var+type ispacevar+type-resultp)
   :short "Check if an atom type is a product type,
-          returning its ispace parameter variables and body array type
-          if successful."
-  (if (type-case type :pi)
-      (make-ispacevarlist+type :vars (type-pi->params type)
-                               :type (type-pi->body type))
-    (reserr nil)))
+          peeling off its first ispace parameter variable if successful."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Consistently with the curried view of ispace applications
+     (see @(tsee expr)),
+     an n-ary product type is treated as
+     the nesting of unary product types;
+     this will be also explicated in the type ASTs soon.
+     Accordingly, this matching operation peels off one variable:
+     if the type is a product type with at least one variable,
+     we return the first variable,
+     along with the body of the product type
+     if there are no other variables,
+     or otherwise the product type over the remaining variables.
+     A product type with no variables fails to match."))
+  (b* (((unless (type-case type :pi)) (reserr nil))
+       (params (type-pi->params type))
+       (body (type-pi->body type))
+       ((unless (consp params)) (reserr nil)))
+    (make-ispacevar+type
+     :var (car params)
+     :type (if (consp (cdr params))
+               (make-type-pi :params (cdr params) :body body)
+             body))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
