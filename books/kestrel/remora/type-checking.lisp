@@ -932,7 +932,7 @@
    (xdoc::p
     "In the rule in [thesis],
      @($(x\\ \\gamma)\\ldots$) corresponds to @('var') in our code,
-     @($\\tau_p$) corresponds to the element type of @('rest-type),
+     @($\\tau_p$) corresponds to the element type of @('rest-type'),
      @($\\iota_p$) corresponds to the ispace of @('rest-type'),
      and @($\\iota_f$) corresponds to @('fun-ispace')."))
   (b* (((ok fun-type+ispace) (type-match-array fun-type))
