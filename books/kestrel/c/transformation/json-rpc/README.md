@@ -31,7 +31,7 @@ Usage (socket transport):
    JSON terminated by a newline.  For example (see tests/example-request.json
    for the multi-line, human-readable form of a struct-type-split request):
 
-     {"jsonrpc": "2.0", "method": "struct-type-split", "params": {"old-dir": "input-files", "new-dir": "out", "files": ["test1.c"], "struct-tag": "point", "right-members": ["z"], "new-tag": "point_right", "preprocess": false}, "id": 1}
+     {"jsonrpc": "2.0", "method": "struct-type-split", "params": {"old-dir": "input-files", "new-dir": "out", "files": ["test1.c"], "struct-tag": "point", "right-members": ["z"], "new-tag": "point_right", "unsafe": true, "preprocess": false}, "id": 1}
 
    A quick way to send it with netcat:
 
