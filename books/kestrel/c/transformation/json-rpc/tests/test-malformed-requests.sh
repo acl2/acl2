@@ -88,6 +88,7 @@ check "method not allowed"               -32601 '{"jsonrpc":"2.0","method":"frob
 # Invalid params (produced by the method itself):
 check "missing required param"           -32602 '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files"},"id":1}'
 check "param wrong type"                 -32602 '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["test1.c"],"struct-tag":99,"right-members":["z"]},"id":1}'
+check "unsafe wrong type"                -32602 '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["test1.c"],"struct-tag":"point","right-members":["z"],"unsafe":"yes"},"id":1}'
 check "params is array not object"       -32602 '{"jsonrpc":"2.0","method":"struct-type-split","params":[1,2],"id":1}'
 check "duplicate parameter name"         -32602 '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","old-dir":"elsewhere","new-dir":"out","files":["test1.c"],"struct-tag":"point","right-members":["z"]},"id":1}'
 
@@ -96,8 +97,8 @@ check "struct tag not found"             -32603 '{"jsonrpc":"2.0","method":"stru
 check "input file not found"             -32603 '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["nope.c"],"struct-tag":"point","right-members":["z"],"preprocess":false},"id":1}'
 
 # Sanity checks of the non-error paths:
-check "valid request (success)"          OK     '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["test1.c"],"struct-tag":"point","right-members":["z"],"new-tag":"point_right","preprocess":false},"id":1}'
-check "valid notification (no response)" NONE   '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["test1.c"],"struct-tag":"point","right-members":["z"],"new-tag":"point_right","preprocess":false}}'
+check "valid request (success)"          OK     '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["test1.c"],"struct-tag":"point","right-members":["z"],"new-tag":"point_right","unsafe":true,"preprocess":false},"id":1}'
+check "valid notification (no response)" NONE   '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["test1.c"],"struct-tag":"point","right-members":["z"],"new-tag":"point_right","unsafe":true,"preprocess":false}}'
 
 echo
 echo "Passed: ${pass}  Failed: ${fail}"
