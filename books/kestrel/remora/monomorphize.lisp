@@ -44,7 +44,7 @@
      the evaluated nat values and partially evaluating dimensions throughout the
      type and body.")
    (xdoc::p
-    "Index-function definitions are handled the same way: every @(':iapp')
+    "Index-function definitions are handled the same way: every @(':iappn')
      call to a known @(':ifun') with non-empty ispace arguments is replaced by
      a reference to a freshly generated, fully-instantiated @(':val') definition
      (an @(':ifun') abstracts only ispace parameters, so the instance has no
@@ -471,29 +471,29 @@
                   (mono-expr fuel x.fun fn-info-map dim-var-map type-map)))
               (mv err fn-info-map (expr-tapp new-fun x.args)))
 
-      :iapp
+      :iappn
       (b* (((mv err fn-info-map new-fun)
             (mono-expr fuel x.fun fn-info-map dim-var-map type-map))
-           ((when err) (mv err fn-info-map (expr-iapp new-fun x.args)))
+           ((when err) (mv err fn-info-map (expr-iappn new-fun x.args)))
            (fun new-fun)
-           ; Only monomorphize an :iapp of a known :ifun :var to non-empty ispace args.
+           ; Only monomorphize an :iappn of a known :ifun :var to non-empty ispace args.
            ((mv err fn-info-map new-expr)
             (if (not (consp x.args))
-                (mv nil fn-info-map (expr-iapp fun x.args))
+                (mv nil fn-info-map (expr-iappn fun x.args))
               (expr-case fun
                 :var (b* ((ifun-name fun.name)
                           ((unless (assoc-equal ifun-name fn-info-map))
-                           (mv nil fn-info-map (expr-iapp fun x.args)))
+                           (mv nil fn-info-map (expr-iappn fun x.args)))
                           ((mv eval-err nats) (eval-iargs x.args dim-var-map))
                           ((when eval-err)
-                           (mv :ispace-eval-error fn-info-map (expr-iapp fun x.args)))
+                           (mv :ispace-eval-error fn-info-map (expr-iappn fun x.args)))
                           (inst-name (cfun-inst-name ifun-name nil nats))
                           ((mv err fn-info-map)
                            (mono-ifun-instance fuel ifun-name inst-name nats
                                                fn-info-map dim-var-map type-map))
-                          ((when err) (mv err fn-info-map (expr-iapp fun x.args))))
+                          ((when err) (mv err fn-info-map (expr-iappn fun x.args))))
                        (mv nil fn-info-map (expr-var inst-name)))
-                :otherwise (mv nil fn-info-map (expr-iapp fun x.args)))))
+                :otherwise (mv nil fn-info-map (expr-iappn fun x.args)))))
            ((when err) (mv err fn-info-map new-expr)))
         (mv nil fn-info-map new-expr))
 
@@ -625,9 +625,9 @@
        @('name') to a @(tsee bind+bind-map) pair with an empty @('bind-map') is
        added to @('fn-info-map') and the bind is returned unchanged: the body is
        @('not') monomorphized here.  The body is processed later, at the
-       @(':capp') (respectively @(':iapp')) call site that instantiates it, with
+       @(':capp') (respectively @(':iappn')) call site that instantiates it, with
        the fuel decremented.  The registration done here lets those call sites,
-       and subsequent @(':capp')/@(':iapp') expressions in the enclosing
+       and subsequent @(':capp')/@(':iappn') expressions in the enclosing
        @(':let') body, look up the name."))
     :measure (two-nats-measure fuel (bind-count x))
     (bind-case x
@@ -651,7 +651,7 @@
                   )
                 (mv nil fn-info-map (bind-fix x)))))
 
-  ; Instance generators for the :capp / :iapp cases of mono-expr.  Each builds
+  ; Instance generators for the :capp / :iappn cases of mono-expr.  Each builds
   ; the monomorphized instance body by recursing with the fuel decremented.
   ; It is and error for fuel to be exhausted.
 
@@ -716,7 +716,7 @@
                               (dim-var-map acl2::string-nat-mapp)
                               (type-map string-type-mapp))
     :short "Generate and register the monomorphized @(':val') instance for an
-            @(':iapp') call to @('ifun-name'), unless it already exists."
+            @(':iappn') call to @('ifun-name'), unless it already exists."
     :long
     (xdoc::topstring
      (xdoc::p

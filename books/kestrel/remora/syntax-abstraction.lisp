@@ -1968,13 +1968,13 @@
   ;; iapp-exp = "i-app" ws exp *( ws ispace )
   (define abs-iapp-exp ((tree abnf::treep))
     :returns (e expr-resultp)
-    :short "Abstract an @('iapp-exp') to an @(tsee expr) @(':iapp')."
+    :short "Abstract an @('iapp-exp') to an @(tsee expr) @(':iappn')."
     (b* (((okf (abnf::tree-list-tuple4 sub))
           (abnf::check-tree-nonleaf-4 tree "iapp-exp"))
          ((okf fun-tree) (abnf::check-tree-list-1 sub.3rd))
          ((okf fun) (abs-exp fun-tree))
          ((okf args) (abs-*-ws-ispace sub.4th)))
-      (make-expr-iapp :fun fun :args args))
+      (make-expr-iappn :fun fun :args args))
     :measure (abnf::tree-count tree))
 
   ;; unbox-exp = "unbox" ws "(" ws unbox-spec ws ")" ws exp

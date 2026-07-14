@@ -431,11 +431,11 @@
       :tapp (b* (((mv used new-fun) (uniq-expr x.fun used r)))
               (mv used (expr-tapp new-fun (type-list-rename-all-vars x.args r))))
 
-      :iapp (b* (((var-renamings r-) r)
-                 ((mv used new-fun) (uniq-expr x.fun used r)))
-              (mv used (expr-iapp new-fun
-                                  (ispace-list-rename-ispace-vars
-                                   x.args r-.dim r-.shape))))
+      :iappn (b* (((var-renamings r-) r)
+                  ((mv used new-fun) (uniq-expr x.fun used r)))
+               (mv used (expr-iappn new-fun
+                                    (ispace-list-rename-ispace-vars
+                                     x.args r-.dim r-.shape))))
 
       :capp (b* (((var-renamings r-) r)
                  ((mv used new-fun) (uniq-expr x.fun used r))

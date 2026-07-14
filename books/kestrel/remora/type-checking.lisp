@@ -1359,11 +1359,11 @@
           ((ok type) (check-tapp fe.type expr.args senv)))
        (make-type+expr :type type
                        :expr (make-expr-tapp :fun fe.expr :args expr.args)))
-     :iapp
+     :iappn
      (b* (((ok (type+expr fe)) (check-expr expr.fun senv))
           ((ok type) (check-iapp fe.type expr.args senv)))
        (make-type+expr :type type
-                       :expr (make-expr-iapp :fun fe.expr :args expr.args)))
+                       :expr (make-expr-iappn :fun fe.expr :args expr.args)))
      :capp
      (b* (((ok (type+expr fe)) (check-expr expr.fun senv))
           (fun-type fe.type)

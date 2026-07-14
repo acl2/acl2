@@ -1220,11 +1220,11 @@
                   ((ok tvals) (eval-type-list expr.args
                                               (expr-denv->tenv denv))))
                (eval-tapp funval tvals (1- limit)))
-       :iapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
-                  ((ok ivals) (eval-ispace-list expr.args
-                                                (type-denv->ienv
-                                                 (expr-denv->tenv denv)))))
-               (eval-iapp funval ivals (1- limit)))
+       :iappn (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
+                   ((ok ivals) (eval-ispace-list expr.args
+                                                 (type-denv->ienv
+                                                  (expr-denv->tenv denv)))))
+                (eval-iapp funval ivals (1- limit)))
        :capp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                   ((ok funval)
                    (type-list-option-case

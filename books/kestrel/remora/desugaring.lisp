@@ -200,7 +200,7 @@
                     (fun-targs-iargs
                      (ispace-list-option-case
                       expr.iargs
-                      :some (make-expr-iapp
+                      :some (make-expr-iappn
                              :fun fun-targs
                              :args (ispace-list-desugar expr.iargs.val))
                       :none fun-targs))

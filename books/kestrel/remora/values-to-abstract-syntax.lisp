@@ -545,7 +545,7 @@
                   :fun opvar
                   :args (list (type-value-to-type pval.tval))))
      :head-t-d-s (mv nil
-                     (make-expr-iapp
+                     (make-expr-iappn
                       :fun (make-expr-tapp
                             :fun opvar
                             :args (list (type-value-to-type pval.tval)))
@@ -557,7 +557,7 @@
                   :fun opvar
                   :args (list (type-value-to-type pval.tval))))
      :tail-t-d-s (mv nil
-                     (make-expr-iapp
+                     (make-expr-iappn
                       :fun (make-expr-tapp
                             :fun opvar
                             :args (list (type-value-to-type pval.tval)))
@@ -569,7 +569,7 @@
                     :fun opvar
                     :args (list (type-value-to-type pval.tval))))
      :length-t-d-s (mv nil
-                       (make-expr-iapp
+                       (make-expr-iappn
                         :fun (make-expr-tapp
                               :fun opvar
                               :args (list (type-value-to-type pval.tval)))
