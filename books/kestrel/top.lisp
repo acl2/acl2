@@ -42,6 +42,7 @@
 ;; (include-book "helpers/top") ;; TODO: Uncomment when stable
 (include-book "ethereum/top")
 (include-book "file-io-light/top")
+(include-book "filepath/paths")
 (include-book "floats/top")
 (include-book "fty/top")
 (include-book "hints/top")
