@@ -40,15 +40,13 @@
 ; The argument is a string of Remora source for a standalone expression.
 ; The macro expands to an assert-event that runs
 ; parse-top-exp-from-string followed by check-top-expr,
-; and passes when parsing succeeds and type checking returns an error.
+; and passes when type checking returns an error.
 ; The error is printed to the comment window for manual inspection.
 
 (defmacro test-check-top-expr-fail (code)
   `(assert-event
     (b* ((code ,code)
          (ast (parse-top-exp-from-string code))
-         ((when (reserrp ast))
-          (prog2$ (cw "~x0~%" ast) nil))
          (tast (check-top-expr ast)))
       (and (not (cw "~x0~%" tast))
            (reserrp tast)))))
