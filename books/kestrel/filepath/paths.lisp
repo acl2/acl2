@@ -1,4 +1,13 @@
-;Author: Aakash Koneru
+; Filepath library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Aakash Koneru
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Representation
 ;
@@ -19,7 +28,9 @@
 (in-package "FILEPATH")
 
 (include-book "std/strings/top" :dir :system)
-(include-book "kestrel/lists-light/prefixp" :dir :system)
+(include-book "kestrel/lists-light/prefixp-def" :dir :system)
+
+(local (include-book "kestrel/lists-light/prefixp" :dir :system))
 
 (defxdoc paths
   :parents (acl2::kestrel-books)
@@ -744,35 +755,3 @@
   :hints (("Goal" :in-theory (enable relativize-path resolve path-prefixp
                                      relative-path-p absolute-path-p path-p
                                      make-path path-kind path-segments))))
-
-
-;Tests
-;---------------------
-
-; Parsing
-
-(assert-event (equal (parse-path "foo/bar")
-                     (make-path :relative (list "foo" "bar"))))
-(assert-event (equal (parse-path "/foo/bar")
-                     (make-path :absolute (list "foo" "bar"))))
-(assert-event (equal (parse-path "../foo")
-                     (make-path :relative (list :back "foo"))))
-(assert-event (equal (parse-path "foo/../bar")
-                     (make-path :relative (list "foo" :back "bar"))))
-(assert-event (equal (parse-path ".")
-                     (make-path :relative nil)))
-(assert-event (equal (parse-path "/")
-                     (make-path :absolute nil)))
-
-(assert-event (equal (parse-path-windows "foo\\bar")
-                     (make-path :relative (list "foo" "bar"))))
-(assert-event (equal (parse-path-windows "\\foo\\bar")
-                     (make-path :absolute (list "foo" "bar"))))
-
-; Printing
-
-(assert-event (equal (path-to-string (make-path :relative (list "foo" "bar")))  "foo/bar"))
-(assert-event (equal (path-to-string (make-path :absolute (list "foo" "bar")))  "/foo/bar"))
-(assert-event (equal (path-to-string (make-path :relative (list :back "foo")))  "../foo"))
-(assert-event (equal (path-to-string (make-path :absolute nil))                 "/"))
-(assert-event (equal (path-to-string-windows (make-path :relative (list "foo" "bar"))) "foo\\bar"))

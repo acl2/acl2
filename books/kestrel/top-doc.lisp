@@ -42,6 +42,7 @@
    (include-book "hdwallet/top")
    (include-book "ethereum/top")
    (include-book "file-io-light/doc")
+   (include-book "filepath/paths")
    (include-book "fty/top")
    (include-book "futhark/top")
    (include-book "helpers/doc")
