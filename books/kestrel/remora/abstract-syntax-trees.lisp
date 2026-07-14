@@ -1070,14 +1070,25 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod file
-  :short "Fixtype of source files."
+  :short "Fixtype of source files and import-expanded programs."
   :long
   (xdoc::topstring
    (xdoc::p
     "This corresponds to @('file') in the ABNF grammar.")
    (xdoc::p
     "A source file is a sequence of imports
-     followed by a sequence of declarations."))
+     followed by a sequence of declarations.")
+   (xdoc::p
+    "This fixtype also represents import-expanded programs:
+     resolving the imports of a file
+     replaces them with the declarations of the imported files,
+     yielding a value of this fixtype with an empty list of imports.
+     In the Haskell implementation,
+     these are two different types:
+     parsing yields a list of imports paired with a program
+     (a pair with no named type),
+     and import resolution yields a program
+     (@('Prog'), a list of declarations)."))
   ((imports import-list)
    (decls decl-list))
   :pred filep)
