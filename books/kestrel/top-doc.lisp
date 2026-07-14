@@ -43,6 +43,7 @@
    (include-book "ethereum/top")
    (include-book "file-io-light/doc")
    (include-book "fty/top")
+   (include-book "futhark/top")
    (include-book "helpers/doc")
    (include-book "htclient/top")
    (include-book "isar/top")
