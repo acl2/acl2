@@ -45,26 +45,33 @@
                             (list (make-type-value-array :elem *tv-int*
                                                          :dims (list 3))))))
 
-; Ispace application: length-t applied to a dimension and a shape.
+; Ispace application: length-t applied to a dimension,
+; then length-t-d applied to a shape.
 
 (acl2::assert-equal
  (eval-primop-ifun (primop-value-length-t *tv-int*)
-                   (list (ispace-value-dim 2)
-                         (ispace-value-shape (list 3))))
+                   (ispace-value-dim 2))
+ (expr-value-primop (make-primop-value-length-t-d :tval *tv-int*
+                                                  :dval 2)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-length-t-d :tval *tv-int*
+                                                 :dval 2)
+                   (ispace-value-shape (list 3)))
  (expr-value-primop (make-primop-value-length-t-d-s :tval *tv-int*
                                                     :dval 2
                                                     :sval (list 3))))
 
-; Dimension and shape in the wrong order.
+; A shape where a dimension is expected.
 (acl2::assert-event
  (reserrp (eval-primop-ifun (primop-value-length-t *tv-int*)
-                            (list (ispace-value-shape (list 3))
-                                  (ispace-value-dim 2)))))
+                            (ispace-value-shape (list 3)))))
 
-; Wrong number of ispace values.
+; A dimension where a shape is expected.
 (acl2::assert-event
- (reserrp (eval-primop-ifun (primop-value-length-t *tv-int*)
-                            (list (ispace-value-dim 2)))))
+ (reserrp (eval-primop-ifun (make-primop-value-length-t-d :tval *tv-int*
+                                                          :dval 2)
+                            (ispace-value-dim 3))))
 
 ; Application of the fully instantiated length to argument cells.
 
@@ -129,26 +136,33 @@
                             (list (make-type-value-array :elem *tv-int*
                                                          :dims (list 3))))))
 
-; Ispace application: head-t applied to a dimension and a shape.
+; Ispace application: head-t applied to a dimension,
+; then head-t-d applied to a shape.
 
 (acl2::assert-equal
  (eval-primop-ifun (primop-value-head-t *tv-int*)
-                   (list (ispace-value-dim 1)
-                         (ispace-value-shape (list 3))))
+                   (ispace-value-dim 1))
+ (expr-value-primop (make-primop-value-head-t-d :tval *tv-int*
+                                                :dval 1)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-head-t-d :tval *tv-int*
+                                               :dval 1)
+                   (ispace-value-shape (list 3)))
  (expr-value-primop (make-primop-value-head-t-d-s :tval *tv-int*
                                                   :dval 1
                                                   :sval (list 3))))
 
-; Dimension and shape in the wrong order.
+; A shape where a dimension is expected.
 (acl2::assert-event
  (reserrp (eval-primop-ifun (primop-value-head-t *tv-int*)
-                            (list (ispace-value-shape (list 3))
-                                  (ispace-value-dim 1)))))
+                            (ispace-value-shape (list 3)))))
 
-; Wrong number of ispace values.
+; A dimension where a shape is expected.
 (acl2::assert-event
- (reserrp (eval-primop-ifun (primop-value-head-t *tv-int*)
-                            (list (ispace-value-dim 1)))))
+ (reserrp (eval-primop-ifun (make-primop-value-head-t-d :tval *tv-int*
+                                                        :dval 1)
+                            (ispace-value-dim 3))))
 
 ; Application of the fully instantiated head to argument cells.
 
@@ -208,26 +222,33 @@
                             (list (make-type-value-array :elem *tv-int*
                                                          :dims (list 3))))))
 
-; Ispace application: tail-t applied to a dimension and a shape.
+; Ispace application: tail-t applied to a dimension,
+; then tail-t-d applied to a shape.
 
 (acl2::assert-equal
  (eval-primop-ifun (primop-value-tail-t *tv-int*)
-                   (list (ispace-value-dim 1)
-                         (ispace-value-shape (list 3))))
+                   (ispace-value-dim 1))
+ (expr-value-primop (make-primop-value-tail-t-d :tval *tv-int*
+                                                :dval 1)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-tail-t-d :tval *tv-int*
+                                               :dval 1)
+                   (ispace-value-shape (list 3)))
  (expr-value-primop (make-primop-value-tail-t-d-s :tval *tv-int*
                                                   :dval 1
                                                   :sval (list 3))))
 
-; Dimension and shape in the wrong order.
+; A shape where a dimension is expected.
 (acl2::assert-event
  (reserrp (eval-primop-ifun (primop-value-tail-t *tv-int*)
-                            (list (ispace-value-shape (list 3))
-                                  (ispace-value-dim 1)))))
+                            (ispace-value-shape (list 3)))))
 
-; Wrong number of ispace values.
+; A dimension where a shape is expected.
 (acl2::assert-event
- (reserrp (eval-primop-ifun (primop-value-tail-t *tv-int*)
-                            (list (ispace-value-dim 1)))))
+ (reserrp (eval-primop-ifun (make-primop-value-tail-t-d :tval *tv-int*
+                                                        :dval 1)
+                            (ispace-value-dim 3))))
 
 ; Application of the fully instantiated tail to argument cells.
 

@@ -1577,74 +1577,76 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-primop-ifun ((op primop-valuep) (ivals ispace-value-listp))
+(define eval-primop-ifun ((op primop-valuep) (ival ispace-valuep))
   :guard (primop-value-ifunp op)
   :returns (val expr-value-resultp)
   :short "Evaluate the application of a primitive operation value
-          to ispace values."
+          to an ispace value."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the dynamic counterpart, for primitive operations,
-     of applying an ispace lambda abstraction to ispace values:
+     of applying an ispace lambda abstraction to an ispace value:
      it is called by @(tsee eval-iapp)
      on a scalar primitive operation value
-     and the ispace argument values.")
+     and the ispace argument value.")
    (xdoc::p
     "The guard requires the value to be applicable to ispace values
      (see @(tsee primop-value-ifunp)).
-     We check that the ispace values match, in number and sorts,
-     the ispace parameters of the operation,
-     i.e. the ones in the operation's type in @(tsee primop-types);
+     Each stage applicable to ispace values expects
+     an ispace value of a specific sort,
+     namely the sort of the next ispace parameter
+     in the operation's type in @(tsee primop-types):
+     a dimension for the stages that store just a type value,
+     a shape for the stages that also store a dimension.
+     We check that the ispace value has the expected sort;
      then we construct the next instantiation stage of the operation,
-     which stores the ispace values received
-     (for @('head'), @('tail'), and @('length'), a dimension and a shape),
-     along with the previously received type values.
-     Anything else is an error.")
-   (xdoc::p
-    "Applying a stage that stores a type value and a dimension
-     is not supported yet, and results in an error.
-     It will be supported
-     when ispace applications are evaluated
-     one ispace argument at a time, in curried style."))
+     which stores the ispace value received,
+     along with the previously received instantiation values.
+     Anything else is an error."))
   (primop-value-case
    op
-   :head-t (b* (((unless (ispace-values-match-ispace-vars-p
-                          ivals
-                          (list (ispace-var-dim "d")
-                                (ispace-var-shape "s"))))
-                 (reserr nil)))
-             (expr-value-primop
-              (make-primop-value-head-t-d-s
-               :tval op.tval
-               :dval (ispace-value-dim->val (first ivals))
-               :sval (ispace-value-shape->val (second ivals)))))
-   :head-t-d (reserr :todo)
-   :tail-t (b* (((unless (ispace-values-match-ispace-vars-p
-                          ivals
-                          (list (ispace-var-dim "d")
-                                (ispace-var-shape "s"))))
-                 (reserr nil)))
-             (expr-value-primop
-              (make-primop-value-tail-t-d-s
-               :tval op.tval
-               :dval (ispace-value-dim->val (first ivals))
-               :sval (ispace-value-shape->val (second ivals)))))
-   :tail-t-d (reserr :todo)
-   :length-t (b* (((unless (ispace-values-match-ispace-vars-p
-                            ivals
-                            (list (ispace-var-dim "d")
-                                  (ispace-var-shape "s"))))
-                   (reserr nil)))
-               (expr-value-primop
-                (make-primop-value-length-t-d-s
-                 :tval op.tval
-                 :dval (ispace-value-dim->val (first ivals))
-                 :sval (ispace-value-shape->val (second ivals)))))
-   :length-t-d (reserr :todo)
+   :head-t (ispace-value-case
+            ival
+            :dim (expr-value-primop
+                  (make-primop-value-head-t-d :tval op.tval
+                                              :dval ival.val))
+            :shape (reserr nil))
+   :head-t-d (ispace-value-case
+              ival
+              :dim (reserr nil)
+              :shape (expr-value-primop
+                      (make-primop-value-head-t-d-s :tval op.tval
+                                                    :dval op.dval
+                                                    :sval ival.val)))
+   :tail-t (ispace-value-case
+            ival
+            :dim (expr-value-primop
+                  (make-primop-value-tail-t-d :tval op.tval
+                                              :dval ival.val))
+            :shape (reserr nil))
+   :tail-t-d (ispace-value-case
+              ival
+              :dim (reserr nil)
+              :shape (expr-value-primop
+                      (make-primop-value-tail-t-d-s :tval op.tval
+                                                    :dval op.dval
+                                                    :sval ival.val)))
+   :length-t (ispace-value-case
+              ival
+              :dim (expr-value-primop
+                    (make-primop-value-length-t-d :tval op.tval
+                                                  :dval ival.val))
+              :shape (reserr nil))
+   :length-t-d (ispace-value-case
+                ival
+                :dim (reserr nil)
+                :shape (expr-value-primop
+                        (make-primop-value-length-t-d-s :tval op.tval
+                                                        :dval op.dval
+                                                        :sval ival.val)))
    :otherwise (prog2$ (impossible) (reserr nil)))
-  :guard-hints (("Goal" :in-theory (enable primop-value-ifunp
-                                           ispace-values-match-ispace-vars-p)))
+  :guard-hints (("Goal" :in-theory (enable primop-value-ifunp)))
 
   ///
 

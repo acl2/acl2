@@ -1137,10 +1137,18 @@
        and we use a separate ACL2 function to apply
        the function value to the argument type values.")
      (xdoc::p
-      "For an ispace application,
-       we evaluate the function sub-expression and the ispace arguments,
+      "For a unary ispace application,
+       we evaluate the function sub-expression and the ispace argument,
        and we use a separate ACL2 function to apply
-       the function value to the argument ispace values.")
+       the function value to the argument ispace value.
+       For an n-ary ispace application,
+       we evaluate the function sub-expression,
+       and we use a separate ACL2 function
+       that goes through the ispace arguments,
+       evaluating each one and applying
+       the current function value to it,
+       consistently with the n-ary application being sugar for
+       a chain of unary applications.")
      (xdoc::p
       "For a combined application,
        we evaluate the function sub-expression,
@@ -1220,12 +1228,13 @@
                   ((ok tvals) (eval-type-list expr.args
                                               (expr-denv->tenv denv))))
                (eval-tapp funval tvals (1- limit)))
-       :iapp (reserr :todo)
-       :iappn (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
-                   ((ok ivals) (eval-ispace-list expr.args
-                                                 (type-denv->ienv
-                                                  (expr-denv->tenv denv)))))
-                (eval-iapp funval ivals (1- limit)))
+       :iapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
+                  ((ok ival) (eval-ispace expr.arg
+                                          (type-denv->ienv
+                                           (expr-denv->tenv denv)))))
+               (eval-iapp funval ival (1- limit)))
+       :iappn (b* (((ok funval) (eval-expr expr.fun denv (1- limit))))
+                (eval-iappn funval expr.args denv (1- limit)))
        :capp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                   ((ok funval)
                    (type-list-option-case
@@ -1238,11 +1247,7 @@
                   ((ok funval)
                    (ispace-list-option-case
                     expr.iargs
-                    :some (b* (((ok ivals)
-                                (eval-ispace-list expr.iargs.val
-                                                  (type-denv->ienv
-                                                   (expr-denv->tenv denv)))))
-                            (eval-iapp funval ivals (1- limit)))
+                    :some (eval-iappn funval expr.iargs.val denv (1- limit))
                     :none funval))
                   ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
                (eval-app funval argvals (1- limit)))
@@ -1765,38 +1770,80 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define eval-iapp ((funval expr-valuep)
-                     (ivals ispace-value-listp)
+                     (ival ispace-valuep)
                      (limit natp))
     :guard (expr-value-wfp funval)
     :returns (val expr-value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
-    :short "Apply an expression value to ispace values."
+    :short "Apply an expression value to an ispace value."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is called by @(tsee eval-expr) for an ispace application,
-       after the function and the ispace arguments have been evaluated:
+      "This is called by @(tsee eval-expr) for a unary ispace application,
+       after the function and the ispace argument have been evaluated:
        @('funval') is the expression value of the function,
-       and @('ivals') are the expression values of the ispace arguments.")
+       and @('ival') is the ispace value of the argument.
+       It is also called by @(tsee eval-iappn),
+       which realizes n-ary ispace applications
+       as chains of unary ones.")
      (xdoc::p
       "The function value must be an array, of any rank,
        whose elements are ispace lambda abstractions
        or primitive operation values applicable to ispace values;
-       the ispace argument values must match
-       the parameters in number and sorts.
-       Each such element is applied to the ispace argument values.")
+       the ispace argument value must match, in sort,
+       the first parameter of each such element.
+       Each element is applied to the ispace argument value.")
      (xdoc::p
       "This ACL2 function performs that element-wise application.
-       The base case is that of a scalar (i.e. 0-rank array) function value:
-       we check that the arguments match the parameters,
-       we extend the dynamic environment contained in the ispace lambda value
-       to associate the arguments with the parameters,
-       and we evaluate the body of the ispace lambda abstraction
+       The base case is that of a scalar (i.e. 0-rank array) function value.
+       For an ispace lambda value,
+       we check that the argument matches the first parameter in sort,
+       and we extend the dynamic environment
+       contained in the ispace lambda value
+       to associate the argument with that parameter.
+       If the first parameter is the only one,
+       we evaluate the body of the ispace lambda abstraction
        in the extended environment.
+       If there are further parameters, the application is partial:
+       we return the ispace lambda value over the remaining parameters,
+       with the extended environment;
+       under the curried view of ispace lambda abstractions,
+       this is the value of the inner lambda abstraction
+       over the remaining parameters,
+       whose environment captures the parameter just associated.
        If instead the scalar function value is
        a primitive operation value applicable to ispace values,
-       it is applied to the ispace argument values
+       it is applied to the ispace argument value
        via @(tsee eval-primop-ifun).")
+     (xdoc::p
+      "The case split in the treatment of ispace lambda values,
+       between instantiating the only parameter
+       and peeling off the first of two or more parameters,
+       is due solely to the fact that
+       ispace lambda abstractions are still n-ary
+       while ispace application is unary.
+       The closure created by @(tsee eval-atom)
+       for a lambda abstraction with two or more parameters
+       covers all those parameters,
+       so it is not the closure needed by
+       the unary application of that value:
+       this function must construct the peeled closure itself.
+       Once ispace lambda abstractions are also made unary,
+       the body of a (currently) multi-parameter lambda abstraction
+       will itself be a lambda abstraction:
+       this function will just always
+       evaluate the body in the extended environment,
+       and the evaluation of that body, via @(tsee eval-atom),
+       will create the needed closure,
+       capturing the extended environment,
+       restricted to the free variables;
+       that is, closure environments will be extended
+       only via the capture performed in @(tsee eval-atom),
+       and the case split will disappear.
+       The analogous case split for product type values,
+       in the empty vector case described below,
+       will similarly disappear
+       once product types are also made unary.")
      (xdoc::p
       "A non-empty vector function value
        is applied via a separate ACL2 function that goes through the list.
@@ -1810,38 +1857,53 @@
        no ispace lambda abstractions to apply,
        but it carries the type of its would-be elements,
        which must be a product type value;
-       the ispace argument values must match
-       its parameters in number and sorts.
+       the ispace argument value must match its first parameter in sort.
        We extend the dynamic environment
        contained in the product type value
-       to associate the arguments with the parameters,
-       and we evaluate the body of the product type value,
+       to associate the argument with that parameter.
+       If the first parameter is the only one,
+       we evaluate the body of the product type value
+       in the extended environment,
        which yields the type value of the would-be results
-       of the element-wise application.
-       Similarly to the evaluation of empty frame expressions
+       of the element-wise application;
+       similarly to the evaluation of empty frame expressions
        in @(tsee eval-expr),
        we decompose that type value into
-       the atom type value and the dimensions.
-       We return the empty vector value
+       the atom type value and the dimensions,
+       and we return the empty vector value
        whose element type value is that atom type value,
        and whose element dimensions are
        the element dimensions of the function value
        followed by the dimensions of the evaluated body of the product type.
+       If there are further parameters,
+       the instantiation of the product type value is partial:
+       we return the empty vector value, with the same dimensions,
+       whose element type value is the product type value
+       over the remaining parameters,
+       with the extended environment.
        The implicit leading 0 dimension of the function value
        is also the implicit leading 0 dimension of the result expression value."))
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-value-case
        funval
        :ilambda
-       (b* (((unless (ispace-values-match-ispace-vars-p ivals funval.params))
+       (b* (((unless (consp funval.params)) (reserr nil))
+            ((unless (ispace-values-match-ispace-vars-p
+                      (list ival) (list (car funval.params))))
              (reserr nil))
-            (denv (expr-denv-add-ispaces funval.params ivals funval.denv)))
+            (denv (expr-denv-add-ispace (car funval.params)
+                                        ival
+                                        funval.denv))
+            ((when (consp (cdr funval.params)))
+             (make-expr-value-ilambda :params (cdr funval.params)
+                                      :body funval.body
+                                      :denv denv)))
          (eval-expr funval.body denv (1- limit)))
        :primop (if (primop-value-ifunp funval.val)
-                   (eval-primop-ifun funval.val ivals)
+                   (eval-primop-ifun funval.val ival)
                  (reserr nil))
        :vector
-       (b* (((ok vals) (eval-iapp-list funval.elems ivals (1- limit)))
+       (b* (((ok vals) (eval-iapp-list funval.elems ival (1- limit)))
             ;; TODO: eliminate the next two checks via proof
             ((unless (consp vals)) (reserr nil))
             ((unless (list-repeatp (dims-of-expr-value-list vals))) (reserr nil)))
@@ -1850,12 +1912,20 @@
        (type-value-case
         funval.elem
         :pi
-        (b* (((unless (ispace-values-match-ispace-vars-p ivals
-                                                         funval.elem.params))
+        (b* (((unless (consp funval.elem.params)) (reserr nil))
+             ((unless (ispace-values-match-ispace-vars-p
+                       (list ival) (list (car funval.elem.params))))
               (reserr nil))
-             (tenv (type-denv-add-ispaces funval.elem.params
-                                          ivals
-                                          funval.elem.denv))
+             (tenv (type-denv-add-ispace (car funval.elem.params)
+                                         ival
+                                         funval.elem.denv))
+             ((when (consp (cdr funval.elem.params)))
+              (make-expr-value-vector-empty
+               :dims funval.dims
+               :elem (make-type-value-pi
+                      :params (cdr funval.elem.params)
+                      :body funval.elem.body
+                      :denv tenv)))
              ((ok tval) (eval-type funval.elem.body tenv))
              ((mv elem body-dims)
               (type-value-case
@@ -1872,7 +1942,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define eval-iapp-list ((funvals expr-value-listp)
-                          (ivals ispace-value-listp)
+                          (ival ispace-valuep)
                           (limit natp))
     :guard (expr-value-list-wfp funvals)
     :returns (vals expr-value-list-resultp)
@@ -1881,14 +1951,14 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This applies each expression value to the ispace values,
+      "This applies each expression value to the ispace value,
        returning the list of results in the same order.
        It is used to lift ispace application over
        a vector of ispace lambda values (see @(tsee eval-iapp))."))
     (b* (((when (zp limit)) (reserr :limit))
          ((when (endp funvals)) nil)
-         ((ok val) (eval-iapp (car funvals) ivals (1- limit)))
-         ((ok vals) (eval-iapp-list (cdr funvals) ivals (1- limit))))
+         ((ok val) (eval-iapp (car funvals) ival (1- limit)))
+         ((ok vals) (eval-iapp-list (cdr funvals) ival (1- limit))))
       (cons val vals))
     :measure (nfix limit)
 
@@ -1901,6 +1971,39 @@
       :hints (("Goal"
                :induct (acl2::cdr-dec-induct funvals limit)
                :in-theory (enable len)))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-iappn ((funval expr-valuep)
+                      (args ispace-listp)
+                      (denv expr-denvp)
+                      (limit natp))
+    :guard (expr-value-wfp funval)
+    :returns (val expr-value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Apply an expression value to
+            the arguments of an n-ary ispace application."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "An n-ary ispace application is sugar for
+       a left-nested chain of unary ispace applications (see @(tsee expr)).
+       Accordingly, after @(tsee eval-expr) has evaluated
+       the function sub-expression of an n-ary ispace application,
+       this function goes through the ispace arguments,
+       evaluating each one
+       and applying the current function value to it
+       via @(tsee eval-iapp),
+       in the same order in which
+       the chain of unary applications would be evaluated.
+       If there are no arguments, we return the function value."))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (endp args)) (expr-value-fix funval))
+         ((ok ival) (eval-ispace (car args)
+                                 (type-denv->ienv (expr-denv->tenv denv))))
+         ((ok val) (eval-iapp funval ival (1- limit))))
+      (eval-iappn val (cdr args) denv (1- limit)))
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2259,15 +2362,20 @@
                                       tvals limit)
                       (eval-tapp-list funvals
                                       (type-value-list-fix tvals) limit)
-                      (eval-iapp funval ivals limit)
-                      (eval-iapp (expr-value-fix funval) ivals limit)
+                      (eval-iapp funval ival limit)
+                      (eval-iapp (expr-value-fix funval) ival limit)
                       (eval-iapp funval
-                                 (ispace-value-list-fix ivals) limit)
-                      (eval-iapp-list funvals ivals limit)
+                                 (ispace-value-fix ival) limit)
+                      (eval-iapp-list funvals ival limit)
                       (eval-iapp-list (expr-value-list-fix funvals)
-                                      ivals limit)
+                                      ival limit)
                       (eval-iapp-list funvals
-                                      (ispace-value-list-fix ivals) limit)
+                                      (ispace-value-fix ival) limit)
+                      (eval-iappn funval args denv limit)
+                      (eval-iappn (expr-value-fix funval) args denv limit)
+                      (eval-iappn funval
+                                  (ispace-list-fix args) denv limit)
+                      (eval-iappn funval args (expr-denv-fix denv) limit)
                       (eval-app funval argvals limit)
                       (eval-app (expr-value-fix funval) argvals limit)
                       (eval-app funval (expr-value-list-fix argvals) limit)
@@ -2362,6 +2470,11 @@
                     (not (reserrp vals)))
                (expr-value-list-wfp vals))
       :fn eval-iapp-list)
+    (defret expr-value-wfp-of-eval-iappn
+      (implies (and (expr-value-wfp funval)
+                    (not (reserrp val)))
+               (expr-value-wfp val))
+      :fn eval-iappn)
     (defret expr-value-wfp-of-eval-app
       (implies (and (expr-value-wfp funval)
                     (not (reserrp val)))
@@ -2405,8 +2518,9 @@
                (eval-bind-list binds denv limit)
                (eval-tapp funval tvals limit)
                (eval-tapp-list funvals tvals limit)
-               (eval-iapp funval ivals limit)
-               (eval-iapp-list funvals ivals limit)
+               (eval-iapp funval ival limit)
+               (eval-iapp-list funvals ival limit)
+               (eval-iappn funval args denv limit)
                (eval-app funval argvals limit)
                (eval-app-list funcells argcell-lists limit)
                (eval-app-cell funcell argcells limit)

@@ -61,3 +61,17 @@
  "
 ((i-app (t-app (t-fn (&t) (i-fn ($d) (fn ((x (A &t $d))) x))) Int) 3) [1 2 3])
 ")
+
+; Partial instantiation of a polymorphic primitive operation:
+; the value is an intermediate instantiation stage.
+(test-eval-top-expr
+ "(i-app (t-app length Int) 3)")
+
+; Completion of a partial instantiation, as a chain of unary applications.
+(test-eval-top-expr
+ "(i-app (i-app (t-app length Int) 3) (dims 4 5))")
+
+; Partial application of an ispace lambda abstraction:
+; the value is a closure over the remaining parameter.
+(test-eval-top-expr
+ "(i-app (i-fn ($d $e) (fn ((x (A Int (dims $d $e)))) x)) 3)")
