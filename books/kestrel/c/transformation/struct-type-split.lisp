@@ -133,8 +133,10 @@
     (see @(tsee sts-split-trans-units)),
     since compatible struct types in different translation units
     have different unique identifiers.
-    The @('right-name') field is the tag of the right struct type,
-    which is assumed to be globally unique.
+    The @('right-name') field is the tag of the right struct type
+    when the target struct type is tagged,
+    and is ignored otherwise.
+    When used, it is assumed to be globally unique.
     The @('blacklist'), @('ident-map'), and @('warnings') fields
     accumulate.
     The @('warnings') field collects warning messages,
@@ -4173,68 +4175,158 @@
     (retok (and lookup
                 (c$::valid-tag-info-fix (cdr lookup))))))
 
-(define sts-find-struct-uid-search
-  ((tag identp)
-   (tunits filepath-trans-unit-mapp))
-  :guard (c$::filepath-trans-unit-map-annop tunits)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sts-find-struct-type-in-valid-table
+  ((tag? ident-optionp)
+   (typedef-name? ident-optionp)
+   (filepath filepathp)
+   (table c$::valid-tablep))
+  :guard (or tag? typedef-name?)
   :returns (mv (er? maybe-msgp)
-               (uid c$::uidp)
-               (filepath filepathp))
-  :short "Search the translation units for a struct type with the given tag."
-  (b* (((reterr) (c$::irr-uid) (filepath ""))
+               (type? c$::type-optionp))
+  :short "Find a selected struct type in the file scope of a validation table."
+  :long
+  (xdoc::topstring-p
+   "The selection is by @('tag?') when it is non-@('nil'),
+    and by @('typedef-name?') otherwise.
+    We return @('nil') when the selected identifier is absent,
+    has the wrong identifier kind, or does not denote a struct type.
+    This lets callers search other translation units.")
+  (b* (((reterr) nil)
+       ((when tag?)
+        (b* (((erp info?) (sts-find-tag-info-in-valid-table tag? table))
+             ((unless (and info?
+                           (c$::tag-kind-case
+                             (c$::valid-tag-info->kind info?)
+                             :struct)))
+              (retok nil)))
+          (retok
+            (c$::make-type-struct
+              :uid (c$::valid-tag-info->uid info?)
+              :tunit? (c$::filepath-fix filepath)
+              :tag/members
+              (c$::make-type-struni-tag/members-tagged :tag tag?)))))
+       (info?
+        (c$::valid-lookup-ord-file-scope
+          (c$::ident-fix typedef-name?) table))
+       ((unless (and info?
+                     (c$::valid-ord-info-case info? :typedef)
+                     (c$::type-case (c$::valid-ord-info-typedef->def info?)
+                                    :struct)))
+        (retok nil)))
+    (retok (c$::valid-ord-info-typedef->def info?)))
+  ///
+
+  (defret type-structp-of-sts-find-struct-type-in-valid-table.type?
+    (implies type?
+             (c$::type-case type? :struct))
+    :hints (("Goal"
+             :in-theory (enable sts-find-struct-type-in-valid-table)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sts-find-struct-type-search
+  ((tag? ident-optionp)
+   (typedef-name? ident-optionp)
+   (tunits filepath-trans-unit-mapp))
+  :guard (and (c$::filepath-trans-unit-map-annop tunits)
+              (or tag? typedef-name?))
+  :returns (mv (er? maybe-msgp)
+               (type c$::typep))
+  :short "Search the translation units for the selected struct type."
+  (b* (((reterr) (c$::irr-type))
        ((when (omap::emptyp tunits))
-        (retmsg$ "A struct type with tag ~x0 does not exist."
-                 (c$::ident-fix tag)))
+        (if tag?
+            (retmsg$ "A struct type with tag ~x0 does not exist."
+                     tag?)
+          (retmsg$ "A typedef name ~x0 denoting a struct type does not exist."
+                   (c$::ident-fix typedef-name?))))
        (filepath (c$::filepath-fix (omap::head-key tunits)))
        (tunit (omap::head-val tunits))
-       ((erp info?)
-        (sts-find-tag-info-in-valid-table
-          tag
+       ((erp type?)
+        (sts-find-struct-type-in-valid-table
+          tag?
+          typedef-name?
+          filepath
           (c$::trans-unit-vinfo->table-end (c$::trans-unit->info tunit))))
-       ((when (and info?
-                   (c$::tag-kind-case (c$::valid-tag-info->kind info?)
-                                      :struct)))
-        (retok (c$::valid-tag-info->uid info?) filepath)))
-    (sts-find-struct-uid-search tag (omap::tail tunits))))
+       ((when type?)
+        (retok type?)))
+    (sts-find-struct-type-search tag? typedef-name? (omap::tail tunits)))
+  ///
 
-(define sts-find-struct-uid
+  (defret type-structp-of-sts-find-struct-type-search.type
+    (implies (not er?)
+             (c$::type-case type :struct))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable sts-find-struct-type-search)))))
+
+(define sts-find-struct-type
   ((filepath? c$::filepath-optionp)
-   (tag identp)
+   (tag? ident-optionp)
+   (typedef-name? ident-optionp)
    (tunits trans-ensemblep))
-  :guard (c$::trans-ensemble-annop tunits)
+  :guard (and (c$::trans-ensemble-annop tunits)
+              (or tag? typedef-name?))
   :returns (mv (er? maybe-msgp)
-               (uid c$::uidp)
-               (filepath filepathp))
-  :short "Find the unique identifier of the struct type with the given tag."
+               (type c$::typep))
+  :short "Find the selected struct type."
   :long
   (xdoc::topstring-p
    "If @('filepath?') is provided, only that translation unit is consulted.
     Otherwise, the translation units are searched in order,
     and the first with a matching struct type at file scope is used.
-    The filepath of the translation unit
-    in which the struct type was found is also returned.")
-  (b* (((reterr) (c$::irr-uid) (filepath ""))
+    The type is selected by @('tag?') when it is non-@('nil'),
+    and by @('typedef-name?') otherwise.")
+  (b* (((reterr) (c$::irr-type))
        (unwrapped-tunits (trans-ensemble->units tunits))
        ((unless filepath?)
-        (sts-find-struct-uid-search tag unwrapped-tunits))
+        (sts-find-struct-type-search tag? typedef-name? unwrapped-tunits))
        (lookup (omap::assoc filepath? unwrapped-tunits))
        ((unless lookup)
         (retmsg$ "Provided filepath ~x0 does not exist in the ~
                   translation unit ensemble."
                  filepath?))
        (tunit (cdr lookup))
-       ((erp info?)
-        (sts-find-tag-info-in-valid-table
-          tag
-          (c$::trans-unit-vinfo->table-end (c$::trans-unit->info tunit))))
+       (table (c$::trans-unit-vinfo->table-end (c$::trans-unit->info tunit)))
+       ((when tag?)
+        (b* (((erp info?) (sts-find-tag-info-in-valid-table tag? table))
+             ((unless info?)
+              (retmsg$ "The struct tag ~x0 was not found at file scope."
+                       tag?))
+             ((c$::valid-tag-info info) info?)
+             ((unless (c$::tag-kind-case info.kind :struct))
+              (retmsg$ "The tag ~x0 names a union type, not a struct type."
+                       tag?)))
+          (retok
+            (c$::make-type-struct
+              :uid info.uid
+              :tunit? (c$::filepath-fix filepath?)
+              :tag/members
+              (c$::make-type-struni-tag/members-tagged :tag tag?)))))
+       (info?
+        (c$::valid-lookup-ord-file-scope
+          (c$::ident-fix typedef-name?) table))
        ((unless info?)
-        (retmsg$ "The struct tag ~x0 was not found at file scope."
-                 (c$::ident-fix tag)))
-       ((c$::valid-tag-info info) info?)
-       ((unless (c$::tag-kind-case info.kind :struct))
-        (retmsg$ "The tag ~x0 names a union type, not a struct type."
-                 (c$::ident-fix tag))))
-    (retok info.uid (c$::filepath-fix filepath?))))
+        (retmsg$ "The typedef name ~x0 was not found at file scope."
+                 (c$::ident-fix typedef-name?)))
+       ((unless (c$::valid-ord-info-case info? :typedef))
+        (retmsg$ "The ordinary identifier ~x0 does not name a typedef."
+                 (c$::ident-fix typedef-name?)))
+       (type (c$::valid-ord-info-typedef->def info?))
+       ((unless (c$::type-case type :struct))
+        (retmsg$ "The typedef name ~x0 denotes ~x1, not a struct type."
+                 (c$::ident-fix typedef-name?)
+                 type)))
+    (retok type))
+  ///
+
+  (defret type-structp-of-sts-find-struct-type.type
+    (implies (not er?)
+             (c$::type-case type :struct))
+    :hints (("Goal"
+             :in-theory (enable sts-find-struct-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4244,14 +4336,16 @@
   :enable maybe-msgp)
 
 (define sts-split-trans-units
-  ((tag identp)
+  ((tag? ident-optionp)
+   (typedef-name? ident-optionp)
    (primary-type c$::typep)
    (completions c$::type-completions-p)
    (ienv c$::ienvp)
    (unsafe booleanp)
    (tunits filepath-trans-unit-mapp)
    (st sts-split-statep))
-  :guard (c$::filepath-trans-unit-map-annop tunits)
+  :guard (and (c$::filepath-trans-unit-map-annop tunits)
+              (or tag? typedef-name?))
   :returns (mv (er? maybe-msgp)
                (tunits$ filepath-trans-unit-mapp)
                (st$ sts-split-statep))
@@ -4259,8 +4353,8 @@
   :long
   (xdoc::topstring-p
    "For each translation unit,
-    we look up the unique identifier, if any,
-    which the tag denotes at file scope.
+    we look up the struct type, if any,
+    which the selected tag or typedef name denotes at file scope.
     If there is one, and its struct type is compatible
     with the primary struct type,
     the translation unit is transformed
@@ -4274,7 +4368,7 @@
     receive the same right name.
     Note that we assume that at most one struct type
     per translation unit is subject to the split,
-    namely the one denoted by the tag at file scope.
+    namely the one denoted by the selected name at file scope.
     In particular, struct types declared in block scopes
     are not considered:
     a block-scope struct type in another translation unit
@@ -4294,60 +4388,62 @@
         (retok nil (sts-split-state-fix st)))
        (filepath (c$::filepath-fix (omap::head-key tunits)))
        (tunit (omap::head-val tunits))
-       ((erp info?)
-        (sts-find-tag-info-in-valid-table
-          tag
+       ((erp current-type?)
+        (sts-find-struct-type-in-valid-table
+          tag?
+          typedef-name?
+          filepath
           (c$::trans-unit-vinfo->table-end (c$::trans-unit->info tunit))))
-       (structp (and info?
-                     (c$::tag-kind-case (c$::valid-tag-info->kind info?)
-                                        :struct)))
-       (uid (if structp
-                (c$::valid-tag-info->uid info?)
+       (uid (if current-type?
+                (c$::type-struct->uid current-type?)
               (c$::irr-uid)))
-       (current-type
-         (c$::make-type-struct
-           :uid uid
-           :tunit? (c$::filepath-fix filepath)
-           :tag/members (c$::make-type-struni-tag/members-tagged :tag tag)))
-       ((when (or (not structp)
+       (current-tag? (and current-type?
+                          (c$::type-struct->tag? current-type?)))
+       ((when (or (not current-type?)
                   (not (c$::type-compatible-p
                          primary-type
-                         current-type
+                         current-type?
                          completions
                          ienv))))
-        ;; The tag does not denote a compatible struct type
+        ;; The selected name does not denote a compatible struct type
         ;; in this translation unit, which is left unchanged.
         (b* (((erp rest st)
               (sts-split-trans-units
-                tag primary-type completions ienv unsafe (omap::tail tunits) st)))
+                tag? typedef-name? primary-type completions ienv
+                unsafe (omap::tail tunits) st)))
           (retok (omap::update filepath (c$::trans-unit-fix tunit) rest)
                  st)))
        (st (change-sts-split-state st :filepath filepath))
        (msg? (sts-check-completions completions uid))
        ((when msg?)
         (reterr (sts-error-in-translation-unit msg? st)))
-       ((mv erp tunit st)
-        (trans-unit-sts-split tunit
-                              (change-sts-split-state st :target-struct-uid uid)))
-       ((when erp)
-        (reterr (sts-error-in-translation-unit erp st)))
        (safep
         (b* (((when unsafe) t)
+             ((unless current-tag?) nil)
              ((mv erp members)
               (c$::type-struni-tag/members->members
-                (type-struct->tag/members current-type)
+                (c$::type-struct->tag/members current-type?)
                 uid
                 completions))
              ((when erp) nil)
-             (spec (make-sts-struct-spec :uid uid :tag tag :members members)))
+             (spec (make-sts-struct-spec
+                     :uid uid
+                     :tag current-tag?
+                     :members members)))
           (trans-unit-sts-safep tunit spec)))
        ((unless safep)
         (reterr (sts-error-in-translation-unit
                   (msg$ "Safety check failed.")
                   st)))
+       ((mv erp tunit st)
+        (trans-unit-sts-split tunit
+                              (change-sts-split-state st :target-struct-uid uid)))
+       ((when erp)
+        (reterr (sts-error-in-translation-unit erp st)))
        ((erp rest st)
         (sts-split-trans-units
-          tag primary-type completions ienv unsafe (omap::tail tunits) st)))
+          tag? typedef-name? primary-type completions ienv
+          unsafe (omap::tail tunits) st)))
     (retok (omap::update filepath tunit rest) st))
   :verify-guards :after-returns
   :guard-hints
@@ -4358,9 +4454,10 @@
                               msgp-when-maybe-msgp-and-non-nil))))
 
 (define sts-split-code-ensemble
-  ((tag identp)
+  ((right-members ident-listp)
+   (tag? ident-optionp)
+   (typedef-name? ident-optionp)
    (filepath? c$::filepath-optionp)
-   (right-members ident-listp)
    (right-name? ident-optionp)
    (unsafe booleanp)
    (code code-ensemblep))
@@ -4371,20 +4468,23 @@
   :short "Split a struct type in a code ensemble."
   :long
   (xdoc::topstring-p
-   "The primary struct type to split is identified by its tag,
+   "The primary struct type to split is identified by its tag or typedef name,
     within the translation unit named by @('filepath?') if provided,
     and otherwise within the first translation unit
-    defining a struct type with that tag.
-    Compatible struct types with the same tag
+    defining a struct type with that name.
+    Compatible struct types selected by the same kind of name
     in other translation units are also split,
     one translation unit at a time
     (at most one struct type per translation unit may be split;
     see @(tsee sts-split-trans-units)).
     The members in @('right-members') are split off
-    into a new right struct type,
-    whose tag is a fresh identifier
-    based on @('right-name?') if provided,
+    into a new right struct type.
+    If the original struct type is tagged,
+    the right type's tag is a fresh identifier
+    based on @('right-name?') if provided
     and on the original tag otherwise.
+    If the original struct type is untagged,
+    the right type is also untagged.
     The code ensemble must use the C17 standard,
     since the transformation assumes the C17 rules
     for struct type compatibility.
@@ -4395,6 +4495,10 @@
     in reverse chronological order.")
   (b* (((reterr) (c$::irr-code-ensemble) nil)
        ((code-ensemble code) code)
+       ((when (and tag? typedef-name?))
+        (retmsg$ "A struct tag and typedef name cannot both be provided."))
+       ((unless (or tag? typedef-name?))
+        (retmsg$ "No struct tag or typedef name was provided."))
        ;; The transformation assumes the C17 rules
        ;; for struct type compatibility;
        ;; see sts-split-trans-units.
@@ -4402,28 +4506,35 @@
         (retmsg$ "Only the C17 standard is currently supported, ~
                   but the code ensemble uses the standard ~x0."
                  (c$::ienv->std code.ienv)))
-       ((erp primary-uid primary-filepath)
-        (sts-find-struct-uid filepath? tag code.trans-units))
+       ((erp primary-type)
+        (sts-find-struct-type
+          filepath? tag? typedef-name? code.trans-units))
+       (primary-uid (c$::type-struct->uid primary-type))
+       (primary-tag? (c$::type-struct->tag? primary-type))
+       ((when (and (not unsafe)
+                   (not primary-tag?)))
+        (retmsg$ "Safety checks are not supported for an untagged struct type. ~
+                  Use :UNSAFE T to disable the safety checks."))
        (info (c$::trans-ensemble->info code.trans-units))
        ;; type-compatible-p accesses the completions with hons-get,
        ;; so they must be a fast alist.
        (completions (make-fast-alist
                       (c$::trans-ensemble-vinfo->completions info)))
-       (primary-type
-         (c$::make-type-struct
-           :uid primary-uid
-           :tunit? (c$::filepath-fix primary-filepath)
-           :tag/members (c$::make-type-struni-tag/members-tagged :tag tag)))
        (map (trans-ensemble->units code.trans-units))
        (blacklist (filepath-trans-unit-map-collect-idents map))
-       (right-name (fresh-ident (or right-name? tag) blacklist))
+       (right-name
+         (if primary-tag?
+             (fresh-ident (or right-name? primary-tag?) blacklist)
+           (c$::irr-ident)))
        (st (make-sts-split-state
              :target-struct-uid primary-uid
              :right-set (mergesort right-members)
              :right-name right-name
              :dialect (c$::ienv->dialect code.ienv)
              :ienv code.ienv
-             :blacklist (insert right-name blacklist)
+             :blacklist (if primary-tag?
+                            (insert right-name blacklist)
+                          blacklist)
              :ident-map nil
              :warnings nil
              :filepath (c$::irr-filepath)
@@ -4431,7 +4542,7 @@
              :completions completions))
        ((erp map st)
         (sts-split-trans-units
-          tag primary-type completions code.ienv unsafe map st))
+          tag? typedef-name? primary-type completions code.ienv unsafe map st))
        (- (fast-alist-free completions))
        (warnings (sts-split-state->warnings st))
        (new-trans-units (c$::change-trans-ensemble code.trans-units
@@ -4466,25 +4577,26 @@
 
 (define sts-split-process-inputs (const-old
                                   const-new
-                                  struct-tag
-                                  filepath
                                   right-members
+                                  struct-tag?
+                                  typedef-name?
+                                  filepath
                                   new-tag
                                   unsafe
                                   print-warnings
                                   (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
                (code code-ensemblep)
-               (tag identp)
-               (filepath? c$::filepath-optionp)
                (right-members ident-listp)
+               (tag? ident-optionp)
+               (typedef-name? ident-optionp)
+               (filepath? c$::filepath-optionp)
                (new-tag? ident-optionp)
                (unsafe$ booleanp)
                (print-warnings$ booleanp)
                (const-new$ symbolp))
   :short "Process the inputs."
-  (b* (((reterr)
-        (c$::irr-code-ensemble) (c$::irr-ident) nil nil nil nil nil nil)
+  (b* (((reterr) (c$::irr-code-ensemble) nil nil nil nil nil nil nil nil)
        ((unless (symbolp const-old))
         (retmsg$ "~x0 must be a symbol." const-old))
        (code (acl2::constant-value const-old wrld))
@@ -4493,18 +4605,29 @@
        ((unless (code-ensemble-annop code))
         (retmsg$ "~x0 must be annotated with validation information."
                  const-old))
-       ((unless (stringp struct-tag))
-        (retmsg$ "~x0 must be a string." struct-tag))
-       (tag (c$::ident struct-tag))
-       ((unless (or (not filepath)
-                    (stringp filepath)))
-        (retmsg$ "~x0 must be nil or a string." filepath))
-       (filepath? (and filepath (filepath filepath)))
        ((unless (string-listp right-members))
         (retmsg$ "~x0 must be a list of strings." right-members))
        ((unless (consp right-members))
         (retmsg$ "At least one right member must be specified."))
        (right-members (c$::string-list-map-ident right-members))
+       ((unless (or (stringp struct-tag?)
+                    (not struct-tag?)))
+        (retmsg$ "~x0 must be a string or NIL." struct-tag?))
+       (tag? (if struct-tag? (c$::ident struct-tag?) nil))
+       ((unless (or (stringp typedef-name?)
+                    (not typedef-name?)))
+        (retmsg$ "~x0 must be a string or NIL." typedef-name?))
+       (typedef-name? (if typedef-name? (c$::ident typedef-name?) nil))
+       ((when (and tag? typedef-name?))
+        (retmsg$ "The :STRUCT-TAG and :TYPEDEF-NAME inputs ~
+                  cannot both be provided."))
+       ((unless (or tag? typedef-name?))
+        (retmsg$ "One of the :STRUCT-TAG and :TYPEDEF-NAME inputs ~
+                  must be provided."))
+       ((unless (or (not filepath)
+                    (stringp filepath)))
+        (retmsg$ "~x0 must be nil or a string." filepath))
+       (filepath? (and filepath (filepath filepath)))
        ((unless (or (not new-tag)
                     (stringp new-tag)))
         (retmsg$ "~x0 must be nil or a string." new-tag))
@@ -4515,13 +4638,21 @@
         (retmsg$ "~x0 must be a boolean." print-warnings))
        ((unless (symbolp const-new))
         (retmsg$ "~x0 must be a symbol." const-new)))
-    (retok code tag filepath? right-members new-tag? unsafe print-warnings
-           const-new))
+    (retok code right-members tag? typedef-name? filepath? new-tag?
+           unsafe print-warnings const-new))
   ///
 
   (defret code-ensemble-annop-of-sts-split-process-inputs.code
     (implies (not er?)
-             (code-ensemble-annop code))))
+             (code-ensemble-annop code)))
+
+  (defret tag?-or-typedef-name?-of-sts-split-process-inputs
+    (implies (not er?)
+             (or tag? typedef-name?)))
+
+  (defret not-tag?-and-typedef-name?-of-sts-split-process-inputs
+    (implies (not er?)
+             (not (and tag? typedef-name?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4548,9 +4679,10 @@
 
 (define sts-split-gen-everything
   ((code code-ensemblep)
-   (tag identp)
-   (filepath? c$::filepath-optionp)
    (right-members ident-listp)
+   (tag? ident-optionp)
+   (typedef-name? ident-optionp)
+   (filepath? c$::filepath-optionp)
    (new-tag? ident-optionp)
    (unsafe booleanp)
    (print-warnings booleanp)
@@ -4562,7 +4694,7 @@
   (b* (((reterr) '(_))
        ((erp code warnings)
         (sts-split-code-ensemble
-          tag filepath? right-members new-tag? unsafe code))
+          right-members tag? typedef-name? filepath? new-tag? unsafe code))
        (- (and print-warnings
                (sts-print-warnings warnings)))
        (defconst-event
@@ -4574,9 +4706,10 @@
 
 (define struct-type-split-fn (const-old
                               const-new
-                              struct-tag
-                              filepath
                               right-members
+                              struct-tag
+                              typedef-name
+                              filepath
                               new-tag
                               unsafe
                               print-warnings
@@ -4586,13 +4719,14 @@
                (event pseudo-event-formp)
                state)
   :short "Event expansion of @(tsee struct-type-split)."
-  (b* (((mv erp code tag filepath? right-members new-tag? unsafe print-warnings
-            const-new)
+  (b* (((mv erp code right-members tag? typedef-name? filepath? new-tag?
+            unsafe print-warnings const-new)
         (sts-split-process-inputs const-old
                                   const-new
-                                  struct-tag
-                                  filepath
                                   right-members
+                                  struct-tag
+                                  typedef-name
+                                  filepath
                                   new-tag
                                   unsafe
                                   print-warnings
@@ -4601,9 +4735,10 @@
         (er-soft+ ctx t '(_) "STRUCT-TYPE-SPLIT ERROR: ~@0" erp))
        ((mv erp event)
         (sts-split-gen-everything code
-                                  tag
-                                  filepath?
                                   right-members
+                                  tag?
+                                  typedef-name?
+                                  filepath?
                                   new-tag?
                                   unsafe
                                   print-warnings
@@ -4620,17 +4755,19 @@
     (const-old
      const-new
      &key
-     struct-tag
-     filepath
      right-members
+     struct-tag
+     typedef-name
+     filepath
      new-tag
      unsafe
      (print-warnings 't))
     `(make-event (struct-type-split-fn ',const-old
                                        ',const-new
-                                       ',struct-tag
-                                       ',filepath
                                        ',right-members
+                                       ',struct-tag
+                                       ',typedef-name
+                                       ',filepath
                                        ',new-tag
                                        ',unsafe
                                        ',print-warnings

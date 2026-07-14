@@ -46,15 +46,16 @@
       consideration is given to performance, which may be affected by
       padding, locality, etc."))
    (xdoc::evmac-section-form
-    (xdoc::codeblock
-     "(struct-type-split const-old"
-     "                   const-new"
-     "                   :struct-tag     ..."
-     "                   :right-members  ..."
-     "                   :filepath       ... ; optional"
-     "                   :new-tag        ... ; optional"
-     "                   :unsafe         ... ; default nil"
-     "                   :print-warnings ... ; default t"
+     (xdoc::codeblock
+      "(struct-type-split const-old"
+      "                   const-new"
+      "                   :right-members  ..."
+      "                   :struct-tag     ... ; required if :typedef-name is omitted"
+      "                   :typedef-name   ... ; required if :struct-tag is omitted"
+      "                   :filepath       ... ; optional"
+      "                   :new-tag        ... ; optional"
+      "                   :unsafe         ... ; default nil"
+      "                   :print-warnings ... ; default t"
      "  )"
      ))
    (xdoc::evmac-section-inputs
@@ -85,42 +86,60 @@
        so its validation information is refreshed
        and may be used further."))
     (xdoc::desc
-     "@(':struct-tag') &mdash; no default"
-     (xdoc::p
-      "A string denoting the tag of the struct type to split.
-       The struct type must be defined at file scope."))
-    (xdoc::desc
      "@(':right-members') &mdash; no default"
      (xdoc::p
       "A non-empty string list denoting the members of the struct type
        which should be split out into the new right struct type.
        The remaining members stay in the left struct type,
-       which keeps the original tag."))
+       which keeps the original tag, if any."))
+    (xdoc::desc
+     "@(':struct-tag')"
+     (xdoc::p
+      "A string denoting the tag of the struct type to split.
+       The struct type must be defined at file scope.
+       This argument is required unless a @(':typedef-name') is provided,
+       and values cannot be provided for both."))
+    (xdoc::desc
+     "@(':typedef-name')"
+     (xdoc::p
+      "A string denoting the @('typedef') type alias
+       of the struct type to split.
+       The @('typedef') must be defined at file scope.
+       This is an alternative means of identifying the struct type to split.
+       As described under @(':struct-tag'),
+       either of these two arguments may be provided, but not both."))
     (xdoc::desc
      "@(':filepath') &mdash; optional"
      (xdoc::p
       "A string denoting the filepath of a translation unit,
        in which the struct type denoted by @(':struct-tag')
-       is to be found.
-       This may be used to disambiguate the @(':struct-tag') argument
+       or @(':typedef-name') is to be found.
+       This may be used to disambiguate
+       the @(':struct-tag') or @(':typedef-name') arguments
        when incompatible struct types in different translation units
-       share the tag.
+       share the same tag or @('typedef') name, respectively.
        If this argument is omitted, the first translation unit
-       with a struct type with the given tag at file scope is used."))
+       with a struct type of the given tag or @('typedef') name
+       at file scope is used."))
     (xdoc::desc
      "@(':new-tag') &mdash; optional"
      (xdoc::p
       "A string denoting the tag of the new right struct type.
-       A fresh tag is derived from it if it is not already fresh.")
+       A fresh tag is derived from it if it is not already fresh.
+       If this argument is omitted and the target struct type is tagged,
+       a fresh tag is derived from the original tag.")
      (xdoc::p
-      "If this argument is omitted,
-       a fresh tag is derived from the original tag."))
+      "If the target struct type is untagged,
+       the new right struct type is also untagged,
+       and this argument is ignored."))
     (xdoc::desc
      "@(':unsafe') &mdash; default @('nil')"
      (xdoc::p
       "By default, the transformation checks certain safety conditions
        to ensure the resulting code is correct.
-       These checks can optionally be disabled."))
+       These checks can optionally be disabled.
+       An untagged target struct type can currently be split only when
+       the safety checks are disabled."))
     (xdoc::desc
      "@(':print-warnings') &mdash; default @('t')"
      (xdoc::p
@@ -169,16 +188,6 @@
        and a use @('foo_p x;') is split into @('foo_p x;') and @('foo_p_0 x_0;').
        Typedef chains are handled as well.")
      (xdoc::li
-      "Typedefs whose denoted type is splittable
-       (the struct type itself, possibly behind pointers) are supported.
-       Each such typedef is split into a parallel right typedef
-       of the corresponding right type,
-       and uses of the typedef name are split accordingly.
-       For example, @('typedef struct foo *foo_p;') yields a right typedef
-       @('typedef struct foo_right *foo_p_0;'),
-       and a use @('foo_p x;') is split into @('foo_p x;') and @('foo_p_0 x_0;').
-       Typedef chains are handled as well.")
-     (xdoc::li
       "The struct type must not appear in certain expression contexts,
        such as @('sizeof') and @('_Alignof') expressions;
        such occurrences are detected and reported as errors.")
@@ -205,7 +214,7 @@
        this is checked by the transformation.
        The transformation assumes that at most one struct type
        per translation unit is subject to the split,
-       namely the one denoted by the tag at file scope.
+       namely the one denoted by the selected name at file scope.
        This is consistent with C17,
        in which struct types declared in different scopes
        of the same translation unit are never compatible.

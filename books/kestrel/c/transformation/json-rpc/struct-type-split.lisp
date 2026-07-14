@@ -73,9 +73,18 @@
       "An array of strings denoting the input files to read,
        relative to @('\"old-dir\"')."))
     (xdoc::desc
-     "@('\"struct-tag\"') &mdash; required"
+     "@('\"struct-tag\"')"
      (xdoc::p
-      "A string denoting the tag of the struct type to split."))
+      "A string denoting the tag of the struct type to split.
+       Exactly one of @('\"struct-tag\"') and @('\"typedef-name\"')
+       must be provided."))
+    (xdoc::desc
+     "@('\"typedef-name\"')"
+     (xdoc::p
+      "A string denoting a file-scope typedef name
+       for the struct type to split.
+       Exactly one of @('\"struct-tag\"') and @('\"typedef-name\"')
+       must be provided."))
     (xdoc::desc
      "@('\"right-members\"') &mdash; required"
      (xdoc::p
@@ -382,7 +391,13 @@
        ((erp preprocess-args) (param->preprocess-args obj))
        ((erp ienv) (param->ienv obj))
        ;; Transformation-specific arguments:
-       ((erp & struct-tag) (param->string "struct-tag" obj t))
+       ((erp struct-tag-present struct-tag)
+        (param->string "struct-tag" obj nil))
+       ((erp typedef-name-present typedef-name)
+        (param->string "typedef-name" obj nil))
+       ((when (eq struct-tag-present typedef-name-present))
+        (reterr (jsonrpc::make-invalid-params-error
+                 "Exactly one of struct-tag and typedef-name must be provided.")))
        ((erp right-members) (param->string-list "right-members" obj t))
        ((unless (consp right-members))
         (reterr (jsonrpc::make-invalid-params-error
@@ -403,13 +418,14 @@
         (reterr (jsonrpc::make-internal-error
                  "Internal error: the input code ensemble is not annotated.")))
        ;; Run the transformation on the code ensemble:
-       (tag (c$::ident struct-tag))
+       (tag? (and struct-tag-present (c$::ident struct-tag)))
+       (typedef-name? (and typedef-name-present (c$::ident typedef-name)))
        (filepath? (and filepath-present (c$::filepath filepath)))
        (right-member-idents (c$::string-list-map-ident right-members))
        (new-tag? (and new-tag-present (c$::ident new-tag)))
        ((mv er? code$ warnings)
         (sts-split-code-ensemble
-         tag filepath? right-member-idents new-tag? unsafe code))
+         right-member-idents tag? typedef-name? filepath? new-tag? unsafe code))
        ((when er?)
         (reterr (jsonrpc::make-internal-error
                  (concatenate 'string

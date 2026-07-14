@@ -126,6 +126,27 @@ int main(void) {
                        :struct-tag point
                        :right-members ("z")))
 
+  ;; Neither a struct tag nor a typedef name is specified.
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :right-members ("z")))
+
+  ;; A struct tag and a typedef name cannot both be specified.
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :typedef-name "point_t"
+                       :right-members ("z")))
+
+  ;; The typedef name does not exist.
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :typedef-name "nonexistent"
+                       :right-members ("z")))
+
   ;; No right members are specified.
   (must-fail
     (struct-type-split *old*
@@ -435,7 +456,7 @@ int getz(void) {
 
   (struct-type-split *old*
                      *new*
-                     :struct-tag "point"
+                     :typedef-name "point_t"
                      :right-members ("z")
                      :new-tag "point_right"
                      :unsafe t)
@@ -450,6 +471,52 @@ int getz(void) {
 } point_t;
 
 typedef struct point_right {
+  int z;
+} point_t_0;
+
+static point_t p;
+
+static point_t_0 p_0;
+
+int main(void) {
+  p.x = 4;
+  return p.x + p_0.z;
+}
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; An untagged struct type can only be selected via its typedef name.
+;; The split produces a second untagged struct and a fresh typedef name.
+
+(acl2::must-succeed*
+  (c$::input-files :files '("typedef-anon.c")
+                   :const *old*)
+
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :typedef-name "point_t"
+                       :right-members ("z")))
+
+  (struct-type-split *old*
+                     *new*
+                     :typedef-name "point_t"
+                     :right-members ("z")
+                     :unsafe t)
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/typedef-anon.c"
+    :content "typedef struct {
+  int x;
+} point_t;
+
+typedef struct {
   int z;
 } point_t_0;
 
