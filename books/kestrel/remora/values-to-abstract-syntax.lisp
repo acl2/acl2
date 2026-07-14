@@ -527,12 +527,13 @@
     "An uninstantiated primitive operation value,
      which includes every monomorphic primitive operation,
      becomes the variable that denotes the operation.
-     A partially instantiated primitive operation value becomes
+     A stage that stores just a type value becomes
      a type application of that variable
-     to the type converted from the type value in the stage.
-     A totally instantiated primitive operation value becomes
+     to the type converted from the type value.
+     A stage that also stores ispace values becomes
      an ispace application of that type application
-     to the dimension and the shape in the stage.
+     to the dimension in the stage,
+     plus the shape if the stage has one.
      As we add more polymorphic primitive operations,
      we will need to generalize this."))
   (b* (((mv err name) (primop-value-name pval))
@@ -544,6 +545,12 @@
                  (make-expr-tapp
                   :fun opvar
                   :args (list (type-value-to-type pval.tval))))
+     :head-t-d (mv nil
+                   (make-expr-iappn
+                    :fun (make-expr-tapp
+                          :fun opvar
+                          :args (list (type-value-to-type pval.tval)))
+                    :args (list (ispace-dim (dim-const pval.dval)))))
      :head-t-d-s (mv nil
                      (make-expr-iappn
                       :fun (make-expr-tapp
@@ -556,6 +563,12 @@
                  (make-expr-tapp
                   :fun opvar
                   :args (list (type-value-to-type pval.tval))))
+     :tail-t-d (mv nil
+                   (make-expr-iappn
+                    :fun (make-expr-tapp
+                          :fun opvar
+                          :args (list (type-value-to-type pval.tval)))
+                    :args (list (ispace-dim (dim-const pval.dval)))))
      :tail-t-d-s (mv nil
                      (make-expr-iappn
                       :fun (make-expr-tapp
@@ -568,6 +581,12 @@
                    (make-expr-tapp
                     :fun opvar
                     :args (list (type-value-to-type pval.tval))))
+     :length-t-d (mv nil
+                     (make-expr-iappn
+                      :fun (make-expr-tapp
+                            :fun opvar
+                            :args (list (type-value-to-type pval.tval)))
+                      :args (list (ispace-dim (dim-const pval.dval)))))
      :length-t-d-s (mv nil
                        (make-expr-iappn
                         :fun (make-expr-tapp

@@ -1446,12 +1446,15 @@
      :bool-to-float (prim-bool-to-float (first args))
      :head (prog2$ (impossible) (reserr nil))
      :head-t (prog2$ (impossible) (reserr nil))
+     :head-t-d (prog2$ (impossible) (reserr nil))
      :head-t-d-s (prim-head op.tval op.dval op.sval (first args))
      :tail (prog2$ (impossible) (reserr nil))
      :tail-t (prog2$ (impossible) (reserr nil))
+     :tail-t-d (prog2$ (impossible) (reserr nil))
      :tail-t-d-s (prim-tail op.tval op.dval op.sval (first args))
      :length (prog2$ (impossible) (reserr nil))
      :length-t (prog2$ (impossible) (reserr nil))
+     :length-t-d (prog2$ (impossible) (reserr nil))
      :length-t-d-s (prim-length op.tval op.dval op.sval (first args))))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp
                                            arity-of-primop-value-fun
@@ -1597,7 +1600,13 @@
      which stores the ispace values received
      (for @('head'), @('tail'), and @('length'), a dimension and a shape),
      along with the previously received type values.
-     Anything else is an error."))
+     Anything else is an error.")
+   (xdoc::p
+    "Applying a stage that stores a type value and a dimension
+     is not supported yet, and results in an error.
+     It will be supported
+     when ispace applications are evaluated
+     one ispace argument at a time, in curried style."))
   (primop-value-case
    op
    :head-t (b* (((unless (ispace-values-match-ispace-vars-p
@@ -1610,6 +1619,7 @@
                :tval op.tval
                :dval (ispace-value-dim->val (first ivals))
                :sval (ispace-value-shape->val (second ivals)))))
+   :head-t-d (reserr :todo)
    :tail-t (b* (((unless (ispace-values-match-ispace-vars-p
                           ivals
                           (list (ispace-var-dim "d")
@@ -1620,6 +1630,7 @@
                :tval op.tval
                :dval (ispace-value-dim->val (first ivals))
                :sval (ispace-value-shape->val (second ivals)))))
+   :tail-t-d (reserr :todo)
    :length-t (b* (((unless (ispace-values-match-ispace-vars-p
                             ivals
                             (list (ispace-var-dim "d")
@@ -1630,6 +1641,7 @@
                  :tval op.tval
                  :dval (ispace-value-dim->val (first ivals))
                  :sval (ispace-value-shape->val (second ivals)))))
+   :length-t-d (reserr :todo)
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp
                                            ispace-values-match-ispace-vars-p)))
