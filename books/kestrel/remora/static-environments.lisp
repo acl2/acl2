@@ -232,7 +232,7 @@
            (cons "bool->i" bool-to-int-type)
            (cons "bool->f" bool-to-float-type)
            (cons "head" head-type)
-           (cons "tail" tail-type)           
+           (cons "tail" tail-type)
            (cons "length" length-type)
            (cons "append" append-type)))))
 
