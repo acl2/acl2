@@ -31,6 +31,7 @@
 (include-book "../syntax/unambiguity")
 (include-book "../syntax/validation-annotations")
 (include-book "../syntax/validator")
+(include-book "struct-type-split-safety")
 (include-book "utilities/context-msg")
 (include-book "utilities/fresh-ident")
 
@@ -4247,6 +4248,7 @@
    (primary-type c$::typep)
    (completions c$::type-completions-p)
    (ienv c$::ienvp)
+   (unsafe booleanp)
    (tunits filepath-trans-unit-mapp)
    (st sts-split-statep))
   :guard (c$::filepath-trans-unit-map-annop tunits)
@@ -4317,7 +4319,7 @@
         ;; in this translation unit, which is left unchanged.
         (b* (((erp rest st)
               (sts-split-trans-units
-                tag primary-type completions ienv (omap::tail tunits) st)))
+                tag primary-type completions ienv unsafe (omap::tail tunits) st)))
           (retok (omap::update filepath (c$::trans-unit-fix tunit) rest)
                  st)))
        (st (change-sts-split-state st :filepath filepath))
@@ -4329,16 +4331,25 @@
                               (change-sts-split-state st :target-struct-uid uid)))
        ((when erp)
         (reterr (sts-error-in-translation-unit erp st)))
+       (safep
+        (b* (((when unsafe) t)
+             ((mv erp members)
+              (c$::type-struni-tag/members->members
+                (type-struct->tag/members current-type)
+                uid
+                completions))
+             ((when erp) nil)
+             (spec (make-sts-struct-spec :uid uid :tag tag :members members)))
+          (trans-unit-sts-safep tunit spec)))
+       ((unless safep)
+        (reterr (sts-error-in-translation-unit
+                  (msg$ "Safety check failed.")
+                  st)))
        ((erp rest st)
         (sts-split-trans-units
-          tag primary-type completions ienv (omap::tail tunits) st)))
+          tag primary-type completions ienv unsafe (omap::tail tunits) st)))
     (retok (omap::update filepath tunit rest) st))
-  :guard-debug t
   :verify-guards :after-returns
-  ;; The errors passed to sts-error-in-translation-unit are known to be
-  ;; non-nil (and hence msgp, not just maybe-msgp) from the guarding tests:
-  ;; the return-type lemmas establish their maybe-msgp-ness, and
-  ;; msgp-when-maybe-msgp-and-non-nil then refines it to msgp.
   :guard-hints
   (("Goal" :in-theory (enable c$::filepath-trans-unit-map-annop
                               c$::trans-unit-annop
@@ -4351,6 +4362,7 @@
    (filepath? c$::filepath-optionp)
    (right-members ident-listp)
    (right-name? ident-optionp)
+   (unsafe booleanp)
    (code code-ensemblep))
   :guard (code-ensemble-annop code)
   :returns (mv (er? maybe-msgp)
@@ -4418,7 +4430,8 @@
              :member-map nil
              :completions completions))
        ((erp map st)
-        (sts-split-trans-units tag primary-type completions code.ienv map st))
+        (sts-split-trans-units
+          tag primary-type completions code.ienv unsafe map st))
        (- (fast-alist-free completions))
        (warnings (sts-split-state->warnings st))
        (new-trans-units (c$::change-trans-ensemble code.trans-units
@@ -4457,6 +4470,7 @@
                                   filepath
                                   right-members
                                   new-tag
+                                  unsafe
                                   print-warnings
                                   (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
@@ -4465,10 +4479,12 @@
                (filepath? c$::filepath-optionp)
                (right-members ident-listp)
                (new-tag? ident-optionp)
+               (unsafe$ booleanp)
                (print-warnings$ booleanp)
                (const-new$ symbolp))
   :short "Process the inputs."
-  (b* (((reterr) (c$::irr-code-ensemble) (c$::irr-ident) nil nil nil nil nil)
+  (b* (((reterr)
+        (c$::irr-code-ensemble) (c$::irr-ident) nil nil nil nil nil nil)
        ((unless (symbolp const-old))
         (retmsg$ "~x0 must be a symbol." const-old))
        (code (acl2::constant-value const-old wrld))
@@ -4493,11 +4509,14 @@
                     (stringp new-tag)))
         (retmsg$ "~x0 must be nil or a string." new-tag))
        (new-tag? (and new-tag (c$::ident new-tag)))
+       ((unless (booleanp unsafe))
+        (retmsg$ "~x0 must be a boolean." unsafe))
        ((unless (booleanp print-warnings))
         (retmsg$ "~x0 must be a boolean." print-warnings))
        ((unless (symbolp const-new))
         (retmsg$ "~x0 must be a symbol." const-new)))
-    (retok code tag filepath? right-members new-tag? print-warnings const-new))
+    (retok code tag filepath? right-members new-tag? unsafe print-warnings
+           const-new))
   ///
 
   (defret code-ensemble-annop-of-sts-split-process-inputs.code
@@ -4533,6 +4552,7 @@
    (filepath? c$::filepath-optionp)
    (right-members ident-listp)
    (new-tag? ident-optionp)
+   (unsafe booleanp)
    (print-warnings booleanp)
    (const-new symbolp))
   :guard (code-ensemble-annop code)
@@ -4541,7 +4561,8 @@
   :short "Generate all the events."
   (b* (((reterr) '(_))
        ((erp code warnings)
-        (sts-split-code-ensemble tag filepath? right-members new-tag? code))
+        (sts-split-code-ensemble
+          tag filepath? right-members new-tag? unsafe code))
        (- (and print-warnings
                (sts-print-warnings warnings)))
        (defconst-event
@@ -4557,6 +4578,7 @@
                               filepath
                               right-members
                               new-tag
+                              unsafe
                               print-warnings
                               (ctx ctxp)
                               state)
@@ -4564,7 +4586,7 @@
                (event pseudo-event-formp)
                state)
   :short "Event expansion of @(tsee struct-type-split)."
-  (b* (((mv erp code tag filepath? right-members new-tag? print-warnings
+  (b* (((mv erp code tag filepath? right-members new-tag? unsafe print-warnings
             const-new)
         (sts-split-process-inputs const-old
                                   const-new
@@ -4572,6 +4594,7 @@
                                   filepath
                                   right-members
                                   new-tag
+                                  unsafe
                                   print-warnings
                                   (w state)))
        ((when erp)
@@ -4582,6 +4605,7 @@
                                   filepath?
                                   right-members
                                   new-tag?
+                                  unsafe
                                   print-warnings
                                   const-new))
        ((when erp)
@@ -4600,6 +4624,7 @@
      filepath
      right-members
      new-tag
+     unsafe
      (print-warnings 't))
     `(make-event (struct-type-split-fn ',const-old
                                        ',const-new
@@ -4607,6 +4632,7 @@
                                        ',filepath
                                        ',right-members
                                        ',new-tag
+                                       ',unsafe
                                        ',print-warnings
                                        'struct-type-split
                                        state))))

@@ -92,6 +92,11 @@
      (xdoc::p
       "A string denoting the tag of the new right struct type."))
     (xdoc::desc
+     "@('\"unsafe\"') &mdash; optional, default @('false')"
+     (xdoc::p
+      "A boolean that, when @('true'), disables the transformation's safety
+       checks."))
+    (xdoc::desc
      "@('\"preprocess\"') &mdash; optional, default @('\"auto\"')"
      (xdoc::p
       "A boolean or string controlling preprocessing:
@@ -125,6 +130,7 @@
     "             \"struct-tag\": \"point\","
     "             \"right-members\": [\"z\"],"
     "             \"new-tag\": \"point_right\","
+    "             \"unsafe\": true,"
     "             \"preprocess\": false},"
     " \"id\": 1}"))
   :order-subtopics t
@@ -218,6 +224,22 @@
                  (concatenate 'string
                               "Parameter " name " must be an array of strings.")))))
     (retok strs)))
+
+(define param->boolean ((name stringp)
+                        (obj json::valuep)
+                        (default booleanp))
+  :guard (json::value-case obj :object)
+  :returns (mv (erp maybe-errorp) (val booleanp))
+  :short "Read an optional boolean-valued parameter."
+  (b* ((default$ (and default t))
+       ((reterr) default$)
+       ((mv presentp v) (get-member name obj))
+       ((unless presentp) (retok default$))
+       ((when (json::value-case v :true)) (retok t))
+       ((when (json::value-case v :false)) (retok nil)))
+    (reterr (jsonrpc::make-invalid-params-error
+             (concatenate 'string
+                          "Parameter " name " must be a boolean.")))))
 
 (define members->names ((members json::member-listp))
   :returns (names string-listp)
@@ -367,6 +389,7 @@
                  "At least one right member must be specified.")))
        ((erp filepath-present filepath) (param->string "filepath" obj nil))
        ((erp new-tag-present new-tag) (param->string "new-tag" obj nil))
+       ((erp unsafe) (param->boolean "unsafe" obj nil))
        ;; Read the input files into a code ensemble:
        ((mv erp code state)
         (c$::input-files-prog-fn t files old-dir preprocess preprocess-args
@@ -386,7 +409,7 @@
        (new-tag? (and new-tag-present (c$::ident new-tag)))
        ((mv er? code$ warnings)
         (sts-split-code-ensemble
-         tag filepath? right-member-idents new-tag? code))
+         tag filepath? right-member-idents new-tag? unsafe code))
        ((when er?)
         (reterr (jsonrpc::make-internal-error
                  (concatenate 'string

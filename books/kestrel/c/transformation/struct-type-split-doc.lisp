@@ -49,10 +49,11 @@
     (xdoc::codeblock
      "(struct-type-split const-old"
      "                   const-new"
-     "                   :struct-tag    ..."
-     "                   :right-members ..."
-     "                   :filepath      ... ; optional"
-     "                   :new-tag       ... ; optional"
+     "                   :struct-tag     ..."
+     "                   :right-members  ..."
+     "                   :filepath       ... ; optional"
+     "                   :new-tag        ... ; optional"
+     "                   :unsafe         ... ; default nil"
      "                   :print-warnings ... ; default t"
      "  )"
      ))
@@ -114,6 +115,12 @@
      (xdoc::p
       "If this argument is omitted,
        a fresh tag is derived from the original tag."))
+    (xdoc::desc
+     "@(':unsafe') &mdash; default @('nil')"
+     (xdoc::p
+      "By default, the transformation checks certain safety conditions
+       to ensure the resulting code is correct.
+       These checks can optionally be disabled."))
     (xdoc::desc
      "@(':print-warnings') &mdash; default @('t')"
      (xdoc::p
