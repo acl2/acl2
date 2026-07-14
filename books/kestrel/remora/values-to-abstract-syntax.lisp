@@ -531,9 +531,11 @@
      a type application of that variable
      to the type converted from the type value.
      A stage that also stores ispace values becomes
-     an ispace application of that type application
+     a unary ispace application of that type application
      to the dimension in the stage,
-     plus the shape if the stage has one.
+     wrapped in a further unary ispace application
+     to the shape if the stage has one:
+     a left-nested chain of the core unary form (see @(tsee expr)).
      As we add more polymorphic primitive operations,
      we will need to generalize this."))
   (b* (((mv err name) (primop-value-name pval))
@@ -546,55 +548,58 @@
                   :fun opvar
                   :args (list (type-value-to-type pval.tval))))
      :head-t-d (mv nil
-                   (make-expr-iappn
+                   (make-expr-iapp
                     :fun (make-expr-tapp
                           :fun opvar
                           :args (list (type-value-to-type pval.tval)))
-                    :args (list (ispace-dim (dim-const pval.dval)))))
+                    :arg (ispace-dim (dim-const pval.dval))))
      :head-t-d-s (mv nil
-                     (make-expr-iappn
-                      :fun (make-expr-tapp
-                            :fun opvar
-                            :args (list (type-value-to-type pval.tval)))
-                      :args (list (ispace-dim (dim-const pval.dval))
-                                  (ispace-shape
-                                   (shape-dims (dim-const-list pval.sval))))))
+                     (make-expr-iapp
+                      :fun (make-expr-iapp
+                            :fun (make-expr-tapp
+                                  :fun opvar
+                                  :args (list (type-value-to-type pval.tval)))
+                            :arg (ispace-dim (dim-const pval.dval)))
+                      :arg (ispace-shape
+                            (shape-dims (dim-const-list pval.sval)))))
      :tail-t (mv nil
                  (make-expr-tapp
                   :fun opvar
                   :args (list (type-value-to-type pval.tval))))
      :tail-t-d (mv nil
-                   (make-expr-iappn
+                   (make-expr-iapp
                     :fun (make-expr-tapp
                           :fun opvar
                           :args (list (type-value-to-type pval.tval)))
-                    :args (list (ispace-dim (dim-const pval.dval)))))
+                    :arg (ispace-dim (dim-const pval.dval))))
      :tail-t-d-s (mv nil
-                     (make-expr-iappn
-                      :fun (make-expr-tapp
-                            :fun opvar
-                            :args (list (type-value-to-type pval.tval)))
-                      :args (list (ispace-dim (dim-const pval.dval))
-                                  (ispace-shape
-                                   (shape-dims (dim-const-list pval.sval))))))
+                     (make-expr-iapp
+                      :fun (make-expr-iapp
+                            :fun (make-expr-tapp
+                                  :fun opvar
+                                  :args (list (type-value-to-type pval.tval)))
+                            :arg (ispace-dim (dim-const pval.dval)))
+                      :arg (ispace-shape
+                            (shape-dims (dim-const-list pval.sval)))))
      :length-t (mv nil
                    (make-expr-tapp
                     :fun opvar
                     :args (list (type-value-to-type pval.tval))))
      :length-t-d (mv nil
-                     (make-expr-iappn
+                     (make-expr-iapp
                       :fun (make-expr-tapp
                             :fun opvar
                             :args (list (type-value-to-type pval.tval)))
-                      :args (list (ispace-dim (dim-const pval.dval)))))
+                      :arg (ispace-dim (dim-const pval.dval))))
      :length-t-d-s (mv nil
-                       (make-expr-iappn
-                        :fun (make-expr-tapp
-                              :fun opvar
-                              :args (list (type-value-to-type pval.tval)))
-                        :args (list (ispace-dim (dim-const pval.dval))
-                                    (ispace-shape
-                                     (shape-dims (dim-const-list pval.sval))))))
+                       (make-expr-iapp
+                        :fun (make-expr-iapp
+                              :fun (make-expr-tapp
+                                    :fun opvar
+                                    :args (list (type-value-to-type pval.tval)))
+                              :arg (ispace-dim (dim-const pval.dval)))
+                        :arg (ispace-shape
+                              (shape-dims (dim-const-list pval.sval)))))
      :otherwise (mv nil opvar))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
