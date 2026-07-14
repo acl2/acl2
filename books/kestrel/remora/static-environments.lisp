@@ -173,6 +173,13 @@
                       (tpi ("$d" "@s")
                            (t-> ((t[] "&t" (shape++ "$d" "@s")))
                                 :int)))
+             (shp)))
+       (append-type
+        (t[] (tforall ("&t")
+                      (tpi ("$m" "$n" "@s")
+                           (t-> ((t[] "&t" (shape++ "$m" "@s"))
+                                 (t[] "&t" (shape++ "$n" "@s")))
+                                (t[] "&t" (shape++ (dim+ "$m" "$n") "@s")))))
              (shp))))
     (omap::from-alist
      (list (cons "+" int-binop-type)
@@ -225,8 +232,9 @@
            (cons "bool->i" bool-to-int-type)
            (cons "bool->f" bool-to-float-type)
            (cons "head" head-type)
-           (cons "tail" tail-type)
-           (cons "length" length-type)))))
+           (cons "tail" tail-type)           
+           (cons "length" length-type)
+           (cons "append" append-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
