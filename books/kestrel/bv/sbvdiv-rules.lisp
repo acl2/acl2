@@ -293,8 +293,8 @@
 
 ;gen!
 (defthmd sbvdiv-of-sbvdiv-arg2
-  (implies (and (natp size)
-                (natp x)
+  (implies (and; (natp size)
+;                (natp x)
                 (unsigned-byte-p (+ -1 size) x)  ; x is non-negative (gen?) ;todo: drop
                 (unsigned-byte-p (+ -1 size) y1) ; y1 is non-negative (gen?)
                 (unsigned-byte-p (+ -1 size) y2) ; y2 is non-negative (gen?)
