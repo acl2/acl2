@@ -28,6 +28,7 @@
 (include-book "bvlt-def")
 (include-book "bvplus-def")
 (include-book "bvmult-def")
+(include-book "sbvdiv-def")
 (include-book "defs-arith")
 (include-book "leftrotate") ; todo: split out defs
 (include-book "rightrotate") ; todo: split out defs
@@ -61,15 +62,6 @@
   (bvchop n (mod (bvchop n x) ;these two bvchops are new
                   (bvchop n y)
                   )))
-
-;fixme make sure this is right
-;this is like java's idiv
-;takes and returns USBs
-(defund sbvdiv (n x y)
-  (declare (type (integer 1 *) n)
-           (type integer x y)
-           (xargs :guard (not (equal 0 (bvchop n y)))))
-  (bvchop n (truncate (logext n x) (logext n y))))
 
 ;fixme could call this sbvfloor
 ;this one rounds toward negative infinity

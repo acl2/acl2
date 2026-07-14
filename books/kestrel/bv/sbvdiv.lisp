@@ -12,20 +12,12 @@
 (in-package "ACL2")
 
 (include-book "unsigned-byte-p-forced")
-(include-book "bvchop")
+(include-book "bvchop") ; localize?
+(include-book "sbvdiv-def")
 (include-book "logext-def")
 (local (include-book "getbit"))
 (local (include-book "logext"))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
-
-;fixme make sure this is right
-;this is like java's idiv
-;takes and returns USBs
-(defund sbvdiv (n x y)
-  (declare (type (integer 1 *) n)
-           (type integer x y)
-           (xargs :guard (not (equal 0 (bvchop n y)))))
-  (bvchop n (truncate (logext n x) (logext n y))))
 
 (defthm unsigned-byte-p-of-sbvdiv
   (implies (<= size size2)
@@ -33,13 +25,6 @@
                   (natp size2)))
   :hints (("Goal" :in-theory (enable sbvdiv))))
 
-;; axe only?
-(defthmd natp-of-sbvdiv
-  (natp (sbvdiv size x y)))
-
-;; axe only?
-(defthmd integerp-of-sbvdiv
-  (integerp (sbvdiv size x y)))
 
 ;do not remove (helps justify the translation to STP)
 (defthm sbvdiv-of-bvchop-arg2
