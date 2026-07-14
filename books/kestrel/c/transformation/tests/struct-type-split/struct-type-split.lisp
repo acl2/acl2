@@ -33,8 +33,7 @@
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :unsafe t)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -281,8 +280,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :unsafe t)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -372,8 +370,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :unsafe t)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -458,8 +455,7 @@ int getz(void) {
                      *new*
                      :typedef-name "point_t"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :unsafe t)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -592,8 +588,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :unsafe t)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")

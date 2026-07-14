@@ -8242,12 +8242,13 @@
              (retmsg$ "Error in translation unit ~x0: ~@1"
                       (filepath->string path)
                       erp)))
-          ((erp new-tumap -) (valid-filepath-trans-unit-map-loop (set::tail paths)
-                                                                 tumap
-                                                                 keep-going
-                                                                 vstate)))
+          ((erp new-tumap final-vstate)
+           (valid-filepath-trans-unit-map-loop (set::tail paths)
+                                                tumap
+                                                keep-going
+                                                vstate)))
        (retok (omap::update path new-tunit new-tumap)
-              vstate))
+              final-vstate))
      :no-function nil
      :prepwork ((local (in-theory (enable emptyp-of-filepath-set-fix))))
      :verify-guards :after-returns
