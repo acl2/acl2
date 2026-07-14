@@ -471,6 +471,10 @@
                   (mono-expr fuel x.fun fn-info-map dim-var-map type-map)))
               (mv err fn-info-map (expr-tapp new-fun x.args)))
 
+      :iapp (b* (((mv err fn-info-map new-fun)
+                  (mono-expr fuel x.fun fn-info-map dim-var-map type-map)))
+              (mv err fn-info-map (expr-iapp new-fun x.arg)))
+
       :iappn
       (b* (((mv err fn-info-map new-fun)
             (mono-expr fuel x.fun fn-info-map dim-var-map type-map))

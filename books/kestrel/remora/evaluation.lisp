@@ -1220,6 +1220,7 @@
                   ((ok tvals) (eval-type-list expr.args
                                               (expr-denv->tenv denv))))
                (eval-tapp funval tvals (1- limit)))
+       :iapp (reserr :todo)
        :iappn (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                    ((ok ivals) (eval-ispace-list expr.args
                                                  (type-denv->ienv

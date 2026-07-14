@@ -1223,6 +1223,12 @@
                                 (pdoc-concat (pdoc-line)
                                              (type-list-to-pdoc e.args))
                               (pdoc-empty)))))
+      :iapp (b* (((ok fun) (expr-to-pdoc e.fun)))
+              (pdoc-prefix-form
+               "i-app"
+               (pdoc-concat fun
+                            (pdoc-concat (pdoc-line)
+                                         (ispace-to-pdoc e.arg)))))
       :iappn (b* (((ok fun) (expr-to-pdoc e.fun)))
                (pdoc-prefix-form
                 "i-app"

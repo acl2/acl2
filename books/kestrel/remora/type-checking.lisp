@@ -1359,6 +1359,7 @@
           ((ok type) (check-tapp fe.type expr.args senv)))
        (make-type+expr :type type
                        :expr (make-expr-tapp :fun fe.expr :args expr.args)))
+     :iapp (reserr :todo)
      :iappn
      (b* (((ok (type+expr fe)) (check-expr expr.fun senv))
           ((ok type) (check-iapp fe.type expr.args senv)))
