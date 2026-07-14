@@ -17,100 +17,100 @@
 (local (include-book "kestrel/bv/logxor" :dir :system))
 
 (defthm <=-of-schar-integer-fix-linear
-  (<= (c::schar-integer-fix x) 127)
+  (<= (schar-integer-fix x) 127)
   :rule-classes :linear
-  :hints (("Goal" :in-theory (enable c::schar-integer-fix
-                                     c::schar-integerp
-                                     c::char-bits
+  :hints (("Goal" :in-theory (enable schar-integer-fix
+                                     schar-integerp
+                                     char-bits
                                      signed-byte-p))))
 
 (defthm <=-of-schar-integer-fix-linear-2
-  (<= -128 (c::schar-integer-fix x))
+  (<= -128 (schar-integer-fix x))
   :rule-classes :linear
-  :hints (("Goal" :in-theory (enable c::schar-integer-fix
-                                     c::schar-integerp
-                                     c::char-bits
+  :hints (("Goal" :in-theory (enable schar-integer-fix
+                                     schar-integerp
+                                     char-bits
                                      signed-byte-p))))
 
 (defthm <=-of-integer-from-schar-linear
-  (<= (c::integer-from-schar x) 127)
+  (<= (integer-from-schar x) 127)
   :rule-classes :linear
-  :hints (("Goal" :in-theory (enable c::integer-from-schar))))
+  :hints (("Goal" :in-theory (enable integer-from-schar))))
 
 (defthm <=-of-integer-from-schar-linear-2
-  (<= -128 (c::integer-from-schar x))
+  (<= -128 (integer-from-schar x))
   :rule-classes :linear
-  :hints (("Goal" :in-theory (enable c::integer-from-schar))))
+  :hints (("Goal" :in-theory (enable integer-from-schar))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Converts bitnot-schar into lognot
-;; sint is involved because c::bitnot-schar returns a sint
+;; sint is involved because bitnot-schar returns a sint
 (defthmd integer-from-sint-of-bitnot-schar
-  (equal (c::integer-from-sint (c::bitnot-schar x))
-         (lognot (c::integer-from-schar x)))
-  :hints (("Goal" :in-theory (enable c::bitnot-schar
-                                     c::bitnot-sint ; todo
-                                     c::sint-from-schar
-                                     c::sint-integer-fix
-                                     c::sint-integerp
-                                     c::int-bits))))
+  (equal (integer-from-sint (bitnot-schar x))
+         (lognot (integer-from-schar x)))
+  :hints (("Goal" :in-theory (enable bitnot-schar
+                                     bitnot-sint ; todo
+                                     sint-from-schar
+                                     sint-integer-fix
+                                     sint-integerp
+                                     int-bits))))
 
 ;; Converts bitand-schar-schar into logand
-;; sint is involved because c::bitand-schar-schar returns a sint
+;; sint is involved because bitand-schar-schar returns a sint
 (defthmd integer-from-sint-of-bitand-schar-schar
-  (equal (c::integer-from-sint (c::bitand-schar-schar x y))
-         (logand (c::integer-from-schar x) (c::integer-from-schar y)))
-  :hints (("Goal" :in-theory (enable c::bitand-schar-schar
-                                     c::bitand-sint-sint ; todo
-                                     c::sint-from-schar
-                                     c::sint-integer-fix
-                                     c::sint-integerp
-                                     c::int-bits))))
+  (equal (integer-from-sint (bitand-schar-schar x y))
+         (logand (integer-from-schar x) (integer-from-schar y)))
+  :hints (("Goal" :in-theory (enable bitand-schar-schar
+                                     bitand-sint-sint ; todo
+                                     sint-from-schar
+                                     sint-integer-fix
+                                     sint-integerp
+                                     int-bits))))
 
 ;; Converts bitior-schar-schar into logior
-;; sint is involved because c::bitand-schar-schar returns a sint
+;; sint is involved because bitand-schar-schar returns a sint
 (defthmd integer-from-sint-of-bitior-schar-schar
-  (equal (c::integer-from-sint (c::bitior-schar-schar x y))
-         (logior (c::integer-from-schar x) (c::integer-from-schar y)))
-  :hints (("Goal" :in-theory (enable c::bitior-schar-schar
-                                     c::bitior-sint-sint ; todo
-                                     c::sint-from-schar
-                                     c::sint-integer-fix
-                                     c::sint-integerp
-                                     c::int-bits))))
+  (equal (integer-from-sint (bitior-schar-schar x y))
+         (logior (integer-from-schar x) (integer-from-schar y)))
+  :hints (("Goal" :in-theory (enable bitior-schar-schar
+                                     bitior-sint-sint ; todo
+                                     sint-from-schar
+                                     sint-integer-fix
+                                     sint-integerp
+                                     int-bits))))
 
 ;; Converts bitxor-schar-schar into logxor
-;; sint is involved because c::bitand-schar-schar returns a sint
+;; sint is involved because bitand-schar-schar returns a sint
 (defthmd integer-from-sint-of-bitxor-schar-schar
-  (equal (c::integer-from-sint (c::bitxor-schar-schar x y))
-         (logxor (c::integer-from-schar x) (c::integer-from-schar y)))
-  :hints (("Goal" :in-theory (enable c::bitxor-schar-schar
-                                     c::bitxor-sint-sint ; todo
-                                     c::sint-from-schar
-                                     c::sint-integer-fix
-                                     c::sint-integerp
-                                     c::int-bits))))
+  (equal (integer-from-sint (bitxor-schar-schar x y))
+         (logxor (integer-from-schar x) (integer-from-schar y)))
+  :hints (("Goal" :in-theory (enable bitxor-schar-schar
+                                     bitxor-sint-sint ; todo
+                                     sint-from-schar
+                                     sint-integer-fix
+                                     sint-integerp
+                                     int-bits))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; These can sometimes save us from having to enable schar-removal-rules.
 
 (defthm scharp-of-declar
-  (equal (c::scharp (c::declar x))
-         (c::scharp x))
-  :hints (("Goal" :in-theory (enable c::declar))))
+  (equal (scharp (declar x))
+         (scharp x))
+  :hints (("Goal" :in-theory (enable declar))))
 
 (defthm scharp-of-assign
-  (equal (c::scharp (c::assign x))
-         (c::scharp x))
-  :hints (("Goal" :in-theory (enable c::assign))))
+  (equal (scharp (assign x))
+         (scharp x))
+  :hints (("Goal" :in-theory (enable assign))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (deftheory schar-removal-rules
-    '(c::assign
-      c::declar
+    '(assign
+      declar
       ;; ;; these are triggered by conversion functions on the outside.  if needed we could be more aggressive
       ;; ;; and rewrite/open functions like add-uint-uint without conversion wrappers outside of them:
       ;; integer-from-uint-of-add-uint-uint ; or we could introduce bvplus
@@ -127,18 +127,18 @@
       ;; boolean-from-sint-of-ge-uint-uint
       ;; boolean-from-sint-of-eq-uint-uint
       ;; boolean-from-sint-of-ne-uint-uint
-      ;; c::add-uchar-uchar-okp
-      ;; c::div-uchar-uchar-okp
-      ;; c::minus-uchar-okp
-      ;; c::mul-uchar-uchar-okp
-      ;; c::rem-uchar-uchar-okp
-      ;; c::shl-uchar-okp
-      ;; c::shl-uchar-uchar-okp
-      ;; c::shr-uchar-okp
-      ;; c::shr-uchar-uchar-okp
-      ;; c::sub-uchar-uchar-okp
-      c::schar-integerp ; exposes signed-byte-p
-      c::char-bits
-      ;; c::schar-dec-const ; does not exist
+      ;; add-uchar-uchar-okp
+      ;; div-uchar-uchar-okp
+      ;; minus-uchar-okp
+      ;; mul-uchar-uchar-okp
+      ;; rem-uchar-uchar-okp
+      ;; shl-uchar-okp
+      ;; shl-uchar-uchar-okp
+      ;; shr-uchar-okp
+      ;; shr-uchar-uchar-okp
+      ;; sub-uchar-uchar-okp
+      schar-integerp ; exposes signed-byte-p
+      char-bits
+      ;; schar-dec-const ; does not exist
       )
   :redundant-okp t)
