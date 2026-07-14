@@ -384,6 +384,8 @@
     statassert
     make-statassert
 
+    attrib
+
     attrib-spec-listp
 
     init-declorp

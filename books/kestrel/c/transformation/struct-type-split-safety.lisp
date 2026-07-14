@@ -911,8 +911,11 @@
     "We allow all alignment specifiers,
      because they do not seem related to the struct type being split.")
    (xdoc::p
-    "Certain GCC/Clang attributes might need to be rejected,
-     but we need to examine them in more detail.")
+    "For now we accept all attributes without examining them,
+     because attributes may contain expressions
+     but those are not yet annotated by the validator,
+     and the STS transformation does not transform attributes.
+     All of this will need to be handled properly eventually.")
    (xdoc::p
     "We reject the @('__stdcall') and @('__declspec') declaration specifiers,
      out of caution.")
@@ -1009,6 +1012,7 @@
                     (and (declor-option-sts-safep struct-declor.declor? spec)
                          (const-expr-option-sts-safep struct-declor.expr? spec)
                          (struct-declor-info-sts-safep struct-declor spec))))
+   (attrib t)
    (init-declor (b* (((init-declor init-declor)))
                   (and (declor-sts-safep init-declor.declor spec)
                        (attrib-spec-list-sts-safep init-declor.attribs spec)
