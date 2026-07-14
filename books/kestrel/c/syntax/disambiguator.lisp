@@ -2707,7 +2707,7 @@
          (retok (make-param-declor-abstract :declor new-absdeclor :info nil)
                 (dstate-fix dstate)))
        :none
-       (retok (param-declor-none) (dstate-fix dstate))
+       (retok (param-declor-none nil) (dstate-fix dstate))
        :ambig
        (b* (((erp declor/absdeclor ident? dstate)
              (dimb-amb-declor/absdeclor paramdeclor.declor dstate)))

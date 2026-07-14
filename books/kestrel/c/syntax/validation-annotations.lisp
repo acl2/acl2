@@ -329,7 +329,15 @@
      (xdoc::p
       "Non-abstract parameter declarators are annotated
        with their types and their UIDs.
-       Abstract parameter declarators are annotated with their types.")
+       Abstract parameter declarators are annotated with their types.
+       Absent (i.e. @(':none')) parameter declarators
+       are annotated with their types;
+       in the case of this being part of
+       a single @('void') parameter declaration,
+       which has a special meaning (i.e. a function with zero parameters),
+       we annotate the parameter declarator with the @('void') type.
+       Note that @('void') can never be confused with
+       the type of a function parameter, which cannot be @('void').")
      (xdoc::p
       "Type names are annotated with the type they denote.")
      (xdoc::p
@@ -438,6 +446,7 @@
                                   (type-vinfop
                                    (param-declor-abstract->info
                                     param-declor))))
+     (param-declor :none (type-vinfop param-declor.info))
      (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
                   (absdeclor-option-annop (tyname->declor? tyname))
                   (type-vinfop (tyname->info tyname))))

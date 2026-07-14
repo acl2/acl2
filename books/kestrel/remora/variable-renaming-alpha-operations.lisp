@@ -414,8 +414,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :extra-args ((dim-renam string-string-mapp)
                (shape-renam string-string-mapp)
                (avoid ispace-var-setp))
@@ -642,20 +641,6 @@
      see @(tsee type-rename-ispace-vars-alpha)."))
   (atom-rename-ispace-vars-alpha-aux atom dim-renam shape-renam nil))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define prog-rename-ispace-vars-alpha ((prog progp)
-                                       (dim-renam string-string-mapp)
-                                       (shape-renam string-string-mapp))
-  :returns (new-prog progp)
-  :short "Rename ispace variables in a program,
-          with automatic alpha renaming to avoid capture."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the top-level entry point for programs;
-     see @(tsee type-rename-ispace-vars-alpha)."))
-  (prog-rename-ispace-vars-alpha-aux prog dim-renam shape-renam nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -673,8 +658,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :extra-args ((atom-renam string-string-mapp)
                (array-renam string-string-mapp)
                (avoid type-var-setp))
@@ -872,20 +856,6 @@
      see @(tsee type-rename-type-vars-alpha)."))
   (atom-rename-type-vars-alpha-aux atom atom-renam array-renam nil))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define prog-rename-type-vars-alpha ((prog progp)
-                                     (atom-renam string-string-mapp)
-                                     (array-renam string-string-mapp))
-  :returns (new-prog progp)
-  :short "Rename type variables in a program,
-          with automatic alpha renaming to avoid capture."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the top-level entry point for programs;
-     see @(tsee type-rename-type-vars-alpha)."))
-  (prog-rename-type-vars-alpha-aux prog atom-renam array-renam nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -899,8 +869,7 @@
      see @(tsee ast-subst-expr-vars-alpha-aux) for the general scheme,
      including the rebuilding of @('var+type?-list') parameters
      via @(tsee var+type?-list-set-vars)."))
-  :types (exprs/atoms/binds
-          prog)
+  :types (exprs/atoms/binds)
   :extra-args ((renam string-string-mapp)
                (avoid string-setp))
   :override
@@ -1026,15 +995,3 @@
      see @(tsee expr-rename-expr-vars-alpha)."))
   (atom-rename-expr-vars-alpha-aux atom renam nil))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define prog-rename-expr-vars-alpha ((prog progp) (renam string-string-mapp))
-  :returns (new-prog progp)
-  :short "Rename expression variables in a program,
-          with automatic alpha renaming to avoid capture."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the top-level entry point for programs;
-     see @(tsee expr-rename-expr-vars-alpha)."))
-  (prog-rename-expr-vars-alpha-aux prog renam nil))

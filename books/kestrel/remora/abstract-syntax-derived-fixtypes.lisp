@@ -314,10 +314,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult prog-result
-  :short "Fixtype of programs and errors."
-  :ok prog
-  :pred prog-resultp)
+(fty::defresult import-result
+  :short "Fixtype of imports and errors."
+  :ok import
+  :pred import-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult import-list-result
+  :short "Fixtype of lists of imports and errors."
+  :ok import-list
+  :pred import-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult decl-result
+  :short "Fixtype of declarations and errors."
+  :ok decl
+  :pred decl-resultp
+  :prepwork ((local (in-theory (enable decl-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult decl-list-result
+  :short "Fixtype of lists of declarations and errors."
+  :ok decl-list
+  :pred decl-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult file-result
+  :short "Fixtype of source files and errors."
+  :ok file
+  :pred file-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

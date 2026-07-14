@@ -136,8 +136,7 @@
           var+type?-list
           exprs/atoms/binds
           expr-list-list
-          atom-list-list
-          prog)
+          atom-list-list)
   :result booleanp
   :default t
   :combine and

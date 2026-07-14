@@ -76,7 +76,7 @@
      (each ASCII code point is a single @('UTF-8') byte).
      The encoding is performed by syntax abstraction by @('abs-nats-to-string'),
      and is symmetric to the @('UTF-8') decoding
-     performed by @('parse-program-from-bytes').
+     performed by the parsing entry points (see @('parser-interface')).
      Consumers that need code points back
      can decode the string with @('acl2::utf8=>ustring').
      String equality on names is bytewise,
@@ -430,7 +430,11 @@
        function types (with zero or more input types and an output type),
        universal types (quantified over kinded variables),
        product types (quantified over ispace parameters),
-       and sum types (quantified over ispace parameters)."))
+       and sum types (quantified over ispace parameters).")
+     (xdoc::p
+      "The concrete syntax requires the parameter lists of
+       @(':forall'), @(':pi'), and @(':sigma') to be non-empty;
+       this is not captured in this fixtype."))
     (:var ((var type-var)))
     (:base ((type base-type)))
     (:array ((elem type)
@@ -797,14 +801,18 @@
        bracketed expressions,
        and @('let') expressions.
        An unboxing expression
-       binds zero or more variables to ispaces,
+       binds one or more variables to ispaces,
        binds a variable to the boxed expression,
        and returns the body expression;
        it is optionally annotated by its type
        (the type of the whole unboxing expression).")
      (xdoc::p
-      "The non-emptiness of the atom list in @(':array')
-       and of the expression list in @(':frame')
+      "The non-emptiness of the atom list in @(':array'),
+       of the expression list in @(':frame'),
+       of the argument lists of @(':app'), @(':tapp'), and @(':iapp')
+       (but not of @(':capp'), whose value arguments may be absent),
+       of the bind list in @(':let'),
+       and of the ispace-var list in @(':unbox')
        is not captured in this fixtype.
        The FTY @(':require') feature does not seem to work here,
        perhaps because of the interaction with the mutually recursive fixtypes.
@@ -879,6 +887,10 @@
        we could enforce this syntactically,
        but we follow [arxiv], [thesis], and [impl],
        which all use a generic type.")
+     (xdoc::p
+      "The concrete syntax requires the parameter lists of the three
+       lambda summands and the ispace list of @(':box') to be non-empty;
+       this is not captured in this fixtype.")
      (xdoc::p
       "The optional type of the body of a lambda abstraction
        is calculated and stored by the type checker.
@@ -998,13 +1010,74 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod prog
-  :short "Fixtype of programs."
+(fty::defprod import
+  :short "Fixtype of imports."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to @('program') in the ABNF grammar.")
+    "This corresponds to @('import') in the ABNF grammar.")
    (xdoc::p
-    "Currently a program is just a (top-level) expression."))
-  ((expr expr))
-  :pred progp)
+    "An import names another Remora source file
+     whose declarations are in scope in the importing file.
+     The path is a string literal,
+     represented as a list of character literals
+     like the @(':string') summand of @(tsee expr)."))
+  ((path char-lit-list))
+  :pred importp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist import-list
+  :short "Fixtype of lists of imports."
+  :elt-type import
+  :true-listp t
+  :elementp-of-nil nil
+  :pred import-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum decl
+  :short "Fixtype of declarations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('decl') in the ABNF grammar.")
+   (xdoc::p
+    "A declaration is either
+     a definition, wrapping any of the binding forms
+     used in @('let') expressions,
+     or an entry point, whose signature has the same shape
+     as that of a function binding
+     (the @(':fun') summand of @(tsee bind)):
+     a name, value parameters, an optional return type,
+     and a body expression."))
+  (:def ((bind bind)))
+  (:entry ((var string)
+           (params var+type?-list)
+           (type? type-option)
+           (expr expr)))
+  :pred declp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist decl-list
+  :short "Fixtype of lists of declarations."
+  :elt-type decl
+  :true-listp t
+  :elementp-of-nil nil
+  :pred decl-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod file
+  :short "Fixtype of source files."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('file') in the ABNF grammar.")
+   (xdoc::p
+    "A source file is a sequence of imports
+     followed by a sequence of declarations."))
+  ((imports import-list)
+   (decls decl-list))
+  :pred filep)

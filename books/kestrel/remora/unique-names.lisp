@@ -27,7 +27,7 @@
 
 (defxdoc+ unique-names
   :parents (remora)
-  :short "Detection of duplicate bind names in Remora programs,
+  :short "Detection of duplicate bind names in Remora ASTs,
           and renaming of binds to make all bind names unique."
   :long
   (xdoc::topstring
@@ -35,10 +35,10 @@
     "Transformations that substitute variables without regard to shadowing
      (e.g. the maps applied by @(see monomorphize)) are only safe when
      the names introduced by binders are unique.
-     @(tsee prog-duplicate-bind-names) checks that property for
-     @(':let') binds, @(tsee prog-duplicate-binder-names) checks it for
+     @(tsee expr-duplicate-bind-names) checks that property for
+     @(':let') binds, @(tsee expr-duplicate-binder-names) checks it for
      all binders (binds as well as lambda, unbox, and function-bind
-     parameters), and @(tsee prog-uniquify-bind-names) establishes it by
+     parameters), and @(tsee expr-uniquify-bind-names) establishes it by
      renaming binds and parameters,
      keeping the original names where possible."))
   :order-subtopics t
@@ -75,8 +75,7 @@
 
 (fty::deffold-reduce bind-names
   :short "Collect the names of all @(tsee bind)s occurring in an AST."
-  :types (exprs/atoms/binds
-          prog)
+  :types (exprs/atoms/binds)
   :result string-listp
   :default nil
   :combine append
@@ -86,16 +85,16 @@
                               (expr-bind-names expr.body)))))
   :name ast-bind-names)
 
-(define prog-duplicate-bind-names ((prog progp))
+(define expr-duplicate-bind-names ((expr exprp))
   :returns (dup-names string-listp)
-  :short "List the names bound by more than one @(tsee bind) in a program."
+  :short "List the names bound by more than one @(tsee bind) in an expression."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Returns @('nil') if all binds in the program bind distinct names;
+    "Returns @('nil') if all binds in the expression bind distinct names;
      otherwise returns the duplicated names (a name bound @('n') times
      is listed @('n - 1') times)."))
-  (duplicated-names (prog-bind-names prog))
+  (duplicated-names (expr-bind-names expr))
   :prepwork
   ((define duplicated-names ((names string-listp))
      :returns (dups string-listp)
@@ -113,8 +112,7 @@
 (fty::deffold-reduce binder-names
   :short "Collect the names of all binders occurring in an AST:
           bind names and parameter names."
-  :types (exprs/atoms/binds
-          prog)
+  :types (exprs/atoms/binds)
   :result string-listp
   :default nil
   :combine append
@@ -151,26 +149,26 @@
                                        (expr-binder-names bind.expr))))))
   :name ast-binder-names)
 
-(define prog-duplicate-binder-names ((prog progp))
+(define expr-duplicate-binder-names ((expr exprp))
   :returns (dup-names string-listp)
   :short "List the names bound by more than one binder
-          (bind or parameter) in a program."
+          (bind or parameter) in an expression."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Returns @('nil') if all binders in the program bind distinct names;
+    "Returns @('nil') if all binders in the expression bind distinct names;
      otherwise returns the duplicated names (a name bound @('n') times
      is listed @('n - 1') times).
-     After @(tsee prog-uniquify-bind-names) this returns @('nil')."))
-  (duplicated-names (prog-binder-names prog)))
+     After @(tsee expr-uniquify-bind-names) this returns @('nil')."))
+  (duplicated-names (expr-binder-names expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Binder-name uniquification: rename binds and parameters so that all binder
-; names in a program are distinct, keeping the original names where possible.
+; names in an expression are distinct, keeping the original names where possible.
 ; A binder (a bind, or a parameter of a lambda, unbox, or function bind)
 ; keeps its name unless that name has already been seen (as an earlier
-; binder name or a free variable name of the program); in that case it is
+; binder name or a free variable name of the expression); in that case it is
 ; renamed to a fresh variant of the name, and the renaming is applied to the
 ; binder's scope via the renaming operations from
 ; variable-renaming-operations.lisp.  Since fresh names avoid all names seen
@@ -187,12 +185,12 @@
   (xdoc::topstring
    (xdoc::p
     "The @('avoid') component is not a renaming: it is the set of all
-     variable names occurring anywhere in the program (in any namespace and
+     variable names occurring anywhere in the expression (in any namespace and
      any role), fixed throughout the traversal.  Freshly generated bind
      names must avoid it, so that they can never capture (or be captured
      by) an occurrence of an existing name --- in particular one whose
      binder has not been encountered yet, such as a parameter of a lambda
-     abstraction later in the program."))
+     abstraction later in the expression."))
   ((dim acl2::string-string-map)
    (shape acl2::string-string-map)
    (atom acl2::string-string-map)
@@ -221,7 +219,7 @@
      bind names of every namespace.")
    (xdoc::p
     "The variant avoids not only the names seen so far (@('used')) but also
-     all names occurring anywhere in the program (@('avoid')), so that it
+     all names occurring anywhere in the expression (@('avoid')), so that it
      cannot capture, or be captured by, any binder --- including binders not
      yet encountered by the traversal."))
   (if (set::in (str-fix name) (string-sfix used))
@@ -716,15 +714,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define prog-uniquify-bind-names ((prog progp))
-  :returns (new-prog progp)
-  :short "Rename binds and parameters so that all binder names in a program
-          are distinct, keeping the original names where possible."
+(define expr-uniquify-bind-names ((expr exprp))
+  :returns (new-expr exprp)
+  :short "Rename binds and parameters so that all binder names in an
+          expression are distinct, keeping the original names
+          where possible."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Traverses the program left-to-right, accumulating the set of names seen
-     so far, initialized with the names of the program's free variables in
+    "Traverses the expression left-to-right, accumulating the set of names seen
+     so far, initialized with the names of the expression's free variables in
      all namespaces (so that no binder is renamed to, or left colliding with,
      e.g. a built-in function name).  A binder --- a bind, or a parameter of
      a lambda (of any kind), an unbox, or a function bind --- whose name has
@@ -732,35 +731,35 @@
      variant of its name (the name with a numeric suffix), and the renaming
      is applied throughout the binder's scope.")
    (xdoc::p
-    "Afterwards @(tsee prog-duplicate-binder-names) returns @('nil') (so in
-     particular @(tsee prog-duplicate-bind-names) does too), and no binder
-     name coincides with a free variable name of the program.")
+    "Afterwards @(tsee expr-duplicate-binder-names) returns @('nil') (so in
+     particular @(tsee expr-duplicate-bind-names) does too), and no binder
+     name coincides with a free variable name of the expression.")
    (xdoc::p
     "The generated fresh names avoid the names of all the variables
-     occurring anywhere in the program, in any namespace and any role
+     occurring anywhere in the expression, in any namespace and any role
      (see the @('avoid') component of @(tsee var-renamings)), so the
      renamings applied to the binds' scopes are capture-free."))
   (b* (((mv free-dim-names free-shape-names)
-        (dim/shape-names-of-ispace-vars (prog-free-ispace-vars prog)))
+        (dim/shape-names-of-ispace-vars (expr-free-ispace-vars expr)))
        ((mv free-atom-names free-array-names)
-        (atom/array-names-of-type-vars (prog-free-type-vars prog)))
+        (atom/array-names-of-type-vars (expr-free-type-vars expr)))
        (used (set::union
-              (prog-free-expr-vars prog)
+              (expr-free-expr-vars expr)
               (set::union
                free-dim-names
                (set::union free-shape-names
                            (set::union free-atom-names free-array-names)))))
        ((mv all-dim-names all-shape-names)
-        (dim/shape-names-of-ispace-vars (prog-all-ispace-vars prog)))
+        (dim/shape-names-of-ispace-vars (expr-all-ispace-vars expr)))
        ((mv all-atom-names all-array-names)
-        (atom/array-names-of-type-vars (prog-all-type-vars prog)))
+        (atom/array-names-of-type-vars (expr-all-type-vars expr)))
        (avoid (set::union
-               (prog-all-expr-vars prog)
+               (expr-all-expr-vars expr)
                (set::union
                 all-dim-names
                 (set::union all-shape-names
                             (set::union all-atom-names all-array-names)))))
        (r (make-var-renamings :dim nil :shape nil :atom nil :array nil
                               :expr nil :avoid avoid))
-       ((mv & new-expr) (uniq-expr (prog->expr prog) used r)))
-    (make-prog :expr new-expr)))
+       ((mv & new-expr) (uniq-expr (expr-fix expr) used r)))
+    new-expr))
