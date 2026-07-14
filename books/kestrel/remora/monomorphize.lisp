@@ -13,6 +13,7 @@
 (include-book "abstract-syntax-trees")
 (include-book "integer-lists")
 (include-book "nat-lists")
+(include-book "unique-names")
 (include-book "variable-substitution-operations")
 (include-book "utility-transforms")
 
@@ -565,7 +566,7 @@
                  (mv err fn-info-map
                      (expr-let (if (consp new-binds) new-binds (list new-bind))
                                new-body)))
-             (mv t fn-info-map x))))
+             (mv :let-not-normalized fn-info-map x))))
 
   (define mono-expr-list ((fuel natp) (x expr-listp)
                           (fn-info-map fn-info-mapp) (dim-var-map acl2::string-nat-mapp) (type-map string-type-mapp))
@@ -759,6 +760,14 @@
   (xdoc::topstring
    (xdoc::p
     "Top-level entry point.  Returns @('(mv error fn-info-map new-expr)').
+     The expression is first run through @(tsee expr-uniquify-names) so
+     that every binder name (bind, or lambda/unbox/function parameter) is
+     distinct: the traversal below substitutes ispace and type variables
+     throughout whole subtrees, including into the as-yet-unprocessed bodies
+     of nested @(':cfun')/@(':ifun') binds, so without this precondition a
+     nested binder reusing an enclosing ispace or type variable's name could
+     have its own parameter occurrences captured by the enclosing
+     substitution.
      On success @('error') is @('nil') and @('fn-info-map') is a
      @(tsee fn-info-map) mapping each @(':cfun') and @(':ifun') name to a
      @(tsee bind+bind-map) pair, whose @('bind-map') component maps each
@@ -768,7 +777,8 @@
      @(':ispace-eval-error') (an ispace argument failed to evaluate to a nat),
      or @(':bad-ifun-entry') / @(':bad-cfun-entry') (a name registered as an
      @(':ifun') / @(':cfun') resolved to a binding of the wrong kind)."))
-  (b* ((expr (expr-singletonize-let expr))
+  (b* ((expr (expr-uniquify-names expr))
+       (expr (expr-singletonize-let expr))
        (fuel (expr-count expr))
        ((mv err fn-info-map new-expr)
         (mono-expr (* 10 fuel) expr nil nil nil)))
