@@ -796,7 +796,7 @@
        applications of expressions to expressions
        (called `term applications' in the Remora publications),
        applications of expressions to types,
-       applications of expressions to ispaces (unary or <i>n>/i>-ary),
+       applications of expressions to ispaces (unary or <i>n</i>-ary),
        combined applications of expressions to types/ispaces/expressions,
        unboxing expressions,
        bracketed expressions,
@@ -808,7 +808,7 @@
        it is optionally annotated by its type
        (the type of the whole unboxing expression).")
      (xdoc::p
-      "The @(':iapp') summand is the main, core form if ispace application,
+      "The @(':iapp') summand is the main, core form of ispace application,
        while the @(':iappn') summand is sugar for
        a left-nested chain of the unary applications to one argument at a time.
        We plan to modify the CST-to-AST mapping to turn
@@ -817,7 +817,7 @@
        We also plan to define and use well-formedness predicates
        saying that @(':iappn') always has two or more arguments
        (this could be also realized via a fixtype @(':require') in principle,
-       but that currently is not working well within @('tsee fty::deftypes)).
+       but that currently is not working well within @(tsee fty::deftypes)).
        Other <i>n</i>-ary constructs will be similarly given unary forms,
        and treated in the same way.")
      (xdoc::p
