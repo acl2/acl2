@@ -29,9 +29,9 @@
     (b* ((code ,code)
          (ast (parse-top-exp-from-string code))
          (tast (check-top-expr ast))
-         ((when (reserrp tast))
-          (prog2$ (cw "~x0~%" tast) nil)))
-      (not (cw "~x0~%" (type+expr->type tast))))))
+         (type (type+expr->type tast)))
+      (and (not (cw "~x0~%" type))
+           (not (reserrp tast))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
