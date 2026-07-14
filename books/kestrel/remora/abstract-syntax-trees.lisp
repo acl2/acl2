@@ -811,7 +811,7 @@
       "The @(':iapp') summand is the main, core form of ispace application,
        while the @(':iappn') summand is sugar for
        a left-nested chain of the unary applications to one argument at a time.
-       We plan to modify the CST-to-AST mapping to turn
+       The CST-to-AST mapping turns
        applications to one argument into @(':iapp'),
        and applications to two or more arguments into @(':iappn').
        We also plan to define and use well-formedness predicates

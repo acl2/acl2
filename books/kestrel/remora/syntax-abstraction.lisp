@@ -1968,13 +1968,25 @@
   ;; iapp-exp = "i-app" ws exp *( ws ispace )
   (define abs-iapp-exp ((tree abnf::treep))
     :returns (e expr-resultp)
-    :short "Abstract an @('iapp-exp') to an @(tsee expr) @(':iappn')."
+    :short "Abstract an @('iapp-exp') to
+            an @(tsee expr) @(':iapp') or @(':iappn')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "An application to one ispace argument becomes
+       a unary ispace application @(':iapp');
+       an application to two or more ispace arguments becomes
+       an n-ary ispace application @(':iappn')
+       (see @(tsee expr))."))
     (b* (((okf (abnf::tree-list-tuple4 sub))
           (abnf::check-tree-nonleaf-4 tree "iapp-exp"))
          ((okf fun-tree) (abnf::check-tree-list-1 sub.3rd))
          ((okf fun) (abs-exp fun-tree))
          ((okf args) (abs-*-ws-ispace sub.4th)))
-      (make-expr-iappn :fun fun :args args))
+      (if (and (consp args)
+               (endp (cdr args)))
+          (make-expr-iapp :fun fun :arg (car args))
+        (make-expr-iappn :fun fun :args args)))
     :measure (abnf::tree-count tree))
 
   ;; unbox-exp = "unbox" ws "(" ws unbox-spec ws ")" ws exp
