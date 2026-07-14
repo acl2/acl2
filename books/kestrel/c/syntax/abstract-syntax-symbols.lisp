@@ -423,6 +423,10 @@
     make-label-name
     make-label-casexpr
 
+    asm-output
+
+    asm-input
+
     asm-stmt
     asm-stmt-fix
 

@@ -917,6 +917,9 @@
      and the STS transformation does not transform attributes.
      All of this will need to be handled properly eventually.")
    (xdoc::p
+    "For the same reason as attributes,
+     for now we accept all the assembler input and output operands.")
+   (xdoc::p
     "We reject the @('__stdcall') and @('__declspec') declaration specifiers,
      out of caution.")
    (xdoc::p
@@ -1018,6 +1021,8 @@
                        (attrib-spec-list-sts-safep init-declor.attribs spec)
                        (initer-option-sts-safep init-declor.initer? spec)
                        (init-declor-info-sts-safep init-declor spec))))
+   (asm-output t)
+   (asm-input t)
    (asm-stmt (sts-reject (asm-stmt-fix asm-stmt)))
    (fundef (b* (((fundef fundef)))
              (and (decl-spec-list-sts-safep fundef.specs spec)
