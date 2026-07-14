@@ -835,10 +835,11 @@
      involving the struct being split
      (unless one writes @('s[0]') instead of @('*s')).")
    (xdoc::p
-    "We reject function calls for now,
-     because we need to make sure that those are safe too,
-     and that may include some built-in functions
-     which need to be examined case by case.")
+    "Function calls are allowed
+     (so long as the arguments satisfy the safety checks),
+     but this relies on the assumption that
+     we are safety-checking all the called functions.
+     We plan to do this as a complementary safety check.")
    (xdoc::p
     "We allow member access, by value or by pointer.
      This is the normal safe way to access structs.
@@ -911,8 +912,14 @@
     "We allow all alignment specifiers,
      because they do not seem related to the struct type being split.")
    (xdoc::p
-    "Certain GCC/Clang attributes might need to be rejected,
-     but we need to examine them in more detail.")
+    "For now we accept all attributes without examining them,
+     because attributes may contain expressions
+     but those are not yet annotated by the validator,
+     and the STS transformation does not transform attributes.
+     All of this will need to be handled properly eventually.")
+   (xdoc::p
+    "For the same reason as attributes,
+     for now we accept all the assembler input and output operands.")
    (xdoc::p
     "We reject the @('__stdcall') and @('__declspec') declaration specifiers,
      out of caution.")
@@ -963,7 +970,6 @@
   ((stor-spec :auto (sts-reject (stor-spec-fix stor-spec)))
    (type-qual :atomic (sts-reject (type-qual-fix type-qual)))
    (expr :gensel (sts-reject (expr-fix expr)))
-   (expr :funcall (sts-reject (expr-fix expr)))
    (expr :complit (and (tyname-sts-safep expr.type spec)
                        (desiniter-list-sts-safep expr.elems spec)
                        (tyname-info-sts-safep expr.type spec)))
@@ -1009,11 +1015,14 @@
                     (and (declor-option-sts-safep struct-declor.declor? spec)
                          (const-expr-option-sts-safep struct-declor.expr? spec)
                          (struct-declor-info-sts-safep struct-declor spec))))
+   (attrib t)
    (init-declor (b* (((init-declor init-declor)))
                   (and (declor-sts-safep init-declor.declor spec)
                        (attrib-spec-list-sts-safep init-declor.attribs spec)
                        (initer-option-sts-safep init-declor.initer? spec)
                        (init-declor-info-sts-safep init-declor spec))))
+   (asm-output t)
+   (asm-input t)
    (asm-stmt (sts-reject (asm-stmt-fix asm-stmt)))
    (fundef (b* (((fundef fundef)))
              (and (decl-spec-list-sts-safep fundef.specs spec)
