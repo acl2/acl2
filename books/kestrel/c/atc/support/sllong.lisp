@@ -66,3 +66,10 @@
     sllong-oct-const ; exposes sllong-from-integer
     )
   :redundant-okp t)
+
+;; This theory introduces C operators
+(deftheory sllong-intro-rules
+    '(;;ushort-from-integer-of-+-of---arg1
+      ;;ushort-from-integer-of-+-of---arg2
+      )
+  :redundant-okp t)

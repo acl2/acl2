@@ -76,19 +76,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (deftheory c-intro-rules
-    (acl2::union-theories* ;; (theory 'uchar-intro-rules)
-     (theory 'ushort-intro-rules)
-     (theory 'uint-intro-rules)
-     (theory 'ulong-intro-rules)
-     (theory 'ullong-intro-rules)
-     ;; (theory 'schar-intro-rules)
-     ;; (theory 'sshort-intro-rules)
-     (theory 'sint-intro-rules)
-     ;; (theory 'slong-intro-rules)
-     ;; (theory 'sllong-intro-rules)
-     (theory 'uchar-array-intro-rules) ; todo: more
-     (theory 'sint-array-intro-rules)
-     )
+    (acl2::union-theories* (theory 'uchar-intro-rules)
+                           (theory 'ushort-intro-rules)
+                           (theory 'uint-intro-rules)
+                           (theory 'ulong-intro-rules)
+                           (theory 'ullong-intro-rules)
+                           (theory 'schar-intro-rules)
+                           (theory 'sshort-intro-rules)
+                           (theory 'sint-intro-rules)
+                           (theory 'slong-intro-rules)
+                           (theory 'sllong-intro-rules)
+                           (theory 'uchar-array-intro-rules)
+                           (theory 'sint-array-intro-rules))
   :redundant-okp t)
 
 ;; Temporary alias, to be deprecated.

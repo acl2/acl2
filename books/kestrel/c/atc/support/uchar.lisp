@@ -287,3 +287,10 @@
       ;; uchar-dec-const
       )
   :redundant-okp t)
+
+;; This theory introduces C operators
+(deftheory uchar-intro-rules
+    '(;;ushort-from-integer-of-+-of---arg1
+      ;;ushort-from-integer-of-+-of---arg2
+      )
+  :redundant-okp t)

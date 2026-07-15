@@ -91,3 +91,10 @@
     slong-oct-const ; exposes slong-from-integer
     )
   :redundant-okp t)
+
+;; This theory introduces C operators
+(deftheory slong-intro-rules
+    '(;;ushort-from-integer-of-+-of---arg1
+      ;;ushort-from-integer-of-+-of---arg2
+      )
+  :redundant-okp t)
