@@ -632,6 +632,20 @@ int main(void) {
 ;; supported: it is split in place (see the success tests further below).
 
 (acl2::must-succeed*
+  ;; Casting a pointer to the split struct type to void * exposes its
+  ;; representation, so the safety check rejects the transformation.
+  (c$::input-files :files '("pointer-cast.c")
+                   :const *old*)
+
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")))
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
   ;; An array of the split struct type.
   (c$::input-files :files '("array.c")
                    :const *old*)
@@ -1064,8 +1078,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :unsafe t)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
