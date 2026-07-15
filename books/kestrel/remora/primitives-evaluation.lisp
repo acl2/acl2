@@ -1363,7 +1363,50 @@
         (reserr nil)))
     (expr-value-base (base-value-int (int-value d)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-append ((tval type-valuep) (m natp) (n natp) (s nat-listp)
+                     (val1 expr-valuep) (val2 expr-valuep))
+  :guard (and (expr-value-wfp val1) (expr-value-wfp val2))
+  :returns (val expr-value-resultp)
+  (b* ((m (lnfix m)) (n (lnfix n)) (s (nat-list-fix s))
+       ((unless (equal (dims-of-expr-value val1) (cons m s))) (reserr nil))
+       ((unless (equal (dims-of-expr-value val2) (cons n s))) (reserr nil))
+       (elems1 (if (expr-value-case val1 :vector)
+                   (expr-value-vector->elems val1) nil))
+       (elems2 (if (expr-value-case val2 :vector)
+                   (expr-value-vector->elems val2) nil))
+       (elems (append elems1 elems2)))
+    (if (consp elems)
+        (expr-value-vector elems)
+      (expr-value-vector-empty s tval))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule dims-of-expr-value-of-car-of-expr-value-vector->elems
+  (implies (and (expr-value-wfp val) (expr-value-case val :vector))
+           (equal (dims-of-expr-value (car (expr-value-vector->elems val)))
+                  (cdr (dims-of-expr-value val))))
+  :enable (dims-of-expr-value
+           expr-value-wfp
+           expr-value-list-wfp-alt-def
+           check-dims-of-expr-value
+           check-dims-of-expr-value-list-when-expr-value-list-wfp
+           acl2::not-reserrp-when-nat-list-listp))
+
+(defrule expr-value-wfp-of-expr-value-vector-of-append-of-vector->elems
+  (implies (and (expr-value-wfp val1) (expr-value-case val1 :vector)
+                (expr-value-wfp val2) (expr-value-case val2 :vector)
+                (equal (dims-of-expr-value val1) (cons m s))
+                (equal (dims-of-expr-value val2) (cons n s))
+                (consp (append (expr-value-vector->elems val1)
+                               (expr-value-vector->elems val2))))
+           (expr-value-wfp
+            (expr-value-vector (append (expr-value-vector->elems val1)
+                                       (expr-value-vector->elems val2)))))
+  :use ((:instance list-repeatp-of-append
+                   (x (dims-of-expr-value-list (expr-value-vector->elems val1)))
+                   (y (dims-of-expr-value-list (expr-value-vector->elems val2))))))
 
 (define eval-primop-fun ((op primop-valuep) (args expr-value-listp))
   :guard (and (primop-value-funp op)
@@ -1452,7 +1495,11 @@
      :tail-t-d-s (prim-tail op.tval op.dval op.sval (first args))
      :length (prog2$ (impossible) (reserr nil))
      :length-t (prog2$ (impossible) (reserr nil))
-     :length-t-d-s (prim-length op.tval op.dval op.sval (first args))))
+     :length-t-d-s (prim-length op.tval op.dval op.sval (first args))
+     :append (prog2$ (impossible) (reserr nil))
+     :append-t (prog2$ (impossible) (reserr nil))
+     :append-t-m-n-s (prim-append op.tval op.mval op.nval op.sval
+                                  (first args) (second args))))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp
                                            arity-of-primop-value-fun
                                            type-of-primop-value-fun)))
@@ -1516,6 +1563,7 @@
                               prim-head
                               prim-tail
                               prim-length
+                              prim-append
                               dims-of-expr-value-list-of-cdr)
                              (cdr-of-dims-of-expr-value-list))))))
 
@@ -1560,6 +1608,11 @@
                           (list (type-var-atom "t"))))
                  (reserr nil)))
              (expr-value-primop (primop-value-length-t (first tvals))))
+   :append (b* (((unless (type-values-match-type-vars-p
+                          tvals
+                          (list (type-var-atom "t"))))
+                 (reserr nil)))
+             (expr-value-primop (primop-value-append-t (first tvals))))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-tfunp
                                            type-values-match-type-vars-p)))
@@ -1630,6 +1683,18 @@
                  :tval op.tval
                  :dval (ispace-value-dim->val (first ivals))
                  :sval (ispace-value-shape->val (second ivals)))))
+   :append-t (b* (((unless (ispace-values-match-ispace-vars-p
+                            ivals
+                            (list (ispace-var-dim "m")
+                                  (ispace-var-dim "n")
+                                  (ispace-var-shape "s"))))
+                   (reserr nil)))
+               (expr-value-primop
+                (make-primop-value-append-t-m-n-s
+                 :tval op.tval
+                 :mval (ispace-value-dim->val (first ivals))
+                 :nval (ispace-value-dim->val (second ivals))
+                 :sval (ispace-value-shape->val (third ivals)))))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp
                                            ispace-values-match-ispace-vars-p)))
