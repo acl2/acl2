@@ -156,6 +156,12 @@
   (:length-t-d-s ((tval type-value)
                   (dval nat)
                   (sval nat-list)))
+  (:append ())
+  (:append-t ((tval type-value)))
+  (:append-t-m-n-s ((tval type-value)
+                  (mval nat)
+                  (nval nat)
+                  (sval nat-list)))
   :pred primop-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -190,6 +196,8 @@
                      :tail-t nil
                      :length nil
                      :length-t nil
+                     :append nil
+                     :append-t nil
                      :otherwise t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -211,6 +219,7 @@
                      :head t
                      :tail t
                      :length t
+                     :append t
                      :otherwise nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -231,6 +240,7 @@
                      :head-t t
                      :tail-t t
                      :length-t t
+                     :append-t t
                      :otherwise nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -288,6 +298,8 @@
                      :tail-t-d-s (primop-value-tail)
                      :length-t (primop-value-length)
                      :length-t-d-s (primop-value-length)
+                     :append-t (primop-value-append)
+                     :append-t-m-n-s (primop-value-append)
                      :otherwise (primop-value-fix op)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -451,7 +463,8 @@
                                     :dims (cons (1+ op.dval) op.sval)))
                          :out (make-type-value-array
                                :elem op.tval
-                               :dims op.sval)))
+                               :dims op.sval))
+                  :dims nil)
      :tail (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t-d-s (make-type-value-array
@@ -461,7 +474,8 @@
                                     :dims (cons (1+ op.dval) op.sval)))
                          :out (make-type-value-array
                                :elem op.tval
-                               :dims (cons op.dval op.sval))))
+                               :dims (cons op.dval op.sval)))
+                  :dims nil)
      :length (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t-d-s (make-type-value-array
@@ -470,7 +484,21 @@
                                       :elem op.tval
                                       :dims (cons op.dval op.sval)))
                            :out int-tv)
-                    :dims nil)))
+                    :dims nil)
+     :append (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :append-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :append-t-m-n-s (make-type-value-array
+                      :elem (make-type-value-fun
+                             :in (list (make-type-value-array
+                                        :elem op.tval
+                                        :dims (cons op.mval op.sval))
+                                       (make-type-value-array
+                                        :elem op.tval
+                                        :dims (cons op.nval op.sval)))
+                             :out (make-type-value-array
+                                   :elem op.tval
+                                   :dims (cons (+ op.mval op.nval) op.sval)))
+                      :dims nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///
