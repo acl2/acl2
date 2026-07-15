@@ -83,7 +83,7 @@
      whose fields hold the instantiation values received so far.")
    (xdoc::p
     "Currently the only polymorphic operations are
-     @('head'), @('tail'), and @('length'),
+     @('head'), @('tail'), @('length'), @('append'), and @('reverse'),
      each with three similar stages.
      For example, here are the stages of @('length'):
      @(':length') is the uninstantiated operation;
@@ -159,9 +159,14 @@
   (:append ())
   (:append-t ((tval type-value)))
   (:append-t-m-n-s ((tval type-value)
-                  (mval nat)
-                  (nval nat)
-                  (sval nat-list)))
+                    (mval nat)
+                    (nval nat)
+                    (sval nat-list)))
+  (:reverse ())
+  (:reverse-t ((tval type-value)))
+  (:reverse-t-d-s ((tval type-value)
+                   (dval nat)
+                   (sval nat-list)))
   :pred primop-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -198,6 +203,8 @@
                      :length-t nil
                      :append nil
                      :append-t nil
+                     :reverse nil
+                     :reverse-t nil
                      :otherwise t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -220,6 +227,7 @@
                      :tail t
                      :length t
                      :append t
+                     :reverse t
                      :otherwise nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -241,6 +249,7 @@
                      :tail-t t
                      :length-t t
                      :append-t t
+                     :reverse-t t
                      :otherwise nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -300,6 +309,8 @@
                      :length-t-d-s (primop-value-length)
                      :append-t (primop-value-append)
                      :append-t-m-n-s (primop-value-append)
+                     :reverse-t (primop-value-reverse)
+                     :reverse-t-d-s (primop-value-reverse)
                      :otherwise (primop-value-fix op)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -498,7 +509,18 @@
                              :out (make-type-value-array
                                    :elem op.tval
                                    :dims (cons (+ op.mval op.nval) op.sval)))
-                      :dims nil)))
+                      :dims nil)
+     :reverse (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :reverse-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :reverse-t-d-s (make-type-value-array
+                     :elem (make-type-value-fun
+                            :in (list (make-type-value-array
+                                       :elem op.tval
+                                       :dims (cons op.dval op.sval)))
+                            :out (make-type-value-array
+                                  :elem op.tval
+                                  :dims (cons op.dval op.sval)))
+                     :dims nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///

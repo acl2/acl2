@@ -104,6 +104,18 @@
   :induct t
   :enable list-repeatp)
 
+  (defrule car-of-rev-when-list-repeatp
+    (implies (list-repeatp x)
+             (equal (car (rev x)) (car x)))
+    :induct t
+    :enable (list-repeatp rev))
+
+  (defrule list-repeatp-of-rev
+    (implies (list-repeatp x)
+             (list-repeatp (rev x)))
+    :induct t
+    :enable (list-repeatp rev))
+
   (defruled take-when-list-repeatp
     (implies (and (list-repeatp list)
                   (<= (nfix n) (len list)))

@@ -89,7 +89,8 @@
                @(tsee prim-float-ceiling), @(tsee prim-float-floor)."))
    (xdoc::p
     "The polymorphic primitives currently implemented are
-     @(tsee prim-head), @(tsee prim-tail), and @(tsee prim-length).")
+     @(tsee prim-head), @(tsee prim-tail), @(tsee prim-length),
+     @(tsee prim-append), and @(tsee prim-reverse).")
    (xdoc::p
     "For integers, we currently model Remora integer values as unbounded
      mathematical integers, matching ACL2's own integer type.
@@ -1365,20 +1366,103 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define prim-append ((tval type-valuep) (m natp) (n natp) (s nat-listp)
-                     (val1 expr-valuep) (val2 expr-valuep))
+(define prim-append ((tval type-valuep)
+                     (m natp)
+                     (n natp)
+                     (s nat-listp)
+                     (val1 expr-valuep)
+                     (val2 expr-valuep))
   :guard (and (expr-value-wfp val1) (expr-value-wfp val2))
   :returns (val expr-value-resultp)
+  :short "Evaluation of array append."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('append') operation
+     (see the @(':append-t-m-n-s') summand of @(tsee primop-value)):
+     @('tval'), @('m'), @('n'), and @('s') are the instantiation values,
+     and @('val1') and @('val2') are the argument cells.
+     According to the instantiated type of the operation,
+     the argument cells are arrays
+     whose dimensions are the dimensions @('m') and @('n') respectively,
+     each followed by the shape @('s'),
+     and the result is the concatenation of the two arrays,
+     whose dimensions are the dimension @('m+n') followed by the shape @('s').
+     The guard requires the argument cells to be well-formed;
+     we defensively check that they have the expected dimensions.")
+   (xdoc::p
+    "Since @('m') and @('n') may be 0,
+     the argument cells may be empty arrays,
+     which are not @(':vector') values and contribute no elements.
+     The type value @('tval') is currently only used
+     for when the output is an empty array
+     and not for checking well-formedness,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cells
+     when those checks are extended to types."))
   (b* ((m (lnfix m)) (n (lnfix n)) (s (nat-list-fix s))
        ((unless (equal (dims-of-expr-value val1) (cons m s))) (reserr nil))
        ((unless (equal (dims-of-expr-value val2) (cons n s))) (reserr nil))
        (elems1 (if (expr-value-case val1 :vector)
-                   (expr-value-vector->elems val1) nil))
+                   (expr-value-vector->elems val1)
+                 nil))
        (elems2 (if (expr-value-case val2 :vector)
-                   (expr-value-vector->elems val2) nil))
+                   (expr-value-vector->elems val2)
+                 nil))
        (elems (append elems1 elems2)))
     (if (consp elems)
         (expr-value-vector elems)
+      (expr-value-vector-empty s tval))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-reverse ((tval type-valuep)
+                      (d natp)
+                      (s nat-listp)
+                      (val1 expr-valuep))
+  :guard (expr-value-wfp val1)
+  :returns (val expr-value-resultp)
+  :short "Evaluation of array reverse."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('reverse') operation
+     (see the @(':reverse-t-d-s') summand of @(tsee primop-value)):
+     @('tval'), @('d'), and @('s') are the instantiation values,
+     and @('val1') is the argument cell.
+     According to the instantiated type of the operation,
+     the argument cell is an array
+     whose dimensions are the dimension @('d') followed by the shape @('s'),
+     and the result is the array with its elements in reverse order,
+     with the same dimensions.
+     The guard requires the argument cell to be well-formed;
+     we defensively check that it has the expected dimensions.")
+   (xdoc::p
+    "We reverse the order of the elements of the cell,
+     i.e. we reverse the array along its leading axis.
+     [impl] instead reverses the flattened list
+     of all the atoms of the array,
+     which differs from our semantics
+     when the shape @('s') is not empty.")
+   (xdoc::p
+    "Since @('d') may be 0, the argument cell may be an empty array,
+     which is not a @(':vector') value and has no elements.
+     The type value @('tval') is currently only used
+     for when the output is an empty array
+     and not for checking well-formedness,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cell
+     when those checks are extended to types."))
+  (b* ((d (lnfix d)) (s (nat-list-fix s))
+       ((unless (equal (dims-of-expr-value val1) (cons d s))) (reserr nil))
+       (elems (if (expr-value-case val1 :vector)
+                  (expr-value-vector->elems val1)
+                nil))
+       (relems (rev elems)))
+    (if (consp relems)
+        (expr-value-vector relems)
       (expr-value-vector-empty s tval))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1499,7 +1583,10 @@
      :append (prog2$ (impossible) (reserr nil))
      :append-t (prog2$ (impossible) (reserr nil))
      :append-t-m-n-s (prim-append op.tval op.mval op.nval op.sval
-                                  (first args) (second args))))
+                                  (first args) (second args))
+     :reverse (prog2$ (impossible) (reserr nil))
+     :reverse-t (prog2$ (impossible) (reserr nil))
+     :reverse-t-d-s (prim-reverse op.tval op.dval op.sval (first args))))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp
                                            arity-of-primop-value-fun
                                            type-of-primop-value-fun)))
@@ -1564,6 +1651,7 @@
                               prim-tail
                               prim-length
                               prim-append
+                              prim-reverse
                               dims-of-expr-value-list-of-cdr)
                              (cdr-of-dims-of-expr-value-list))))))
 
@@ -1613,6 +1701,11 @@
                           (list (type-var-atom "t"))))
                  (reserr nil)))
              (expr-value-primop (primop-value-append-t (first tvals))))
+   :reverse (b* (((unless (type-values-match-type-vars-p
+                           tvals
+                           (list (type-var-atom "t"))))
+                  (reserr nil)))
+              (expr-value-primop (primop-value-reverse-t (first tvals))))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-tfunp
                                            type-values-match-type-vars-p)))
@@ -1648,7 +1741,9 @@
      i.e. the ones in the operation's type in @(tsee primop-types);
      then we construct the next instantiation stage of the operation,
      which stores the ispace values received
-     (for @('head'), @('tail'), and @('length'), a dimension and a shape),
+     (a dimension and a shape
+     for @('head'), @('tail'), @('length'), and @('reverse');
+     two dimensions and a shape for @('append')),
      along with the previously received type values.
      Anything else is an error."))
   (primop-value-case
@@ -1695,6 +1790,16 @@
                  :mval (ispace-value-dim->val (first ivals))
                  :nval (ispace-value-dim->val (second ivals))
                  :sval (ispace-value-shape->val (third ivals)))))
+   :reverse-t (b* (((unless (ispace-values-match-ispace-vars-p
+                             ivals
+                             (list (ispace-var-dim "d")
+                                   (ispace-var-shape "s"))))
+                    (reserr nil)))
+                (expr-value-primop
+                 (make-primop-value-reverse-t-d-s
+                  :tval op.tval
+                  :dval (ispace-value-dim->val (first ivals))
+                  :sval (ispace-value-shape->val (second ivals)))))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp
                                            ispace-values-match-ispace-vars-p)))
