@@ -463,7 +463,8 @@
                                     :dims (cons (1+ op.dval) op.sval)))
                          :out (make-type-value-array
                                :elem op.tval
-                               :dims op.sval)))
+                               :dims op.sval))
+                  :dims nil)
      :tail (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t-d-s (make-type-value-array
@@ -473,7 +474,8 @@
                                     :dims (cons (1+ op.dval) op.sval)))
                          :out (make-type-value-array
                                :elem op.tval
-                               :dims (cons op.dval op.sval))))
+                               :dims (cons op.dval op.sval)))
+                  :dims nil)
      :length (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t-d-s (make-type-value-array
@@ -495,7 +497,8 @@
                                         :dims (cons op.nval op.sval)))
                              :out (make-type-value-array
                                    :elem op.tval
-                                   :dims (cons (+ op.mval op.nval) op.sval))))))
+                                   :dims (cons (+ op.mval op.nval) op.sval)))
+                      :dims nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///

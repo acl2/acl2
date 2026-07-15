@@ -1383,14 +1383,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule list-repeatp-of-append
-  (implies (and (list-repeatp x)
-                (list-repeatp y)
-                (equal (car x) (car y)))
-           (list-repeatp (append x y)))
-  :induct t
-  :enable list-repeatp)
-
 (defrule dims-of-expr-value-of-car-of-expr-value-vector->elems
   (implies (and (expr-value-wfp val) (expr-value-case val :vector))
            (equal (dims-of-expr-value (car (expr-value-vector->elems val)))
@@ -1407,8 +1399,6 @@
                 (expr-value-wfp val2) (expr-value-case val2 :vector)
                 (equal (dims-of-expr-value val1) (cons m s))
                 (equal (dims-of-expr-value val2) (cons n s))
-;                (equal (cdr (dims-of-expr-value val1))
-;                       (cdr (dims-of-expr-value val2)))
                 (consp (append (expr-value-vector->elems val1)
                                (expr-value-vector->elems val2))))
            (expr-value-wfp
@@ -1416,8 +1406,7 @@
                                        (expr-value-vector->elems val2)))))
   :use ((:instance list-repeatp-of-append
                    (x (dims-of-expr-value-list (expr-value-vector->elems val1)))
-                   (y (dims-of-expr-value-list (expr-value-vector->elems val2)))))
-  )
+                   (y (dims-of-expr-value-list (expr-value-vector->elems val2))))))
 
 (define eval-primop-fun ((op primop-valuep) (args expr-value-listp))
   :guard (and (primop-value-funp op)
@@ -1620,7 +1609,8 @@
                  (reserr nil)))
              (expr-value-primop (primop-value-length-t (first tvals))))
    :append (b* (((unless (type-values-match-type-vars-p
-                          tvals (list (type-var-atom "t"))))
+                          tvals
+                          (list (type-var-atom "t"))))
                  (reserr nil)))
              (expr-value-primop (primop-value-append-t (first tvals))))
    :otherwise (prog2$ (impossible) (reserr nil)))

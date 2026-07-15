@@ -96,6 +96,14 @@
     :induct t
     :enable nthcdr)
 
+  (defrule list-repeatp-of-append
+  (implies (and (list-repeatp x)
+                (list-repeatp y)
+                (equal (car x) (car y)))
+           (list-repeatp (append x y)))
+  :induct t
+  :enable list-repeatp)
+
   (defruled take-when-list-repeatp
     (implies (and (list-repeatp list)
                   (<= (nfix n) (len list)))
