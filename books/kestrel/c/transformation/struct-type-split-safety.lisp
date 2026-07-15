@@ -181,6 +181,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(define type-is-*pointer-to-struct-spec-p ((type typep) (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a type is
+          the struct type being split,
+          or a pointer to it,
+          or a pointer to a pointer to it,
+          etc."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('*') in the name of this function conveys the idea of `0 or more'."))
+  (or (type-is-struct-spec-p type spec)
+      (and (type-case type :pointer)
+           (type-is-*pointer-to-struct-spec-p (type-pointer->to type) spec)))
+  :measure (type-count type))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define type-may-be-struct-spec-p ((type typep) (spec sts-struct-specp))
   :returns (yes/no booleanp)
   :short "Check if a type may be the struct type being split."
@@ -209,8 +227,30 @@
      or when the type is unknown or an unknown scalar.
      The unknown arithmetic type cannot be a pointer.
      An unknown built-in type may be a pointer (to a built-in type),
-     but we assume that the struct type being splie is not a built-in one."))
+     but we assume that the struct type being split is not a built-in one."))
   (or (type-is-pointer-to-struct-spec-p type spec)
+      (type-case type :unknown)
+      (type-case type :unknown-scalar)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-may-be-*pointer-to-struct-spec-p ((type typep)
+                                               (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a type may be
+          the struct type being split,
+          or a pointer to it,
+          or a pointer to a pointer to it,
+          etc."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case when @(tsee type-is-*pointer-to-struct-spec-p) holds,
+     or when the type is unknown or an unknown scalar.
+     The unknown arithmetic type cannot be a struct or a pointer.
+     An unknown built-in type may be a struct or pointer to a struct,
+     but we assume that the struct type being split is not a built-in one."))
+  (or (type-is-*pointer-to-struct-spec-p type spec)
       (type-case type :unknown)
       (type-case type :unknown-scalar)))
 
@@ -553,15 +593,16 @@
    (xdoc::p
     "This is the case exactly when
      neither the source nor the destination type
-     is the struct being split or a pointer type to it."))
+     is the struct being split
+     or a pointer type to it,
+     or a pointer to a pointer type to it,
+     and so on."))
   (or (and (tyname-unamb/anno-p tyname)
            (expr-unamb/anno-p arg)
            (b* ((src-type (expr-type arg))
                 (dst-type (type-vinfo->type (tyname->info tyname))))
-             (and (not (type-may-be-struct-spec-p src-type spec))
-                  (not (type-may-be-pointer-to-struct-spec-p src-type spec))
-                  (not (type-may-be-struct-spec-p dst-type spec))
-                  (not (type-may-be-pointer-to-struct-spec-p dst-type spec)))))
+             (and (not (type-may-be-*pointer-to-struct-spec-p src-type spec))
+                  (not (type-may-be-*pointer-to-struct-spec-p dst-type spec)))))
       (sts-reject (expr-cast tyname arg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
