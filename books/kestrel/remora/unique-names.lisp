@@ -103,6 +103,8 @@
                          (expr-binder-names atom.body)))
    (atom :tlambda (append (type-var-list->name atom.params)
                           (expr-binder-names atom.body)))
+   (atom :ilambda (cons (ispace-var->name atom.param)
+                        (expr-binder-names atom.body)))
    (atom :ilambdan (append (ispace-var-list->name atom.params)
                            (expr-binder-names atom.body)))
    (bind :fun (append (var+type?-list->var bind.params)
@@ -894,6 +896,25 @@
                                                       :atom atom-renam
                                                       :array array-renam))))
                  (mv used (atom-tlambda new-params new-body)))
+
+      :ilambda (b* (((var-renamings r-) r)
+                    (name (ispace-var->name x.param))
+                    (new-name (fresh-bind-name name used r-.avoid))
+                    (used (set::insert new-name (string-sfix used)))
+                    ((mv new-param dim-renam shape-renam)
+                     (ispace-var-case x.param
+                       :dim (mv (ispace-var-dim new-name)
+                                (extend-renaming name new-name r-.dim)
+                                r-.shape)
+                       :shape (mv (ispace-var-shape new-name)
+                                  r-.dim
+                                  (extend-renaming name new-name r-.shape))))
+                    ((mv used new-body)
+                     (uniq-expr x.body used
+                                (change-var-renamings r
+                                                      :dim dim-renam
+                                                      :shape shape-renam))))
+                 (mv used (atom-ilambda new-param new-body)))
 
       :ilambdan (b* (((var-renamings r-) r)
                      ((mv used new-params dim-renam shape-renam)

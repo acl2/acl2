@@ -488,6 +488,22 @@
                                                      dim-renam
                                                      shape-renam
                                                      avoid))))
+   (atom :ilambda
+         (b* (((mv fresh-params dim-renam shape-renam)
+               (dim/shape-rename-alpha-bound (list atom.param)
+                                             dim-renam
+                                             shape-renam
+                                             (expr-free-ispace-vars
+                                              atom.body)))
+              (fresh-param (if (consp fresh-params)
+                               (car fresh-params)
+                             atom.param)))
+           (make-atom-ilambda
+            :param fresh-param
+            :body (expr-rename-ispace-vars-alpha-aux atom.body
+                                                     dim-renam
+                                                     shape-renam
+                                                     avoid))))
    (atom :ilambdan
          (b* (((mv fresh-params dim-renam shape-renam)
                (dim/shape-rename-alpha-bound atom.params
@@ -994,4 +1010,3 @@
     "This is the top-level entry point for atoms;
      see @(tsee expr-rename-expr-vars-alpha)."))
   (atom-rename-expr-vars-alpha-aux atom renam nil))
-

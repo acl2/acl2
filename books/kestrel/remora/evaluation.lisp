@@ -1061,12 +1061,14 @@
      if there are no parameters other than the first one,
      or otherwise the ispace lambda abstraction
      over the remaining parameters,
-     as an atom expression."))
+     as an atom expression,
+     in the unary form if exactly one parameter remains."))
   (b* ((params (ispace-var-list-fix params))
        (body (expr-fix body)))
-    (if (endp (cdr params))
-        body
-      (expr-atom (atom-ilambdan (cdr params) body)))))
+    (cond ((endp (cdr params)) body)
+          ((endp (cddr params))
+           (expr-atom (atom-ilambda (cadr params) body)))
+          (t (expr-atom (atom-ilambdan (cdr params) body))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1357,10 +1359,13 @@
        with the same parameters and body,
        which are not evaluated here but only when the abstraction is applied.")
      (xdoc::p
-      "An ispace lambda abstraction must have at least one parameter,
-       and evaluates to a unary ispace lambda value
-       that binds the first parameter,
-       whose body is the ispace lambda abstraction
+      "An ispace lambda abstraction evaluates to
+       a unary ispace lambda value.
+       For the unary form, the value binds the parameter,
+       and its body is the body of the abstraction.
+       The n-ary form must have at least one parameter:
+       the value binds the first parameter,
+       and its body is the ispace lambda abstraction
        over the remaining parameters if there are any,
        or otherwise the body of the given ispace lambda abstraction
        (see @(tsee ilambda-curried-body)):
@@ -1404,6 +1409,14 @@
                  :denv (expr-denv-restrict
                         (expr-free-ispace-vars atom.body)
                         (atom-free-type-vars atom)
+                        (expr-free-expr-vars atom.body)
+                        denv))
+       :ilambda (make-expr-value-ilambda
+                 :param atom.param
+                 :body atom.body
+                 :denv (expr-denv-restrict
+                        (atom-free-ispace-vars atom)
+                        (expr-free-type-vars atom.body)
                         (expr-free-expr-vars atom.body)
                         denv))
        :ilambdan

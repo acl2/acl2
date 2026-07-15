@@ -210,6 +210,7 @@
           (bind-list-free-ispace-vars expr.binds)
           (set::difference (expr-free-ispace-vars expr.body)
                            (bind-list-bound-ispace-vars expr.binds))))
+   (atom :ilambda (set::delete atom.param (expr-free-ispace-vars atom.body)))
    (atom :ilambdan
          (set::difference (expr-free-ispace-vars atom.body)
                           (set::mergesort atom.params)))

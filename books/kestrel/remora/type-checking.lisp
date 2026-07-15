@@ -1557,14 +1557,18 @@
        that is the type of the abstraction,
        whose bound variables are the same as the abstraction.")
      (xdoc::p
-      "For an ispace abstraction,
+      "For an n-ary ispace abstraction,
        first we check that there are no duplicate bound variables;
        two variables with the same name but different sorts
        (one dimension and one shape) count as distinct.
        We check the body of the abstraction.
        The resulting type is the body of the product type
        that is the type of the abstraction,
-       whose bound variables are the same as the abstraction.")
+       whose bound variables are the same as the abstraction.
+       A unary ispace abstraction is checked in the same way,
+       except that there is no duplicate check
+       (there is just one bound variable),
+       and the product type binds just that variable.")
      (xdoc::p
       "For a boxing atom,
        the ispaces must be valid (see @(tsee check-ispace-list)),
@@ -1608,6 +1612,12 @@
        (make-type+atom
         :type (make-type-forall :params atom.params :body be.type)
         :atom (make-atom-tlambda :params atom.params :body be.expr)))
+     :ilambda
+     (b* ((senv (senv-add-ispace-vars (list atom.param) senv))
+          ((ok (type+expr be)) (check-expr atom.body senv)))
+       (make-type+atom
+        :type (make-type-pi :params (list atom.param) :body be.type)
+        :atom (make-atom-ilambda :param atom.param :body be.expr)))
      :ilambdan
      (b* (((unless (no-duplicatesp-equal atom.params))
            (reserr nil))

@@ -590,6 +590,21 @@
                                                     dim-subst
                                                     shape-subst
                                                     avoid))))
+   (atom :ilambda
+         (b* (((mv fresh-params dim-subst shape-subst)
+               (dim/shape-subst-alpha-bound (list atom.param)
+                                            dim-subst
+                                            shape-subst
+                                            (expr-free-ispace-vars atom.body)))
+              (fresh-param (if (consp fresh-params)
+                               (car fresh-params)
+                             atom.param)))
+           (make-atom-ilambda
+            :param fresh-param
+            :body (expr-subst-ispace-vars-alpha-aux atom.body
+                                                    dim-subst
+                                                    shape-subst
+                                                    avoid))))
    (atom :ilambdan
          (b* (((mv fresh-params dim-subst shape-subst)
                (dim/shape-subst-alpha-bound atom.params
@@ -1276,4 +1291,3 @@
      see @(tsee expr-subst-expr-vars-alpha) for why the @('avoid') set
      can be started empty here."))
   (atom-subst-expr-vars-alpha-aux atom subst nil))
-

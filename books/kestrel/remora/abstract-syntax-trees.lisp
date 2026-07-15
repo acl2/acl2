@@ -904,8 +904,21 @@
        but we follow [arxiv], [thesis], and [impl],
        which all use a generic type.")
      (xdoc::p
-      "The concrete syntax requires the parameter lists of the three
-       lambda summands and the ispace list of @(':box') to be non-empty;
+      "The @(':ilambda') summand is
+       the main, core form of ispace lambda abstraction,
+       which binds exactly one parameter,
+       while the @(':ilambdan') summand is sugar for
+       a nesting of unary ispace lambda abstractions.
+       Currently the CST-to-AST mapping turns
+       all ispace lambda abstractions into @(':ilambdan');
+       we plan to redirect it to turn
+       the ones with one parameter into @(':ilambda'),
+       similarly to ispace applications (see @(tsee expr)).
+       The other lambda summands will be similarly given unary forms.")
+     (xdoc::p
+      "The concrete syntax requires the parameter lists of
+       the @(':lambda'), @(':tlambda'), and @(':ilambdan') summands
+       and the ispace list of @(':box') to be non-empty;
        this is not captured in this fixtype.")
      (xdoc::p
       "The optional type of the body of a lambda abstraction
@@ -916,6 +929,8 @@
               (body expr)
               (type? type-option)))
     (:tlambda ((params type-var-list)
+               (body expr)))
+    (:ilambda ((param ispace-var)
                (body expr)))
     (:ilambdan ((params ispace-var-list)
                 (body expr)))
