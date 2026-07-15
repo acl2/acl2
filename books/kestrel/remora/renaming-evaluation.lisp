@@ -1837,7 +1837,7 @@
                :body (expr-rename-expr-vars val.body renam)
                :denv (expr-denv-rename-expr-vars val.denv renam))
      :ilambda (make-expr-value-ilambda
-               :params val.params
+               :param val.param
                :body (expr-rename-expr-vars val.body renam)
                :denv (expr-denv-rename-expr-vars val.denv renam))
      :box (make-expr-value-box
@@ -2226,11 +2226,11 @@
                                                    dim-renam
                                                    shape-renam))
      :ilambda (b* (((mv & & body-dim-renam body-shape-renam)
-                    (dim/shape-rename-remove-bound (set::mergesort val.params)
+                    (dim/shape-rename-remove-bound (set::insert val.param nil)
                                                    dim-renam
                                                    shape-renam)))
                 (make-expr-value-ilambda
-                 :params val.params
+                 :param val.param
                  :body (expr-rename-ispace-vars val.body
                                                 body-dim-renam
                                                 body-shape-renam)
@@ -2624,7 +2624,7 @@
                                                    atom-renam
                                                    array-renam)))
      :ilambda (make-expr-value-ilambda
-               :params val.params
+               :param val.param
                :body (expr-rename-type-vars val.body atom-renam array-renam)
                :denv (expr-denv-rename-type-vars val.denv
                                                  atom-renam

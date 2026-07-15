@@ -125,6 +125,18 @@
        The same goes for the optional type of the body of the lambda value,
        which mirrors the one in the AST for lambda abstraction atoms.")
      (xdoc::p
+      "An ispace lambda value binds exactly one parameter:
+       consistently with the curried view of ispace applications
+       (see @(tsee expr)),
+       an ispace lambda abstraction with two or more parameters
+       evaluates to the unary ispace lambda value
+       that binds the first parameter,
+       whose body is the ispace lambda abstraction
+       over the remaining parameters.
+       The other two kinds of lambda values
+       still bind all their parameters at once;
+       they will be similarly made unary.")
+     (xdoc::p
       "This fixtype does not capture constraints like
        the non-emptiness of the expression value list in @(':vector'),
        and the dimension and type consistency of the elements of a @(':vector').
@@ -143,7 +155,7 @@
     (:tlambda ((params type-var-list)
                (body expr)
                (denv expr-denv)))
-    (:ilambda ((params ispace-var-list)
+    (:ilambda ((param ispace-var)
                (body expr)
                (denv expr-denv)))
     (:box ((ispaces ispace-value-list)
@@ -722,10 +734,10 @@
 
   (defrule expr-value-wfp-of-expr-value-ilambda
     (implies (expr-denv-wfp denv)
-             (expr-value-wfp (expr-value-ilambda params body denv)))
+             (expr-value-wfp (expr-value-ilambda param body denv)))
     :enable (expr-value-wfp
              expr-denv-wfp-alt-def)
-    :expand (check-dims-of-expr-value (expr-value-ilambda params body denv)))
+    :expand (check-dims-of-expr-value (expr-value-ilambda param body denv)))
 
   (defrule expr-denv-wfp-of-expr-value-ilambda->denv
     (implies (and (expr-value-wfp val)

@@ -1041,6 +1041,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ilambda-curried-body ((params ispace-var-listp) (body exprp))
+  :guard (consp params)
+  :returns (new-body exprp)
+  :short "Body of the unary closure
+          for an ispace lambda abstraction with the given parameters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Ispace lambda values bind exactly one parameter
+     (see @(tsee expr-value)),
+     consistently with the curried view of ispace applications:
+     an ispace lambda abstraction with two or more parameters
+     evaluates to the unary closure that binds the first parameter
+     and whose body is
+     the ispace lambda abstraction over the remaining parameters.
+     This function returns the body of the unary closure:
+     the body of the given ispace lambda abstraction
+     if there are no parameters other than the first one,
+     or otherwise the ispace lambda abstraction
+     over the remaining parameters,
+     as an atom expression."))
+  (b* ((params (ispace-var-list-fix params))
+       (body (expr-fix body)))
+    (if (endp (cdr params))
+        body
+      (expr-atom (atom-ilambda (cdr params) body)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines eval-exprs/atoms/binds
   :short "Evaluate expressions, atoms, and bindings."
   :long
@@ -1323,11 +1352,20 @@
        the body itself is not evaluated here,
        but only when the abstraction is applied.")
      (xdoc::p
-      "A type lambda abstraction or an ispace lambda abstraction
-       evaluates to a type lambda value or an ispace lambda value,
-       respectively,
+      "A type lambda abstraction
+       evaluates to a type lambda value
        with the same parameters and body,
        which are not evaluated here but only when the abstraction is applied.")
+     (xdoc::p
+      "An ispace lambda abstraction must have at least one parameter,
+       and evaluates to a unary ispace lambda value
+       that binds the first parameter,
+       whose body is the ispace lambda abstraction
+       over the remaining parameters if there are any,
+       or otherwise the body of the given ispace lambda abstraction
+       (see @(tsee ilambda-curried-body)):
+       an ispace lambda abstraction with two or more parameters
+       stands for the nesting of unary ones, in curried style.")
      (xdoc::p
       "All three kinds of lambda values are closures:
        they include dynamic environments
@@ -1368,14 +1406,16 @@
                         (atom-free-type-vars atom)
                         (expr-free-expr-vars atom.body)
                         denv))
-       :ilambda (make-expr-value-ilambda
-                 :params atom.params
-                 :body atom.body
-                 :denv (expr-denv-restrict
-                        (atom-free-ispace-vars atom)
-                        (expr-free-type-vars atom.body)
-                        (expr-free-expr-vars atom.body)
-                        denv))
+       :ilambda
+       (b* (((unless (consp atom.params)) (reserr nil)))
+         (make-expr-value-ilambda
+          :param (car atom.params)
+          :body (ilambda-curried-body atom.params atom.body)
+          :denv (expr-denv-restrict
+                 (atom-free-ispace-vars atom)
+                 (expr-free-type-vars atom.body)
+                 (expr-free-expr-vars atom.body)
+                 denv)))
        :box (b* (((ok ivals) (eval-ispace-list atom.ispaces
                                                (type-denv->ienv
                                                 (expr-denv->tenv denv))))
@@ -1553,9 +1593,10 @@
                                   (expr-denv->tenv denv))
                            :none nil)))
                (expr-denv-add-expr bind.var val denv))
-       :ifun (b* ((val (make-expr-value-ilambda
-                        :params bind.params
-                        :body bind.expr
+       :ifun (b* (((unless (consp bind.params)) (reserr nil))
+                  (val (make-expr-value-ilambda
+                        :param (car bind.params)
+                        :body (ilambda-curried-body bind.params bind.expr)
                         :denv (expr-denv-restrict
                                (set::difference
                                 (expr-free-ispace-vars bind.expr)
@@ -1796,54 +1837,34 @@
      (xdoc::p
       "This ACL2 function performs that element-wise application.
        The base case is that of a scalar (i.e. 0-rank array) function value.
-       For an ispace lambda value,
-       we check that the argument matches the first parameter in sort,
-       and we extend the dynamic environment
+       For an ispace lambda value, which binds exactly one parameter,
+       we check that the argument matches the parameter in sort,
+       we extend the dynamic environment
        contained in the ispace lambda value
-       to associate the argument with that parameter.
-       If the first parameter is the only one,
-       we evaluate the body of the ispace lambda abstraction
-       in the extended environment.
-       If there are further parameters, the application is partial:
-       we return the ispace lambda value over the remaining parameters,
-       with the extended environment;
-       under the curried view of ispace lambda abstractions,
-       this is the value of the inner lambda abstraction
-       over the remaining parameters,
-       whose environment captures the parameter just associated.
+       to associate the argument with the parameter,
+       and we evaluate the body in the extended environment.
+       If the ispace lambda abstraction has further parameters,
+       the body is itself an ispace lambda abstraction
+       (see @(tsee ilambda-curried-body)),
+       whose evaluation, via @(tsee eval-atom),
+       creates the closure for the remaining parameters,
+       capturing the extended environment
+       (restricted to the free variables):
+       closure environments are extended
+       only via the capture performed in @(tsee eval-atom).
        If instead the scalar function value is
        a primitive operation value applicable to ispace values,
        it is applied to the ispace argument value
        via @(tsee eval-primop-ifun).")
      (xdoc::p
-      "The case split in the treatment of ispace lambda values,
+      "The case split for product type values,
+       in the empty vector case described below,
        between instantiating the only parameter
        and peeling off the first of two or more parameters,
-       is due solely to the fact that
-       ispace lambda abstractions are still n-ary
-       while ispace application is unary.
-       The closure created by @(tsee eval-atom)
-       for a lambda abstraction with two or more parameters
-       covers all those parameters,
-       so it is not the closure needed by
-       the unary application of that value:
-       this function must construct the peeled closure itself.
-       Once ispace lambda abstractions are also made unary,
-       the body of a (currently) multi-parameter lambda abstraction
-       will itself be a lambda abstraction:
-       this function will just always
-       evaluate the body in the extended environment,
-       and the evaluation of that body, via @(tsee eval-atom),
-       will create the needed closure,
-       capturing the extended environment,
-       restricted to the free variables;
-       that is, closure environments will be extended
-       only via the capture performed in @(tsee eval-atom),
-       and the case split will disappear.
-       The analogous case split for product type values,
-       in the empty vector case described below,
-       will similarly disappear
-       once product types are also made unary.")
+       is due solely to the fact that product types are still n-ary;
+       it will disappear once they are also made unary,
+       analogously to how the case split for ispace lambda values
+       disappeared when their values were made unary.")
      (xdoc::p
       "A non-empty vector function value
        is applied via a separate ACL2 function that goes through the list.
@@ -1887,17 +1908,10 @@
       (expr-value-case
        funval
        :ilambda
-       (b* (((unless (consp funval.params)) (reserr nil))
-            ((unless (ispace-values-match-ispace-vars-p
-                      (list ival) (list (car funval.params))))
+       (b* (((unless (ispace-values-match-ispace-vars-p
+                      (list ival) (list funval.param)))
              (reserr nil))
-            (denv (expr-denv-add-ispace (car funval.params)
-                                        ival
-                                        funval.denv))
-            ((when (consp (cdr funval.params)))
-             (make-expr-value-ilambda :params (cdr funval.params)
-                                      :body funval.body
-                                      :denv denv)))
+            (denv (expr-denv-add-ispace funval.param ival funval.denv)))
          (eval-expr funval.body denv (1- limit)))
        :primop (if (primop-value-ifunp funval.val)
                    (eval-primop-ifun funval.val ival)
