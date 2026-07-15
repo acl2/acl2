@@ -74,3 +74,7 @@
 ; More ispace arguments than bound variables.
 (test-check-top-expr-fail
  "(i-app (t-app length Int) 3 (dims 4 5) 7)")
+
+; The variable $d escapes.
+(test-check-top-expr-fail
+ "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e)))) v)")

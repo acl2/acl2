@@ -1286,6 +1286,13 @@
        In [arxiv] and [thesis],
        the latter array has atom type @($\\tau_b$) and ispace @($\\iota_b$),
        which correspond to @('body-atom-type') and @('body-ispace') in our code.
+       This array type must not contain occurrences of
+       the ispace variables bound in the unboxing expression,
+       i.e. it must be a well-formed type
+       in the type enviroment prior to its extension with the ispace bindings;
+       this corresponds to the third premise of the inference rule in [thesis],
+       which we check via @(tsee check-type) on
+       the static environment @('senv0').
        The type of the unboxing expression is the array type consisting of
        the @($\\tau_b$) type as atom
        and the concatenation of @($\\iota_s$) and @($\\iota_b$) as ispace.
@@ -1440,9 +1447,11 @@
            (type-rename-ispace-vars-alpha sum-body-type
                                           renaming.1st
                                           renaming.2nd))
+          (senv0 senv)
           (senv (senv-add-ispace-vars expr.ispaces senv))
           (senv (senv-add-var+type expr.var sum-body-type-renam senv))
           ((ok (type+expr be)) (check-expr expr.body senv))
+          ((unless (check-type be.type senv0)) (reserr nil))
           ((ok arr-type+ispace) (type-match-array be.type))
           (body-atom-type (type+ispace->type arr-type+ispace))
           (body-ispace (type+ispace->ispace arr-type+ispace))
