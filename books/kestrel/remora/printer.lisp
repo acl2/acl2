@@ -1315,11 +1315,11 @@
                   "t-fn"
                   (pdoc-concat (pdoc-paren (type-var-list-to-pdoc a.params))
                                (pdoc-concat (pdoc-line) body))))
-      :ilambda (b* (((ok body) (expr-to-pdoc a.body)))
-                 (pdoc-prefix-form
-                  "i-fn"
-                  (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc a.params))
-                               (pdoc-concat (pdoc-line) body))))
+      :ilambdan (b* (((ok body) (expr-to-pdoc a.body)))
+                  (pdoc-prefix-form
+                   "i-fn"
+                   (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc a.params))
+                                (pdoc-concat (pdoc-line) body))))
       :box (b* (((ok array) (expr-to-pdoc a.array)))
              (pdoc-prefix-form
               "box"

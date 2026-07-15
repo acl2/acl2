@@ -653,7 +653,7 @@
      :tlambda (b* ((atom (atom-tlambda val.params val.body))
                    ((mv err atom) (atom-subst-expr-denv atom val.denv)))
                 (mv err (expr-atom atom)))
-     :ilambda (b* ((atom (atom-ilambda (list val.param) val.body))
+     :ilambda (b* ((atom (atom-ilambdan (list val.param) val.body))
                    ((mv err atom) (atom-subst-expr-denv atom val.denv)))
                 (mv err (expr-atom atom)))
      :box (b* (((mv err array) (expr-value-to-expr val.array)))

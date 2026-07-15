@@ -276,7 +276,7 @@
                      (expr-subst-ispace-vars-no-capture-p expr.body
                                                           dim-subst
                                                           shape-subst)))))
-   (atom :ilambda
+   (atom :ilambdan
          (b* (((mv dim-subst shape-subst)
                (dim/shape-subst-remove-bound (set::mergesort atom.params)
                                              dim-subst
@@ -664,12 +664,12 @@
             :body (expr-subst-ispace-vars expr.body
                                           dim-subst
                                           shape-subst))))
-   (atom :ilambda
+   (atom :ilambdan
          (b* (((mv dim-subst shape-subst)
                (dim/shape-subst-remove-bound (set::mergesort atom.params)
                                              dim-subst
                                              shape-subst)))
-           (make-atom-ilambda
+           (make-atom-ilambdan
             :params atom.params
             :body (expr-subst-ispace-vars atom.body
                                           dim-subst

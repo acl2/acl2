@@ -103,8 +103,8 @@
                          (expr-binder-names atom.body)))
    (atom :tlambda (append (type-var-list->name atom.params)
                           (expr-binder-names atom.body)))
-   (atom :ilambda (append (ispace-var-list->name atom.params)
-                          (expr-binder-names atom.body)))
+   (atom :ilambdan (append (ispace-var-list->name atom.params)
+                           (expr-binder-names atom.body)))
    (bind :fun (append (var+type?-list->var bind.params)
                       (expr-binder-names bind.expr)))
    (bind :tfun (append (type-var-list->name bind.params)
@@ -895,16 +895,16 @@
                                                       :array array-renam))))
                  (mv used (atom-tlambda new-params new-body)))
 
-      :ilambda (b* (((var-renamings r-) r)
-                    ((mv used new-params dim-renam shape-renam)
-                     (uniq-ispace-var-params x.params used r-.avoid
-                                             r-.dim r-.shape))
-                    ((mv used new-body)
-                     (uniq-expr x.body used
-                                (change-var-renamings r
-                                                      :dim dim-renam
-                                                      :shape shape-renam))))
-                 (mv used (atom-ilambda new-params new-body)))
+      :ilambdan (b* (((var-renamings r-) r)
+                     ((mv used new-params dim-renam shape-renam)
+                      (uniq-ispace-var-params x.params used r-.avoid
+                                              r-.dim r-.shape))
+                     ((mv used new-body)
+                      (uniq-expr x.body used
+                                 (change-var-renamings r
+                                                       :dim dim-renam
+                                                       :shape shape-renam))))
+                  (mv used (atom-ilambdan new-params new-body)))
 
       :box (b* (((var-renamings r-) r)
                 ((mv used new-array) (uniq-expr x.array used r)))

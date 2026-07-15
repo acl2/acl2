@@ -1608,14 +1608,14 @@
        (make-type+atom
         :type (make-type-forall :params atom.params :body be.type)
         :atom (make-atom-tlambda :params atom.params :body be.expr)))
-     :ilambda
+     :ilambdan
      (b* (((unless (no-duplicatesp-equal atom.params))
            (reserr nil))
           (senv (senv-add-ispace-vars atom.params senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
         :type (make-type-pi :params atom.params :body be.type)
-        :atom (make-atom-ilambda :params atom.params :body be.expr)))
+        :atom (make-atom-ilambdan :params atom.params :body be.expr)))
      :box
      (b* (((unless (check-ispace-list atom.ispaces senv)) (reserr nil))
           (ispaces (senv-expand-ispace-list atom.ispaces senv))

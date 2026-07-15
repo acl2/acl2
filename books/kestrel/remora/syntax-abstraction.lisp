@@ -2114,13 +2114,13 @@
   ;; ispace-lambda = ( "i-fn" / "iλ" ) ws "(" *( ws ispace-var ) ws ")" ws exp
   (define abs-ispace-lambda ((tree abnf::treep))
     :returns (a atom-resultp)
-    :short "Abstract an @('ispace-lambda') to an @(tsee atom) @(':ilambda')."
+    :short "Abstract an @('ispace-lambda') to an @(tsee atom) @(':ilambdan')."
     (b* (((okf (abnf::tree-list-tuple8 sub))
           (abnf::check-tree-nonleaf-8 tree "ispace-lambda"))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf params) (abs-*-ws-ispace-var sub.4th))
          ((okf body) (abs-exp body-tree)))
-      (make-atom-ilambda :params params :body body))
+      (make-atom-ilambdan :params params :body body))
     :measure (abnf::tree-count tree))
 
   ;; box-expr = "box" ws "(" *( ws ispace ) ws ")" ws exp ws type

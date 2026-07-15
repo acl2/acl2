@@ -237,7 +237,7 @@
                      (expr-rename-ispace-vars-no-capture-p expr.body
                                                            dim-renam
                                                            shape-renam)))))
-   (atom :ilambda
+   (atom :ilambdan
          (b* (((mv bound-dim-vars bound-shape-vars dim-renam shape-renam)
                (dim/shape-rename-remove-bound (set::mergesort atom.params)
                                               dim-renam
@@ -623,12 +623,12 @@
             :body (expr-rename-ispace-vars expr.body
                                            dim-renam
                                            shape-renam))))
-   (atom :ilambda
+   (atom :ilambdan
          (b* (((mv & & dim-renam shape-renam)
                (dim/shape-rename-remove-bound (set::mergesort atom.params)
                                               dim-renam
                                               shape-renam)))
-           (make-atom-ilambda
+           (make-atom-ilambdan
             :params atom.params
             :body (expr-rename-ispace-vars atom.body
                                            dim-renam

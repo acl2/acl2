@@ -1066,7 +1066,7 @@
        (body (expr-fix body)))
     (if (endp (cdr params))
         body
-      (expr-atom (atom-ilambda (cdr params) body)))))
+      (expr-atom (atom-ilambdan (cdr params) body)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1406,7 +1406,7 @@
                         (atom-free-type-vars atom)
                         (expr-free-expr-vars atom.body)
                         denv))
-       :ilambda
+       :ilambdan
        (b* (((unless (consp atom.params)) (reserr nil)))
          (make-expr-value-ilambda
           :param (car atom.params)
@@ -1627,7 +1627,7 @@
                     bind.iparams?
                     :some (mv (make-expr-array
                                :dims nil
-                               :atoms (list (make-atom-ilambda
+                               :atoms (list (make-atom-ilambdan
                                              :params bind.iparams?.val
                                              :body lambda-expr)))
                               (make-type-pi :params bind.iparams?.val

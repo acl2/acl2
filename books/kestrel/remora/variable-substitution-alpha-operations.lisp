@@ -590,13 +590,13 @@
                                                     dim-subst
                                                     shape-subst
                                                     avoid))))
-   (atom :ilambda
+   (atom :ilambdan
          (b* (((mv fresh-params dim-subst shape-subst)
                (dim/shape-subst-alpha-bound atom.params
                                             dim-subst
                                             shape-subst
                                             (expr-free-ispace-vars atom.body))))
-           (make-atom-ilambda
+           (make-atom-ilambdan
             :params fresh-params
             :body (expr-subst-ispace-vars-alpha-aux atom.body
                                                     dim-subst

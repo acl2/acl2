@@ -488,14 +488,14 @@
                                                      dim-renam
                                                      shape-renam
                                                      avoid))))
-   (atom :ilambda
+   (atom :ilambdan
          (b* (((mv fresh-params dim-renam shape-renam)
                (dim/shape-rename-alpha-bound atom.params
                                              dim-renam
                                              shape-renam
                                              (expr-free-ispace-vars
                                               atom.body))))
-           (make-atom-ilambda
+           (make-atom-ilambdan
             :params fresh-params
             :body (expr-rename-ispace-vars-alpha-aux atom.body
                                                      dim-renam
