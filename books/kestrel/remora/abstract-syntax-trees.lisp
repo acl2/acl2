@@ -909,10 +909,9 @@
        which binds exactly one parameter,
        while the @(':ilambdan') summand is sugar for
        a nesting of unary ispace lambda abstractions.
-       Currently the CST-to-AST mapping turns
-       all ispace lambda abstractions into @(':ilambdan');
-       we plan to redirect it to turn
-       the ones with one parameter into @(':ilambda'),
+       The CST-to-AST mapping turns
+       the ispace lambda abstractions with one parameter into @(':ilambda'),
+       and those with two or more parameters into @(':ilambdan'),
        similarly to ispace applications (see @(tsee expr)).
        The other lambda summands will be similarly given unary forms.")
      (xdoc::p
