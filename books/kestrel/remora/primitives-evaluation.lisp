@@ -1304,12 +1304,14 @@
      According to the instantiated type of the operation,
      the argument cell is an array
      whose dimensions are the dimension @('d+1') followed by the shape @('s'),
-     and the result is the array after removing the first element, whose dimensions are
+     and the result is the array after removing the first element,
+     whose dimensions are
      the dimension @('d') followed by the shape @('s').
      The guard requires the argument cell to be well-formed;
      we defensively check that it has the expected dimensions.")
    (xdoc::p
-    "The type value @('tval') is currently only used for when the output is an empty array
+    "The type value @('tval') is currently only used
+     for when the output is an empty array
      and not for checking well-formedness,
      because our well-formedness checks on expression values
      currently concern dimensions but not types;
@@ -1326,7 +1328,16 @@
        (tail (cdr elems)))
     (if (consp tail)
         (expr-value-vector tail)
-      (expr-value-vector-empty s tval))))
+      (expr-value-vector-empty s tval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-tail
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (expr-value-wfp val1)
+    :hints (("Goal" :in-theory (e/d (dims-of-expr-value-list-of-cdr)
+                                    (cdr-of-dims-of-expr-value-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1558,7 +1569,6 @@
                               prim-bool-to-int
                               prim-bool-to-float
                               prim-head
-                              prim-tail
                               dims-of-expr-value-list-of-cdr)
                              (cdr-of-dims-of-expr-value-list))))))
 
