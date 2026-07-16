@@ -652,7 +652,7 @@
                     :type? (type-value-option-to-type-option val.type?)))
                   ((mv err atom) (atom-subst-expr-denv atom val.denv)))
                (mv err (expr-atom atom)))
-     :tlambda (b* ((atom (atom-tlambda val.params val.body))
+     :tlambda (b* ((atom (atom-tlambda (list val.param) val.body))
                    ((mv err atom) (atom-subst-expr-denv atom val.denv)))
                 (mv err (expr-atom atom)))
      :ilambda (b* ((atom (atom-ilambda val.param val.body))

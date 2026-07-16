@@ -133,9 +133,11 @@
        that binds the first parameter,
        whose body is the ispace lambda abstraction
        over the remaining parameters.
-       The other two kinds of lambda values
-       still bind all their parameters at once;
-       they will be similarly made unary.")
+       A type lambda value similarly binds exactly one parameter,
+       consistently with the curried view of type applications.
+       The remaining kind of lambda values
+       still binds all its parameters at once;
+       it will be similarly made unary.")
      (xdoc::p
       "This fixtype does not capture constraints like
        the non-emptiness of the expression value list in @(':vector'),
@@ -152,7 +154,7 @@
               (body expr)
               (type? type-value-option)
               (denv expr-denv)))
-    (:tlambda ((params type-var-list)
+    (:tlambda ((param type-var)
                (body expr)
                (denv expr-denv)))
     (:ilambda ((param ispace-var)
@@ -765,10 +767,10 @@
 
   (defrule expr-value-wfp-of-expr-value-tlambda
     (implies (expr-denv-wfp denv)
-             (expr-value-wfp (expr-value-tlambda params body denv)))
+             (expr-value-wfp (expr-value-tlambda param body denv)))
     :enable (expr-value-wfp
              expr-denv-wfp-alt-def)
-    :expand (check-dims-of-expr-value (expr-value-tlambda params body denv)))
+    :expand (check-dims-of-expr-value (expr-value-tlambda param body denv)))
 
   (defrule expr-denv-wfp-of-expr-value-tlambda->denv
     (implies (and (expr-value-wfp val)

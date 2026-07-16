@@ -1330,10 +1330,18 @@
        the body itself is not evaluated here,
        but only when the abstraction is applied.")
      (xdoc::p
-      "A type lambda abstraction
-       evaluates to a type lambda value
-       with the same parameters and body,
-       which are not evaluated here but only when the abstraction is applied.")
+      "A type lambda abstraction evaluates to
+       a unary type lambda value.
+       The abstraction must have at least one parameter:
+       the value binds the first parameter,
+       and its body is the type lambda abstraction
+       over the remaining parameters if there are any,
+       or otherwise the body of the given type lambda abstraction
+       (see @(tsee tlambda-curried-body)):
+       a type lambda abstraction with two or more parameters
+       stands for the nesting of unary ones, in curried style.
+       The body is not evaluated here,
+       but only when the abstraction is applied.")
      (xdoc::p
       "An ispace lambda abstraction evaluates to
        a unary ispace lambda value.
@@ -1379,14 +1387,16 @@
                          (expr-free-type-vars atom.body)
                          (atom-free-expr-vars atom)
                          denv)))
-       :tlambda (make-expr-value-tlambda
-                 :params atom.params
-                 :body atom.body
-                 :denv (expr-denv-restrict
-                        (expr-free-ispace-vars atom.body)
-                        (atom-free-type-vars atom)
-                        (expr-free-expr-vars atom.body)
-                        denv))
+       :tlambda
+       (b* (((unless (consp atom.params)) (reserr nil)))
+         (make-expr-value-tlambda
+          :param (car atom.params)
+          :body (tlambda-curried-body atom.params atom.body)
+          :denv (expr-denv-restrict
+                 (expr-free-ispace-vars atom.body)
+                 (atom-free-type-vars atom)
+                 (expr-free-expr-vars atom.body)
+                 denv)))
        :ilambda (make-expr-value-ilambda
                  :param atom.param
                  :body atom.body
@@ -1564,9 +1574,10 @@
                                            (expr-denv->tenv denv))
                           :none nil)))
               (expr-denv-add-expr bind.var val denv))
-       :tfun (b* ((val (make-expr-value-tlambda
-                        :params bind.params
-                        :body bind.expr
+       :tfun (b* (((unless (consp bind.params)) (reserr nil))
+                  (val (make-expr-value-tlambda
+                        :param (car bind.params)
+                        :body (tlambda-curried-body bind.params bind.expr)
                         :denv (expr-denv-restrict
                                (expr-free-ispace-vars bind.expr)
                                (set::difference
@@ -1673,25 +1684,44 @@
       "This is called by @(tsee eval-expr) for a type application,
        after the function and the type arguments have been evaluated:
        @('funval') is the expression value of the function,
-       and @('tvals') are the expression values of the type arguments.")
+       and @('tvals') are the type values of the arguments.
+       Consistently with the curried view of type applications
+       (see @(tsee expr)),
+       the function value is applied to
+       the type argument values one at a time,
+       in a chain of unary applications:
+       each step applies the current function value
+       to the next type argument value;
+       if there are no (more) type argument values,
+       the current function value is the result.")
      (xdoc::p
-      "The function value must be an array, of any rank,
+      "In each unary application,
+       the function value must be an array, of any rank,
        whose elements are type lambda abstractions
        or primitive operation values applicable to type values;
-       the type argument values must match
-       the parameters in number and kinds.
-       Each such element is applied to the type argument values.")
+       the type argument value must match, in kind,
+       the first parameter of each such element.
+       Each element is applied to the type argument value.")
      (xdoc::p
       "This ACL2 function performs that element-wise application.
-       The base case is that of a scalar (i.e. 0-rank array) function value:
-       we check that the arguments match the parameters,
+       The base case is that of a scalar (i.e. 0-rank array) function value.
+       For a type lambda value, which binds exactly one parameter,
+       we check that the argument matches the parameter in kind,
        we extend the dynamic environment contained in the type lambda value
-       to associate the arguments with the parameters,
-       and we evaluate the body of the type lambda abstraction
-       in the extended environment.
+       to associate the argument with the parameter,
+       and we evaluate the body in the extended environment.
+       If the type lambda abstraction has further parameters,
+       the body is itself a type lambda abstraction
+       (see @(tsee tlambda-curried-body)),
+       whose evaluation, via @(tsee eval-atom),
+       creates the closure for the remaining parameters,
+       capturing the extended environment
+       (restricted to the free variables):
+       closure environments are extended
+       only via the capture performed in @(tsee eval-atom).
        If instead the scalar function value is
        a primitive operation value applicable to type values,
-       it is applied to the type argument values
+       it is applied to the type argument value
        via @(tsee eval-primop-tfun).")
      (xdoc::p
       "A non-empty vector function value
@@ -1706,12 +1736,18 @@
        no type lambda abstractions to apply,
        but it carries the type of its would-be elements,
        which must be a universal type value;
-       the type argument values must match
-       its parameters in number and kinds.
+       the type argument value must match, in kind,
+       the first parameter of the universal type value.
        We extend the dynamic environment
        contained in the universal type value
-       to associate the arguments with the parameters,
-       and we evaluate the body of the universal type value,
+       to associate the argument with the first parameter.
+       If the universal type value has further parameters,
+       we return the empty vector value, with the same dimensions,
+       over the universal type value
+       that binds the remaining parameters
+       and contains the extended environment.
+       Otherwise, we evaluate the body of the universal type value
+       in the extended environment,
        which yields the type value of the would-be results
        of the element-wise application.
        Similarly to the evaluation of empty frame expressions
@@ -1724,44 +1760,73 @@
        the element dimensions of the function value
        followed by the dimensions of the evaluated body of the universal type.
        The implicit leading 0 dimension of the function value
-       is also the implicit leading 0 dimension of the result expression value."))
-    (b* (((when (zp limit)) (reserr :limit)))
-      (expr-value-case
-       funval
-       :tlambda
-       (b* (((unless (type-values-match-type-vars-p tvals funval.params))
-             (reserr nil))
-            (denv (expr-denv-add-types funval.params tvals funval.denv)))
-         (eval-expr funval.body denv (1- limit)))
-       :primop (if (primop-value-tfunp funval.val)
-                   (eval-primop-tfun funval.val tvals)
+       is also the implicit leading 0 dimension of the result expression value.")
+     (xdoc::p
+      "The case split on the remaining parameters
+       of the universal type value
+       is due solely to the fact that
+       universal type values still bind all their parameters at once,
+       unlike product type values (see @(tsee type-value)).
+       When universal type values are made unary as well,
+       this case split will disappear,
+       and partial instantiation will need no special treatment here,
+       just as in @(tsee eval-iapp)."))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (endp tvals)) (expr-value-fix funval))
+         (tval (car tvals))
+         ((ok val)
+          (expr-value-case
+           funval
+           :tlambda
+           (b* (((unless (type-values-match-type-vars-p (list tval)
+                                                        (list funval.param)))
                  (reserr nil))
-       :vector
-       (b* (((ok vals) (eval-tapp-list funval.elems tvals (1- limit)))
-            ;; TODO: eliminate the next two checks via proof
-            ((unless (consp vals)) (reserr nil))
-            ((unless (list-repeatp (dims-of-expr-value-list vals))) (reserr nil)))
-         (expr-value-vector vals))
-       :vector-empty
-       (type-value-case
-        funval.elem
-        :forall
-        (b* (((unless (type-values-match-type-vars-p tvals funval.elem.params))
-              (reserr nil))
-             (tenv (type-denv-add-types funval.elem.params
-                                        tvals
-                                        funval.elem.denv))
-             ((ok tval) (eval-type funval.elem.body tenv))
-             ((mv elem body-dims)
-              (type-value-case
-               tval
-               :array (mv tval.elem tval.dims)
-               :otherwise (mv tval nil)))
-             ((when (type-value-case elem :array)) (reserr nil)))
-          (make-expr-value-vector-empty :dims (append funval.dims body-dims)
-                                        :elem elem))
-        :otherwise (reserr nil))
-       :otherwise (reserr nil)))
+                (denv (expr-denv-add-type funval.param tval funval.denv)))
+             (eval-expr funval.body denv (1- limit)))
+           :primop (if (primop-value-tfunp funval.val)
+                       (eval-primop-tfun funval.val (list tval))
+                     (reserr nil))
+           :vector
+           (b* (((ok vals) (eval-tapp-list funval.elems
+                                           (list tval)
+                                           (1- limit)))
+                ;; TODO: eliminate the next two checks via proof
+                ((unless (consp vals)) (reserr nil))
+                ((unless (list-repeatp (dims-of-expr-value-list vals)))
+                 (reserr nil)))
+             (expr-value-vector vals))
+           :vector-empty
+           (type-value-case
+            funval.elem
+            :forall
+            (b* (((unless (consp funval.elem.params)) (reserr nil))
+                 ((unless (type-values-match-type-vars-p
+                           (list tval)
+                           (list (car funval.elem.params))))
+                  (reserr nil))
+                 (tenv (type-denv-add-type (car funval.elem.params)
+                                           tval
+                                           funval.elem.denv))
+                 ((when (consp (cdr funval.elem.params)))
+                  (make-expr-value-vector-empty
+                   :dims funval.dims
+                   :elem (make-type-value-forall
+                          :params (cdr funval.elem.params)
+                          :body funval.elem.body
+                          :denv tenv)))
+                 ((ok bodyval) (eval-type funval.elem.body tenv))
+                 ((mv elem body-dims)
+                  (type-value-case
+                   bodyval
+                   :array (mv bodyval.elem bodyval.dims)
+                   :otherwise (mv bodyval nil)))
+                 ((when (type-value-case elem :array)) (reserr nil)))
+              (make-expr-value-vector-empty
+               :dims (append funval.dims body-dims)
+               :elem elem))
+            :otherwise (reserr nil))
+           :otherwise (reserr nil))))
+      (eval-tapp val (cdr tvals) (1- limit)))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

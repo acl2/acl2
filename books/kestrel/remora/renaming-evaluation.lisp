@@ -1999,7 +1999,7 @@
                 :type? val.type?
                 :denv (expr-denv-rename-expr-vars val.denv renam)))
      :tlambda (make-expr-value-tlambda
-               :params val.params
+               :param val.param
                :body (expr-rename-expr-vars val.body renam)
                :denv (expr-denv-rename-expr-vars val.denv renam))
      :ilambda (make-expr-value-ilambda
@@ -2386,7 +2386,7 @@
                                                   dim-renam
                                                   shape-renam))
      :tlambda (make-expr-value-tlambda
-               :params val.params
+               :param val.param
                :body (expr-rename-ispace-vars val.body dim-renam shape-renam)
                :denv (expr-denv-rename-ispace-vars val.denv
                                                    dim-renam
@@ -2778,11 +2778,11 @@
                                                 atom-renam
                                                 array-renam))
      :tlambda (b* (((mv & & body-atom-renam body-array-renam)
-                    (atom/array-rename-remove-bound (set::mergesort val.params)
+                    (atom/array-rename-remove-bound (set::insert val.param nil)
                                                     atom-renam
                                                     array-renam)))
                 (make-expr-value-tlambda
-                 :params val.params
+                 :param val.param
                  :body (expr-rename-type-vars val.body
                                               body-atom-renam
                                               body-array-renam)

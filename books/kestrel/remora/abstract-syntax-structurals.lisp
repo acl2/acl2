@@ -598,3 +598,31 @@
           ((endp (cddr params))
            (expr-atom (atom-ilambda (cadr params) body)))
           (t (expr-atom (atom-ilambdan (cdr params) body))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tlambda-curried-body ((params type-var-listp) (body exprp))
+  :guard (consp params)
+  :returns (new-body exprp)
+  :short "Body of the unary closure
+          for a type lambda abstraction with the given parameters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Type lambda values bind exactly one parameter
+     (see @(tsee expr-value)),
+     consistently with the curried view of type applications:
+     a type lambda abstraction with two or more parameters
+     evaluates to the unary closure that binds the first parameter
+     and whose body is
+     the type lambda abstraction over the remaining parameters.
+     This function returns the body of the unary closure:
+     the body of the given type lambda abstraction
+     if there are no parameters other than the first one,
+     or otherwise the type lambda abstraction
+     over the remaining parameters,
+     as an atom expression."))
+  (b* ((params (type-var-list-fix params))
+       (body (expr-fix body)))
+    (cond ((endp (cdr params)) body)
+          (t (expr-atom (atom-tlambda (cdr params) body))))))

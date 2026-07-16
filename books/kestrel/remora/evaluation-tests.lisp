@@ -84,3 +84,17 @@
 ; Completion of that instantiation, as a chain.
 (test-eval-top-expr
  "(i-app (i-app (frame [0] (Pi ($d $e) (-> ((A Int (dims $d $e))) Int))) 3) 4)")
+
+; Full instantiation of a two-parameter type lambda abstraction,
+; as a chain of unary applications through unary closures.
+(test-eval-top-expr
+ "
+((i-app (t-app (t-fn (&t &u) (i-fn ($d) (fn ((x (A &t $d))) x))) Int Int) 3)
+ [1 2 3])
+")
+
+; Full instantiation of an empty frame of a two-parameter universal type:
+; the first unary application peels the universal type value,
+; the second one completes the instantiation.
+(test-eval-top-expr
+ "(t-app (frame [0] (Forall (&t &u) (Pi ($d) (-> ((A &t $d)) Int)))) Int Int)")
