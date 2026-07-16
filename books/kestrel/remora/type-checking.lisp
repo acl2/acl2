@@ -277,7 +277,7 @@
      :fun (and (check-type-list type.in senv)
                (check-type type.out senv))
      :forall (check-type type.body (senv-add-type-vars type.params senv))
-     :pi (check-type type.body (senv-add-ispace-vars type.params senv))
+     :pin (check-type type.body (senv-add-ispace-vars type.params senv))
      :sigma (check-type type.body (senv-add-ispace-vars type.params senv)))
     :measure (type-count type))
 
@@ -1621,7 +1621,7 @@
      (b* ((senv (senv-add-ispace-vars (list atom.param) senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
-        :type (make-type-pi :params (list atom.param) :body be.type)
+        :type (make-type-pin :params (list atom.param) :body be.type)
         :atom (make-atom-ilambda :param atom.param :body be.expr)))
      :ilambdan
      (b* (((unless (no-duplicatesp-equal atom.params))
@@ -1629,7 +1629,7 @@
           (senv (senv-add-ispace-vars atom.params senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
-        :type (make-type-pi :params atom.params :body be.type)
+        :type (make-type-pin :params atom.params :body be.type)
         :atom (make-atom-ilambdan :params atom.params :body be.expr)))
      :box
      (b* (((unless (check-ispace-list atom.ispaces senv)) (reserr nil))
@@ -1838,7 +1838,7 @@
        (make-senv+bind
         :senv (senv-add-var+type bind.var
                                  (make-type-array
-                                  :elem (make-type-pi
+                                  :elem (make-type-pin
                                          :params bind.params
                                          :body ee.type)
                                   :ispace (ispace-shape (shape-dims nil)))
@@ -1868,8 +1868,8 @@
           (fun-type (make-type-fun :in types :out btype))
           (fun-type (ispace-var-list-option-case
                      bind.iparams?
-                     :some (make-type-pi :params bind.iparams?.val
-                                         :body fun-type)
+                     :some (make-type-pin :params bind.iparams?.val
+                                          :body fun-type)
                      :none fun-type))
           (fun-type (type-var-list-option-case
                      bind.tparams?

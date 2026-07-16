@@ -434,7 +434,7 @@
        and sum types (quantified over ispace parameters).")
      (xdoc::p
       "The concrete syntax requires the parameter lists of
-       @(':forall'), @(':pi'), and @(':sigma') to be non-empty;
+       @(':forall'), @(':pin'), and @(':sigma') to be non-empty;
        this is not captured in this fixtype."))
     (:var ((var type-var)))
     (:base ((type base-type)))
@@ -446,8 +446,8 @@
            (out type)))
     (:forall ((params type-var-list)
               (body type)))
-    (:pi ((params ispace-var-list)
-          (body type)))
+    (:pin ((params ispace-var-list)
+           (body type)))
     (:sigma ((params ispace-var-list)
              (body type)))
     :pred typep)

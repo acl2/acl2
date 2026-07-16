@@ -305,7 +305,7 @@
        (body (type-fix body)))
     (if (endp (cdr params))
         body
-      (make-type-pi :params (cdr params) :body body))))
+      (make-type-pin :params (cdr params) :body body))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -366,13 +366,13 @@
               :denv (type-denv-restrict (type-free-ispace-vars type)
                                         (type-free-type-vars type)
                                         denv))
-     :pi (b* (((unless (consp type.params)) (reserr nil)))
-           (make-type-value-pi
-            :param (car type.params)
-            :body (pi-curried-body type.params type.body)
-            :denv (type-denv-restrict (type-free-ispace-vars type)
-                                      (type-free-type-vars type)
-                                      denv)))
+     :pin (b* (((unless (consp type.params)) (reserr nil)))
+            (make-type-value-pi
+             :param (car type.params)
+             :body (pi-curried-body type.params type.body)
+             :denv (type-denv-restrict (type-free-ispace-vars type)
+                                       (type-free-type-vars type)
+                                       denv)))
      :sigma (make-type-value-sigma
              :params type.params
              :body type.body
@@ -1648,8 +1648,8 @@
                   ((ok &) (type-option-case
                            bind.type?
                            :some (eval-type
-                                  (make-type-pi :params bind.params
-                                                :body bind.type?.val)
+                                  (make-type-pin :params bind.params
+                                                 :body bind.type?.val)
                                   (expr-denv->tenv denv))
                            :none nil)))
                (expr-denv-add-expr bind.var val denv))
@@ -1671,8 +1671,8 @@
                                :atoms (list (make-atom-ilambdan
                                              :params bind.iparams?.val
                                              :body lambda-expr)))
-                              (make-type-pi :params bind.iparams?.val
-                                            :body lambda-type))
+                              (make-type-pin :params bind.iparams?.val
+                                             :body lambda-type))
                     :none (mv lambda-expr lambda-type)))
                   ((mv cfun-expr cfun-type)
                    (type-var-list-option-case

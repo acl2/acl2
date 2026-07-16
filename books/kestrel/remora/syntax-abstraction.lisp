@@ -1351,13 +1351,13 @@
   ;;           ws type
   (define abs-pi-type ((tree abnf::treep))
     :returns (ty type-resultp)
-    :short "Abstract a @('pi-type') to a @(tsee type) @(':pi')."
+    :short "Abstract a @('pi-type') to a @(tsee type) @(':pin')."
     (b* (((okf (abnf::tree-list-tuple8 sub))
           (abnf::check-tree-nonleaf-8 tree "pi-type"))
          ((okf params) (abs-*-ws-ispace-var sub.4th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf body) (abs-type body-tree)))
-      (make-type-pi :params params :body body))
+      (make-type-pin :params params :body body))
     :measure (abnf::tree-count tree))
 
   ;; sigma-type = ( "Sigma" / %x03A3 ) ws "(" *( ws ispace-var ) ws ")"

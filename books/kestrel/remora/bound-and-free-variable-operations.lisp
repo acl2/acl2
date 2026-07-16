@@ -195,7 +195,7 @@
   :override
   ((dim :var (set::insert (ispace-var-dim dim.name) nil))
    (shape :var (set::insert (ispace-var-shape shape.name) nil))
-   (type :pi
+   (type :pin
          (set::difference (type-free-ispace-vars type.body)
                           (set::mergesort type.params)))
    (type :sigma
@@ -377,7 +377,7 @@
   :override
   ((dim :var (set::insert (ispace-var-dim dim.name) nil))
    (shape :var (set::insert (ispace-var-shape shape.name) nil))
-   (type :pi
+   (type :pin
          (set::union (set::mergesort type.params)
                      (type-all-ispace-vars type.body)))
    (type :sigma

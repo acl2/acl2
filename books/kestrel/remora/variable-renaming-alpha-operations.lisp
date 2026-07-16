@@ -426,13 +426,13 @@
                    (shape-var shape.name))))
    (shape :dims (shape-dims (dim-list-rename-dim-vars shape.dims dim-renam)))
    (ispace :dim (ispace-dim (dim-rename-dim-vars ispace.dim dim-renam)))
-   (type :pi
+   (type :pin
          (b* (((mv fresh-params dim-renam shape-renam)
                (dim/shape-rename-alpha-bound type.params
                                              dim-renam
                                              shape-renam
                                              (type-free-ispace-vars type.body))))
-           (make-type-pi
+           (make-type-pin
             :params fresh-params
             :body (type-rename-ispace-vars-alpha-aux type.body
                                                      dim-renam

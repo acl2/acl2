@@ -373,24 +373,24 @@
                                                            maps.4th)))
                           (type-equivp body1 body2))
                 :otherwise nil))
-     :pi (b* ((type2 (normalize-scalar-type type2)))
-           (type-case
-            type2
-            :pi (b* ((used (set::union (type-all-ispace-vars type1)
-                                       (type-all-ispace-vars type2)))
-                     (maps (fresh-ispace-var-renaming type1.params
-                                                      type2.params
-                                                      used))
-                     ((when (reserrp maps)) nil)
-                     ((string-string-map-quadruple maps) maps)
-                     (body1 (type-rename-ispace-vars type1.body
-                                                     maps.1st
-                                                     maps.2nd))
-                     (body2 (type-rename-ispace-vars type2.body
-                                                     maps.3rd
-                                                     maps.4th)))
-                  (type-equivp body1 body2))
-            :otherwise nil))
+     :pin (b* ((type2 (normalize-scalar-type type2)))
+            (type-case
+             type2
+             :pin (b* ((used (set::union (type-all-ispace-vars type1)
+                                         (type-all-ispace-vars type2)))
+                       (maps (fresh-ispace-var-renaming type1.params
+                                                        type2.params
+                                                        used))
+                       ((when (reserrp maps)) nil)
+                       ((string-string-map-quadruple maps) maps)
+                       (body1 (type-rename-ispace-vars type1.body
+                                                       maps.1st
+                                                       maps.2nd))
+                       (body2 (type-rename-ispace-vars type2.body
+                                                       maps.3rd
+                                                       maps.4th)))
+                    (type-equivp body1 body2))
+             :otherwise nil))
      :sigma (b* ((type2 (normalize-scalar-type type2)))
               (type-case
                type2

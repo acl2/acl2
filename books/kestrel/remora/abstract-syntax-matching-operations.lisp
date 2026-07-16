@@ -132,14 +132,14 @@
      if there are no other variables,
      or otherwise the product type over the remaining variables.
      A product type with no variables fails to match."))
-  (b* (((unless (type-case type :pi)) (reserr nil))
-       (params (type-pi->params type))
-       (body (type-pi->body type))
+  (b* (((unless (type-case type :pin)) (reserr nil))
+       (params (type-pin->params type))
+       (body (type-pin->body type))
        ((unless (consp params)) (reserr nil)))
     (make-ispacevar+type
      :var (car params)
      :type (if (consp (cdr params))
-               (make-type-pi :params (cdr params) :body body)
+               (make-type-pin :params (cdr params) :body body)
              body))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -225,7 +225,7 @@
   :default t
   :combine and
   :override
-  ((type :pi
+  ((type :pin
          (b* (((mv dim-subst shape-subst)
                (dim/shape-subst-remove-bound (set::mergesort type.params)
                                              dim-subst
@@ -622,11 +622,11 @@
                    (shape-var shape.name))))
    (shape :dims (shape-dims (dim-list-subst-dim-vars shape.dims dim-subst)))
    (ispace :dim (ispace-dim (dim-subst-dim-vars ispace.dim dim-subst)))
-   (type :pi (b* (((mv dim-subst shape-subst)
+   (type :pin (b* (((mv dim-subst shape-subst)
                    (dim/shape-subst-remove-bound (set::mergesort type.params)
                                                  dim-subst
                                                  shape-subst)))
-               (make-type-pi
+               (make-type-pin
                 :params type.params
                 :body (type-subst-ispace-vars type.body
                                               dim-subst

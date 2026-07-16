@@ -147,7 +147,7 @@
      :forall (make-type-forall
               :params tval.params
               :body (type-subst-type-denv tval.body tval.denv))
-     :pi (make-type-pi
+     :pi (make-type-pin
           :params (list tval.param)
           :body (type-subst-type-denv tval.body tval.denv))
      :sigma (make-type-sigma

@@ -884,11 +884,11 @@
                (pdoc-concat (pdoc-paren (type-var-list-to-pdoc ty.params))
                             (pdoc-concat (pdoc-line)
                                          (type-to-pdoc ty.body))))
-      :pi (pdoc-prefix-form
-           "Pi"
-           (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc ty.params))
-                        (pdoc-concat (pdoc-line)
-                                     (type-to-pdoc ty.body))))
+      :pin (pdoc-prefix-form
+            "Pi"
+            (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc ty.params))
+                         (pdoc-concat (pdoc-line)
+                                      (type-to-pdoc ty.body))))
       :sigma (pdoc-prefix-form
               "Sigma"
               (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc ty.params))

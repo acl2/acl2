@@ -253,8 +253,8 @@
                     (lambda-type?
                      (type-option-case
                       type?
-                      :some (make-type-pi :params bind.params
-                                          :body type?.val)
+                      :some (make-type-pin :params bind.params
+                                           :body type?.val)
                       :none nil))
                     (lambda-expr
                      (make-expr-array
@@ -299,8 +299,8 @@
                             (ilambda-lambda-type
                              (ispace-var-list-option-case
                               bind.iparams?
-                              :some (make-type-pi :params bind.iparams?.val
-                                                  :body lambda-type)
+                              :some (make-type-pin :params bind.iparams?.val
+                                                   :body lambda-type)
                               :none lambda-type)))
                          (type-var-list-option-case
                           bind.tparams?
