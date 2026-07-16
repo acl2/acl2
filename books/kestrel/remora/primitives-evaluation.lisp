@@ -1186,7 +1186,13 @@
   :short "Evaluation of boolean negation."
   (b* (((ok b1) (check-expr-value-bool val1))
        (bval (not b1)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-not
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1196,7 +1202,13 @@
   (b* (((ok b1) (check-expr-value-bool val1))
        ((ok b2) (check-expr-value-bool val2))
        (bval (and b1 b2)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-and
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1206,7 +1218,13 @@
   (b* (((ok b1) (check-expr-value-bool val1))
        ((ok b2) (check-expr-value-bool val2))
        (bval (or b1 b2)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-or
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1216,7 +1234,13 @@
   (b* (((ok b1) (check-expr-value-bool val1))
        ((ok b2) (check-expr-value-bool val2))
        (bval (iff b1 b2)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-eq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1226,7 +1250,13 @@
   (b* (((ok b1) (check-expr-value-bool val1))
        ((ok b2) (check-expr-value-bool val2))
        (bval (not (iff b1 b2))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-neq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1235,7 +1265,13 @@
   :short "Evaluation of boolean conversion to integer."
   (b* (((ok b1) (check-expr-value-bool val1))
        (ival (int-value (if b1 1 0))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-to-int
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1244,7 +1280,13 @@
   :short "Evaluation of boolean conversion to float."
   (b* (((ok b1) (check-expr-value-bool val1))
        (fval (float-value-ratio (if b1 1 0))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-to-float
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1567,14 +1609,7 @@
                                 prim-float-truncate
                                 prim-float-round
                                 prim-float-ceiling
-                                prim-float-floor
-                                prim-bool-not
-                                prim-bool-and
-                                prim-bool-or
-                                prim-bool-eq
-                                prim-bool-neq
-                                prim-bool-to-int
-                                prim-bool-to-float)))))
+                                prim-float-floor)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
