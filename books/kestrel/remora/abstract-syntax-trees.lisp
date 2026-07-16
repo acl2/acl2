@@ -438,10 +438,9 @@
        which binds exactly one parameter,
        while the @(':pin') summand is sugar for
        a nesting of unary product types.
-       Currently the CST-to-AST mapping turns
-       all product types into @(':pin');
-       we plan to redirect it to turn
-       the ones with one parameter into @(':pi'),
+       The CST-to-AST mapping turns
+       the product types with one parameter into @(':pi'),
+       and those with two or more parameters into @(':pin'),
        similarly to ispace applications (see @(tsee expr)).
        The @(':forall') and @(':sigma') summands
        will be similarly given unary forms.")
