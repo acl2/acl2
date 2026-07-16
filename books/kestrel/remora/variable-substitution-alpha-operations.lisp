@@ -528,6 +528,18 @@
                    (shape-var shape.name))))
    (shape :dims (shape-dims (dim-list-subst-dim-vars shape.dims dim-subst)))
    (ispace :dim (ispace-dim (dim-subst-dim-vars ispace.dim dim-subst)))
+   (type :pi
+         (b* (((mv fresh-params dim-subst shape-subst)
+               (dim/shape-subst-alpha-bound (list type.param)
+                                            dim-subst
+                                            shape-subst
+                                            (type-free-ispace-vars type.body))))
+           (make-type-pi
+            :param (car fresh-params)
+            :body (type-subst-ispace-vars-alpha-aux type.body
+                                                    dim-subst
+                                                    shape-subst
+                                                    avoid))))
    (type :pin
          (b* (((mv fresh-params dim-subst shape-subst)
                (dim/shape-subst-alpha-bound type.params

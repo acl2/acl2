@@ -822,6 +822,52 @@
            set::difference
            set::difference-insert-x))
 
+; The singleton version of the previous theorem, for the unary product types,
+; obtained by instantiating it with the singleton set of the bound variable
+; and by bridging the set difference to a set deletion.
+
+(local
+ (defruled difference-of-insert-nil
+   (equal (set::difference vars (set::insert var nil))
+          (set::delete var vars))
+   :enable (set::double-containment set::pick-a-point-subset-strategy)))
+
+(defruled ispace-var-set-rename-ispace-vars-of-delete
+  (implies
+   (and (ispace-var-setp vars)
+        (ispace-varp var)
+        (renaming-no-capture-p
+         (mv-nth 0 (dim/shape-rename-remove-bound (set::insert var nil)
+                                                  dim-renam
+                                                  shape-renam))
+         (mv-nth 2 (dim/shape-rename-remove-bound (set::insert var nil)
+                                                  dim-renam
+                                                  shape-renam)))
+        (renaming-no-capture-p
+         (mv-nth 1 (dim/shape-rename-remove-bound (set::insert var nil)
+                                                  dim-renam
+                                                  shape-renam))
+         (mv-nth 3 (dim/shape-rename-remove-bound (set::insert var nil)
+                                                  dim-renam
+                                                  shape-renam))))
+   (equal
+    (set::delete
+     var
+     (ispace-var-set-rename-ispace-vars
+      vars
+      (mv-nth 2 (dim/shape-rename-remove-bound (set::insert var nil)
+                                               dim-renam
+                                               shape-renam))
+      (mv-nth 3 (dim/shape-rename-remove-bound (set::insert var nil)
+                                               dim-renam
+                                               shape-renam))))
+    (ispace-var-set-rename-ispace-vars (set::delete var vars)
+                                       dim-renam
+                                       shape-renam)))
+  :use ((:instance ispace-var-set-rename-ispace-vars-of-difference
+                   (bound (set::insert var nil))))
+  :enable difference-of-insert-nil)
+
 ; The free ispace variables of a renamed type are the renamings of the free
 ; ispace variables of the type, provided the renaming captures no variables.
 
@@ -853,6 +899,7 @@
                               type-rename-ispace-vars-no-capture-p
                               type-list-rename-ispace-vars-no-capture-p
                               ispace-var-set-rename-ispace-vars-of-difference
+                              ispace-var-set-rename-ispace-vars-of-delete
                               ispace-var-set-rename-ispace-vars))))
 
 ; The free type variables of a type are untouched by an ispace renaming.
