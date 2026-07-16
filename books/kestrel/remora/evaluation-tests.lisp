@@ -75,3 +75,12 @@
 ; the value is a closure over the remaining parameter.
 (test-eval-top-expr
  "(i-app (i-fn ($d $e) (fn ((x (A Int (dims $d $e)))) x)) 3)")
+
+; Partial instantiation of an empty frame of a two-parameter product type:
+; the value is an empty vector over the peeled product type value.
+(test-eval-top-expr
+ "(i-app (frame [0] (Pi ($d $e) (-> ((A Int (dims $d $e))) Int))) 3)")
+
+; Completion of that instantiation, as a chain.
+(test-eval-top-expr
+ "(i-app (i-app (frame [0] (Pi ($d $e) (-> ((A Int (dims $d $e))) Int))) 3) 4)")

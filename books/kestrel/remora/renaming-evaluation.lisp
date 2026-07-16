@@ -333,11 +333,11 @@
                                                   dim-renam
                                                   shape-renam))
      :pi (b* (((mv & & body-dim-renam body-shape-renam)
-               (dim/shape-rename-remove-bound (set::mergesort tval.params)
+               (dim/shape-rename-remove-bound (set::insert tval.param nil)
                                               dim-renam
                                               shape-renam)))
            (make-type-value-pi
-            :params tval.params
+            :param tval.param
             :body (type-rename-ispace-vars tval.body
                                            body-dim-renam
                                            body-shape-renam)
@@ -574,6 +574,34 @@
                    (mv-nth 1 (dim/shape-names-of-ispace-vars vars1))
                    (mv-nth 1 (dim/shape-names-of-ispace-vars vars2)))))
   :enable (set::double-containment set::pick-a-point-subset-strategy))
+
+(defrule dim-names-of-ispace-vars-of-insert
+  (implies (and (ispace-varp var)
+                (ispace-var-setp vars))
+           (equal (mv-nth 0 (dim/shape-names-of-ispace-vars
+                             (set::insert var vars)))
+                  (if (ispace-var-case var :dim)
+                      (set::insert (ispace-var-dim->name var)
+                                   (mv-nth 0 (dim/shape-names-of-ispace-vars
+                                              vars)))
+                    (mv-nth 0 (dim/shape-names-of-ispace-vars vars)))))
+  :enable (set::double-containment
+           set::pick-a-point-subset-strategy
+           equal-of-ispace-var-dim))
+
+(defrule shape-names-of-ispace-vars-of-insert
+  (implies (and (ispace-varp var)
+                (ispace-var-setp vars))
+           (equal (mv-nth 1 (dim/shape-names-of-ispace-vars
+                             (set::insert var vars)))
+                  (if (ispace-var-case var :shape)
+                      (set::insert (ispace-var-shape->name var)
+                                   (mv-nth 1 (dim/shape-names-of-ispace-vars
+                                              vars)))
+                    (mv-nth 1 (dim/shape-names-of-ispace-vars vars)))))
+  :enable (set::double-containment
+           set::pick-a-point-subset-strategy
+           equal-of-ispace-var-shape))
 
 (defret-mutual shape-names-of-free-ispace-vars-of-dims
   (defret shape-names-of-dim-free-ispace-vars
@@ -943,6 +971,82 @@
 (local (acl2::defopeners type-rename-ispace-vars))
 (local (acl2::defopeners eval-type))
 
+; Commutation of ispace-variable renaming with the currying of product
+; types performed by evaluation (see pi-curried-body): renaming the curried
+; body under the maps reduced by the first parameter equals currying the
+; body renamed under the maps reduced by all the parameters.  The crux is
+; that removing the first parameter and then the remaining ones from the
+; renaming maps equals removing all the parameters at once.
+
+(local
+ (defruled mergesort-of-cons
+   (equal (set::mergesort (cons a l))
+          (set::insert a (set::mergesort l)))
+   :enable set::mergesort))
+
+(local
+ (defruled mergesort-when-singleton
+   (implies (and (consp params)
+                 (not (consp (cdr params))))
+            (equal (set::mergesort params)
+                   (set::insert (car params) nil)))
+   :expand ((set::mergesort params)
+            (set::mergesort (cdr params)))))
+
+(local
+ (defruled delete*-of-delete*-fuse
+   (equal (omap::delete* keys1 (omap::delete* keys2 map))
+          (omap::delete* (set::union keys1 keys2) map))
+   :expand ((omap::ext-equal (omap::delete* keys1 (omap::delete* keys2 map))
+                             (omap::delete* (set::union keys1 keys2) map))
+            (omap::ext-equal (omap::delete* (set::union keys1 keys2) map)
+                             (omap::delete* keys1 (omap::delete* keys2 map))))
+   :use ((:instance omap::ext-equal-becomes-equal
+                    (omap::x (omap::delete* keys1 (omap::delete* keys2 map)))
+                    (omap::y (omap::delete* (set::union keys1 keys2) map))))))
+
+(local
+ (defruled dim/shape-rename-remove-bound-of-insert-then-rest
+   (implies (and (ispace-varp var)
+                 (ispace-var-listp rest))
+            (b* (((mv & & dim1 shape1)
+                  (dim/shape-rename-remove-bound (set::insert var nil)
+                                                 dim-renam shape-renam))
+                 ((mv & & dim2 shape2)
+                  (dim/shape-rename-remove-bound (set::mergesort rest)
+                                                 dim1 shape1))
+                 ((mv & & dimc shapec)
+                  (dim/shape-rename-remove-bound (set::mergesort
+                                                  (cons var rest))
+                                                 dim-renam shape-renam)))
+              (and (equal dim2 dimc)
+                   (equal shape2 shapec))))
+   :enable (dim/shape-rename-remove-bound
+            delete*-of-delete*-fuse
+            mergesort-of-cons)))
+
+(defrule type-rename-ispace-vars-of-pi-curried-body
+  (implies (and (ispace-var-listp params)
+                (consp params))
+           (b* (((mv & & dim1 shape1)
+                 (dim/shape-rename-remove-bound (set::insert (car params) nil)
+                                                dim-renam shape-renam))
+                ((mv & & dim-all shape-all)
+                 (dim/shape-rename-remove-bound (set::mergesort params)
+                                                dim-renam shape-renam)))
+             (equal (type-rename-ispace-vars (pi-curried-body params body)
+                                             dim1 shape1)
+                    (pi-curried-body params
+                                     (type-rename-ispace-vars body
+                                                              dim-all
+                                                              shape-all)))))
+  :enable (pi-curried-body
+           dim/shape-rename-remove-bound-of-insert-then-rest
+           mergesort-when-singleton)
+  :use ((:instance dim/shape-rename-remove-bound-of-insert-then-rest
+                   (var (car params))
+                   (rest (cdr params)))))
+
 ; Phase 1: evaluating a renamed type errs exactly when evaluating the
 ; original type does.  This is proved first, and separately from the value
 ; equality below, so that during the induction for the latter the error
@@ -1191,7 +1295,7 @@
                                                   atom-renam
                                                   array-renam)))
      :pi (make-type-value-pi
-          :params tval.params
+          :param tval.param
           :body (type-rename-type-vars tval.body atom-renam array-renam)
           :denv (type-denv-rename-type-vars tval.denv atom-renam array-renam))
      :sigma (make-type-value-sigma
@@ -1592,6 +1696,21 @@
 ; as for renamed ispace variables.
 
 (local (acl2::defopeners type-rename-type-vars))
+
+; The type-variable analogue of the commutation of renaming with the
+; currying of product types: since product types bind no type variables,
+; the renaming maps are not reduced, and the commutation is direct.
+
+(defrule type-rename-type-vars-of-pi-curried-body
+  (implies (and (ispace-var-listp params)
+                (consp params))
+           (equal (type-rename-type-vars (pi-curried-body params body)
+                                         atom-renam array-renam)
+                  (pi-curried-body params
+                                   (type-rename-type-vars body
+                                                          atom-renam
+                                                          array-renam))))
+  :enable pi-curried-body)
 
 (defret-mutual reserrp-of-eval-of-rename-type-vars
   (defret reserrp-of-eval-type-of-type-rename-type-vars

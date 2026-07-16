@@ -282,6 +282,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define pi-curried-body ((params ispace-var-listp) (body typep))
+  :guard (consp params)
+  :returns (new-body typep)
+  :short "Body of the unary product type value
+          for a product type with the given parameters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Product type values bind exactly one parameter
+     (see @(tsee type-value)),
+     consistently with the curried view of ispace applications:
+     a product type with two or more parameters
+     evaluates to the unary product type value
+     that binds the first parameter
+     and whose body is the product type over the remaining parameters.
+     This function returns the body of the unary product type value:
+     the body of the given product type
+     if there are no parameters other than the first one,
+     or otherwise the product type over the remaining parameters."))
+  (b* ((params (ispace-var-list-fix params))
+       (body (type-fix body)))
+    (if (endp (cdr params))
+        body
+      (make-type-pi :params (cdr params) :body body))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines eval-types
   :short "Evaluate types and lists of types."
 
@@ -339,12 +366,13 @@
               :denv (type-denv-restrict (type-free-ispace-vars type)
                                         (type-free-type-vars type)
                                         denv))
-     :pi (make-type-value-pi
-          :params type.params
-          :body type.body
-          :denv (type-denv-restrict (type-free-ispace-vars type)
-                                    (type-free-type-vars type)
-                                    denv))
+     :pi (b* (((unless (consp type.params)) (reserr nil)))
+           (make-type-value-pi
+            :param (car type.params)
+            :body (pi-curried-body type.params type.body)
+            :denv (type-denv-restrict (type-free-ispace-vars type)
+                                      (type-free-type-vars type)
+                                      denv)))
      :sigma (make-type-value-sigma
              :params type.params
              :body type.body
@@ -1870,15 +1898,6 @@
        it is applied to the ispace argument value
        via @(tsee eval-primop-ifun).")
      (xdoc::p
-      "The case split for product type values,
-       in the empty vector case described below,
-       between instantiating the only parameter
-       and peeling off the first of two or more parameters,
-       is due solely to the fact that product types are still n-ary;
-       it will disappear once they are also made unary,
-       analogously to how the case split for ispace lambda values
-       disappeared when their values were made unary.")
-     (xdoc::p
       "A non-empty vector function value
        is applied via a separate ACL2 function that goes through the list.
        We check that the resulting list of expression values is not empty
@@ -1890,13 +1909,13 @@
       "An empty vector function value has
        no ispace lambda abstractions to apply,
        but it carries the type of its would-be elements,
-       which must be a product type value;
-       the ispace argument value must match its first parameter in sort.
+       which must be a product type value,
+       which binds exactly one parameter;
+       the ispace argument value must match that parameter in sort.
        We extend the dynamic environment
        contained in the product type value
-       to associate the argument with that parameter.
-       If the first parameter is the only one,
-       we evaluate the body of the product type value
+       to associate the argument with the parameter,
+       and we evaluate the body of the product type value
        in the extended environment,
        which yields the type value of the would-be results
        of the element-wise application;
@@ -1909,12 +1928,12 @@
        and whose element dimensions are
        the element dimensions of the function value
        followed by the dimensions of the evaluated body of the product type.
-       If there are further parameters,
-       the instantiation of the product type value is partial:
-       we return the empty vector value, with the same dimensions,
-       whose element type value is the product type value
-       over the remaining parameters,
-       with the extended environment.
+       If the product type has further parameters,
+       the body is itself a product type (see @(tsee pi-curried-body)),
+       whose evaluation yields
+       the product type value over the remaining parameters:
+       that is an atom type value, contributing no dimensions,
+       so partial instantiation needs no special treatment here.
        The implicit leading 0 dimension of the function value
        is also the implicit leading 0 dimension of the result expression value."))
     (b* (((when (zp limit)) (reserr :limit)))
@@ -1939,20 +1958,12 @@
        (type-value-case
         funval.elem
         :pi
-        (b* (((unless (consp funval.elem.params)) (reserr nil))
-             ((unless (ispace-values-match-ispace-vars-p
-                       (list ival) (list (car funval.elem.params))))
+        (b* (((unless (ispace-values-match-ispace-vars-p
+                       (list ival) (list funval.elem.param)))
               (reserr nil))
-             (tenv (type-denv-add-ispace (car funval.elem.params)
+             (tenv (type-denv-add-ispace funval.elem.param
                                          ival
                                          funval.elem.denv))
-             ((when (consp (cdr funval.elem.params)))
-              (make-expr-value-vector-empty
-               :dims funval.dims
-               :elem (make-type-value-pi
-                      :params (cdr funval.elem.params)
-                      :body funval.elem.body
-                      :denv tenv)))
              ((ok tval) (eval-type funval.elem.body tenv))
              ((mv elem body-dims)
               (type-value-case
