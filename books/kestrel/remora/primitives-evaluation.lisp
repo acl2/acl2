@@ -1765,11 +1765,16 @@
      we defensively check that it has the expected dimensions.")
    (xdoc::p
     "We reverse the order of the elements of the cell,
-     i.e. we reverse the array along its leading axis.
-     [impl] instead reverses the flattened list
+     i.e. we reverse the array along its leading axis,
+     as prescribed by the type of the operation.
+     The interpreter in [impl] instead reverses the flattened list
      of all the atoms of the array,
      which differs from our semantics
-     when the shape @('s') is not empty.")
+     when the shape @('s') is not empty.
+     This is a bug in [impl], which has been reported:
+     the interpreter ignores the shape instantiation
+     and reverses the flat atom list,
+     which is only correct when the shape is empty.")
    (xdoc::p
     "Since @('d') may be 0, the argument cell may be an empty array,
      which is not a @(':vector') value and has no elements.
