@@ -366,6 +366,7 @@
               :denv (type-denv-restrict (type-free-ispace-vars type)
                                         (type-free-type-vars type)
                                         denv))
+     :pi (reserr :todo)
      :pin (b* (((unless (consp type.params)) (reserr nil)))
             (make-type-value-pi
              :param (car type.params)

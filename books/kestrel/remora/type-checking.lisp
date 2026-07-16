@@ -277,6 +277,7 @@
      :fun (and (check-type-list type.in senv)
                (check-type type.out senv))
      :forall (check-type type.body (senv-add-type-vars type.params senv))
+     :pi nil ; TODO
      :pin (check-type type.body (senv-add-ispace-vars type.params senv))
      :sigma (check-type type.body (senv-add-ispace-vars type.params senv)))
     :measure (type-count type))

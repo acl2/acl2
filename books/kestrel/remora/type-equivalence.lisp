@@ -373,6 +373,7 @@
                                                            maps.4th)))
                           (type-equivp body1 body2))
                 :otherwise nil))
+     :pi nil ; TODO
      :pin (b* ((type2 (normalize-scalar-type type2)))
             (type-case
              type2
