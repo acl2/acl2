@@ -182,3 +182,21 @@
 ;         (fn ((u [Int $d]))
 ;           (i-fn ($d) (@length (Int) ($d []) u)))))
 ;   (i-app ((i-app f 5) [1 2 3 4 5]) 3))")
+
+; Full instantiation of a two-parameter type lambda abstraction,
+; as an n-ary type application.
+(test-check-top-expr
+ "(t-app (t-fn (&t &u) (i-fn ($d) (fn ((x (A &t $d))) x))) Int Int)")
+
+; Partial instantiation, providing just the first type:
+; the type is the (lifted) universal type over the remaining variable.
+(test-check-top-expr
+ "(t-app (t-fn (&t &u) (i-fn ($d) (fn ((x (A &t $d))) x))) Int)")
+
+; Completion of a partial instantiation, as a chain.
+(test-check-top-expr
+ "(t-app (t-app (t-fn (&t &u) (i-fn ($d) (fn ((x (A &t $d))) x))) Int) Int)")
+
+; More type arguments than bound variables.
+(test-check-top-expr-fail
+ "(t-app (t-fn (&t) (i-fn ($d) (fn ((x (A &t $d))) x))) Int Int)")

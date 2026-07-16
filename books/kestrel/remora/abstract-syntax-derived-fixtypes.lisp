@@ -541,6 +541,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod typevar+type
+  :short "Fixtype of pairs consisting of
+          a type variable and a type."
+  ((var type-var)
+   (type type))
+  :pred typevar+type-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult typevar+type-result
+  :short "Fixtype of
+          (i) pairs consisting of a type variable and a type
+          and (ii) errors."
+  :ok typevar+type
+  :pred typevar+type-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod typevarlist+type
   :short "Fixtype of pairs consisting of
           a list of type variables and a type."

@@ -102,14 +102,32 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-forall ((type typep))
-  :returns (vars+type typevarlist+type-resultp)
+  :returns (var+type typevar+type-resultp)
   :short "Check if an atom type is a universal type,
-          returning its type parameter variables and body array type
-          if successful."
-  (if (type-case type :forall)
-      (make-typevarlist+type :vars (type-forall->params type)
-                             :type (type-forall->body type))
-    (reserr nil)))
+          peeling off its first type parameter variable if successful."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Consistently with the curried view of type applications
+     (see @(tsee expr)),
+     an n-ary universal type is treated as
+     the nesting of unary universal types.
+     Accordingly, this matching operation peels off one variable:
+     if the type is a universal type with at least one variable,
+     we return the first variable,
+     along with the body of the universal type
+     if there are no other variables,
+     or otherwise the universal type over the remaining variables.
+     A universal type with no variables fails to match."))
+  (b* (((unless (type-case type :forall)) (reserr nil))
+       (params (type-forall->params type))
+       (body (type-forall->body type))
+       ((unless (consp params)) (reserr nil)))
+    (make-typevar+type
+     :var (car params)
+     :type (if (consp (cdr params))
+               (make-type-forall :params (cdr params) :body body)
+             body))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
