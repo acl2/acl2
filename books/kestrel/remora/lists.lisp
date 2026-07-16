@@ -117,12 +117,13 @@
     :enable nthcdr)
 
   (defrule list-repeatp-of-append
-  (implies (and (list-repeatp x)
+    (equal (list-repeatp (append x y))
+           (and (list-repeatp x)
                 (list-repeatp y)
-                (equal (car x) (car y)))
-           (list-repeatp (append x y)))
-  :induct t
-  :enable list-repeatp)
+                (or (endp x)
+                    (endp y)
+                    (equal (car x) (car y)))))
+    :induct t)
 
   (defruled take-when-list-repeatp
     (implies (and (list-repeatp list)
