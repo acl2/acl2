@@ -802,8 +802,8 @@
                 ((mv used new-args) (uniq-expr-list x.args used r)))
              (mv used (expr-app new-fun new-args)))
 
-      :tapp (b* (((mv used new-fun) (uniq-expr x.fun used r)))
-              (mv used (expr-tapp new-fun (type-list-rename-all-vars x.args r))))
+      :tappn (b* (((mv used new-fun) (uniq-expr x.fun used r)))
+               (mv used (expr-tappn new-fun (type-list-rename-all-vars x.args r))))
 
       :iapp (b* (((var-renamings r-) r)
                  ((mv used new-fun) (uniq-expr x.fun used r)))

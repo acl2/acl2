@@ -193,7 +193,7 @@
                     (fun-targs
                      (type-list-option-case
                       expr.targs
-                      :some (make-expr-tapp
+                      :some (make-expr-tappn
                              :fun fun
                              :args (type-list-desugar expr.targs.val))
                       :none fun))

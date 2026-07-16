@@ -1220,14 +1220,14 @@
                  (b* (((ok args) (expr-list-to-pdoc e.args)))
                    (pdoc-call-form fun args))
                (pdoc-head-only-form fun)))
-      :tapp (b* (((ok fun) (expr-to-pdoc e.fun)))
-              (pdoc-prefix-form
-               "t-app"
-               (pdoc-concat fun
-                            (if (consp e.args)
-                                (pdoc-concat (pdoc-line)
-                                             (type-list-to-pdoc e.args))
-                              (pdoc-empty)))))
+      :tappn (b* (((ok fun) (expr-to-pdoc e.fun)))
+               (pdoc-prefix-form
+                "t-app"
+                (pdoc-concat fun
+                             (if (consp e.args)
+                                 (pdoc-concat (pdoc-line)
+                                              (type-list-to-pdoc e.args))
+                               (pdoc-empty)))))
       :iapp (b* (((ok fun) (expr-to-pdoc e.fun)))
               (pdoc-prefix-form
                "i-app"
