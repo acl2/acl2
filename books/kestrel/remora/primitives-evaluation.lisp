@@ -1361,7 +1361,13 @@
        (s (nat-list-fix s))
        ((unless (equal (dims-of-expr-value val1) (cons d s)))
         (reserr nil)))
-    (expr-value-base (base-value-int (int-value d)))))
+    (expr-value-base (base-value-int (int-value d))))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-length
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1553,7 +1559,6 @@
                               prim-bool-to-float
                               prim-head
                               prim-tail
-                              prim-length
                               dims-of-expr-value-list-of-cdr)
                              (cdr-of-dims-of-expr-value-list))))))
 
