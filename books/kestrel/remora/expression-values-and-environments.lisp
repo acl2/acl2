@@ -1459,7 +1459,8 @@
          (cons "head" (expr-value-primop (primop-value-head)))
          (cons "tail" (expr-value-primop (primop-value-tail)))
          (cons "length" (expr-value-primop (primop-value-length)))
-         (cons "append" (expr-value-primop (primop-value-append))))))
+         (cons "append" (expr-value-primop (primop-value-append)))
+         (cons "reverse" (expr-value-primop (primop-value-reverse))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
