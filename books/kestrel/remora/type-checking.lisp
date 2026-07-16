@@ -1398,6 +1398,7 @@
           ((ok type) (check-app fe.type aes.types)))
        (make-type+expr :type type
                        :expr (make-expr-app :fun fe.expr :args aes.exprs)))
+     :tapp (reserr :todo)
      :tappn
      (b* (((ok (type+expr fe)) (check-expr expr.fun senv))
           ((ok type) (check-tapp fe.type expr.args senv)))

@@ -1232,10 +1232,11 @@
        :app (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                  ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
               (eval-app funval argvals (1- limit)))
+       :tapp (reserr :todo)
        :tappn (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                    ((ok tvals) (eval-type-list expr.args
                                                (expr-denv->tenv denv))))
-               (eval-tapp funval tvals (1- limit)))
+                (eval-tapp funval tvals (1- limit)))
        :iapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                   ((ok ival) (eval-ispace expr.arg
                                           (type-denv->ienv

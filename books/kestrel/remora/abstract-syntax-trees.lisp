@@ -809,7 +809,7 @@
        string literals,
        applications of expressions to expressions
        (called `term applications' in the Remora publications),
-       applications of expressions to types,
+       applications of expressions to types (unary or n-ary),
        applications of expressions to ispaces (unary or n-ary),
        combined applications of expressions to types/ispaces/expressions,
        unboxing expressions,
@@ -821,6 +821,14 @@
        and returns the body expression;
        it is optionally annotated by its type
        (the type of the whole unboxing expression).")
+     (xdoc::p
+      "The @(':tapp') summand is the main, core form of type application,
+       while the @(':tappn') summand is sugar for
+       a left-nested chain of the unary applications to one argument at a time.
+       We plan to redirect the CST-to-AST mapping to turn
+       applications to one argument into @(':tapp'),
+       and applications to two or more arguments into @(':tappn'),
+       similarly to ispace applications.")
      (xdoc::p
       "The @(':iapp') summand is the main, core form of ispace application,
        while the @(':iappn') summand is sugar for
@@ -866,6 +874,8 @@
     (:string ((chars char-lit-list)))
     (:app ((fun expr)
            (args expr-list)))
+    (:tapp ((fun expr)
+            (arg type)))
     (:tappn ((fun expr)
              (args type-list)))
     (:iapp ((fun expr)
