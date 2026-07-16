@@ -1367,46 +1367,37 @@
 
 (define prim-append ((tval type-valuep) (m natp) (n natp) (s nat-listp)
                      (val1 expr-valuep) (val2 expr-valuep))
-  :guard (and (expr-value-wfp val1) (expr-value-wfp val2))
+  :guard (and (expr-value-wfp val1)
+              (expr-value-wfp val2))
   :returns (val expr-value-resultp)
   (b* ((m (lnfix m)) (n (lnfix n)) (s (nat-list-fix s))
        ((unless (equal (dims-of-expr-value val1) (cons m s))) (reserr nil))
        ((unless (equal (dims-of-expr-value val2) (cons n s))) (reserr nil))
-       (elems1 (if (expr-value-case val1 :vector)
-                   (expr-value-vector->elems val1) nil))
-       (elems2 (if (expr-value-case val2 :vector)
-                   (expr-value-vector->elems val2) nil))
+       (elems1 (expr-value-vector-elements val1))
+       (elems2 (expr-value-vector-elements val2))
        (elems (append elems1 elems2)))
     (if (consp elems)
         (expr-value-vector elems)
-      (expr-value-vector-empty s tval))))
+      (expr-value-vector-empty s tval)))
+  :guard-hints
+  (("Goal" :in-theory (enable expr-value-vectorp-to-consp-of-dims)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-append
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (and (expr-value-wfp val1)
+              (expr-value-wfp val2))
+    :hints (("Goal"
+             :in-theory
+             (e/d (dims-of-expr-value-vector-elements-to-repeat
+                   expr-value-vectorp-to-consp-of-dims
+                   car-of-repeat
+                   car/cdr-when-equal-cons)
+                  (car-of-dims-of-expr-value-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule dims-of-expr-value-of-car-of-expr-value-vector->elems
-  (implies (and (expr-value-wfp val) (expr-value-case val :vector))
-           (equal (dims-of-expr-value (car (expr-value-vector->elems val)))
-                  (cdr (dims-of-expr-value val))))
-  :enable (dims-of-expr-value
-           expr-value-wfp
-           expr-value-list-wfp-alt-def
-           check-dims-of-expr-value
-           check-dims-of-expr-value-list-when-expr-value-list-wfp
-           acl2::not-reserrp-when-nat-list-listp))
-
-(defrule expr-value-wfp-of-expr-value-vector-of-append-of-vector->elems
-  (implies (and (expr-value-wfp val1) (expr-value-case val1 :vector)
-                (expr-value-wfp val2) (expr-value-case val2 :vector)
-                (equal (dims-of-expr-value val1) (cons m s))
-                (equal (dims-of-expr-value val2) (cons n s))
-                (consp (append (expr-value-vector->elems val1)
-                               (expr-value-vector->elems val2))))
-           (expr-value-wfp
-            (expr-value-vector (append (expr-value-vector->elems val1)
-                                       (expr-value-vector->elems val2)))))
-  :use ((:instance list-repeatp-of-append
-                   (x (dims-of-expr-value-list (expr-value-vector->elems val1)))
-                   (y (dims-of-expr-value-list (expr-value-vector->elems val2))))))
 
 (define eval-primop-fun ((op primop-valuep) (args expr-value-listp))
   :guard (and (primop-value-funp op)
@@ -1563,7 +1554,6 @@
                               prim-head
                               prim-tail
                               prim-length
-                              prim-append
                               dims-of-expr-value-list-of-cdr)
                              (cdr-of-dims-of-expr-value-list))))))
 
