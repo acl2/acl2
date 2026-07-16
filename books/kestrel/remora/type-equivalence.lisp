@@ -290,7 +290,13 @@
        which we then compare for equivalence.
        The fresh variables must not be in any of the two types:
        so we set the set of variables to avoid to
-       all the (free and bound) variables in the two types.")
+       all the (free and bound) variables in the two types.
+       Two unary product types are handled the same way,
+       on the singleton lists of their bound variables.
+       A unary product type is never equivalent to an n-ary one,
+       for now:
+       relating the sugar and core forms is left for
+       a planned rework of type equivalence.")
      (xdoc::p
       "Since we are renaming (ispace and type) variables to fresh ones,
        we do not call the predicates to check for variable capture.
@@ -373,7 +379,24 @@
                                                            maps.4th)))
                           (type-equivp body1 body2))
                 :otherwise nil))
-     :pi nil ; TODO
+     :pi (b* ((type2 (normalize-scalar-type type2)))
+           (type-case
+            type2
+            :pi (b* ((used (set::union (type-all-ispace-vars type1)
+                                       (type-all-ispace-vars type2)))
+                     (maps (fresh-ispace-var-renaming (list type1.param)
+                                                      (list type2.param)
+                                                      used))
+                     ((when (reserrp maps)) nil)
+                     ((string-string-map-quadruple maps) maps)
+                     (body1 (type-rename-ispace-vars type1.body
+                                                     maps.1st
+                                                     maps.2nd))
+                     (body2 (type-rename-ispace-vars type2.body
+                                                     maps.3rd
+                                                     maps.4th)))
+                  (type-equivp body1 body2))
+            :otherwise nil))
      :pin (b* ((type2 (normalize-scalar-type type2)))
             (type-case
              type2
