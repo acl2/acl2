@@ -251,22 +251,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define senv-add-ispace-var ((var ispace-varp) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add an ispace variable to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variable is added with an absent associated ispace,
+     because it does not stand for any specific ispace;
+     this is the case for variables bound by abstractions.
+     A variable already present is overwritten,
+     which realizes the intended shadowing."))
+  (change-senv senv
+               :ispace-vars (omap::update (ispace-var-fix var)
+                                          nil
+                                          (senv->ispace-vars senv))))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define senv-add-ispace-vars ((vars ispace-var-listp) (senv senvp))
   :returns (new-senv senvp)
   :short "Add zero or more ispace variables to the static environment."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The variables are added with an absent associated ispace,
-     because they do not stand for any specific ispace;
-     this is the case for variables bound by abstractions.
-     A variable already present is overwritten,
-     which realizes the intended shadowing."))
+    "See @(tsee senv-add-ispace-var),
+     which this function repeats for each variable."))
   (b* (((when (endp vars)) (senv-fix senv))
-       (new-ispace-vars (omap::update (ispace-var-fix (car vars))
-                                      nil
-                                      (senv->ispace-vars senv)))
-       (senv (change-senv senv :ispace-vars new-ispace-vars)))
+       (senv (senv-add-ispace-var (car vars) senv)))
     (senv-add-ispace-vars (cdr vars) senv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
