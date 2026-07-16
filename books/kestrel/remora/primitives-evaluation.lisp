@@ -1788,7 +1788,14 @@
        (relems (rev elems)))
     (if (consp relems)
         (expr-value-vector relems)
-      (expr-value-vector-empty s tval))))
+      (expr-value-vector-empty s tval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-reverse
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (expr-value-wfp val1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
