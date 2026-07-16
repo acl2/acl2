@@ -1574,7 +1574,15 @@
        A unary ispace abstraction is checked in the same way,
        except that there is no duplicate check
        (there is just one bound variable),
-       and the product type binds just that variable.")
+       and its type is the unary product type over that variable.
+       Note that, until the CST-to-AST mapping for product types
+       is redirected to produce unary product types,
+       a user-written product type annotation is n-ary,
+       and thus not equivalent to
+       the unary product type computed here
+       (see @(tsee type-equivp));
+       the redirection will remove this discrepancy
+       for one-parameter abstractions.")
      (xdoc::p
       "For a boxing atom,
        the ispaces must be valid (see @(tsee check-ispace-list)),
@@ -1622,7 +1630,7 @@
      (b* ((senv (senv-add-ispace-var atom.param senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
-        :type (make-type-pin :params (list atom.param) :body be.type)
+        :type (make-type-pi :param atom.param :body be.type)
         :atom (make-atom-ilambda :param atom.param :body be.expr)))
      :ilambdan
      (b* (((unless (no-duplicatesp-equal atom.params))

@@ -79,6 +79,11 @@
 (test-check-top-expr-fail
  "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e)))) v)")
 
+; Application of a unary ispace lambda abstraction:
+; its computed type is a unary product type, matched by the application.
+(test-check-top-expr
+ "(i-app (i-fn ($d) (fn ((x (A Int $d))) x)) 3)")
+
 ; The inner variable $d escapes, and the outer variable $d does not interfere.
 (test-check-top-expr-fail
  "(let ((i-fun (f ($d))

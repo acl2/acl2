@@ -120,19 +120,24 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "A unary product type is matched directly:
+     we return its bound variable and its body.")
+   (xdoc::p
     "Consistently with the curried view of ispace applications
      (see @(tsee expr)),
      an n-ary product type is treated as
-     the nesting of unary product types;
-     this will be also explicated in the type ASTs soon.
+     the nesting of unary product types.
      Accordingly, this matching operation peels off one variable:
-     if the type is a product type with at least one variable,
+     if the type is an n-ary product type with at least one variable,
      we return the first variable,
      along with the body of the product type
      if there are no other variables,
      or otherwise the product type over the remaining variables.
-     A product type with no variables fails to match."))
-  (b* (((unless (type-case type :pin)) (reserr nil))
+     An n-ary product type with no variables fails to match."))
+  (b* (((when (type-case type :pi))
+        (make-ispacevar+type :var (type-pi->param type)
+                             :type (type-pi->body type)))
+       ((unless (type-case type :pin)) (reserr nil))
        (params (type-pin->params type))
        (body (type-pin->body type))
        ((unless (consp params)) (reserr nil)))
