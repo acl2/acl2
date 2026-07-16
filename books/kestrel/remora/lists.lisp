@@ -149,7 +149,23 @@
     :use ((:instance take-when-list-repeatp)
           (:instance take-when-list-repeatp (list (nthcdr n list))))
     :enable (nth-when-list-repeatp nfix)
-    :disable list-repeatp))
+    :disable list-repeatp)
+
+  (defruled repeat-of-len-and-car-when-list-repeatp
+    (implies (and (list-repeatp list)
+                  (consp list)
+                  (equal len (len list)))
+             (equal (repeat len (car list))
+                    (true-list-fix list)))
+    :use lemma
+    :prep-lemmas
+    ((defruled lemma
+       (implies (and (list-repeatp list)
+                     (consp list))
+                (equal (repeat (len list) (car list))
+                       (true-list-fix list)))
+       :induct t
+       :enable repeat))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
