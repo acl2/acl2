@@ -164,7 +164,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (+ i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-add
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -174,7 +180,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (- i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-sub
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -184,7 +196,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (* i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-mul
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -202,7 +220,13 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (= i2.int 0)) (reserr nil)) ;; ERROR: division by zero
        (ival (int-value (floor i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-div
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -219,7 +243,13 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (< i2.int 0)) (reserr nil)) ;; ERROR: negative exponent
        (ival (int-value (expt i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-expt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -237,7 +267,13 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (= i2.int 0)) (reserr nil)) ;; ERROR: modulo zero
        (ival (int-value (mod i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-mod
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -247,7 +283,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (max i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-max
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -257,7 +299,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (min i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-min
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -267,7 +315,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (logand i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-bit-and
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -277,7 +331,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (logior i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-bit-or
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -287,7 +347,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (logxor i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-bit-xor
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -311,7 +377,13 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (< i2.int 0)) (reserr nil)) ;; ERROR: shift by negative bits
        (ival (int-value (ash i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-shl
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -322,7 +394,13 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (< i2.int 0)) (reserr nil)) ;; ERROR: shift by negative bits
        (ival (int-value (ash i1.int (- i2.int)))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-shr
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -331,7 +409,13 @@
   :short "Evaluation of integer bitwise negation."
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        (ival (int-value (lognot i1.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-bit-not
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -357,7 +441,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((when (< i1.int 0)) (reserr nil)) ;; ERROR: negative input
        (ival (int-value (logcount i1.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-popc
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -367,7 +457,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (= i1.int i2.int)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-eq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -377,7 +473,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (not (= i1.int i2.int))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-neq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -387,7 +489,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (< i1.int i2.int)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-lt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -397,7 +505,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (> i1.int i2.int)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-gt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -407,7 +521,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (<= i1.int i2.int)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-leq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -417,7 +537,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (>= i1.int i2.int)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-geq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -426,7 +552,13 @@
   :short "Evaluation of integer conversion to float."
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        (fval (float-value-ratio i1.int)))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-to-float
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -435,7 +567,13 @@
   :short "Evaluation of integer conversion to boolean."
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        (bval (not (= i1.int 0))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-to-bool
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1674,32 +1812,7 @@
   (defret expr-value-wfp-of-eval-primop-fun
     (implies (not (reserrp val))
              (expr-value-wfp val))
-    :hyp (expr-value-list-wfp args)
-    :hints
-    (("Goal" :in-theory (enable eval-primop-fun
-                                prim-int-add
-                                prim-int-sub
-                                prim-int-mul
-                                prim-int-div
-                                prim-int-expt
-                                prim-int-mod
-                                prim-int-max
-                                prim-int-min
-                                prim-int-bit-and
-                                prim-int-bit-or
-                                prim-int-bit-xor
-                                prim-int-shl
-                                prim-int-shr
-                                prim-int-bit-not
-                                prim-int-popc
-                                prim-int-eq
-                                prim-int-neq
-                                prim-int-lt
-                                prim-int-gt
-                                prim-int-leq
-                                prim-int-geq
-                                prim-int-to-float
-                                prim-int-to-bool)))))
+    :hyp (expr-value-list-wfp args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
