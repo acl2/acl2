@@ -1283,7 +1283,14 @@
         (reserr nil))
        (elems (expr-value-vector->elems val1))
        ((unless (consp elems)) (reserr nil)))
-    (car elems)))
+    (car elems))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-head
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (expr-value-wfp val1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1568,7 +1575,6 @@
                               prim-bool-neq
                               prim-bool-to-int
                               prim-bool-to-float
-                              prim-head
                               dims-of-expr-value-list-of-cdr)
                              (cdr-of-dims-of-expr-value-list))))))
 
