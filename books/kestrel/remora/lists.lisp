@@ -132,8 +132,8 @@
     :enable (list-repeatp rev))
 
   (defrule list-repeatp-of-rev
-    (implies (list-repeatp (rev x))
-             (list-repeatp x))
+    (equal (list-repeatp (rev x))
+           (list-repeatp x))
     :induct t
     :enable (list-repeatp
              rev

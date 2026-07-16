@@ -430,10 +430,6 @@
 
 ; With d = 2 and s = (3), the whole matrix is the cell,
 ; and reversing it reverses the order of its rows.
-; mismatch: the Haskell interpreter reverses the flattened elements,
-; giving [[6 5 4] [3 2 1]]; this is a bug in the interpreter,
-; which ignores the shape instantiation (only correct when s is empty);
-; see https://github.com/remora-lang/remora/issues/31
 (acl2::assert-equal
  (prim-reverse *tv-int* 2 (list 3) *mat23*)
  (expr-value-vector
