@@ -40,6 +40,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled car/cdr-when-equal-cons
+  :short "Derive equalities for @(tsee car) and @(tsee cdr)
+          from an equality to a @(tsee cons).."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This may be useful when the context has
+     a hypothesis that matches this theorem's hypothesis,
+     but ACL2's heuristics judge the term matching @('x')
+     to be simpler than the term matching @('(cons a b)'),
+     and thus @('x') is not replaced by @('(cons a b)'),
+     thus missing opportunities for simplifying
+     @(tsee car) and/or @(tsee cdr) of the term matching @('x').
+     This rule performs that simplification by rewriting."))
+  (implies (equal x (cons a b))
+           (and (equal (car x) a)
+                (equal (cdr x) b))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled car-of-repeat
   :short "Theorem about @(tsee car) applied to @(tsee repeat)."
   (equal (car (repeat n x))
@@ -97,12 +117,13 @@
     :enable nthcdr)
 
   (defrule list-repeatp-of-append
-  (implies (and (list-repeatp x)
+    (equal (list-repeatp (append x y))
+           (and (list-repeatp x)
                 (list-repeatp y)
-                (equal (car x) (car y)))
-           (list-repeatp (append x y)))
-  :induct t
-  :enable list-repeatp)
+                (or (endp x)
+                    (endp y)
+                    (equal (car x) (car y)))))
+    :induct t)
 
   (defruled take-when-list-repeatp
     (implies (and (list-repeatp list)
@@ -129,7 +150,23 @@
     :use ((:instance take-when-list-repeatp)
           (:instance take-when-list-repeatp (list (nthcdr n list))))
     :enable (nth-when-list-repeatp nfix)
-    :disable list-repeatp))
+    :disable list-repeatp)
+
+  (defruled repeat-of-len-and-car-when-list-repeatp
+    (implies (and (list-repeatp list)
+                  (consp list)
+                  (equal len (len list)))
+             (equal (repeat len (car list))
+                    (true-list-fix list)))
+    :use lemma
+    :prep-lemmas
+    ((defruled lemma
+       (implies (and (list-repeatp list)
+                     (consp list))
+                (equal (repeat (len list) (car list))
+                       (true-list-fix list)))
+       :induct t
+       :enable repeat))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
