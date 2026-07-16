@@ -1387,7 +1387,8 @@
          (cons "bool->f" (expr-value-primop (primop-value-bool-to-float)))
          (cons "head" (expr-value-primop (primop-value-head)))
          (cons "tail" (expr-value-primop (primop-value-tail)))
-         (cons "length" (expr-value-primop (primop-value-length))))))
+         (cons "length" (expr-value-primop (primop-value-length)))
+         (cons "append" (expr-value-primop (primop-value-append))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

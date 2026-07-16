@@ -78,3 +78,9 @@
 ; The variable $d escapes.
 (test-check-top-expr-fail
  "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e)))) v)")
+
+; The inner variable $d escapes, and the outer variable $d does not interfere.
+(test-check-top-expr-fail
+ "(let ((i-fun (f ($d))
+        (unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e)))) v)))
+  (@length (Int) (5 []) (i-app f 5)))")
