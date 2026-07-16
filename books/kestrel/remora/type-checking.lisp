@@ -277,7 +277,7 @@
      :fun (and (check-type-list type.in senv)
                (check-type type.out senv))
      :forall (check-type type.body (senv-add-type-vars type.params senv))
-     :pi nil ; TODO
+     :pi (check-type type.body (senv-add-ispace-var type.param senv))
      :pin (check-type type.body (senv-add-ispace-vars type.params senv))
      :sigma (check-type type.body (senv-add-ispace-vars type.params senv)))
     :measure (type-count type))
@@ -1619,7 +1619,7 @@
         :type (make-type-forall :params atom.params :body be.type)
         :atom (make-atom-tlambda :params atom.params :body be.expr)))
      :ilambda
-     (b* ((senv (senv-add-ispace-vars (list atom.param) senv))
+     (b* ((senv (senv-add-ispace-var atom.param senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
         :type (make-type-pin :params (list atom.param) :body be.type)
