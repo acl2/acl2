@@ -489,7 +489,13 @@
                           0
                         (float-value-ratio->ratio f2))))
                (float-value-ratio (+ r1 r2)))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-add
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -548,7 +554,13 @@
                           0
                         (float-value-ratio->ratio f2))))
                (float-value-ratio (- r1 r2)))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-sub
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -624,7 +636,13 @@
                (if (and (= res 0) neg-res)
                    (float-value-neg0)
                  (float-value-ratio res)))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-mul
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -701,7 +719,13 @@
                (if (and (= res 0) neg-res)
                    (float-value-neg0)
                  (float-value-ratio res)))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-div
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -804,7 +828,13 @@
                  (t (float-value-ratio 0))))
           ;; 7e. standard case.
           (t (float-value-ratio (expt r1 r2))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-expt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -841,7 +871,13 @@
                         (float-value-ratio->ratio f2)))
                   (res (<= r1 r2)))
                (if res f2 f1))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-max
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -878,7 +914,13 @@
                         (float-value-ratio->ratio f2)))
                   (res (<= r1 r2)))
                (if res f1 f2))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-min
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -912,7 +954,13 @@
      a decision Remora has not yet made.
      We therefore defer the implementation and error for now."))
   (b* (((ok &) (check-expr-value-float val1)))
-    (reserr nil)))
+    (reserr nil))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-sqrt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -940,7 +988,13 @@
                           (= f1.ratio 0))
                      (and (float-value-case f2 :ratio)
                           (= f1.ratio (float-value-ratio->ratio f2)))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-eq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -968,7 +1022,13 @@
                                (= f1.ratio 0))
                           (and (float-value-case f2 :ratio)
                                (= f1.ratio (float-value-ratio->ratio f2))))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-neq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -999,7 +1059,13 @@
                           (< f1.ratio 0))
                      (and (float-value-case f2 :ratio)
                           (< f1.ratio (float-value-ratio->ratio f2)))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-lt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1030,7 +1096,13 @@
                           (> f1.ratio 0))
                      (and (float-value-case f2 :ratio)
                           (> f1.ratio (float-value-ratio->ratio f2)))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-gt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1061,7 +1133,13 @@
                           (<= f1.ratio 0))
                      (and (float-value-case f2 :ratio)
                           (<= f1.ratio (float-value-ratio->ratio f2)))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-leq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1092,7 +1170,13 @@
                           (>= f1.ratio 0))
                      (and (float-value-case f2 :ratio)
                           (>= f1.ratio (float-value-ratio->ratio f2)))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-geq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1113,7 +1197,13 @@
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
       :neginf (reserr nil)
-      :nan    (reserr nil))))
+      :nan    (reserr nil)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-truncate
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1135,7 +1225,13 @@
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
       :neginf (reserr nil)
-      :nan    (reserr nil))))
+      :nan    (reserr nil)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-round
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1156,7 +1252,13 @@
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
       :neginf (reserr nil)
-      :nan    (reserr nil))))
+      :nan    (reserr nil)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-ceiling
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1177,7 +1279,13 @@
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
       :neginf (reserr nil)
-      :nan    (reserr nil))))
+      :nan    (reserr nil)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-floor
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1591,25 +1699,7 @@
                                 prim-int-leq
                                 prim-int-geq
                                 prim-int-to-float
-                                prim-int-to-bool
-                                prim-float-add
-                                prim-float-sub
-                                prim-float-mul
-                                prim-float-div
-                                prim-float-expt
-                                prim-float-max
-                                prim-float-min
-                                prim-float-sqrt
-                                prim-float-eq
-                                prim-float-neq
-                                prim-float-lt
-                                prim-float-gt
-                                prim-float-leq
-                                prim-float-geq
-                                prim-float-truncate
-                                prim-float-round
-                                prim-float-ceiling
-                                prim-float-floor)))))
+                                prim-int-to-bool)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
