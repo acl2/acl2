@@ -333,12 +333,13 @@
      :fun (b* (((ok in-tvals) (eval-type-list type.in denv))
                ((ok out-tval) (eval-type type.out denv)))
             (make-type-value-fun :in in-tvals :out out-tval))
-     :forall (make-type-value-forall
-              :params type.params
-              :body type.body
-              :denv (type-denv-restrict (type-free-ispace-vars type)
-                                        (type-free-type-vars type)
-                                        denv))
+     :forall (b* (((unless (consp type.params)) (reserr nil)))
+               (make-type-value-forall
+                :param (car type.params)
+                :body (forall-curried-body type.params type.body)
+                :denv (type-denv-restrict (type-free-ispace-vars type)
+                                          (type-free-type-vars type)
+                                          denv)))
      :pi (make-type-value-pi
           :param type.param
           :body type.body
@@ -1735,42 +1736,33 @@
       "An empty vector function value has
        no type lambda abstractions to apply,
        but it carries the type of its would-be elements,
-       which must be a universal type value;
-       the type argument value must match, in kind,
-       the first parameter of the universal type value.
+       which must be a universal type value,
+       which binds exactly one parameter;
+       the type argument value must match that parameter in kind.
        We extend the dynamic environment
        contained in the universal type value
-       to associate the argument with the first parameter.
-       If the universal type value has further parameters,
-       we return the empty vector value, with the same dimensions,
-       over the universal type value
-       that binds the remaining parameters
-       and contains the extended environment.
-       Otherwise, we evaluate the body of the universal type value
+       to associate the argument with the parameter,
+       and we evaluate the body of the universal type value
        in the extended environment,
        which yields the type value of the would-be results
-       of the element-wise application.
-       Similarly to the evaluation of empty frame expressions
+       of the element-wise application;
+       similarly to the evaluation of empty frame expressions
        in @(tsee eval-expr),
        we decompose that type value into
-       the atom type value and the dimensions.
-       We return the empty vector value
+       the atom type value and the dimensions,
+       and we return the empty vector value
        whose element type value is that atom type value,
        and whose element dimensions are
        the element dimensions of the function value
        followed by the dimensions of the evaluated body of the universal type.
+       If the universal type has further parameters,
+       the body is itself a universal type (see @(tsee forall-curried-body)),
+       whose evaluation yields
+       the universal type value over the remaining parameters:
+       that is an atom type value, contributing no dimensions,
+       so partial instantiation needs no special treatment here.
        The implicit leading 0 dimension of the function value
-       is also the implicit leading 0 dimension of the result expression value.")
-     (xdoc::p
-      "The case split on the remaining parameters
-       of the universal type value
-       is due solely to the fact that
-       universal type values still bind all their parameters at once,
-       unlike product type values (see @(tsee type-value)).
-       When universal type values are made unary as well,
-       this case split will disappear,
-       and partial instantiation will need no special treatment here,
-       just as in @(tsee eval-iapp)."))
+       is also the implicit leading 0 dimension of the result expression value."))
     (b* (((when (zp limit)) (reserr :limit))
          ((when (endp tvals)) (expr-value-fix funval))
          (tval (car tvals))
@@ -1799,21 +1791,13 @@
            (type-value-case
             funval.elem
             :forall
-            (b* (((unless (consp funval.elem.params)) (reserr nil))
-                 ((unless (type-values-match-type-vars-p
+            (b* (((unless (type-values-match-type-vars-p
                            (list tval)
-                           (list (car funval.elem.params))))
+                           (list funval.elem.param)))
                   (reserr nil))
-                 (tenv (type-denv-add-type (car funval.elem.params)
+                 (tenv (type-denv-add-type funval.elem.param
                                            tval
                                            funval.elem.denv))
-                 ((when (consp (cdr funval.elem.params)))
-                  (make-expr-value-vector-empty
-                   :dims funval.dims
-                   :elem (make-type-value-forall
-                          :params (cdr funval.elem.params)
-                          :body funval.elem.body
-                          :denv tenv)))
                  ((ok bodyval) (eval-type funval.elem.body tenv))
                  ((mv elem body-dims)
                   (type-value-case

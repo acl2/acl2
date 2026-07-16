@@ -147,7 +147,7 @@
      :fun (make-type-fun :in (type-value-list-to-type-list tval.in)
                          :out (type-value-to-type tval.out))
      :forall (make-type-forall
-              :params tval.params
+              :params (list tval.param)
               :body (type-subst-type-denv tval.body tval.denv))
      :pi (make-type-pi
           :param tval.param

@@ -327,7 +327,7 @@
                                                dim-renam
                                                shape-renam))
      :forall (make-type-value-forall
-              :params tval.params
+              :param tval.param
               :body (type-rename-ispace-vars tval.body dim-renam shape-renam)
               :denv (type-denv-rename-ispace-vars tval.denv
                                                   dim-renam
@@ -1093,6 +1093,21 @@
                    (var (car params))
                    (rest (cdr params)))))
 
+; The ispace-variable analogue for the currying of universal types:
+; since universal types bind no ispace variables,
+; the renaming maps are not reduced, and the commutation is direct.
+
+(defrule type-rename-ispace-vars-of-forall-curried-body
+  (implies (and (type-var-listp params)
+                (consp params))
+           (equal (type-rename-ispace-vars (forall-curried-body params body)
+                                           dim-renam shape-renam)
+                  (forall-curried-body params
+                                       (type-rename-ispace-vars body
+                                                                dim-renam
+                                                                shape-renam))))
+  :enable forall-curried-body)
+
 ; Phase 1: evaluating a renamed type errs exactly when evaluating the
 ; original type does.  This is proved first, and separately from the value
 ; equality below, so that during the induction for the latter the error
@@ -1330,11 +1345,11 @@
                                              atom-renam
                                              array-renam))
      :forall (b* (((mv & & body-atom-renam body-array-renam)
-                   (atom/array-rename-remove-bound (set::mergesort tval.params)
+                   (atom/array-rename-remove-bound (set::insert tval.param nil)
                                                    atom-renam
                                                    array-renam)))
                (make-type-value-forall
-                :params tval.params
+                :param tval.param
                 :body (type-rename-type-vars tval.body
                                              body-atom-renam
                                              body-array-renam)
@@ -1530,6 +1545,46 @@
   :enable (atom/array-names-of-type-vars
            equal-of-type-var-array
            set::in))
+
+(local
+ (defrule setp-of-atom-names-of-type-vars
+   (set::setp (mv-nth 0 (atom/array-names-of-type-vars vars)))
+   :use string-setp-of-atom/array-names-of-type-vars.atom-names
+   :disable string-setp-of-atom/array-names-of-type-vars.atom-names))
+
+(local
+ (defrule setp-of-array-names-of-type-vars
+   (set::setp (mv-nth 1 (atom/array-names-of-type-vars vars)))
+   :use string-setp-of-atom/array-names-of-type-vars.array-names
+   :disable string-setp-of-atom/array-names-of-type-vars.array-names))
+
+(defrule atom-names-of-type-vars-of-insert
+  (implies (and (type-varp var)
+                (type-var-setp vars))
+           (equal (mv-nth 0 (atom/array-names-of-type-vars
+                             (set::insert var vars)))
+                  (if (type-var-case var :atom)
+                      (set::insert (type-var-atom->name var)
+                                   (mv-nth 0 (atom/array-names-of-type-vars
+                                              vars)))
+                    (mv-nth 0 (atom/array-names-of-type-vars vars)))))
+  :enable (set::double-containment
+           set::pick-a-point-subset-strategy
+           equal-of-type-var-atom))
+
+(defrule array-names-of-type-vars-of-insert
+  (implies (and (type-varp var)
+                (type-var-setp vars))
+           (equal (mv-nth 1 (atom/array-names-of-type-vars
+                             (set::insert var vars)))
+                  (if (type-var-case var :array)
+                      (set::insert (type-var-array->name var)
+                                   (mv-nth 1 (atom/array-names-of-type-vars
+                                              vars)))
+                    (mv-nth 1 (atom/array-names-of-type-vars vars)))))
+  :enable (set::double-containment
+           set::pick-a-point-subset-strategy
+           equal-of-type-var-array))
 
 ; No-capture lemmas for the two type-variable namespaces.
 
@@ -1758,6 +1813,54 @@
                                                           atom-renam
                                                           array-renam))))
   :enable pi-curried-body)
+
+; The type-variable commutation for the currying of universal types
+; mirrors the ispace-variable one for the currying of product types:
+; the crux is again that removing the first parameter and then the
+; remaining ones from the renaming maps equals removing all the
+; parameters at once.
+
+(local
+ (defruled atom/array-rename-remove-bound-of-insert-then-rest
+   (implies (and (type-varp var)
+                 (type-var-listp rest))
+            (b* (((mv & & atom1 array1)
+                  (atom/array-rename-remove-bound (set::insert var nil)
+                                                  atom-renam array-renam))
+                 ((mv & & atom2 array2)
+                  (atom/array-rename-remove-bound (set::mergesort rest)
+                                                  atom1 array1))
+                 ((mv & & atomc arrayc)
+                  (atom/array-rename-remove-bound (set::mergesort
+                                                   (cons var rest))
+                                                  atom-renam array-renam)))
+              (and (equal atom2 atomc)
+                   (equal array2 arrayc))))
+   :enable (atom/array-rename-remove-bound
+            delete*-of-delete*-fuse
+            mergesort-of-cons)))
+
+(defrule type-rename-type-vars-of-forall-curried-body
+  (implies (and (type-var-listp params)
+                (consp params))
+           (b* (((mv & & atom1 array1)
+                 (atom/array-rename-remove-bound (set::insert (car params)
+                                                              nil)
+                                                 atom-renam array-renam))
+                ((mv & & atom-all array-all)
+                 (atom/array-rename-remove-bound (set::mergesort params)
+                                                 atom-renam array-renam)))
+             (equal (type-rename-type-vars (forall-curried-body params body)
+                                           atom1 array1)
+                    (forall-curried-body params
+                                         (type-rename-type-vars body
+                                                                atom-all
+                                                                array-all)))))
+  :enable (forall-curried-body
+           mergesort-when-singleton)
+  :use ((:instance atom/array-rename-remove-bound-of-insert-then-rest
+                   (var (car params))
+                   (rest (cdr params)))))
 
 (defret-mutual reserrp-of-eval-of-rename-type-vars
   (defret reserrp-of-eval-type-of-type-rename-type-vars
