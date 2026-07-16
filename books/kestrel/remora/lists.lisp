@@ -40,6 +40,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled car/cdr-when-equal-cons
+  :short "Derive equalities for @(tsee car) and @(tsee cdr)
+          from an equality to a @(tsee cons).."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This may be useful when the context has
+     a hypothesis that matches this theorem's hypothesis,
+     but ACL2's heuristics judge the term matching @('x')
+     to be simpler than the term matching @('(cons a b)'),
+     and thus @('x') is not replaced by @('(cons a b)'),
+     thus missing opportunities for simplifying
+     @(tsee car) and/or @(tsee cdr) of the term matching @('x').
+     This rule performs that simplification by rewriting."))
+  (implies (equal x (cons a b))
+           (and (equal (car x) a)
+                (equal (cdr x) b))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled car-of-repeat
   :short "Theorem about @(tsee car) applied to @(tsee repeat)."
   (equal (car (repeat n x))
