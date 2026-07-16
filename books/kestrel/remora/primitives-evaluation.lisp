@@ -1771,8 +1771,12 @@
      of all the atoms of the array,
      which differs from our semantics
      when the shape @('s') is not empty.
-     This is a bug in [impl], which has been reported:
-     the interpreter ignores the shape instantiation
+     This is a bug in [impl]
+     (see "
+    (xdoc::ahref
+     "https://github.com/remora-lang/remora/issues/31"
+     "issue 31 in the [impl] repository")
+    "): the interpreter ignores the shape instantiation
      and reverses the flat atom list,
      which is only correct when the shape is empty.")
    (xdoc::p
