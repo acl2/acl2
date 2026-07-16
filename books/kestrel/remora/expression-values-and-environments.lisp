@@ -682,6 +682,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define expr-value-vectorp ((val expr-valuep))
+  :returns (yes/no booleanp)
+  :short "Check if an expression value is a possibly empty vector."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The naming of this predicate and of the @(tsee expr-value) summands
+     are not ideal,
+     because in @(tsee expr-value) @(':vector') refers to non-empty vectors,
+     while in this predicate name @('vectorp') refers to all vectors.
+     We may improve names in the future,
+     or we may merge @(':vector-empty') into @('vector') in @(tsee expr-value)
+     by adding a type value to non-empty vectors."))
+  (or (expr-value-case val :vector)
+      (expr-value-case val :vector-empty))
+
+  ///
+
+  (defruled expr-value-vectorp-to-consp-of-dims
+    (implies (expr-value-wfp val)
+             (equal (expr-value-vectorp val)
+                    (consp (dims-of-expr-value val))))
+    :enable (dims-of-expr-value
+             expr-value-wfp)
+    :expand (check-dims-of-expr-value val)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-value-vector-elements ((val expr-valuep))
+  :guard (expr-value-vectorp val)
+  :returns (vals expr-value-listp)
+  :short "Element values of a possibly empty vector."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lets us treat non-empty and empty vectors uniformly
+     for the purpose of obtaining their element values."))
+  (expr-value-case
+   val
+   :vector val.elems
+   :vector-empty nil
+   :otherwise (impossible))
+  :guard-hints (("Goal" :in-theory (enable expr-value-vectorp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection expr-value-wfp-theorems
   :short "Theorems about the well-formedness of certain expression values."
 
