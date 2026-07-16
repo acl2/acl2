@@ -1088,7 +1088,6 @@
                                                               dim-all
                                                               shape-all)))))
   :enable (pi-curried-body
-           dim/shape-rename-remove-bound-of-insert-then-rest
            mergesort-when-singleton)
   :use ((:instance dim/shape-rename-remove-bound-of-insert-then-rest
                    (var (car params))
@@ -1198,6 +1197,7 @@
                        type-free-ispace-vars
                        type-free-type-vars
                        ispace-var-set-rename-ispace-vars-of-difference
+                       ispace-var-set-rename-ispace-vars-of-delete
                        ispace-denv-restrict-of-rename-when-denv-ispace-vars-renamed-p
                        restrict-of-types-when-denv-type-vars-ispace-renamed-p
                        not-reserrp-when-type-valuep

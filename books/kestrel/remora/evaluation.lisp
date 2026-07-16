@@ -300,12 +300,14 @@
      This function returns the body of the unary product type value:
      the body of the given product type
      if there are no parameters other than the first one,
-     or otherwise the product type over the remaining parameters."))
+     or otherwise the product type over the remaining parameters,
+     in the unary form if exactly one parameter remains."))
   (b* ((params (ispace-var-list-fix params))
        (body (type-fix body)))
-    (if (endp (cdr params))
-        body
-      (make-type-pin :params (cdr params) :body body))))
+    (cond ((endp (cdr params)) body)
+          ((endp (cddr params))
+           (make-type-pi :param (cadr params) :body body))
+          (t (make-type-pin :params (cdr params) :body body)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -366,7 +368,12 @@
               :denv (type-denv-restrict (type-free-ispace-vars type)
                                         (type-free-type-vars type)
                                         denv))
-     :pi (reserr :todo)
+     :pi (make-type-value-pi
+          :param type.param
+          :body type.body
+          :denv (type-denv-restrict (type-free-ispace-vars type)
+                                    (type-free-type-vars type)
+                                    denv))
      :pin (b* (((unless (consp type.params)) (reserr nil)))
             (make-type-value-pi
              :param (car type.params)
