@@ -1791,13 +1791,13 @@
      when those checks are extended to types."))
   (b* ((d (lnfix d)) (s (nat-list-fix s))
        ((unless (equal (dims-of-expr-value val1) (cons d s))) (reserr nil))
-       (elems (if (expr-value-case val1 :vector)
-                  (expr-value-vector->elems val1)
-                nil))
+       (elems (expr-value-vector-elements val1))
        (relems (rev elems)))
     (if (consp relems)
         (expr-value-vector relems)
       (expr-value-vector-empty s tval)))
+  :guard-hints
+  (("Goal" :in-theory (enable expr-value-vectorp-to-consp-of-dims)))
 
   ///
 
