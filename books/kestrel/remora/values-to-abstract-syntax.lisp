@@ -135,7 +135,9 @@
        we substitute the bindings of the captured dynamic environment
        into the body (see @(tsee type-subst-type-denv)),
        and we rebuild the (universal, product, or sum) type
-       with the parameters and the resulting body."))
+       with the parameters and the resulting body.
+       Since product type values are unary,
+       they are rebuilt as unary product types."))
     (type-value-case
      tval
      :base (type-base tval.type)
@@ -147,8 +149,8 @@
      :forall (make-type-forall
               :params tval.params
               :body (type-subst-type-denv tval.body tval.denv))
-     :pi (make-type-pin
-          :params (list tval.param)
+     :pi (make-type-pi
+          :param tval.param
           :body (type-subst-type-denv tval.body tval.denv))
      :sigma (make-type-sigma
              :params tval.params
