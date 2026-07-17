@@ -1140,10 +1140,18 @@
        and we use a separate ACL2 function to apply
        the function value to the argument expression values.")
      (xdoc::p
-      "For a type application,
-       we evaluate the function sub-expression and the type arguments,
+      "For a unary type application,
+       we evaluate the function sub-expression and the type argument,
        and we use a separate ACL2 function to apply
-       the function value to the argument type values.")
+       the function value to the argument type value.
+       For an n-ary type application,
+       we evaluate the function sub-expression,
+       and we use a separate ACL2 function
+       that goes through the type arguments,
+       evaluating each one and applying
+       the current function value to it,
+       consistently with the n-ary application being sugar for
+       a chain of unary applications.")
      (xdoc::p
       "For a unary ispace application,
        we evaluate the function sub-expression and the ispace argument,
@@ -1232,11 +1240,12 @@
        :app (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                  ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
               (eval-app funval argvals (1- limit)))
-       :tapp (reserr :todo)
-       :tappn (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
-                   ((ok tvals) (eval-type-list expr.args
-                                               (expr-denv->tenv denv))))
-                (eval-tapp funval tvals (1- limit)))
+       :tapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
+                  ((ok tval) (eval-type expr.arg
+                                        (expr-denv->tenv denv))))
+               (eval-tapp funval tval (1- limit)))
+       :tappn (b* (((ok funval) (eval-expr expr.fun denv (1- limit))))
+                (eval-tappn funval expr.args denv (1- limit)))
        :iapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                   ((ok ival) (eval-ispace expr.arg
                                           (type-denv->ienv
@@ -1248,10 +1257,7 @@
                   ((ok funval)
                    (type-list-option-case
                     expr.targs
-                    :some (b* (((ok tvals)
-                                (eval-type-list expr.targs.val
-                                                (expr-denv->tenv denv))))
-                            (eval-tapp funval tvals (1- limit)))
+                    :some (eval-tappn funval expr.targs.val denv (1- limit))
                     :none funval))
                   ((ok funval)
                    (ispace-list-option-case
@@ -1674,31 +1680,24 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define eval-tapp ((funval expr-valuep)
-                     (tvals type-value-listp)
+                     (tval type-valuep)
                      (limit natp))
     :guard (expr-value-wfp funval)
     :returns (val expr-value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
-    :short "Apply an expression value to type values."
+    :short "Apply an expression value to a type value."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is called by @(tsee eval-expr) for a type application,
-       after the function and the type arguments have been evaluated:
+      "This is called by @(tsee eval-expr) for a unary type application,
+       after the function and the type argument have been evaluated:
        @('funval') is the expression value of the function,
-       and @('tvals') are the type values of the arguments.
-       Consistently with the curried view of type applications
-       (see @(tsee expr)),
-       the function value is applied to
-       the type argument values one at a time,
-       in a chain of unary applications:
-       each step applies the current function value
-       to the next type argument value;
-       if there are no (more) type argument values,
-       the current function value is the result.")
+       and @('tval') is the type value of the argument.
+       It is also called by @(tsee eval-tappn),
+       which realizes n-ary type applications
+       as chains of unary ones.")
      (xdoc::p
-      "In each unary application,
-       the function value must be an array, of any rank,
+      "The function value must be an array, of any rank,
        whose elements are type lambda abstractions
        or primitive operation values applicable to type values;
        the type argument value must match, in kind,
@@ -1764,60 +1763,53 @@
        so partial instantiation needs no special treatment here.
        The implicit leading 0 dimension of the function value
        is also the implicit leading 0 dimension of the result expression value."))
-    (b* (((when (zp limit)) (reserr :limit))
-         ((when (endp tvals)) (expr-value-fix funval))
-         (tval (car tvals))
-         ((ok val)
-          (expr-value-case
-           funval
-           :tlambda
-           (b* (((unless (type-values-match-type-vars-p (list tval)
-                                                        (list funval.param)))
+    (b* (((when (zp limit)) (reserr :limit)))
+      (expr-value-case
+       funval
+       :tlambda
+       (b* (((unless (type-values-match-type-vars-p (list tval)
+                                                    (list funval.param)))
+             (reserr nil))
+            (denv (expr-denv-add-type funval.param tval funval.denv)))
+         (eval-expr funval.body denv (1- limit)))
+       :primop (if (primop-value-tfunp funval.val)
+                   (eval-primop-tfun funval.val tval)
                  (reserr nil))
-                (denv (expr-denv-add-type funval.param tval funval.denv)))
-             (eval-expr funval.body denv (1- limit)))
-           :primop (if (primop-value-tfunp funval.val)
-                       (eval-primop-tfun funval.val (list tval))
-                     (reserr nil))
-           :vector
-           (b* (((ok vals) (eval-tapp-list funval.elems
-                                           (list tval)
-                                           (1- limit)))
-                ;; TODO: eliminate the next two checks via proof
-                ((unless (consp vals)) (reserr nil))
-                ((unless (list-repeatp (dims-of-expr-value-list vals)))
-                 (reserr nil)))
-             (expr-value-vector vals))
-           :vector-empty
-           (type-value-case
-            funval.elem
-            :forall
-            (b* (((unless (type-values-match-type-vars-p
-                           (list tval)
-                           (list funval.elem.param)))
-                  (reserr nil))
-                 (tenv (type-denv-add-type funval.elem.param
-                                           tval
-                                           funval.elem.denv))
-                 ((ok bodyval) (eval-type funval.elem.body tenv))
-                 ((mv elem body-dims)
-                  (type-value-case
-                   bodyval
-                   :array (mv bodyval.elem bodyval.dims)
-                   :otherwise (mv bodyval nil)))
-                 ((when (type-value-case elem :array)) (reserr nil)))
-              (make-expr-value-vector-empty
-               :dims (append funval.dims body-dims)
-               :elem elem))
-            :otherwise (reserr nil))
-           :otherwise (reserr nil))))
-      (eval-tapp val (cdr tvals) (1- limit)))
+       :vector
+       (b* (((ok vals) (eval-tapp-list funval.elems tval (1- limit)))
+            ;; TODO: eliminate the next two checks via proof
+            ((unless (consp vals)) (reserr nil))
+            ((unless (list-repeatp (dims-of-expr-value-list vals))) (reserr nil)))
+         (expr-value-vector vals))
+       :vector-empty
+       (type-value-case
+        funval.elem
+        :forall
+        (b* (((unless (type-values-match-type-vars-p
+                       (list tval)
+                       (list funval.elem.param)))
+              (reserr nil))
+             (tenv (type-denv-add-type funval.elem.param
+                                       tval
+                                       funval.elem.denv))
+             ((ok bodyval) (eval-type funval.elem.body tenv))
+             ((mv elem body-dims)
+              (type-value-case
+               bodyval
+               :array (mv bodyval.elem bodyval.dims)
+               :otherwise (mv bodyval nil)))
+             ((when (type-value-case elem :array)) (reserr nil)))
+          (make-expr-value-vector-empty
+           :dims (append funval.dims body-dims)
+           :elem elem))
+        :otherwise (reserr nil))
+       :otherwise (reserr nil)))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define eval-tapp-list ((funvals expr-value-listp)
-                          (tvals type-value-listp)
+                          (tval type-valuep)
                           (limit natp))
     :guard (expr-value-list-wfp funvals)
     :returns (vals expr-value-list-resultp)
@@ -1826,14 +1818,14 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This applies each expression value to the type values,
+      "This applies each expression value to the type value,
        returning the list of results in the same order.
        It is used to lift type application over
        a vector of type lambda values (see @(tsee eval-tapp))."))
     (b* (((when (zp limit)) (reserr :limit))
          ((when (endp funvals)) nil)
-         ((ok val) (eval-tapp (car funvals) tvals (1- limit)))
-         ((ok vals) (eval-tapp-list (cdr funvals) tvals (1- limit))))
+         ((ok val) (eval-tapp (car funvals) tval (1- limit)))
+         ((ok vals) (eval-tapp-list (cdr funvals) tval (1- limit))))
       (cons val vals))
     :measure (nfix limit)
 
@@ -1846,6 +1838,38 @@
       :hints (("Goal"
                :induct (acl2::cdr-dec-induct funvals limit)
                :in-theory (enable len)))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-tappn ((funval expr-valuep)
+                      (args type-listp)
+                      (denv expr-denvp)
+                      (limit natp))
+    :guard (expr-value-wfp funval)
+    :returns (val expr-value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Apply an expression value to
+            the arguments of an n-ary type application."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "An n-ary type application is sugar for
+       a left-nested chain of unary type applications (see @(tsee expr)).
+       Accordingly, after @(tsee eval-expr) has evaluated
+       the function sub-expression of an n-ary type application,
+       this function goes through the type arguments,
+       evaluating each one
+       and applying the current function value to it
+       via @(tsee eval-tapp),
+       in the same order in which
+       the chain of unary applications would be evaluated.
+       If there are no arguments, we return the function value."))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (endp args)) (expr-value-fix funval))
+         ((ok tval) (eval-type (car args) (expr-denv->tenv denv)))
+         ((ok val) (eval-tapp funval tval (1- limit))))
+      (eval-tappn val (cdr args) denv (1- limit)))
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2390,14 +2414,17 @@
                       (eval-bind-list binds denv limit)
                       (eval-bind-list (bind-list-fix binds) denv limit)
                       (eval-bind-list binds (expr-denv-fix denv) limit)
-                      (eval-tapp funval tvals limit)
-                      (eval-tapp (expr-value-fix funval) tvals limit)
-                      (eval-tapp funval (type-value-list-fix tvals) limit)
-                      (eval-tapp-list funvals tvals limit)
+                      (eval-tapp funval tval limit)
+                      (eval-tapp (expr-value-fix funval) tval limit)
+                      (eval-tapp funval (type-value-fix tval) limit)
+                      (eval-tapp-list funvals tval limit)
                       (eval-tapp-list (expr-value-list-fix funvals)
-                                      tvals limit)
-                      (eval-tapp-list funvals
-                                      (type-value-list-fix tvals) limit)
+                                      tval limit)
+                      (eval-tapp-list funvals (type-value-fix tval) limit)
+                      (eval-tappn funval args denv limit)
+                      (eval-tappn (expr-value-fix funval) args denv limit)
+                      (eval-tappn funval (type-list-fix args) denv limit)
+                      (eval-tappn funval args (expr-denv-fix denv) limit)
                       (eval-iapp funval ival limit)
                       (eval-iapp (expr-value-fix funval) ival limit)
                       (eval-iapp funval
@@ -2496,6 +2523,11 @@
                     (not (reserrp vals)))
                (expr-value-list-wfp vals))
       :fn eval-tapp-list)
+    (defret expr-value-wfp-of-eval-tappn
+      (implies (and (expr-value-wfp funval)
+                    (not (reserrp val)))
+               (expr-value-wfp val))
+      :fn eval-tappn)
     (defret expr-value-wfp-of-eval-iapp
       (implies (and (expr-value-wfp funval)
                     (not (reserrp val)))
@@ -2552,8 +2584,9 @@
                (eval-atom-list atoms denv limit)
                (eval-bind bind denv limit)
                (eval-bind-list binds denv limit)
-               (eval-tapp funval tvals limit)
-               (eval-tapp-list funvals tvals limit)
+               (eval-tapp funval tval limit)
+               (eval-tapp-list funvals tval limit)
+               (eval-tappn funval args denv limit)
                (eval-iapp funval ival limit)
                (eval-iapp-list funvals ival limit)
                (eval-iappn funval args denv limit)

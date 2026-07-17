@@ -98,3 +98,21 @@
 ; the second one completes the instantiation.
 (test-eval-top-expr
  "(t-app (frame [0] (Forall (&t &u) (Pi ($d) (-> ((A &t $d)) Int)))) Int Int)")
+
+; Partial application of a type lambda abstraction:
+; the value is a closure over the remaining parameter.
+(test-eval-top-expr
+ "(t-app (t-fn (&t &u) (i-fn ($d) (fn ((x (A &t $d))) x))) Int)")
+
+; Partial instantiation of an empty frame of a two-parameter universal type:
+; the value is an empty vector over
+; the universal type value binding the remaining parameter.
+(test-eval-top-expr
+ "(t-app (frame [0] (Forall (&t &u) (Pi ($d) (-> ((A &t $d)) Int)))) Int)")
+
+; Completion of that instantiation, as a chain.
+(test-eval-top-expr
+ "
+(t-app (t-app (frame [0] (Forall (&t &u) (Pi ($d) (-> ((A &t $d)) Int)))) Int)
+       Int)
+")

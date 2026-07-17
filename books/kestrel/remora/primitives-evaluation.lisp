@@ -1821,50 +1821,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-primop-tfun ((op primop-valuep) (tvals type-value-listp))
+(define eval-primop-tfun ((op primop-valuep) (tval type-valuep))
   :guard (primop-value-tfunp op)
   :returns (val expr-value-resultp)
   :short "Evaluate the application of a primitive operation value
-          to type values."
+          to a type value."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the dynamic counterpart, for primitive operations,
-     of applying a type lambda abstraction to type values:
+     of applying a type lambda abstraction to a type value:
      it is called by @(tsee eval-tapp)
      on a scalar primitive operation value
-     and the type argument values.")
+     and the type argument value.")
    (xdoc::p
     "The guard requires the value to be applicable to type values
      (see @(tsee primop-value-tfunp)).
-     We check that the type values match, in number and kinds,
-     the type parameters of the operation,
-     i.e. the ones in the operation's type in @(tsee primop-types);
+     We check that the type value matches, in kind,
+     the type parameter of the operation,
+     i.e. the one in the operation's type in @(tsee primop-types);
      then we construct the next instantiation stage of the operation,
-     which stores the type values received.
+     which stores the type value received.
      Anything else is an error."))
   (primop-value-case
    op
    :head (b* (((unless (type-values-match-type-vars-p
-                        tvals
+                        (list tval)
                         (list (type-var-atom "t"))))
                (reserr nil)))
-           (expr-value-primop (primop-value-head-t (first tvals))))
+           (expr-value-primop (primop-value-head-t tval)))
    :tail (b* (((unless (type-values-match-type-vars-p
-                        tvals
+                        (list tval)
                         (list (type-var-atom "t"))))
                (reserr nil)))
-           (expr-value-primop (primop-value-tail-t (first tvals))))
+           (expr-value-primop (primop-value-tail-t tval)))
    :length (b* (((unless (type-values-match-type-vars-p
-                          tvals
+                          (list tval)
                           (list (type-var-atom "t"))))
                  (reserr nil)))
-             (expr-value-primop (primop-value-length-t (first tvals))))
+             (expr-value-primop (primop-value-length-t tval)))
    :append (b* (((unless (type-values-match-type-vars-p
-                          tvals
+                          (list tval)
                           (list (type-var-atom "t"))))
                  (reserr nil)))
-             (expr-value-primop (primop-value-append-t (first tvals))))
+             (expr-value-primop (primop-value-append-t tval)))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-tfunp
                                            type-values-match-type-vars-p)))

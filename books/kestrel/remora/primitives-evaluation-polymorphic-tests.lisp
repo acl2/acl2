@@ -31,19 +31,14 @@
 ; Type application: length applied to one atom type value.
 
 (acl2::assert-equal
- (eval-primop-tfun (primop-value-length) (list *tv-int*))
+ (eval-primop-tfun (primop-value-length) *tv-int*)
  (expr-value-primop (primop-value-length-t *tv-int*)))
-
-; Wrong number of type values.
-(acl2::assert-event
- (reserrp (eval-primop-tfun (primop-value-length)
-                            (list *tv-int* *tv-int*))))
 
 ; Array type value where an atom one is expected.
 (acl2::assert-event
  (reserrp (eval-primop-tfun (primop-value-length)
-                            (list (make-type-value-array :elem *tv-int*
-                                                         :dims (list 3))))))
+                            (make-type-value-array :elem *tv-int*
+                                                   :dims (list 3)))))
 
 ; Ispace application: length-t applied to a dimension,
 ; then length-t-d applied to a shape.
@@ -122,19 +117,14 @@
 ; Type application: head applied to one atom type value.
 
 (acl2::assert-equal
- (eval-primop-tfun (primop-value-head) (list *tv-int*))
+ (eval-primop-tfun (primop-value-head) *tv-int*)
  (expr-value-primop (primop-value-head-t *tv-int*)))
-
-; Wrong number of type values.
-(acl2::assert-event
- (reserrp (eval-primop-tfun (primop-value-head)
-                            (list *tv-int* *tv-int*))))
 
 ; Array type value where an atom one is expected.
 (acl2::assert-event
  (reserrp (eval-primop-tfun (primop-value-head)
-                            (list (make-type-value-array :elem *tv-int*
-                                                         :dims (list 3))))))
+                            (make-type-value-array :elem *tv-int*
+                                                   :dims (list 3)))))
 
 ; Ispace application: head-t applied to a dimension,
 ; then head-t-d applied to a shape.
@@ -208,19 +198,14 @@
 ; Type application: tail applied to one atom type value.
 
 (acl2::assert-equal
- (eval-primop-tfun (primop-value-tail) (list *tv-int*))
+ (eval-primop-tfun (primop-value-tail) *tv-int*)
  (expr-value-primop (primop-value-tail-t *tv-int*)))
-
-; Wrong number of type values.
-(acl2::assert-event
- (reserrp (eval-primop-tfun (primop-value-tail)
-                            (list *tv-int* *tv-int*))))
 
 ; Array type value where an atom one is expected.
 (acl2::assert-event
  (reserrp (eval-primop-tfun (primop-value-tail)
-                            (list (make-type-value-array :elem *tv-int*
-                                                         :dims (list 3))))))
+                            (make-type-value-array :elem *tv-int*
+                                                   :dims (list 3)))))
 
 ; Ispace application: tail-t applied to a dimension,
 ; then tail-t-d applied to a shape.
