@@ -108,18 +108,24 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "A unary universal type is matched directly:
+     we return its bound variable and its body.")
+   (xdoc::p
     "Consistently with the curried view of type applications
      (see @(tsee expr)),
      an n-ary universal type is treated as
      the nesting of unary universal types.
      Accordingly, this matching operation peels off one variable:
-     if the type is a universal type with at least one variable,
+     if the type is an n-ary universal type with at least one variable,
      we return the first variable,
      along with the body of the universal type
      if there are no other variables,
      or otherwise the universal type over the remaining variables.
-     A universal type with no variables fails to match."))
-  (b* (((unless (type-case type :foralln)) (reserr nil))
+     An n-ary universal type with no variables fails to match."))
+  (b* (((when (type-case type :forall))
+        (make-typevar+type :var (type-forall->param type)
+                           :type (type-forall->body type)))
+       ((unless (type-case type :foralln)) (reserr nil))
        (params (type-foralln->params type))
        (body (type-foralln->body type))
        ((unless (consp params)) (reserr nil)))

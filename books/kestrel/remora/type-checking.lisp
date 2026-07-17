@@ -1610,7 +1610,15 @@
        A unary type abstraction is checked in the same way,
        except that there is no duplicate check
        (there is just one bound variable),
-       and the universal type binds just that variable.")
+       and its type is the unary universal type over that variable.
+       Note that, until the CST-to-AST mapping for universal types
+       is redirected to produce unary universal types,
+       a user-written universal type annotation is n-ary,
+       and thus not equivalent to
+       the unary universal type computed here
+       (see @(tsee type-equivp));
+       the redirection will remove this discrepancy
+       for one-parameter abstractions.")
      (xdoc::p
       "For an n-ary ispace abstraction,
        first we check that there are no duplicate bound variables;
@@ -1663,7 +1671,7 @@
      (b* ((senv (senv-add-type-var atom.param senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
-        :type (make-type-foralln :params (list atom.param) :body be.type)
+        :type (make-type-forall :param atom.param :body be.type)
         :atom (make-atom-tlambda :param atom.param :body be.expr)))
      :tlambdan
      (b* (((unless (no-duplicatesp-equal atom.params))

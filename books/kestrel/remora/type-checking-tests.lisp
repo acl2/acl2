@@ -203,6 +203,11 @@
 (test-check-top-expr-fail
  "(t-app (t-fn (&t) (i-fn ($d) (fn ((x (A &t $d))) x))) Int Int)")
 
+; Application of a unary type lambda abstraction:
+; its computed type is a unary universal type, matched by the application.
+(test-check-top-expr
+ "(t-app (t-fn (&t) (i-fn ($d) (fn ((x (A &t $d))) x))) Int)")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The following fails but should succeed in the latest Remora, which is curried.
