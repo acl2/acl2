@@ -736,6 +736,18 @@
                                                    atom-renam
                                                    array-renam
                                                    avoid))))
+   (atom :tlambda
+         (b* (((mv fresh-params atom-renam array-renam)
+               (atom/array-rename-alpha-bound (list atom.param)
+                                              atom-renam
+                                              array-renam
+                                              (expr-free-type-vars atom.body))))
+           (make-atom-tlambda
+            :param (car fresh-params)
+            :body (expr-rename-type-vars-alpha-aux atom.body
+                                                   atom-renam
+                                                   array-renam
+                                                   avoid))))
    (atom :tlambdan
          (b* (((mv fresh-params atom-renam array-renam)
                (atom/array-rename-alpha-bound atom.params

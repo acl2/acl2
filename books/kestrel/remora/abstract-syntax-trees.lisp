@@ -928,6 +928,17 @@
        but we follow [arxiv], [thesis], and [impl],
        which all use a generic type.")
      (xdoc::p
+      "The @(':tlambda') summand is
+       the main, core form of type lambda abstraction,
+       which binds exactly one parameter,
+       while the @(':tlambdan') summand is sugar for
+       a nesting of unary type lambda abstractions.
+       Currently the CST-to-AST mapping turns
+       all type lambda abstractions into @(':tlambdan');
+       we plan to redirect it to turn
+       the ones with one parameter into @(':tlambda'),
+       similarly to ispace lambda abstractions.")
+     (xdoc::p
       "The @(':ilambda') summand is
        the main, core form of ispace lambda abstraction,
        which binds exactly one parameter,
@@ -937,7 +948,7 @@
        the ispace lambda abstractions with one parameter into @(':ilambda'),
        and those with two or more parameters into @(':ilambdan'),
        similarly to ispace applications (see @(tsee expr)).
-       The other lambda summands will be similarly given unary forms.")
+       The @(':lambda') summand will be similarly given a unary form.")
      (xdoc::p
       "The concrete syntax requires the parameter lists of
        the @(':lambda'), @(':tlambdan'), and @(':ilambdan') summands
@@ -951,6 +962,8 @@
     (:lambda ((params var+type?-list)
               (body expr)
               (type? type-option)))
+    (:tlambda ((param type-var)
+               (body expr)))
     (:tlambdan ((params type-var-list)
                 (body expr)))
     (:ilambda ((param ispace-var)

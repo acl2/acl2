@@ -1321,6 +1321,11 @@
                  "fn"
                  (pdoc-concat (pdoc-paren params)
                               (pdoc-concat (pdoc-line) body))))
+      :tlambda (b* (((ok body) (expr-to-pdoc a.body)))
+                 (pdoc-prefix-form
+                  "t-fn"
+                  (pdoc-concat (pdoc-paren (type-var-to-pdoc a.param))
+                               (pdoc-concat (pdoc-line) body))))
       :tlambdan (b* (((ok body) (expr-to-pdoc a.body)))
                   (pdoc-prefix-form
                    "t-fn"

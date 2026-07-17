@@ -291,22 +291,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define senv-add-type-var ((var type-varp) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add a type variable to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variable is added with an absent associated type,
+     because it does not stand for any specific type;
+     this is the case for variables bound by abstractions.
+     A variable already present is overwritten,
+     which realizes the intended shadowing."))
+  (change-senv senv
+               :type-vars (omap::update (type-var-fix var)
+                                        nil
+                                        (senv->type-vars senv))))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define senv-add-type-vars ((vars type-var-listp) (senv senvp))
   :returns (new-senv senvp)
   :short "Add zero or more type variables to the static environment."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The variables are added with an absent associated type,
-     because they do not stand for any specific type;
-     this is the case for variables bound by abstractions.
-     A variable already present is overwritten,
-     which realizes the intended shadowing."))
+    "See @(tsee senv-add-type-var),
+     which this function repeats for each variable."))
   (b* (((when (endp vars)) (senv-fix senv))
-       (new-type-vars (omap::update (type-var-fix (car vars))
-                                    nil
-                                    (senv->type-vars senv)))
-       (senv (change-senv senv :type-vars new-type-vars)))
+       (senv (senv-add-type-var (car vars) senv)))
     (senv-add-type-vars (cdr vars) senv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

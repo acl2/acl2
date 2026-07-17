@@ -914,6 +914,18 @@
                                                   atom-subst
                                                   array-subst
                                                   avoid))))
+   (atom :tlambda
+         (b* (((mv fresh-params atom-subst array-subst)
+               (atom/array-subst-alpha-bound (list atom.param)
+                                             atom-subst
+                                             array-subst
+                                             (expr-free-type-vars atom.body))))
+           (make-atom-tlambda
+            :param (car fresh-params)
+            :body (expr-subst-type-vars-alpha-aux atom.body
+                                                  atom-subst
+                                                  array-subst
+                                                  avoid))))
    (atom :tlambdan
          (b* (((mv fresh-params atom-subst array-subst)
                (atom/array-subst-alpha-bound atom.params

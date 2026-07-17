@@ -394,6 +394,16 @@
                      (expr-rename-type-vars-no-capture-p expr.body
                                                          atom-renam
                                                          array-renam)))))
+   (atom :tlambda
+         (b* (((mv bound-atom-vars bound-array-vars atom-renam array-renam)
+               (atom/array-rename-remove-bound (set::insert atom.param nil)
+                                               atom-renam
+                                               array-renam)))
+           (and (renaming-no-capture-p bound-atom-vars atom-renam)
+                (renaming-no-capture-p bound-array-vars array-renam)
+                (expr-rename-type-vars-no-capture-p atom.body
+                                                    atom-renam
+                                                    array-renam))))
    (atom :tlambdan
          (b* (((mv bound-atom-vars bound-array-vars atom-renam array-renam)
                (atom/array-rename-remove-bound (set::mergesort atom.params)
@@ -810,6 +820,16 @@
            (make-expr-let
             :binds binds
             :body (expr-rename-type-vars expr.body
+                                         atom-renam
+                                         array-renam))))
+   (atom :tlambda
+         (b* (((mv & & atom-renam array-renam)
+               (atom/array-rename-remove-bound (set::insert atom.param nil)
+                                               atom-renam
+                                               array-renam)))
+           (make-atom-tlambda
+            :param atom.param
+            :body (expr-rename-type-vars atom.body
                                          atom-renam
                                          array-renam))))
    (atom :tlambdan

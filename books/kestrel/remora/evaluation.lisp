@@ -1340,7 +1340,9 @@
      (xdoc::p
       "A type lambda abstraction evaluates to
        a unary type lambda value.
-       The abstraction must have at least one parameter:
+       For the unary form, the value binds the parameter,
+       and its body is the body of the abstraction.
+       The n-ary form must have at least one parameter:
        the value binds the first parameter,
        and its body is the type lambda abstraction
        over the remaining parameters if there are any,
@@ -1395,6 +1397,14 @@
                          (expr-free-type-vars atom.body)
                          (atom-free-expr-vars atom)
                          denv)))
+       :tlambda (make-expr-value-tlambda
+                 :param atom.param
+                 :body atom.body
+                 :denv (expr-denv-restrict
+                        (expr-free-ispace-vars atom.body)
+                        (atom-free-type-vars atom)
+                        (expr-free-expr-vars atom.body)
+                        denv))
        :tlambdan
        (b* (((unless (consp atom.params)) (reserr nil)))
          (make-expr-value-tlambda

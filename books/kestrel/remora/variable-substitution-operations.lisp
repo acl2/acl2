@@ -439,6 +439,17 @@
                      (expr-subst-type-vars-no-capture-p expr.body
                                                         atom-subst
                                                         array-subst)))))
+   (atom :tlambda
+         (b* (((mv atom-subst array-subst)
+               (atom/array-subst-remove-bound (set::insert atom.param nil)
+                                              atom-subst
+                                              array-subst)))
+           (and (atom/array-subst-no-capture-p (set::insert atom.param nil)
+                                               atom-subst
+                                               array-subst)
+                (expr-subst-type-vars-no-capture-p atom.body
+                                                   atom-subst
+                                                   array-subst))))
    (atom :tlambdan
          (b* (((mv atom-subst array-subst)
                (atom/array-subst-remove-bound (set::mergesort atom.params)
@@ -832,6 +843,16 @@
            (make-expr-let
             :binds binds
             :body (expr-subst-type-vars expr.body
+                                        atom-subst
+                                        array-subst))))
+   (atom :tlambda
+         (b* (((mv atom-subst array-subst)
+               (atom/array-subst-remove-bound (set::insert atom.param nil)
+                                              atom-subst
+                                              array-subst)))
+           (make-atom-tlambda
+            :param atom.param
+            :body (expr-subst-type-vars atom.body
                                         atom-subst
                                         array-subst))))
    (atom :tlambdan

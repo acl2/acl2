@@ -1598,14 +1598,18 @@
        We store the body's type into the optional type slot of
        the returned lambda atom.")
      (xdoc::p
-      "For a type abstraction,
+      "For an n-ary type abstraction,
        first we check that there are no duplicate bound variables;
        two variables with the same name but different kinds
        (one atom and one array) count as distinct.
        We check the body of the abstraction in the extended environment.
        The resulting type is the body of the universal type
        that is the type of the abstraction,
-       whose bound variables are the same as the abstraction.")
+       whose bound variables are the same as the abstraction.
+       A unary type abstraction is checked in the same way,
+       except that there is no duplicate check
+       (there is just one bound variable),
+       and the universal type binds just that variable.")
      (xdoc::p
       "For an n-ary ispace abstraction,
        first we check that there are no duplicate bound variables;
@@ -1654,6 +1658,12 @@
         :atom (make-atom-lambda :params atom.params
                                 :body be.expr
                                 :type? be.type)))
+     :tlambda
+     (b* ((senv (senv-add-type-var atom.param senv))
+          ((ok (type+expr be)) (check-expr atom.body senv)))
+       (make-type+atom
+        :type (make-type-forall :params (list atom.param) :body be.type)
+        :atom (make-atom-tlambda :param atom.param :body be.expr)))
      :tlambdan
      (b* (((unless (no-duplicatesp-equal atom.params))
            (reserr nil))
