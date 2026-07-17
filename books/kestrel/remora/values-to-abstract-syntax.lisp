@@ -533,8 +533,8 @@
      a unary type application of that variable
      to the type converted from the type value.
      A stage that also stores ispace values becomes
-     a unary ispace application of that type application
-     to the dimension in the stage,
+     the nesting of unary ispace applications of that type application
+     to the dimensions in the stage, in order,
      wrapped in a further unary ispace application
      to the shape if the stage has one:
      a left-nested chain of the core unary form (see @(tsee expr)).
@@ -602,6 +602,54 @@
                               :arg (ispace-dim (dim-const pval.dval)))
                         :arg (ispace-shape
                               (shape-dims (dim-const-list pval.sval)))))
+     :append-t (mv nil
+                   (make-expr-tapp
+                    :fun opvar
+                    :arg (type-value-to-type pval.tval)))
+     :append-t-m (mv nil
+                     (make-expr-iapp
+                      :fun (make-expr-tapp
+                            :fun opvar
+                            :arg (type-value-to-type pval.tval))
+                      :arg (ispace-dim (dim-const pval.mval))))
+     :append-t-m-n (mv nil
+                       (make-expr-iapp
+                        :fun (make-expr-iapp
+                              :fun (make-expr-tapp
+                                    :fun opvar
+                                    :arg (type-value-to-type pval.tval))
+                              :arg (ispace-dim (dim-const pval.mval)))
+                        :arg (ispace-dim (dim-const pval.nval))))
+     :append-t-m-n-s (mv nil
+                         (make-expr-iapp
+                          :fun (make-expr-iapp
+                                :fun (make-expr-iapp
+                                      :fun (make-expr-tapp
+                                            :fun opvar
+                                            :arg (type-value-to-type pval.tval))
+                                      :arg (ispace-dim (dim-const pval.mval)))
+                                :arg (ispace-dim (dim-const pval.nval)))
+                          :arg (ispace-shape
+                                (shape-dims (dim-const-list pval.sval)))))
+     :reverse-t (mv nil
+                    (make-expr-tapp
+                     :fun opvar
+                     :arg (type-value-to-type pval.tval)))
+     :reverse-t-d (mv nil
+                      (make-expr-iapp
+                       :fun (make-expr-tapp
+                             :fun opvar
+                             :arg (type-value-to-type pval.tval))
+                       :arg (ispace-dim (dim-const pval.dval))))
+     :reverse-t-d-s (mv nil
+                        (make-expr-iapp
+                         :fun (make-expr-iapp
+                               :fun (make-expr-tapp
+                                     :fun opvar
+                                     :arg (type-value-to-type pval.tval))
+                               :arg (ispace-dim (dim-const pval.dval)))
+                         :arg (ispace-shape
+                               (shape-dims (dim-const-list pval.sval)))))
      :otherwise (mv nil opvar))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
