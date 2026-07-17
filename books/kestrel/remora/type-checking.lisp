@@ -277,6 +277,7 @@
                    (check-ispace-list type.ispaces senv))
      :fun (and (check-type-list type.in senv)
                (check-type type.out senv))
+     :forall nil ; TODO
      :foralln (check-type type.body (senv-add-type-vars type.params senv))
      :pi (check-type type.body (senv-add-ispace-var type.param senv))
      :pin (check-type type.body (senv-add-ispace-vars type.params senv))

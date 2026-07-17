@@ -361,6 +361,7 @@
              :array nil
              :bracket nil
              :fun t
+             :forall t
              :foralln t
              :pi t
              :pin t

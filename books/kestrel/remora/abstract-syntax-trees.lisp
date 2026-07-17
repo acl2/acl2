@@ -433,6 +433,17 @@
        product types (quantified over ispace parameters),
        and sum types (quantified over ispace parameters).")
      (xdoc::p
+      "The @(':forall') summand is
+       the main, core form of universal type,
+       which binds exactly one parameter,
+       while the @(':foralln') summand is sugar for
+       a nesting of unary universal types.
+       Currently the CST-to-AST mapping turns
+       all universal types into @(':foralln');
+       we plan to redirect it to turn
+       the ones with one parameter into @(':forall'),
+       similarly to product types.")
+     (xdoc::p
       "The @(':pi') summand is
        the main, core form of product type,
        which binds exactly one parameter,
@@ -442,8 +453,8 @@
        the product types with one parameter into @(':pi'),
        and those with two or more parameters into @(':pin'),
        similarly to ispace applications (see @(tsee expr)).
-       The @(':foralln') and @(':sigma') summands
-       will be similarly given unary forms.")
+       The @(':sigma') summand
+       will be similarly given a unary form.")
      (xdoc::p
       "The concrete syntax requires the parameter lists of
        @(':foralln'), @(':pin'), and @(':sigma') to be non-empty;
@@ -456,6 +467,8 @@
                (ispaces ispace-list)))
     (:fun ((in type-list)
            (out type)))
+    (:forall ((param type-var)
+              (body type)))
     (:foralln ((params type-var-list)
                (body type)))
     (:pi ((param ispace-var)

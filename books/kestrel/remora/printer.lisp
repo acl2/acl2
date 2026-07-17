@@ -879,11 +879,16 @@
             (pdoc-concat (pdoc-paren (type-list-to-pdoc ty.in))
                          (pdoc-concat (pdoc-line)
                                       (type-to-pdoc ty.out))))
-      :foralln (pdoc-prefix-form
+      :forall (pdoc-prefix-form
                "Forall"
-               (pdoc-concat (pdoc-paren (type-var-list-to-pdoc ty.params))
+               (pdoc-concat (pdoc-paren (type-var-to-pdoc ty.param))
                             (pdoc-concat (pdoc-line)
                                          (type-to-pdoc ty.body))))
+      :foralln (pdoc-prefix-form
+                "Forall"
+                (pdoc-concat (pdoc-paren (type-var-list-to-pdoc ty.params))
+                             (pdoc-concat (pdoc-line)
+                                          (type-to-pdoc ty.body))))
       :pi (pdoc-prefix-form
            "Pi"
            (pdoc-concat (pdoc-paren (ispace-var-to-pdoc ty.param))

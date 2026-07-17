@@ -361,6 +361,7 @@
              :fun (and (type-list-equivp type1.in type2.in)
                        (type-equivp type1.out type2.out))
              :otherwise nil))
+     :forall nil ; TODO
      :foralln (b* ((type2 (normalize-scalar-type type2)))
                 (type-case
                  type2
