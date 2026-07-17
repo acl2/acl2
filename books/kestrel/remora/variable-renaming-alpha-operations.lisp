@@ -704,6 +704,18 @@
                    (if var+name
                        (type-var (type-var-array (cdr var+name)))
                      (type-var (type-var-array type.var.name))))))
+   (type :forall
+         (b* (((mv fresh-params atom-renam array-renam)
+               (atom/array-rename-alpha-bound (list type.param)
+                                              atom-renam
+                                              array-renam
+                                              (type-free-type-vars type.body))))
+           (make-type-forall
+            :param (car fresh-params)
+            :body (type-rename-type-vars-alpha-aux type.body
+                                                   atom-renam
+                                                   array-renam
+                                                   avoid))))
    (type :foralln
          (b* (((mv fresh-params atom-renam array-renam)
                (atom/array-rename-alpha-bound type.params

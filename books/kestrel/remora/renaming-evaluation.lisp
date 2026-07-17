@@ -1703,6 +1703,47 @@
            set::difference
            set::difference-insert-x))
 
+; The type-variable analogue of the singleton (deletion) version of the
+; preceding theorem (see ispace-var-set-rename-ispace-vars-of-delete):
+; it is needed for the unary universal type, whose free type variables
+; are obtained via a set deletion instead of a set difference.
+
+(defruled type-var-set-rename-type-vars-of-delete
+  (implies
+   (and (type-var-setp vars)
+        (type-varp var)
+        (renaming-no-capture-p
+         (mv-nth 0 (atom/array-rename-remove-bound (set::insert var nil)
+                                                   atom-renam
+                                                   array-renam))
+         (mv-nth 2 (atom/array-rename-remove-bound (set::insert var nil)
+                                                   atom-renam
+                                                   array-renam)))
+        (renaming-no-capture-p
+         (mv-nth 1 (atom/array-rename-remove-bound (set::insert var nil)
+                                                   atom-renam
+                                                   array-renam))
+         (mv-nth 3 (atom/array-rename-remove-bound (set::insert var nil)
+                                                   atom-renam
+                                                   array-renam))))
+   (equal
+    (set::delete
+     var
+     (type-var-set-rename-type-vars
+      vars
+      (mv-nth 2 (atom/array-rename-remove-bound (set::insert var nil)
+                                                atom-renam
+                                                array-renam))
+      (mv-nth 3 (atom/array-rename-remove-bound (set::insert var nil)
+                                                atom-renam
+                                                array-renam))))
+    (type-var-set-rename-type-vars (set::delete var vars)
+                                   atom-renam
+                                   array-renam)))
+  :use ((:instance type-var-set-rename-type-vars-of-difference
+                   (bound (set::insert var nil))))
+  :enable difference-of-insert-nil)
+
 ; The free type variables of a type with renamed type variables are the
 ; renamings of the free type variables of the type, provided the renaming
 ; captures no variables.
@@ -1735,6 +1776,7 @@
                               type-rename-type-vars-no-capture-p
                               type-list-rename-type-vars-no-capture-p
                               type-var-set-rename-type-vars-of-difference
+                              type-var-set-rename-type-vars-of-delete
                               type-var-set-rename-type-vars
                               rename-type-var
                               rename-var-string))))
@@ -1955,6 +1997,7 @@
                        type-free-ispace-vars
                        type-free-type-vars
                        type-var-set-rename-type-vars-of-difference
+                       type-var-set-rename-type-vars-of-delete
                        ispace-denv-restrict-when-denv-ispace-vars-equal-p
                        restrict-of-types-when-denv-type-vars-renamed-p
                        rename-var-string

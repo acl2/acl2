@@ -370,7 +370,17 @@
   :default t
   :combine and
   :override
-  ((type :foralln
+  ((type :forall
+         (b* (((mv bound-atom-vars bound-array-vars atom-renam array-renam)
+               (atom/array-rename-remove-bound (set::insert type.param nil)
+                                               atom-renam
+                                               array-renam)))
+           (and (renaming-no-capture-p bound-atom-vars atom-renam)
+                (renaming-no-capture-p bound-array-vars array-renam)
+                (type-rename-type-vars-no-capture-p type.body
+                                                    atom-renam
+                                                    array-renam))))
+   (type :foralln
          (b* (((mv bound-atom-vars bound-array-vars atom-renam array-renam)
                (atom/array-rename-remove-bound (set::mergesort type.params)
                                                atom-renam
@@ -798,6 +808,16 @@
                    (if var+name
                        (type-var (type-var-array (cdr var+name)))
                      (type-var (type-var-array type.var.name))))))
+   (type :forall
+         (b* (((mv & & atom-renam array-renam)
+               (atom/array-rename-remove-bound (set::insert type.param nil)
+                                               atom-renam
+                                               array-renam)))
+           (make-type-forall
+            :param type.param
+            :body (type-rename-type-vars type.body
+                                         atom-renam
+                                         array-renam))))
    (type :foralln
          (b* (((mv & & atom-renam array-renam)
                (atom/array-rename-remove-bound (set::mergesort type.params)

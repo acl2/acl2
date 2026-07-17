@@ -882,6 +882,18 @@
                    (if var+type
                        (cdr var+type)
                      (type-var (type-var-array type.var.name))))))
+   (type :forall
+         (b* (((mv fresh-params atom-subst array-subst)
+               (atom/array-subst-alpha-bound (list type.param)
+                                             atom-subst
+                                             array-subst
+                                             (type-free-type-vars type.body))))
+           (make-type-forall
+            :param (car fresh-params)
+            :body (type-subst-type-vars-alpha-aux type.body
+                                                  atom-subst
+                                                  array-subst
+                                                  avoid))))
    (type :foralln
          (b* (((mv fresh-params atom-subst array-subst)
                (atom/array-subst-alpha-bound type.params
