@@ -291,9 +291,11 @@
        The fresh variables must not be in any of the two types:
        so we set the set of variables to avoid to
        all the (free and bound) variables in the two types.
-       Two unary product types are handled the same way,
+       Two unary universal types, and two unary product types,
+       are handled the same way,
        on the singleton lists of their bound variables.
-       A unary product type is never equivalent to an n-ary one,
+       A unary (universal or product) type
+       is never equivalent to an n-ary one,
        for now:
        relating the sugar and core forms is left for
        a planned rework of type equivalence.")
@@ -361,7 +363,24 @@
              :fun (and (type-list-equivp type1.in type2.in)
                        (type-equivp type1.out type2.out))
              :otherwise nil))
-     :forall nil ; TODO
+     :forall (b* ((type2 (normalize-scalar-type type2)))
+               (type-case
+                type2
+                :forall (b* ((used (set::union (type-all-type-vars type1)
+                                               (type-all-type-vars type2)))
+                             (maps (fresh-type-var-renaming (list type1.param)
+                                                            (list type2.param)
+                                                            used))
+                             ((when (reserrp maps)) nil)
+                             ((string-string-map-quadruple maps) maps)
+                             (body1 (type-rename-type-vars type1.body
+                                                           maps.1st
+                                                           maps.2nd))
+                             (body2 (type-rename-type-vars type2.body
+                                                           maps.3rd
+                                                           maps.4th)))
+                          (type-equivp body1 body2))
+                :otherwise nil))
      :foralln (b* ((type2 (normalize-scalar-type type2)))
                 (type-case
                  type2
