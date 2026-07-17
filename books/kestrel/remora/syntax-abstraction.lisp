@@ -1338,13 +1338,25 @@
   ;;               ws type
   (define abs-forall-type ((tree abnf::treep))
     :returns (ty type-resultp)
-    :short "Abstract a @('forall-type') to a @(tsee type) @(':foralln')."
+    :short "Abstract a @('forall-type') to
+            a @(tsee type) @(':forall') or @(':foralln')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A universal type with one variable becomes
+       a unary universal type @(':forall');
+       one with two or more variables becomes
+       an n-ary universal type @(':foralln')
+       (see @(tsee type))."))
     (b* (((okf (abnf::tree-list-tuple8 sub))
           (abnf::check-tree-nonleaf-8 tree "forall-type"))
          ((okf params) (abs-*-ws-type-var sub.4th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf body) (abs-type body-tree)))
-      (make-type-foralln :params params :body body))
+      (if (and (consp params)
+               (endp (cdr params)))
+          (make-type-forall :param (car params) :body body)
+        (make-type-foralln :params params :body body)))
     :measure (abnf::tree-count tree))
 
   ;; pi-type = ( "Pi" / %x03A0 ) ws "(" *( ws ispace-var ) ws ")"

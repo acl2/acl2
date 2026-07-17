@@ -438,10 +438,9 @@
        which binds exactly one parameter,
        while the @(':foralln') summand is sugar for
        a nesting of unary universal types.
-       Currently the CST-to-AST mapping turns
-       all universal types into @(':foralln');
-       we plan to redirect it to turn
-       the ones with one parameter into @(':forall'),
+       The CST-to-AST mapping turns
+       the universal types with one parameter into @(':forall'),
+       and those with two or more parameters into @(':foralln'),
        similarly to product types.")
      (xdoc::p
       "The @(':pi') summand is

@@ -1610,15 +1610,7 @@
        A unary type abstraction is checked in the same way,
        except that there is no duplicate check
        (there is just one bound variable),
-       and its type is the unary universal type over that variable.
-       Note that, until the CST-to-AST mapping for universal types
-       is redirected to produce unary universal types,
-       a user-written universal type annotation is n-ary,
-       and thus not equivalent to
-       the unary universal type computed here
-       (see @(tsee type-equivp));
-       the redirection will remove this discrepancy
-       for one-parameter abstractions.")
+       and its type is the unary universal type over that variable.")
      (xdoc::p
       "For an n-ary ispace abstraction,
        first we check that there are no duplicate bound variables;
