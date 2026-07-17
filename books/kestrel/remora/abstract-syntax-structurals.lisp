@@ -560,10 +560,13 @@
      This function returns the body of the unary universal type value:
      the body of the given universal type
      if there are no parameters other than the first one,
-     or otherwise the universal type over the remaining parameters."))
+     or otherwise the universal type over the remaining parameters,
+     in the unary form if exactly one parameter remains."))
   (b* ((params (type-var-list-fix params))
        (body (type-fix body)))
     (cond ((endp (cdr params)) body)
+          ((endp (cddr params))
+           (make-type-forall :param (cadr params) :body body))
           (t (make-type-foralln :params (cdr params) :body body)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -333,7 +333,12 @@
      :fun (b* (((ok in-tvals) (eval-type-list type.in denv))
                ((ok out-tval) (eval-type type.out denv)))
             (make-type-value-fun :in in-tvals :out out-tval))
-     :forall (reserr :todo)
+     :forall (make-type-value-forall
+              :param type.param
+              :body type.body
+              :denv (type-denv-restrict (type-free-ispace-vars type)
+                                        (type-free-type-vars type)
+                                        denv))
      :foralln (b* (((unless (consp type.params)) (reserr nil)))
                 (make-type-value-forall
                  :param (car type.params)
