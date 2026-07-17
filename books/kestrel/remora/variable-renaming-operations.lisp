@@ -394,7 +394,7 @@
                      (expr-rename-type-vars-no-capture-p expr.body
                                                          atom-renam
                                                          array-renam)))))
-   (atom :tlambda
+   (atom :tlambdan
          (b* (((mv bound-atom-vars bound-array-vars atom-renam array-renam)
                (atom/array-rename-remove-bound (set::mergesort atom.params)
                                                atom-renam
@@ -812,12 +812,12 @@
             :body (expr-rename-type-vars expr.body
                                          atom-renam
                                          array-renam))))
-   (atom :tlambda
+   (atom :tlambdan
          (b* (((mv & & atom-renam array-renam)
                (atom/array-rename-remove-bound (set::mergesort atom.params)
                                                atom-renam
                                                array-renam)))
-           (make-atom-tlambda
+           (make-atom-tlambdan
             :params atom.params
             :body (expr-rename-type-vars atom.body
                                          atom-renam

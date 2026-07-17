@@ -1395,7 +1395,7 @@
                          (expr-free-type-vars atom.body)
                          (atom-free-expr-vars atom)
                          denv)))
-       :tlambda
+       :tlambdan
        (b* (((unless (consp atom.params)) (reserr nil)))
          (make-expr-value-tlambda
           :param (car atom.params)
@@ -1646,7 +1646,7 @@
                     bind.tparams?
                     :some (mv (make-expr-array
                                :dims nil
-                               :atoms (list (make-atom-tlambda
+                               :atoms (list (make-atom-tlambdan
                                              :params bind.tparams?.val
                                              :body iexpr)))
                               (make-type-forall :params bind.tparams?.val

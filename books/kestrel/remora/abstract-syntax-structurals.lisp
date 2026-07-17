@@ -620,7 +620,7 @@
   (b* ((params (type-var-list-fix params))
        (body (expr-fix body)))
     (cond ((endp (cdr params)) body)
-          (t (expr-atom (atom-tlambda (cdr params) body))))))
+          (t (expr-atom (atom-tlambdan (cdr params) body))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

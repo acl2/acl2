@@ -439,7 +439,7 @@
                      (expr-subst-type-vars-no-capture-p expr.body
                                                         atom-subst
                                                         array-subst)))))
-   (atom :tlambda
+   (atom :tlambdan
          (b* (((mv atom-subst array-subst)
                (atom/array-subst-remove-bound (set::mergesort atom.params)
                                               atom-subst
@@ -834,12 +834,12 @@
             :body (expr-subst-type-vars expr.body
                                         atom-subst
                                         array-subst))))
-   (atom :tlambda
+   (atom :tlambdan
          (b* (((mv atom-subst array-subst)
                (atom/array-subst-remove-bound (set::mergesort atom.params)
                                               atom-subst
                                               array-subst)))
-           (make-atom-tlambda
+           (make-atom-tlambdan
             :params atom.params
             :body (expr-subst-type-vars atom.body
                                         atom-subst

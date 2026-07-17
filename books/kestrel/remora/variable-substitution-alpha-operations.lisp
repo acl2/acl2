@@ -914,13 +914,13 @@
                                                   atom-subst
                                                   array-subst
                                                   avoid))))
-   (atom :tlambda
+   (atom :tlambdan
          (b* (((mv fresh-params atom-subst array-subst)
                (atom/array-subst-alpha-bound atom.params
                                              atom-subst
                                              array-subst
                                              (expr-free-type-vars atom.body))))
-           (make-atom-tlambda
+           (make-atom-tlambdan
             :params fresh-params
             :body (expr-subst-type-vars-alpha-aux atom.body
                                                   atom-subst

@@ -2125,13 +2125,13 @@
   ;; type-lambda = ( "t-fn" / "tλ" ) ws "(" *( ws type-var ) ws ")" ws exp
   (define abs-type-lambda ((tree abnf::treep))
     :returns (a atom-resultp)
-    :short "Abstract a @('type-lambda') to an @(tsee atom) @(':tlambda')."
+    :short "Abstract a @('type-lambda') to an @(tsee atom) @(':tlambdan')."
     (b* (((okf (abnf::tree-list-tuple8 sub))
           (abnf::check-tree-nonleaf-8 tree "type-lambda"))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf params) (abs-*-ws-type-var sub.4th))
          ((okf body) (abs-exp body-tree)))
-      (make-atom-tlambda :params params :body body))
+      (make-atom-tlambdan :params params :body body))
     :measure (abnf::tree-count tree))
 
   ;; ispace-lambda = ( "i-fn" / "iλ" ) ws "(" *( ws ispace-var ) ws ")" ws exp

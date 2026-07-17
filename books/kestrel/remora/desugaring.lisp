@@ -243,8 +243,8 @@
                     (lambda-expr
                      (make-expr-array
                       :dims nil
-                      :atoms (list (make-atom-tlambda :params bind.params
-                                                      :body expr)))))
+                      :atoms (list (make-atom-tlambdan :params bind.params
+                                                       :body expr)))))
                  (make-bind-val :var bind.var
                                 :type? lambda-type?
                                 :expr lambda-expr)))
@@ -287,7 +287,7 @@
                       bind.tparams?
                       :some (make-expr-array
                              :dims nil
-                             :atoms (list (make-atom-tlambda
+                             :atoms (list (make-atom-tlambdan
                                            :params bind.tparams?.val
                                            :body ilambda-lambda-expr)))
                       :none ilambda-lambda-expr))

@@ -101,8 +101,8 @@
                                       (expr-binder-names expr.body)))))
    (atom :lambda (append (var+type?-list->var atom.params)
                          (expr-binder-names atom.body)))
-   (atom :tlambda (append (type-var-list->name atom.params)
-                          (expr-binder-names atom.body)))
+   (atom :tlambdan (append (type-var-list->name atom.params)
+                           (expr-binder-names atom.body)))
    (atom :ilambda (cons (ispace-var->name atom.param)
                         (expr-binder-names atom.body)))
    (atom :ilambdan (append (ispace-var-list->name atom.params)
@@ -889,16 +889,16 @@
                                            :body new-body
                                            :type? new-type?)))
 
-      :tlambda (b* (((var-renamings r-) r)
-                    ((mv used new-params atom-renam array-renam)
-                     (uniq-type-var-params x.params used r-.avoid
-                                           r-.atom r-.array))
-                    ((mv used new-body)
-                     (uniq-expr x.body used
-                                (change-var-renamings r
-                                                      :atom atom-renam
-                                                      :array array-renam))))
-                 (mv used (atom-tlambda new-params new-body)))
+      :tlambdan (b* (((var-renamings r-) r)
+                     ((mv used new-params atom-renam array-renam)
+                      (uniq-type-var-params x.params used r-.avoid
+                                            r-.atom r-.array))
+                     ((mv used new-body)
+                      (uniq-expr x.body used
+                                 (change-var-renamings r
+                                                       :atom atom-renam
+                                                       :array array-renam))))
+                  (mv used (atom-tlambdan new-params new-body)))
 
       :ilambda (b* (((var-renamings r-) r)
                     (name (ispace-var->name x.param))

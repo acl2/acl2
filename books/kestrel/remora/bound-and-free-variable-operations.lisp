@@ -275,7 +275,7 @@
          (set::union (bind-list-free-type-vars expr.binds)
                      (set::difference (expr-free-type-vars expr.body)
                                       (bind-list-bound-type-vars expr.binds))))
-   (atom :tlambda
+   (atom :tlambdan
          (set::difference (expr-free-type-vars atom.body)
                           (set::mergesort atom.params)))
    (bind :tfun
@@ -423,8 +423,8 @@
   ((type :var (set::insert type.var nil))
    (type :forall (set::union (set::mergesort type.params)
                              (type-all-type-vars type.body)))
-   (atom :tlambda (set::union (set::mergesort atom.params)
-                              (expr-all-type-vars atom.body)))
+   (atom :tlambdan (set::union (set::mergesort atom.params)
+                               (expr-all-type-vars atom.body)))
    (bind :type (set::insert bind.var
                             (type-all-type-vars bind.type)))
    (bind :tfun (set::union (set::mergesort bind.params)

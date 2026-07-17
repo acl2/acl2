@@ -940,7 +940,7 @@
        The other lambda summands will be similarly given unary forms.")
      (xdoc::p
       "The concrete syntax requires the parameter lists of
-       the @(':lambda'), @(':tlambda'), and @(':ilambdan') summands
+       the @(':lambda'), @(':tlambdan'), and @(':ilambdan') summands
        and the ispace list of @(':box') to be non-empty;
        this is not captured in this fixtype.")
      (xdoc::p
@@ -951,8 +951,8 @@
     (:lambda ((params var+type?-list)
               (body expr)
               (type? type-option)))
-    (:tlambda ((params type-var-list)
-               (body expr)))
+    (:tlambdan ((params type-var-list)
+                (body expr)))
     (:ilambda ((param ispace-var)
                (body expr)))
     (:ilambdan ((params ispace-var-list)
