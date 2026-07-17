@@ -51,13 +51,14 @@
    (xdoc::p
     "These ASTs preserve much of the concrete syntax information,
      so they include both core and non-core constructs.
-     We have defines a characterization of core ASTs
+     We have defined a characterization of core ASTs
      and a desugaring transformation from all ASTs to core ASTs.
-     The ASTs in [impl] are slightly more abstracted than ours.")
+     The ASTs in [impl] are more abstracted than ours;
+     they contain less sugar.")
    (xdoc::p
     "Our ASTs contain some information absent from the concrete syntax,
      such as certain type annotations.
-     These are meant to be calculated by type checking/inference.")
+     These are calculated by type checking/inference.")
    (xdoc::p
     "As a general remark that applies to multiple fixtypes defined here,
      we use ACL2 strings for variable names.
@@ -67,21 +68,21 @@
     "Note that the strings representing identifiers
      that derive from potentially-non-ASCII Remora surface syntax
      are stored in our ASTs as ACL2 strings whose bytes are
-     the @('UTF-8') encoding of the original Unicode code-point sequence.
+     the UTF-8 encoding of the original Unicode code-point sequence.
      Since ACL2 char codes are 0-255,
      a non-ASCII code point such as U+03B1 cannot occupy a single character;
-     the @('UTF-8') convention encodes it as two bytes (@('0xCE 0xB1'))
+     the UTF-8 convention encodes it as two bytes (@('0xCE 0xB1'))
      within the string.
      ASCII identifiers are unaffected
-     (each ASCII code point is a single @('UTF-8') byte).
+     (each ASCII code point is a single UTF-8 byte).
      The encoding is performed by syntax abstraction by @('abs-nats-to-string'),
-     and is symmetric to the @('UTF-8') decoding
-     performed by the parsing entry points (see @('parser-interface')).
+     and is symmetric to the UTF-8 decoding
+     performed by the parsing entry points (see @(see parser-interface)).
      Consumers that need code points back
-     can decode the string with @('acl2::utf8=>ustring').
-     String equality on names is bytewise,
+     can decode the string with @(tsee acl2::utf8=>ustring).
+     String equality on names is byte-wise,
      which agrees with code-point-sequence equality,
-     given the assumption that the strings are well-formed @('UTF-8')."))
+     given the assumption that the strings are well-formed UTF-8."))
   :order-subtopics t
   :default-parent t)
 
