@@ -825,7 +825,7 @@
       "The @(':tapp') summand is the main, core form of type application,
        while the @(':tappn') summand is sugar for
        a left-nested chain of the unary applications to one argument at a time.
-       We plan to redirect the CST-to-AST mapping to turn
+       The CST-to-AST mapping turns
        applications to one argument into @(':tapp'),
        and applications to two or more arguments into @(':tappn'),
        similarly to ispace applications.")
