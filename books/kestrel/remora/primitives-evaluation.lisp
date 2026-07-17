@@ -89,7 +89,8 @@
                @(tsee prim-float-ceiling), @(tsee prim-float-floor)."))
    (xdoc::p
     "The polymorphic primitives currently implemented are
-     @(tsee prim-head), @(tsee prim-tail), and @(tsee prim-length).")
+     @(tsee prim-head), @(tsee prim-tail), @(tsee prim-length),
+     @(tsee prim-append), and @(tsee prim-reverse).")
    (xdoc::p
     "For integers, we currently model Remora integer values as unbounded
      mathematical integers, matching ACL2's own integer type.
@@ -164,7 +165,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (+ i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-add
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -174,7 +181,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (- i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-sub
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -184,7 +197,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (* i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-mul
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -202,7 +221,13 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (= i2.int 0)) (reserr nil)) ;; ERROR: division by zero
        (ival (int-value (floor i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-div
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -219,7 +244,13 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (< i2.int 0)) (reserr nil)) ;; ERROR: negative exponent
        (ival (int-value (expt i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-expt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -237,7 +268,13 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (= i2.int 0)) (reserr nil)) ;; ERROR: modulo zero
        (ival (int-value (mod i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-mod
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -247,7 +284,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (max i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-max
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -257,7 +300,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (min i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-min
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -267,7 +316,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (logand i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-bit-and
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -277,7 +332,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (logior i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-bit-or
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -287,7 +348,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (logxor i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-bit-xor
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -311,7 +378,13 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (< i2.int 0)) (reserr nil)) ;; ERROR: shift by negative bits
        (ival (int-value (ash i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-shl
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -322,7 +395,13 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (< i2.int 0)) (reserr nil)) ;; ERROR: shift by negative bits
        (ival (int-value (ash i1.int (- i2.int)))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-shr
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -331,7 +410,13 @@
   :short "Evaluation of integer bitwise negation."
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        (ival (int-value (lognot i1.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-bit-not
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -357,7 +442,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((when (< i1.int 0)) (reserr nil)) ;; ERROR: negative input
        (ival (int-value (logcount i1.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-popc
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -367,7 +458,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (= i1.int i2.int)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-eq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -377,7 +474,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (not (= i1.int i2.int))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-neq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -387,7 +490,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (< i1.int i2.int)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-lt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -397,7 +506,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (> i1.int i2.int)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-gt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -407,7 +522,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (<= i1.int i2.int)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-leq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -417,7 +538,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (>= i1.int i2.int)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-geq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -426,7 +553,13 @@
   :short "Evaluation of integer conversion to float."
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        (fval (float-value-ratio i1.int)))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-to-float
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -435,7 +568,13 @@
   :short "Evaluation of integer conversion to boolean."
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        (bval (not (= i1.int 0))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-to-bool
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -489,7 +628,13 @@
                           0
                         (float-value-ratio->ratio f2))))
                (float-value-ratio (+ r1 r2)))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-add
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -548,7 +693,13 @@
                           0
                         (float-value-ratio->ratio f2))))
                (float-value-ratio (- r1 r2)))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-sub
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -624,7 +775,13 @@
                (if (and (= res 0) neg-res)
                    (float-value-neg0)
                  (float-value-ratio res)))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-mul
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -701,7 +858,13 @@
                (if (and (= res 0) neg-res)
                    (float-value-neg0)
                  (float-value-ratio res)))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-div
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -804,7 +967,13 @@
                  (t (float-value-ratio 0))))
           ;; 7e. standard case.
           (t (float-value-ratio (expt r1 r2))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-expt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -841,7 +1010,13 @@
                         (float-value-ratio->ratio f2)))
                   (res (<= r1 r2)))
                (if res f2 f1))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-max
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -878,7 +1053,13 @@
                         (float-value-ratio->ratio f2)))
                   (res (<= r1 r2)))
                (if res f1 f2))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-min
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -912,7 +1093,13 @@
      a decision Remora has not yet made.
      We therefore defer the implementation and error for now."))
   (b* (((ok &) (check-expr-value-float val1)))
-    (reserr nil)))
+    (reserr nil))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-sqrt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -940,7 +1127,13 @@
                           (= f1.ratio 0))
                      (and (float-value-case f2 :ratio)
                           (= f1.ratio (float-value-ratio->ratio f2)))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-eq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -968,7 +1161,13 @@
                                (= f1.ratio 0))
                           (and (float-value-case f2 :ratio)
                                (= f1.ratio (float-value-ratio->ratio f2))))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-neq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -999,7 +1198,13 @@
                           (< f1.ratio 0))
                      (and (float-value-case f2 :ratio)
                           (< f1.ratio (float-value-ratio->ratio f2)))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-lt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1030,7 +1235,13 @@
                           (> f1.ratio 0))
                      (and (float-value-case f2 :ratio)
                           (> f1.ratio (float-value-ratio->ratio f2)))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-gt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1061,7 +1272,13 @@
                           (<= f1.ratio 0))
                      (and (float-value-case f2 :ratio)
                           (<= f1.ratio (float-value-ratio->ratio f2)))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-leq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1092,7 +1309,13 @@
                           (>= f1.ratio 0))
                      (and (float-value-case f2 :ratio)
                           (>= f1.ratio (float-value-ratio->ratio f2)))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-geq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1113,7 +1336,13 @@
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
       :neginf (reserr nil)
-      :nan    (reserr nil))))
+      :nan    (reserr nil)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-truncate
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1135,7 +1364,13 @@
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
       :neginf (reserr nil)
-      :nan    (reserr nil))))
+      :nan    (reserr nil)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-round
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1156,7 +1391,13 @@
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
       :neginf (reserr nil)
-      :nan    (reserr nil))))
+      :nan    (reserr nil)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-ceiling
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1177,7 +1418,13 @@
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
       :neginf (reserr nil)
-      :nan    (reserr nil))))
+      :nan    (reserr nil)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-floor
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1186,7 +1433,13 @@
   :short "Evaluation of boolean negation."
   (b* (((ok b1) (check-expr-value-bool val1))
        (bval (not b1)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-not
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1196,7 +1449,13 @@
   (b* (((ok b1) (check-expr-value-bool val1))
        ((ok b2) (check-expr-value-bool val2))
        (bval (and b1 b2)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-and
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1206,7 +1465,13 @@
   (b* (((ok b1) (check-expr-value-bool val1))
        ((ok b2) (check-expr-value-bool val2))
        (bval (or b1 b2)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-or
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1216,7 +1481,13 @@
   (b* (((ok b1) (check-expr-value-bool val1))
        ((ok b2) (check-expr-value-bool val2))
        (bval (iff b1 b2)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-eq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1226,7 +1497,13 @@
   (b* (((ok b1) (check-expr-value-bool val1))
        ((ok b2) (check-expr-value-bool val2))
        (bval (not (iff b1 b2))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-neq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1235,7 +1512,13 @@
   :short "Evaluation of boolean conversion to integer."
   (b* (((ok b1) (check-expr-value-bool val1))
        (ival (int-value (if b1 1 0))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-to-int
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1244,7 +1527,13 @@
   :short "Evaluation of boolean conversion to float."
   (b* (((ok b1) (check-expr-value-bool val1))
        (fval (float-value-ratio (if b1 1 0))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-to-float
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1283,7 +1572,14 @@
         (reserr nil))
        (elems (expr-value-vector->elems val1))
        ((unless (consp elems)) (reserr nil)))
-    (car elems)))
+    (car elems))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-head
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (expr-value-wfp val1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1304,12 +1600,14 @@
      According to the instantiated type of the operation,
      the argument cell is an array
      whose dimensions are the dimension @('d+1') followed by the shape @('s'),
-     and the result is the array after removing the first element, whose dimensions are
+     and the result is the array after removing the first element,
+     whose dimensions are
      the dimension @('d') followed by the shape @('s').
      The guard requires the argument cell to be well-formed;
      we defensively check that it has the expected dimensions.")
    (xdoc::p
-    "The type value @('tval') is currently only used for when the output is an empty array
+    "The type value @('tval') is currently only used
+     for when the output is an empty array
      and not for checking well-formedness,
      because our well-formedness checks on expression values
      currently concern dimensions but not types;
@@ -1326,7 +1624,16 @@
        (tail (cdr elems)))
     (if (consp tail)
         (expr-value-vector tail)
-      (expr-value-vector-empty s tval))))
+      (expr-value-vector-empty s tval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-tail
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (expr-value-wfp val1)
+    :hints (("Goal" :in-theory (e/d (dims-of-expr-value-list-of-cdr)
+                                    (cdr-of-dims-of-expr-value-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1361,52 +1668,134 @@
        (s (nat-list-fix s))
        ((unless (equal (dims-of-expr-value val1) (cons d s)))
         (reserr nil)))
-    (expr-value-base (base-value-int (int-value d)))))
+    (expr-value-base (base-value-int (int-value d))))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-length
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define prim-append ((tval type-valuep) (m natp) (n natp) (s nat-listp)
-                     (val1 expr-valuep) (val2 expr-valuep))
+(define prim-append ((tval type-valuep)
+                     (m natp)
+                     (n natp)
+                     (s nat-listp)
+                     (val1 expr-valuep)
+                     (val2 expr-valuep))
   :guard (and (expr-value-wfp val1) (expr-value-wfp val2))
   :returns (val expr-value-resultp)
+  :short "Evaluation of array append."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('append') operation
+     (see the @(':append-t-m-n-s') summand of @(tsee primop-value)):
+     @('tval'), @('m'), @('n'), and @('s') are the instantiation values,
+     and @('val1') and @('val2') are the argument cells.
+     According to the instantiated type of the operation,
+     the argument cells are arrays
+     whose dimensions are the dimensions @('m') and @('n') respectively,
+     each followed by the shape @('s'),
+     and the result is the concatenation of the two arrays,
+     whose dimensions are the dimension @('m+n') followed by the shape @('s').
+     The guard requires the argument cells to be well-formed;
+     we defensively check that they have the expected dimensions.")
+   (xdoc::p
+    "Since @('m') and @('n') may be 0,
+     the argument cells may be empty arrays,
+     which are not @(':vector') values and contribute no elements.
+     The type value @('tval') is currently only used
+     for when the output is an empty array
+     and not for checking well-formedness,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cells
+     when those checks are extended to types."))
   (b* ((m (lnfix m)) (n (lnfix n)) (s (nat-list-fix s))
        ((unless (equal (dims-of-expr-value val1) (cons m s))) (reserr nil))
        ((unless (equal (dims-of-expr-value val2) (cons n s))) (reserr nil))
-       (elems1 (if (expr-value-case val1 :vector)
-                   (expr-value-vector->elems val1) nil))
-       (elems2 (if (expr-value-case val2 :vector)
-                   (expr-value-vector->elems val2) nil))
+       (elems1 (expr-value-vector-elements val1))
+       (elems2 (expr-value-vector-elements val2))
        (elems (append elems1 elems2)))
     (if (consp elems)
         (expr-value-vector elems)
-      (expr-value-vector-empty s tval))))
+      (expr-value-vector-empty s tval)))
+  :guard-hints
+  (("Goal" :in-theory (enable expr-value-vectorp-to-consp-of-dims)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-append
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (and (expr-value-wfp val1)
+              (expr-value-wfp val2))
+    :hints (("Goal"
+             :in-theory
+             (e/d (dims-of-expr-value-vector-elements-to-repeat
+                   expr-value-vectorp-to-consp-of-dims
+                   car-of-repeat
+                   car/cdr-when-equal-cons)
+                  (car-of-dims-of-expr-value-list))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-reverse ((tval type-valuep)
+                      (d natp)
+                      (s nat-listp)
+                      (val1 expr-valuep))
+  :guard (expr-value-wfp val1)
+  :returns (val expr-value-resultp)
+  :short "Evaluation of array reverse."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('reverse') operation
+     (see the @(':reverse-t-d-s') summand of @(tsee primop-value)):
+     @('tval'), @('d'), and @('s') are the instantiation values,
+     and @('val1') is the argument cell.
+     According to the instantiated type of the operation,
+     the argument cell is an array
+     whose dimensions are the dimension @('d') followed by the shape @('s'),
+     and the result is the array with its elements in reverse order,
+     with the same dimensions.
+     The guard requires the argument cell to be well-formed;
+     we defensively check that it has the expected dimensions.")
+   (xdoc::p
+    "We reverse the order of the elements of the cell,
+     i.e. we reverse the array along its leading axis,
+     as prescribed by the type of the operation.
+     This is consistent with the interpreter in [impl].")
+   (xdoc::p
+    "Since @('d') may be 0, the argument cell may be an empty array,
+     which is not a @(':vector') value and has no elements.
+     The type value @('tval') is currently only used
+     for when the output is an empty array
+     and not for checking well-formedness,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cell
+     when those checks are extended to types."))
+  (b* ((d (lnfix d)) (s (nat-list-fix s))
+       ((unless (equal (dims-of-expr-value val1) (cons d s))) (reserr nil))
+       (elems (expr-value-vector-elements val1))
+       (relems (rev elems)))
+    (if (consp relems)
+        (expr-value-vector relems)
+      (expr-value-vector-empty s tval)))
+  :guard-hints
+  (("Goal" :in-theory (enable expr-value-vectorp-to-consp-of-dims)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-reverse
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (expr-value-wfp val1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule dims-of-expr-value-of-car-of-expr-value-vector->elems
-  (implies (and (expr-value-wfp val) (expr-value-case val :vector))
-           (equal (dims-of-expr-value (car (expr-value-vector->elems val)))
-                  (cdr (dims-of-expr-value val))))
-  :enable (dims-of-expr-value
-           expr-value-wfp
-           expr-value-list-wfp-alt-def
-           check-dims-of-expr-value
-           check-dims-of-expr-value-list-when-expr-value-list-wfp
-           acl2::not-reserrp-when-nat-list-listp))
-
-(defrule expr-value-wfp-of-expr-value-vector-of-append-of-vector->elems
-  (implies (and (expr-value-wfp val1) (expr-value-case val1 :vector)
-                (expr-value-wfp val2) (expr-value-case val2 :vector)
-                (equal (dims-of-expr-value val1) (cons m s))
-                (equal (dims-of-expr-value val2) (cons n s))
-                (consp (append (expr-value-vector->elems val1)
-                               (expr-value-vector->elems val2))))
-           (expr-value-wfp
-            (expr-value-vector (append (expr-value-vector->elems val1)
-                                       (expr-value-vector->elems val2)))))
-  :use ((:instance list-repeatp-of-append
-                   (x (dims-of-expr-value-list (expr-value-vector->elems val1)))
-                   (y (dims-of-expr-value-list (expr-value-vector->elems val2))))))
 
 (define eval-primop-fun ((op primop-valuep) (args expr-value-listp))
   :guard (and (primop-value-funp op)
@@ -1499,7 +1888,10 @@
      :append (prog2$ (impossible) (reserr nil))
      :append-t (prog2$ (impossible) (reserr nil))
      :append-t-m-n-s (prim-append op.tval op.mval op.nval op.sval
-                                  (first args) (second args))))
+                                  (first args) (second args))
+     :reverse (prog2$ (impossible) (reserr nil))
+     :reverse-t (prog2$ (impossible) (reserr nil))
+     :reverse-t-d-s (prim-reverse op.tval op.dval op.sval (first args))))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp
                                            arity-of-primop-value-fun
                                            type-of-primop-value-fun)))
@@ -1509,63 +1901,7 @@
   (defret expr-value-wfp-of-eval-primop-fun
     (implies (not (reserrp val))
              (expr-value-wfp val))
-    :hyp (expr-value-list-wfp args)
-    :hints
-    (("Goal" :in-theory (e/d (eval-primop-fun
-                              prim-int-add
-                              prim-int-sub
-                              prim-int-mul
-                              prim-int-div
-                              prim-int-expt
-                              prim-int-mod
-                              prim-int-max
-                              prim-int-min
-                              prim-int-bit-and
-                              prim-int-bit-or
-                              prim-int-bit-xor
-                              prim-int-shl
-                              prim-int-shr
-                              prim-int-bit-not
-                              prim-int-popc
-                              prim-int-eq
-                              prim-int-neq
-                              prim-int-lt
-                              prim-int-gt
-                              prim-int-leq
-                              prim-int-geq
-                              prim-int-to-float
-                              prim-int-to-bool
-                              prim-float-add
-                              prim-float-sub
-                              prim-float-mul
-                              prim-float-div
-                              prim-float-expt
-                              prim-float-max
-                              prim-float-min
-                              prim-float-sqrt
-                              prim-float-eq
-                              prim-float-neq
-                              prim-float-lt
-                              prim-float-gt
-                              prim-float-leq
-                              prim-float-geq
-                              prim-float-truncate
-                              prim-float-round
-                              prim-float-ceiling
-                              prim-float-floor
-                              prim-bool-not
-                              prim-bool-and
-                              prim-bool-or
-                              prim-bool-eq
-                              prim-bool-neq
-                              prim-bool-to-int
-                              prim-bool-to-float
-                              prim-head
-                              prim-tail
-                              prim-length
-                              prim-append
-                              dims-of-expr-value-list-of-cdr)
-                             (cdr-of-dims-of-expr-value-list))))))
+    :hyp (expr-value-list-wfp args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1613,6 +1949,11 @@
                           (list (type-var-atom "t"))))
                  (reserr nil)))
              (expr-value-primop (primop-value-append-t (first tvals))))
+   :reverse (b* (((unless (type-values-match-type-vars-p
+                           tvals
+                           (list (type-var-atom "t"))))
+                  (reserr nil)))
+              (expr-value-primop (primop-value-reverse-t (first tvals))))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-tfunp
                                            type-values-match-type-vars-p)))
@@ -1648,7 +1989,9 @@
      i.e. the ones in the operation's type in @(tsee primop-types);
      then we construct the next instantiation stage of the operation,
      which stores the ispace values received
-     (for @('head'), @('tail'), and @('length'), a dimension and a shape),
+     (a dimension and a shape
+     for @('head'), @('tail'), @('length'), and @('reverse');
+     two dimensions and a shape for @('append')),
      along with the previously received type values.
      Anything else is an error."))
   (primop-value-case
@@ -1695,6 +2038,16 @@
                  :mval (ispace-value-dim->val (first ivals))
                  :nval (ispace-value-dim->val (second ivals))
                  :sval (ispace-value-shape->val (third ivals)))))
+   :reverse-t (b* (((unless (ispace-values-match-ispace-vars-p
+                             ivals
+                             (list (ispace-var-dim "d")
+                                   (ispace-var-shape "s"))))
+                    (reserr nil)))
+                (expr-value-primop
+                 (make-primop-value-reverse-t-d-s
+                  :tval op.tval
+                  :dval (ispace-value-dim->val (first ivals))
+                  :sval (ispace-value-shape->val (second ivals)))))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp
                                            ispace-values-match-ispace-vars-p)))

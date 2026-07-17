@@ -15845,7 +15845,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defconst *default-state*
   (list nil nil
         *initial-global-table*
-        4000000 nil nil 1 nil nil nil nil nil))
+        nil nil 1 nil nil nil nil nil))
 
 (defun build-state1 (open-input-channels
    open-output-channels global-table
