@@ -361,7 +361,7 @@
              :array nil
              :bracket nil
              :fun t
-             :forall t
+             :foralln t
              :pi t
              :pin t
              :sigma t))
@@ -563,7 +563,7 @@
   (b* ((params (type-var-list-fix params))
        (body (type-fix body)))
     (cond ((endp (cdr params)) body)
-          (t (make-type-forall :params (cdr params) :body body)))))
+          (t (make-type-foralln :params (cdr params) :body body)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

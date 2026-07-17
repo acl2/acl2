@@ -269,8 +269,8 @@
   :combine set::union
   :override
   ((type :var (set::insert type.var nil))
-   (type :forall (set::difference (type-free-type-vars type.body)
-                                  (set::mergesort type.params)))
+   (type :foralln (set::difference (type-free-type-vars type.body)
+                                   (set::mergesort type.params)))
    (expr :let
          (set::union (bind-list-free-type-vars expr.binds)
                      (set::difference (expr-free-type-vars expr.body)
@@ -422,8 +422,8 @@
   :combine set::union
   :override
   ((type :var (set::insert type.var nil))
-   (type :forall (set::union (set::mergesort type.params)
-                             (type-all-type-vars type.body)))
+   (type :foralln (set::union (set::mergesort type.params)
+                              (type-all-type-vars type.body)))
    (atom :tlambda (set::insert atom.param (expr-all-type-vars atom.body)))
    (atom :tlambdan (set::union (set::mergesort atom.params)
                                (expr-all-type-vars atom.body)))

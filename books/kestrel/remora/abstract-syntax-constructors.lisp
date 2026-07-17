@@ -248,8 +248,8 @@
   :short "Construct a universal type from
           a parenthesized list of variable strings (parameters)
           and a type term (body)."
-  `(type-forall (list ,@(type-var-terms-from-strings params))
-                ,(type-term-from-var/base/other type)))
+  `(type-foralln (list ,@(type-var-terms-from-strings params))
+                 ,(type-term-from-var/base/other type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

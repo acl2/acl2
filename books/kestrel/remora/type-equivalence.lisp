@@ -361,24 +361,24 @@
              :fun (and (type-list-equivp type1.in type2.in)
                        (type-equivp type1.out type2.out))
              :otherwise nil))
-     :forall (b* ((type2 (normalize-scalar-type type2)))
-               (type-case
-                type2
-                :forall (b* ((used (set::union (type-all-type-vars type1)
-                                               (type-all-type-vars type2)))
-                             (maps (fresh-type-var-renaming type1.params
-                                                            type2.params
-                                                            used))
-                             ((when (reserrp maps)) nil)
-                             ((string-string-map-quadruple maps) maps)
-                             (body1 (type-rename-type-vars type1.body
-                                                           maps.1st
-                                                           maps.2nd))
-                             (body2 (type-rename-type-vars type2.body
-                                                           maps.3rd
-                                                           maps.4th)))
-                          (type-equivp body1 body2))
-                :otherwise nil))
+     :foralln (b* ((type2 (normalize-scalar-type type2)))
+                (type-case
+                 type2
+                 :foralln (b* ((used (set::union (type-all-type-vars type1)
+                                                 (type-all-type-vars type2)))
+                               (maps (fresh-type-var-renaming type1.params
+                                                              type2.params
+                                                              used))
+                               ((when (reserrp maps)) nil)
+                               ((string-string-map-quadruple maps) maps)
+                               (body1 (type-rename-type-vars type1.body
+                                                             maps.1st
+                                                             maps.2nd))
+                               (body2 (type-rename-type-vars type2.body
+                                                             maps.3rd
+                                                             maps.4th)))
+                            (type-equivp body1 body2))
+                 :otherwise nil))
      :pi (b* ((type2 (normalize-scalar-type type2)))
            (type-case
             type2

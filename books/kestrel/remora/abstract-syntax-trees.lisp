@@ -442,11 +442,11 @@
        the product types with one parameter into @(':pi'),
        and those with two or more parameters into @(':pin'),
        similarly to ispace applications (see @(tsee expr)).
-       The @(':forall') and @(':sigma') summands
+       The @(':foralln') and @(':sigma') summands
        will be similarly given unary forms.")
      (xdoc::p
       "The concrete syntax requires the parameter lists of
-       @(':forall'), @(':pin'), and @(':sigma') to be non-empty;
+       @(':foralln'), @(':pin'), and @(':sigma') to be non-empty;
        this is not captured in this fixtype."))
     (:var ((var type-var)))
     (:base ((type base-type)))
@@ -456,8 +456,8 @@
                (ispaces ispace-list)))
     (:fun ((in type-list)
            (out type)))
-    (:forall ((params type-var-list)
-              (body type)))
+    (:foralln ((params type-var-list)
+               (body type)))
     (:pi ((param ispace-var)
           (body type)))
     (:pin ((params ispace-var-list)

@@ -277,7 +277,7 @@
                    (check-ispace-list type.ispaces senv))
      :fun (and (check-type-list type.in senv)
                (check-type type.out senv))
-     :forall (check-type type.body (senv-add-type-vars type.params senv))
+     :foralln (check-type type.body (senv-add-type-vars type.params senv))
      :pi (check-type type.body (senv-add-ispace-var type.param senv))
      :pin (check-type type.body (senv-add-ispace-vars type.params senv))
      :sigma (check-type type.body (senv-add-ispace-vars type.params senv)))
@@ -1662,7 +1662,7 @@
      (b* ((senv (senv-add-type-var atom.param senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
-        :type (make-type-forall :params (list atom.param) :body be.type)
+        :type (make-type-foralln :params (list atom.param) :body be.type)
         :atom (make-atom-tlambda :param atom.param :body be.expr)))
      :tlambdan
      (b* (((unless (no-duplicatesp-equal atom.params))
@@ -1670,7 +1670,7 @@
           (senv (senv-add-type-vars atom.params senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
-        :type (make-type-forall :params atom.params :body be.type)
+        :type (make-type-foralln :params atom.params :body be.type)
         :atom (make-atom-tlambdan :params atom.params :body be.expr)))
      :ilambda
      (b* ((senv (senv-add-ispace-var atom.param senv))
@@ -1875,7 +1875,7 @@
        (make-senv+bind
         :senv (senv-add-var+type bind.var
                                  (make-type-array
-                                  :elem (make-type-forall
+                                  :elem (make-type-foralln
                                          :params bind.params
                                          :body ee.type)
                                   :ispace (ispace-shape (shape-dims nil)))
@@ -1928,8 +1928,8 @@
                      :none fun-type))
           (fun-type (type-var-list-option-case
                      bind.tparams?
-                     :some (make-type-forall :params bind.tparams?.val
-                                             :body fun-type)
+                     :some (make-type-foralln :params bind.tparams?.val
+                                              :body fun-type)
                      :none fun-type)))
        (make-senv+bind
         :senv (senv-add-var+type bind.var

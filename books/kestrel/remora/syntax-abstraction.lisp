@@ -1338,13 +1338,13 @@
   ;;               ws type
   (define abs-forall-type ((tree abnf::treep))
     :returns (ty type-resultp)
-    :short "Abstract a @('forall-type') to a @(tsee type) @(':forall')."
+    :short "Abstract a @('forall-type') to a @(tsee type) @(':foralln')."
     (b* (((okf (abnf::tree-list-tuple8 sub))
           (abnf::check-tree-nonleaf-8 tree "forall-type"))
          ((okf params) (abs-*-ws-type-var sub.4th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf body) (abs-type body-tree)))
-      (make-type-forall :params params :body body))
+      (make-type-foralln :params params :body body))
     :measure (abnf::tree-count tree))
 
   ;; pi-type = ( "Pi" / %x03A0 ) ws "(" *( ws ispace-var ) ws ")"

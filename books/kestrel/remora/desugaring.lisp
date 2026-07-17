@@ -237,8 +237,8 @@
                     (lambda-type?
                      (type-option-case
                       type?
-                      :some (make-type-forall :params bind.params
-                                              :body type?.val)
+                      :some (make-type-foralln :params bind.params
+                                               :body type?.val)
                       :none nil))
                     (lambda-expr
                      (make-expr-array
@@ -304,8 +304,8 @@
                               :none lambda-type)))
                          (type-var-list-option-case
                           bind.tparams?
-                          :some (make-type-forall :params bind.tparams?.val
-                                                  :body ilambda-lambda-type)
+                          :some (make-type-foralln :params bind.tparams?.val
+                                                   :body ilambda-lambda-type)
                           :none ilambda-lambda-type)))))
                  (make-bind-val :var bind.var
                                 :type? lambda-type?

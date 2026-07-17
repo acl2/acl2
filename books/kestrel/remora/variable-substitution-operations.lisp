@@ -413,7 +413,7 @@
   :default t
   :combine and
   :override
-  ((type :forall
+  ((type :foralln
          (b* (((mv atom-subst array-subst)
                (atom/array-subst-remove-bound (set::mergesort type.params)
                                               atom-subst
@@ -821,12 +821,12 @@
                    (if var+type
                        (cdr var+type)
                      (type-var (type-var-array type.var.name))))))
-   (type :forall
+   (type :foralln
          (b* (((mv atom-subst array-subst)
                (atom/array-subst-remove-bound (set::mergesort type.params)
                                               atom-subst
                                               array-subst)))
-           (make-type-forall
+           (make-type-foralln
             :params type.params
             :body (type-subst-type-vars type.body
                                         atom-subst

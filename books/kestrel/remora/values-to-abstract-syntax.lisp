@@ -146,7 +146,7 @@
              :ispace (ispace-shape (shape-dims (dim-const-list tval.dims))))
      :fun (make-type-fun :in (type-value-list-to-type-list tval.in)
                          :out (type-value-to-type tval.out))
-     :forall (make-type-forall
+     :forall (make-type-foralln
               :params (list tval.param)
               :body (type-subst-type-denv tval.body tval.denv))
      :pi (make-type-pi

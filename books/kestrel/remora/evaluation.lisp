@@ -333,13 +333,13 @@
      :fun (b* (((ok in-tvals) (eval-type-list type.in denv))
                ((ok out-tval) (eval-type type.out denv)))
             (make-type-value-fun :in in-tvals :out out-tval))
-     :forall (b* (((unless (consp type.params)) (reserr nil)))
-               (make-type-value-forall
-                :param (car type.params)
-                :body (forall-curried-body type.params type.body)
-                :denv (type-denv-restrict (type-free-ispace-vars type)
-                                          (type-free-type-vars type)
-                                          denv)))
+     :foralln (b* (((unless (consp type.params)) (reserr nil)))
+                (make-type-value-forall
+                 :param (car type.params)
+                 :body (forall-curried-body type.params type.body)
+                 :denv (type-denv-restrict (type-free-ispace-vars type)
+                                           (type-free-type-vars type)
+                                           denv)))
      :pi (make-type-value-pi
           :param type.param
           :body type.body
@@ -1606,8 +1606,8 @@
                   ((ok &) (type-option-case
                            bind.type?
                            :some (eval-type
-                                  (make-type-forall :params bind.params
-                                                    :body bind.type?.val)
+                                  (make-type-foralln :params bind.params
+                                                     :body bind.type?.val)
                                   (expr-denv->tenv denv))
                            :none nil)))
                (expr-denv-add-expr bind.var val denv))
@@ -1659,8 +1659,8 @@
                                :atoms (list (make-atom-tlambdan
                                              :params bind.tparams?.val
                                              :body iexpr)))
-                              (make-type-forall :params bind.tparams?.val
-                                                :body itype))
+                              (make-type-foralln :params bind.tparams?.val
+                                                 :body itype))
                     :none (mv iexpr itype)))
                   ((ok val) (eval-expr cfun-expr denv (1- limit)))
                   ((ok &) (eval-type cfun-type (expr-denv->tenv denv))))

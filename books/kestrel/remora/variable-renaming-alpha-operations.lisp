@@ -704,13 +704,13 @@
                    (if var+name
                        (type-var (type-var-array (cdr var+name)))
                      (type-var (type-var-array type.var.name))))))
-   (type :forall
+   (type :foralln
          (b* (((mv fresh-params atom-renam array-renam)
                (atom/array-rename-alpha-bound type.params
                                               atom-renam
                                               array-renam
                                               (type-free-type-vars type.body))))
-           (make-type-forall
+           (make-type-foralln
             :params fresh-params
             :body (type-rename-type-vars-alpha-aux type.body
                                                    atom-renam

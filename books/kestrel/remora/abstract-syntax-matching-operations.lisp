@@ -119,14 +119,14 @@
      if there are no other variables,
      or otherwise the universal type over the remaining variables.
      A universal type with no variables fails to match."))
-  (b* (((unless (type-case type :forall)) (reserr nil))
-       (params (type-forall->params type))
-       (body (type-forall->body type))
+  (b* (((unless (type-case type :foralln)) (reserr nil))
+       (params (type-foralln->params type))
+       (body (type-foralln->body type))
        ((unless (consp params)) (reserr nil)))
     (make-typevar+type
      :var (car params)
      :type (if (consp (cdr params))
-               (make-type-forall :params (cdr params) :body body)
+               (make-type-foralln :params (cdr params) :body body)
              body))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
