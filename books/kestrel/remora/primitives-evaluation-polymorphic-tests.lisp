@@ -465,3 +465,112 @@
                                                             :dval 3
                                                             :sval nil)
                            (list *vec3* *vec3*))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation index:
+; instantiation stage transitions and application of the final stage.
+
+; Type application: index applied to one atom type value.
+
+(acl2::assert-equal
+ (eval-primop-tfun (primop-value-index) (list *tv-int*))
+ (expr-value-primop (primop-value-index-t *tv-int*)))
+
+; Ispace application: index-t applied to one dimension.
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-index-t *tv-int*)
+                   (list (ispace-value-dim 3)))
+ (expr-value-primop (make-primop-value-index-t-m :tval *tv-int*
+                                                 :mval 3)))
+
+; Application of the fully instantiated index to argument cells.
+
+(acl2::assert-equal (prim-index *tv-int* 3 *vec3* (iv 0)) (iv 1))
+(acl2::assert-equal (prim-index *tv-int* 3 *vec3* (iv 2)) (iv 3))
+
+; Index out of bounds.
+(acl2::assert-event (reserrp (prim-index *tv-int* 3 *vec3* (iv 3))))
+(acl2::assert-event (reserrp (prim-index *tv-int* 3 *vec3* (iv -1))))
+
+; Cell dimensions not matching the instantiation.
+(acl2::assert-event (reserrp (prim-index *tv-int* 2 *vec3* (iv 0))))
+(acl2::assert-event (reserrp (prim-index *tv-int* 3 *mat23* (iv 0))))
+
+; Non-integer index.
+(acl2::assert-event (reserrp (prim-index *tv-int* 3 *vec3* (bv t))))
+
+; Via eval-primop-fun.
+
+(acl2::assert-equal
+ (eval-primop-fun (make-primop-value-index-t-m :tval *tv-int*
+                                               :mval 3)
+                  (list *vec3* (iv 1)))
+ (iv 2))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation index2d:
+; instantiation stage transitions and application of the final stage.
+
+; Type application: index2d applied to one atom type value.
+
+(acl2::assert-equal
+ (eval-primop-tfun (primop-value-index2d) (list *tv-int*))
+ (expr-value-primop (primop-value-index2d-t *tv-int*)))
+
+; Ispace application: index2d-t applied to two dimensions.
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-index2d-t *tv-int*)
+                   (list (ispace-value-dim 2)
+                         (ispace-value-dim 3)))
+ (expr-value-primop (make-primop-value-index2d-t-m-n :tval *tv-int*
+                                                     :mval 2
+                                                     :nval 3)))
+
+; Application of the fully instantiated index2d to argument cells.
+
+(acl2::assert-equal
+ (prim-index2d *tv-int* 2 3 *mat23*
+               (expr-value-vector (list (iv 0) (iv 0))))
+ (iv 1))
+(acl2::assert-equal
+ (prim-index2d *tv-int* 2 3 *mat23*
+               (expr-value-vector (list (iv 1) (iv 2))))
+ (iv 6))
+
+; Indices out of bounds.
+(acl2::assert-event
+ (reserrp (prim-index2d *tv-int* 2 3 *mat23*
+                        (expr-value-vector (list (iv 2) (iv 0))))))
+(acl2::assert-event
+ (reserrp (prim-index2d *tv-int* 2 3 *mat23*
+                        (expr-value-vector (list (iv 0) (iv 3))))))
+(acl2::assert-event
+ (reserrp (prim-index2d *tv-int* 2 3 *mat23*
+                        (expr-value-vector (list (iv -1) (iv 0))))))
+
+; Index vector of the wrong length.
+(acl2::assert-event
+ (reserrp (prim-index2d *tv-int* 2 3 *mat23*
+                        (expr-value-vector (list (iv 0))))))
+
+; Cell dimensions not matching the instantiation.
+(acl2::assert-event
+ (reserrp (prim-index2d *tv-int* 3 2 *mat23*
+                        (expr-value-vector (list (iv 0) (iv 0))))))
+(acl2::assert-event
+ (reserrp (prim-index2d *tv-int* 2 3 *vec3*
+                        (expr-value-vector (list (iv 0) (iv 0))))))
+
+; Via eval-primop-fun.
+
+(acl2::assert-equal
+ (eval-primop-fun (make-primop-value-index2d-t-m-n :tval *tv-int*
+                                                   :mval 2
+                                                   :nval 3)
+                  (list *mat23*
+                        (expr-value-vector (list (iv 1) (iv 0)))))
+ (iv 4))

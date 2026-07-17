@@ -1460,7 +1460,9 @@
          (cons "tail" (expr-value-primop (primop-value-tail)))
          (cons "length" (expr-value-primop (primop-value-length)))
          (cons "append" (expr-value-primop (primop-value-append)))
-         (cons "reverse" (expr-value-primop (primop-value-reverse))))))
+         (cons "reverse" (expr-value-primop (primop-value-reverse)))
+         (cons "index" (expr-value-primop (primop-value-index)))
+         (cons "index2d" (expr-value-primop (primop-value-index2d))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

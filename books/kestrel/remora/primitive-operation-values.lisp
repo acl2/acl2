@@ -83,7 +83,8 @@
      whose fields hold the instantiation values received so far.")
    (xdoc::p
     "Currently the only polymorphic operations are
-     @('head'), @('tail'), @('length'), @('append'), and @('reverse'),
+     @('head'), @('tail'), @('length'), @('append'), @('reverse'),
+     @('index'), and @('index2d'),
      each with three similar stages.
      For example, here are the stages of @('length'):
      @(':length') is the uninstantiated operation;
@@ -167,6 +168,15 @@
   (:reverse-t-d-s ((tval type-value)
                    (dval nat)
                    (sval nat-list)))
+  (:index ())
+  (:index-t ((tval type-value)))
+  (:index-t-m ((tval type-value)
+               (mval nat)))
+  (:index2d ())
+  (:index2d-t ((tval type-value)))
+  (:index2d-t-m-n ((tval type-value)
+                   (mval nat)
+                   (nval nat)))
   :pred primop-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -205,6 +215,10 @@
                      :append-t nil
                      :reverse nil
                      :reverse-t nil
+                     :index nil
+                     :index-t nil
+                     :index2d nil
+                     :index2d-t nil
                      :otherwise t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -228,6 +242,8 @@
                      :length t
                      :append t
                      :reverse t
+                     :index t
+                     :index2d t
                      :otherwise nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -250,6 +266,8 @@
                      :length-t t
                      :append-t t
                      :reverse-t t
+                     :index-t t
+                     :index2d-t t
                      :otherwise nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -311,6 +329,10 @@
                      :append-t-m-n-s (primop-value-append)
                      :reverse-t (primop-value-reverse)
                      :reverse-t-d-s (primop-value-reverse)
+                     :index-t (primop-value-index)
+                     :index-t-m (primop-value-index)
+                     :index2d-t (primop-value-index2d)
+                     :index2d-t-m-n (primop-value-index2d)
                      :otherwise (primop-value-fix op)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -520,6 +542,32 @@
                             :out (make-type-value-array
                                   :elem op.tval
                                   :dims (cons op.dval op.sval)))
+                     :dims nil)
+     :index (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :index-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :index-t-m (make-type-value-array
+                 :elem (make-type-value-fun
+                        :in (list (make-type-value-array
+                                   :elem op.tval
+                                   :dims (list op.mval))
+                                  int-tv)
+                        :out (make-type-value-array
+                              :elem op.tval
+                              :dims nil))
+                 :dims nil)
+     :index2d (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :index2d-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :index2d-t-m-n (make-type-value-array
+                     :elem (make-type-value-fun
+                            :in (list (make-type-value-array
+                                       :elem op.tval
+                                       :dims (list op.mval op.nval))
+                                      (make-type-value-array
+                                       :elem (type-value-base (base-type-int))
+                                       :dims (list 2)))
+                            :out (make-type-value-array
+                                  :elem op.tval
+                                  :dims nil))
                      :dims nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 

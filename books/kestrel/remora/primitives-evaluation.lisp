@@ -90,7 +90,8 @@
    (xdoc::p
     "The polymorphic primitives currently implemented are
      @(tsee prim-head), @(tsee prim-tail), @(tsee prim-length),
-     @(tsee prim-append), and @(tsee prim-reverse).")
+     @(tsee prim-append), @(tsee prim-reverse),
+     @(tsee prim-index), and @(tsee prim-index2d).")
    (xdoc::p
     "For integers, we currently model Remora integer values as unbounded
      mathematical integers, matching ACL2's own integer type.
@@ -1795,6 +1796,125 @@
              (expr-value-wfp val))
     :hyp (expr-value-wfp val1)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-index ((tval type-valuep)
+                    (m natp)
+                    (val1 expr-valuep)
+                    (val2 expr-valuep))
+  :guard (and (expr-value-wfp val1) (expr-value-wfp val2))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of vector indexing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('index') operation
+     (see the @(':index-t-m') summand of @(tsee primop-value)):
+     @('tval') and @('m') are the instantiation values,
+     and @('val1') and @('val2') are the argument cells.
+     According to the instantiated type of the operation,
+     the first argument cell is a vector of @('m') scalars,
+     the second argument cell is a scalar integer @('i'),
+     and the result is the @('i')-th element (zero-based) of the vector.
+     The guard requires the argument cells to be well-formed;
+     we defensively check that they have the expected dimensions,
+     and that the index is within bounds
+     (the interpreter in [impl] crashes on out-of-bounds indices,
+     while we return an error).")
+   (xdoc::p
+    "The type value @('tval') is currently unused,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cells
+     when those checks are extended to types."))
+  (declare (ignore tval))
+  (b* ((m (lnfix m))
+       ((unless (equal (dims-of-expr-value val1) (list m))) (reserr nil))
+       ((ok (int-value ival)) (check-expr-value-int val2))
+       (i ival.int)
+       ((unless (and (<= 0 i) (< i m))) (reserr nil))
+       (elems (expr-value-vector-elements val1))
+       ((unless (< i (len elems))) (reserr nil)))
+    (expr-value-fix (nth i elems)))
+  :guard-hints
+  (("Goal" :in-theory (enable expr-value-vectorp-to-consp-of-dims nfix)))
+  
+  ///
+  
+  (defret expr-value-wfp-of-prim-index
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (expr-value-wfp val1)
+    :hints
+    (("Goal"
+      :in-theory (enable expr-value-wfp-of-nth-when-expr-value-list-wfp nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-index2d ((tval type-valuep)
+                      (m natp)
+                      (n natp)
+                      (val1 expr-valuep)
+                      (val2 expr-valuep))
+  :guard (and (expr-value-wfp val1) (expr-value-wfp val2))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of matrix indexing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('index2d') operation
+     (see the @(':index2d-t-m-n') summand of @(tsee primop-value)):
+     @('tval'), @('m'), and @('n') are the instantiation values,
+     and @('val1') and @('val2') are the argument cells.
+     According to the instantiated type of the operation,
+     the first argument cell is an @('m') by @('n') matrix of scalars,
+     the second argument cell is a vector of two integers @('i') and @('j'),
+     and the result is the scalar at (zero-based) row @('i') and column @('j')
+     of the matrix.
+     The guard requires the argument cells to be well-formed;
+     we defensively check that they have the expected dimensions,
+     and that the indices are within bounds
+     (the interpreter in [impl] crashes on out-of-bounds indices,
+     while we return an error).")
+   (xdoc::p
+    "The type value @('tval') is currently unused,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cells
+     when those checks are extended to types."))
+  (declare (ignore tval))
+  (b* ((m (lnfix m))
+       (n (lnfix n))
+       ((unless (equal (dims-of-expr-value val1) (list m n))) (reserr nil))
+       ((unless (equal (dims-of-expr-value val2) (list 2))) (reserr nil))
+       (idxs (expr-value-vector-elements val2))
+       ((unless (equal (len idxs) 2)) (reserr nil))
+       ((ok (int-value ival)) (check-expr-value-int (expr-value-fix (nth 0 idxs))))
+       ((ok (int-value jval)) (check-expr-value-int (expr-value-fix (nth 1 idxs))))
+       (i ival.int)
+       (j jval.int)
+       ((unless (and (<= 0 i) (< i m))) (reserr nil))
+       ((unless (and (<= 0 j) (< j n))) (reserr nil))
+       (rows (expr-value-vector-elements val1))
+       ((unless (< i (len rows))) (reserr nil))
+       (row (expr-value-fix (nth i rows)))
+       ((unless (expr-value-vectorp row)) (reserr nil))
+       (elems (expr-value-vector-elements row))
+       ((unless (< j (len elems))) (reserr nil)))
+    (expr-value-fix (nth j elems)))
+  :guard-hints
+  (("Goal" :in-theory (enable expr-value-vectorp-to-consp-of-dims nfix)))
+  
+  ///
+  
+  (defret expr-value-wfp-of-prim-index2d
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (expr-value-wfp val1)
+    :hints
+    (("Goal"
+      :in-theory (enable expr-value-wfp-of-nth-when-expr-value-list-wfp nfix)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-primop-fun ((op primop-valuep) (args expr-value-listp))
@@ -1891,7 +2011,14 @@
                                   (first args) (second args))
      :reverse (prog2$ (impossible) (reserr nil))
      :reverse-t (prog2$ (impossible) (reserr nil))
-     :reverse-t-d-s (prim-reverse op.tval op.dval op.sval (first args))))
+     :reverse-t-d-s (prim-reverse op.tval op.dval op.sval (first args))
+     :index (prog2$ (impossible) (reserr nil))
+     :index-t (prog2$ (impossible) (reserr nil))
+     :index-t-m (prim-index op.tval op.mval (first args) (second args))
+     :index2d (prog2$ (impossible) (reserr nil))
+     :index2d-t (prog2$ (impossible) (reserr nil))
+     :index2d-t-m-n (prim-index2d op.tval op.mval op.nval
+                                (first args) (second args))))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp
                                            arity-of-primop-value-fun
                                            type-of-primop-value-fun)))
@@ -1954,6 +2081,16 @@
                            (list (type-var-atom "t"))))
                   (reserr nil)))
               (expr-value-primop (primop-value-reverse-t (first tvals))))
+   :index (b* (((unless (type-values-match-type-vars-p
+                           tvals
+                           (list (type-var-atom "t"))))
+                  (reserr nil)))
+            (expr-value-primop (primop-value-index-t (first tvals))))
+   :index2d (b* (((unless (type-values-match-type-vars-p
+                           tvals
+                           (list (type-var-atom "t"))))
+                  (reserr nil)))
+            (expr-value-primop (primop-value-index2d-t (first tvals))))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-tfunp
                                            type-values-match-type-vars-p)))
@@ -1991,7 +2128,9 @@
      which stores the ispace values received
      (a dimension and a shape
      for @('head'), @('tail'), @('length'), and @('reverse');
-     two dimensions and a shape for @('append')),
+     two dimensions and a shape for @('append');
+     a dimension for @('index');
+     two dimensions for @('index2d')),
      along with the previously received type values.
      Anything else is an error."))
   (primop-value-case
@@ -2048,6 +2187,24 @@
                   :tval op.tval
                   :dval (ispace-value-dim->val (first ivals))
                   :sval (ispace-value-shape->val (second ivals)))))
+   :index-t (b* (((unless (ispace-values-match-ispace-vars-p
+                           ivals
+                           (list (ispace-var-dim "m"))))
+                  (reserr nil)))
+              (expr-value-primop
+               (make-primop-value-index-t-m
+                :tval op.tval
+                :mval (ispace-value-dim->val (first ivals)))))
+   :index2d-t (b* (((unless (ispace-values-match-ispace-vars-p
+                             ivals
+                             (list (ispace-var-dim "m")
+                                   (ispace-var-dim "n"))))
+                    (reserr nil)))
+                (expr-value-primop
+                 (make-primop-value-index2d-t-m-n
+                  :tval op.tval
+                  :mval (ispace-value-dim->val (first ivals))
+                  :nval (ispace-value-dim->val (second ivals)))))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp
                                            ispace-values-match-ispace-vars-p)))
