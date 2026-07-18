@@ -139,8 +139,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ definduction-info
-  :parents (definduction-implementation)
+(defxdoc+ definductive-info
+  :parents (definductive-implementation)
   :short "Information about the predicates and inference rules."
   :long
   (xdoc::topstring
@@ -2918,6 +2918,7 @@
                                               (long-suppliedp booleanp)
                                               state)
   :returns (mv erp (event pseudo-event-formp))
+  :parents (definductive-implementation)
   :short "Proces the inputs and generate all the events."
   (b* (((reterr) '(_))
        ((erp name pred-infos irule-infos parents short long xdocp)
@@ -2951,6 +2952,7 @@
   :returns (mv erp
                (event pseudo-event-formp)
                state)
+  :parents (definductive-implementation)
   :short "Event expansion of @(tsee definductive) from the inputs."
   (b* (((mv erp event)
         (defind-process-inputs-and-gen-events
@@ -2967,6 +2969,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection definductive-definition
+  :parents (definductive-implementation)
   :short "Definition of the @(tsee definductive) macro."
   (defmacro definductive (name
                           &key
