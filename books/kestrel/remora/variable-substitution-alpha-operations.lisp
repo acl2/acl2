@@ -530,11 +530,23 @@
    (ispace :dim (ispace-dim (dim-subst-dim-vars ispace.dim dim-subst)))
    (type :pi
          (b* (((mv fresh-params dim-subst shape-subst)
-               (dim/shape-subst-alpha-bound type.params
+               (dim/shape-subst-alpha-bound (list type.param)
                                             dim-subst
                                             shape-subst
                                             (type-free-ispace-vars type.body))))
            (make-type-pi
+            :param (car fresh-params)
+            :body (type-subst-ispace-vars-alpha-aux type.body
+                                                    dim-subst
+                                                    shape-subst
+                                                    avoid))))
+   (type :pin
+         (b* (((mv fresh-params dim-subst shape-subst)
+               (dim/shape-subst-alpha-bound type.params
+                                            dim-subst
+                                            shape-subst
+                                            (type-free-ispace-vars type.body))))
+           (make-type-pin
             :params fresh-params
             :body (type-subst-ispace-vars-alpha-aux type.body
                                                     dim-subst
@@ -592,11 +604,26 @@
                                                     avoid))))
    (atom :ilambda
          (b* (((mv fresh-params dim-subst shape-subst)
+               (dim/shape-subst-alpha-bound (list atom.param)
+                                            dim-subst
+                                            shape-subst
+                                            (expr-free-ispace-vars atom.body)))
+              (fresh-param (if (consp fresh-params)
+                               (car fresh-params)
+                             atom.param)))
+           (make-atom-ilambda
+            :param fresh-param
+            :body (expr-subst-ispace-vars-alpha-aux atom.body
+                                                    dim-subst
+                                                    shape-subst
+                                                    avoid))))
+   (atom :ilambdan
+         (b* (((mv fresh-params dim-subst shape-subst)
                (dim/shape-subst-alpha-bound atom.params
                                             dim-subst
                                             shape-subst
                                             (expr-free-ispace-vars atom.body))))
-           (make-atom-ilambda
+           (make-atom-ilambdan
             :params fresh-params
             :body (expr-subst-ispace-vars-alpha-aux atom.body
                                                     dim-subst
@@ -857,11 +884,23 @@
                      (type-var (type-var-array type.var.name))))))
    (type :forall
          (b* (((mv fresh-params atom-subst array-subst)
-               (atom/array-subst-alpha-bound type.params
+               (atom/array-subst-alpha-bound (list type.param)
                                              atom-subst
                                              array-subst
                                              (type-free-type-vars type.body))))
            (make-type-forall
+            :param (car fresh-params)
+            :body (type-subst-type-vars-alpha-aux type.body
+                                                  atom-subst
+                                                  array-subst
+                                                  avoid))))
+   (type :foralln
+         (b* (((mv fresh-params atom-subst array-subst)
+               (atom/array-subst-alpha-bound type.params
+                                             atom-subst
+                                             array-subst
+                                             (type-free-type-vars type.body))))
+           (make-type-foralln
             :params fresh-params
             :body (type-subst-type-vars-alpha-aux type.body
                                                   atom-subst
@@ -889,11 +928,23 @@
                                                   avoid))))
    (atom :tlambda
          (b* (((mv fresh-params atom-subst array-subst)
-               (atom/array-subst-alpha-bound atom.params
+               (atom/array-subst-alpha-bound (list atom.param)
                                              atom-subst
                                              array-subst
                                              (expr-free-type-vars atom.body))))
            (make-atom-tlambda
+            :param (car fresh-params)
+            :body (expr-subst-type-vars-alpha-aux atom.body
+                                                  atom-subst
+                                                  array-subst
+                                                  avoid))))
+   (atom :tlambdan
+         (b* (((mv fresh-params atom-subst array-subst)
+               (atom/array-subst-alpha-bound atom.params
+                                             atom-subst
+                                             array-subst
+                                             (expr-free-type-vars atom.body))))
+           (make-atom-tlambdan
             :params fresh-params
             :body (expr-subst-type-vars-alpha-aux atom.body
                                                   atom-subst
@@ -1276,4 +1327,3 @@
      see @(tsee expr-subst-expr-vars-alpha) for why the @('avoid') set
      can be started empty here."))
   (atom-subst-expr-vars-alpha-aux atom subst nil))
-

@@ -881,14 +881,24 @@
                                       (type-to-pdoc ty.out))))
       :forall (pdoc-prefix-form
                "Forall"
-               (pdoc-concat (pdoc-paren (type-var-list-to-pdoc ty.params))
+               (pdoc-concat (pdoc-paren (type-var-to-pdoc ty.param))
                             (pdoc-concat (pdoc-line)
                                          (type-to-pdoc ty.body))))
+      :foralln (pdoc-prefix-form
+                "Forall"
+                (pdoc-concat (pdoc-paren (type-var-list-to-pdoc ty.params))
+                             (pdoc-concat (pdoc-line)
+                                          (type-to-pdoc ty.body))))
       :pi (pdoc-prefix-form
            "Pi"
-           (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc ty.params))
+           (pdoc-concat (pdoc-paren (ispace-var-to-pdoc ty.param))
                         (pdoc-concat (pdoc-line)
                                      (type-to-pdoc ty.body))))
+      :pin (pdoc-prefix-form
+            "Pi"
+            (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc ty.params))
+                         (pdoc-concat (pdoc-line)
+                                      (type-to-pdoc ty.body))))
       :sigma (pdoc-prefix-form
               "Sigma"
               (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc ty.params))
@@ -1219,18 +1229,30 @@
               (pdoc-prefix-form
                "t-app"
                (pdoc-concat fun
-                            (if (consp e.args)
-                                (pdoc-concat (pdoc-line)
-                                             (type-list-to-pdoc e.args))
-                              (pdoc-empty)))))
+                            (pdoc-concat (pdoc-line)
+                                         (type-to-pdoc e.arg)))))
+      :tappn (b* (((ok fun) (expr-to-pdoc e.fun)))
+               (pdoc-prefix-form
+                "t-app"
+                (pdoc-concat fun
+                             (if (consp e.args)
+                                 (pdoc-concat (pdoc-line)
+                                              (type-list-to-pdoc e.args))
+                               (pdoc-empty)))))
       :iapp (b* (((ok fun) (expr-to-pdoc e.fun)))
               (pdoc-prefix-form
                "i-app"
                (pdoc-concat fun
-                            (if (consp e.args)
-                                (pdoc-concat (pdoc-line)
-                                             (ispace-list-to-pdoc e.args))
-                              (pdoc-empty)))))
+                            (pdoc-concat (pdoc-line)
+                                         (ispace-to-pdoc e.arg)))))
+      :iappn (b* (((ok fun) (expr-to-pdoc e.fun)))
+               (pdoc-prefix-form
+                "i-app"
+                (pdoc-concat fun
+                             (if (consp e.args)
+                                 (pdoc-concat (pdoc-line)
+                                              (ispace-list-to-pdoc e.args))
+                               (pdoc-empty)))))
       :capp (b* (((ok fun) (expr-to-pdoc e.fun))
                  ((ok args-doc)
                   (if (consp e.args)
@@ -1307,13 +1329,23 @@
       :tlambda (b* (((ok body) (expr-to-pdoc a.body)))
                  (pdoc-prefix-form
                   "t-fn"
-                  (pdoc-concat (pdoc-paren (type-var-list-to-pdoc a.params))
+                  (pdoc-concat (pdoc-paren (type-var-to-pdoc a.param))
                                (pdoc-concat (pdoc-line) body))))
+      :tlambdan (b* (((ok body) (expr-to-pdoc a.body)))
+                  (pdoc-prefix-form
+                   "t-fn"
+                   (pdoc-concat (pdoc-paren (type-var-list-to-pdoc a.params))
+                                (pdoc-concat (pdoc-line) body))))
       :ilambda (b* (((ok body) (expr-to-pdoc a.body)))
                  (pdoc-prefix-form
                   "i-fn"
-                  (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc a.params))
+                  (pdoc-concat (pdoc-paren (ispace-var-to-pdoc a.param))
                                (pdoc-concat (pdoc-line) body))))
+      :ilambdan (b* (((ok body) (expr-to-pdoc a.body)))
+                  (pdoc-prefix-form
+                   "i-fn"
+                   (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc a.params))
+                                (pdoc-concat (pdoc-line) body))))
       :box (b* (((ok array) (expr-to-pdoc a.array)))
              (pdoc-prefix-form
               "box"

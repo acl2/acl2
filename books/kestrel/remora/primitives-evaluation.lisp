@@ -1878,19 +1878,25 @@
      :bool-to-float (prim-bool-to-float (first args))
      :head (prog2$ (impossible) (reserr nil))
      :head-t (prog2$ (impossible) (reserr nil))
+     :head-t-d (prog2$ (impossible) (reserr nil))
      :head-t-d-s (prim-head op.tval op.dval op.sval (first args))
      :tail (prog2$ (impossible) (reserr nil))
      :tail-t (prog2$ (impossible) (reserr nil))
+     :tail-t-d (prog2$ (impossible) (reserr nil))
      :tail-t-d-s (prim-tail op.tval op.dval op.sval (first args))
      :length (prog2$ (impossible) (reserr nil))
      :length-t (prog2$ (impossible) (reserr nil))
+     :length-t-d (prog2$ (impossible) (reserr nil))
      :length-t-d-s (prim-length op.tval op.dval op.sval (first args))
      :append (prog2$ (impossible) (reserr nil))
      :append-t (prog2$ (impossible) (reserr nil))
+     :append-t-m (prog2$ (impossible) (reserr nil))
+     :append-t-m-n (prog2$ (impossible) (reserr nil))
      :append-t-m-n-s (prim-append op.tval op.mval op.nval op.sval
                                   (first args) (second args))
      :reverse (prog2$ (impossible) (reserr nil))
      :reverse-t (prog2$ (impossible) (reserr nil))
+     :reverse-t-d (prog2$ (impossible) (reserr nil))
      :reverse-t-d-s (prim-reverse op.tval op.dval op.sval (first args))))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp
                                            arity-of-primop-value-fun
@@ -1905,55 +1911,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-primop-tfun ((op primop-valuep) (tvals type-value-listp))
+(define eval-primop-tfun ((op primop-valuep) (tval type-valuep))
   :guard (primop-value-tfunp op)
   :returns (val expr-value-resultp)
   :short "Evaluate the application of a primitive operation value
-          to type values."
+          to a type value."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the dynamic counterpart, for primitive operations,
-     of applying a type lambda abstraction to type values:
+     of applying a type lambda abstraction to a type value:
      it is called by @(tsee eval-tapp)
      on a scalar primitive operation value
-     and the type argument values.")
+     and the type argument value.")
    (xdoc::p
     "The guard requires the value to be applicable to type values
      (see @(tsee primop-value-tfunp)).
-     We check that the type values match, in number and kinds,
-     the type parameters of the operation,
-     i.e. the ones in the operation's type in @(tsee primop-types);
+     We check that the type value matches, in kind,
+     the type parameter of the operation,
+     i.e. the one in the operation's type in @(tsee primop-types);
      then we construct the next instantiation stage of the operation,
-     which stores the type values received.
+     which stores the type value received.
      Anything else is an error."))
   (primop-value-case
    op
    :head (b* (((unless (type-values-match-type-vars-p
-                        tvals
+                        (list tval)
                         (list (type-var-atom "t"))))
                (reserr nil)))
-           (expr-value-primop (primop-value-head-t (first tvals))))
+           (expr-value-primop (primop-value-head-t tval)))
    :tail (b* (((unless (type-values-match-type-vars-p
-                        tvals
+                        (list tval)
                         (list (type-var-atom "t"))))
                (reserr nil)))
-           (expr-value-primop (primop-value-tail-t (first tvals))))
+           (expr-value-primop (primop-value-tail-t tval)))
    :length (b* (((unless (type-values-match-type-vars-p
-                          tvals
+                          (list tval)
                           (list (type-var-atom "t"))))
                  (reserr nil)))
-             (expr-value-primop (primop-value-length-t (first tvals))))
+             (expr-value-primop (primop-value-length-t tval)))
    :append (b* (((unless (type-values-match-type-vars-p
-                          tvals
+                          (list tval)
                           (list (type-var-atom "t"))))
                  (reserr nil)))
-             (expr-value-primop (primop-value-append-t (first tvals))))
+             (expr-value-primop (primop-value-append-t tval)))
    :reverse (b* (((unless (type-values-match-type-vars-p
-                           tvals
+                           (list tval)
                            (list (type-var-atom "t"))))
                   (reserr nil)))
-              (expr-value-primop (primop-value-reverse-t (first tvals))))
+              (expr-value-primop (primop-value-reverse-t tval)))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-tfunp
                                            type-values-match-type-vars-p)))
@@ -1968,89 +1974,110 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-primop-ifun ((op primop-valuep) (ivals ispace-value-listp))
+(define eval-primop-ifun ((op primop-valuep) (ival ispace-valuep))
   :guard (primop-value-ifunp op)
   :returns (val expr-value-resultp)
   :short "Evaluate the application of a primitive operation value
-          to ispace values."
+          to an ispace value."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the dynamic counterpart, for primitive operations,
-     of applying an ispace lambda abstraction to ispace values:
+     of applying an ispace lambda abstraction to an ispace value:
      it is called by @(tsee eval-iapp)
      on a scalar primitive operation value
-     and the ispace argument values.")
+     and the ispace argument value.")
    (xdoc::p
     "The guard requires the value to be applicable to ispace values
      (see @(tsee primop-value-ifunp)).
-     We check that the ispace values match, in number and sorts,
-     the ispace parameters of the operation,
-     i.e. the ones in the operation's type in @(tsee primop-types);
+     Each stage applicable to ispace values expects
+     an ispace value of a specific sort,
+     namely the sort of the next ispace parameter
+     in the operation's type in @(tsee primop-types):
+     a dimension for the stages that store just a type value,
+     a shape for the stages that also store a dimension.
+     We check that the ispace value has the expected sort;
      then we construct the next instantiation stage of the operation,
-     which stores the ispace values received
-     (a dimension and a shape
-     for @('head'), @('tail'), @('length'), and @('reverse');
-     two dimensions and a shape for @('append')),
-     along with the previously received type values.
+     which stores the ispace value received,
+     along with the previously received instantiation values.
      Anything else is an error."))
   (primop-value-case
    op
-   :head-t (b* (((unless (ispace-values-match-ispace-vars-p
-                          ivals
-                          (list (ispace-var-dim "d")
-                                (ispace-var-shape "s"))))
-                 (reserr nil)))
-             (expr-value-primop
-              (make-primop-value-head-t-d-s
-               :tval op.tval
-               :dval (ispace-value-dim->val (first ivals))
-               :sval (ispace-value-shape->val (second ivals)))))
-   :tail-t (b* (((unless (ispace-values-match-ispace-vars-p
-                          ivals
-                          (list (ispace-var-dim "d")
-                                (ispace-var-shape "s"))))
-                 (reserr nil)))
-             (expr-value-primop
-              (make-primop-value-tail-t-d-s
-               :tval op.tval
-               :dval (ispace-value-dim->val (first ivals))
-               :sval (ispace-value-shape->val (second ivals)))))
-   :length-t (b* (((unless (ispace-values-match-ispace-vars-p
-                            ivals
-                            (list (ispace-var-dim "d")
-                                  (ispace-var-shape "s"))))
-                   (reserr nil)))
-               (expr-value-primop
-                (make-primop-value-length-t-d-s
-                 :tval op.tval
-                 :dval (ispace-value-dim->val (first ivals))
-                 :sval (ispace-value-shape->val (second ivals)))))
-   :append-t (b* (((unless (ispace-values-match-ispace-vars-p
-                            ivals
-                            (list (ispace-var-dim "m")
-                                  (ispace-var-dim "n")
-                                  (ispace-var-shape "s"))))
-                   (reserr nil)))
-               (expr-value-primop
-                (make-primop-value-append-t-m-n-s
-                 :tval op.tval
-                 :mval (ispace-value-dim->val (first ivals))
-                 :nval (ispace-value-dim->val (second ivals))
-                 :sval (ispace-value-shape->val (third ivals)))))
-   :reverse-t (b* (((unless (ispace-values-match-ispace-vars-p
-                             ivals
-                             (list (ispace-var-dim "d")
-                                   (ispace-var-shape "s"))))
-                    (reserr nil)))
-                (expr-value-primop
-                 (make-primop-value-reverse-t-d-s
-                  :tval op.tval
-                  :dval (ispace-value-dim->val (first ivals))
-                  :sval (ispace-value-shape->val (second ivals)))))
+   :head-t (ispace-value-case
+            ival
+            :dim (expr-value-primop
+                  (make-primop-value-head-t-d :tval op.tval
+                                              :dval ival.val))
+            :shape (reserr nil))
+   :head-t-d (ispace-value-case
+              ival
+              :dim (reserr nil)
+              :shape (expr-value-primop
+                      (make-primop-value-head-t-d-s :tval op.tval
+                                                    :dval op.dval
+                                                    :sval ival.val)))
+   :tail-t (ispace-value-case
+            ival
+            :dim (expr-value-primop
+                  (make-primop-value-tail-t-d :tval op.tval
+                                              :dval ival.val))
+            :shape (reserr nil))
+   :tail-t-d (ispace-value-case
+              ival
+              :dim (reserr nil)
+              :shape (expr-value-primop
+                      (make-primop-value-tail-t-d-s :tval op.tval
+                                                    :dval op.dval
+                                                    :sval ival.val)))
+   :length-t (ispace-value-case
+              ival
+              :dim (expr-value-primop
+                    (make-primop-value-length-t-d :tval op.tval
+                                                  :dval ival.val))
+              :shape (reserr nil))
+   :length-t-d (ispace-value-case
+                ival
+                :dim (reserr nil)
+                :shape (expr-value-primop
+                        (make-primop-value-length-t-d-s :tval op.tval
+                                                        :dval op.dval
+                                                        :sval ival.val)))
+   :append-t (ispace-value-case
+              ival
+              :dim (expr-value-primop
+                    (make-primop-value-append-t-m :tval op.tval
+                                                  :mval ival.val))
+              :shape (reserr nil))
+   :append-t-m (ispace-value-case
+                ival
+                :dim (expr-value-primop
+                      (make-primop-value-append-t-m-n :tval op.tval
+                                                      :mval op.mval
+                                                      :nval ival.val))
+                :shape (reserr nil))
+   :append-t-m-n (ispace-value-case
+                  ival
+                  :dim (reserr nil)
+                  :shape (expr-value-primop
+                          (make-primop-value-append-t-m-n-s :tval op.tval
+                                                            :mval op.mval
+                                                            :nval op.nval
+                                                            :sval ival.val)))
+   :reverse-t (ispace-value-case
+               ival
+               :dim (expr-value-primop
+                     (make-primop-value-reverse-t-d :tval op.tval
+                                                    :dval ival.val))
+               :shape (reserr nil))
+   :reverse-t-d (ispace-value-case
+                 ival
+                 :dim (reserr nil)
+                 :shape (expr-value-primop
+                         (make-primop-value-reverse-t-d-s :tval op.tval
+                                                          :dval op.dval
+                                                          :sval ival.val)))
    :otherwise (prog2$ (impossible) (reserr nil)))
-  :guard-hints (("Goal" :in-theory (enable primop-value-ifunp
-                                           ispace-values-match-ispace-vars-p)))
+  :guard-hints (("Goal" :in-theory (enable primop-value-ifunp)))
 
   ///
 

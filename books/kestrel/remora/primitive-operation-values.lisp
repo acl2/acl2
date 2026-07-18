@@ -89,10 +89,10 @@
      @(':length') is the uninstantiated operation;
      @(':length-t') is the operation applied to
      a type value for its type parameter;
+     @(':length-t-d') is the operation further applied to
+     a natural number for its dimension parameter;
      @(':length-t-d-s') is the operation further applied to
-     ispace values for its ispace parameters,
-     i.e. a natural number for the dimension parameter
-     and a list of natural numbers for the shape parameter."))
+     a list of natural numbers for its shape parameter."))
   (:int-add ())
   (:int-sub ())
   (:int-mul ())
@@ -143,27 +143,40 @@
   (:bool-to-float ())
   (:head ())
   (:head-t ((tval type-value)))
+  (:head-t-d ((tval type-value)
+              (dval nat)))
   (:head-t-d-s ((tval type-value)
                 (dval nat)
                 (sval nat-list)))
   (:tail ())
   (:tail-t ((tval type-value)))
+  (:tail-t-d ((tval type-value)
+              (dval nat)))
   (:tail-t-d-s ((tval type-value)
                 (dval nat)
                 (sval nat-list)))
   (:length ())
   (:length-t ((tval type-value)))
+  (:length-t-d ((tval type-value)
+                (dval nat)))
   (:length-t-d-s ((tval type-value)
                   (dval nat)
                   (sval nat-list)))
   (:append ())
   (:append-t ((tval type-value)))
+  (:append-t-m ((tval type-value)
+                (mval nat)))
+  (:append-t-m-n ((tval type-value)
+                  (mval nat)
+                  (nval nat)))
   (:append-t-m-n-s ((tval type-value)
                     (mval nat)
                     (nval nat)
                     (sval nat-list)))
   (:reverse ())
   (:reverse-t ((tval type-value)))
+  (:reverse-t-d ((tval type-value)
+                 (dval nat)))
   (:reverse-t-d-s ((tval type-value)
                    (dval nat)
                    (sval nat-list)))
@@ -197,14 +210,20 @@
   (primop-value-case op
                      :head nil
                      :head-t nil
+                     :head-t-d nil
                      :tail nil
                      :tail-t nil
+                     :tail-t-d nil
                      :length nil
                      :length-t nil
+                     :length-t-d nil
                      :append nil
                      :append-t nil
+                     :append-t-m nil
+                     :append-t-m-n nil
                      :reverse nil
                      :reverse-t nil
+                     :reverse-t-d nil
                      :otherwise t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -246,10 +265,16 @@
      that expect ispace values next."))
   (primop-value-case op
                      :head-t t
+                     :head-t-d t
                      :tail-t t
+                     :tail-t-d t
                      :length-t t
+                     :length-t-d t
                      :append-t t
+                     :append-t-m t
+                     :append-t-m-n t
                      :reverse-t t
+                     :reverse-t-d t
                      :otherwise nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -302,14 +327,18 @@
      it maps every other primitive operation value to itself."))
   (primop-value-case op
                      :head-t (primop-value-head)
+                     :head-t-d (primop-value-head)
                      :head-t-d-s (primop-value-head)
                      :tail-t (primop-value-tail)
+                     :tail-t-d (primop-value-tail)
                      :tail-t-d-s (primop-value-tail)
                      :length-t (primop-value-length)
+                     :length-t-d (primop-value-length)
                      :length-t-d-s (primop-value-length)
                      :append-t (primop-value-append)
                      :append-t-m-n-s (primop-value-append)
                      :reverse-t (primop-value-reverse)
+                     :reverse-t-d (primop-value-reverse)
                      :reverse-t-d-s (primop-value-reverse)
                      :otherwise (primop-value-fix op)))
 
@@ -467,6 +496,7 @@
      :bool-to-float bool-to-float-tv
      :head (prog2$ (impossible) (type-value-base (base-type-bool)))
      :head-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :head-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :head-t-d-s (make-type-value-array
                   :elem (make-type-value-fun
                          :in (list (make-type-value-array
@@ -478,6 +508,7 @@
                   :dims nil)
      :tail (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :tail-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t-d-s (make-type-value-array
                   :elem (make-type-value-fun
                          :in (list (make-type-value-array
@@ -489,6 +520,7 @@
                   :dims nil)
      :length (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :length-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t-d-s (make-type-value-array
                     :elem (make-type-value-fun
                            :in (list (make-type-value-array
@@ -498,6 +530,8 @@
                     :dims nil)
      :append (prog2$ (impossible) (type-value-base (base-type-bool)))
      :append-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :append-t-m (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :append-t-m-n (prog2$ (impossible) (type-value-base (base-type-bool)))
      :append-t-m-n-s (make-type-value-array
                       :elem (make-type-value-fun
                              :in (list (make-type-value-array
@@ -512,6 +546,7 @@
                       :dims nil)
      :reverse (prog2$ (impossible) (type-value-base (base-type-bool)))
      :reverse-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :reverse-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :reverse-t-d-s (make-type-value-array
                      :elem (make-type-value-fun
                             :in (list (make-type-value-array
