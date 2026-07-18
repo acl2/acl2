@@ -1951,8 +1951,8 @@
        ((mv prem-conjuncts prem-formals)
         (defind-gen-irule-fn-prems+formals info.premises 1 name))
        (vars (defind-irule-info-free-vars info))
-       (body/matrix `(and ,concl-conjunct
-                          ,@prem-conjuncts))
+       (body/matrix `(and ,@prem-conjuncts
+                          ,concl-conjunct))
        (fix-id-thm (defind-assert-fix-id-thm-name info.conclusion.name name))
        (fix-return-thm
         (defind-assert-fix-return-thm-name info.conclusion.name name))
