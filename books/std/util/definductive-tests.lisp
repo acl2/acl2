@@ -82,3 +82,41 @@
                   (p-alt-step-p)
                   (p a))
              (p-alt a)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (defstub gstub () => *)
+
+ (definductive all-ground
+   :preds ((gnd a))
+   :irules ((ax ()
+                (gnd 0))
+            (step ((gnd 0))
+                  (gnd 1))
+            (ax2 ((gstub))
+                 (gnd 2))))
+
+ (must-be-redundant
+  (defthm gnd-ax
+    (implies (and)
+             (gnd 0))))
+
+ (must-be-redundant
+  (defthm gnd-step
+    (implies (gnd 0)
+             (gnd 1))))
+
+ (must-be-redundant
+  (defthm gnd-ax2
+    (implies (gstub)
+             (gnd 2))))
+
+ (must-be-redundant
+  (defthm gnd-alt-when-gnd
+    (implies (and (gnd-alt-ax-p)
+                  (gnd-alt-step-p)
+                  (gnd-alt-ax2-p)
+                  (gnd a))
+             (gnd-alt a)))))
