@@ -300,7 +300,7 @@
        of each value of the @('p[i]-proof') fixtype.
        As described above, each summand has a conclusion field.")
      (xdoc::p
-      "This function is guard-verified."))
+      "This function is guard-verified and has fixing theorems."))
 
     (xdoc::desc
      (list
@@ -321,7 +321,8 @@
        i.e. they form a valid instance of the rule.")
      (xdoc::p
       "These predicates are currently not guard-verified,
-       because they may involve arbitrary user-supplied terms."))
+       because they may involve arbitrary user-supplied terms.
+       These predicates have fixing theorems."))
 
     (xdoc::desc
      (list
@@ -336,7 +337,8 @@
      (xdoc::p
       "These predicates are currently not guard-verified,
        because they call the non-guard-verified
-       @('p[l[k]]-rule[k]-validp') predicates."))
+       @('p[l[k]]-rule[k]-validp') predicates.
+       The @('p[i]-proof-validp') predicates have fixing theorems."))
 
     (xdoc::desc
      (list
@@ -349,7 +351,9 @@
      (xdoc::p
       "These predicates are currently not guard-verified,
        because they call the non-guard-verified
-       @('p[i]-proof-validp') predicates."))
+       @('p[i]-proof-validp') predicates.
+       The @('p[i]') predicates do not have fixing theorems,
+       because the formals are currently untyped."))
 
     (xdoc::desc
      (list
@@ -366,8 +370,11 @@
      (xdoc::p
       "These functions are used to prove the theorems described next.")
      (xdoc::p
-      "These functions are currently not guard-verified,
-       because they may involve arbitrary user-supplied terms."))
+      "Currently these functions
+       are not guard-verified,
+       because they may involve arbitrary user-supplied terms,
+       and do not have fixing theorems,
+       because they are only used to prove some of the generated theorems."))
 
     (xdoc::desc
      (list
@@ -424,7 +431,8 @@
        and a nullary @(tsee defun) is generated instead.")
      (xdoc::p
       "These functions are currently not guard-verified,
-       because they may involve arbitrary user-supplied terms."))
+       because they may involve arbitrary user-supplied terms.
+       These functions have no fixing theorems, because they have no formals."))
 
     (xdoc::desc
      (list
