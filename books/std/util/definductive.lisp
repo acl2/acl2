@@ -1715,12 +1715,14 @@
      the field has the form @('(premise[num]-proof p[j]-proof)'),
      where @('p[j]') is the name of the predicate of the premise.
      The index @('num') is passed to this function,
-     and incremented at each recursive call, initially 1.
+     and incremented at each recursive call after a @(':pred') premise
+     (unchanged after a @(':other') premise),
+     initially 1.
      The @('p[j]-proof') fixtype is the one of the proofs for @('p[j]')."))
   (b* (((when (endp infos)) nil)
        (info (car infos))
        ((when (defind-premise-info-case info :other))
-        (defind-gen-prem-fields (cdr infos) (1+ (lposfix num)) name))
+        (defind-gen-prem-fields (cdr infos) (lposfix num) name))
        (pred-name (defind-premise-info-pred->name info))
        (field-name (defind-prem-field-name num name))
        (field-type (defind-proof-type-name pred-name name))
