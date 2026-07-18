@@ -14,24 +14,20 @@
 (include-book "type-checking")
 (include-book "evaluation")
 
-(include-book "std/util/defmacro-plus" :dir :system)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ test-eval-top-expr (code)
-  :parents (evaluation)
-  :short "Test that a standalone Remora expression
-          parses, type-checks, and evaluates without error."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "@('code') is a string of Remora source for a standalone expression.
-     The expansion is an @(tsee assert-event) that runs the full pipeline
-     &mdash; @(tsee parse-top-exp-from-string), @(tsee check-top-expr),
-     @(tsee eval-top-expr) (with an evaluation limit of one million)
-     &mdash; and passes when the resulting value is not an error.
-     The value is printed to the comment window for manual inspection;
-     the expected value is not checked."))
+; Test that a standalone Remora expression
+; parses, type-checks, and evaluates without error.
+; The argument is a string of Remora source for a standalone expression.
+; The macro expands to an assert-event that runs the full pipeline
+; (parse-top-exp-from-string,
+; check-top-expr,
+; and eval-top-expr with an evaluation limit of one million)
+; and passes when the resulting value is not an error.
+; The value is printed to the comment window for manual inspection;
+; the expected value is not checked.
+
+(defmacro test-eval-top-expr (code)
   `(assert-event
     (b* ((code ,code)
          (ast (parse-top-exp-from-string code))
@@ -64,4 +60,59 @@
 (test-eval-top-expr
  "
 ((i-app (t-app (t-fn (&t) (i-fn ($d) (fn ((x (A &t $d))) x))) Int) 3) [1 2 3])
+")
+
+; Partial instantiation of a polymorphic primitive operation:
+; the value is an intermediate instantiation stage.
+(test-eval-top-expr
+ "(i-app (t-app length Int) 3)")
+
+; Completion of a partial instantiation, as a chain of unary applications.
+(test-eval-top-expr
+ "(i-app (i-app (t-app length Int) 3) (dims 4 5))")
+
+; Partial application of an ispace lambda abstraction:
+; the value is a closure over the remaining parameter.
+(test-eval-top-expr
+ "(i-app (i-fn ($d $e) (fn ((x (A Int (dims $d $e)))) x)) 3)")
+
+; Partial instantiation of an empty frame of a two-parameter product type:
+; the value is an empty vector over the peeled product type value.
+(test-eval-top-expr
+ "(i-app (frame [0] (Pi ($d $e) (-> ((A Int (dims $d $e))) Int))) 3)")
+
+; Completion of that instantiation, as a chain.
+(test-eval-top-expr
+ "(i-app (i-app (frame [0] (Pi ($d $e) (-> ((A Int (dims $d $e))) Int))) 3) 4)")
+
+; Full instantiation of a two-parameter type lambda abstraction,
+; as a chain of unary applications through unary closures.
+(test-eval-top-expr
+ "
+((i-app (t-app (t-fn (&t &u) (i-fn ($d) (fn ((x (A &t $d))) x))) Int Int) 3)
+ [1 2 3])
+")
+
+; Full instantiation of an empty frame of a two-parameter universal type:
+; the first unary application peels the universal type value,
+; the second one completes the instantiation.
+(test-eval-top-expr
+ "(t-app (frame [0] (Forall (&t &u) (Pi ($d) (-> ((A &t $d)) Int)))) Int Int)")
+
+; Partial application of a type lambda abstraction:
+; the value is a closure over the remaining parameter.
+(test-eval-top-expr
+ "(t-app (t-fn (&t &u) (i-fn ($d) (fn ((x (A &t $d))) x))) Int)")
+
+; Partial instantiation of an empty frame of a two-parameter universal type:
+; the value is an empty vector over
+; the universal type value binding the remaining parameter.
+(test-eval-top-expr
+ "(t-app (frame [0] (Forall (&t &u) (Pi ($d) (-> ((A &t $d)) Int)))) Int)")
+
+; Completion of that instantiation, as a chain.
+(test-eval-top-expr
+ "
+(t-app (t-app (frame [0] (Forall (&t &u) (Pi ($d) (-> ((A &t $d)) Int)))) Int)
+       Int)
 ")
