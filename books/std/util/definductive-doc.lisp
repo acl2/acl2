@@ -298,7 +298,9 @@
      (xdoc::p
       "Function to return the conclusion, of type @('p[i]-assertion'),
        of each value of the @('p[i]-proof') fixtype.
-       As described above, each summand has a conclusion field."))
+       As described above, each summand has a conclusion field.")
+     (xdoc::p
+      "This function is guard-verified."))
 
     (xdoc::desc
      (list
@@ -316,7 +318,10 @@
        a conclusion of type @('p[l[k]]-assertion')
        and zero or more premises of the approproate assertion types,
        and says whethe they fit the pattern of the rule,
-       i.e. they form a valid instance of the rule."))
+       i.e. they form a valid instance of the rule.")
+     (xdoc::p
+      "These predicates are currently not guard-verified,
+       because they may involve arbitrary user-supplied terms."))
 
     (xdoc::desc
      (list
@@ -327,7 +332,11 @@
       "Predicates expressing the validity of proof trees:
        every node of the tree must be
        a valid instance of the corresponding inference rule,
-       according to the @('p[l[k]]-rule[k]-validp') predicates."))
+       according to the @('p[l[k]]-rule[k]-validp') predicates.")
+     (xdoc::p
+      "These predicates are currently not guard-verified,
+       because they call the non-guard-verified
+       @('p[l[k]]-rule[k]-validp') predicates."))
 
     (xdoc::desc
      (list
@@ -336,7 +345,11 @@
       "@('p[n]')")
      (xdoc::p
       "Definitions of the predicates,
-       in terms of the existence of valid proof trees."))
+       in terms of the existence of valid proof trees.")
+     (xdoc::p
+      "These predicates are currently not guard-verified,
+       because they call the non-guard-verified
+       @('p[i]-proof-validp') predicates."))
 
     (xdoc::desc
      (list
@@ -351,7 +364,10 @@
        These functions are accompanied by theorems showing that
        the output proof trees are valid if the input proof trees are valid.")
      (xdoc::p
-      "These functions are used to prove the theorems described next."))
+      "These functions are used to prove the theorems described next.")
+     (xdoc::p
+      "These functions are currently not guard-verified,
+       because they may involve arbitrary user-supplied terms."))
 
     (xdoc::desc
      (list
@@ -405,7 +421,10 @@
        quantified over the free variables in the rules.
        For a rule without free variables,
        there is no quantification,
-       and a nullary @(tsee defun) is generated instead."))
+       and a nullary @(tsee defun) is generated instead.")
+     (xdoc::p
+      "These functions are currently not guard-verified,
+       because they may involve arbitrary user-supplied terms."))
 
     (xdoc::desc
      (list

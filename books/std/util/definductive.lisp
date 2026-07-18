@@ -1355,20 +1355,6 @@
 
 ;;;;;;;;;;
 
-(define defind-proof-prem-acc-return-thm-name ((pred-name symbolp)
-                                               (irule-name symbolp)
-                                               (num posp)
-                                               (name symbolp))
-  :returns (thm-name symbolp)
-  :short "Name of the return theorem of a premise accessor of
-          a @('p[i]-proof') fixtype."
-  (packn-pos (list (defind-proof-recog-name pred-name name)
-                   '-of-
-                   (defind-proof-prem-acc-name pred-name irule-name num name))
-             (symbol-lfix name)))
-
-;;;;;;;;;;
-
 (define defind-proof-concl-acc-return-thm-name ((pred-name symbolp)
                                                 (irule-name symbolp)
                                                 (name symbolp))
@@ -1981,7 +1967,7 @@
         `(define ,fn-name (,concl-formal ,@prem-formals)
            ,@xdoc?
            ,body/matrix
-           :guard-hints (("Goal" :in-theory nil))
+           :verify-guards nil
            :hooks ((:fix :hints (("Goal" :in-theory '(,fn-name
                                                       ,fix-id-thm
                                                       ,fix-return-thm
@@ -1990,7 +1976,7 @@
          :returns result ; suppress booleanp obligation
          ,@xdoc?
          (exists ,vars ,body/matrix)
-         :guard-hints (("Goal" :in-theory nil))
+         :verify-guards nil
          ///
          (local (in-theory '(,fix-id-thm
                              ,fix-return-thm
@@ -2020,13 +2006,12 @@
   :returns (mv (conjuncts true-listp)
                (concl-calls true-listp)
                (count-thms symbol-listp)
-               (return-thms symbol-listp)
                (fixing-thms symbol-listp))
   :short "Generate the conjuncts for the proofs of the premises
           of an inference rule in a case of a @('p[i]-proof-validp') function,
           along with calls of the conclusion functions on those proofs,
           and along with the names of some relevant theorems."
-  (b* (((when (endp infos)) (mv nil nil nil nil nil))
+  (b* (((when (endp infos)) (mv nil nil nil nil))
        (info (car infos)))
     (defind-premise-info-case
       info
@@ -2037,17 +2022,14 @@
                  (concl-call `(,concl-fn ,prem-proof-var))
                  (count-thm (defind-proof-prem-count-thm-name
                               info.name irule-name num name))
-                 (return-thm (defind-proof-prem-acc-return-thm-name
-                               info.name irule-name num name))
                  (fixing-thm (defind-proof-prem-fixing-thm-name
                                info.name irule-name num name))
-                 ((mv conjuncts concl-calls count-thms return-thms fixing-thms)
+                 ((mv conjuncts concl-calls count-thms fixing-thms)
                   (defind-gen-proof-valid-fn-case-prems
                     (cdr infos) irule-name (1+ (lposfix num)) name)))
               (mv (cons conjunct conjuncts)
                   (cons concl-call concl-calls)
                   (cons count-thm count-thms)
-                  (cons return-thm return-thms)
                   (cons fixing-thm fixing-thms)))
       :other (defind-gen-proof-valid-fn-case-prems
                (cdr infos) irule-name num name))))
@@ -2060,7 +2042,6 @@
                                         (name symbolp))
   :returns (mv (keyword+term true-listp)
                (count-thms symbol-listp)
-               (return-thms symbol-listp)
                (fixing-thms symbol-listp))
   :short "Generate a case of a @('p[i]-proof-validp') function,
           along with the names of some relevant theorems."
@@ -2069,7 +2050,6 @@
        ((mv prem-conjuncts
             concl-calls
             count-thms
-            return-thms
             fixing-thms)
         (defind-gen-proof-valid-fn-case-prems infos irule-name 1 name))
        (concl-var (defind-proof-concl-var-name name)))
@@ -2077,7 +2057,6 @@
                     (,valid-irule-fn ,concl-var
                                      ,@concl-calls)))
         count-thms
-        return-thms
         fixing-thms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2088,8 +2067,6 @@
   :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
   :returns (mv (keywords+terms true-listp)
                (count-thms symbol-listp)
-               (prem-return-thms symbol-listp)
-               (concl-return-thms symbol-listp)
                (prem-fixing-thms symbol-listp)
                (concl-fixing-thms symbol-listp))
   :short "Generate the cases of a @('p[i]-proof-validp') function,
@@ -2098,28 +2075,22 @@
   (xdoc::topstring
    (xdoc::p
     "There is one case for each rule whose conclusion is @('p[i]')."))
-  (b* (((when (endp infos)) (mv nil nil nil nil nil nil))
+  (b* (((when (endp infos)) (mv nil nil nil nil))
        ((defind-irule-info info) (car infos))
        ((unless (equal (defind-conclusion-info->name info.conclusion)
                        (symbol-lfix pred-name)))
         (defind-gen-proof-valid-fn-cases pred-name (cdr infos) name))
-       ((mv keyword+term count-thms prem-return-thms prem-fixing-thms)
+       ((mv keyword+term count-thms prem-fixing-thms)
         (defind-gen-proof-valid-fn-case pred-name info.premises info.name name))
-       (concl-return-thm
-        (defind-proof-concl-acc-return-thm-name pred-name info.name name))
        (concl-fixing-thm
         (defind-proof-concl-acc-fixing-thm-name pred-name info.name name))
        ((mv keywords+terms
             more-count-thms
-            more-prem-return-thms
-            more-concl-return-thms
             more-prem-fixing-thms
             more-concl-fixing-thms)
         (defind-gen-proof-valid-fn-cases pred-name (cdr infos) name)))
     (mv (cons keyword+term keywords+terms)
         (append count-thms more-count-thms)
-        (append prem-return-thms more-prem-return-thms)
-        (cons concl-return-thm more-concl-return-thms)
         (append prem-fixing-thms more-prem-fixing-thms)
         (cons concl-fixing-thm more-concl-fixing-thms))))
 
@@ -2137,7 +2108,7 @@
    (xdoc::p
     "This assumes that there is a single @('p[i]'),
      as documented as an initial restriction in @(tsee definductive).
-     So we generate a termination and guard hints as part of this function,
+     So we generate termination hints as part of this function,
      as well as fixing theorems and hints for this function.
      Once we generalize to multiple @('p[i]') predicates,
      this has to become part of a @(tsee defines),
@@ -2148,14 +2119,11 @@
        (proof-case (defind-proof-case-name pred-name name))
        ((mv keywords+terms
             count-thms
-            prem-return-thms
-            concl-return-thms
             prem-fixing-thms
             concl-fixing-thms)
         (defind-gen-proof-valid-fn-cases pred-name infos name))
        (count-fn (defind-proof-count-fn-name pred-name name))
        (poss-thm (defind-proof-kind-poss-thm-name pred-name name))
-       (concl-return-thm (defind-proof-concl-return-thm-name pred-name name))
        (kind-fixing-thm (defind-proof-kind-fixing-thm-name pred-name name)))
     `(define ,fn-name ((,fn-formal ,proof-recog))
        ,@(and xdocp
@@ -2172,10 +2140,7 @@
                                     (:e tau-system)
                                     ,poss-thm
                                     ,@count-thms)))
-       :guard-hints (("Goal" :in-theory '(,poss-thm
-                                          ,@prem-return-thms
-                                          ,@concl-return-thms
-                                          ,concl-return-thm)))
+       :verify-guards nil
        :hooks ((:fix :hints (("Goal" :in-theory '(,fn-name
                                                   ,kind-fixing-thm
                                                   ,@prem-fixing-thms
@@ -2230,7 +2195,7 @@
                     (equal (,proof->concl ,proof)
                            (,assert ,@pred-info.formals))))
        :skolem-name ,witness
-       :guard-hints (("Goal" :in-theory nil)))))
+       :verify-guards nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2316,6 +2281,7 @@
                                    (symbol-name info.name))
                                   "').")))
        (,proof-constr (,assert ,@concl-args) ,@subproof-vars)
+       :verify-guards nil
        ///
        (defret ,valid-thm
          (,proof-valid-fn ,proof-var)
@@ -2610,8 +2576,10 @@
        (vars (defind-irule-info-free-vars info))
        (event (if (set::emptyp vars)
                   `(defun ,fn-name ()
+                     (declare (xargs :verify-guards nil))
                      (implies (and ,@prems) ,concl))
                 `(defun-sk ,fn-name ()
+                   (declare (xargs :verify-guards nil))
                    (forall ,vars (implies (and ,@prems) ,concl)))))
        (call `(,fn-name)))
     (mv event call)))
