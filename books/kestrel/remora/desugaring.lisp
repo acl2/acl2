@@ -193,14 +193,14 @@
                     (fun-targs
                      (type-list-option-case
                       expr.targs
-                      :some (make-expr-tapp
+                      :some (make-expr-tappn
                              :fun fun
                              :args (type-list-desugar expr.targs.val))
                       :none fun))
                     (fun-targs-iargs
                      (ispace-list-option-case
                       expr.iargs
-                      :some (make-expr-iapp
+                      :some (make-expr-iappn
                              :fun fun-targs
                              :args (ispace-list-desugar expr.iargs.val))
                       :none fun-targs))
@@ -237,14 +237,14 @@
                     (lambda-type?
                      (type-option-case
                       type?
-                      :some (make-type-forall :params bind.params
-                                              :body type?.val)
+                      :some (make-type-foralln :params bind.params
+                                               :body type?.val)
                       :none nil))
                     (lambda-expr
                      (make-expr-array
                       :dims nil
-                      :atoms (list (make-atom-tlambda :params bind.params
-                                                      :body expr)))))
+                      :atoms (list (make-atom-tlambdan :params bind.params
+                                                       :body expr)))))
                  (make-bind-val :var bind.var
                                 :type? lambda-type?
                                 :expr lambda-expr)))
@@ -253,14 +253,14 @@
                     (lambda-type?
                      (type-option-case
                       type?
-                      :some (make-type-pi :params bind.params
-                                          :body type?.val)
+                      :some (make-type-pin :params bind.params
+                                           :body type?.val)
                       :none nil))
                     (lambda-expr
                      (make-expr-array
                       :dims nil
-                      :atoms (list (make-atom-ilambda :params bind.params
-                                                      :body expr)))))
+                      :atoms (list (make-atom-ilambdan :params bind.params
+                                                       :body expr)))))
                  (make-bind-val :var bind.var
                                 :type? lambda-type?
                                 :expr lambda-expr)))
@@ -278,7 +278,7 @@
                       bind.iparams?
                       :some (make-expr-array
                              :dims nil
-                             :atoms (list (make-atom-ilambda
+                             :atoms (list (make-atom-ilambdan
                                            :params bind.iparams?.val
                                            :body lambda-expr)))
                       :none lambda-expr))
@@ -287,7 +287,7 @@
                       bind.tparams?
                       :some (make-expr-array
                              :dims nil
-                             :atoms (list (make-atom-tlambda
+                             :atoms (list (make-atom-tlambdan
                                            :params bind.tparams?.val
                                            :body ilambda-lambda-expr)))
                       :none ilambda-lambda-expr))
@@ -299,13 +299,13 @@
                             (ilambda-lambda-type
                              (ispace-var-list-option-case
                               bind.iparams?
-                              :some (make-type-pi :params bind.iparams?.val
-                                                  :body lambda-type)
+                              :some (make-type-pin :params bind.iparams?.val
+                                                   :body lambda-type)
                               :none lambda-type)))
                          (type-var-list-option-case
                           bind.tparams?
-                          :some (make-type-forall :params bind.tparams?.val
-                                                  :body ilambda-lambda-type)
+                          :some (make-type-foralln :params bind.tparams?.val
+                                                   :body ilambda-lambda-type)
                           :none ilambda-lambda-type)))))
                  (make-bind-val :var bind.var
                                 :type? lambda-type?

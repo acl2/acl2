@@ -195,7 +195,8 @@
   :override
   ((dim :var (set::insert (ispace-var-dim dim.name) nil))
    (shape :var (set::insert (ispace-var-shape shape.name) nil))
-   (type :pi
+   (type :pi (set::delete type.param (type-free-ispace-vars type.body)))
+   (type :pin
          (set::difference (type-free-ispace-vars type.body)
                           (set::mergesort type.params)))
    (type :sigma
@@ -210,7 +211,8 @@
           (bind-list-free-ispace-vars expr.binds)
           (set::difference (expr-free-ispace-vars expr.body)
                            (bind-list-bound-ispace-vars expr.binds))))
-   (atom :ilambda
+   (atom :ilambda (set::delete atom.param (expr-free-ispace-vars atom.body)))
+   (atom :ilambdan
          (set::difference (expr-free-ispace-vars atom.body)
                           (set::mergesort atom.params)))
    (bind :ifun
@@ -267,13 +269,15 @@
   :combine set::union
   :override
   ((type :var (set::insert type.var nil))
-   (type :forall (set::difference (type-free-type-vars type.body)
-                                  (set::mergesort type.params)))
+   (type :forall (set::delete type.param (type-free-type-vars type.body)))
+   (type :foralln (set::difference (type-free-type-vars type.body)
+                                   (set::mergesort type.params)))
    (expr :let
          (set::union (bind-list-free-type-vars expr.binds)
                      (set::difference (expr-free-type-vars expr.body)
                                       (bind-list-bound-type-vars expr.binds))))
-   (atom :tlambda
+   (atom :tlambda (set::delete atom.param (expr-free-type-vars atom.body)))
+   (atom :tlambdan
          (set::difference (expr-free-type-vars atom.body)
                           (set::mergesort atom.params)))
    (bind :tfun
@@ -376,7 +380,8 @@
   :override
   ((dim :var (set::insert (ispace-var-dim dim.name) nil))
    (shape :var (set::insert (ispace-var-shape shape.name) nil))
-   (type :pi
+   (type :pi (set::insert type.param (type-all-ispace-vars type.body)))
+   (type :pin
          (set::union (set::mergesort type.params)
                      (type-all-ispace-vars type.body)))
    (type :sigma
@@ -418,10 +423,12 @@
   :combine set::union
   :override
   ((type :var (set::insert type.var nil))
-   (type :forall (set::union (set::mergesort type.params)
-                             (type-all-type-vars type.body)))
-   (atom :tlambda (set::union (set::mergesort atom.params)
-                              (expr-all-type-vars atom.body)))
+   (type :forall (set::insert type.param (type-all-type-vars type.body)))
+   (type :foralln (set::union (set::mergesort type.params)
+                              (type-all-type-vars type.body)))
+   (atom :tlambda (set::insert atom.param (expr-all-type-vars atom.body)))
+   (atom :tlambdan (set::union (set::mergesort atom.params)
+                               (expr-all-type-vars atom.body)))
    (bind :type (set::insert bind.var
                             (type-all-type-vars bind.type)))
    (bind :tfun (set::union (set::mergesort bind.params)

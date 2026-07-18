@@ -248,8 +248,8 @@
   :short "Construct a universal type from
           a parenthesized list of variable strings (parameters)
           and a type term (body)."
-  `(type-forall (list ,@(type-var-terms-from-strings params))
-                ,(type-term-from-var/base/other type)))
+  `(type-foralln (list ,@(type-var-terms-from-strings params))
+                 ,(type-term-from-var/base/other type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -257,8 +257,8 @@
   :short "Construct a product type term from
           a parenthesized list of variable strings (parameters)
           and a type term (body)."
-  `(type-pi (list ,@(ispace-var-terms-from-strings params))
-            ,(type-term-from-var/base/other type)))
+  `(type-pin (list ,@(ispace-var-terms-from-strings params))
+             ,(type-term-from-var/base/other type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
