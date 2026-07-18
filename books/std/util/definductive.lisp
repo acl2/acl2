@@ -495,7 +495,7 @@
         (reterr (msg "The name of the predicate in ~
                       the ~n0 element of the :PREDS input ~
                       must be fresh, but ~@1"
-                     (list (lposfix i) msg/nil))))
+                     (list (lposfix i)) msg/nil)))
        ((unless (legal-variable-listp pred-formals))
         (reterr (msg "The formals of the predicate in ~
                       the ~n0 element of the :PREDS input ~
