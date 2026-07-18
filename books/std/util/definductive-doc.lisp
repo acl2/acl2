@@ -402,7 +402,10 @@
        The bodies of these functions are implications
        with the premises as antecedents
        and with the conclusions as consequents,
-       quantified over the free variables in the rules."))
+       quantified over the free variables in the rules.
+       For a rule without free variables,
+       there is no quantification,
+       and a nullary @(tsee defun) is generated instead."))
 
     (xdoc::desc
      (list

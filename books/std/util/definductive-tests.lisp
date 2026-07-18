@@ -53,3 +53,32 @@
                   (r*-alt-trans-p)
                   (r* a b))
              (r*-alt a b)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (definductive nil-trees
+   :preds ((p a))
+   :irules ((base ()
+                  (p nil))
+            (step ((p x) (p y))
+                  (p (cons x y)))))
+
+ (must-be-redundant
+  (defthm p-base
+    (implies (and)
+             (p nil))))
+
+ (must-be-redundant
+  (defthm p-step
+    (implies (and (p x)
+                  (p y))
+             (p (cons x y)))))
+
+ (must-be-redundant
+  (defthm p-alt-when-p
+    (implies (and (p-alt-base-p)
+                  (p-alt-step-p)
+                  (p a))
+             (p-alt a)))))

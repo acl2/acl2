@@ -2273,7 +2273,10 @@
        (proof-valid-fn (defind-proof-valid-fn-name cinfo.name name))
        (valid-thm
         (defind-valid-proof-for-rule-thm-name cinfo.name info.name name))
-       (suff-thm (defind-irule-valid-suff-thm-name cinfo.name info.name name))
+       (suff/def-thm
+        (if (set::emptyp (defind-irule-info-free-vars info))
+            (defind-irule-valid-fn-name cinfo.name info.name name)
+          (defind-irule-valid-suff-thm-name cinfo.name info.name name)))
        (concl (defind-concl-var-name name))
        (cong-thm (defind-valid-congruence-thm-name cinfo.name name))
        (fix-id-thm (defind-assert-fix-id-thm-name cinfo.name name))
@@ -2320,7 +2323,7 @@
                    ,@other-prems
                    ,@subproof-eqs)
          :hints (("Goal"
-                  :use (:instance ,suff-thm
+                  :use (:instance ,suff/def-thm
                                   (,concl (,assert ,@concl-args))
                                   ,@prem-insts)
                   :in-theory '(,cong-thm
@@ -2604,10 +2607,14 @@
        (prems (defind-gen-pred-alt-irule-prop-prems info.premises name))
        (concl `(,(defind-pred-alt-fn-name cinfo.name name)
                 ,@(defind-term-info-list->uterm cinfo.args)))
-       (vars (defind-irule-info-free-vars info)))
-    (mv `(defun-sk ,fn-name ()
-           (forall ,vars (implies (and ,@prems) ,concl)))
-        `(,fn-name))))
+       (vars (defind-irule-info-free-vars info))
+       (event (if (set::emptyp vars)
+                  `(defun ,fn-name ()
+                     (implies (and ,@prems) ,concl))
+                `(defun-sk ,fn-name ()
+                   (forall ,vars (implies (and ,@prems) ,concl)))))
+       (call `(,fn-name)))
+    (mv event call)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2750,13 +2757,16 @@
           (irule-valid-fn (defind-irule-valid-fn-name cinfo.name info.name name))
           (irule-acc-thm
            (defind-proof-concl-acc-return-thm-name cinfo.name info.name name))
-          (necc-rule (defind-pred-alt-irule-thm-name cinfo.name info.name name))
+          (necc/def-rule
+           (if (set::emptyp (defind-irule-info-free-vars info))
+               (defind-pred-alt-irule-fn-name cinfo.name info.name name)
+             (defind-pred-alt-irule-thm-name cinfo.name info.name name)))
           (vars (defind-irule-info-free-vars info))
           (witcall (defind-gen-irule-witness-call info name))
           (inst-doublets (if (= (set::cardinality vars) 1)
                              (list `(,(set::head vars) ,witcall))
                            (defind-gen-irule-mv-nth-doublets vars 0 witcall)))
-          (lemma-instance `(:instance ,necc-rule ,@inst-doublets))
+          (lemma-instance `(:instance ,necc/def-rule ,@inst-doublets))
           ((mv irule-valid-fns irule-acc-thms lemma-instances)
            (defind-gen-pred-alt-when-proof-valid-thm-loop (cdr infos) name)))
        (mv (cons irule-valid-fn irule-valid-fns)
