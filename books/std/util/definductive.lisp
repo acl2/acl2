@@ -1982,7 +1982,8 @@
            ,@xdoc?
            ,body/matrix
            :guard-hints (("Goal" :in-theory nil))
-           :hooks ((:fix :hints (("Goal" :in-theory '(,fix-id-thm
+           :hooks ((:fix :hints (("Goal" :in-theory '(,fn-name
+                                                      ,fix-id-thm
                                                       ,fix-return-thm
                                                       ,equal-thm))))))
       `(define-sk ,fn-name (,concl-formal ,@prem-formals)
