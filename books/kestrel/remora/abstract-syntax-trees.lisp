@@ -51,13 +51,14 @@
    (xdoc::p
     "These ASTs preserve much of the concrete syntax information,
      so they include both core and non-core constructs.
-     We have defines a characterization of core ASTs
+     We have defined a characterization of core ASTs
      and a desugaring transformation from all ASTs to core ASTs.
-     The ASTs in [impl] are slightly more abstracted than ours.")
+     The ASTs in [impl] are more abstracted than ours;
+     they contain less sugar.")
    (xdoc::p
     "Our ASTs contain some information absent from the concrete syntax,
      such as certain type annotations.
-     These are meant to be calculated by type checking/inference.")
+     These are calculated by type checking/inference.")
    (xdoc::p
     "As a general remark that applies to multiple fixtypes defined here,
      we use ACL2 strings for variable names.
@@ -67,21 +68,21 @@
     "Note that the strings representing identifiers
      that derive from potentially-non-ASCII Remora surface syntax
      are stored in our ASTs as ACL2 strings whose bytes are
-     the @('UTF-8') encoding of the original Unicode code-point sequence.
+     the UTF-8 encoding of the original Unicode code-point sequence.
      Since ACL2 char codes are 0-255,
      a non-ASCII code point such as U+03B1 cannot occupy a single character;
-     the @('UTF-8') convention encodes it as two bytes (@('0xCE 0xB1'))
+     the UTF-8 convention encodes it as two bytes (@('0xCE 0xB1'))
      within the string.
      ASCII identifiers are unaffected
-     (each ASCII code point is a single @('UTF-8') byte).
+     (each ASCII code point is a single UTF-8 byte).
      The encoding is performed by syntax abstraction by @('abs-nats-to-string'),
-     and is symmetric to the @('UTF-8') decoding
-     performed by the parsing entry points (see @('parser-interface')).
+     and is symmetric to the UTF-8 decoding
+     performed by the parsing entry points (see @(see parser-interface)).
      Consumers that need code points back
-     can decode the string with @('acl2::utf8=>ustring').
-     String equality on names is bytewise,
+     can decode the string with @(tsee acl2::utf8=>ustring).
+     String equality on names is byte-wise,
      which agrees with code-point-sequence equality,
-     given the assumption that the strings are well-formed @('UTF-8')."))
+     given the assumption that the strings are well-formed UTF-8."))
   :order-subtopics t
   :default-parent t)
 
@@ -432,8 +433,30 @@
        product types (quantified over ispace parameters),
        and sum types (quantified over ispace parameters).")
      (xdoc::p
+      "The @(':forall') summand is
+       the main, core form of universal type,
+       which binds exactly one parameter,
+       while the @(':foralln') summand is sugar for
+       a nesting of unary universal types.
+       The CST-to-AST mapping turns
+       the universal types with one parameter into @(':forall'),
+       and those with two or more parameters into @(':foralln'),
+       similarly to product types.")
+     (xdoc::p
+      "The @(':pi') summand is
+       the main, core form of product type,
+       which binds exactly one parameter,
+       while the @(':pin') summand is sugar for
+       a nesting of unary product types.
+       The CST-to-AST mapping turns
+       the product types with one parameter into @(':pi'),
+       and those with two or more parameters into @(':pin'),
+       similarly to ispace applications (see @(tsee expr)).
+       The @(':sigma') summand
+       will be similarly given a unary form.")
+     (xdoc::p
       "The concrete syntax requires the parameter lists of
-       @(':forall'), @(':pi'), and @(':sigma') to be non-empty;
+       @(':foralln'), @(':pin'), and @(':sigma') to be non-empty;
        this is not captured in this fixtype."))
     (:var ((var type-var)))
     (:base ((type base-type)))
@@ -443,10 +466,14 @@
                (ispaces ispace-list)))
     (:fun ((in type-list)
            (out type)))
-    (:forall ((params type-var-list)
+    (:forall ((param type-var)
               (body type)))
-    (:pi ((params ispace-var-list)
+    (:foralln ((params type-var-list)
+               (body type)))
+    (:pi ((param ispace-var)
           (body type)))
+    (:pin ((params ispace-var-list)
+           (body type)))
     (:sigma ((params ispace-var-list)
              (body type)))
     :pred typep)
@@ -794,8 +821,8 @@
        string literals,
        applications of expressions to expressions
        (called `term applications' in the Remora publications),
-       applications of expressions to types,
-       applications of expressions to ispaces,
+       applications of expressions to types (unary or n-ary),
+       applications of expressions to ispaces (unary or n-ary),
        combined applications of expressions to types/ispaces/expressions,
        unboxing expressions,
        bracketed expressions,
@@ -807,9 +834,30 @@
        it is optionally annotated by its type
        (the type of the whole unboxing expression).")
      (xdoc::p
+      "The @(':tapp') summand is the main, core form of type application,
+       while the @(':tappn') summand is sugar for
+       a left-nested chain of the unary applications to one argument at a time.
+       The CST-to-AST mapping turns
+       applications to one argument into @(':tapp'),
+       and applications to two or more arguments into @(':tappn'),
+       similarly to ispace applications.")
+     (xdoc::p
+      "The @(':iapp') summand is the main, core form of ispace application,
+       while the @(':iappn') summand is sugar for
+       a left-nested chain of the unary applications to one argument at a time.
+       The CST-to-AST mapping turns
+       applications to one argument into @(':iapp'),
+       and applications to two or more arguments into @(':iappn').
+       We also plan to define and use well-formedness predicates
+       saying that @(':iappn') always has two or more arguments
+       (this could be also realized via a fixtype @(':require') in principle,
+       but that currently is not working well within @(tsee fty::deftypes)).
+       Other n-ary constructs will be similarly given unary forms,
+       and treated in the same way.")
+     (xdoc::p
       "The non-emptiness of the atom list in @(':array'),
        of the expression list in @(':frame'),
-       of the argument lists of @(':app'), @(':tapp'), and @(':iapp')
+       of the argument lists of @(':app'), @(':tappn'), and @(':iappn')
        (but not of @(':capp'), whose value arguments may be absent),
        of the bind list in @(':let'),
        and of the ispace-var list in @(':unbox')
@@ -839,9 +887,13 @@
     (:app ((fun expr)
            (args expr-list)))
     (:tapp ((fun expr)
-            (args type-list)))
+            (arg type)))
+    (:tappn ((fun expr)
+             (args type-list)))
     (:iapp ((fun expr)
-            (args ispace-list)))
+            (arg ispace)))
+    (:iappn ((fun expr)
+             (args ispace-list)))
     (:capp ((fun expr)
             (targs type-list-option)
             (iargs ispace-list-option)
@@ -888,8 +940,30 @@
        but we follow [arxiv], [thesis], and [impl],
        which all use a generic type.")
      (xdoc::p
-      "The concrete syntax requires the parameter lists of the three
-       lambda summands and the ispace list of @(':box') to be non-empty;
+      "The @(':tlambda') summand is
+       the main, core form of type lambda abstraction,
+       which binds exactly one parameter,
+       while the @(':tlambdan') summand is sugar for
+       a nesting of unary type lambda abstractions.
+       The CST-to-AST mapping turns
+       the type lambda abstractions with one parameter into @(':tlambda'),
+       and those with two or more parameters into @(':tlambdan'),
+       similarly to ispace lambda abstractions.")
+     (xdoc::p
+      "The @(':ilambda') summand is
+       the main, core form of ispace lambda abstraction,
+       which binds exactly one parameter,
+       while the @(':ilambdan') summand is sugar for
+       a nesting of unary ispace lambda abstractions.
+       The CST-to-AST mapping turns
+       the ispace lambda abstractions with one parameter into @(':ilambda'),
+       and those with two or more parameters into @(':ilambdan'),
+       similarly to ispace applications (see @(tsee expr)).
+       The @(':lambda') summand will be similarly given a unary form.")
+     (xdoc::p
+      "The concrete syntax requires the parameter lists of
+       the @(':lambda'), @(':tlambdan'), and @(':ilambdan') summands
+       and the ispace list of @(':box') to be non-empty;
        this is not captured in this fixtype.")
      (xdoc::p
       "The optional type of the body of a lambda abstraction
@@ -899,10 +973,14 @@
     (:lambda ((params var+type?-list)
               (body expr)
               (type? type-option)))
-    (:tlambda ((params type-var-list)
+    (:tlambda ((param type-var)
                (body expr)))
-    (:ilambda ((params ispace-var-list)
+    (:tlambdan ((params type-var-list)
+                (body expr)))
+    (:ilambda ((param ispace-var)
                (body expr)))
+    (:ilambdan ((params ispace-var-list)
+                (body expr)))
     (:box ((ispaces ispace-list)
            (array expr)
            (type type)))

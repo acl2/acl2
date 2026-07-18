@@ -135,7 +135,9 @@
        we substitute the bindings of the captured dynamic environment
        into the body (see @(tsee type-subst-type-denv)),
        and we rebuild the (universal, product, or sum) type
-       with the parameters and the resulting body."))
+       with the parameters and the resulting body.
+       Since universal and product type values are unary,
+       they are rebuilt as unary universal and product types."))
     (type-value-case
      tval
      :base (type-base tval.type)
@@ -145,10 +147,10 @@
      :fun (make-type-fun :in (type-value-list-to-type-list tval.in)
                          :out (type-value-to-type tval.out))
      :forall (make-type-forall
-              :params tval.params
+              :param tval.param
               :body (type-subst-type-denv tval.body tval.denv))
      :pi (make-type-pi
-          :params tval.params
+          :param tval.param
           :body (type-subst-type-denv tval.body tval.denv))
      :sigma (make-type-sigma
              :params tval.params
@@ -527,12 +529,15 @@
     "An uninstantiated primitive operation value,
      which includes every monomorphic primitive operation,
      becomes the variable that denotes the operation.
-     A partially instantiated primitive operation value becomes
-     a type application of that variable
-     to the type converted from the type value in the stage.
-     A totally instantiated primitive operation value becomes
-     an ispace application of that type application
-     to the dimension and the shape in the stage.
+     A stage that stores just a type value becomes
+     a unary type application of that variable
+     to the type converted from the type value.
+     A stage that also stores ispace values becomes
+     the nesting of unary ispace applications of that type application
+     to the dimensions in the stage, in order,
+     wrapped in a further unary ispace application
+     to the shape if the stage has one:
+     a left-nested chain of the core unary form (see @(tsee expr)).
      As we add more polymorphic primitive operations,
      we will need to generalize this."))
   (b* (((mv err name) (primop-value-name pval))
@@ -543,39 +548,108 @@
      :head-t (mv nil
                  (make-expr-tapp
                   :fun opvar
-                  :args (list (type-value-to-type pval.tval))))
+                  :arg (type-value-to-type pval.tval)))
+     :head-t-d (mv nil
+                   (make-expr-iapp
+                    :fun (make-expr-tapp
+                          :fun opvar
+                          :arg (type-value-to-type pval.tval))
+                    :arg (ispace-dim (dim-const pval.dval))))
      :head-t-d-s (mv nil
                      (make-expr-iapp
-                      :fun (make-expr-tapp
-                            :fun opvar
-                            :args (list (type-value-to-type pval.tval)))
-                      :args (list (ispace-dim (dim-const pval.dval))
-                                  (ispace-shape
-                                   (shape-dims (dim-const-list pval.sval))))))
+                      :fun (make-expr-iapp
+                            :fun (make-expr-tapp
+                                  :fun opvar
+                                  :arg (type-value-to-type pval.tval))
+                            :arg (ispace-dim (dim-const pval.dval)))
+                      :arg (ispace-shape
+                            (shape-dims (dim-const-list pval.sval)))))
      :tail-t (mv nil
                  (make-expr-tapp
                   :fun opvar
-                  :args (list (type-value-to-type pval.tval))))
+                  :arg (type-value-to-type pval.tval)))
+     :tail-t-d (mv nil
+                   (make-expr-iapp
+                    :fun (make-expr-tapp
+                          :fun opvar
+                          :arg (type-value-to-type pval.tval))
+                    :arg (ispace-dim (dim-const pval.dval))))
      :tail-t-d-s (mv nil
                      (make-expr-iapp
-                      :fun (make-expr-tapp
-                            :fun opvar
-                            :args (list (type-value-to-type pval.tval)))
-                      :args (list (ispace-dim (dim-const pval.dval))
-                                  (ispace-shape
-                                   (shape-dims (dim-const-list pval.sval))))))
+                      :fun (make-expr-iapp
+                            :fun (make-expr-tapp
+                                  :fun opvar
+                                  :arg (type-value-to-type pval.tval))
+                            :arg (ispace-dim (dim-const pval.dval)))
+                      :arg (ispace-shape
+                            (shape-dims (dim-const-list pval.sval)))))
      :length-t (mv nil
                    (make-expr-tapp
                     :fun opvar
-                    :args (list (type-value-to-type pval.tval))))
+                    :arg (type-value-to-type pval.tval)))
+     :length-t-d (mv nil
+                     (make-expr-iapp
+                      :fun (make-expr-tapp
+                            :fun opvar
+                            :arg (type-value-to-type pval.tval))
+                      :arg (ispace-dim (dim-const pval.dval))))
      :length-t-d-s (mv nil
                        (make-expr-iapp
-                        :fun (make-expr-tapp
-                              :fun opvar
-                              :args (list (type-value-to-type pval.tval)))
-                        :args (list (ispace-dim (dim-const pval.dval))
-                                    (ispace-shape
-                                     (shape-dims (dim-const-list pval.sval))))))
+                        :fun (make-expr-iapp
+                              :fun (make-expr-tapp
+                                    :fun opvar
+                                    :arg (type-value-to-type pval.tval))
+                              :arg (ispace-dim (dim-const pval.dval)))
+                        :arg (ispace-shape
+                              (shape-dims (dim-const-list pval.sval)))))
+     :append-t (mv nil
+                   (make-expr-tapp
+                    :fun opvar
+                    :arg (type-value-to-type pval.tval)))
+     :append-t-m (mv nil
+                     (make-expr-iapp
+                      :fun (make-expr-tapp
+                            :fun opvar
+                            :arg (type-value-to-type pval.tval))
+                      :arg (ispace-dim (dim-const pval.mval))))
+     :append-t-m-n (mv nil
+                       (make-expr-iapp
+                        :fun (make-expr-iapp
+                              :fun (make-expr-tapp
+                                    :fun opvar
+                                    :arg (type-value-to-type pval.tval))
+                              :arg (ispace-dim (dim-const pval.mval)))
+                        :arg (ispace-dim (dim-const pval.nval))))
+     :append-t-m-n-s (mv nil
+                         (make-expr-iapp
+                          :fun (make-expr-iapp
+                                :fun (make-expr-iapp
+                                      :fun (make-expr-tapp
+                                            :fun opvar
+                                            :arg (type-value-to-type pval.tval))
+                                      :arg (ispace-dim (dim-const pval.mval)))
+                                :arg (ispace-dim (dim-const pval.nval)))
+                          :arg (ispace-shape
+                                (shape-dims (dim-const-list pval.sval)))))
+     :reverse-t (mv nil
+                    (make-expr-tapp
+                     :fun opvar
+                     :arg (type-value-to-type pval.tval)))
+     :reverse-t-d (mv nil
+                      (make-expr-iapp
+                       :fun (make-expr-tapp
+                             :fun opvar
+                             :arg (type-value-to-type pval.tval))
+                       :arg (ispace-dim (dim-const pval.dval))))
+     :reverse-t-d-s (mv nil
+                        (make-expr-iapp
+                         :fun (make-expr-iapp
+                               :fun (make-expr-tapp
+                                     :fun opvar
+                                     :arg (type-value-to-type pval.tval))
+                               :arg (ispace-dim (dim-const pval.dval)))
+                         :arg (ispace-shape
+                               (shape-dims (dim-const-list pval.sval)))))
      :otherwise (mv nil opvar))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -626,10 +700,10 @@
                     :type? (type-value-option-to-type-option val.type?)))
                   ((mv err atom) (atom-subst-expr-denv atom val.denv)))
                (mv err (expr-atom atom)))
-     :tlambda (b* ((atom (atom-tlambda val.params val.body))
+     :tlambda (b* ((atom (atom-tlambda val.param val.body))
                    ((mv err atom) (atom-subst-expr-denv atom val.denv)))
                 (mv err (expr-atom atom)))
-     :ilambda (b* ((atom (atom-ilambda val.params val.body))
+     :ilambda (b* ((atom (atom-ilambda val.param val.body))
                    ((mv err atom) (atom-subst-expr-denv atom val.denv)))
                 (mv err (expr-atom atom)))
      :box (b* (((mv err array) (expr-value-to-expr val.array)))

@@ -428,11 +428,23 @@
    (ispace :dim (ispace-dim (dim-rename-dim-vars ispace.dim dim-renam)))
    (type :pi
          (b* (((mv fresh-params dim-renam shape-renam)
-               (dim/shape-rename-alpha-bound type.params
+               (dim/shape-rename-alpha-bound (list type.param)
                                              dim-renam
                                              shape-renam
                                              (type-free-ispace-vars type.body))))
            (make-type-pi
+            :param (car fresh-params)
+            :body (type-rename-ispace-vars-alpha-aux type.body
+                                                     dim-renam
+                                                     shape-renam
+                                                     avoid))))
+   (type :pin
+         (b* (((mv fresh-params dim-renam shape-renam)
+               (dim/shape-rename-alpha-bound type.params
+                                             dim-renam
+                                             shape-renam
+                                             (type-free-ispace-vars type.body))))
+           (make-type-pin
             :params fresh-params
             :body (type-rename-ispace-vars-alpha-aux type.body
                                                      dim-renam
@@ -490,12 +502,28 @@
                                                      avoid))))
    (atom :ilambda
          (b* (((mv fresh-params dim-renam shape-renam)
+               (dim/shape-rename-alpha-bound (list atom.param)
+                                             dim-renam
+                                             shape-renam
+                                             (expr-free-ispace-vars
+                                              atom.body)))
+              (fresh-param (if (consp fresh-params)
+                               (car fresh-params)
+                             atom.param)))
+           (make-atom-ilambda
+            :param fresh-param
+            :body (expr-rename-ispace-vars-alpha-aux atom.body
+                                                     dim-renam
+                                                     shape-renam
+                                                     avoid))))
+   (atom :ilambdan
+         (b* (((mv fresh-params dim-renam shape-renam)
                (dim/shape-rename-alpha-bound atom.params
                                              dim-renam
                                              shape-renam
                                              (expr-free-ispace-vars
                                               atom.body))))
-           (make-atom-ilambda
+           (make-atom-ilambdan
             :params fresh-params
             :body (expr-rename-ispace-vars-alpha-aux atom.body
                                                      dim-renam
@@ -678,11 +706,23 @@
                      (type-var (type-var-array type.var.name))))))
    (type :forall
          (b* (((mv fresh-params atom-renam array-renam)
-               (atom/array-rename-alpha-bound type.params
+               (atom/array-rename-alpha-bound (list type.param)
                                               atom-renam
                                               array-renam
                                               (type-free-type-vars type.body))))
            (make-type-forall
+            :param (car fresh-params)
+            :body (type-rename-type-vars-alpha-aux type.body
+                                                   atom-renam
+                                                   array-renam
+                                                   avoid))))
+   (type :foralln
+         (b* (((mv fresh-params atom-renam array-renam)
+               (atom/array-rename-alpha-bound type.params
+                                              atom-renam
+                                              array-renam
+                                              (type-free-type-vars type.body))))
+           (make-type-foralln
             :params fresh-params
             :body (type-rename-type-vars-alpha-aux type.body
                                                    atom-renam
@@ -710,11 +750,23 @@
                                                    avoid))))
    (atom :tlambda
          (b* (((mv fresh-params atom-renam array-renam)
-               (atom/array-rename-alpha-bound atom.params
+               (atom/array-rename-alpha-bound (list atom.param)
                                               atom-renam
                                               array-renam
                                               (expr-free-type-vars atom.body))))
            (make-atom-tlambda
+            :param (car fresh-params)
+            :body (expr-rename-type-vars-alpha-aux atom.body
+                                                   atom-renam
+                                                   array-renam
+                                                   avoid))))
+   (atom :tlambdan
+         (b* (((mv fresh-params atom-renam array-renam)
+               (atom/array-rename-alpha-bound atom.params
+                                              atom-renam
+                                              array-renam
+                                              (expr-free-type-vars atom.body))))
+           (make-atom-tlambdan
             :params fresh-params
             :body (expr-rename-type-vars-alpha-aux atom.body
                                                    atom-renam
@@ -994,4 +1046,3 @@
     "This is the top-level entry point for atoms;
      see @(tsee expr-rename-expr-vars-alpha)."))
   (atom-rename-expr-vars-alpha-aux atom renam nil))
-

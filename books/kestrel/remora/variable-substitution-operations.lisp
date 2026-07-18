@@ -227,6 +227,17 @@
   :override
   ((type :pi
          (b* (((mv dim-subst shape-subst)
+               (dim/shape-subst-remove-bound (set::insert type.param nil)
+                                             dim-subst
+                                             shape-subst)))
+           (and (dim/shape-subst-no-capture-p (set::insert type.param nil)
+                                              dim-subst
+                                              shape-subst)
+                (type-subst-ispace-vars-no-capture-p type.body
+                                                     dim-subst
+                                                     shape-subst))))
+   (type :pin
+         (b* (((mv dim-subst shape-subst)
                (dim/shape-subst-remove-bound (set::mergesort type.params)
                                              dim-subst
                                              shape-subst)))
@@ -277,6 +288,17 @@
                                                           dim-subst
                                                           shape-subst)))))
    (atom :ilambda
+         (b* (((mv dim-subst shape-subst)
+               (dim/shape-subst-remove-bound (set::insert atom.param nil)
+                                             dim-subst
+                                             shape-subst)))
+           (and (dim/shape-subst-no-capture-p (set::insert atom.param nil)
+                                              dim-subst
+                                              shape-subst)
+                (expr-subst-ispace-vars-no-capture-p atom.body
+                                                     dim-subst
+                                                     shape-subst))))
+   (atom :ilambdan
          (b* (((mv dim-subst shape-subst)
                (dim/shape-subst-remove-bound (set::mergesort atom.params)
                                              dim-subst
@@ -393,6 +415,17 @@
   :override
   ((type :forall
          (b* (((mv atom-subst array-subst)
+               (atom/array-subst-remove-bound (set::insert type.param nil)
+                                              atom-subst
+                                              array-subst)))
+           (and (atom/array-subst-no-capture-p (set::insert type.param nil)
+                                               atom-subst
+                                               array-subst)
+                (type-subst-type-vars-no-capture-p type.body
+                                                   atom-subst
+                                                   array-subst))))
+   (type :foralln
+         (b* (((mv atom-subst array-subst)
                (atom/array-subst-remove-bound (set::mergesort type.params)
                                               atom-subst
                                               array-subst)))
@@ -418,6 +451,17 @@
                                                         atom-subst
                                                         array-subst)))))
    (atom :tlambda
+         (b* (((mv atom-subst array-subst)
+               (atom/array-subst-remove-bound (set::insert atom.param nil)
+                                              atom-subst
+                                              array-subst)))
+           (and (atom/array-subst-no-capture-p (set::insert atom.param nil)
+                                               atom-subst
+                                               array-subst)
+                (expr-subst-type-vars-no-capture-p atom.body
+                                                   atom-subst
+                                                   array-subst))))
+   (atom :tlambdan
          (b* (((mv atom-subst array-subst)
                (atom/array-subst-remove-bound (set::mergesort atom.params)
                                               atom-subst
@@ -612,10 +656,19 @@
    (shape :dims (shape-dims (dim-list-subst-dim-vars shape.dims dim-subst)))
    (ispace :dim (ispace-dim (dim-subst-dim-vars ispace.dim dim-subst)))
    (type :pi (b* (((mv dim-subst shape-subst)
-                   (dim/shape-subst-remove-bound (set::mergesort type.params)
+                   (dim/shape-subst-remove-bound (set::insert type.param nil)
                                                  dim-subst
                                                  shape-subst)))
                (make-type-pi
+                :param type.param
+                :body (type-subst-ispace-vars type.body
+                                              dim-subst
+                                              shape-subst))))
+   (type :pin (b* (((mv dim-subst shape-subst)
+                   (dim/shape-subst-remove-bound (set::mergesort type.params)
+                                                 dim-subst
+                                                 shape-subst)))
+               (make-type-pin
                 :params type.params
                 :body (type-subst-ispace-vars type.body
                                               dim-subst
@@ -666,10 +719,20 @@
                                           shape-subst))))
    (atom :ilambda
          (b* (((mv dim-subst shape-subst)
-               (dim/shape-subst-remove-bound (set::mergesort atom.params)
+               (dim/shape-subst-remove-bound (set::insert atom.param nil)
                                              dim-subst
                                              shape-subst)))
            (make-atom-ilambda
+            :param atom.param
+            :body (expr-subst-ispace-vars atom.body
+                                          dim-subst
+                                          shape-subst))))
+   (atom :ilambdan
+         (b* (((mv dim-subst shape-subst)
+               (dim/shape-subst-remove-bound (set::mergesort atom.params)
+                                             dim-subst
+                                             shape-subst)))
+           (make-atom-ilambdan
             :params atom.params
             :body (expr-subst-ispace-vars atom.body
                                           dim-subst
@@ -771,10 +834,20 @@
                      (type-var (type-var-array type.var.name))))))
    (type :forall
          (b* (((mv atom-subst array-subst)
-               (atom/array-subst-remove-bound (set::mergesort type.params)
+               (atom/array-subst-remove-bound (set::insert type.param nil)
                                               atom-subst
                                               array-subst)))
            (make-type-forall
+            :param type.param
+            :body (type-subst-type-vars type.body
+                                        atom-subst
+                                        array-subst))))
+   (type :foralln
+         (b* (((mv atom-subst array-subst)
+               (atom/array-subst-remove-bound (set::mergesort type.params)
+                                              atom-subst
+                                              array-subst)))
+           (make-type-foralln
             :params type.params
             :body (type-subst-type-vars type.body
                                         atom-subst
@@ -795,10 +868,20 @@
                                         array-subst))))
    (atom :tlambda
          (b* (((mv atom-subst array-subst)
-               (atom/array-subst-remove-bound (set::mergesort atom.params)
+               (atom/array-subst-remove-bound (set::insert atom.param nil)
                                               atom-subst
                                               array-subst)))
            (make-atom-tlambda
+            :param atom.param
+            :body (expr-subst-type-vars atom.body
+                                        atom-subst
+                                        array-subst))))
+   (atom :tlambdan
+         (b* (((mv atom-subst array-subst)
+               (atom/array-subst-remove-bound (set::mergesort atom.params)
+                                              atom-subst
+                                              array-subst)))
+           (make-atom-tlambdan
             :params atom.params
             :body (expr-subst-type-vars atom.body
                                         atom-subst
