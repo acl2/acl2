@@ -34,7 +34,6 @@
 (include-book "irrelevant-formals")
 (include-book "known-packages")
 (include-book "known-packages-plus")
-(include-book "legal-variable-listp")
 (include-book "macro-queries")
 (include-book "maybe-pseudo-event-formp")
 (include-book "non-parallel-book")
