@@ -285,7 +285,7 @@
 (std::deflist defind-premise-info-list-case-pred (x)
   :guard (defind-premise-info-listp x)
   :short "Check if all the elements of
-          a list of information about premises or a rule
+          a list of information about premises of a rule
           are of the @(':pred') kind."
   (defind-premise-info-case x :pred))
 
@@ -294,7 +294,7 @@
 (std::deflist defind-premise-info-list-case-other (x)
   :guard (defind-premise-info-listp x)
   :short "Check if all the elements of
-          a list of information about premises or a rule
+          a list of information about premises of a rule
           are of the @(':other') kind."
   (defind-premise-info-case x :other))
 
@@ -895,20 +895,20 @@
                       but there are duplicates among ~&0."
                      irule-names)))
        ((unless (defind-irule-info-list-some-recursivep infos))
-        (reterr (msg "The :IRULES input must include
+        (reterr (msg "The :IRULES input must include ~
                       at least one recursive rule, ~
                       i.e. a rule with the predicate in some premises. ~
                       With the supplied rules, ~
-                      the definition of the predicate is not recursive, ~
-                      and thus can be be more simply defined ~
+                      the predicate would not be recursive, ~
+                      and thus could be more simply defined ~
                       without using DEFINDUCTIVE.")))
        ((unless (defind-irule-info-list-some-nonrecursivep infos))
-        (reterr (msg "The :IRULES input must include
+        (reterr (msg "The :IRULES input must include ~
                       at least one non-recursive rule, ~
                       i.e. a rule without the predicate in its premises. ~
                       With the supplied rules, ~
                       the predicate would be defined to be empty, ~
-                      because of the lack of some base case."))))
+                      for lack of a base case."))))
     (retok infos))
 
   :prepwork

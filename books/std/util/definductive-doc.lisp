@@ -231,14 +231,15 @@
       "There must be at least one rule
        with a premise of the form (i) above.
        That is, the rules must be recursive,
-       otherwise the predicate could be more simplify defined
+       otherwise the predicate could be more simply defined
        without using inference rules.
        This condition will be generalized when
        we remove the restriction to one predicate mentioned above.")
      (xdoc::p
       "There must be at least one rule
        whose premises all have the form (ii) above.
-       That is, there must at least one base case for the recursive definition,
+       That is, there must be at least one base case
+       for the recursive definition,
        otherwise the smallest predicate satisfying the rules is empty.
        This condition will be generalized when
        we remove the restriction to one predicate mentioned above."))
