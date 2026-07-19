@@ -1535,8 +1535,8 @@
                                           (irule-name symbolp)
                                           (name symbolp))
   :returns (thm-name symbolp)
-  :short "Name of the sufficiency theorem associated to
-          a @('p[l[k]]-proof-for-rule[k]') function."
+  :short "Name of the sufficiency theorem of
+          a @('p[l[k]]-rule[k]-validp') function."
   (packn-pos (list (defind-irule-valid-fn-name pred-name irule-name name)
                    '-suff)
              (symbol-lfix name)))
