@@ -2169,7 +2169,7 @@
                         :hints (("Goal" :in-theory '(,fn-name
                                                      ,@return-thms))))
        ,@(and xdocp
-              `(:parents (,(symbol-fix name))
+              `(:parents (,(symbol-lfix name))
                 :short ,(str::cat "Validity of a proof for @('"
                                   (str::downcase-string (symbol-name pred-name))
                                   "').")))
