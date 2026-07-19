@@ -13,6 +13,7 @@
 (include-book "definductive")
 
 (include-book "std/testing/must-be-redundant" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 (include-book "std/testing/must-succeed-star" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -120,3 +121,11 @@
                   (gnd-alt-ax2-p)
                   (gnd a))
              (gnd-alt a)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (definductive duplicate-formals
+   :preds ((p x x))
+   :irules ((ax ()
+                (p 0 0)))))

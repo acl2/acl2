@@ -501,6 +501,12 @@
                       the ~n0 element of the :PREDS input ~
                       must be legal variable names, ~
                       but at least one in ~&1 is not."
+                     (list (lposfix i)) pred-formals)))
+       ((unless (no-duplicatesp-eq pred-formals))
+        (reterr (msg "The formals of the predicate in ~
+                      the ~n0 element of the :PREDS input ~
+                      must be all distinct, ~
+                      but there are duplicates among ~&1."
                      (list (lposfix i)) pred-formals))))
     (retok (make-defind-pred-info :name pred-name
                                   :formals pred-formals))))
