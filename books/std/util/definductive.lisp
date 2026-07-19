@@ -1505,6 +1505,18 @@
 
 ;;;;;;;;;;
 
+(define defind-irule-valid-return-thm-name ((pred-name symbolp)
+                                            (irule-name symbolp)
+                                            (name symbolp))
+  :returns (thm-name)
+  :short "Name fo the return theorem of
+          a @('p[l[k]]-proof-for-rule[k]') function."
+  (packn-pos (list 'booleanp-of-
+                   (defind-irule-valid-fn-name pred-name irule-name name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
 (define defind-irule-valid-suff-thm-name ((pred-name symbolp)
                                           (irule-name symbolp)
                                           (name symbolp))
@@ -2046,6 +2058,7 @@
                                         (irule-name symbolp)
                                         (name symbolp))
   :returns (mv (keyword+term true-listp)
+               (return-thm symbolp)
                (count-thms symbol-listp)
                (fixing-thms symbol-listp))
   :short "Generate a case of a @('p[i]-proof-validp') function,
@@ -2057,10 +2070,13 @@
             count-thms
             fixing-thms)
         (defind-gen-proof-valid-fn-case-prems infos irule-name 1 name))
-       (concl-var (defind-proof-concl-var-name name)))
+       (concl-var (defind-proof-concl-var-name name))
+       (return-thm
+        (defind-irule-valid-return-thm-name pred-name irule-name name)))
     (mv `(,tag (and ,@prem-conjuncts
                     (,valid-irule-fn ,concl-var
                                      ,@concl-calls)))
+        return-thm
         count-thms
         fixing-thms)))
 
@@ -2071,6 +2087,7 @@
                                          (name symbolp))
   :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
   :returns (mv (keywords+terms true-listp)
+               (return-thms symbol-listp)
                (count-thms symbol-listp)
                (prem-fixing-thms symbol-listp)
                (concl-fixing-thms symbol-listp))
@@ -2080,21 +2097,23 @@
   (xdoc::topstring
    (xdoc::p
     "There is one case for each rule whose conclusion is @('p[i]')."))
-  (b* (((when (endp infos)) (mv nil nil nil nil))
+  (b* (((when (endp infos)) (mv nil nil nil nil nil))
        ((defind-irule-info info) (car infos))
        ((unless (equal (defind-conclusion-info->name info.conclusion)
                        (symbol-lfix pred-name)))
         (defind-gen-proof-valid-fn-cases pred-name (cdr infos) name))
-       ((mv keyword+term count-thms prem-fixing-thms)
+       ((mv keyword+term return-thm count-thms prem-fixing-thms)
         (defind-gen-proof-valid-fn-case pred-name info.premises info.name name))
        (concl-fixing-thm
         (defind-proof-concl-acc-fixing-thm-name pred-name info.name name))
        ((mv keywords+terms
+            more-return-thms
             more-count-thms
             more-prem-fixing-thms
             more-concl-fixing-thms)
         (defind-gen-proof-valid-fn-cases pred-name (cdr infos) name)))
     (mv (cons keyword+term keywords+terms)
+        (cons return-thm more-return-thms)
         (append count-thms more-count-thms)
         (append prem-fixing-thms more-prem-fixing-thms)
         (cons concl-fixing-thm more-concl-fixing-thms))))
@@ -2123,6 +2142,7 @@
        (proof-recog (defind-proof-recog-name pred-name name))
        (proof-case (defind-proof-case-name pred-name name))
        ((mv keywords+terms
+            return-thms
             count-thms
             prem-fixing-thms
             concl-fixing-thms)
@@ -2131,6 +2151,9 @@
        (poss-thm (defind-proof-kind-poss-thm-name pred-name name))
        (kind-fixing-thm (defind-proof-kind-fixing-thm-name pred-name name)))
     `(define ,fn-name ((,fn-formal ,proof-recog))
+       :returns (yes/no booleanp
+                        :hints (("Goal" :in-theory '(,fn-name
+                                                     ,@return-thms))))
        ,@(and xdocp
               `(:parents (,(symbol-fix name))
                 :short ,(str::cat "Validity of a proof for @('"
