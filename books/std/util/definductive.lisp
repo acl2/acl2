@@ -802,7 +802,7 @@
   (b* (((reterr) (irr-defind-irule-info))
        ((unless (and (true-listp irule)
                      (= (len irule) 3)))
-        (reterr (msg "~@0 must be a list of tree elements, ~
+        (reterr (msg "~@0 must be a list of three elements, ~
                        but it is ~x1 instead."
                      desc irule)))
        ((list name prems concl) irule)
