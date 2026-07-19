@@ -16,7 +16,7 @@
 (include-book "kestrel/fty/symbol-set" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
-(include-book "std/system/check-user-term" :dir :system)
+(include-book "std/system/check-user-term-dollar" :dir :system)
 (include-book "std/system/fresh-namep" :dir :system)
 (include-book "std/system/legal-variable-listp" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
@@ -56,35 +56,6 @@
          (symbol-listp (true-list-fix x)))
   :induct t
   :enable set::mergesort)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; move to Std/system
-
-(define check-user-term$ (x state)
-  :returns (mv (term/message (or (pseudo-termp term/message)
-                                 (msgp term/message)))
-               (stobjs-out symbol-listp))
-  (b* ((wrld (w state))
-       ((mv erp val)
-        (magic-ev-fncall 'check-user-term (list x wrld) state nil nil))
-       ((when erp)
-        (raise "Internal error: call of CHECK-USER-TERM failed.")
-        (mv nil nil))
-       ((unless (and (true-listp val)
-                     (= (len val) 2)))
-        (raise "Internal error: call of CHECK-USER-TERM returns ~x0." val)
-        (mv nil nil))
-       ((list term/message stobjs-out) val)
-       ((unless (or (pseudo-termp term/message)
-                    (msgp term/message)))
-        (raise "Internal error: CHECK-USER-TERM returned ~x0." term/message)
-        (mv nil nil))
-       ((unless (symbol-listp stobjs-out))
-        (raise "Internal error: CHECK-USER-TERM returned ~x0." stobjs-out)
-        (mv nil nil)))
-    (mv term/message stobjs-out))
-  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
