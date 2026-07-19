@@ -267,7 +267,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist defind-premise-info-list
-  :short "Fixtype of lists of information about a premise of a rule."
+  :short "Fixtype of lists of information about premises of a rule."
   :elt-type defind-premise-info
   :true-listp t
   :elementp-of-nil nil
@@ -276,9 +276,27 @@
 ;;;;;;;;;;
 
 (defirrelevant irr-defind-premise-info
-  :short "Irrelevant information about a premise of a rule."
+  :short "Irrelevant information about premises of a rule."
   :type defind-premise-infop
   :body (defind-premise-info-pred nil nil))
+
+;;;;;;;;;;
+
+(std::deflist defind-premise-info-list-case-pred (x)
+  :guard (defind-premise-info-listp x)
+  :short "Check if all the elements of
+          a list of information about premises or a rule
+          are of the @(':pred') kind."
+  (defind-premise-info-case x :pred))
+
+;;;;;;;;;;
+
+(std::deflist defind-premise-info-list-case-other (x)
+  :guard (defind-premise-info-listp x)
+  :short "Check if all the elements of
+          a list of information about premises or a rule
+          are of the @(':other') kind."
+  (defind-premise-info-case x :other))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -339,6 +357,38 @@
   :returns (names symbol-listp)
   :short "Lift @(tsee defind-irule-info->name) to lists."
   (defind-irule-info->name x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-irule-info-recursivep ((info defind-irule-infop))
+  :returns (yes/no booleanp)
+  :short "Check if a rule is recursive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case when at least one premise is a @(':pred'),
+     i.e. when not all are @(':other') premises."))
+  (not (defind-premise-info-list-case-other
+         (defind-irule-info->premises info))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-irule-info-list-some-recursivep ((infos defind-irule-info-listp))
+  :returns (yes/no booleanp)
+  :short "Check if at least a rule is recursive."
+  (and (not (endp infos))
+       (or (defind-irule-info-recursivep (car infos))
+           (defind-irule-info-list-some-recursivep (cdr infos)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-irule-info-list-some-nonrecursivep ((infos
+                                                    defind-irule-info-listp))
+  :returns (yes/no booleanp)
+  :short "Check if at least a rule is not recursive."
+  (and (not (endp infos))
+       (or (not (defind-irule-info-recursivep (car infos)))
+           (defind-irule-info-list-some-nonrecursivep (cdr infos)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -843,7 +893,22 @@
         (reterr (msg "The names of the rules in the :IRULES input ~
                       must be all distinct, ~
                       but there are duplicates among ~&0."
-                     irule-names))))
+                     irule-names)))
+       ((unless (defind-irule-info-list-some-recursivep infos))
+        (reterr (msg "The :IRULES input must include
+                      at least one recursive rule, ~
+                      i.e. a rule with the predicate in some premises. ~
+                      With the supplied rules, ~
+                      the definition of the predicate is not recursive, ~
+                      and thus can be be more simply defined ~
+                      without using DEFINDUCTIVE.")))
+       ((unless (defind-irule-info-list-some-nonrecursivep infos))
+        (reterr (msg "The :IRULES input must include
+                      at least one non-recursive rule, ~
+                      i.e. a rule without the predicate in its premises. ~
+                      With the supplied rules, ~
+                      the predicate would be defined to be empty, ~
+                      because of the lack of some base case."))))
     (retok infos))
 
   :prepwork
