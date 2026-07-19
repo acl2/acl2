@@ -119,7 +119,7 @@
   (xdoc::evmac-topic-implementation-item-input "irules")
 
   "@('irule-name') is the name of
-   one the inference rules specified in the @(':irules') input,
+   one of the inference rules specified in the @(':irules') input,
    i.e. a @('rule[k]') in the user documentation."
 
   (xdoc::evmac-topic-implementation-item-input "parents")
@@ -258,7 +258,7 @@
     "A premise has the form of
      (i) a call of a @('p[i]') predicate
      on some terms not containing the predicates being defined,
-     or (ii) some term not contains the predicates being defined."))
+     or (ii) some term not containing the predicates being defined."))
   (:pred ((name symbol)
           (args defind-term-info-list)))
   (:other ((term defind-term-info)))
@@ -287,7 +287,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Conclusions always the form of
+    "Conclusions always have the form of
      a call of a @('p[i]') predicate
      on some terms not containing the predicates being defined.
      It is like the @(':pred') case of @(tsee defind-premise-info)."))
@@ -1681,8 +1681,8 @@
    (xdoc::p
     "We use the @(':xvar') option to avoid possible collisions with @('x'),
      which could be a commonly chosen name for a predicate formal.
-     Although @('assertion') seems unlike to clash,
-     at some point we should add to pick an @(':xvar') name
+     Although @('assertion') seems unlikely to clash,
+     at some point we should pick an @(':xvar') name
      that we establish to be distinct from the formals
      (maybe even leaving @('x') as is if it is not a formal)."))
   (b* (((defind-pred-info info)))
@@ -2942,7 +2942,7 @@
                                               state)
   :returns (mv erp (event pseudo-event-formp))
   :parents (definductive-implementation)
-  :short "Proces the inputs and generate all the events."
+  :short "Process the inputs and generate all the events."
   (b* (((reterr) '(_))
        ((erp name pred-infos irule-infos parents short long xdocp)
         (defind-process-inputs
