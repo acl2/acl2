@@ -712,7 +712,7 @@
               (reterr "irrelevant"))
              (pred-info (defind-lookup-pred pred-name pred-infos))
              ((unless pred-info)
-              (raise "Internal error: no information for ~x9." pred-name)
+              (raise "Internal error: no information for ~x0." pred-name)
               (reterr "irrelevant"))
              (pred-formals (defind-pred-info->formals pred-info))
              ((unless (= (len args) (len pred-formals)))
