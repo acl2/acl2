@@ -1965,7 +1965,9 @@
                                  "').")))))
     (if (set::emptyp vars)
         `(define ,fn-name (,concl-formal ,@prem-formals)
-         :returns (yes/no booleanp)
+           :returns (yes/no booleanp
+                            :hints (("Goal" :in-theory '(,fn-name
+                                                         booleanp))))
            ,@xdoc?
            ,body/matrix
            :verify-guards nil
@@ -1974,7 +1976,9 @@
                                                       ,fix-return-thm
                                                       ,equal-thm))))))
       `(define-sk ,fn-name (,concl-formal ,@prem-formals)
-         :returns (yes/no booleanp)
+         :returns (yes/no booleanp
+                          :hints (("Goal" :in-theory '(,fn-name
+                                                       booleanp))))
          ,@xdoc?
          (exists ,vars ,body/matrix)
          :verify-guards nil
