@@ -129,3 +129,37 @@
    :preds ((p x x))
    :irules ((ax ()
                 (p 0 0)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (definductive no-recursive-rule
+   :preds ((p x))
+   :irules ((ax ()
+                (p 0)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (definductive no-recursive-rule-with-premises
+   :preds ((p x))
+   :irules ((ax ((natp x))
+                (p x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (definductive no-base-rule
+   :preds ((p x))
+   :irules ((step ((p x))
+                  (p (cons x x))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (definductive no-base-rule-multi
+   :preds ((p x))
+   :irules ((step1 ((p x))
+                   (p (cons x x)))
+            (step2 ((p x) (p y))
+                   (p (cons x y))))))
