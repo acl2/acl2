@@ -18,6 +18,7 @@
   :returns (mv (term/message (or (pseudo-termp term/message)
                                  (msgp term/message)))
                (stobjs-out symbol-listp))
+  :parents (std/system/term-queries)
   :short "A logic-mode guard-verified version of @(tsee check-user-term)."
   :long
   (xdoc::topstring
