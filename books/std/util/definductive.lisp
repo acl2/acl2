@@ -675,7 +675,10 @@
                       must match the number ~x1 of formals ~
                       of the predicate ~x2, ~
                       but it is ~x3 instead."
-                     desc (len pred-formals) pred-name (len args))))
+                     (msg-downcase-first desc)
+                     (len pred-formals)
+                     pred-name
+                     (len args))))
        (args-desc (msg "the arguments of ~@0" (msg-downcase-first desc)))
        ((erp arg-infos) (defind-process-args args args-desc state)))
     (retok (make-defind-conclusion-info :name pred-name :args arg-infos)))
@@ -720,7 +723,10 @@
                             must match the number ~x1 of formals ~
                             of the predicate ~x2, ~
                             but it is ~x3 instead."
-                           desc (len pred-formals) pred-name (len args))))
+                           (msg-downcase-first desc)
+                           (len pred-formals)
+                           pred-name
+                           (len args))))
              (args-desc (msg "the arguments of ~@0" (msg-downcase-first desc)))
              ((erp arg-infos) (defind-process-args args args-desc state)))
           (retok (make-defind-premise-info-pred :name pred-name
@@ -806,11 +812,13 @@
                      desc name)))
        ((erp prem-infos)
         (defind-process-premises prems desc pred-infos state))
+       (concl-desc (msg "The conclusion of ~@0" (msg-downcase-first desc)))
        ((erp concl-info)
-        (defind-process-conclusion concl desc pred-infos state)))
+        (defind-process-conclusion concl concl-desc pred-infos state)))
     (retok (make-defind-irule-info :name name
                                    :premises prem-infos
-                                   :conclusion concl-info))))
+                                   :conclusion concl-info)))
+  :guard-hints (("Goal" :in-theory (enable character-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
