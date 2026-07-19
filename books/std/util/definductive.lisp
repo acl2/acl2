@@ -47,16 +47,6 @@
   (mbe :logic (symbol-fix x)
        :exec x))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; move to FTY
-
-(defrule symbol-setp-of-mergesort
-  (equal (symbol-setp (set::mergesort x))
-         (symbol-listp (true-list-fix x)))
-  :induct t
-  :enable set::mergesort)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-implementation
