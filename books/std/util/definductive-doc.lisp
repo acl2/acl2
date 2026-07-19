@@ -44,7 +44,7 @@
       its reflexive and transitive closure can be defined as
       the smallest relation")
     (xdoc::@[]
-     "R^\\ast \\subseqeq \\mathcal{U} \\times \\mathcal{U}")
+     "R^\\ast \\subseteq \\mathcal{U} \\times \\mathcal{U}")
     (xdoc::p
      "that satisfies the following inference rules:")
     (xdoc::@[]
@@ -73,7 +73,7 @@
       (e.g. static typing rules and dynamic execution rules).")
 
     (xdoc::p
-     "In higher-order logic, @($R\\ast$) can be formalized as follows
+     "In higher-order logic, @($R^\\ast$) can be formalized as follows
       (explained below):")
     (xdoc::@[]
      "\\mathcal{F} :
@@ -89,25 +89,25 @@
      "R^\\ast =
       \\iota r.\\
       (r = \\mathcal{F}(r) \\wedge
-      (\\forall r'.\\ r' = \\mathcal{F}(r') \\Longightarrow r \\subseteq r'))")
+      (\\forall r'.\\ r' = \\mathcal{F}(r') \\Longrightarrow r \\subseteq r'))")
     (xdoc::p
      "Here @($\\mathcal{P}$) is the powerset operator.
       The higher-order function @($\\mathcal{F}$)
       maps a generic binary relation @($r$) over @($\\mathcal{U}$)
       to another binary relation @($\\mathcal{F}(r)$) over @($\\mathcal{U}$),
       according to the inference rules:
-      if @($R(x,y)$) then @($r\\\mathcal{F}(r)(x,y)$)
+      if @($R(x,y)$) then @($\\mathcal{F}(r)(x,y)$)
       (rule @($\\mathsf{Base}$));
-      unconditionally @($\\mathcal{F}(r)(x,x)$ (rule @($\\mathsf{Refl}$));
-      if @($r(x,y)$) and @($r(y,z)) then @($\\mathcal{F}(r)(x,z)$)
+      unconditionally @($\\mathcal{F}(r)(x,x)$) (rule @($\\mathsf{Refl}$));
+      if @($r(x,y)$) and @($r(y,z)$) then @($\\mathcal{F}(r)(x,z)$)
       (rule @($\\mathsf{Trans}$)).
       The function @($\\mathcal{F}$) is easily proved monotone:")
     (xdoc::@[]
      "r_1 \\subseteq r_2 \\Longrightarrow
-      \\mathcal{F}(r_1} \\subseteq \\mahtcal{F}(r_2)")
+      \\mathcal{F}(r_1) \\subseteq \\mathcal{F}(r_2)")
     (xdoc::p
      "Thus, by the Knaster-Tarski theorem,
-      @($\\mathcal$) has a least fixpoint,
+      @($\\mathcal{F}$) has a least fixpoint,
       and we define @($R^\\ast$) to be it,
       via the @($\\iota$) definite description operator:
       @($R^\\ast$) is the relation @($r$) that
@@ -169,7 +169,7 @@
        In the future, it may be used to identify this inductive definition.")
      (xdoc::p
       "The names of all the generated events,
-       excepts possibly for the predicates, whose names are supplied directly,
+       except possibly for the predicates, whose names are supplied directly,
        are in the package of this symbol.
        It is recommended to put this name and the predicate names
        all in the same package."))
@@ -213,9 +213,9 @@
      (xdoc::p
       "It must be a list of the form")
      (xdoc::codeblock
-      "((rule[1] (premise[1,1] ... premise[1,p[1]]) conclusion[1])"
+      "((rule[1] (premise[1,1] ... premise[1,q[1]]) conclusion[1])"
       " ..."
-      " (rule[r] (premise[r,1] ... premise[1,p[r]]) conclusion[r]))")
+      " (rule[r] (premise[r,1] ... premise[r,q[r]]) conclusion[r]))")
      (xdoc::p
       "where each @('rule[k]') is a symbol that names a rule,
        and each @('premise[k,h]') and @('conclusion[k]') is
@@ -224,7 +224,7 @@
        any of @('arg[1]'), ..., @('arg[m[i]]'),
        or (ii) a term in which none of @('p[1]'), ..., @('p[n]') occurs.
        For a @('conclusion[k]'), the term must have form (i);
-       for a @('premise[k,h]',) the term may have either form.
+       for a @('premise[k,h]'), the term may have either form.
        All the rule names @('rule[1]'), ..., @('rule[r]') must be distinct;
        there must be at least one rule, i.e. @('r') must be positive."))
 
@@ -234,7 +234,7 @@
       "@(':short')"
       "@(':long')")
      (xdoc::p
-      "These, if present, are put ito the generated XDOC topic
+      "These, if present, are put into the generated XDOC topic
        described in the Section `Generated Events' below.
        If @(':parents') is supplied, it must not be @('nil').")))
 
@@ -288,7 +288,9 @@
        whose corresponding field has type @('p[j]-proof').")
      (xdoc::p
       "These fixtypes are mutually recursive in general,
-       so they are put inside a @(tsee fty::deftypes)."))
+       in which case they are put inside a @(tsee fty::deftypes);
+       currently, since only one predicate is supported,
+       a single @(tsee fty::deftagsum) is generated."))
 
     (xdoc::desc
      (list
@@ -316,8 +318,8 @@
        the predicate used in the conclusion of rule @('k')),
        @('p[l[k]]-rule[k]-validp') takes as inputs
        a conclusion of type @('p[l[k]]-assertion')
-       and zero or more premises of the approproate assertion types,
-       and says whethe they fit the pattern of the rule,
+       and zero or more premises of the appropriate assertion types,
+       and says whether they fit the pattern of the rule,
        i.e. they form a valid instance of the rule.")
      (xdoc::p
       "These predicates are currently not guard-verified,
@@ -398,7 +400,7 @@
       are indeed the smallest ones.
       The generation of the following items
       could be perhaps made optional in this macro.
-      If XDOC is generaed, all the following items are put
+      If XDOC is generated, all the following items are put
       inside a @(tsee defsection) whose name is obtained by
       extending the @('name') input with the suffix @('-minimal').")
 
