@@ -18,6 +18,7 @@
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/system/check-user-term" :dir :system)
 (include-book "std/system/fresh-namep" :dir :system)
+(include-book "std/system/legal-variable-listp" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
@@ -59,12 +60,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; move to Std/system
-
-(define legal-variable-listp ((names true-listp))
-  :returns (yes/no booleanp)
-  (or (endp names)
-      (and (legal-variablep (car names))
-           (legal-variable-listp (cdr names)))))
 
 (define check-user-term$ (x state)
   :returns (mv (term/message (or (pseudo-termp term/message)
