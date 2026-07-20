@@ -81,6 +81,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum int-binary-primop
+  :short "Fixtype of integer binary primitive operations."
+  (:add ())
+  (:sub ())
+  (:mul ())
+  (:div ())
+  (:expt ())
+  (:mod ())
+  (:max ())
+  (:min ())
+  (:bit-and ())
+  (:bit-or ())
+  (:bit-xor ())
+  (:shl ())
+  (:shr ())
+  :pred int-binary-primop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum int-rel-primop
+  :short "Fixtype of integer relational operations."
+  (:eq ())
+  (:neq ())
+  (:lt ())
+  (:gt ())
+  (:leq ())
+  (:geq ())
+  :pred int-rel-primop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: factor more primops
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -226,11 +257,6 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This fixtype contains summands for the primitive operations themselves,
-       in correspondence with the entries of @(tsee primop-types),
-       as well as summands for partially and fully instantiated
-       polymorphic operations (more details below).")
-     (xdoc::p
       "A value of this fixtype represents a primitive operation,
        or an instantiation stage thereof,
        as a scalar (zero-rank array) function value,
@@ -254,36 +280,20 @@
        @(':length-t-d') is the operation further applied to
        a natural number for its dimension parameter;
        @(':length-t-d-s') is the operation further applied to
-       a list of natural numbers for its shape parameter.")
-     (xdoc::p
-      "For now we only have one stage that stores an expression value,
-       namely the one for integer addition after it is applied to one value.
-       This is so that this fixtype
-       is mutually recursive with @(tsee expr-value),
-       but we need to add value stages to all other operations.
-       Most likely, we will refactor them
-       to avoid a proliferation of summands."))
+       a list of natural numbers for its shape parameter.
+       As another example, here are the stages of integer binary operations:
+       @(':int-binary') is the uninstantiated operation;
+       @(':int-binary-x') is the operation applied to
+       its first argument value
+       (which we call @('x'), based on the idea that
+       the two arguments are @('x') and @('y')."))
     (:int-unary ((op int-unary-primop)))
-    (:int-add ())
-    (:int-add-x ((x expr-value))) ; TODO: add more stages like this
-    (:int-sub ())
-    (:int-mul ())
-    (:int-div ())
-    (:int-expt ())
-    (:int-mod ())
-    (:int-max ())
-    (:int-min ())
-    (:int-bit-and ())
-    (:int-bit-or ())
-    (:int-bit-xor ())
-    (:int-shl ())
-    (:int-shr ())
-    (:int-eq ())
-    (:int-neq ())
-    (:int-lt ())
-    (:int-gt ())
-    (:int-leq ())
-    (:int-geq ())
+    (:int-binary ((op int-binary-primop)))
+    (:int-binary-x ((op int-binary-primop)
+                    (xval expr-value)))
+    (:int-rel ((op int-rel-primop)))
+    (:int-rel-x ((op int-rel-primop)
+                 (xval expr-value)))
     (:int-to-float ())
     (:int-to-bool ())
     (:float-add ())
@@ -362,8 +372,7 @@
                      (mval nat)
                      (nval nat)))
     :pred primop-valuep
-    :xvar primopval
-    :measure (two-nats-measure (acl2-count primopval) 0))
+    :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -620,8 +629,8 @@
     :short "Check dimension constraints on primitive operation values."
     (primop-value-case
      val
-     :int-add-x (b* (((ok &) (check-dims-of-expr-value val.x)))
-                  :unit)
+     :int-binary-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                     :unit)
      :otherwise :unit)
     :measure (primop-value-count val))
 
@@ -1128,6 +1137,11 @@
      and on the fully instantiated stages
      of the polymorphic primitive operations."))
   (primop-value-case op
+                     :int-unary t
+                     :int-binary t
+                     :int-binary-x t
+                     :int-rel t
+                     :int-rel-x t
                      :head nil
                      :head-t nil
                      :head-t-d nil
@@ -1167,6 +1181,11 @@
      the stages of polymorphic primitive operations
      that expect type values next."))
   (primop-value-case op
+                     :int-unary nil
+                     :int-binary nil
+                     :int-binary-x nil
+                     :int-rel nil
+                     :int-rel-x nil
                      :head t
                      :tail t
                      :length t
@@ -1191,6 +1210,11 @@
      the stages of polymorphic primitive operations
      that expect ispace values next."))
   (primop-value-case op
+                     :int-unary nil
+                     :int-binary nil
+                     :int-binary-x nil
+                     :int-rel nil
+                     :int-rel-x nil
                      :head-t t
                      :head-t-d t
                      :tail-t t
@@ -1256,6 +1280,8 @@
      discarding the instantiation values (if any);
      it maps every other primitive operation value to itself."))
   (primop-value-case op
+                     :int-binary-x (primop-value-int-binary op.op)
+                     :int-rel-x (primop-value-int-rel op.op)
                      :head-t (primop-value-head)
                      :head-t-d (primop-value-head)
                      :head-t-d-s (primop-value-head)
@@ -1381,26 +1407,10 @@
     (primop-value-case
      op
      :int-unary int-unop-tv
-     :int-add int-binop-tv
-     :int-add-x int-unop-tv
-     :int-sub int-binop-tv
-     :int-mul int-binop-tv
-     :int-div int-binop-tv
-     :int-expt int-binop-tv
-     :int-mod int-binop-tv
-     :int-max int-binop-tv
-     :int-min int-binop-tv
-     :int-bit-and int-binop-tv
-     :int-bit-or int-binop-tv
-     :int-bit-xor int-binop-tv
-     :int-shl int-binop-tv
-     :int-shr int-binop-tv
-     :int-eq int-relop-tv
-     :int-neq int-relop-tv
-     :int-lt int-relop-tv
-     :int-gt int-relop-tv
-     :int-leq int-relop-tv
-     :int-geq int-relop-tv
+     :int-binary int-binop-tv
+     :int-binary-x int-unop-tv
+     :int-rel int-relop-tv
+     :int-rel-x int-unop-tv
      :int-to-float int-to-float-tv
      :int-to-bool int-to-bool-tv
      :float-add float-binop-tv
@@ -2082,31 +2092,69 @@
      A polymorphic operation like @('head'), @('tail'), or @('length')
      is associated to its uninstantiated stage."))
   (omap::from-alist
-   (list (cons "+" (expr-value-primop (primop-value-int-add)))
-         (cons "-" (expr-value-primop (primop-value-int-sub)))
-         (cons "*" (expr-value-primop (primop-value-int-mul)))
-         (cons "/" (expr-value-primop (primop-value-int-div)))
-         (cons "^" (expr-value-primop (primop-value-int-expt)))
-         (cons "mod" (expr-value-primop (primop-value-int-mod)))
-         (cons "max" (expr-value-primop (primop-value-int-max)))
-         (cons "min" (expr-value-primop (primop-value-int-min)))
-         (cons "bit-and" (expr-value-primop (primop-value-int-bit-and)))
-         (cons "bit-or" (expr-value-primop (primop-value-int-bit-or)))
-         (cons "bit-xor" (expr-value-primop (primop-value-int-bit-xor)))
-         (cons "shl" (expr-value-primop (primop-value-int-shl)))
-         (cons "shr" (expr-value-primop (primop-value-int-shr)))
+   (list (cons "+" (expr-value-primop
+                    (primop-value-int-binary
+                     (int-binary-primop-add))))
+         (cons "-" (expr-value-primop
+                    (primop-value-int-binary
+                     (int-binary-primop-sub))))
+         (cons "*" (expr-value-primop
+                    (primop-value-int-binary
+                     (int-binary-primop-mul))))
+         (cons "/" (expr-value-primop
+                    (primop-value-int-binary
+                     (int-binary-primop-div))))
+         (cons "^" (expr-value-primop
+                    (primop-value-int-binary
+                     (int-binary-primop-expt))))
+         (cons "mod" (expr-value-primop
+                      (primop-value-int-binary
+                       (int-binary-primop-mod))))
+         (cons "max" (expr-value-primop
+                      (primop-value-int-binary
+                       (int-binary-primop-max))))
+         (cons "min" (expr-value-primop
+                      (primop-value-int-binary
+                       (int-binary-primop-min))))
+         (cons "bit-and" (expr-value-primop
+                          (primop-value-int-binary
+                           (int-binary-primop-bit-and))))
+         (cons "bit-or" (expr-value-primop
+                         (primop-value-int-binary
+                          (int-binary-primop-bit-or))))
+         (cons "bit-xor" (expr-value-primop
+                          (primop-value-int-binary
+                           (int-binary-primop-bit-xor))))
+         (cons "shl" (expr-value-primop
+                      (primop-value-int-binary
+                       (int-binary-primop-shl))))
+         (cons "shr" (expr-value-primop
+                      (primop-value-int-binary
+                       (int-binary-primop-shr))))
          (cons "bit-not" (expr-value-primop
                           (primop-value-int-unary
                            (int-unary-primop-bit-not))))
          (cons "popc" (expr-value-primop
                        (primop-value-int-unary
                         (int-unary-primop-popc))))
-         (cons "==" (expr-value-primop (primop-value-int-eq)))
-         (cons "!=" (expr-value-primop (primop-value-int-neq)))
-         (cons "<" (expr-value-primop (primop-value-int-lt)))
-         (cons ">" (expr-value-primop (primop-value-int-gt)))
-         (cons "<=" (expr-value-primop (primop-value-int-leq)))
-         (cons ">=" (expr-value-primop (primop-value-int-geq)))
+         (cons "==" (expr-value-primop
+                     (primop-value-int-rel
+                      (int-rel-primop-eq))))
+         (cons "!=" (expr-value-primop
+                     (primop-value-int-rel
+                      (int-rel-primop-neq))))
+         (cons "<" (expr-value-primop
+                    (primop-value-int-rel
+                     (int-rel-primop-lt))))
+         (cons ">" (expr-value-primop
+                    (primop-value-int-rel
+                     (int-rel-primop-gt))))
+         (cons "<=" (expr-value-primop
+                     (primop-value-int-rel
+                      (int-rel-primop-leq))))
+         (cons ">=" (expr-value-primop
+                     (primop-value-int-rel
+                      (int-rel-primop-geq))))
          (cons "i->f" (expr-value-primop (primop-value-int-to-float)))
          (cons "i->bool" (expr-value-primop (primop-value-int-to-bool)))
          (cons "f.+" (expr-value-primop (primop-value-float-add)))
