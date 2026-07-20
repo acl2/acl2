@@ -1948,6 +1948,10 @@
         (reserr nil)))
     (primop-value-case
      op
+     :int-unary (int-unary-primop-case
+                 op.op
+                 :bit-not (prim-int-bit-not (first args))
+                 :popc (prim-int-popc (first args)))
      :int-add (prim-int-add (first args) (second args))
      :int-add-x (reserr :todo)
      :int-sub (prim-int-sub (first args) (second args))
@@ -1962,8 +1966,6 @@
      :int-bit-xor (prim-int-bit-xor (first args) (second args))
      :int-shl (prim-int-shl (first args) (second args))
      :int-shr (prim-int-shr (first args) (second args))
-     :int-bit-not (prim-int-bit-not (first args))
-     :int-popc (prim-int-popc (first args))
      :int-eq (prim-int-eq (first args) (second args))
      :int-neq (prim-int-neq (first args) (second args))
      :int-lt (prim-int-lt (first args) (second args))

@@ -73,6 +73,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum int-unary-primop
+  :short "Fixtype of integer unary primitive operations."
+  (:bit-not ())
+  (:popc ())
+  :pred int-unary-primop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: factor more primops
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftypes expr-values/denv
   :short "Fixtypes of expression values and expression dynamic environments."
   :long
@@ -251,6 +263,7 @@
        but we need to add value stages to all other operations.
        Most likely, we will refactor them
        to avoid a proliferation of summands."))
+    (:int-unary ((op int-unary-primop)))
     (:int-add ())
     (:int-add-x ((x expr-value))) ; TODO: add more stages like this
     (:int-sub ())
@@ -265,8 +278,6 @@
     (:int-bit-xor ())
     (:int-shl ())
     (:int-shr ())
-    (:int-bit-not ())
-    (:int-popc ())
     (:int-eq ())
     (:int-neq ())
     (:int-lt ())
@@ -1369,6 +1380,7 @@
          :dims nil)))
     (primop-value-case
      op
+     :int-unary int-unop-tv
      :int-add int-binop-tv
      :int-add-x int-unop-tv
      :int-sub int-binop-tv
@@ -1383,8 +1395,6 @@
      :int-bit-xor int-binop-tv
      :int-shl int-binop-tv
      :int-shr int-binop-tv
-     :int-bit-not int-unop-tv
-     :int-popc int-unop-tv
      :int-eq int-relop-tv
      :int-neq int-relop-tv
      :int-lt int-relop-tv
@@ -2085,8 +2095,12 @@
          (cons "bit-xor" (expr-value-primop (primop-value-int-bit-xor)))
          (cons "shl" (expr-value-primop (primop-value-int-shl)))
          (cons "shr" (expr-value-primop (primop-value-int-shr)))
-         (cons "bit-not" (expr-value-primop (primop-value-int-bit-not)))
-         (cons "popc" (expr-value-primop (primop-value-int-popc)))
+         (cons "bit-not" (expr-value-primop
+                          (primop-value-int-unary
+                           (int-unary-primop-bit-not))))
+         (cons "popc" (expr-value-primop
+                       (primop-value-int-unary
+                        (int-unary-primop-popc))))
          (cons "==" (expr-value-primop (primop-value-int-eq)))
          (cons "!=" (expr-value-primop (primop-value-int-neq)))
          (cons "<" (expr-value-primop (primop-value-int-lt)))
