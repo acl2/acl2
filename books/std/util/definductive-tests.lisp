@@ -124,6 +124,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(must-succeed*
+
+ (definductive bounded-nats
+   :preds ((bn x))
+   :irules ((base ()
+                  (bn 0))
+            (step ((bn x) (<= x 5))
+                  (bn (1+ x)))))
+
+ (must-be-redundant
+  (defthm bn-base
+    (implies (and)
+             (bn 0))))
+
+ (must-be-redundant
+  (defthm bn-step
+    (implies (and (bn x)
+                  (<= x 5))
+             (bn (1+ x)))))
+
+ (must-be-redundant
+  (defthm bn-alt-when-bn
+    (implies (and (bn-alt-base-p)
+                  (bn-alt-step-p)
+                  (bn x))
+             (bn-alt x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (must-fail
  (definductive duplicate-formals
    :preds ((p x x))
