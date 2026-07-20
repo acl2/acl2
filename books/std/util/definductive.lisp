@@ -587,7 +587,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defind-terms-to-translate-in-premise (prem (pred-names symbol-listp))
-  :returns (terms true-listp)
+  :returns (terms set::setp)
   :short "Collect the terms to translate in a premise of a rule."
   :long
   (xdoc::topstring
@@ -608,29 +608,35 @@
      (e.g. arguments are collected
      even if their number does not match the arity of the predicate,
      in which case validation stops before the arguments),
-     but it must never miss a term that is validated."))
+     but it must never miss a term that is validated.")
+   (xdoc::p
+    "This function, and the other term collection functions,
+     return sets of terms, so that duplicate terms are collected once,
+     and thus each distinct term is translated only once in phase 2."))
   (if (and (true-listp prem)
            (consp prem)
            (member-equal (car prem) (symbol-list-fix pred-names)))
-      (cdr prem)
-    (list prem)))
+      (set::mergesort (cdr prem))
+    (set::insert prem nil)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define defind-terms-to-translate-in-premises (prems
                                                (pred-names symbol-listp))
-  :returns (terms true-listp)
+  :returns (terms set::setp)
   :short "Collect the terms to translate in the premises of a rule."
   (if (consp prems)
-      (append (defind-terms-to-translate-in-premise (car prems) pred-names)
-              (defind-terms-to-translate-in-premises (cdr prems) pred-names))
-    nil))
+      (set::union
+       (defind-terms-to-translate-in-premise (car prems) pred-names)
+       (defind-terms-to-translate-in-premises (cdr prems) pred-names))
+    nil)
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define defind-terms-to-translate-in-conclusion (concl
                                                  (pred-names symbol-listp))
-  :returns (terms true-listp)
+  :returns (terms set::setp)
   :short "Collect the terms to translate in the conclusion of a rule."
   :long
   (xdoc::topstring
@@ -642,30 +648,33 @@
   (if (and (true-listp concl)
            (consp concl)
            (member-equal (car concl) (symbol-list-fix pred-names)))
-      (cdr concl)
+      (set::mergesort (cdr concl))
     nil))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define defind-terms-to-translate-in-irule (irule (pred-names symbol-listp))
-  :returns (terms true-listp)
+  :returns (terms set::setp)
   :short "Collect the terms to translate in a rule."
   (if (and (true-listp irule)
            (= (len irule) 3))
-      (append (defind-terms-to-translate-in-premises (cadr irule) pred-names)
-              (defind-terms-to-translate-in-conclusion (caddr irule)
-                                                       pred-names))
-    nil))
+      (set::union
+       (defind-terms-to-translate-in-premises (cadr irule) pred-names)
+       (defind-terms-to-translate-in-conclusion (caddr irule) pred-names))
+    nil)
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define defind-terms-to-translate-in-irules (irules (pred-names symbol-listp))
-  :returns (terms true-listp)
+  :returns (terms set::setp)
   :short "Collect the terms to translate in the @(':irules') input."
   (if (consp irules)
-      (append (defind-terms-to-translate-in-irule (car irules) pred-names)
-              (defind-terms-to-translate-in-irules (cdr irules) pred-names))
-    nil))
+      (set::union
+       (defind-terms-to-translate-in-irule (car irules) pred-names)
+       (defind-terms-to-translate-in-irules (cdr irules) pred-names))
+    nil)
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -875,7 +884,7 @@
                                                 :args arg-infos)))
       (b* ((desc (msg "Since ~@0 does not have the form of ~
                        a call of one of the predicates among ~&1, ~
-                       it "
+                       it"
                       (msg-downcase-first desc) pred-names))
            ((erp info) (defind-process-term prem desc translations)))
         (retok (make-defind-premise-info-other :term info)))))
@@ -1070,7 +1079,7 @@
   :returns (mv erp
                (name symbolp)
                (pred-infos defind-pred-info-listp)
-               (terms true-listp))
+               (terms set::setp))
   :short "Process the inputs, phase 1:
           process the @('name') and @(':preds') inputs,
           and collect the terms to translate from the @(':irules') input."
