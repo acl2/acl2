@@ -123,7 +123,7 @@
     "The operations from @('+') to @('bool->f') have monomorphic types:
      zero-rank array types of function types between base types.
      The @('head'), @('tail'), @('length'),
-     @('append'), and @('reverse') operations
+     @('append'), @('reverse'), @('index'), and @('index2d') operations
      have polymorphic types:
      a universal type of a product type of a function type, as in [impl].
      Like the monomorphic types,
@@ -187,6 +187,20 @@
                       (tpi ("$d" "@s")
                            (t-> ((t[] "&t" (shape++ "$d" "@s")))
                                 (t[] "&t" (shape++ "$d" "@s")))))
+             (shp)))
+       (index-type
+        (t[] (tforall ("&t")
+                      (tpi ("$m")
+                           (t-> ((t[] "&t" (shp "$m"))
+                                 :int)
+                                "&t")))
+             (shp)))
+       (index2d-type
+        (t[] (tforall ("&t")
+                      (tpi ("$m" "$n")
+                           (t-> ((t[] "&t" (shape++ "$m" "$n"))
+                                 (t[] :int (shp 2)))
+                                "&t")))
              (shp))))
     (omap::from-alist
      (list (cons "+" int-binop-type)
@@ -242,7 +256,9 @@
            (cons "tail" tail-type)
            (cons "length" length-type)
            (cons "append" append-type)
-           (cons "reverse" reverse-type)))))
+           (cons "reverse" reverse-type)
+           (cons "index" index-type)
+           (cons "index2d" index2d-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
