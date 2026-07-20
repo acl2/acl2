@@ -446,6 +446,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-irule-groundp ((info defind-irule-infop))
+  :returns (yes/no booleanp)
+  :short "Check if a rule is ground."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case when the rule has no free variables."))
+  (set::emptyp (defind-irule-info-free-vars info)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod defind-translation
   :short "Fixtype of translations of terms."
   :long
@@ -2274,7 +2285,7 @@
                :short ,(str::cat "Validity of an instance of the rule @('"
                                  (str::downcase-string (symbol-name info.name))
                                  "').")))))
-    (if (set::emptyp vars)
+    (if (defind-irule-groundp info)
         `(define ,fn-name (,concl-formal ,@prem-formals)
            :returns (yes/no booleanp
                             :hints (("Goal" :in-theory '(,fn-name
@@ -2566,7 +2577,7 @@
        (valid-thm
         (defind-valid-proof-for-rule-thm-name cinfo.name info.name name))
        (suff/def-thm
-        (if (set::emptyp (defind-irule-info-free-vars info))
+        (if (defind-irule-groundp info)
             (defind-irule-valid-fn-name cinfo.name info.name name)
           (defind-irule-valid-suff-thm-name cinfo.name info.name name)))
        (concl (defind-concl-var-name name))
@@ -2901,7 +2912,7 @@
        (concl `(,(defind-pred-alt-fn-name cinfo.name name)
                 ,@(defind-term-info-list->uterm cinfo.args)))
        (vars (defind-irule-info-free-vars info))
-       (event (if (set::emptyp vars)
+       (event (if (defind-irule-groundp info)
                   `(defun ,fn-name ()
                      (declare (xargs :verify-guards nil))
                      (implies (and ,@prems) ,concl))
@@ -3053,7 +3064,7 @@
           (irule-acc-thm
            (defind-proof-concl-acc-return-thm-name cinfo.name info.name name))
           (necc/def-rule
-           (if (set::emptyp (defind-irule-info-free-vars info))
+           (if (defind-irule-groundp info)
                (defind-pred-alt-irule-fn-name cinfo.name info.name name)
              (defind-pred-alt-irule-thm-name cinfo.name info.name name)))
           (vars (defind-irule-info-free-vars info))
