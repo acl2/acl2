@@ -1338,26 +1338,49 @@
   ;;               ws type
   (define abs-forall-type ((tree abnf::treep))
     :returns (ty type-resultp)
-    :short "Abstract a @('forall-type') to a @(tsee type) @(':forall')."
+    :short "Abstract a @('forall-type') to
+            a @(tsee type) @(':forall') or @(':foralln')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A universal type with one variable becomes
+       a unary universal type @(':forall');
+       one with two or more variables becomes
+       an n-ary universal type @(':foralln')
+       (see @(tsee type))."))
     (b* (((okf (abnf::tree-list-tuple8 sub))
           (abnf::check-tree-nonleaf-8 tree "forall-type"))
          ((okf params) (abs-*-ws-type-var sub.4th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf body) (abs-type body-tree)))
-      (make-type-forall :params params :body body))
+      (if (and (consp params)
+               (endp (cdr params)))
+          (make-type-forall :param (car params) :body body)
+        (make-type-foralln :params params :body body)))
     :measure (abnf::tree-count tree))
 
   ;; pi-type = ( "Pi" / %x03A0 ) ws "(" *( ws ispace-var ) ws ")"
   ;;           ws type
   (define abs-pi-type ((tree abnf::treep))
     :returns (ty type-resultp)
-    :short "Abstract a @('pi-type') to a @(tsee type) @(':pi')."
+    :short "Abstract a @('pi-type') to a @(tsee type) @(':pi') or @(':pin')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A product type with one variable becomes
+       a unary product type @(':pi');
+       one with two or more variables becomes
+       an n-ary product type @(':pin')
+       (see @(tsee type))."))
     (b* (((okf (abnf::tree-list-tuple8 sub))
           (abnf::check-tree-nonleaf-8 tree "pi-type"))
          ((okf params) (abs-*-ws-ispace-var sub.4th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf body) (abs-type body-tree)))
-      (make-type-pi :params params :body body))
+      (if (and (consp params)
+               (endp (cdr params)))
+          (make-type-pi :param (car params) :body body)
+        (make-type-pin :params params :body body)))
     :measure (abnf::tree-count tree))
 
   ;; sigma-type = ( "Sigma" / %x03A3 ) ws "(" *( ws ispace-var ) ws ")"
@@ -1956,25 +1979,49 @@
   ;; tapp-exp = "t-app" ws exp *( ws type )
   (define abs-tapp-exp ((tree abnf::treep))
     :returns (e expr-resultp)
-    :short "Abstract a @('tapp-exp') to an @(tsee expr) @(':tapp')."
+    :short "Abstract a @('tapp-exp') to
+            an @(tsee expr) @(':tapp') or @(':tappn')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "An application to one type argument becomes
+       a unary type application @(':tapp');
+       an application to two or more type arguments becomes
+       an n-ary type application @(':tappn')
+       (see @(tsee expr))."))
     (b* (((okf (abnf::tree-list-tuple4 sub))
           (abnf::check-tree-nonleaf-4 tree "tapp-exp"))
          ((okf fun-tree) (abnf::check-tree-list-1 sub.3rd))
          ((okf fun) (abs-exp fun-tree))
          ((okf args) (abs-*-ws-type sub.4th)))
-      (make-expr-tapp :fun fun :args args))
+      (if (and (consp args)
+               (endp (cdr args)))
+          (make-expr-tapp :fun fun :arg (car args))
+        (make-expr-tappn :fun fun :args args)))
     :measure (abnf::tree-count tree))
 
   ;; iapp-exp = "i-app" ws exp *( ws ispace )
   (define abs-iapp-exp ((tree abnf::treep))
     :returns (e expr-resultp)
-    :short "Abstract an @('iapp-exp') to an @(tsee expr) @(':iapp')."
+    :short "Abstract an @('iapp-exp') to
+            an @(tsee expr) @(':iapp') or @(':iappn')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "An application to one ispace argument becomes
+       a unary ispace application @(':iapp');
+       an application to two or more ispace arguments becomes
+       an n-ary ispace application @(':iappn')
+       (see @(tsee expr))."))
     (b* (((okf (abnf::tree-list-tuple4 sub))
           (abnf::check-tree-nonleaf-4 tree "iapp-exp"))
          ((okf fun-tree) (abnf::check-tree-list-1 sub.3rd))
          ((okf fun) (abs-exp fun-tree))
          ((okf args) (abs-*-ws-ispace sub.4th)))
-      (make-expr-iapp :fun fun :args args))
+      (if (and (consp args)
+               (endp (cdr args)))
+          (make-expr-iapp :fun fun :arg (car args))
+        (make-expr-iappn :fun fun :args args)))
     :measure (abnf::tree-count tree))
 
   ;; unbox-exp = "unbox" ws "(" ws unbox-spec ws ")" ws exp
@@ -2090,25 +2137,49 @@
   ;; type-lambda = ( "t-fn" / "tλ" ) ws "(" *( ws type-var ) ws ")" ws exp
   (define abs-type-lambda ((tree abnf::treep))
     :returns (a atom-resultp)
-    :short "Abstract a @('type-lambda') to an @(tsee atom) @(':tlambda')."
+    :short "Abstract a @('type-lambda') to
+            an @(tsee atom) @(':tlambda') or @(':tlambdan')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A type lambda abstraction with one parameter becomes
+       a unary type lambda abstraction @(':tlambda');
+       one with two or more parameters becomes
+       an n-ary type lambda abstraction @(':tlambdan')
+       (see @(tsee atom))."))
     (b* (((okf (abnf::tree-list-tuple8 sub))
           (abnf::check-tree-nonleaf-8 tree "type-lambda"))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf params) (abs-*-ws-type-var sub.4th))
          ((okf body) (abs-exp body-tree)))
-      (make-atom-tlambda :params params :body body))
+      (if (and (consp params)
+               (endp (cdr params)))
+          (make-atom-tlambda :param (car params) :body body)
+        (make-atom-tlambdan :params params :body body)))
     :measure (abnf::tree-count tree))
 
   ;; ispace-lambda = ( "i-fn" / "iλ" ) ws "(" *( ws ispace-var ) ws ")" ws exp
   (define abs-ispace-lambda ((tree abnf::treep))
     :returns (a atom-resultp)
-    :short "Abstract an @('ispace-lambda') to an @(tsee atom) @(':ilambda')."
+    :short "Abstract an @('ispace-lambda') to
+            an @(tsee atom) @(':ilambda') or @(':ilambdan')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "An ispace lambda abstraction with one parameter becomes
+       a unary ispace lambda abstraction @(':ilambda');
+       one with two or more parameters becomes
+       an n-ary ispace lambda abstraction @(':ilambdan')
+       (see @(tsee atom))."))
     (b* (((okf (abnf::tree-list-tuple8 sub))
           (abnf::check-tree-nonleaf-8 tree "ispace-lambda"))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf params) (abs-*-ws-ispace-var sub.4th))
          ((okf body) (abs-exp body-tree)))
-      (make-atom-ilambda :params params :body body))
+      (if (and (consp params)
+               (endp (cdr params)))
+          (make-atom-ilambda :param (car params) :body body)
+        (make-atom-ilambdan :params params :body body)))
     :measure (abnf::tree-count tree))
 
   ;; box-expr = "box" ws "(" *( ws ispace ) ws ")" ws exp ws type

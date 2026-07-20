@@ -102,26 +102,74 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-forall ((type typep))
-  :returns (vars+type typevarlist+type-resultp)
+  :returns (var+type typevar+type-resultp)
   :short "Check if an atom type is a universal type,
-          returning its type parameter variables and body array type
-          if successful."
-  (if (type-case type :forall)
-      (make-typevarlist+type :vars (type-forall->params type)
-                             :type (type-forall->body type))
-    (reserr nil)))
+          peeling off its first type parameter variable if successful."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A unary universal type is matched directly:
+     we return its bound variable and its body.")
+   (xdoc::p
+    "Consistently with the curried view of type applications
+     (see @(tsee expr)),
+     an n-ary universal type is treated as
+     the nesting of unary universal types.
+     Accordingly, this matching operation peels off one variable:
+     if the type is an n-ary universal type with at least one variable,
+     we return the first variable,
+     along with the body of the universal type
+     if there are no other variables,
+     or otherwise the universal type over the remaining variables.
+     An n-ary universal type with no variables fails to match."))
+  (b* (((when (type-case type :forall))
+        (make-typevar+type :var (type-forall->param type)
+                           :type (type-forall->body type)))
+       ((unless (type-case type :foralln)) (reserr nil))
+       (params (type-foralln->params type))
+       (body (type-foralln->body type))
+       ((unless (consp params)) (reserr nil)))
+    (make-typevar+type
+     :var (car params)
+     :type (if (consp (cdr params))
+               (make-type-foralln :params (cdr params) :body body)
+             body))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-product ((type typep))
-  :returns (vars+type ispacevarlist+type-resultp)
+  :returns (var+type ispacevar+type-resultp)
   :short "Check if an atom type is a product type,
-          returning its ispace parameter variables and body array type
-          if successful."
-  (if (type-case type :pi)
-      (make-ispacevarlist+type :vars (type-pi->params type)
-                               :type (type-pi->body type))
-    (reserr nil)))
+          peeling off its first ispace parameter variable if successful."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A unary product type is matched directly:
+     we return its bound variable and its body.")
+   (xdoc::p
+    "Consistently with the curried view of ispace applications
+     (see @(tsee expr)),
+     an n-ary product type is treated as
+     the nesting of unary product types.
+     Accordingly, this matching operation peels off one variable:
+     if the type is an n-ary product type with at least one variable,
+     we return the first variable,
+     along with the body of the product type
+     if there are no other variables,
+     or otherwise the product type over the remaining variables.
+     An n-ary product type with no variables fails to match."))
+  (b* (((when (type-case type :pi))
+        (make-ispacevar+type :var (type-pi->param type)
+                             :type (type-pi->body type)))
+       ((unless (type-case type :pin)) (reserr nil))
+       (params (type-pin->params type))
+       (body (type-pin->body type))
+       ((unless (consp params)) (reserr nil)))
+    (make-ispacevar+type
+     :var (car params)
+     :type (if (consp (cdr params))
+               (make-type-pin :params (cdr params) :body body)
+             body))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
