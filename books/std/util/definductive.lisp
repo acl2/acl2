@@ -13,6 +13,7 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
+(include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/symbol-set" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/legal-variable-listp" :dir :system)
@@ -86,7 +87,7 @@
 
   "@('xdocp') is a flag saying whether XDOC should be generated or not."
 
-  "@('translations') is an omap
+  "@('translations') is an omap of type @(tsee defind-translation-omap)
    from user-supplied terms in the @(':irules') input
    to the results of running @(tsee check-user-term) on those terms.
    It is the bridge between phases 2 and 3 of input processing,
@@ -443,6 +444,41 @@
     (set::union (defind-premise-info-list-free-vars info.premises)
                 (defind-conclusion-info-free-vars info.conclusion))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod defind-translation
+  :short "Fixtype of translations of terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the result of running @(tsee check-user-term) on a term:
+     the translated term, or an error message if translation fails,
+     together with the output stobjs of the term.")
+   (xdoc::p
+    "The first component is a @(tsee pseudo-termp) or a @(tsee msgp),
+     but we leave the field untyped
+     because there is currently no fixtype for
+     the union of translated terms and messages;
+     the field is checked by the logic-mode validation code,
+     in @(tsee defind-process-term)."))
+  ((term/msg "The translated term, or an error message.")
+   (stobjs-out symbol-list))
+  :pred defind-translationp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap defind-translation-omap
+  :short "Fixtype of omaps from terms to translations of the terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These omaps associate untranslated terms,
+     which may be any values,
+     to their translations."))
+  :key-type any
+  :val-type defind-translation
+  :pred defind-translation-omapp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-input-processing definductive)
@@ -679,7 +715,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defind-process-term (term (desc msgp) (translations omap::mapp))
+(define defind-process-term (term (desc msgp) (translations defind-translation-omapp))
   :returns (mv erp (info defind-term-infop))
   :short "Process a term in a rule."
   :long
@@ -718,43 +754,35 @@
      the collection and validation traversals,
      and against malformed translation results."))
   (b* (((reterr) (irr-defind-term-info))
-       (term+translation (omap::assoc term translations))
+       (term+translation
+        (omap::assoc term (defind-translation-omap-fix translations)))
        ((unless (consp term+translation))
         (raise "Internal error: no translation for ~x0." term)
         (reterr "irrelevant"))
-       (translation (cdr term+translation))
-       ((unless (consp translation))
-        (raise "Internal error: malformed translation ~x0 for ~x1."
-               translation term)
-        (reterr "irrelevant"))
-       (term/msg (car translation))
-       (stobjs-out (cdr translation))
-       ((unless (or (pseudo-termp term/msg)
-                    (msgp term/msg)))
+       ((defind-translation translation) (cdr term+translation))
+       ((unless (or (pseudo-termp translation.term/msg)
+                    (msgp translation.term/msg)))
         (raise "Internal error: malformed translation result ~x0 for ~x1."
-               term/msg term)
+               translation.term/msg term)
         (reterr "irrelevant"))
-       ((unless (symbol-listp stobjs-out))
-        (raise "Internal error: malformed output stobjs ~x0 for ~x1."
-               stobjs-out term)
-        (reterr "irrelevant"))
-       ((unless (pseudo-termp term/msg))
+       ((unless (pseudo-termp translation.term/msg))
         ;; No period at the end of the following string
-        ;; because TERM/MSG ends with period already.
+        ;; because TRANSLATION.TERM/MSG ends with period already.
         (reterr (msg "~@0 must be a valid untranslated term, but: ~@1"
-                     desc term/msg)))
-       ((unless (equal stobjs-out (list nil)))
+                     desc translation.term/msg)))
+       ((unless (equal translation.stobjs-out (list nil)))
         (reterr (msg "~@0 must return a single non-stobj value, ~
                       but it returns ~x1 instead."
-                     desc stobjs-out))))
-    (retok (make-defind-term-info :uterm term :tterm term/msg)))
+                     desc translation.stobjs-out))))
+    (retok (make-defind-term-info :uterm term
+                                  :tterm translation.term/msg)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defind-process-args ((args true-listp)
                              (prem/concl-desc msgp)
-                             (translations omap::mapp))
+                             (translations defind-translation-omapp))
   :returns (mv erp (infos defind-term-info-listp))
   :short "Process the arguments of a premise or conclusion of a rule
           that has the form of a call of a predicate being defined."
@@ -771,7 +799,7 @@
   ((define defind-process-args-loop ((args true-listp)
                                      (prem/concl-desc msgp)
                                      (q posp)
-                                     (translations omap::mapp))
+                                     (translations defind-translation-omapp))
      :returns (mv erp (infos defind-term-info-listp))
      :parents nil
      (b* (((reterr) nil)
@@ -791,7 +819,7 @@
 (define defind-process-conclusion (concl
                                    (desc msgp)
                                    (pred-infos defind-pred-info-listp)
-                                   (translations omap::mapp))
+                                   (translations defind-translation-omapp))
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (mv erp (info defind-conclusion-infop))
   :short "Process the conclusion of a rule."
@@ -840,7 +868,7 @@
 (define defind-process-premise (prem
                                 (desc msgp)
                                 (pred-infos defind-pred-info-listp)
-                                (translations omap::mapp))
+                                (translations defind-translation-omapp))
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (mv erp (info defind-premise-infop))
   :short "Process the premise of a rule."
@@ -897,7 +925,7 @@
 (define defind-process-premises (prems
                                  (irule-desc msgp)
                                  (pred-infos defind-pred-info-listp)
-                                 (translations omap::mapp))
+                                 (translations defind-translation-omapp))
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (mv erp (infos defind-premise-info-listp))
   :short "Process the premises of a rule."
@@ -919,7 +947,7 @@
                                          (q posp)
                                          (irule-desc msgp)
                                          (pred-infos defind-pred-info-listp)
-                                         (translations omap::mapp))
+                                         (translations defind-translation-omapp))
      :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
      :returns (mv erp (infos defind-premise-info-listp))
      :parents nil
@@ -943,7 +971,7 @@
 (define defind-process-irule (irule
                               (desc msgp)
                               (pred-infos defind-pred-info-listp)
-                              (translations omap::mapp))
+                              (translations defind-translation-omapp))
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (mv erp (info defind-irule-infop))
   :short "Process a rule."
@@ -978,7 +1006,7 @@
 (define defind-process-irules (irules
                                (irules-suppliedp booleanp)
                                (pred-infos defind-pred-info-listp)
-                               (translations omap::mapp))
+                               (translations defind-translation-omapp))
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (mv erp (infos defind-irule-info-listp))
   :short "Process the @(':irules') input."
@@ -1019,7 +1047,7 @@
   ((define defind-process-irules-loop ((irules true-listp)
                                        (k posp)
                                        (pred-infos defind-pred-info-listp)
-                                       (translations omap::mapp))
+                                       (translations defind-translation-omapp))
      :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
      :returns (mv erp (infos defind-irule-info-listp))
      :parents nil
@@ -1119,7 +1147,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defind-process-inputs-2 ((terms true-listp) state)
-  :returns (translations "An @(tsee omap::mapp)
+  :returns (translations "A @(tsee defind-translation-omapp)
                           from the terms to their translation results.")
   :mode :program
   :short "Process the inputs, phase 2:
@@ -1133,8 +1161,9 @@
    (xdoc::p
     "For each term collected in phase 1,
      we call @(tsee check-user-term),
-     and we associate to the term the result of the translation:
-     the pair of (i) the translated term or error message
+     and we associate to the term the result of the translation,
+     as a @(tsee defind-translation) value with
+     (i) the translated term or error message
      and (ii) the output stobjs.
      These results are checked, in logic mode,
      in @(tsee defind-process-term).")
@@ -1151,7 +1180,8 @@
        (term (car terms))
        ((mv term/msg stobjs-out) (check-user-term term (w state))))
     (omap::update term
-                  (cons term/msg stobjs-out)
+                  (make-defind-translation :term/msg term/msg
+                                           :stobjs-out stobjs-out)
                   (defind-process-inputs-2 (cdr terms) state)))
   :hooks nil)
 
@@ -1166,7 +1196,7 @@
                                  long
                                  (long-suppliedp booleanp)
                                  (pred-infos defind-pred-info-listp)
-                                 (translations omap::mapp))
+                                 (translations defind-translation-omapp))
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (mv erp
                (irule-infos defind-irule-info-listp)
