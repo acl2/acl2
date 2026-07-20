@@ -18,6 +18,7 @@
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/legal-variable-listp" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
+(include-book "std/basic/symbol-lfix" :dir :system)
 (include-book "std/omaps/core" :dir :system)
 (include-book "std/system/check-user-term" :dir :system)
 (include-book "std/system/fresh-namep" :dir :system)
@@ -38,15 +39,6 @@
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (acl2::controlled-configuration)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; move to Std/basic
-
-(define symbol-lfix ((x symbolp))
-  :returns (x-fixed symbolp)
-  (mbe :logic (symbol-fix x)
-       :exec x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
