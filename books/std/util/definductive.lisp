@@ -17,6 +17,7 @@
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/legal-variable-listp" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
+(include-book "std/omaps/core" :dir :system)
 (include-book "std/system/check-user-term" :dir :system)
 (include-book "std/system/fresh-namep" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
@@ -85,7 +86,7 @@
 
   "@('xdocp') is a flag saying whether XDOC should be generated or not."
 
-  "@('translations') is an alist
+  "@('translations') is an omap
    from user-supplied terms in the @(':irules') input
    to the results of running @(tsee check-user-term) on those terms.
    It is the bridge between phases 2 and 3 of input processing,
@@ -678,7 +679,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defind-process-term (term (desc msgp) (translations alistp))
+(define defind-process-term (term (desc msgp) (translations omap::mapp))
   :returns (mv erp (info defind-term-infop))
   :short "Process a term in a rule."
   :long
@@ -691,7 +692,7 @@
      so long as they are well-formed,
      which is checked by this function.
      The term must be a valid untranslated term:
-     its translation is looked up in the @('translations') alist,
+     its translation is looked up in the @('translations') omap,
      built in phase 2 of input processing
      (see @(tsee defind-process-inputs-2)).
      If the translation was successful,
@@ -717,7 +718,7 @@
      the collection and validation traversals,
      and against malformed translation results."))
   (b* (((reterr) (irr-defind-term-info))
-       (term+translation (assoc-equal term translations))
+       (term+translation (omap::assoc term translations))
        ((unless (consp term+translation))
         (raise "Internal error: no translation for ~x0." term)
         (reterr "irrelevant"))
@@ -753,7 +754,7 @@
 
 (define defind-process-args ((args true-listp)
                              (prem/concl-desc msgp)
-                             (translations alistp))
+                             (translations omap::mapp))
   :returns (mv erp (infos defind-term-info-listp))
   :short "Process the arguments of a premise or conclusion of a rule
           that has the form of a call of a predicate being defined."
@@ -770,7 +771,7 @@
   ((define defind-process-args-loop ((args true-listp)
                                      (prem/concl-desc msgp)
                                      (q posp)
-                                     (translations alistp))
+                                     (translations omap::mapp))
      :returns (mv erp (infos defind-term-info-listp))
      :parents nil
      (b* (((reterr) nil)
@@ -790,7 +791,7 @@
 (define defind-process-conclusion (concl
                                    (desc msgp)
                                    (pred-infos defind-pred-info-listp)
-                                   (translations alistp))
+                                   (translations omap::mapp))
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (mv erp (info defind-conclusion-infop))
   :short "Process the conclusion of a rule."
@@ -839,7 +840,7 @@
 (define defind-process-premise (prem
                                 (desc msgp)
                                 (pred-infos defind-pred-info-listp)
-                                (translations alistp))
+                                (translations omap::mapp))
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (mv erp (info defind-premise-infop))
   :short "Process the premise of a rule."
@@ -896,7 +897,7 @@
 (define defind-process-premises (prems
                                  (irule-desc msgp)
                                  (pred-infos defind-pred-info-listp)
-                                 (translations alistp))
+                                 (translations omap::mapp))
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (mv erp (infos defind-premise-info-listp))
   :short "Process the premises of a rule."
@@ -918,7 +919,7 @@
                                          (q posp)
                                          (irule-desc msgp)
                                          (pred-infos defind-pred-info-listp)
-                                         (translations alistp))
+                                         (translations omap::mapp))
      :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
      :returns (mv erp (infos defind-premise-info-listp))
      :parents nil
@@ -942,7 +943,7 @@
 (define defind-process-irule (irule
                               (desc msgp)
                               (pred-infos defind-pred-info-listp)
-                              (translations alistp))
+                              (translations omap::mapp))
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (mv erp (info defind-irule-infop))
   :short "Process a rule."
@@ -977,7 +978,7 @@
 (define defind-process-irules (irules
                                (irules-suppliedp booleanp)
                                (pred-infos defind-pred-info-listp)
-                               (translations alistp))
+                               (translations omap::mapp))
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (mv erp (infos defind-irule-info-listp))
   :short "Process the @(':irules') input."
@@ -1018,7 +1019,7 @@
   ((define defind-process-irules-loop ((irules true-listp)
                                        (k posp)
                                        (pred-infos defind-pred-info-listp)
-                                       (translations alistp))
+                                       (translations omap::mapp))
      :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
      :returns (mv erp (infos defind-irule-info-listp))
      :parents nil
@@ -1118,7 +1119,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defind-process-inputs-2 ((terms true-listp) state)
-  :returns (translations "An @(tsee alistp)
+  :returns (translations "An @(tsee omap::mapp)
                           from the terms to their translation results.")
   :mode :program
   :short "Process the inputs, phase 2:
@@ -1149,9 +1150,9 @@
   (b* (((when (endp terms)) nil)
        (term (car terms))
        ((mv term/msg stobjs-out) (check-user-term term (w state))))
-    (acons term
-           (cons term/msg stobjs-out)
-           (defind-process-inputs-2 (cdr terms) state)))
+    (omap::update term
+                  (cons term/msg stobjs-out)
+                  (defind-process-inputs-2 (cdr terms) state)))
   :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1165,7 +1166,7 @@
                                  long
                                  (long-suppliedp booleanp)
                                  (pred-infos defind-pred-info-listp)
-                                 (translations alistp))
+                                 (translations omap::mapp))
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (mv erp
                (irule-infos defind-irule-info-listp)
