@@ -480,16 +480,21 @@
 ; Type application: index applied to one atom type value.
 
 (acl2::assert-equal
- (eval-primop-tfun (primop-value-index) (list *tv-int*))
+ (eval-primop-tfun (primop-value-index) *tv-int*)
  (expr-value-primop (primop-value-index-t *tv-int*)))
 
-; Ispace application: index-t applied to one dimension.
+; Ispace application: index-t applied to a dimension.
 
 (acl2::assert-equal
  (eval-primop-ifun (primop-value-index-t *tv-int*)
-                   (list (ispace-value-dim 3)))
+                   (ispace-value-dim 3))
  (expr-value-primop (make-primop-value-index-t-m :tval *tv-int*
                                                  :mval 3)))
+
+; A shape where a dimension is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-index-t *tv-int*)
+                            (ispace-value-shape (list 3)))))
 
 ; Application of the fully instantiated index to argument cells.
 
@@ -523,15 +528,22 @@
 ; Type application: index2d applied to one atom type value.
 
 (acl2::assert-equal
- (eval-primop-tfun (primop-value-index2d) (list *tv-int*))
+ (eval-primop-tfun (primop-value-index2d) *tv-int*)
  (expr-value-primop (primop-value-index2d-t *tv-int*)))
 
-; Ispace application: index2d-t applied to two dimensions.
+; Ispace application: index2d-t applied to a dimension,
+; then index2d-t-m applied to another dimension.
 
 (acl2::assert-equal
  (eval-primop-ifun (primop-value-index2d-t *tv-int*)
-                   (list (ispace-value-dim 2)
-                         (ispace-value-dim 3)))
+                   (ispace-value-dim 2))
+ (expr-value-primop (make-primop-value-index2d-t-m :tval *tv-int*
+                                                   :mval 2)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-index2d-t-m :tval *tv-int*
+                                                  :mval 2)
+                   (ispace-value-dim 3))
  (expr-value-primop (make-primop-value-index2d-t-m-n :tval *tv-int*
                                                      :mval 2
                                                      :nval 3)))

@@ -187,6 +187,8 @@
                (mval nat)))
   (:index2d ())
   (:index2d-t ((tval type-value)))
+  (:index2d-t-m ((tval type-value)
+                 (mval nat)))
   (:index2d-t-m-n ((tval type-value)
                    (mval nat)
                    (nval nat)))
@@ -236,11 +238,9 @@
                      :reverse-t-d nil
                      :index nil
                      :index-t nil
-                     :index-t-m nil
                      :index2d nil
                      :index2d-t nil
                      :index2d-t-m nil
-                     :index2d-t-m-n nil
                      :otherwise t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -295,10 +295,8 @@
                      :reverse-t t
                      :reverse-t-d t
                      :index-t t
-                     :index-t-m t
                      :index2d-t t
                      :index2d-t-m t
-                     :index2d-t-m-n t
                      :otherwise nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -598,6 +596,7 @@
                  :dims nil)
      :index2d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :index2d-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :index2d-t-m (prog2$ (impossible) (type-value-base (base-type-bool)))
      :index2d-t-m-n (make-type-value-array
                      :elem (make-type-value-fun
                             :in (list (make-type-value-array

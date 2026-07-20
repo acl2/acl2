@@ -2089,12 +2089,12 @@
                   (reserr nil)))
               (expr-value-primop (primop-value-reverse-t tval)))
    :index (b* (((unless (type-values-match-type-vars-p
-                           tvals
+                           (list tval)
                            (list (type-var-atom "t"))))
                   (reserr nil)))
             (expr-value-primop (primop-value-index-t tval)))
    :index2d (b* (((unless (type-values-match-type-vars-p
-                           tvals
+                           (list tval)
                            (list (type-var-atom "t"))))
                   (reserr nil)))
             (expr-value-primop (primop-value-index2d-t tval)))
@@ -2223,20 +2223,20 @@
              ival
              :dim (expr-value-primop
                    (make-primop-value-index-t-m :tval op.tval
-                                                :mval op.mval))
+                                                :mval ival.val))
              :shape (reserr nil))
    :index2d-t (ispace-value-case
                ival
                :dim (expr-value-primop
-                     (make-primop-value-index-t-m :tval op.tval
-                                                  :mval op.mval))
+                     (make-primop-value-index2d-t-m :tval op.tval
+                                                    :mval ival.val))
                :shape (reserr nil))
    :index2d-t-m (ispace-value-case
                  ival
                  :dim (expr-value-primop
-                       (make-primop-value-index-t-m-n :tval op.tval
-                                                      :mval op.mval
-                                                      :nval op.nval))
+                       (make-primop-value-index2d-t-m-n :tval op.tval
+                                                        :mval op.mval
+                                                        :nval ival.val))
                  :shape (reserr nil))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp)))
