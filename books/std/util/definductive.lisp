@@ -2454,8 +2454,10 @@
        (kind-fixing-thm (defind-proof-kind-fixing-thm-name pred-name name)))
     `(define ,fn-name ((,fn-formal ,proof-recog))
        :returns (yes/no booleanp
-                        :hints (("Goal" :in-theory '(,fn-name
-                                                     ,@return-thms))))
+                        :hints (("Goal"
+                                 :induct t
+                                 :in-theory '(,fn-name
+                                              ,@return-thms))))
        ,@(and xdocp
               `(:parents (,(symbol-lfix name))
                 :short ,(str::cat "Validity of a proof for @('"
@@ -2471,10 +2473,12 @@
                                     ,poss-thm
                                     ,@count-thms)))
        :verify-guards nil
-       :hooks ((:fix :hints (("Goal" :in-theory '(,fn-name
-                                                  ,kind-fixing-thm
-                                                  ,@prem-fixing-thms
-                                                  ,@concl-fixing-thms))))))))
+       :hooks ((:fix :hints (("Goal"
+                              :induct t
+                              :in-theory '(,fn-name
+                                           ,kind-fixing-thm
+                                           ,@prem-fixing-thms
+                                           ,@concl-fixing-thms))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
