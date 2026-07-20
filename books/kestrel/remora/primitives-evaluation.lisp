@@ -1829,6 +1829,7 @@
     (primop-value-case
      op
      :int-add (prim-int-add (first args) (second args))
+     :int-add-x (reserr :todo)
      :int-sub (prim-int-sub (first args) (second args))
      :int-mul (prim-int-mul (first args) (second args))
      :int-div (prim-int-div (first args) (second args))

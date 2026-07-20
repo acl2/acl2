@@ -2045,6 +2045,11 @@
               (equal (check-dims-of-expr-value-list vals)
                      (reserr nil)))
      :flag check-dims-of-expr-value-list)
+   (defthm check-dims-of-primop-value-when-reserrp
+     (implies (reserrp (check-dims-of-primop-value val))
+              (equal (check-dims-of-primop-value val)
+                     (reserr nil)))
+     :flag check-dims-of-primop-value)
    (defthm check-dims-of-string-expr-value-map-two-valued
      (and (implies (reserrp (check-dims-of-string-expr-value-map map))
                    (equal (check-dims-of-string-expr-value-map map)
@@ -2063,6 +2068,7 @@
      :flag check-dims-of-expr-denv)
    :hints (("Goal" :in-theory (enable check-dims-of-expr-value
                                       check-dims-of-expr-value-list
+                                      check-dims-of-primop-value
                                       check-dims-of-string-expr-value-map
                                       check-dims-of-expr-denv
                                       acl2::nat-listp-when-result-not-error
