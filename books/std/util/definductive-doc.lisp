@@ -87,9 +87,10 @@
       \\{(x,z) \\mid \\exists y.\\ r(x,y) \\wedge r(y,z)\\}")
     (xdoc::@[]
      "R^\\ast =
-      \\iota r.\\
-      (r = \\mathcal{F}(r) \\wedge
-      (\\forall r'.\\ r' = \\mathcal{F}(r') \\Longrightarrow r \\subseteq r'))")
+      \\iota r. \\ (
+        r = \\mathcal{F}(r) \\wedge
+        (\\forall r'.
+         \\ r' = \\mathcal{F}(r') \\Longrightarrow r \\subseteq r'))")
     (xdoc::p
      "Here @($\\mathcal{P}$) is the powerset operator.
       The higher-order function @($\\mathcal{F}$)
