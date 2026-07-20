@@ -711,23 +711,23 @@
        (term+translation (assoc-equal term translations))
        ((unless (consp term+translation))
         (raise "Internal error: no translation for ~x0." term)
-        (reterr :impossible))
+        (reterr "irrelevant"))
        (translation (cdr term+translation))
        ((unless (consp translation))
         (raise "Internal error: malformed translation ~x0 for ~x1."
                translation term)
-        (reterr :impossible))
+        (reterr "irrelevant"))
        (term/msg (car translation))
        (stobjs-out (cdr translation))
        ((unless (or (pseudo-termp term/msg)
                     (msgp term/msg)))
         (raise "Internal error: malformed translation result ~x0 for ~x1."
                term/msg term)
-        (reterr :impossible))
+        (reterr "irrelevant"))
        ((unless (symbol-listp stobjs-out))
         (raise "Internal error: malformed output stobjs ~x0 for ~x1."
                stobjs-out term)
-        (reterr :impossible))
+        (reterr "irrelevant"))
        ((unless (pseudo-termp term/msg))
         ;; No period at the end of the following string
         ;; because TERM/MSG ends with period already.
