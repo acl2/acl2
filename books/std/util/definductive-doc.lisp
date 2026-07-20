@@ -116,6 +116,10 @@
       (ii) is no larger than all other fixpoints of @($\\mathcal{F}$).")
 
     (xdoc::p
+     "The above generalizes to multiple predicates,
+      defined via mutually recursive inference rules.")
+
+    (xdoc::p
      "Higher-order logic provers typically have mechanisms
       to inductively define predicates
       by writing inference rules in essentially a form like above.
