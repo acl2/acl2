@@ -132,6 +132,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum float-rel-primop
+  :short "Fixtype of float relational operations."
+  (:eq ())
+  (:neq ())
+  (:lt ())
+  (:gt ())
+  (:leq ())
+  (:geq ())
+  :pred float-rel-primop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: factor more primops
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -320,12 +332,9 @@
     (:float-binary ((op float-binary-primop)))
     (:float-binary-x ((op float-binary-primop)
                       (xval expr-value)))
-    (:float-eq ())
-    (:float-neq ())
-    (:float-lt ())
-    (:float-gt ())
-    (:float-leq ())
-    (:float-geq ())
+    (:float-rel ((op float-rel-primop)))
+    (:float-rel-x ((op float-rel-primop)
+                   (xval expr-value)))
     (:float-truncate ())
     (:float-round ())
     (:float-ceiling ())
@@ -651,6 +660,8 @@
                   :unit)
      :float-binary-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
                        :unit)
+     :float-rel-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                    :unit)
      :otherwise :unit)
     :measure (primop-value-count val))
 
@@ -1165,6 +1176,8 @@
                      :float-unary t
                      :float-binary t
                      :float-binary-x t
+                     :float-rel t
+                     :float-rel-x t
                      :head nil
                      :head-t nil
                      :head-t-d nil
@@ -1212,6 +1225,8 @@
                      :float-unary nil
                      :float-binary nil
                      :float-binary-x nil
+                     :float-rel nil
+                     :float-rel-x nil
                      :head t
                      :tail t
                      :length t
@@ -1244,6 +1259,8 @@
                      :float-unary nil
                      :float-binary nil
                      :float-binary-x nil
+                     :float-rel nil
+                     :float-rel-x nil
                      :head-t t
                      :head-t-d t
                      :tail-t t
@@ -1312,6 +1329,7 @@
                      :int-binary-x (primop-value-int-binary op.op)
                      :int-rel-x (primop-value-int-rel op.op)
                      :float-binary-x (primop-value-float-binary op.op)
+                     :float-rel-x (primop-value-float-rel op.op)
                      :head-t (primop-value-head)
                      :head-t-d (primop-value-head)
                      :head-t-d-s (primop-value-head)
@@ -1421,6 +1439,10 @@
         (make-type-value-array
          :elem (make-type-value-fun :in (list float-tv) :out int-tv)
          :dims nil))
+       (float-to-bool-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list float-tv) :out bool-tv)
+         :dims nil))
        (bool-unop-tv
         (make-type-value-array
          :elem (make-type-value-fun :in (list bool-tv) :out bool-tv)
@@ -1449,12 +1471,8 @@
      :float-unary float-unop-tv
      :float-binary float-binop-tv
      :float-binary-x float-unop-tv
-     :float-eq float-relop-tv
-     :float-neq float-relop-tv
-     :float-lt float-relop-tv
-     :float-gt float-relop-tv
-     :float-leq float-relop-tv
-     :float-geq float-relop-tv
+     :float-rel float-relop-tv
+     :float-rel-x float-to-bool-tv
      :float-truncate float-to-int-tv
      :float-round float-to-int-tv
      :float-ceiling float-to-int-tv
@@ -2212,12 +2230,24 @@
          (cons "f.sqrt" (expr-value-primop
                          (primop-value-float-unary
                           (float-unary-primop-sqrt))))
-         (cons "f.==" (expr-value-primop (primop-value-float-eq)))
-         (cons "f.!=" (expr-value-primop (primop-value-float-neq)))
-         (cons "f.<" (expr-value-primop (primop-value-float-lt)))
-         (cons "f.>" (expr-value-primop (primop-value-float-gt)))
-         (cons "f.<=" (expr-value-primop (primop-value-float-leq)))
-         (cons "f.>=" (expr-value-primop (primop-value-float-geq)))
+         (cons "f.==" (expr-value-primop
+                       (primop-value-float-rel
+                        (float-rel-primop-eq))))
+         (cons "f.!=" (expr-value-primop
+                       (primop-value-float-rel
+                        (float-rel-primop-neq))))
+         (cons "f.<" (expr-value-primop
+                      (primop-value-float-rel
+                       (float-rel-primop-lt))))
+         (cons "f.>" (expr-value-primop
+                      (primop-value-float-rel
+                       (float-rel-primop-gt))))
+         (cons "f.<=" (expr-value-primop
+                       (primop-value-float-rel
+                        (float-rel-primop-leq))))
+         (cons "f.>=" (expr-value-primop
+                       (primop-value-float-rel
+                        (float-rel-primop-geq))))
          (cons "truncate" (expr-value-primop (primop-value-float-truncate)))
          (cons "round" (expr-value-primop (primop-value-float-round)))
          (cons "ceiling" (expr-value-primop (primop-value-float-ceiling)))
