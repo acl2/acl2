@@ -12,7 +12,10 @@
 (in-package "REMORA")
 
 (include-book "expression-values-and-environments")
+(include-book "integer-lists")
 
+(include-book "kestrel/fty/integer-result" :dir :system)
+(include-book "kestrel/fty/integer-list-result" :dir :system)
 (include-book "kestrel/fty/boolean-result" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -26,7 +29,9 @@
 
 (local (in-theory (enable int-valuep-when-result-not-error
                           float-valuep-when-result-not-error
-                          booleanp-when-result-not-error)))
+                          booleanp-when-result-not-error
+                          acl2::integerp-when-result-not-error
+                          acl2::integer-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,7 +96,7 @@
     "The polymorphic primitives currently implemented are
      @(tsee prim-head), @(tsee prim-tail), @(tsee prim-length),
      @(tsee prim-append), @(tsee prim-reverse),
-     @(tsee prim-index), and @(tsee prim-index2d).")
+     @(tsee prim-index), @(tsee prim-index2d), and @(tsee prim-sum).")
    (xdoc::p
     "For integers, we currently model Remora integer values as unbounded
      mathematical integers, matching ACL2's own integer type.
@@ -1915,6 +1920,56 @@
     (("Goal"
       :in-theory (enable expr-value-wfp-of-nth-when-expr-value-list-wfp nfix)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-value-list-ints ((vals expr-value-listp))
+  :returns (ints integer-list-resultp)
+  :short "Turn a list of expression values into a list of integers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This fails if any of the expression values is not a scalar integer."))
+  (b* (((when (endp vals)) nil)
+       ((ok (int-value ival)) (check-expr-value-int (car vals)))
+       ((ok rest) (expr-value-list-ints (cdr vals))))
+    (cons ival.int rest)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-sum ((s nat-listp) (val1 expr-valuep))
+  :guard (expr-value-wfp val1)
+  :returns (val expr-value-resultp)
+  :short "Evaluation of array summation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('sum') operation
+     (see the @(':sum-s') summand of @(tsee primop-value)):
+     @('s') is the instantiation value,
+     and @('val1') is the argument cell.
+     According to the instantiated type of the operation,
+     the argument cell is an array of integers
+     whose dimensions are the shape @('s'),
+     and the result is the sum of all of its integers,
+     as a scalar integer value.
+     The guard requires the argument cell to be well-formed;
+     we defensively check that it has the expected dimensions
+     (which the interpreter in [impl] does not use),
+     and that all the atoms of the argument cell are integers.")
+   (xdoc::p
+    "We collect the atoms of the argument cell via @(tsee expr-value-atoms),
+     turn them into integers via @(tsee expr-value-list-ints),
+     and add them via @(tsee integer-list-sum)."))
+  (b* ((s (nat-list-fix s))
+       ((unless (equal (dims-of-expr-value val1) s)) (reserr nil))
+       ((ok ints) (expr-value-list-ints (expr-value-atoms val1))))
+    (expr-value-base (base-value-int (int-value (integer-list-sum ints)))))
+  ///
+
+  (defret expr-value-wfp-of-prim-sum
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-primop-fun ((op primop-valuep) (args expr-value-listp))
@@ -2052,7 +2107,9 @@
      :index2d-t-m (prog2$ (impossible) (reserr nil))
      :index2d-t-m-n (prim-index2d op.tval op.mval op.nval
                                   (first args) (second args))
-     :index2d-t-m-n-x (reserr :todo)))
+     :index2d-t-m-n-x (reserr :todo)
+     :sum (prog2$ (impossible) (reserr nil))
+     :sum-s (prim-sum op.sval (first args))))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp
                                            arity-of-primop-value-fun
                                            type-of-primop-value-fun)))
@@ -2160,7 +2217,9 @@
      namely the sort of the next ispace parameter
      in the operation's type in @(tsee primop-types):
      a dimension for the stages that store just a type value,
-     a shape for the stages that also store a dimension.
+     a shape for the stages that also store a dimension;
+     the uninstantiated stage of @('sum'), which has no type parameter,
+     stores nothing and expects a shape directly.
      We check that the ispace value has the expected sort;
      then we construct the next instantiation stage of the operation,
      which stores the ispace values received
@@ -2168,8 +2227,9 @@
      for @('head'), @('tail'), @('length'), and @('reverse');
      two dimensions and a shape for @('append');
      a dimension for @('index');
-     two dimensions for @('index2d')),
-     along with the previously received type values.
+     two dimensions for @('index2d');
+     a shape for @('sum')),
+     along with the previously received type values (if any).
      Anything else is an error."))
   (primop-value-case
    op
@@ -2265,6 +2325,11 @@
                                                         :mval op.mval
                                                         :nval ival.val))
                  :shape (reserr nil))
+   :sum (ispace-value-case
+         ival
+         :dim (reserr nil)
+         :shape (expr-value-primop
+                 (make-primop-value-sum-s :sval ival.val)))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp)))
 

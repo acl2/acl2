@@ -339,7 +339,15 @@
        @(':int-binary-x') is the operation applied to
        its first argument value
        (which we call @('x'), based on the idea that
-       the two arguments are @('x') and @('y')."))
+       the two arguments are @('x') and @('y').")
+     (xdoc::p
+      "Not every polymorphic operation has a stage for every kind of value.
+       For example, @('sum') is monomorphic in the element type,
+       which is always integer,
+       so it has no type stage:
+       @(':sum') is the uninstantiated operation, and
+       @(':sum-s') is the operation applied to
+       a list of natural numbers for its shape parameter."))
     (:int-unary ((op int-unary-primop)))
     (:int-binary ((op int-binary-primop)))
     (:int-binary-x ((op int-binary-primop)
@@ -431,6 +439,8 @@
                        (mval nat)
                        (nval nat)
                        (xval expr-value)))
+    (:sum ())
+    (:sum-s ((sval nat-list)))
     :pred primop-valuep
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -1189,6 +1199,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defines expr-value-atoms/list
+  :short "Collect the atoms of expression values."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define expr-value-atoms ((val expr-valuep))
+    :returns (vals expr-value-listp)
+    :parents (expression-values-and-environments expr-value-atoms/list)
+    :short "Collect the atoms of an expression value."
+    (expr-value-case
+     val
+     :vector (expr-value-list-atoms val.elems)
+     :vector-empty nil
+     :otherwise (list (expr-value-fix val)))
+    :measure (expr-value-count val))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define expr-value-list-atoms ((vals expr-value-listp))
+    :returns (vals1 expr-value-listp)
+    :parents (expression-values-and-environments expr-value-atoms/list)
+    :short "Collect the atoms of a list of expression values."
+    (b* (((when (endp vals)) nil))
+      (append (expr-value-atoms (car vals))
+              (expr-value-list-atoms (cdr vals))))
+    :measure (expr-value-list-count vals))
+
+  ///
+
+  (fty::deffixequiv-mutual expr-value-atoms/list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define expr-value-with-empty-dim ((dims nat-listp) (elem type-valuep))
   :guard (and (member-equal 0 dims)
               (not (type-value-case elem :array)))
@@ -1532,6 +1575,64 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defines expr-value-atoms/list
+  :short "Collect the atoms of expression values."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define expr-value-atoms ((val expr-valuep))
+    :returns (vals expr-value-listp)
+    :parents (expression-values-and-environments expr-value-atoms/list)
+    :short "Collect the atoms of an expression value."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Recall that we fold atom values into expression values
+       (see @(tsee expr-value)):
+       the atoms of an array are the expression values at its leaves,
+       i.e. the ones that are neither vectors nor empty vectors.
+       We return them in row-major order,
+       i.e. in the order in which they occur in the nested vectors.")
+     (xdoc::p
+      "This is the inverse of
+       @(tsee expr-value-with-nonempty-dims),
+       which builds an expression value
+       from its dimensions and from its atoms in the same order.
+       An empty vector has no atoms,
+       and a non-empty vector has the atoms of its elements.")
+     (xdoc::p
+      "This function is total:
+       every expression value that is not a vector is an atom,
+       including boxes and lambda abstractions."))
+    (expr-value-case
+     val
+     :vector (expr-value-list-atoms val.elems)
+     :vector-empty nil
+     :otherwise (list (expr-value-fix val)))
+    :measure (expr-value-count val))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define expr-value-list-atoms ((vals expr-value-listp))
+    :returns (vals1 expr-value-listp)
+    :parents (expression-values-and-environments expr-value-atoms/list)
+    :short "Collect the atoms of a list of expression values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We concatenate the atoms of each expression value in the list,
+       preserving the order."))
+    (b* (((when (endp vals)) nil))
+      (append (expr-value-atoms (car vals))
+              (expr-value-list-atoms (cdr vals))))
+    :measure (expr-value-list-count vals))
+
+  ///
+
+  (fty::deffixequiv-mutual expr-value-atoms/list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define primop-value-funp ((op primop-valuep))
   :returns (yes/no booleanp)
   :short "Check if a primitive operation value is
@@ -1609,7 +1710,9 @@
                      :index2d-t nil
                      :index2d-t-m nil
                      :index2d-t-m-n t
-                     :index2d-t-m-n-x t))
+                     :index2d-t-m-n-x t
+                     :sum nil
+                     :sum-s t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1680,7 +1783,9 @@
                      :index2d-t nil
                      :index2d-t-m nil
                      :index2d-t-m-n nil
-                     :index2d-t-m-n-x nil))
+                     :index2d-t-m-n-x nil
+                     :sum nil
+                     :sum-s nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1750,7 +1855,9 @@
                      :index2d-t t
                      :index2d-t-m t
                      :index2d-t-m-n nil
-                     :index2d-t-m-n-x nil))
+                     :index2d-t-m-n-x nil
+                     :sum t
+                     :sum-s nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1831,6 +1938,7 @@
                      :index2d-t-m (primop-value-index2d)
                      :index2d-t-m-n (primop-value-index2d)
                      :index2d-t-m-n-x (primop-value-index2d)
+                     :sum-s (primop-value-sum)
                      :otherwise (primop-value-fix op)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2077,7 +2185,15 @@
                               :out (make-type-value-array
                                     :elem op.tval
                                     :dims nil))
-                       :dims nil)))
+                       :dims nil)
+     :sum (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :sum-s (make-type-value-array
+             :elem (make-type-value-fun
+                    :in (list (make-type-value-array
+                               :elem (type-value-base (base-type-int))
+                               :dims op.sval))
+                    :out int-tv)
+             :dims nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///
@@ -2780,7 +2896,8 @@
          (cons "append" (expr-value-primop (primop-value-append)))
          (cons "reverse" (expr-value-primop (primop-value-reverse)))
          (cons "index" (expr-value-primop (primop-value-index)))
-         (cons "index2d" (expr-value-primop (primop-value-index2d))))))
+         (cons "index2d" (expr-value-primop (primop-value-index2d)))
+         (cons "sum" (expr-value-primop (primop-value-sum))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
