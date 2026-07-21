@@ -1302,6 +1302,8 @@
                      :length-t-d (primop-value-length)
                      :length-t-d-s (primop-value-length)
                      :append-t (primop-value-append)
+                     :append-t-m (primop-value-append)
+                     :append-t-m-n (primop-value-append)
                      :append-t-m-n-s (primop-value-append)
                      :reverse-t (primop-value-reverse)
                      :reverse-t-d (primop-value-reverse)
@@ -1309,6 +1311,7 @@
                      :index-t (primop-value-index)
                      :index-t-m (primop-value-index)
                      :index2d-t (primop-value-index2d)
+                     :index2d-t-m (primop-value-index2d)
                      :index2d-t-m-n (primop-value-index2d)
                      :otherwise (primop-value-fix op)))
 
