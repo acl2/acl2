@@ -328,7 +328,7 @@
                             BVCHOP-OF-*-OF-BVCHOP-ARG2
                             BVCHOP-OF-*-OF-BVCHOP
                             ;;slow:
-                            USB-PLUS-FROM-BOUNDS
+                            ;USB-PLUS-FROM-BOUNDS
                             getbit-of-0-when-bitp
                             BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE
                             )))))
