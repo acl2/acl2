@@ -2135,7 +2135,8 @@
     (implies (not (reserrp val))
              (expr-value-wfp val))
     :hints (("Goal" :in-theory (enable expr-value-wfp
-                                       check-dims-of-expr-value)))))
+                                       check-dims-of-expr-value
+                                       check-dims-of-primop-value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2274,4 +2275,5 @@
     (implies (not (reserrp val))
              (expr-value-wfp val))
     :hints (("Goal" :in-theory (enable expr-value-wfp
-                                       check-dims-of-expr-value)))))
+                                       check-dims-of-expr-value
+                                       check-dims-of-primop-value)))))

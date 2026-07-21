@@ -601,6 +601,10 @@
      (xdoc::p
       "Base and abstraction values always satisfy dimension constraints
        and have the empty list of dimensions.
+       Primitive operation values also have the empty list of dimensions,
+       but the expression values stored in their instantiation stages, if any,
+       must satisfy the dimension constraints
+       (see @(tsee check-dims-of-primop-value)).
        Box values also have the empty list of dimensions,
        but their boxed value must satisfy the dimension constraints.")
      (xdoc::p
@@ -627,7 +631,8 @@
     (expr-value-case
      val
      :base nil
-     :primop nil
+     :primop (b* (((ok &) (check-dims-of-primop-value val.val)))
+               nil)
      :lambda (b* (((ok &) (check-dims-of-expr-denv val.denv)))
                nil)
      :tlambda (b* (((ok &) (check-dims-of-expr-denv val.denv)))

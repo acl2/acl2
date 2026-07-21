@@ -47,7 +47,8 @@
              (equal (dims-of-expr-value eval)
                     nil))
     :enable (dims-of-expr-value
-             check-dims-of-expr-value)))
+             expr-value-wfp)
+    :expand ((check-dims-of-expr-value eval))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
