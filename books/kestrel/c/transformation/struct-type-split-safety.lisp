@@ -773,7 +773,7 @@
      (and its values, and pointers to its values)
      only in ways that are safe for the STS transformation.")
    (xdoc::p
-    "The predicates should start at the @(tsee exprs/decls/stmts) clique.
+    "The predicates start at the @(tsee exprs/decls/stmts) clique.
      It is not hard to see that
      all the ASTs in @(see c$::abstract-syntax-trees) before that clique
      do not contain anything directly related to structs.
@@ -787,21 +787,6 @@
      all the ASTs that precede the @(tsee exprs/decls/stmts) clique
      should be deemed safe when taken in isolation,
      and thus we do not need to define any predicates on them.")
-   (xdoc::p
-    "However, above we said `should' because, for now,
-     we are including the @(tsee stor-spec) and @(tsee type-qual) fixtypes,
-     so that we can exclude
-     the @('_Atomic') type qualifier
-     and the @('auto') storage specifier.
-     In general, for now we want to reject code
-     where the struct type is qualified as being atomic,
-     because it is not clear how that interacts with
-     transformations such as splitting the struct;
-     so we just forbid that type qualifier.
-     The reason for excluding the @('auto') storage specifier
-     is that, in C23, it does type inference,
-     which might resolve to the struct type being split,
-     and so we exclude that for now.")
    (xdoc::p
     "The predicates end at the @(tsee trans-unit) type,
      because these checks operate on one translation unit at a time.")
@@ -942,8 +927,13 @@
      This is because the type may denote the struct type being split,
      without that being immediately syntactically apparent.")
    (xdoc::p
-    "@('__auto_type') is excluded for the same reason as
-     the storage specifier @('auto') explained earlier.")
+    "@('__auto_type') is excluded because it does type inference,
+     and so we need to think of this more carefully.
+     In C23, the @('auto') storage class specifier also does type inference,
+     and so it should be treated the same way (excluded for now).
+     However, for now the STS transformation is expressly limited to C17
+     (the transformation checks that explicitly),
+     and so we can accept the @('auto') storage class specifier for now.")
    (xdoc::p
     "We allow all alignment specifiers,
      because they do not seem related to the struct type being split.")
@@ -990,10 +980,19 @@
    (xdoc::p
     "We reject translation items that are
      preprocessing constructs preserved by our preprocessor.
-     We do not have transformations working on those yet."))
-  :types (stor-spec
-          type-qual
-          exprs/decls/stmts
+     We do not have transformations working on those yet.")
+   (xdoc::p
+    "Like we exclude the @('_Atomic') type specifier
+     applied to the struct type being split,
+     we should also exclude the @('_Atomic') type qualifier
+     applied to the struct type being split.
+     Currently this is a bit cumbersome to check because
+     that type qualifier may not be immediately before the struct type.
+     We should extend our model of types with an atomic flag,
+     which is more generally useful,
+     and then we should be able to check atomic type
+     without looking directly at specifiers and qualifiers."))
+  :types (exprs/decls/stmts
           fundef
           ext-declon
           trans-items
@@ -1003,9 +1002,7 @@
   :combine and
   :extra-args ((spec sts-struct-specp))
   :override
-  ((stor-spec :auto (sts-reject (stor-spec-fix stor-spec)))
-   (type-qual :atomic (sts-reject (type-qual-fix type-qual)))
-   (expr :gensel (sts-reject (expr-fix expr)))
+  ((expr :gensel (sts-reject (expr-fix expr)))
    (expr :complit (and (tyname-sts-safep expr.type spec)
                        (desiniter-list-sts-safep expr.elems spec)
                        (tyname-info-sts-safep expr.type spec)))
