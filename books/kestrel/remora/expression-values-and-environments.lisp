@@ -1420,7 +1420,7 @@
      :int-binary int-binop-tv
      :int-binary-x int-unop-tv
      :int-rel int-relop-tv
-     :int-rel-x int-unop-tv
+     :int-rel-x int-to-bool-tv
      :int-to-float int-to-float-tv
      :int-to-bool int-to-bool-tv
      :float-unary float-unop-tv
