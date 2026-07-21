@@ -32,6 +32,7 @@
 (include-book "expr-calls-fn")
 (include-book "unary-lambdap")
 (include-book "wrap-pattern-around-term")
+(include-book "wrap-pattern-around-term-proofs")
 (include-book "lambda-free-termp")
 (include-book "lambdas-closed-in-termp")
 (include-book "all-lambdas-serialized-in-termp")
