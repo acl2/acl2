@@ -46,7 +46,7 @@
 (include-book "term-is-disjunctionp")
 (include-book "clearly-implies-for-disjunctionp")
 (include-book "make-if-term")
-(include-book "make-if-term-proof")
+(include-book "make-if-term-proofs")
 (include-book "strengthen-conjuncts")
 (include-book "make-lambda-term-simple")
 (include-book "make-lambda-terms-simple")
