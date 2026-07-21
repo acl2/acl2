@@ -30,11 +30,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "That transformation is work in progress,
-     as are the safety checks provided here.
-     The two will be connected once the safety checks are practical
-     (currently they are very preliminary and conservative).")
-   (xdoc::p
     "The STS (= Struct Type Split) transformation is safe,
      in the sense that it suitably preserves code functionality,
      only provided that the struct type is not used in certain ways.
@@ -44,7 +39,7 @@
      making it unsafe to split the struct type.")
    (xdoc::p
     "Here we provide checkers that
-     code uses (values of) the struct type being split
+     code uses the struct type being split
      only in safe ways with respect to the STS transformation.
      These checkers operate on ASTs annotated by validation.")
    (xdoc::p
