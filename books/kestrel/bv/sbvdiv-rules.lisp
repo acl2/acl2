@@ -47,7 +47,7 @@
 (defthmd slice-of-bvuminus
   (implies (and (< high size)
                 (<= low high)
-                (integerp x)
+                ;(integerp x)
                 (integerp size)
                 (natp low)
                 (natp high))

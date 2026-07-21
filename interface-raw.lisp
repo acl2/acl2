@@ -5163,42 +5163,42 @@
 ;   update-hcomp-fn-ht-redundant-in-encapsulate.
 
 ;     ACL2 !>>(LOCAL (DEFUN FOO (X) (CONS X X)))
-;     
+;
 ;     Since FOO is non-recursive, its admission is trivial.  We observe that
 ;     the type of FOO is described by the theorem (CONSP (FOO X)).  We used
 ;     primitive type reasoning.
 ;     ; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
 ;     ; DEBUG: [IFATHB-1] Eval def for FOO.
 ;     ; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::FOO.
-;     
+;
 ;     Summary
 ;     Form:  ( DEFUN FOO ...)
 ;     Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
 ;     Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
 ;     FOO
-;     
-;     
+;
+;
 ;     ACL2 !>>(DEFUN FOO (X) (CONS X X))
 ;     ; DEBUG: [REDUNDANT-FN] Set (symbol-function FOO).
 ;     ; DEBUG: [REDUNDANT-*1*FN] Set (symbol-function ACL2_*1*_ACL2::FOO).
-;     
+;
 ;     The event ( DEFUN FOO ...) is redundant.  See :DOC redundant-events.
-;     
+;
 ;     Summary
 ;     Form:  ( DEFUN FOO ...)
 ;     Rules: NIL
 ;     Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
 ;     :REDUNDANT
-;     
+;
 ;     End of Encapsulated Events.
 ;     ; DEBUG: [IFATIB-5] Set (symbol-function FOO), symbol-class :IDEAL.
 ;     ; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::FOO), symbol-class :IDEAL.
-;     
+;
 ;     Having verified that the encapsulated events validate the signatures
 ;     of the ENCAPSULATE event, we discard the ephemeral theory and extend
 ;     the original theory as directed by the signatures and the non-LOCAL
 ;     events.
-;     
+;
 ;     We export FOO.
 
 ;   Analogous redundancy handling for macros and constants may be found in
@@ -9863,19 +9863,29 @@
 ; Keep this in sync with :doc set-debugger-enable.
 
   (declare (ignore y))
-  #+acl2-par (setq *reset-parallelism-variables* t)
-  (print-proof-tree-finish state)
-  (when btp (print-call-history))
-  (cond ((or (debugger-enabledp state)
-             (eql *ld-level* 0)
-             (f-get-global 'boot-strap-flg state))
-         nil)
-        (t
-         (let ((*debugger-hook* nil) ; extra care to avoid possible loop
-               #+ccl ; as above, for CCL revision 12090 and beyond
-               (ccl::*break-hook* nil)
-               (*package* (find-package (current-package state)))
-               (continue-p
+
+; It might not be important to use without-interrupts here.  But it seems
+; harmles, assuming that both of the forms (invoke-restart 'continue) and
+; (throw 'local-top-level ...) take us out of the scope of without-interrupt,
+; which seems likely since they transfer control out of this function.  The
+; potential benefit of using without-interrupts is to avoid the potentially
+; confusing situation of taking an interrupt while the code below -- before the
+; aforementioned transfer of control -- is being executed.
+
+  (without-interrupts
+   #+acl2-par (setq *reset-parallelism-variables* t)
+   (print-proof-tree-finish state)
+   (when btp (print-call-history))
+   (cond ((or (debugger-enabledp state)
+              (eql *ld-level* 0)
+              (f-get-global 'boot-strap-flg state))
+          nil)
+         (t
+          (let ((*debugger-hook* nil) ; extra care to avoid possible loop
+                #+ccl ; as above, for CCL revision 12090 and beyond
+                (ccl::*break-hook* nil)
+                (*package* (find-package (current-package state)))
+                (continue-p
 
 ; This variable determines whether we continue from the abort and let the
 ; prover exit cleanly, or rip out with a throw to the local-top-level.  If we
@@ -9887,9 +9897,9 @@
 ; *acl2-time-limit-boundp* needs to be true is that ultimately, we want
 ; *acl2-time-limit* to revert to its default value of nil.
 
-                (if (f-get-global 'wormhole-name state)
-                    nil
-                    (and (f-get-global 'abort-soft state)
+                 (if (f-get-global 'wormhole-name state)
+                     nil
+                   (and (f-get-global 'abort-soft state)
 
 ; We expect the following (the 'continue restart) to be non-nil after a
 ; control-C interrupt; see the discussion of BREAK in the CL HyperSpec.  It
@@ -9900,31 +9910,31 @@
 ; 'continue restart by binding state global abort-soft to nil to make the
 ; present conjunction false when causing an error.
 
-                         (find-restart 'continue)
-                         *acl2-time-limit-boundp*
+                        (find-restart 'continue)
+                        *acl2-time-limit-boundp*
 
 ; If you change the following, consider changing chk-for-live-stobj
 ; accordingly.
 
-                         (not (eql *acl2-time-limit* 0))))))
-           #+ccl ; for CCL revisions before 12090
-           (declare (ignorable ccl::*break-hook*))
-           (terpri)
-           (format t
-                   "***********************************************")
-           (cond
-            (continue-p
-             (format t
-                     "~&Note:  ~A~
-                      ~&  Will attempt to exit the proof in progress;~
-                      ~&  otherwise, the next interrupt will abort the proof.~
-                      ~&  For an immediate abort see :DOC abort-soft."
-                     condition))
-            (t
-             (format t
-                     "~&************ ABORTING from raw Lisp ***********")
-             (format t
-                     "~&********** (see :DOC raw-lisp-error) **********")
+                        (not (eql *acl2-time-limit* 0))))))
+            #+ccl ; for CCL revisions before 12090
+            (declare (ignorable ccl::*break-hook*))
+            (terpri)
+            (format t
+                    "***********************************************")
+            (cond
+             (continue-p
+              (format t
+                      "~&Note:  ~A~
+                       ~&  Will attempt to exit the proof in progress;~
+                       ~&  otherwise, the next interrupt will abort the proof.~
+                       ~&  For an immediate abort see :DOC abort-soft."
+                      condition))
+             (t
+              (format t
+                      "~&************ ABORTING from raw Lisp ***********")
+              (format t
+                      "~&********** (see :DOC raw-lisp-error) **********")
 
 ; In CCL we can get information about the function currently being executed.
 ; Consider for example what happens if, during a computation, the evaluation of
@@ -9942,34 +9952,34 @@
 ; 2 (expt 2 48)).  However, you get what you get with raw Lisp errors, and we
 ; are happy to make them a bit more useful in some cases.
 
-             (cond
-              #+ccl
-              ((and (fboundp 'ccl::%real-err-fn-name)
-                    (boundp 'ccl::*top-error-frame*)
-                    (not *suppress-while-executing-msg*))
-               (format t
-                       "~&Error:  ~A~&While executing: ~S"
-                       condition
-                       (ccl::%real-err-fn-name ccl::*top-error-frame*)))
-              (t
-               (format t
-                       "~&Error:  ~A"
-                       condition)))))
-           (when btp (format t "~%NOTE: See above for backtrace.~%"))
-           (format t
-                   "~&***********************************************~&")
-           (when *acl2-error-msg*
-             (format t *acl2-error-msg*))
-           (when (not (untouchable-fn-p 'set-debugger-enable-fn
-                                        (w state)
-                                        (f-get-global 'temp-touchable-fns
-                                                      state)))
-             (format t
-                     "~%To enable breaks into the debugger (also see :DOC ~
-                      acl2-customization):~&~s~&"
-                     '(set-debugger-enable t)))
-           (force-output t)
-           (when (eq (standard-oi state) *standard-oi*)
+              (cond
+               #+ccl
+               ((and (fboundp 'ccl::%real-err-fn-name)
+                     (boundp 'ccl::*top-error-frame*)
+                     (not *suppress-while-executing-msg*))
+                (format t
+                        "~&Error:  ~A~&While executing: ~S"
+                        condition
+                        (ccl::%real-err-fn-name ccl::*top-error-frame*)))
+               (t
+                (format t
+                        "~&Error:  ~A"
+                        condition)))))
+            (when btp (format t "~%NOTE: See above for backtrace.~%"))
+            (format t
+                    "~&***********************************************~&")
+            (when *acl2-error-msg*
+              (format t *acl2-error-msg*))
+            (when (not (untouchable-fn-p 'set-debugger-enable-fn
+                                         (w state)
+                                         (f-get-global 'temp-touchable-fns
+                                                       state)))
+              (format t
+                      "~%To enable breaks into the debugger (also see :DOC ~
+                       acl2-customization):~&~s~&"
+                      '(set-debugger-enable t)))
+            (force-output t)
+            (when (eq (standard-oi state) *standard-oi*)
 
 ; In Version_8.5 we called clear-input regardless of the non-nil value of
 ; (standard-oi state).  But that could lead to discarding of valid input or an
@@ -9977,11 +9987,11 @@
 ; community book files clear-input-1.lsp and clear-input-2.lsp in directory
 ; books/system/tests/.
 
-             (clear-input (get-input-stream-from-channel *standard-oi*)))
-           (cond (continue-p
-                  (setq *acl2-time-limit* 0)
-                  (invoke-restart 'continue))
-                 (t
+              (clear-input (get-input-stream-from-channel *standard-oi*)))
+            (cond (continue-p
+                   (setq *acl2-time-limit* 0)
+                   (invoke-restart 'continue))
+                  (t
 
 ; Parallelism blemish: as of May 16, 2011, we also reset all parallelism
 ; variables in Rager's modified version of the source code.  However, that
@@ -9998,18 +10008,28 @@
 ; since when two interrupts are required, the summary does not print the
 ; ACL2(p) checkpoints.
 
-                  (our-ignore-errors ; might not be in scope of catch
-                   (throw 'local-top-level
-                          (if (f-get-global 'wormhole-name state)
-                              :abort
-                              :our-abort)))))))))
+                   (our-ignore-errors ; might not be in scope of catch
+                    (throw 'local-top-level
+                           (if (f-get-global 'wormhole-name state)
+                               :abort
+                             :our-abort))))))))))
 
 ; We formerly set *debugger-hook* here, but now we set it in lp; see the
 ; comment there.
 
+; The following two forms can avoid entering the debugger.  It would probably
+; be good to add similar forms, where feasible, for other host Lisps.  In
+; particular: Allegro CL may similarly use excl:*break-hook*; LispWorks may
+; rather similarly use dbg:with-debugger-wrapper; GCL may not need any such
+; attention; and CMUCL might have no such capability.
+
 #+ccl ; for CCL revisions starting with 12090
 (when (boundp 'ccl::*break-hook*)
   (setq ccl::*break-hook* 'our-abort))
+
+#+sbcl
+(setq sb-ext:*invoke-debugger-hook*
+      'our-abort)
 
 (defun initial-customization-filename ()
 
