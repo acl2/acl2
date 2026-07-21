@@ -101,7 +101,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum int-rel-primop
-  :short "Fixtype of integer relational operations."
+  :short "Fixtype of integer relational primitive operations."
   (:eq ())
   (:neq ())
   (:lt ())
@@ -133,7 +133,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum float-rel-primop
-  :short "Fixtype of float relational operations."
+  :short "Fixtype of float relational primitive operations."
   (:eq ())
   (:neq ())
   (:lt ())
@@ -141,6 +141,29 @@
   (:leq ())
   (:geq ())
   :pred float-rel-primop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum bool-unary-primop
+  :short "Fixtype of boolean unary primitive operations."
+  (:not ())
+  :pred bool-unary-primop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum bool-binary-primop
+  :short "Fixtype of boolean binary primitive operations."
+  (:and ())
+  (:or ())
+  :pred bool-binary-primop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum bool-rel-primop
+  :short "Fixtype of boolean relational primitive operations."
+  (:eq ())
+  (:neq ())
+  :pred bool-rel-primop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -339,11 +362,13 @@
     (:float-round ())
     (:float-ceiling ())
     (:float-floor ())
-    (:bool-not ())
-    (:bool-and ())
-    (:bool-or ())
-    (:bool-eq ())
-    (:bool-neq ())
+    (:bool-unary ((op bool-unary-primop)))
+    (:bool-binary ((op bool-binary-primop)))
+    (:bool-binary-x ((op bool-binary-primop)
+                     (xval expr-value)))
+    (:bool-rel ((op bool-rel-primop)))
+    (:bool-rel-x ((op bool-rel-primop)
+                  (xval expr-value)))
     (:bool-to-int ())
     (:bool-to-float ())
     (:head ())
@@ -662,6 +687,10 @@
                        :unit)
      :float-rel-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
                     :unit)
+     :bool-binary-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                      :unit)
+     :bool-rel-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                   :unit)
      :otherwise :unit)
     :measure (primop-value-count val))
 
@@ -1178,6 +1207,11 @@
                      :float-binary-x t
                      :float-rel t
                      :float-rel-x t
+                     :bool-unary t
+                     :bool-binary t
+                     :bool-binary-x t
+                     :bool-rel t
+                     :bool-rel-x t
                      :head nil
                      :head-t nil
                      :head-t-d nil
@@ -1227,6 +1261,11 @@
                      :float-binary-x nil
                      :float-rel nil
                      :float-rel-x nil
+                     :bool-unary nil
+                     :bool-binary nil
+                     :bool-binary-x nil
+                     :bool-rel nil
+                     :bool-rel-x nil
                      :head t
                      :tail t
                      :length t
@@ -1261,6 +1300,11 @@
                      :float-binary-x nil
                      :float-rel nil
                      :float-rel-x nil
+                     :bool-unary nil
+                     :bool-binary nil
+                     :bool-binary-x nil
+                     :bool-rel nil
+                     :bool-rel-x nil
                      :head-t t
                      :head-t-d t
                      :tail-t t
@@ -1330,6 +1374,8 @@
                      :int-rel-x (primop-value-int-rel op.op)
                      :float-binary-x (primop-value-float-binary op.op)
                      :float-rel-x (primop-value-float-rel op.op)
+                     :bool-binary-x (primop-value-bool-binary op.op)
+                     :bool-rel-x (primop-value-bool-rel op.op)
                      :head-t (primop-value-head)
                      :head-t-d (primop-value-head)
                      :head-t-d-s (primop-value-head)
@@ -1477,11 +1523,11 @@
      :float-round float-to-int-tv
      :float-ceiling float-to-int-tv
      :float-floor float-to-int-tv
-     :bool-not bool-unop-tv
-     :bool-and bool-binop-tv
-     :bool-or bool-binop-tv
-     :bool-eq bool-binop-tv
-     :bool-neq bool-binop-tv
+     :bool-unary bool-unop-tv
+     :bool-binary bool-binop-tv
+     :bool-binary-x bool-unop-tv
+     :bool-rel bool-binop-tv
+     :bool-rel-x bool-unop-tv
      :bool-to-int bool-to-int-tv
      :bool-to-float bool-to-float-tv
      :head (prog2$ (impossible) (type-value-base (base-type-bool)))
@@ -2252,11 +2298,21 @@
          (cons "round" (expr-value-primop (primop-value-float-round)))
          (cons "ceiling" (expr-value-primop (primop-value-float-ceiling)))
          (cons "floor" (expr-value-primop (primop-value-float-floor)))
-         (cons "not" (expr-value-primop (primop-value-bool-not)))
-         (cons "and" (expr-value-primop (primop-value-bool-and)))
-         (cons "or" (expr-value-primop (primop-value-bool-or)))
-         (cons "bool.==" (expr-value-primop (primop-value-bool-eq)))
-         (cons "bool.!=" (expr-value-primop (primop-value-bool-neq)))
+         (cons "not" (expr-value-primop
+                      (primop-value-bool-unary
+                       (bool-unary-primop-not))))
+         (cons "and" (expr-value-primop
+                      (primop-value-bool-binary
+                       (bool-binary-primop-and))))
+         (cons "or" (expr-value-primop
+                     (primop-value-bool-binary
+                      (bool-binary-primop-or))))
+         (cons "bool.==" (expr-value-primop
+                          (primop-value-bool-rel
+                           (bool-rel-primop-eq))))
+         (cons "bool.!=" (expr-value-primop
+                          (primop-value-bool-rel
+                           (bool-rel-primop-neq))))
          (cons "bool->i" (expr-value-primop (primop-value-bool-to-int)))
          (cons "bool->f" (expr-value-primop (primop-value-bool-to-float)))
          (cons "head" (expr-value-primop (primop-value-head)))

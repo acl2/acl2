@@ -2005,11 +2005,19 @@
      :float-round (prim-float-round (first args))
      :float-ceiling (prim-float-ceiling (first args))
      :float-floor (prim-float-floor (first args))
-     :bool-not (prim-bool-not (first args))
-     :bool-and (prim-bool-and (first args) (second args))
-     :bool-or (prim-bool-or (first args) (second args))
-     :bool-eq (prim-bool-eq (first args) (second args))
-     :bool-neq (prim-bool-neq (first args) (second args))
+     :bool-unary (bool-unary-primop-case
+                  op.op
+                  :not (prim-bool-not (first args)))
+     :bool-binary (bool-binary-primop-case
+                   op.op
+                   :and (prim-bool-and (first args) (second args))
+                   :or (prim-bool-or (first args) (second args)))
+     :bool-binary-x (reserr :todo)
+     :bool-rel (bool-rel-primop-case
+                op.op
+                :eq (prim-bool-eq (first args) (second args))
+                :neq (prim-bool-neq (first args) (second args)))
+     :bool-rel-x (reserr :todo)
      :bool-to-int (prim-bool-to-int (first args))
      :bool-to-float (prim-bool-to-float (first args))
      :head (prog2$ (impossible) (reserr nil))
