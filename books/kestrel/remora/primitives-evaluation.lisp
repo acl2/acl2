@@ -2046,6 +2046,7 @@
      :index (prog2$ (impossible) (reserr nil))
      :index-t (prog2$ (impossible) (reserr nil))
      :index-t-m (prim-index op.tval op.mval (first args) (second args))
+     :index-t-m-x (reserr :todo)
      :index2d (prog2$ (impossible) (reserr nil))
      :index2d-t (prog2$ (impossible) (reserr nil))
      :index2d-t-m (prog2$ (impossible) (reserr nil))

@@ -415,6 +415,9 @@
     (:index-t ((tval type-value)))
     (:index-t-m ((tval type-value)
                  (mval nat)))
+    (:index-t-m-x ((tval type-value)
+                   (mval nat)
+                   (xval expr-value)))
     (:index2d ())
     (:index2d-t ((tval type-value)))
     (:index2d-t-m ((tval type-value)
@@ -698,6 +701,8 @@
                    :unit)
      :append-t-m-n-s-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
                          :unit)
+     :index-t-m-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                    :unit)
      :index2d-t-m-n-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
                         :unit)
      :otherwise :unit)
@@ -1254,6 +1259,7 @@
                      :index nil
                      :index-t nil
                      :index-t-m t
+                     :index-t-m-x t
                      :index2d nil
                      :index2d-t nil
                      :index2d-t-m nil
@@ -1324,6 +1330,7 @@
                      :index t
                      :index-t nil
                      :index-t-m nil
+                     :index-t-m-x nil
                      :index2d t
                      :index2d-t nil
                      :index2d-t-m nil
@@ -1393,6 +1400,7 @@
                      :index nil
                      :index-t t
                      :index-t-m nil
+                     :index-t-m-x nil
                      :index2d nil
                      :index2d-t t
                      :index2d-t-m t
@@ -1473,6 +1481,7 @@
                      :reverse-t-d-s (primop-value-reverse)
                      :index-t (primop-value-index)
                      :index-t-m (primop-value-index)
+                     :index-t-m-x (primop-value-index)
                      :index2d-t (primop-value-index2d)
                      :index2d-t-m (primop-value-index2d)
                      :index2d-t-m-n (primop-value-index2d)
@@ -1693,6 +1702,13 @@
                               :elem op.tval
                               :dims nil))
                  :dims nil)
+     :index-t-m-x (make-type-value-array
+                   :elem (make-type-value-fun
+                          :in (list int-tv)
+                          :out (make-type-value-array
+                                :elem op.tval
+                                :dims nil))
+                   :dims nil)
      :index2d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :index2d-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :index2d-t-m (prog2$ (impossible) (type-value-base (base-type-bool)))
