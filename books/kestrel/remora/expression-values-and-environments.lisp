@@ -399,6 +399,11 @@
                       (mval nat)
                       (nval nat)
                       (sval nat-list)))
+    (:append-t-m-n-s-x ((tval type-value)
+                        (mval nat)
+                        (nval nat)
+                        (sval nat-list)
+                        (xval expr-value)))
     (:reverse ())
     (:reverse-t ((tval type-value)))
     (:reverse-t-d ((tval type-value)
@@ -417,6 +422,10 @@
     (:index2d-t-m-n ((tval type-value)
                      (mval nat)
                      (nval nat)))
+    (:index2d-t-m-n-x ((tval type-value)
+                       (mval nat)
+                       (nval nat)
+                       (xval expr-value)))
     :pred primop-valuep
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -687,6 +696,10 @@
                       :unit)
      :bool-rel-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
                    :unit)
+     :append-t-m-n-s-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                         :unit)
+     :index2d-t-m-n-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                        :unit)
      :otherwise :unit)
     :measure (primop-value-count val))
 
@@ -1385,6 +1398,7 @@
                      :append-t-m (primop-value-append)
                      :append-t-m-n (primop-value-append)
                      :append-t-m-n-s (primop-value-append)
+                     :append-t-m-n-s-x (primop-value-append)
                      :reverse-t (primop-value-reverse)
                      :reverse-t-d (primop-value-reverse)
                      :reverse-t-d-s (primop-value-reverse)
@@ -1393,6 +1407,7 @@
                      :index2d-t (primop-value-index2d)
                      :index2d-t-m (primop-value-index2d)
                      :index2d-t-m-n (primop-value-index2d)
+                     :index2d-t-m-n-x (primop-value-index2d)
                      :otherwise (primop-value-fix op)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1576,6 +1591,15 @@
                                    :elem op.tval
                                    :dims (cons (+ op.mval op.nval) op.sval)))
                       :dims nil)
+     :append-t-m-n-s-x (make-type-value-array
+                        :elem (make-type-value-fun
+                               :in (list (make-type-value-array
+                                          :elem op.tval
+                                          :dims (cons op.nval op.sval)))
+                               :out (make-type-value-array
+                                     :elem op.tval
+                                     :dims (cons (+ op.mval op.nval) op.sval)))
+                        :dims nil)
      :reverse (prog2$ (impossible) (type-value-base (base-type-bool)))
      :reverse-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :reverse-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
@@ -1614,7 +1638,16 @@
                             :out (make-type-value-array
                                   :elem op.tval
                                   :dims nil))
-                     :dims nil)))
+                     :dims nil)
+     :index2d-t-m-n-x (make-type-value-array
+                       :elem (make-type-value-fun
+                              :in (list (make-type-value-array
+                                         :elem (type-value-base (base-type-int))
+                                         :dims (list 2)))
+                              :out (make-type-value-array
+                                    :elem op.tval
+                                    :dims nil))
+                       :dims nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///

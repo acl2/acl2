@@ -2038,6 +2038,7 @@
      :append-t-m-n (prog2$ (impossible) (reserr nil))
      :append-t-m-n-s (prim-append op.tval op.mval op.nval op.sval
                                   (first args) (second args))
+     :append-t-m-n-s-x (reserr :todo)
      :reverse (prog2$ (impossible) (reserr nil))
      :reverse-t (prog2$ (impossible) (reserr nil))
      :reverse-t-d (prog2$ (impossible) (reserr nil))
@@ -2049,7 +2050,8 @@
      :index2d-t (prog2$ (impossible) (reserr nil))
      :index2d-t-m (prog2$ (impossible) (reserr nil))
      :index2d-t-m-n (prim-index2d op.tval op.mval op.nval
-                                (first args) (second args))))
+                                  (first args) (second args))
+     :index2d-t-m-n-x (reserr :todo)))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp
                                            arity-of-primop-value-fun
                                            type-of-primop-value-fun)))
