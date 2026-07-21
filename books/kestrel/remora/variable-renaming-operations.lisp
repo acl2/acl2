@@ -192,6 +192,16 @@
   :override
   ((type :pi
          (b* (((mv bound-dim-vars bound-shape-vars dim-renam shape-renam)
+               (dim/shape-rename-remove-bound (set::insert type.param nil)
+                                              dim-renam
+                                              shape-renam)))
+           (and (renaming-no-capture-p bound-dim-vars dim-renam)
+                (renaming-no-capture-p bound-shape-vars shape-renam)
+                (type-rename-ispace-vars-no-capture-p type.body
+                                                      dim-renam
+                                                      shape-renam))))
+   (type :pin
+         (b* (((mv bound-dim-vars bound-shape-vars dim-renam shape-renam)
                (dim/shape-rename-remove-bound (set::mergesort type.params)
                                               dim-renam
                                               shape-renam)))
@@ -238,6 +248,16 @@
                                                            dim-renam
                                                            shape-renam)))))
    (atom :ilambda
+         (b* (((mv bound-dim-vars bound-shape-vars dim-renam shape-renam)
+               (dim/shape-rename-remove-bound (set::insert atom.param nil)
+                                              dim-renam
+                                              shape-renam)))
+           (and (renaming-no-capture-p bound-dim-vars dim-renam)
+                (renaming-no-capture-p bound-shape-vars shape-renam)
+                (expr-rename-ispace-vars-no-capture-p atom.body
+                                                      dim-renam
+                                                      shape-renam))))
+   (atom :ilambdan
          (b* (((mv bound-dim-vars bound-shape-vars dim-renam shape-renam)
                (dim/shape-rename-remove-bound (set::mergesort atom.params)
                                               dim-renam
@@ -352,6 +372,16 @@
   :override
   ((type :forall
          (b* (((mv bound-atom-vars bound-array-vars atom-renam array-renam)
+               (atom/array-rename-remove-bound (set::insert type.param nil)
+                                               atom-renam
+                                               array-renam)))
+           (and (renaming-no-capture-p bound-atom-vars atom-renam)
+                (renaming-no-capture-p bound-array-vars array-renam)
+                (type-rename-type-vars-no-capture-p type.body
+                                                    atom-renam
+                                                    array-renam))))
+   (type :foralln
+         (b* (((mv bound-atom-vars bound-array-vars atom-renam array-renam)
                (atom/array-rename-remove-bound (set::mergesort type.params)
                                                atom-renam
                                                array-renam)))
@@ -375,6 +405,16 @@
                                                          atom-renam
                                                          array-renam)))))
    (atom :tlambda
+         (b* (((mv bound-atom-vars bound-array-vars atom-renam array-renam)
+               (atom/array-rename-remove-bound (set::insert atom.param nil)
+                                               atom-renam
+                                               array-renam)))
+           (and (renaming-no-capture-p bound-atom-vars atom-renam)
+                (renaming-no-capture-p bound-array-vars array-renam)
+                (expr-rename-type-vars-no-capture-p atom.body
+                                                    atom-renam
+                                                    array-renam))))
+   (atom :tlambdan
          (b* (((mv bound-atom-vars bound-array-vars atom-renam array-renam)
                (atom/array-rename-remove-bound (set::mergesort atom.params)
                                                atom-renam
@@ -570,10 +610,20 @@
    (ispace :dim (ispace-dim (dim-rename-dim-vars ispace.dim dim-renam)))
    (type :pi
          (b* (((mv & & dim-renam shape-renam)
-               (dim/shape-rename-remove-bound (set::mergesort type.params)
+               (dim/shape-rename-remove-bound (set::insert type.param nil)
                                               dim-renam
                                               shape-renam)))
            (make-type-pi
+            :param type.param
+            :body (type-rename-ispace-vars type.body
+                                           dim-renam
+                                           shape-renam))))
+   (type :pin
+         (b* (((mv & & dim-renam shape-renam)
+               (dim/shape-rename-remove-bound (set::mergesort type.params)
+                                              dim-renam
+                                              shape-renam)))
+           (make-type-pin
             :params type.params
             :body (type-rename-ispace-vars type.body
                                            dim-renam
@@ -625,10 +675,20 @@
                                            shape-renam))))
    (atom :ilambda
          (b* (((mv & & dim-renam shape-renam)
-               (dim/shape-rename-remove-bound (set::mergesort atom.params)
+               (dim/shape-rename-remove-bound (set::insert atom.param nil)
                                               dim-renam
                                               shape-renam)))
            (make-atom-ilambda
+            :param atom.param
+            :body (expr-rename-ispace-vars atom.body
+                                           dim-renam
+                                           shape-renam))))
+   (atom :ilambdan
+         (b* (((mv & & dim-renam shape-renam)
+               (dim/shape-rename-remove-bound (set::mergesort atom.params)
+                                              dim-renam
+                                              shape-renam)))
+           (make-atom-ilambdan
             :params atom.params
             :body (expr-rename-ispace-vars atom.body
                                            dim-renam
@@ -750,10 +810,20 @@
                      (type-var (type-var-array type.var.name))))))
    (type :forall
          (b* (((mv & & atom-renam array-renam)
-               (atom/array-rename-remove-bound (set::mergesort type.params)
+               (atom/array-rename-remove-bound (set::insert type.param nil)
                                                atom-renam
                                                array-renam)))
            (make-type-forall
+            :param type.param
+            :body (type-rename-type-vars type.body
+                                         atom-renam
+                                         array-renam))))
+   (type :foralln
+         (b* (((mv & & atom-renam array-renam)
+               (atom/array-rename-remove-bound (set::mergesort type.params)
+                                               atom-renam
+                                               array-renam)))
+           (make-type-foralln
             :params type.params
             :body (type-rename-type-vars type.body
                                          atom-renam
@@ -774,10 +844,20 @@
                                          array-renam))))
    (atom :tlambda
          (b* (((mv & & atom-renam array-renam)
-               (atom/array-rename-remove-bound (set::mergesort atom.params)
+               (atom/array-rename-remove-bound (set::insert atom.param nil)
                                                atom-renam
                                                array-renam)))
            (make-atom-tlambda
+            :param atom.param
+            :body (expr-rename-type-vars atom.body
+                                         atom-renam
+                                         array-renam))))
+   (atom :tlambdan
+         (b* (((mv & & atom-renam array-renam)
+               (atom/array-rename-remove-bound (set::mergesort atom.params)
+                                               atom-renam
+                                               array-renam)))
+           (make-atom-tlambdan
             :params atom.params
             :body (expr-rename-type-vars atom.body
                                          atom-renam

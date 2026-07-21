@@ -74,6 +74,8 @@
 (include-book "defsurj-doc")
 (include-book "defiso")
 (include-book "defiso-doc")
+(include-book "definductive")
+(include-book "definductive-doc")
 
 (defxdoc std/util
   :parents (std acl2::macro-libraries)

@@ -362,7 +362,9 @@
              :bracket nil
              :fun t
              :forall t
+             :foralln t
              :pi t
+             :pin t
              :sigma t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -537,3 +539,82 @@
   :returns (shapes shape-listp)
   :short "Lift @(tsee shape-from-ispace) to lists."
   (shape-from-ispace x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define forall-curried-body ((params type-var-listp) (body typep))
+  :guard (consp params)
+  :returns (new-body typep)
+  :short "Peel the first parameter from a universal type
+          and return the remaining body type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A universal type with two or more parameters
+     is sugar for a nested sequence of one-parameter universal types.
+     This function treats an n-ary universal type with at least one parameter
+     as that sequence, or as itself if there is just one parameter,
+     and it returns the body of the outermost universal type.
+     This is the body of the whole universal type
+     when there is just one parameter,
+     otherwise it is another universal type, without the first parameter."))
+  (b* ((params (type-var-list-fix params))
+       (body (type-fix body)))
+    (cond ((endp (cdr params)) body)
+          ((endp (cddr params))
+           (make-type-forall :param (cadr params) :body body))
+          (t (make-type-foralln :params (cdr params) :body body)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pi-curried-body ((params ispace-var-listp) (body typep))
+  :guard (consp params)
+  :returns (new-body typep)
+  :short "Peel the first parameter from a product type
+          and return the remaining body type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee forall-curried-body)."))
+  (b* ((params (ispace-var-list-fix params))
+       (body (type-fix body)))
+    (cond ((endp (cdr params)) body)
+          ((endp (cddr params))
+           (make-type-pi :param (cadr params) :body body))
+          (t (make-type-pin :params (cdr params) :body body)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tlambda-curried-body ((params type-var-listp) (body exprp))
+  :guard (consp params)
+  :returns (new-body exprp)
+  :short "Peel the first parameter from a type lambda abstraction
+          and return the remaining body expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee forall-curried-body)."))
+  (b* ((params (type-var-list-fix params))
+       (body (expr-fix body)))
+    (cond ((endp (cdr params)) body)
+          ((endp (cddr params))
+           (expr-atom (atom-tlambda (cadr params) body)))
+          (t (expr-atom (atom-tlambdan (cdr params) body))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ilambda-curried-body ((params ispace-var-listp) (body exprp))
+  :guard (consp params)
+  :returns (new-body exprp)
+  :short "Peel the first parameter from an ispace lambda abstraction
+          and return the remaining body expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee forall-curried-body)."))
+  (b* ((params (ispace-var-list-fix params))
+       (body (expr-fix body)))
+    (cond ((endp (cdr params)) body)
+          ((endp (cddr params))
+           (expr-atom (atom-ilambda (cadr params) body)))
+          (t (expr-atom (atom-ilambdan (cdr params) body))))))

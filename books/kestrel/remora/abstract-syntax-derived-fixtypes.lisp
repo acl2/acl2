@@ -505,6 +505,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod ispacevar+type
+  :short "Fixtype of pairs consisting of
+          an ispace variable and a type."
+  ((var ispace-var)
+   (type type))
+  :pred ispacevar+type-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult ispacevar+type-result
+  :short "Fixtype of
+          (i) pairs consisting of an ispace variable and a type
+          and (ii) errors."
+  :ok ispacevar+type
+  :pred ispacevar+type-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod ispacevarlist+type
   :short "Fixtype of pairs consisting of
           a list of ispace variables and a type."
@@ -520,6 +538,24 @@
           and (ii) errors."
   :ok ispacevarlist+type
   :pred ispacevarlist+type-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod typevar+type
+  :short "Fixtype of pairs consisting of
+          a type variable and a type."
+  ((var type-var)
+   (type type))
+  :pred typevar+type-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult typevar+type-result
+  :short "Fixtype of
+          (i) pairs consisting of a type variable and a type
+          and (ii) errors."
+  :ok typevar+type
+  :pred typevar+type-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

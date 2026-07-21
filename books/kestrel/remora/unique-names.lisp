@@ -33,20 +33,19 @@
   (xdoc::topstring
    (xdoc::p
     "Transformations that substitute variables without regard to shadowing
-     (e.g. the maps applied by @(see monomorphize)) are only safe when
-     the names introduced by binders are unique.
-     @(tsee expr-duplicate-bind-names) checks that property for
-     @(':let') binds, @(tsee expr-duplicate-binder-names) checks it for
-     all binders (binds as well as lambda, unbox, and function-bind
-     parameters), and @(tsee expr-uniquify-bind-names) establishes it by
-     renaming binds and parameters,
-     keeping the original names where possible."))
+     (e.g. the maps applied by @(see monomorphize)) are only safe when the
+     names introduced by binders are unique.  @(tsee expr-duplicate-names)
+     checks that property for all binders (binds as well as lambda, unbox,
+     and function-bind parameters), and @(tsee expr-uniquify-names)
+     establishes it by renaming binds and parameters, keeping the original
+     names where possible
+     (proved as @(tsee expr-duplicate-names-of-expr-uniquify-names))."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Duplicate bind-name detection.
+; Duplicate binder-name detection.
 
 (define bind-name ((b bindp))
   :returns (name stringp)
@@ -68,42 +67,18 @@
     (cons (bind-name (car binds))
           (bind-list-names (cdr binds)))))
 
-; Fold: collect the names of all binds occurring anywhere in an AST.  Binds
-; occur only in :let expressions, so only that case needs an override: it
-; contributes the let's own bind names in addition to the names collected
-; from the binds' sub-expressions and from the body.
+(defrule bind-name-of-bind-fix
+  :parents (bind-name)
+  (equal (bind-name (bind-fix b))
+        (bind-name b))
+  :enable bind-name)
 
-(fty::deffold-reduce bind-names
-  :short "Collect the names of all @(tsee bind)s occurring in an AST."
-  :types (exprs/atoms/binds)
-  :result string-listp
-  :default nil
-  :combine append
-  :override
-  ((expr :let (append (bind-list-names expr.binds)
-                      (append (bind-list-bind-names expr.binds)
-                              (expr-bind-names expr.body)))))
-  :name ast-bind-names)
-
-(define expr-duplicate-bind-names ((expr exprp))
-  :returns (dup-names string-listp)
-  :short "List the names bound by more than one @(tsee bind) in an expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Returns @('nil') if all binds in the expression bind distinct names;
-     otherwise returns the duplicated names (a name bound @('n') times
-     is listed @('n - 1') times)."))
-  (duplicated-names (expr-bind-names expr))
-  :prepwork
-  ((define duplicated-names ((names string-listp))
-     :returns (dups string-listp)
-     :parents nil
-     (cond ((endp names) nil)
-           ((member-equal (car names) (cdr names))
-            (cons (str-fix (car names))
-                  (duplicated-names (cdr names))))
-           (t (duplicated-names (cdr names)))))))
+(defrule bind-list-names-of-bind-list-fix
+  :parents (bind-list-names)
+  (equal (bind-list-names (bind-list-fix binds))
+        (bind-list-names binds))
+  :induct (len binds)
+  :enable (bind-list-names bind-list-fix))
 
 ; Fold: collect the names of all binders (bind names as well as parameter
 ; names of lambdas, unboxes, and function binds) occurring anywhere in an
@@ -126,10 +101,14 @@
                                       (expr-binder-names expr.body)))))
    (atom :lambda (append (var+type?-list->var atom.params)
                          (expr-binder-names atom.body)))
-   (atom :tlambda (append (type-var-list->name atom.params)
-                          (expr-binder-names atom.body)))
-   (atom :ilambda (append (ispace-var-list->name atom.params)
-                          (expr-binder-names atom.body)))
+   (atom :tlambda (cons (type-var->name atom.param)
+                        (expr-binder-names atom.body)))
+   (atom :tlambdan (append (type-var-list->name atom.params)
+                           (expr-binder-names atom.body)))
+   (atom :ilambda (cons (ispace-var->name atom.param)
+                        (expr-binder-names atom.body)))
+   (atom :ilambdan (append (ispace-var-list->name atom.params)
+                           (expr-binder-names atom.body)))
    (bind :fun (append (var+type?-list->var bind.params)
                       (expr-binder-names bind.expr)))
    (bind :tfun (append (type-var-list->name bind.params)
@@ -149,7 +128,7 @@
                                        (expr-binder-names bind.expr))))))
   :name ast-binder-names)
 
-(define expr-duplicate-binder-names ((expr exprp))
+(define expr-duplicate-names ((expr exprp))
   :returns (dup-names string-listp)
   :short "List the names bound by more than one binder
           (bind or parameter) in an expression."
@@ -157,10 +136,20 @@
   (xdoc::topstring
    (xdoc::p
     "Returns @('nil') if all binders in the expression bind distinct names;
-     otherwise returns the duplicated names (a name bound @('n') times
-     is listed @('n - 1') times).
-     After @(tsee expr-uniquify-bind-names) this returns @('nil')."))
-  (duplicated-names (expr-binder-names expr)))
+     otherwise returns the duplicated names (a name bound @('n') times is
+     listed @('n - 1') times).
+     After @(tsee expr-uniquify-names) this returns @('nil'): see
+     @(tsee expr-duplicate-names-of-expr-uniquify-names)."))
+  (duplicated-names (expr-binder-names expr))
+  :prepwork
+  ((define duplicated-names ((names string-listp))
+     :returns (dups string-listp)
+     :parents nil
+     (cond ((endp names) nil)
+           ((member-equal (car names) (cdr names))
+            (cons (str-fix (car names))
+                  (duplicated-names (cdr names))))
+           (t (duplicated-names (cdr names)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -247,6 +236,225 @@
 ; parameter list are also made distinct, consistently with the sequential
 ; extension of the dynamic environment at application time.
 
+; Support lemmas for the no-duplicate-names theorem about PROG-UNIQUIFY-NAMES
+; (see the DEFRET-MUTUAL further below for the overall proof plan).
+; Everything here is about plain-list membership, subset, disjointness, and
+; duplicate-freeness over the (ordered-set) USED values that the traversal
+; threads via SET::INSERT; the bridge between the ordered-set membership
+; notion (SET::IN) and plain-list membership (MEMBER-EQUAL), on which all
+; the remaining lemmas are phrased, is supplied by the included book
+; STD/OSETS/TOP via SET::IN-TO-MEMBER.
+
+(defrule member-equal-of-insert-when-string-setp
+  (implies (string-setp used)
+          (iff (member-equal a (set::insert b used))
+               (or (equal a b) (member-equal a used))))
+  :use ((:instance set::in-to-member (set::a a) (set::x (set::insert b used)))
+       (:instance set::in-to-member (set::a a) (set::x used)))
+  :enable (set::in-insert acl2::setp-when-string-setp set::insert-produces-set))
+
+(defrule intersectp-equal-of-insert-when-string-setp
+  (implies (string-setp used)
+          (iff (intersectp-equal names (set::insert b used))
+               (or (member-equal b names)
+                   (intersectp-equal names used))))
+  :induct (len names)
+  :enable intersectp-equal)
+
+; USED only grows (as a plain list, via SUBSETP-EQUAL) under SET::INSERT,
+; and disjointness from a bigger set implies disjointness from any of its
+; subsets (see the monotonicity rules below).
+
+(defrule subsetp-equal-of-insert
+  (implies (string-setp x)
+          (subsetp-equal x (set::insert a x)))
+  :induct (subsetp-equal x x)
+  :enable (subsetp-equal member-equal-of-insert-when-string-setp))
+
+(defruled intersectp-equal-commutative
+  :short "Disabled by default: kept as a tool for deriving the mirrored
+          orientations of the monotonicity rules below, rather than as a
+          blanket rewrite, since an unconditional commutativity rewrite
+          tends to fight with the fixed-orientation lemmas."
+  (equal (intersectp-equal a b) (intersectp-equal b a))
+  :rule-classes ((:rewrite :loop-stopper ((a b))))
+  :enable intersectp-equal)
+
+; Monotonicity of (non-)intersection in a subset, in all four orientations
+; (which argument of INTERSECTP-EQUAL the known-disjoint bigger set occupies
+; in the hypothesis, and which the smaller set occupies in the conclusion).
+; The free variable BIG is matched against an available disjointness
+; hypothesis.  In the traversal proof below, BIG is always a USED value that
+; a sub-computation's names are known disjoint from, and SMALL is either an
+; earlier USED value or an earlier sub-computation's names (both of which
+; the invariant places inside that USED value).
+
+(defruled not-intersectp-equal-when-subsetp-equal
+  (implies (and (not (intersectp-equal l big))
+               (subsetp-equal small big))
+          (not (intersectp-equal l small)))
+  :enable intersectp-equal)
+
+(defruled not-intersectp-equal-when-subsetp-equal-2
+  (implies (and (not (intersectp-equal l big))
+               (subsetp-equal small big))
+          (not (intersectp-equal small l)))
+  :use (not-intersectp-equal-when-subsetp-equal
+       (:instance intersectp-equal-commutative (a small) (b l))))
+
+(defruled not-intersectp-equal-when-subsetp-equal-3
+  (implies (and (not (intersectp-equal big l))
+               (subsetp-equal small big))
+          (not (intersectp-equal l small)))
+  :use (not-intersectp-equal-when-subsetp-equal
+       (:instance intersectp-equal-commutative (a big) (b l))))
+
+(defruled not-intersectp-equal-when-subsetp-equal-4
+  (implies (and (not (intersectp-equal big l))
+               (subsetp-equal small big))
+          (not (intersectp-equal small l)))
+  :use (not-intersectp-equal-when-subsetp-equal-3
+       (:instance intersectp-equal-commutative (a small) (b l))))
+
+; The corresponding single-element facts: an element of a set known disjoint
+; from L (in either orientation) is not in L, and membership/non-membership
+; transports along subsets.
+
+(defruled not-member-equal-when-not-intersectp-equal
+  (implies (and (not (intersectp-equal l s))
+               (member-equal a s))
+          (not (member-equal a l)))
+  :induct (len l)
+  :enable intersectp-equal)
+
+(defruled not-member-equal-when-subsetp-equal
+  (implies (and (not (member-equal a big))
+               (subsetp-equal small big))
+          (not (member-equal a small)))
+  :induct (len small)
+  :enable subsetp-equal)
+
+; Transitivity of SUBSETP-EQUAL and transport of membership along it, with
+; both hypothesis orders and :MATCH-FREE :ALL, so that whichever of the two
+; facts happens to be present as a hypothesis (typically an induction
+; hypothesis) can bind the free intermediate, with the other fact then
+; relieved by rewriting.
+
+(defruled subsetp-equal-transitive-1
+  (implies (and (subsetp-equal x y)
+               (subsetp-equal y z))
+          (subsetp-equal x z))
+  :rule-classes ((:rewrite :match-free :all))
+  :induct (len x)
+  :enable (subsetp-equal not-member-equal-when-subsetp-equal))
+
+(defruled subsetp-equal-transitive-2
+  (implies (and (subsetp-equal y z)
+               (subsetp-equal x y))
+          (subsetp-equal x z))
+  :rule-classes ((:rewrite :match-free :all))
+  :use subsetp-equal-transitive-1)
+
+(defruled member-equal-transport-1
+  (implies (and (member-equal a x)
+               (subsetp-equal x y))
+          (member-equal a y))
+  :rule-classes ((:rewrite :match-free :all))
+  :use (:instance not-member-equal-when-subsetp-equal (big y) (small x)))
+
+(defruled member-equal-transport-2
+  (implies (and (subsetp-equal x y)
+               (member-equal a x))
+          (member-equal a y))
+  :rule-classes ((:rewrite :match-free :all))
+  :use member-equal-transport-1)
+
+; Decomposition of NO-DUPLICATESP-EQUAL, INTERSECTP-EQUAL, and
+; SUBSETP-EQUAL over the APPEND/CONS structure that the binder-names fold
+; computes for a compound AST node, reducing each conjunct of the invariant
+; below to facts about the individual sub-computations' names.
+
+(defrule no-duplicatesp-equal-of-append
+  (equal (no-duplicatesp-equal (append a b))
+        (and (no-duplicatesp-equal a)
+             (no-duplicatesp-equal b)
+             (not (intersectp-equal a b))))
+  :induct (append a b)
+  :enable (no-duplicatesp-equal intersectp-equal))
+
+(defrule intersectp-equal-of-append-1
+  (equal (intersectp-equal (append a b) c)
+        (or (intersectp-equal a c) (intersectp-equal b c)))
+  :induct (append a b)
+  :enable intersectp-equal)
+
+(defrule intersectp-equal-of-append-2
+  (equal (intersectp-equal a (append b c))
+        (or (intersectp-equal a b) (intersectp-equal a c)))
+  :enable intersectp-equal)
+
+; INTERSECTP-EQUAL's own definition recurses on (and hence directly decomposes
+; a CONS in) its FIRST argument; a CONS in the SECOND argument (e.g. a single
+; bind's own name prepended to the rest of a bind-list's combined names)
+; needs this separate, derived decomposition.
+
+(defrule intersectp-equal-of-cons-2
+  (iff (intersectp-equal a (cons x y))
+      (or (member-equal x a) (intersectp-equal a y)))
+  :induct t
+  :enable (intersectp-equal member-equal))
+
+; Decomposition of SUBSETP-EQUAL over APPEND and CONS in the first argument
+; (the names of a compound AST node are appends/conses of the names of its
+; sub-computations, each of which the invariant places in NEW-USED
+; separately).
+
+(defrule subsetp-equal-of-append-left
+  (equal (subsetp-equal (append a b) c)
+        (and (subsetp-equal a c) (subsetp-equal b c)))
+  :induct (append a b)
+  :enable subsetp-equal)
+
+(defrule subsetp-equal-of-cons-left
+  (equal (subsetp-equal (cons x a) c)
+        (and (member-equal x c) (subsetp-equal a c)))
+  :enable subsetp-equal)
+
+
+(defrule not-in-used-of-fresh-bind-name
+  :parents (fresh-bind-name)
+  :short "@(tsee fresh-bind-name) never returns a name already in @('used')."
+  (not (set::in (fresh-bind-name name used avoid) (string-sfix used)))
+  :enable (fresh-bind-name set::union-in)
+  :use (:instance fresh-expr-var-is-fresh
+                  (prefix name)
+                  (used (set::union (string-sfix used) (string-sfix avoid)))))
+
+(defrule not-member-equal-of-fresh-bind-name
+  :parents (fresh-bind-name)
+  :short "@(tsee fresh-bind-name) never returns a name already in @('used'),
+          restated in terms of @(tsee member-equal)."
+  (not (member-equal (fresh-bind-name name used avoid) (string-sfix used)))
+  :use (not-in-used-of-fresh-bind-name
+       (:instance set::in-to-member
+                  (set::a (fresh-bind-name name used avoid))
+                  (set::x (string-sfix used)))))
+
+(defrule not-member-equal-of-fresh-bind-name-when-subsetp-equal
+  :parents (fresh-bind-name)
+  :short "@(tsee fresh-bind-name) never returns a name already in any subset
+          of @('used'), such as the names contributed by an earlier
+          sub-computation.  Free-variable-free: @('used') is bound by the
+          conclusion and the subset hypothesis is relieved by rewriting."
+  (implies (subsetp-equal l (string-sfix used))
+          (not (member-equal (fresh-bind-name name used avoid) l)))
+  :use (:instance not-member-equal-when-subsetp-equal
+                  (a (fresh-bind-name name used avoid))
+                  (big (string-sfix used))
+                  (small l)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define uniq-expr-params ((params var+type?-listp)
                           (used string-setp)
                           (avoid string-setp)
@@ -330,6 +538,172 @@
                                 dim-renam shape-renam)))
     (mv used (cons new-var new-rest) dim-renam shape-renam)))
 
+; Freshness and USED-growth facts for the three parameter uniquification
+; functions above, in the four-conjunct form that the main traversal's
+; DEFRET-MUTUAL below uses uniformly: the names of the returned parameters
+; are duplicate-free and disjoint from the incoming USED, they are contained
+; in the returned USED, and the incoming USED is contained in the returned
+; USED.  Containments are stated with both sides under STRING-SFIX, since
+; the return-type theorems of the traversal functions are guard-conditional
+; and so the (unconditional) facts here cannot assume set-ness of raw
+; values.
+
+(defret uniq-expr-params-facts
+  (b* ((names (var+type?-list->var new-params)))
+    (and (no-duplicatesp-equal names)
+        (not (intersectp-equal names (string-sfix used)))
+        (subsetp-equal names (string-sfix new-used))
+        (subsetp-equal (string-sfix used) (string-sfix new-used))))
+  :fn uniq-expr-params
+  :hints (("Goal" :induct t
+          :in-theory (enable uniq-expr-params
+                             var+type?-list->var
+                             intersectp-equal
+                             not-member-equal-of-fresh-bind-name
+                             not-member-equal-when-not-intersectp-equal
+                             not-intersectp-equal-when-subsetp-equal))))
+
+(defret uniq-type-var-params-facts
+  (b* ((names (type-var-list->name new-params)))
+    (and (no-duplicatesp-equal names)
+        (not (intersectp-equal names (string-sfix used)))
+        (subsetp-equal names (string-sfix new-used))
+        (subsetp-equal (string-sfix used) (string-sfix new-used))))
+  :fn uniq-type-var-params
+  :hints (("Goal" :induct t
+          :in-theory (enable uniq-type-var-params
+                             type-var-list->name
+                             type-var->name
+                             intersectp-equal
+                             not-member-equal-of-fresh-bind-name
+                             not-member-equal-when-not-intersectp-equal
+                             not-intersectp-equal-when-subsetp-equal))))
+
+(defret uniq-ispace-var-params-facts
+  (b* ((names (ispace-var-list->name new-params)))
+    (and (no-duplicatesp-equal names)
+        (not (intersectp-equal names (string-sfix used)))
+        (subsetp-equal names (string-sfix new-used))
+        (subsetp-equal (string-sfix used) (string-sfix new-used))))
+  :fn uniq-ispace-var-params
+  :hints (("Goal" :induct t
+          :in-theory (enable uniq-ispace-var-params
+                             ispace-var-list->name
+                             ispace-var->name
+                             intersectp-equal
+                             not-member-equal-of-fresh-bind-name
+                             not-member-equal-when-not-intersectp-equal
+                             not-intersectp-equal-when-subsetp-equal))))
+
+; Free-variable-free consequences of the facts above, phrased so that the
+; parameter function's call (and hence its USED argument) appears in the
+; conclusion, with all remaining hypotheses relievable by rewriting.  These
+; are needed because the facts above are rewrite rules rather than
+; hypotheses of the main traversal's induction, so the free-variable
+; monotonicity rules cannot bind their free variable to them: anything
+; inside the incoming USED stays inside the returned USED, and is disjoint
+; (in both argument orders) from the freshly chosen parameter names.
+
+(defrule subsetp-equal-through-uniq-expr-params
+  (implies (subsetp-equal l (string-sfix used))
+          (subsetp-equal
+           l (string-sfix (mv-nth 0 (uniq-expr-params params used avoid renam)))))
+  :use (:instance subsetp-equal-transitive-1
+                  (x l) (y (string-sfix used))
+                  (z (string-sfix
+                      (mv-nth 0 (uniq-expr-params params used avoid renam))))))
+
+(defrule not-intersectp-equal-of-uniq-expr-params-names-1
+  (implies (subsetp-equal l (string-sfix used))
+          (not (intersectp-equal
+                (var+type?-list->var
+                 (mv-nth 1 (uniq-expr-params params used avoid renam)))
+                l)))
+  :use (:instance not-intersectp-equal-when-subsetp-equal
+                  (l (var+type?-list->var
+                      (mv-nth 1 (uniq-expr-params params used avoid renam))))
+                  (big (string-sfix used))
+                  (small l)))
+
+(defrule not-intersectp-equal-of-uniq-expr-params-names-2
+  (implies (subsetp-equal l (string-sfix used))
+          (not (intersectp-equal
+                l
+                (var+type?-list->var
+                 (mv-nth 1 (uniq-expr-params params used avoid renam))))))
+  :use (:instance not-intersectp-equal-when-subsetp-equal-2
+                  (l (var+type?-list->var
+                      (mv-nth 1 (uniq-expr-params params used avoid renam))))
+                  (big (string-sfix used))
+                  (small l)))
+
+(defrule subsetp-equal-through-uniq-type-var-params
+  (implies (subsetp-equal l (string-sfix used))
+          (subsetp-equal
+           l (string-sfix
+              (mv-nth 0 (uniq-type-var-params params used avoid
+                                              atom-renam array-renam)))))
+  :use (:instance subsetp-equal-transitive-1
+                  (x l) (y (string-sfix used))
+                  (z (string-sfix
+                      (mv-nth 0 (uniq-type-var-params params used avoid
+                                                      atom-renam array-renam))))))
+
+(defrule not-intersectp-equal-of-uniq-type-var-params-names-1
+  (implies (subsetp-equal l (string-sfix used))
+          (not (intersectp-equal
+                (type-var-list->name
+                 (mv-nth 1 (uniq-type-var-params params used avoid
+                                                 atom-renam array-renam)))
+                l)))
+  :use (:instance not-intersectp-equal-when-subsetp-equal
+                  (l (type-var-list->name
+                      (mv-nth 1 (uniq-type-var-params params used avoid
+                                                      atom-renam array-renam))))
+                  (big (string-sfix used))
+                  (small l)))
+
+(defrule subsetp-equal-through-uniq-ispace-var-params
+  (implies (subsetp-equal l (string-sfix used))
+          (subsetp-equal
+           l (string-sfix
+              (mv-nth 0 (uniq-ispace-var-params params used avoid
+                                                dim-renam shape-renam)))))
+  :use (:instance subsetp-equal-transitive-1
+                  (x l) (y (string-sfix used))
+                  (z (string-sfix
+                      (mv-nth 0 (uniq-ispace-var-params params used avoid
+                                                        dim-renam shape-renam))))))
+
+(defrule not-intersectp-equal-of-uniq-ispace-var-params-names-1
+  (implies (subsetp-equal l (string-sfix used))
+          (not (intersectp-equal
+                (ispace-var-list->name
+                 (mv-nth 1 (uniq-ispace-var-params params used avoid
+                                                   dim-renam shape-renam)))
+                l)))
+  :use (:instance not-intersectp-equal-when-subsetp-equal
+                  (l (ispace-var-list->name
+                      (mv-nth 1 (uniq-ispace-var-params params used avoid
+                                                        dim-renam shape-renam))))
+                  (big (string-sfix used))
+                  (small l)))
+
+(defrule not-intersectp-equal-of-uniq-ispace-var-params-names-2
+  (implies (subsetp-equal l (string-sfix used))
+          (not (intersectp-equal
+                l
+                (ispace-var-list->name
+                 (mv-nth 1 (uniq-ispace-var-params params used avoid
+                                                   dim-renam shape-renam))))))
+  :use (:instance not-intersectp-equal-when-subsetp-equal-2
+                  (l (ispace-var-list->name
+                      (mv-nth 1 (uniq-ispace-var-params params used avoid
+                                                        dim-renam shape-renam))))
+                  (big (string-sfix used))
+                  (small l)))
+
+
 ; Apply all applicable renamings (ispace and type variables; expression
 ; variables do not occur in types) to type-level components.
 
@@ -383,7 +757,7 @@
 ; The traversal functions take:
 ;   x    : AST node          — the node being processed
 ;   used : string-setp       — all names seen so far (bind names, parameter
-;                              names, and the program's free variable names)
+;                              names, and the expression's free variable names)
 ;   r    : var-renamings-p   — the renamings currently in scope
 ; and return (mv new-used new-x), plus, for binds, the renamings extended
 ; with the scope of the processed bind(s).
@@ -395,9 +769,11 @@
 ; entry when a name is kept, so the outer renamings do not capture the
 ; parameter); see the UNIQ-*-PARAMS functions above.
 
-(defines uniquify-bind-names-impl
+(defines uniquify-names-impl
   :verify-guards :after-returns
   :ruler-extenders :all
+  ; The flag function is used by the DEFRET-MUTUAL further below.
+  :flag-local nil
 
   (define uniq-expr ((x exprp) (used string-setp) (r var-renamings-p))
     :short "Uniquify binder names in an expression."
@@ -429,13 +805,22 @@
              (mv used (expr-app new-fun new-args)))
 
       :tapp (b* (((mv used new-fun) (uniq-expr x.fun used r)))
-              (mv used (expr-tapp new-fun (type-list-rename-all-vars x.args r))))
+              (mv used (expr-tapp new-fun (type-rename-all-vars x.arg r))))
+
+      :tappn (b* (((mv used new-fun) (uniq-expr x.fun used r)))
+               (mv used (expr-tappn new-fun (type-list-rename-all-vars x.args r))))
 
       :iapp (b* (((var-renamings r-) r)
                  ((mv used new-fun) (uniq-expr x.fun used r)))
               (mv used (expr-iapp new-fun
-                                  (ispace-list-rename-ispace-vars
-                                   x.args r-.dim r-.shape))))
+                                  (ispace-rename-ispace-vars
+                                   x.arg r-.dim r-.shape))))
+
+      :iappn (b* (((var-renamings r-) r)
+                  ((mv used new-fun) (uniq-expr x.fun used r)))
+               (mv used (expr-iappn new-fun
+                                    (ispace-list-rename-ispace-vars
+                                     x.args r-.dim r-.shape))))
 
       :capp (b* (((var-renamings r-) r)
                  ((mv used new-fun) (uniq-expr x.fun used r))
@@ -507,26 +892,64 @@
                                            :type? new-type?)))
 
       :tlambda (b* (((var-renamings r-) r)
-                    ((mv used new-params atom-renam array-renam)
-                     (uniq-type-var-params x.params used r-.avoid
-                                           r-.atom r-.array))
+                    (name (type-var->name x.param))
+                    (new-name (fresh-bind-name name used r-.avoid))
+                    (used (set::insert new-name (string-sfix used)))
+                    ((mv new-param atom-renam array-renam)
+                     (type-var-case x.param
+                       :atom (mv (type-var-atom new-name)
+                                 (extend-renaming name new-name r-.atom)
+                                 r-.array)
+                       :array (mv (type-var-array new-name)
+                                  r-.atom
+                                  (extend-renaming name new-name r-.array))))
                     ((mv used new-body)
                      (uniq-expr x.body used
                                 (change-var-renamings r
                                                       :atom atom-renam
                                                       :array array-renam))))
-                 (mv used (atom-tlambda new-params new-body)))
+                 (mv used (atom-tlambda new-param new-body)))
+
+      :tlambdan (b* (((var-renamings r-) r)
+                     ((mv used new-params atom-renam array-renam)
+                      (uniq-type-var-params x.params used r-.avoid
+                                            r-.atom r-.array))
+                     ((mv used new-body)
+                      (uniq-expr x.body used
+                                 (change-var-renamings r
+                                                       :atom atom-renam
+                                                       :array array-renam))))
+                  (mv used (atom-tlambdan new-params new-body)))
 
       :ilambda (b* (((var-renamings r-) r)
-                    ((mv used new-params dim-renam shape-renam)
-                     (uniq-ispace-var-params x.params used r-.avoid
-                                             r-.dim r-.shape))
+                    (name (ispace-var->name x.param))
+                    (new-name (fresh-bind-name name used r-.avoid))
+                    (used (set::insert new-name (string-sfix used)))
+                    ((mv new-param dim-renam shape-renam)
+                     (ispace-var-case x.param
+                       :dim (mv (ispace-var-dim new-name)
+                                (extend-renaming name new-name r-.dim)
+                                r-.shape)
+                       :shape (mv (ispace-var-shape new-name)
+                                  r-.dim
+                                  (extend-renaming name new-name r-.shape))))
                     ((mv used new-body)
                      (uniq-expr x.body used
                                 (change-var-renamings r
                                                       :dim dim-renam
                                                       :shape shape-renam))))
-                 (mv used (atom-ilambda new-params new-body)))
+                 (mv used (atom-ilambda new-param new-body)))
+
+      :ilambdan (b* (((var-renamings r-) r)
+                     ((mv used new-params dim-renam shape-renam)
+                      (uniq-ispace-var-params x.params used r-.avoid
+                                              r-.dim r-.shape))
+                     ((mv used new-body)
+                      (uniq-expr x.body used
+                                 (change-var-renamings r
+                                                       :dim dim-renam
+                                                       :shape shape-renam))))
+                  (mv used (atom-ilambdan new-params new-body)))
 
       :box (b* (((var-renamings r-) r)
                 ((mv used new-array) (uniq-expr x.array used r)))
@@ -714,11 +1137,117 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-uniquify-bind-names ((expr exprp))
+; Freshness and USED-growth facts for the main traversal, in the same
+; four-conjunct form as the parameter uniquification facts above: the binder
+; names of the produced AST are duplicate-free, disjoint from the incoming
+; USED, contained in the returned USED, and the incoming USED is contained
+; in the returned USED.  For UNIQ-BIND, the "names" are the bind's nested
+; binder names together with the bind's own (possibly renamed) name; for
+; UNIQ-BIND-LIST, they match the grouping that BIND-LIST-NAMES and
+; BIND-LIST-BINDER-NAMES (and hence EXPR-BINDER-NAMES' :LET case) produce.
+;
+; The invariant is deliberately stated with containments (SUBSETP-EQUAL)
+; instead of an exact characterization of the returned USED: the exact
+; version creates INSERT/UNION set equalities whose orientation under the
+; rewriter's term order blocks their own use, while all the sequencing
+; reasoning ("a later sibling's names avoid an earlier sibling's names,
+; because the earlier names are inside the USED that the later freshness is
+; stated against") needs only the containments, discharged by the
+; monotonicity rules above.
+
+(defret-mutual uniquify-names-impl-facts
+  (defret uniq-expr-facts
+    (b* ((names (expr-binder-names new-x)))
+      (and (no-duplicatesp-equal names)
+          (not (intersectp-equal names (string-sfix used)))
+          (subsetp-equal names (string-sfix new-used))
+          (subsetp-equal (string-sfix used) (string-sfix new-used))))
+    :fn uniq-expr)
+  (defret uniq-expr-list-facts
+    (b* ((names (expr-list-binder-names new-x)))
+      (and (no-duplicatesp-equal names)
+          (not (intersectp-equal names (string-sfix used)))
+          (subsetp-equal names (string-sfix new-used))
+          (subsetp-equal (string-sfix used) (string-sfix new-used))))
+    :fn uniq-expr-list)
+  (defret uniq-atom-facts
+    (b* ((names (atom-binder-names new-x)))
+      (and (no-duplicatesp-equal names)
+          (not (intersectp-equal names (string-sfix used)))
+          (subsetp-equal names (string-sfix new-used))
+          (subsetp-equal (string-sfix used) (string-sfix new-used))))
+    :fn uniq-atom)
+  (defret uniq-atom-list-facts
+    (b* ((names (atom-list-binder-names new-x)))
+      (and (no-duplicatesp-equal names)
+          (not (intersectp-equal names (string-sfix used)))
+          (subsetp-equal names (string-sfix new-used))
+          (subsetp-equal (string-sfix used) (string-sfix new-used))))
+    :fn uniq-atom-list)
+  (defret uniq-bind-facts
+    (b* ((names (append (bind-binder-names new-x)
+                        (list (bind-name new-x)))))
+      (and (no-duplicatesp-equal names)
+          (not (intersectp-equal names (string-sfix used)))
+          (subsetp-equal names (string-sfix new-used))
+          (subsetp-equal (string-sfix used) (string-sfix new-used))))
+    :fn uniq-bind)
+  (defret uniq-bind-list-facts
+    (b* ((names (append (bind-list-names new-x)
+                        (bind-list-binder-names new-x))))
+      (and (no-duplicatesp-equal names)
+          (not (intersectp-equal names (string-sfix used)))
+          (subsetp-equal names (string-sfix new-used))
+          (subsetp-equal (string-sfix used) (string-sfix new-used))))
+    :fn uniq-bind-list)
+  :mutual-recursion uniquify-names-impl
+  ;; The traversal functions are opened via :EXPAND, on just the top-level
+  ;; call of each induction subgoal, instead of enabling their definitions:
+  ;; enabled definitions make the rewriter attempt (and almost always fail)
+  ;; to open the closed inner calls that the induction hypotheses are about,
+  ;; which dominates the proof time.  The (never-applicable, since this
+  ;; theorem has no guard hypotheses) guard-conditional STRING-SETP return
+  ;; type rules are disabled for the same reason.
+  :hints
+  (("Goal"
+    :expand ((uniq-expr x used r)
+            (uniq-expr-list x used r)
+            (uniq-atom x used r)
+            (uniq-atom-list x used r)
+            (uniq-bind x used r)
+            (uniq-bind-list x used r))
+    :in-theory (e/d (expr-binder-names expr-list-binder-names
+                     atom-binder-names atom-list-binder-names
+                     bind-binder-names bind-list-binder-names
+                     bind-list-names bind-name
+                     type-var->name ispace-var->name
+                     intersectp-equal
+                     no-duplicatesp-equal
+                     not-member-equal-of-fresh-bind-name
+                     not-intersectp-equal-when-subsetp-equal
+                     not-intersectp-equal-when-subsetp-equal-2
+                     not-intersectp-equal-when-subsetp-equal-4
+                     not-member-equal-when-not-intersectp-equal
+                     not-member-equal-when-subsetp-equal
+                     subsetp-equal-transitive-1
+                     subsetp-equal-transitive-2
+                     member-equal-transport-2)
+                    (return-type-of-uniq-expr.new-used
+                     return-type-of-uniq-expr-list.new-used
+                     return-type-of-uniq-atom.new-used
+                     return-type-of-uniq-atom-list.new-used
+                     return-type-of-uniq-bind.new-used
+                     return-type-of-uniq-bind-list.new-used
+                     string-setp-of-uniq-expr-params.new-used
+                     string-setp-of-uniq-type-var-params.new-used
+                     string-setp-of-uniq-ispace-var-params.new-used)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-uniquify-names ((expr exprp))
   :returns (new-expr exprp)
   :short "Rename binds and parameters so that all binder names in an
-          expression are distinct, keeping the original names
-          where possible."
+          expression are distinct, keeping the original names where possible."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -731,15 +1260,17 @@
      variant of its name (the name with a numeric suffix), and the renaming
      is applied throughout the binder's scope.")
    (xdoc::p
-    "Afterwards @(tsee expr-duplicate-binder-names) returns @('nil') (so in
-     particular @(tsee expr-duplicate-bind-names) does too), and no binder
-     name coincides with a free variable name of the expression.")
+    "Afterwards @(tsee expr-duplicate-names) returns @('nil'): this is
+     proved as @(tsee expr-duplicate-names-of-expr-uniquify-names).
+     Also, no binder name coincides with a free variable name of the
+     expression (not proved yet).")
    (xdoc::p
     "The generated fresh names avoid the names of all the variables
      occurring anywhere in the expression, in any namespace and any role
      (see the @('avoid') component of @(tsee var-renamings)), so the
      renamings applied to the binds' scopes are capture-free."))
-  (b* (((mv free-dim-names free-shape-names)
+  (b* ((expr (expr-fix expr))
+       ((mv free-dim-names free-shape-names)
         (dim/shape-names-of-ispace-vars (expr-free-ispace-vars expr)))
        ((mv free-atom-names free-array-names)
         (atom/array-names-of-type-vars (expr-free-type-vars expr)))
@@ -761,5 +1292,31 @@
                             (set::union all-atom-names all-array-names)))))
        (r (make-var-renamings :dim nil :shape nil :atom nil :array nil
                               :expr nil :avoid avoid))
-       ((mv & new-expr) (uniq-expr (expr-fix expr) used r)))
+       ((mv & new-expr) (uniq-expr expr used r)))
     new-expr))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The promised theorem: after EXPR-UNIQUIFY-NAMES, no binder name is
+; duplicated.  This follows from the no-duplicates conjunct of
+; UNIQ-EXPR-FACTS (which is hypothesis-free) applied to the traversal that
+; EXPR-UNIQUIFY-NAMES performs, plus the observation that DUPLICATED-NAMES
+; returns nil exactly on duplicate-free lists.
+
+(defrule duplicated-names-when-no-duplicatesp-equal
+  :parents (expr-duplicate-names)
+  :short "@('duplicated-names') returns @('nil') on a duplicate-free list."
+  (implies (no-duplicatesp-equal names)
+          (equal (duplicated-names names) nil))
+  :induct t
+  :enable (duplicated-names no-duplicatesp-equal))
+
+(defrule expr-duplicate-names-of-expr-uniquify-names
+  :parents (expr-uniquify-names expr-duplicate-names)
+  :short "After @(tsee expr-uniquify-names), @(tsee expr-duplicate-names)
+          returns @('nil'): all binder names in the resulting expression are
+          distinct."
+  (equal (expr-duplicate-names (expr-uniquify-names expr))
+        nil)
+  :enable (expr-uniquify-names
+           expr-duplicate-names))

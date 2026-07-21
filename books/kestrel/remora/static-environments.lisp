@@ -122,7 +122,8 @@
    (xdoc::p
     "The operations from @('+') to @('bool->f') have monomorphic types:
      zero-rank array types of function types between base types.
-     The @('head'), @('tail'), and @('length') operations
+     The @('head'), @('tail'), @('length'),
+     @('append'), @('reverse'), @('index'), and @('index2d') operations
      have polymorphic types:
      a universal type of a product type of a function type, as in [impl].
      Like the monomorphic types,
@@ -173,6 +174,33 @@
                       (tpi ("$d" "@s")
                            (t-> ((t[] "&t" (shape++ "$d" "@s")))
                                 :int)))
+             (shp)))
+       (append-type
+        (t[] (tforall ("&t")
+                      (tpi ("$m" "$n" "@s")
+                           (t-> ((t[] "&t" (shape++ "$m" "@s"))
+                                 (t[] "&t" (shape++ "$n" "@s")))
+                                (t[] "&t" (shape++ (dim+ "$m" "$n") "@s")))))
+             (shp)))
+       (reverse-type
+        (t[] (tforall ("&t")
+                      (tpi ("$d" "@s")
+                           (t-> ((t[] "&t" (shape++ "$d" "@s")))
+                                (t[] "&t" (shape++ "$d" "@s")))))
+             (shp)))
+       (index-type
+        (t[] (tforall ("&t")
+                      (tpi ("$m")
+                           (t-> ((t[] "&t" (shp "$m"))
+                                 :int)
+                                "&t")))
+             (shp)))
+       (index2d-type
+        (t[] (tforall ("&t")
+                      (tpi ("$m" "$n")
+                           (t-> ((t[] "&t" (shape++ "$m" "$n"))
+                                 (t[] :int (shp 2)))
+                                "&t")))
              (shp))))
     (omap::from-alist
      (list (cons "+" int-binop-type)
@@ -226,7 +254,11 @@
            (cons "bool->f" bool-to-float-type)
            (cons "head" head-type)
            (cons "tail" tail-type)
-           (cons "length" length-type)))))
+           (cons "length" length-type)
+           (cons "append" append-type)
+           (cons "reverse" reverse-type)
+           (cons "index" index-type)
+           (cons "index2d" index2d-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -243,25 +275,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define senv-add-ispace-var ((var ispace-varp) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add an ispace variable to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variable is added with an absent associated ispace,
+     because it does not stand for any specific ispace;
+     this is the case for variables bound by abstractions.
+     A variable already present is overwritten,
+     which realizes the intended shadowing."))
+  (change-senv senv
+               :ispace-vars (omap::update (ispace-var-fix var)
+                                          nil
+                                          (senv->ispace-vars senv))))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define senv-add-ispace-vars ((vars ispace-var-listp) (senv senvp))
   :returns (new-senv senvp)
   :short "Add zero or more ispace variables to the static environment."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The variables are added with an absent associated ispace,
-     because they do not stand for any specific ispace;
-     this is the case for variables bound by abstractions.
-     A variable already present is overwritten,
-     which realizes the intended shadowing."))
+    "See @(tsee senv-add-ispace-var),
+     which this function repeats for each variable."))
   (b* (((when (endp vars)) (senv-fix senv))
-       (new-ispace-vars (omap::update (ispace-var-fix (car vars))
-                                      nil
-                                      (senv->ispace-vars senv)))
-       (senv (change-senv senv :ispace-vars new-ispace-vars)))
+       (senv (senv-add-ispace-var (car vars) senv)))
     (senv-add-ispace-vars (cdr vars) senv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-type-var ((var type-varp) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add a type variable to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variable is added with an absent associated type,
+     because it does not stand for any specific type;
+     this is the case for variables bound by abstractions.
+     A variable already present is overwritten,
+     which realizes the intended shadowing."))
+  (change-senv senv
+               :type-vars (omap::update (type-var-fix var)
+                                        nil
+                                        (senv->type-vars senv))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define senv-add-type-vars ((vars type-var-listp) (senv senvp))
   :returns (new-senv senvp)
@@ -269,16 +331,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The variables are added with an absent associated type,
-     because they do not stand for any specific type;
-     this is the case for variables bound by abstractions.
-     A variable already present is overwritten,
-     which realizes the intended shadowing."))
+    "See @(tsee senv-add-type-var),
+     which this function repeats for each variable."))
   (b* (((when (endp vars)) (senv-fix senv))
-       (new-type-vars (omap::update (type-var-fix (car vars))
-                                    nil
-                                    (senv->type-vars senv)))
-       (senv (change-senv senv :type-vars new-type-vars)))
+       (senv (senv-add-type-var (car vars) senv)))
     (senv-add-type-vars (cdr vars) senv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

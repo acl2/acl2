@@ -57,7 +57,9 @@
   (defruled fun-value-param-dims-of-int-add
     (implies (and (expr-value-case funval :primop)
                   (equal opval (expr-value-primop->val funval))
-                  (primop-value-case opval :int-add))
+                  (primop-value-case opval :int-binary)
+                  (equal op (primop-value-int-binary->op opval))
+                  (int-binary-primop-case op :add))
              (equal (fun-value-param-dims funval)
                     (list nil nil)))
     :enable (fun-value-param-dims
@@ -109,7 +111,9 @@
   (defruled eval-app-cell-of-int-add
     (implies (and (expr-value-case funval :primop)
                   (equal opval (expr-value-primop->val funval))
-                  (primop-value-case opval :int-add)
+                  (primop-value-case opval :int-binary)
+                  (equal op (primop-value-int-binary->op opval))
+                  (int-binary-primop-case op :add)
                   (consp argvals)
                   (consp (cdr argvals))
                   (endp (cddr argvals))
@@ -176,7 +180,9 @@
   (defruled eval-app-of-int-add-no-lifting
     (implies (and (expr-value-case funval :primop)
                   (equal opval (expr-value-primop->val funval))
-                  (primop-value-case opval :int-add)
+                  (primop-value-case opval :int-binary)
+                  (equal op (primop-value-int-binary->op opval))
+                  (int-binary-primop-case op :add)
                   (expr-value-list-wfp argvals)
                   (consp argvals)
                   (consp (cdr argvals))

@@ -74,7 +74,8 @@ int main(void) {
   (struct-type-split *old*
                      *new*
                      :struct-tag "pair"
-                     :right-members ("snd"))
+                     :right-members ("snd")
+                     :unsafe t)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -124,6 +125,27 @@ int main(void) {
                        :struct-tag point
                        :right-members ("z")))
 
+  ;; Neither a struct tag nor a typedef name is specified.
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :right-members ("z")))
+
+  ;; A struct tag and a typedef name cannot both be specified.
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :typedef-name "point_t"
+                       :right-members ("z")))
+
+  ;; The typedef name does not exist.
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :typedef-name "nonexistent"
+                       :right-members ("z")))
+
   ;; No right members are specified.
   (must-fail
     (struct-type-split *old*
@@ -146,7 +168,8 @@ int main(void) {
   (struct-type-split *old*
                      *new*
                      :struct-tag "pair"
-                     :right-members ("snd"))
+                     :right-members ("snd")
+                     :unsafe t)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -184,7 +207,8 @@ int main(void) {
   (struct-type-split *old*
                      *new*
                      :struct-tag "triple"
-                     :right-members ("y"))
+                     :right-members ("y")
+                     :unsafe t)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -429,7 +453,7 @@ int getz(void) {
 
   (struct-type-split *old*
                      *new*
-                     :struct-tag "point"
+                     :typedef-name "point_t"
                      :right-members ("z")
                      :new-tag "point_right")
 
@@ -443,6 +467,52 @@ int getz(void) {
 } point_t;
 
 typedef struct point_right {
+  int z;
+} point_t_0;
+
+static point_t p;
+
+static point_t_0 p_0;
+
+int main(void) {
+  p.x = 4;
+  return p.x + p_0.z;
+}
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; An untagged struct type can only be selected via its typedef name.
+;; The split produces a second untagged struct and a fresh typedef name.
+
+(acl2::must-succeed*
+  (c$::input-files :files '("typedef-anon.c")
+                   :const *old*)
+
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :typedef-name "point_t"
+                       :right-members ("z")))
+
+  (struct-type-split *old*
+                     *new*
+                     :typedef-name "point_t"
+                     :right-members ("z")
+                     :unsafe t)
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/typedef-anon.c"
+    :content "typedef struct {
+  int x;
+} point_t;
+
+typedef struct {
   int z;
 } point_t_0;
 
@@ -562,27 +632,48 @@ int main(void) {
 ;; supported: it is split in place (see the success tests further below).
 
 (acl2::must-succeed*
-  ;; An array of the split struct type.
-  (c$::input-files :files '("array.c")
+  ;; Casting a pointer to the split struct type to void * exposes its
+  ;; representation, so the safety check rejects the transformation.
+  (c$::input-files :files '("pointer-cast.c")
                    :const *old*)
+
   (must-fail
     (struct-type-split *old*
                        *new*
                        :struct-tag "point"
                        :right-members ("z")))
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; An array of the split struct type.
+  (c$::input-files :files '("array.c")
+                   :const *old*)
+
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")))
+
   :with-output-off nil)
 
 (acl2::must-succeed*
   ;; A member of another struct type is split in place.
   (c$::input-files :files '("member.c")
                    :const *old*)
+
+
   (struct-type-split *old*
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right")
+                     :new-tag "point_right"
+                     :unsafe t)
+
   (c$::output-files :const *new*
                     :base-dir "new")
+
   (assert-file-contents
     :file "new/member.c"
     :content "struct point {
@@ -604,6 +695,7 @@ int main(void) {
   return o.inner.x;
 }
 ")
+
   :with-output-off nil)
 
 (acl2::must-succeed*
@@ -611,13 +703,17 @@ int main(void) {
   ;; including in the initializer of the containing object.
   (c$::input-files :files '("ptr-member.c")
                    :const *old*)
+
   (struct-type-split *old*
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right")
+                     :new-tag "point_right"
+                     :unsafe t)
+
   (c$::output-files :const *new*
                     :base-dir "new")
+
   (assert-file-contents
     :file "new/ptr-member.c"
     :content "struct point {
@@ -643,6 +739,7 @@ int main(void) {
   return n.p->x;
 }
 ")
+
   :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -656,13 +753,17 @@ int main(void) {
   ;; continues to designate the correct member.
   (c$::input-files :files '("member-init.c")
                    :const *old*)
+
   (struct-type-split *old*
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right")
+                     :new-tag "point_right"
+                     :unsafe t)
+
   (c$::output-files :const *new*
                     :base-dir "new")
+
   (assert-file-contents
     :file "new/member-init.c"
     :content "struct point {
@@ -689,6 +790,7 @@ int main(void) {
   return braced.inner.x + flat.w + desig.inner_0.z;
 }
 ")
+
   :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -700,13 +802,17 @@ int main(void) {
   ;; within the nested initializer, and member accesses are routed.
   (c$::input-files :files '("nested-init.c")
                    :const *old*)
+
   (struct-type-split *old*
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right")
+                     :new-tag "point_right"
+                     :unsafe t)
+
   (c$::output-files :const *new*
                     :base-dir "new")
+
   (assert-file-contents
     :file "new/nested-init.c"
     :content "struct point {
@@ -734,28 +840,33 @@ int main(void) {
   return w.out.inner.x + w.out.inner_0.z;
 }
 ")
+
   :with-output-off nil)
 
 (acl2::must-succeed*
   ;; A member of a union type.
   (c$::input-files :files '("union-member.c")
                    :const *old*)
+
   (must-fail
     (struct-type-split *old*
                        *new*
                        :struct-tag "point"
                        :right-members ("z")))
+
   :with-output-off nil)
 
 (acl2::must-succeed*
   ;; A self-referential struct type.
   (c$::input-files :files '("self-ref.c")
                    :const *old*)
+
   (must-fail
     (struct-type-split *old*
                        *new*
                        :struct-tag "point"
                        :right-members ("z")))
+
   :with-output-off nil)
 
 (acl2::must-succeed*
@@ -763,13 +874,17 @@ int main(void) {
   ;; is split in place, like a member of a tagged struct type.
   (c$::input-files :files '("untagged-member.c")
                    :const *old*)
+
   (struct-type-split *old*
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right")
+                     :new-tag "point_right"
+                     :unsafe t)
+
   (c$::output-files :const *new*
                     :base-dir "new")
+
   (assert-file-contents
     :file "new/untagged-member.c"
     :content "struct point {
@@ -792,19 +907,24 @@ int main(void) {
   return c.inner.x + c.inner_0.z;
 }
 ")
+
   :with-output-off nil)
 
 (acl2::must-succeed*
   ;; A splittable member of an untagged struct type, accessed via a pointer.
   (c$::input-files :files '("untagged-ptr.c")
                    :const *old*)
+
   (struct-type-split *old*
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right")
+                     :new-tag "point_right"
+                     :unsafe t)
+
   (c$::output-files :const *new*
                     :base-dir "new")
+
   (assert-file-contents
     :file "new/untagged-ptr.c"
     :content "struct point {
@@ -829,6 +949,7 @@ int main(void) {
   return p->inner.x + p->inner_0.z;
 }
 ")
+
   :with-output-off nil)
 
 (acl2::must-succeed*
@@ -837,13 +958,17 @@ int main(void) {
   ;; the enclosing struct type, so the promoted accesses are routed.
   (c$::input-files :files '("anon-struct.c")
                    :const *old*)
+
   (struct-type-split *old*
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right")
+                     :new-tag "point_right"
+                     :unsafe t)
+
   (c$::output-files :const *new*
                     :base-dir "new")
+
   (assert-file-contents
     :file "new/anon-struct.c"
     :content "struct point {
@@ -865,6 +990,7 @@ int main(void) {
   return o.inner.x + o.inner_0.z;
 }
 ")
+
   :with-output-off nil)
 
 (acl2::must-succeed*
@@ -872,11 +998,13 @@ int main(void) {
   ;; since it is effectively a member of a union.
   (c$::input-files :files '("anon-union.c")
                    :const *old*)
+
   (must-fail
     (struct-type-split *old*
                        *new*
                        :struct-tag "point"
                        :right-members ("z")))
+
   :with-output-off nil)
 
 (acl2::must-succeed*
@@ -886,13 +1014,17 @@ int main(void) {
   ;; since inner_0 already names a member of outer.
   (c$::input-files :files '("blacklist.c")
                    :const *old*)
+
   (struct-type-split *old*
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right")
+                     :new-tag "point_right"
+                     :unsafe t)
+
   (c$::output-files :const *new*
                     :base-dir "new")
+
   (assert-file-contents
     :file "new/blacklist.c"
     :content "struct point {
@@ -914,17 +1046,20 @@ int main(void) {
   return o.inner.x + o.inner_1.z + o.inner_0;
 }
 ")
+
   :with-output-off nil)
 
 (acl2::must-succeed*
   ;; A function prototype returning a pointer to the split struct type.
   (c$::input-files :files '("fn-proto.c")
                    :const *old*)
+
   (must-fail
     (struct-type-split *old*
                        *new*
                        :struct-tag "point"
                        :right-members ("z")))
+
   :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -995,7 +1130,8 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right")
+                     :new-tag "point_right"
+                     :unsafe t)
 
   (c$::output-files :const *new*
                     :base-dir "new")
