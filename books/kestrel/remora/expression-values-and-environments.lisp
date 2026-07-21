@@ -638,6 +638,8 @@
      val
      :int-binary-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
                      :unit)
+     :int-rel-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                  :unit)
      :otherwise :unit)
     :measure (primop-value-count val))
 
