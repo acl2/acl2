@@ -1100,6 +1100,32 @@
                                                                 shape-renam))))
   :enable forall-curried-body)
 
+; The analogue for the currying of term lambda abstractions
+; (see lambda-curried-body), laid down ahead of that currying:
+; lambda abstractions bind no ispace variables,
+; but their parameter type annotations may contain ispace variables,
+; so all components are renamed and the commutation is direct.
+
+(local (acl2::defopeners expr-rename-ispace-vars))
+(local (acl2::defopeners atom-rename-ispace-vars))
+
+(defrule expr-rename-ispace-vars-of-lambda-curried-body
+  (implies (and (var+type?-listp params)
+                (consp params))
+           (equal (expr-rename-ispace-vars
+                   (lambda-curried-body params body type?)
+                   dim-renam shape-renam)
+                  (lambda-curried-body
+                   (var+type?-list-rename-ispace-vars params
+                                                      dim-renam
+                                                      shape-renam)
+                   (expr-rename-ispace-vars body dim-renam shape-renam)
+                   (type-option-rename-ispace-vars type?
+                                                   dim-renam
+                                                   shape-renam))))
+  :enable (lambda-curried-body
+           var+type?-list-rename-ispace-vars))
+
 ; Phase 1: evaluating a renamed type errs exactly when evaluating the
 ; original type does.  This is proved first, and separately from the value
 ; equality below, so that during the induction for the latter the error
@@ -1892,6 +1918,62 @@
   :use ((:instance atom/array-rename-remove-bound-of-insert-then-rest
                    (var (car params))
                    (rest (cdr params)))))
+
+; The type-variable analogue for the currying of term lambda abstractions
+; (see lambda-curried-body), laid down ahead of that currying:
+; lambda abstractions bind no type variables,
+; but their parameter type annotations may contain type variables,
+; so all components are renamed and the commutation is direct.
+
+(local (acl2::defopeners expr-rename-type-vars))
+(local (acl2::defopeners atom-rename-type-vars))
+
+(defrule expr-rename-type-vars-of-lambda-curried-body
+  (implies (and (var+type?-listp params)
+                (consp params))
+           (equal (expr-rename-type-vars
+                   (lambda-curried-body params body type?)
+                   atom-renam array-renam)
+                  (lambda-curried-body
+                   (var+type?-list-rename-type-vars params
+                                                    atom-renam
+                                                    array-renam)
+                   (expr-rename-type-vars body atom-renam array-renam)
+                   (type-option-rename-type-vars type?
+                                                 atom-renam
+                                                 array-renam))))
+  :enable (lambda-curried-body
+           var+type?-list-rename-type-vars))
+
+; The expression-variable analogue for the currying of
+; term lambda abstractions, which bind expression variables:
+; renaming the curried body under the map reduced by the first parameter
+; equals currying the body renamed under the map reduced by
+; all the parameters.
+
+(local (acl2::defopeners expr-rename-expr-vars))
+(local (acl2::defopeners atom-rename-expr-vars))
+
+(defrule expr-rename-expr-vars-of-lambda-curried-body
+  (implies (and (var+type?-listp params)
+                (consp params))
+           (equal (expr-rename-expr-vars
+                   (lambda-curried-body params body type?)
+                   (omap::delete* (set::insert (var+type?->var (car params))
+                                               nil)
+                                  (string-string-map-fix renam)))
+                  (lambda-curried-body
+                   params
+                   (expr-rename-expr-vars
+                    body
+                    (omap::delete*
+                     (set::mergesort (var+type?-list->var params))
+                     (string-string-map-fix renam)))
+                   type?)))
+  :enable (lambda-curried-body
+           delete*-of-delete*-fuse
+           mergesort-of-cons
+           mergesort-when-singleton))
 
 (defthm-eval-types-flag
   (defthm reserrp-of-eval-type-of-type-rename-type-vars
