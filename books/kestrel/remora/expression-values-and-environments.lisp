@@ -830,7 +830,78 @@
   (xdoc::topstring
    (xdoc::p
     "The primitive operation value must satisfy the dimension constraints."))
-  (not (reserrp (check-dims-of-primop-value val))))
+  (not (reserrp (check-dims-of-primop-value val)))
+
+  ///
+
+  (defrule expr-value-wfp-of-x-stage-xvals
+    (and (implies (primop-value-case op :int-binary-x)
+                  (equal (expr-value-wfp (primop-value-int-binary-x->xval op))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :int-rel-x)
+                  (equal (expr-value-wfp (primop-value-int-rel-x->xval op))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :float-binary-x)
+                  (equal (expr-value-wfp
+                          (primop-value-float-binary-x->xval op))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :float-rel-x)
+                  (equal (expr-value-wfp (primop-value-float-rel-x->xval op))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :bool-binary-x)
+                  (equal (expr-value-wfp (primop-value-bool-binary-x->xval op))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :bool-rel-x)
+                  (equal (expr-value-wfp (primop-value-bool-rel-x->xval op))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :append-t-m-n-s-x)
+                  (equal (expr-value-wfp
+                          (primop-value-append-t-m-n-s-x->xval op))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :index-t-m-x)
+                  (equal (expr-value-wfp (primop-value-index-t-m-x->xval op))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :index2d-t-m-n-x)
+                  (equal (expr-value-wfp
+                          (primop-value-index2d-t-m-n-x->xval op))
+                         (primop-value-wfp op))))
+    :enable (primop-value-wfp expr-value-wfp)
+    :expand ((check-dims-of-primop-value op)))
+
+  (defrule primop-value-wfp-of-x-stage-constructors
+    (and (equal (primop-value-wfp (primop-value-int-binary-x op xval))
+                (expr-value-wfp xval))
+         (equal (primop-value-wfp (primop-value-int-rel-x op xval))
+                (expr-value-wfp xval))
+         (equal (primop-value-wfp (primop-value-float-binary-x op xval))
+                (expr-value-wfp xval))
+         (equal (primop-value-wfp (primop-value-float-rel-x op xval))
+                (expr-value-wfp xval))
+         (equal (primop-value-wfp (primop-value-bool-binary-x op xval))
+                (expr-value-wfp xval))
+         (equal (primop-value-wfp (primop-value-bool-rel-x op xval))
+                (expr-value-wfp xval))
+         (equal (primop-value-wfp
+                 (primop-value-append-t-m-n-s-x tval mval nval sval xval))
+                (expr-value-wfp xval))
+         (equal (primop-value-wfp (primop-value-index-t-m-x tval mval xval))
+                (expr-value-wfp xval))
+         (equal (primop-value-wfp
+                 (primop-value-index2d-t-m-n-x tval mval nval xval))
+                (expr-value-wfp xval)))
+    :enable (primop-value-wfp expr-value-wfp)
+    :expand ((check-dims-of-primop-value (primop-value-int-binary-x op xval))
+             (check-dims-of-primop-value (primop-value-int-rel-x op xval))
+             (check-dims-of-primop-value (primop-value-float-binary-x op xval))
+             (check-dims-of-primop-value (primop-value-float-rel-x op xval))
+             (check-dims-of-primop-value (primop-value-bool-binary-x op xval))
+             (check-dims-of-primop-value (primop-value-bool-rel-x op xval))
+             (check-dims-of-primop-value
+              (primop-value-append-t-m-n-s-x tval mval nval sval xval))
+             (check-dims-of-primop-value
+              (primop-value-index-t-m-x tval mval xval))
+             (check-dims-of-primop-value
+              (primop-value-index2d-t-m-n-x tval mval nval xval)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1045,6 +1116,21 @@
   (defrule expr-value-wfp-of-expr-value-base
     (expr-value-wfp (expr-value-base base))
     :enable (expr-value-wfp check-dims-of-expr-value))
+
+  (defrule expr-value-wfp-of-expr-value-primop
+    (equal (expr-value-wfp (expr-value-primop opval))
+           (primop-value-wfp opval))
+    :enable (expr-value-wfp
+             primop-value-wfp)
+    :expand (check-dims-of-expr-value (expr-value-primop opval)))
+
+  (defrule primop-value-wfp-of-expr-value-primop->val
+    (implies (expr-value-case val :primop)
+             (equal (primop-value-wfp (expr-value-primop->val val))
+                    (expr-value-wfp val)))
+    :enable (expr-value-wfp
+             primop-value-wfp)
+    :expand (check-dims-of-expr-value val))
 
   (defrule expr-value-wfp-of-expr-value-lambda
     (implies (expr-denv-wfp denv)

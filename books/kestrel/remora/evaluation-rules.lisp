@@ -135,14 +135,14 @@
                       (int-value (+ (int-value->int intval1)
                                     (int-value->int intval2)))))))
     :enable (eval-app-cell
+             eval-primop-fun-chain
              eval-primop-fun
              primop-value-funp
              prim-int-add
-             arity-of-primop-value-fun
-             type-of-primop-value-fun
              len
              check-expr-value-int
-             not-reserrp-when-int-valuep)))
+             not-reserrp-when-int-valuep
+             not-reserrp-when-expr-valuep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
