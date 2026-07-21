@@ -1979,6 +1979,9 @@
      :int-rel-x (reserr :todo)
      :int-to-float (prim-int-to-float (first args))
      :int-to-bool (prim-int-to-bool (first args))
+     :float-unary (float-unary-primop-case
+                   op.op
+                   :sqrt (prim-float-sqrt (first args)))
      :float-add (prim-float-add (first args) (second args))
      :float-sub (prim-float-sub (first args) (second args))
      :float-mul (prim-float-mul (first args) (second args))
@@ -1986,7 +1989,6 @@
      :float-expt (prim-float-expt (first args) (second args))
      :float-max (prim-float-max (first args) (second args))
      :float-min (prim-float-min (first args) (second args))
-     :float-sqrt (prim-float-sqrt (first args))
      :float-eq (prim-float-eq (first args) (second args))
      :float-neq (prim-float-neq (first args) (second args))
      :float-lt (prim-float-lt (first args) (second args))

@@ -112,6 +112,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum float-unary-primop
+  :short "Fixtype of float unary primitive operations."
+  (:sqrt ())
+  :pred float-unary-primop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: factor more primops
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -296,6 +303,7 @@
                  (xval expr-value)))
     (:int-to-float ())
     (:int-to-bool ())
+    (:float-unary ((op float-unary-primop)))
     (:float-add ())
     (:float-sub ())
     (:float-mul ())
@@ -303,7 +311,6 @@
     (:float-expt ())
     (:float-max ())
     (:float-min ())
-    (:float-sqrt ())
     (:float-eq ())
     (:float-neq ())
     (:float-lt ())
@@ -1142,6 +1149,7 @@
                      :int-binary-x t
                      :int-rel t
                      :int-rel-x t
+                     :float-unary t
                      :head nil
                      :head-t nil
                      :head-t-d nil
@@ -1186,6 +1194,7 @@
                      :int-binary-x nil
                      :int-rel nil
                      :int-rel-x nil
+                     :float-unary nil
                      :head t
                      :tail t
                      :length t
@@ -1215,6 +1224,7 @@
                      :int-binary-x nil
                      :int-rel nil
                      :int-rel-x nil
+                     :float-unary nil
                      :head-t t
                      :head-t-d t
                      :tail-t t
@@ -1413,6 +1423,7 @@
      :int-rel-x int-unop-tv
      :int-to-float int-to-float-tv
      :int-to-bool int-to-bool-tv
+     :float-unary float-unop-tv
      :float-add float-binop-tv
      :float-sub float-binop-tv
      :float-mul float-binop-tv
@@ -1420,7 +1431,6 @@
      :float-expt float-binop-tv
      :float-max float-binop-tv
      :float-min float-binop-tv
-     :float-sqrt float-unop-tv
      :float-eq float-relop-tv
      :float-neq float-relop-tv
      :float-lt float-relop-tv
@@ -2164,8 +2174,12 @@
          (cons "f.^" (expr-value-primop (primop-value-float-expt)))
          (cons "f.max" (expr-value-primop (primop-value-float-max)))
          (cons "f.min" (expr-value-primop (primop-value-float-min)))
-         (cons "sqrt" (expr-value-primop (primop-value-float-sqrt)))
-         (cons "f.sqrt" (expr-value-primop (primop-value-float-sqrt)))
+         (cons "sqrt" (expr-value-primop
+                       (primop-value-float-unary
+                        (float-unary-primop-sqrt))))
+         (cons "f.sqrt" (expr-value-primop
+                         (primop-value-float-unary
+                          (float-unary-primop-sqrt))))
          (cons "f.==" (expr-value-primop (primop-value-float-eq)))
          (cons "f.!=" (expr-value-primop (primop-value-float-neq)))
          (cons "f.<" (expr-value-primop (primop-value-float-lt)))
