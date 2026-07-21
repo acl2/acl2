@@ -409,7 +409,9 @@
        The theorem for each rule is an implication
        whose antecedents are the premises
        and whose consequent is the conclusion.
-       Both premises of forms (i) and (ii) (see above) are included.")
+       Both premises of forms (i) and (ii) (see above) are included.
+       For a rule without premises,
+       the theorem is just the conclusion, without implication.")
      (xdoc::p
       "If XDOC is generated, all these theorems are put
        in a @(tsee defsection) whose name is obtained by
@@ -449,6 +451,8 @@
        with the premises as antecedents
        and with the conclusions as consequents,
        quantified over the free variables in the rules.
+       For a rule without premises,
+       the body is just the conclusion, without implication.
        For a rule without free variables,
        there is no quantification,
        and a nullary @(tsee defun) is generated instead.")

@@ -1238,6 +1238,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-gen-conjunction ((conjuncts true-listp))
+  :returns (term "An untranslated term.")
+  :short "Generate a conjunction of zero or more untranslated terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there are no conjuncts, we generate @('t').
+     If there is exactly one conjunct, we generate that conjunct.
+     If there are two or more conjuncts, we generate an @(tsee and) of them.
+     This way, we avoid generating empty and singleton conjunctions."))
+  (cond ((endp conjuncts) t)
+        ((endp (cdr conjuncts)) (car conjuncts))
+        (t `(and ,@(true-list-fix conjuncts)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-implication ((antecedents true-listp) consequent)
+  :returns (term "An untranslated term.")
+  :short "Generate an implication of a consequent
+          from zero or more antecedents,
+          all untranslated terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there are no antecedents, we generate just the consequent.
+     Otherwise, we generate an @(tsee implies)
+     whose antecedent is the conjunction of the antecedents.
+     This way, we avoid generating implications with trivial antecedents."))
+  (if (consp antecedents)
+      `(implies ,(defind-gen-conjunction antecedents) ,consequent)
+    consequent))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-assert-type-name ((pred-name symbolp) (name symbolp))
   :returns (type-name symbolp)
   :short "Name of a @('p[i]-assertion') fixtype."
@@ -2563,6 +2597,7 @@
             prem-of-constr-thms
             other-prems)
         (defind-gen-irule-proof-fn-loop info.name info.premises 1 name))
+       (all-hyps (append subproof-hyps other-prems subproof-eqs))
        (proof-var (defind-proof-var-name name))
        (proof-recog (defind-proof-recog-name cinfo.name name))
        (proof-return (defind-proof-constr-return-thm cinfo.name info.name name))
@@ -2619,9 +2654,8 @@
        ///
        (defret ,valid-thm
          (,proof-valid-fn ,proof-var)
-         :hyp (and ,@subproof-hyps
-                   ,@other-prems
-                   ,@subproof-eqs)
+         ,@(and all-hyps
+                (list :hyp (defind-gen-conjunction all-hyps)))
          :hints (("Goal"
                   :use (:instance ,suff/def-thm
                                   (,concl (,assert ,@concl-args))
@@ -2791,7 +2825,7 @@
        (return-thm
         (defind-irule-proof-return-thm-name cinfo.name info.name name)))
     `(defruled ,thm-name
-       (implies (and ,@pred-hyps ,@other-hyps) ,concl)
+       ,(defind-gen-implication (append pred-hyps other-hyps) concl)
        ,@(and pred-hyps
               (list :expand pred-hyps))
        :use ((:instance ,pred-suff
@@ -2908,13 +2942,14 @@
        (concl `(,(defind-pred-alt-fn-name cinfo.name name)
                 ,@(defind-term-info-list->uterm cinfo.args)))
        (vars (defind-irule-info-free-vars info))
+       (body/matrix (defind-gen-implication prems concl))
        (event (if (defind-irule-groundp info)
                   `(defun ,fn-name ()
                      (declare (xargs :verify-guards nil))
-                     (implies (and ,@prems) ,concl))
+                     ,body/matrix)
                 `(defun-sk ,fn-name ()
                    (declare (xargs :verify-guards nil))
-                   (forall ,vars (implies (and ,@prems) ,concl)))))
+                   (forall ,vars ,body/matrix))))
        (call `(,fn-name)))
     (mv event call)))
 
