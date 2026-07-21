@@ -1982,13 +1982,16 @@
      :float-unary (float-unary-primop-case
                    op.op
                    :sqrt (prim-float-sqrt (first args)))
-     :float-add (prim-float-add (first args) (second args))
-     :float-sub (prim-float-sub (first args) (second args))
-     :float-mul (prim-float-mul (first args) (second args))
-     :float-div (prim-float-div (first args) (second args))
-     :float-expt (prim-float-expt (first args) (second args))
-     :float-max (prim-float-max (first args) (second args))
-     :float-min (prim-float-min (first args) (second args))
+     :float-binary (float-binary-primop-case
+                    op.op
+                    :add (prim-float-add (first args) (second args))
+                    :sub (prim-float-sub (first args) (second args))
+                    :mul (prim-float-mul (first args) (second args))
+                    :div (prim-float-div (first args) (second args))
+                    :expt (prim-float-expt (first args) (second args))
+                    :max (prim-float-max (first args) (second args))
+                    :min (prim-float-min (first args) (second args)))
+     :float-binary-x (reserr :todo)
      :float-eq (prim-float-eq (first args) (second args))
      :float-neq (prim-float-neq (first args) (second args))
      :float-lt (prim-float-lt (first args) (second args))

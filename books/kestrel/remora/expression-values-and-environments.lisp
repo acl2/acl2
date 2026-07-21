@@ -119,6 +119,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum float-binary-primop
+  :short "Fixtype of float binary primitive operations."
+  (:add ())
+  (:sub ())
+  (:mul ())
+  (:div ())
+  (:expt ())
+  (:max ())
+  (:min ())
+  :pred float-binary-primop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: factor more primops
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -304,13 +317,9 @@
     (:int-to-float ())
     (:int-to-bool ())
     (:float-unary ((op float-unary-primop)))
-    (:float-add ())
-    (:float-sub ())
-    (:float-mul ())
-    (:float-div ())
-    (:float-expt ())
-    (:float-max ())
-    (:float-min ())
+    (:float-binary ((op float-binary-primop)))
+    (:float-binary-x ((op float-binary-primop)
+                      (xval expr-value)))
     (:float-eq ())
     (:float-neq ())
     (:float-lt ())
@@ -640,6 +649,8 @@
                      :unit)
      :int-rel-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
                   :unit)
+     :float-binary-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                       :unit)
      :otherwise :unit)
     :measure (primop-value-count val))
 
@@ -1152,6 +1163,8 @@
                      :int-rel t
                      :int-rel-x t
                      :float-unary t
+                     :float-binary t
+                     :float-binary-x t
                      :head nil
                      :head-t nil
                      :head-t-d nil
@@ -1197,6 +1210,8 @@
                      :int-rel nil
                      :int-rel-x nil
                      :float-unary nil
+                     :float-binary nil
+                     :float-binary-x nil
                      :head t
                      :tail t
                      :length t
@@ -1227,6 +1242,8 @@
                      :int-rel nil
                      :int-rel-x nil
                      :float-unary nil
+                     :float-binary nil
+                     :float-binary-x nil
                      :head-t t
                      :head-t-d t
                      :tail-t t
@@ -1294,6 +1311,7 @@
   (primop-value-case op
                      :int-binary-x (primop-value-int-binary op.op)
                      :int-rel-x (primop-value-int-rel op.op)
+                     :float-binary-x (primop-value-float-binary op.op)
                      :head-t (primop-value-head)
                      :head-t-d (primop-value-head)
                      :head-t-d-s (primop-value-head)
@@ -1429,13 +1447,8 @@
      :int-to-float int-to-float-tv
      :int-to-bool int-to-bool-tv
      :float-unary float-unop-tv
-     :float-add float-binop-tv
-     :float-sub float-binop-tv
-     :float-mul float-binop-tv
-     :float-div float-binop-tv
-     :float-expt float-binop-tv
-     :float-max float-binop-tv
-     :float-min float-binop-tv
+     :float-binary float-binop-tv
+     :float-binary-x float-unop-tv
      :float-eq float-relop-tv
      :float-neq float-relop-tv
      :float-lt float-relop-tv
@@ -2172,13 +2185,27 @@
                       (int-rel-primop-geq))))
          (cons "i->f" (expr-value-primop (primop-value-int-to-float)))
          (cons "i->bool" (expr-value-primop (primop-value-int-to-bool)))
-         (cons "f.+" (expr-value-primop (primop-value-float-add)))
-         (cons "f.-" (expr-value-primop (primop-value-float-sub)))
-         (cons "f.*" (expr-value-primop (primop-value-float-mul)))
-         (cons "f./" (expr-value-primop (primop-value-float-div)))
-         (cons "f.^" (expr-value-primop (primop-value-float-expt)))
-         (cons "f.max" (expr-value-primop (primop-value-float-max)))
-         (cons "f.min" (expr-value-primop (primop-value-float-min)))
+         (cons "f.+" (expr-value-primop
+                      (primop-value-float-binary
+                       (float-binary-primop-add))))
+         (cons "f.-" (expr-value-primop
+                      (primop-value-float-binary
+                       (float-binary-primop-sub))))
+         (cons "f.*" (expr-value-primop
+                      (primop-value-float-binary
+                       (float-binary-primop-mul))))
+         (cons "f./" (expr-value-primop
+                      (primop-value-float-binary
+                       (float-binary-primop-div))))
+         (cons "f.^" (expr-value-primop
+                      (primop-value-float-binary
+                       (float-binary-primop-expt))))
+         (cons "f.max" (expr-value-primop
+                        (primop-value-float-binary
+                         (float-binary-primop-max))))
+         (cons "f.min" (expr-value-primop
+                        (primop-value-float-binary
+                         (float-binary-primop-min))))
          (cons "sqrt" (expr-value-primop
                        (primop-value-float-unary
                         (float-unary-primop-sqrt))))
