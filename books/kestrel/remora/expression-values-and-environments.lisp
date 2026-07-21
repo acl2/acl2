@@ -125,6 +125,20 @@
        The same goes for the optional type of the body of the lambda value,
        which mirrors the one in the AST for lambda abstraction atoms.")
      (xdoc::p
+      "An ispace lambda value binds exactly one parameter:
+       consistently with the curried view of ispace applications
+       (see @(tsee expr)),
+       an ispace lambda abstraction with two or more parameters
+       evaluates to the unary ispace lambda value
+       that binds the first parameter,
+       whose body is the ispace lambda abstraction
+       over the remaining parameters.
+       A type lambda value similarly binds exactly one parameter,
+       consistently with the curried view of type applications.
+       The remaining kind of lambda values
+       still binds all its parameters at once;
+       it will be similarly made unary.")
+     (xdoc::p
       "This fixtype does not capture constraints like
        the non-emptiness of the expression value list in @(':vector'),
        and the dimension and type consistency of the elements of a @(':vector').
@@ -140,10 +154,10 @@
               (body expr)
               (type? type-value-option)
               (denv expr-denv)))
-    (:tlambda ((params type-var-list)
+    (:tlambda ((param type-var)
                (body expr)
                (denv expr-denv)))
-    (:ilambda ((params ispace-var-list)
+    (:ilambda ((param ispace-var)
                (body expr)
                (denv expr-denv)))
     (:box ((ispaces ispace-value-list)
@@ -682,8 +696,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define expr-value-vectorp ((val expr-valuep))
+  :returns (yes/no booleanp)
+  :short "Check if an expression value is a possibly empty vector."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The naming of this predicate and of the @(tsee expr-value) summands
+     are not ideal,
+     because in @(tsee expr-value) @(':vector') refers to non-empty vectors,
+     while in this predicate name @('vectorp') refers to all vectors.
+     We may improve names in the future,
+     or we may merge @(':vector-empty') into @('vector') in @(tsee expr-value)
+     by adding a type value to non-empty vectors."))
+  (or (expr-value-case val :vector)
+      (expr-value-case val :vector-empty))
+
+  ///
+
+  (defruled expr-value-vectorp-to-consp-of-dims
+    (implies (expr-value-wfp val)
+             (equal (expr-value-vectorp val)
+                    (consp (dims-of-expr-value val))))
+    :enable (dims-of-expr-value
+             expr-value-wfp)
+    :expand (check-dims-of-expr-value val)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-value-vector-elements ((val expr-valuep))
+  :guard (expr-value-vectorp val)
+  :returns (vals expr-value-listp)
+  :short "Element values of a possibly empty vector."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lets us treat non-empty and empty vectors uniformly
+     for the purpose of obtaining their element values."))
+  (expr-value-case
+   val
+   :vector val.elems
+   :vector-empty nil
+   :otherwise (impossible))
+  :guard-hints (("Goal" :in-theory (enable expr-value-vectorp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection expr-value-wfp-theorems
-  :short "Theorems about the well-formedness of certain expression values."
+  :short "Theorems about well-formedness expression values."
 
   (defrule expr-value-wfp-of-expr-value-base
     (expr-value-wfp (expr-value-base base))
@@ -707,10 +767,10 @@
 
   (defrule expr-value-wfp-of-expr-value-tlambda
     (implies (expr-denv-wfp denv)
-             (expr-value-wfp (expr-value-tlambda params body denv)))
+             (expr-value-wfp (expr-value-tlambda param body denv)))
     :enable (expr-value-wfp
              expr-denv-wfp-alt-def)
-    :expand (check-dims-of-expr-value (expr-value-tlambda params body denv)))
+    :expand (check-dims-of-expr-value (expr-value-tlambda param body denv)))
 
   (defrule expr-denv-wfp-of-expr-value-tlambda->denv
     (implies (and (expr-value-wfp val)
@@ -722,10 +782,10 @@
 
   (defrule expr-value-wfp-of-expr-value-ilambda
     (implies (expr-denv-wfp denv)
-             (expr-value-wfp (expr-value-ilambda params body denv)))
+             (expr-value-wfp (expr-value-ilambda param body denv)))
     :enable (expr-value-wfp
              expr-denv-wfp-alt-def)
-    :expand (check-dims-of-expr-value (expr-value-ilambda params body denv)))
+    :expand (check-dims-of-expr-value (expr-value-ilambda param body denv)))
 
   (defrule expr-denv-wfp-of-expr-value-ilambda->denv
     (implies (and (expr-value-wfp val)
@@ -786,6 +846,11 @@
              expr-value-list-wfp-alt-def)
     :expand (check-dims-of-expr-value val))
 
+  (defrule expr-value-list-wfp-of-expr-value-vector-elements
+    (implies (expr-value-wfp val)
+             (expr-value-list-wfp (expr-value-vector-elements val)))
+    :enable expr-value-vector-elements)
+
   (defrule list-repeatp-of-dims-of-expr-value-vector->elems
     (implies (and (expr-value-wfp val)
                   (expr-value-case val :vector))
@@ -794,7 +859,39 @@
     :enable (expr-value-wfp
              expr-value-list-wfp-alt-def
              check-dims-of-expr-value
-             check-dims-of-expr-value-list-when-expr-value-list-wfp)))
+             check-dims-of-expr-value-list-when-expr-value-list-wfp))
+
+  (defrule list-repeatp-of-dims-of-expr-value-vector-elements
+    (implies (expr-value-wfp val)
+             (list-repeatp
+              (dims-of-expr-value-list (expr-value-vector-elements val))))
+    :enable expr-value-vector-elements)
+
+  (defruled dims-of-expr-value-vector->elems-to-repeat
+    (implies (and (expr-value-wfp val)
+                  (expr-value-case val :vector))
+             (equal (dims-of-expr-value-list (expr-value-vector->elems val))
+                    (repeat (car (dims-of-expr-value val))
+                            (cdr (dims-of-expr-value val)))))
+    :enable (expr-value-wfp
+             dims-of-expr-value
+             dims-of-expr-value-list-when-expr-value-list-wfp
+             check-dims-of-expr-value
+             repeat-of-len-and-car-when-list-repeatp
+             acl2::nat-list-listp-when-result-not-error
+             acl2::true-listp-when-nat-list-listp))
+
+  (defruled dims-of-expr-value-vector-elements-to-repeat
+    (implies (and (expr-value-wfp val)
+                  (expr-value-vectorp val))
+             (equal (dims-of-expr-value-list (expr-value-vector-elements val))
+                    (repeat (car (dims-of-expr-value val))
+                            (cdr (dims-of-expr-value val)))))
+    :enable (expr-value-vectorp
+             expr-value-vector-elements
+             dims-of-expr-value-vector->elems-to-repeat
+             dims-of-expr-value
+             check-dims-of-expr-value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1376,7 +1473,10 @@
          (cons "head" (expr-value-primop (primop-value-head)))
          (cons "tail" (expr-value-primop (primop-value-tail)))
          (cons "length" (expr-value-primop (primop-value-length)))
-         (cons "append" (expr-value-primop (primop-value-append))))))
+         (cons "append" (expr-value-primop (primop-value-append)))
+         (cons "reverse" (expr-value-primop (primop-value-reverse)))
+         (cons "index" (expr-value-primop (primop-value-index)))
+         (cons "index2d" (expr-value-primop (primop-value-index2d))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -53,9 +53,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Full instantiation of a polymorphic primitive operation,
+; as an n-ary ispace application.
+(test-check-top-expr
+ "(i-app (t-app length Int) 3 (dims 4 5))")
+
+; Partial instantiation, providing just the dimension:
+; the type is a product type over the remaining shape variable.
+(test-check-top-expr
+ "(i-app (t-app length Int) 3)")
+
+; Completion of a partial instantiation, as a chain.
+(test-check-top-expr
+ "(i-app (i-app (t-app length Int) 3) (dims 4 5))")
+
+; A shape argument where a dimension is expected.
+(test-check-top-expr-fail
+ "(i-app (t-app length Int) (dims 4 5))")
+
+; More ispace arguments than bound variables.
+(test-check-top-expr-fail
+ "(i-app (t-app length Int) 3 (dims 4 5) 7)")
+
 ; The variable $d escapes.
 (test-check-top-expr-fail
  "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e)))) v)")
+
+; Application of a unary ispace lambda abstraction:
+; its computed type is a unary product type, matched by the application.
+(test-check-top-expr
+ "(i-app (i-fn ($d) (fn ((x (A Int $d))) x)) 3)")
 
 ; The inner variable $d escapes, and the outer variable $d does not interfere.
 (test-check-top-expr-fail
@@ -155,3 +182,39 @@
 ;         (fn ((u [Int $d]))
 ;           (i-fn ($d) (@length (Int) ($d []) u)))))
 ;   (i-app ((i-app f 5) [1 2 3 4 5]) 3))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Full instantiation of a two-parameter type lambda abstraction,
+; as an n-ary type application.
+(test-check-top-expr
+ "(t-app (t-fn (&t &u) (i-fn ($d) (fn ((x (A &t $d))) x))) Int Int)")
+
+; Partial instantiation, providing just the first type:
+; the type is the (lifted) universal type over the remaining variable.
+(test-check-top-expr
+ "(t-app (t-fn (&t &u) (i-fn ($d) (fn ((x (A &t $d))) x))) Int)")
+
+; Completion of a partial instantiation, as a chain.
+(test-check-top-expr
+ "(t-app (t-app (t-fn (&t &u) (i-fn ($d) (fn ((x (A &t $d))) x))) Int) Int)")
+
+; More type arguments than bound variables.
+(test-check-top-expr-fail
+ "(t-app (t-fn (&t) (i-fn ($d) (fn ((x (A &t $d))) x))) Int Int)")
+
+; Application of a unary type lambda abstraction:
+; its computed type is a unary universal type, matched by the application.
+(test-check-top-expr
+ "(t-app (t-fn (&t) (i-fn ($d) (fn ((x (A &t $d))) x))) Int)")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The following fails but should succeed in the latest Remora, which is curried.
+; We must activate this test once our model of Remora is also curried.
+;; (test-check-top-expr
+;;  "
+;; (let ((fun (f (x Int) (y Int) : Int) (+ x y))
+;;       (val g (f 2)))
+;;   (g 3))
+;; ")

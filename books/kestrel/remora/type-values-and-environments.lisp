@@ -67,16 +67,28 @@
       "Critically, universal, product, and sum types
        contain environments for their free ispace and type variables.
        This fixtype currently does not enforce the constraint that
-       the environments contain exactly those free variables."))
+       the environments contain exactly those free variables.")
+     (xdoc::p
+      "A product type value binds exactly one parameter:
+       consistently with the curried view of ispace applications
+       (see @(tsee expr)),
+       a product type with two or more parameters
+       evaluates to the unary product type value
+       that binds the first parameter,
+       whose body is the product type over the remaining parameters.
+       A universal type value similarly binds exactly one parameter,
+       consistently with the curried view of type applications.
+       Sum type values still bind all their parameters at once;
+       they will be similarly made unary."))
     (:base ((type base-type)))
     (:array ((elem type-value)
              (dims nat-list)))
     (:fun ((in type-value-list)
            (out type-value)))
-    (:forall ((params type-var-list)
+    (:forall ((param type-var)
               (body type)
               (denv type-denv)))
-    (:pi ((params ispace-var-list)
+    (:pi ((param ispace-var)
           (body type)
           (denv type-denv)))
     (:sigma ((params ispace-var-list)
