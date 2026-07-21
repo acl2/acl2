@@ -14,7 +14,6 @@
 (include-book "type-values-and-environments")
 (include-book "abstract-syntax-structurals")
 (include-book "base-values")
-(include-book "primitive-operation-values")
 (include-book "unit-types")
 
 (include-book "kestrel/fty/nat-list-list-list" :dir :system)
@@ -47,11 +46,124 @@
     "Expressions (ASTs), and atoms with them, evaluate to expression values.
      Expression dynamic environments capture
      the expression variables in scope
-     and their associated expression values."))
+     and their associated expression values.")
+   (xdoc::p
+    "Expression values include representations for primitive operations.
+     By `primitive operation' we mean
+     a built-in Remora function
+     that is not implemented in Remora
+     and that is implicitly in scope (unless overwritten).
+     Syntactically, it is a variable,
+     whose value is the reification of the operation.
+     We represent this as a special kind of expression value,
+     which includes not only the ``full'' operations,
+     but also partially instantiated forms of those operations;
+     the latter are essentially closures.
+     See @(tsee primop-value) for details and examples.")
+   (xdoc::p
+    "The term `primitive' comes from [thesis], [arxiv], and [esop].
+     Instead, [impl] uses the terms `primitive' and `intrinsic':
+     the first for the ones on integer and similar types,
+     and the second for the ones on lists and similar types.
+     The latter are polymorphic while the former are monomorphic,
+     but that division is not the explicit intention in [impl]."))
   :order-subtopics (base-values
-                    primitive-operation-values
                     t)
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum int-unary-primop
+  :short "Fixtype of integer unary primitive operations."
+  (:bit-not ())
+  (:popc ())
+  :pred int-unary-primop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum int-binary-primop
+  :short "Fixtype of integer binary primitive operations."
+  (:add ())
+  (:sub ())
+  (:mul ())
+  (:div ())
+  (:expt ())
+  (:mod ())
+  (:max ())
+  (:min ())
+  (:bit-and ())
+  (:bit-or ())
+  (:bit-xor ())
+  (:shl ())
+  (:shr ())
+  :pred int-binary-primop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum int-rel-primop
+  :short "Fixtype of integer relational primitive operations."
+  (:eq ())
+  (:neq ())
+  (:lt ())
+  (:gt ())
+  (:leq ())
+  (:geq ())
+  :pred int-rel-primop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum float-unary-primop
+  :short "Fixtype of float unary primitive operations."
+  (:sqrt ())
+  :pred float-unary-primop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum float-binary-primop
+  :short "Fixtype of float binary primitive operations."
+  (:add ())
+  (:sub ())
+  (:mul ())
+  (:div ())
+  (:expt ())
+  (:max ())
+  (:min ())
+  :pred float-binary-primop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum float-rel-primop
+  :short "Fixtype of float relational primitive operations."
+  (:eq ())
+  (:neq ())
+  (:lt ())
+  (:gt ())
+  (:leq ())
+  (:geq ())
+  :pred float-rel-primop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum bool-unary-primop
+  :short "Fixtype of boolean unary primitive operations."
+  (:not ())
+  :pred bool-unary-primop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum bool-binary-primop
+  :short "Fixtype of boolean binary primitive operations."
+  (:and ())
+  (:or ())
+  :pred bool-binary-primop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum bool-rel-primop
+  :short "Fixtype of boolean relational primitive operations."
+  (:eq ())
+  (:neq ())
+  :pred bool-rel-primop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -187,6 +299,138 @@
                (expr-value-listp (repeat-each n vals)))
       :induct (repeat-each n vals)
       :enable (repeat-each expr-value-listp)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deftagsum primop-value
+    :parents (expression-values-and-environments expr-values/denv)
+    :short "Fixtype of primitive operation values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A value of this fixtype represents a primitive operation,
+       or an instantiation stage thereof,
+       as a scalar (zero-rank array) function value,
+       analogously to how the three kinds of lambda abstractions
+       are scalar function values.
+       These are incorporated into @(tsee expr-value)
+       as its @(':primop') summand.")
+     (xdoc::p
+      "Since the Remora primitive operations are curried,
+       there are as many stages as there are parameters:
+       the first stage stores no parameter values,
+       and the last stage stores all but the last parameter values.
+       Each application moves from one stage to the next;
+       the final application is on the last parameter value,
+       so all parameter values are available.")
+     (xdoc::p
+      "For example, here are the stages of @('length'):
+       @(':length') is the uninstantiated operation;
+       @(':length-t') is the operation applied to
+       a type value for its type parameter;
+       @(':length-t-d') is the operation further applied to
+       a natural number for its dimension parameter;
+       @(':length-t-d-s') is the operation further applied to
+       a list of natural numbers for its shape parameter.
+       As another example, here are the stages of integer binary operations:
+       @(':int-binary') is the uninstantiated operation;
+       @(':int-binary-x') is the operation applied to
+       its first argument value
+       (which we call @('x'), based on the idea that
+       the two arguments are @('x') and @('y')."))
+    (:int-unary ((op int-unary-primop)))
+    (:int-binary ((op int-binary-primop)))
+    (:int-binary-x ((op int-binary-primop)
+                    (xval expr-value)))
+    (:int-rel ((op int-rel-primop)))
+    (:int-rel-x ((op int-rel-primop)
+                 (xval expr-value)))
+    (:int-to-float ())
+    (:int-to-bool ())
+    (:float-unary ((op float-unary-primop)))
+    (:float-binary ((op float-binary-primop)))
+    (:float-binary-x ((op float-binary-primop)
+                      (xval expr-value)))
+    (:float-rel ((op float-rel-primop)))
+    (:float-rel-x ((op float-rel-primop)
+                   (xval expr-value)))
+    (:float-truncate ())
+    (:float-round ())
+    (:float-ceiling ())
+    (:float-floor ())
+    (:bool-unary ((op bool-unary-primop)))
+    (:bool-binary ((op bool-binary-primop)))
+    (:bool-binary-x ((op bool-binary-primop)
+                     (xval expr-value)))
+    (:bool-rel ((op bool-rel-primop)))
+    (:bool-rel-x ((op bool-rel-primop)
+                  (xval expr-value)))
+    (:bool-to-int ())
+    (:bool-to-float ())
+    (:head ())
+    (:head-t ((tval type-value)))
+    (:head-t-d ((tval type-value)
+                (dval nat)))
+    (:head-t-d-s ((tval type-value)
+                  (dval nat)
+                  (sval nat-list)))
+    (:tail ())
+    (:tail-t ((tval type-value)))
+    (:tail-t-d ((tval type-value)
+                (dval nat)))
+    (:tail-t-d-s ((tval type-value)
+                  (dval nat)
+                  (sval nat-list)))
+    (:length ())
+    (:length-t ((tval type-value)))
+    (:length-t-d ((tval type-value)
+                  (dval nat)))
+    (:length-t-d-s ((tval type-value)
+                    (dval nat)
+                    (sval nat-list)))
+    (:append ())
+    (:append-t ((tval type-value)))
+    (:append-t-m ((tval type-value)
+                  (mval nat)))
+    (:append-t-m-n ((tval type-value)
+                    (mval nat)
+                    (nval nat)))
+    (:append-t-m-n-s ((tval type-value)
+                      (mval nat)
+                      (nval nat)
+                      (sval nat-list)))
+    (:append-t-m-n-s-x ((tval type-value)
+                        (mval nat)
+                        (nval nat)
+                        (sval nat-list)
+                        (xval expr-value)))
+    (:reverse ())
+    (:reverse-t ((tval type-value)))
+    (:reverse-t-d ((tval type-value)
+                   (dval nat)))
+    (:reverse-t-d-s ((tval type-value)
+                     (dval nat)
+                     (sval nat-list)))
+    (:index ())
+    (:index-t ((tval type-value)))
+    (:index-t-m ((tval type-value)
+                 (mval nat)))
+    (:index-t-m-x ((tval type-value)
+                   (mval nat)
+                   (xval expr-value)))
+    (:index2d ())
+    (:index2d-t ((tval type-value)))
+    (:index2d-t-m ((tval type-value)
+                   (mval nat)))
+    (:index2d-t-m-n ((tval type-value)
+                     (mval nat)
+                     (nval nat)))
+    (:index2d-t-m-n-x ((tval type-value)
+                       (mval nat)
+                       (nval nat)
+                       (xval expr-value)))
+    :pred primop-valuep
+    :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -336,7 +580,15 @@
      because they need to check the expression values inside them.
      But an environment as such does not have dimensions,
      so no dimensions are returned by the checking function on environments
-     (and on the underlying maps)."))
+     (and on the underlying maps).")
+   (xdoc::p
+    "Since expression values are mutually recursive
+     with primitive operation values,
+     these functions also operate on the latter.
+     Although these are always scalars,
+     we still need to check the well-formedness
+     of the expression values stored in them.
+     As done with environment, no dimensions are returned."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -426,6 +678,35 @@
       :hints (("Goal"
                :induct (len vals)
                :in-theory (enable len)))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-dims-of-primop-value ((val primop-valuep))
+    :returns (unit unit-resultp)
+    :parents (expression-values-and-environments check-dims-of-expr-values/denv)
+    :short "Check dimension constraints on primitive operation values."
+    (primop-value-case
+     val
+     :int-binary-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                     :unit)
+     :int-rel-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                  :unit)
+     :float-binary-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                       :unit)
+     :float-rel-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                    :unit)
+     :bool-binary-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                      :unit)
+     :bool-rel-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                   :unit)
+     :append-t-m-n-s-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                         :unit)
+     :index-t-m-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                    :unit)
+     :index2d-t-m-n-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                        :unit)
+     :otherwise :unit)
+    :measure (primop-value-count val))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -534,6 +815,17 @@
              (expr-value-list-list-wfp (list-split vals n)))
     :induct t
     :enable list-split))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primop-value-wfp ((val primop-valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a primitive operation value is well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The primitive operation value must satisfy the dimension constraints."))
+  (not (reserrp (check-dims-of-primop-value val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -892,6 +1184,591 @@
              dims-of-expr-value-vector->elems-to-repeat
              dims-of-expr-value
              check-dims-of-expr-value)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primop-value-funp ((op primop-valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a primitive operation value is
+          applicable to expression values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A primitive operation value (see @(tsee primop-value))
+     may be applicable to expression values (via term applications),
+     or to type values (via type applications),
+     or to ispace values (via ispace applications).
+     This predicate,
+     along with @(tsee primop-value-tfunp) and @(tsee primop-value-ifunp),
+     checks these applicabilities,
+     which are exhaustive and non-overlapping.
+     The three predicates mirror the three kinds of lambda abstraction values,
+     i.e. the @(':lambda'), @(':tlambda'), and @(':ilambda') summands
+     of @(tsee expr-value).")
+   (xdoc::p
+    "This predicate holds on the monomorphic primitive operations,
+     which need no instantiation,
+     and on the fully instantiated stages
+     of the polymorphic primitive operations."))
+  (primop-value-case op
+                     :int-unary t
+                     :int-binary t
+                     :int-binary-x t
+                     :int-rel t
+                     :int-rel-x t
+                     :int-to-float t
+                     :int-to-bool t
+                     :float-unary t
+                     :float-binary t
+                     :float-binary-x t
+                     :float-rel t
+                     :float-rel-x t
+                     :float-truncate t
+                     :float-round t
+                     :float-ceiling t
+                     :float-floor t
+                     :bool-unary t
+                     :bool-binary t
+                     :bool-binary-x t
+                     :bool-rel t
+                     :bool-rel-x t
+                     :bool-to-int t
+                     :bool-to-float t
+                     :head nil
+                     :head-t nil
+                     :head-t-d nil
+                     :head-t-d-s t
+                     :tail nil
+                     :tail-t nil
+                     :tail-t-d nil
+                     :tail-t-d-s t
+                     :length nil
+                     :length-t nil
+                     :length-t-d nil
+                     :length-t-d-s t
+                     :append nil
+                     :append-t nil
+                     :append-t-m nil
+                     :append-t-m-n nil
+                     :append-t-m-n-s t
+                     :append-t-m-n-s-x t
+                     :reverse nil
+                     :reverse-t nil
+                     :reverse-t-d nil
+                     :reverse-t-d-s t
+                     :index nil
+                     :index-t nil
+                     :index-t-m t
+                     :index-t-m-x t
+                     :index2d nil
+                     :index2d-t nil
+                     :index2d-t-m nil
+                     :index2d-t-m-n t
+                     :index2d-t-m-n-x t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primop-value-tfunp ((op primop-valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a primitive operation value is
+          applicable to type values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee primop-value-funp) for
+     a description of the three applicability predicates.")
+   (xdoc::p
+    "This predicate holds on
+     the stages of polymorphic primitive operations
+     that expect type values next."))
+  (primop-value-case op
+                     :int-unary nil
+                     :int-binary nil
+                     :int-binary-x nil
+                     :int-rel nil
+                     :int-rel-x nil
+                     :int-to-float nil
+                     :int-to-bool nil
+                     :float-unary nil
+                     :float-binary nil
+                     :float-binary-x nil
+                     :float-rel nil
+                     :float-rel-x nil
+                     :float-truncate nil
+                     :float-round nil
+                     :float-ceiling nil
+                     :float-floor nil
+                     :bool-unary nil
+                     :bool-binary nil
+                     :bool-binary-x nil
+                     :bool-rel nil
+                     :bool-rel-x nil
+                     :bool-to-int nil
+                     :bool-to-float nil
+                     :head t
+                     :head-t nil
+                     :head-t-d nil
+                     :head-t-d-s nil
+                     :tail t
+                     :tail-t nil
+                     :tail-t-d nil
+                     :tail-t-d-s nil
+                     :length t
+                     :length-t nil
+                     :length-t-d nil
+                     :length-t-d-s nil
+                     :append t
+                     :append-t nil
+                     :append-t-m nil
+                     :append-t-m-n nil
+                     :append-t-m-n-s nil
+                     :append-t-m-n-s-x nil
+                     :reverse t
+                     :reverse-t nil
+                     :reverse-t-d nil
+                     :reverse-t-d-s nil
+                     :index t
+                     :index-t nil
+                     :index-t-m nil
+                     :index-t-m-x nil
+                     :index2d t
+                     :index2d-t nil
+                     :index2d-t-m nil
+                     :index2d-t-m-n nil
+                     :index2d-t-m-n-x nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primop-value-ifunp ((op primop-valuep))
+  :returns (yes/no booleanp)
+  :short "Check if a primitive operation value is applicable to ispace values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee primop-value-funp) for
+     a description of the three applicability predicates.")
+   (xdoc::p
+    "This predicate holds on
+     the stages of polymorphic primitive operations
+     that expect ispace values next."))
+  (primop-value-case op
+                     :int-unary nil
+                     :int-binary nil
+                     :int-binary-x nil
+                     :int-rel nil
+                     :int-rel-x nil
+                     :int-to-float nil
+                     :int-to-bool nil
+                     :float-unary nil
+                     :float-binary nil
+                     :float-binary-x nil
+                     :float-rel nil
+                     :float-rel-x nil
+                     :float-truncate nil
+                     :float-round nil
+                     :float-ceiling nil
+                     :float-floor nil
+                     :bool-unary nil
+                     :bool-binary nil
+                     :bool-binary-x nil
+                     :bool-rel nil
+                     :bool-rel-x nil
+                     :bool-to-int nil
+                     :bool-to-float nil
+                     :head nil
+                     :head-t t
+                     :head-t-d t
+                     :head-t-d-s nil
+                     :tail nil
+                     :tail-t t
+                     :tail-t-d t
+                     :tail-t-d-s nil
+                     :length nil
+                     :length-t t
+                     :length-t-d t
+                     :length-t-d-s nil
+                     :append nil
+                     :append-t t
+                     :append-t-m t
+                     :append-t-m-n t
+                     :append-t-m-n-s nil
+                     :append-t-m-n-s-x nil
+                     :reverse nil
+                     :reverse-t t
+                     :reverse-t-d t
+                     :reverse-t-d-s nil
+                     :index nil
+                     :index-t t
+                     :index-t-m nil
+                     :index-t-m-x nil
+                     :index2d nil
+                     :index2d-t t
+                     :index2d-t-m t
+                     :index2d-t-m-n nil
+                     :index2d-t-m-n-x nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection primop-value-applicability-theorems
+  :short "Theorems about the applicability predicates
+          for primitive operation values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The predicates
+     @(tsee primop-value-funp),
+     @(tsee primop-value-tfunp), and
+     @(tsee primop-value-ifunp)
+     are exhaustive and non-overlapping:
+     every primitive operation value satisfies exactly one of them."))
+
+  (defrule primop-value-applicability-exhaustive
+    (or (primop-value-funp op)
+        (primop-value-tfunp op)
+        (primop-value-ifunp op))
+    :rule-classes nil
+    :enable (primop-value-funp
+             primop-value-tfunp
+             primop-value-ifunp))
+
+  (defrule primop-value-applicability-non-overlapping
+    (and (not (and (primop-value-funp op)
+                   (primop-value-tfunp op)))
+         (not (and (primop-value-funp op)
+                   (primop-value-ifunp op)))
+         (not (and (primop-value-tfunp op)
+                   (primop-value-ifunp op))))
+    :rule-classes nil
+    :enable (primop-value-funp
+             primop-value-tfunp
+             primop-value-ifunp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primop-value-uninstantiated ((op primop-valuep))
+  :returns (uninst primop-valuep)
+  :short "Uninstantiated stage of a primitive operation value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This maps each stage of a polymorphic primitive operation
+     to the uninstantiated stage of the same operation,
+     discarding the instantiation values (if any);
+     it maps every other primitive operation value to itself."))
+  (primop-value-case op
+                     :int-binary-x (primop-value-int-binary op.op)
+                     :int-rel-x (primop-value-int-rel op.op)
+                     :float-binary-x (primop-value-float-binary op.op)
+                     :float-rel-x (primop-value-float-rel op.op)
+                     :bool-binary-x (primop-value-bool-binary op.op)
+                     :bool-rel-x (primop-value-bool-rel op.op)
+                     :head-t (primop-value-head)
+                     :head-t-d (primop-value-head)
+                     :head-t-d-s (primop-value-head)
+                     :tail-t (primop-value-tail)
+                     :tail-t-d (primop-value-tail)
+                     :tail-t-d-s (primop-value-tail)
+                     :length-t (primop-value-length)
+                     :length-t-d (primop-value-length)
+                     :length-t-d-s (primop-value-length)
+                     :append-t (primop-value-append)
+                     :append-t-m (primop-value-append)
+                     :append-t-m-n (primop-value-append)
+                     :append-t-m-n-s (primop-value-append)
+                     :append-t-m-n-s-x (primop-value-append)
+                     :reverse-t (primop-value-reverse)
+                     :reverse-t-d (primop-value-reverse)
+                     :reverse-t-d-s (primop-value-reverse)
+                     :index-t (primop-value-index)
+                     :index-t-m (primop-value-index)
+                     :index-t-m-x (primop-value-index)
+                     :index2d-t (primop-value-index2d)
+                     :index2d-t-m (primop-value-index2d)
+                     :index2d-t-m-n (primop-value-index2d)
+                     :index2d-t-m-n-x (primop-value-index2d)
+                     :otherwise (primop-value-fix op)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-of-primop-value-fun ((op primop-valuep))
+  :guard (primop-value-funp op)
+  :returns (type type-valuep)
+  :short "Type of a primitive operation value applicable to expression values,
+          as a type value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type value form of the type that
+     @(tsee primop-types) associates to the operation's surface name.
+     We keep this consistent with @(tsee primop-types) by construction;
+     a theorem relating the two could be added later.")
+   (xdoc::p
+    "Currently this type is always
+     a zero-rank array of the operation's function type,
+     whose inputs and output are themselves
+     zero-rank arrays of base types.
+     From this type value we can obtain,
+     for an operation used as a function value,
+     both the expected cell dimensions of its arguments
+     and the type of its result,
+     uniformly with how the same information
+     is obtained for lambda abstractions.")
+   (xdoc::p
+    "This function is restricted, via the guard,
+     to the primitive operation values applicable to expression values,
+     which are the ones used as function values.
+     For the fully instantiated stages
+     of polymorphic primitive operations,
+     the function type value is constructed
+     from the instantiation values in the fields:
+     for the @(':length-t-d-s') stage of @('length'),
+     the input is an array of the stored type value,
+     whose dimensions are the stored dimension
+     followed by the stored shape,
+     and the output is the zero-rank array of the integer type.
+     For the stages not applicable to expression values,
+     which are outside the guard,
+     we return an irrelevant type value."))
+  (b* ((int-tv (make-type-value-array
+                :elem (type-value-base (base-type-int))
+                :dims nil))
+       (bool-tv (make-type-value-array
+                 :elem (type-value-base (base-type-bool))
+                 :dims nil))
+       (float-tv (make-type-value-array
+                  :elem (type-value-base (base-type-float))
+                  :dims nil))
+       (int-binop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list int-tv int-tv) :out int-tv)
+         :dims nil))
+       (int-unop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list int-tv) :out int-tv)
+         :dims nil))
+       (int-relop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list int-tv int-tv) :out bool-tv)
+         :dims nil))
+       (int-to-float-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list int-tv) :out float-tv)
+         :dims nil))
+       (int-to-bool-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list int-tv) :out bool-tv)
+         :dims nil))
+       (float-binop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list float-tv float-tv) :out float-tv)
+         :dims nil))
+       (float-unop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list float-tv) :out float-tv)
+         :dims nil))
+       (float-relop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list float-tv float-tv) :out bool-tv)
+         :dims nil))
+       (float-to-int-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list float-tv) :out int-tv)
+         :dims nil))
+       (float-to-bool-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list float-tv) :out bool-tv)
+         :dims nil))
+       (bool-unop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list bool-tv) :out bool-tv)
+         :dims nil))
+       (bool-binop-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list bool-tv bool-tv) :out bool-tv)
+         :dims nil))
+       (bool-to-int-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list bool-tv) :out int-tv)
+         :dims nil))
+       (bool-to-float-tv
+        (make-type-value-array
+         :elem (make-type-value-fun :in (list bool-tv) :out float-tv)
+         :dims nil)))
+    (primop-value-case
+     op
+     :int-unary int-unop-tv
+     :int-binary int-binop-tv
+     :int-binary-x int-unop-tv
+     :int-rel int-relop-tv
+     :int-rel-x int-to-bool-tv
+     :int-to-float int-to-float-tv
+     :int-to-bool int-to-bool-tv
+     :float-unary float-unop-tv
+     :float-binary float-binop-tv
+     :float-binary-x float-unop-tv
+     :float-rel float-relop-tv
+     :float-rel-x float-to-bool-tv
+     :float-truncate float-to-int-tv
+     :float-round float-to-int-tv
+     :float-ceiling float-to-int-tv
+     :float-floor float-to-int-tv
+     :bool-unary bool-unop-tv
+     :bool-binary bool-binop-tv
+     :bool-binary-x bool-unop-tv
+     :bool-rel bool-binop-tv
+     :bool-rel-x bool-unop-tv
+     :bool-to-int bool-to-int-tv
+     :bool-to-float bool-to-float-tv
+     :head (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :head-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :head-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :head-t-d-s (make-type-value-array
+                  :elem (make-type-value-fun
+                         :in (list (make-type-value-array
+                                    :elem op.tval
+                                    :dims (cons (1+ op.dval) op.sval)))
+                         :out (make-type-value-array
+                               :elem op.tval
+                               :dims op.sval))
+                  :dims nil)
+     :tail (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :tail-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :tail-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :tail-t-d-s (make-type-value-array
+                  :elem (make-type-value-fun
+                         :in (list (make-type-value-array
+                                    :elem op.tval
+                                    :dims (cons (1+ op.dval) op.sval)))
+                         :out (make-type-value-array
+                               :elem op.tval
+                               :dims (cons op.dval op.sval)))
+                  :dims nil)
+     :length (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :length-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :length-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :length-t-d-s (make-type-value-array
+                    :elem (make-type-value-fun
+                           :in (list (make-type-value-array
+                                      :elem op.tval
+                                      :dims (cons op.dval op.sval)))
+                           :out int-tv)
+                    :dims nil)
+     :append (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :append-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :append-t-m (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :append-t-m-n (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :append-t-m-n-s (make-type-value-array
+                      :elem (make-type-value-fun
+                             :in (list (make-type-value-array
+                                        :elem op.tval
+                                        :dims (cons op.mval op.sval))
+                                       (make-type-value-array
+                                        :elem op.tval
+                                        :dims (cons op.nval op.sval)))
+                             :out (make-type-value-array
+                                   :elem op.tval
+                                   :dims (cons (+ op.mval op.nval) op.sval)))
+                      :dims nil)
+     :append-t-m-n-s-x (make-type-value-array
+                        :elem (make-type-value-fun
+                               :in (list (make-type-value-array
+                                          :elem op.tval
+                                          :dims (cons op.nval op.sval)))
+                               :out (make-type-value-array
+                                     :elem op.tval
+                                     :dims (cons (+ op.mval op.nval) op.sval)))
+                        :dims nil)
+     :reverse (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :reverse-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :reverse-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :reverse-t-d-s (make-type-value-array
+                     :elem (make-type-value-fun
+                            :in (list (make-type-value-array
+                                       :elem op.tval
+                                       :dims (cons op.dval op.sval)))
+                            :out (make-type-value-array
+                                  :elem op.tval
+                                  :dims (cons op.dval op.sval)))
+                     :dims nil)
+     :index (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :index-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :index-t-m (make-type-value-array
+                 :elem (make-type-value-fun
+                        :in (list (make-type-value-array
+                                   :elem op.tval
+                                   :dims (list op.mval))
+                                  int-tv)
+                        :out (make-type-value-array
+                              :elem op.tval
+                              :dims nil))
+                 :dims nil)
+     :index-t-m-x (make-type-value-array
+                   :elem (make-type-value-fun
+                          :in (list int-tv)
+                          :out (make-type-value-array
+                                :elem op.tval
+                                :dims nil))
+                   :dims nil)
+     :index2d (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :index2d-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :index2d-t-m (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :index2d-t-m-n (make-type-value-array
+                     :elem (make-type-value-fun
+                            :in (list (make-type-value-array
+                                       :elem op.tval
+                                       :dims (list op.mval op.nval))
+                                      (make-type-value-array
+                                       :elem (type-value-base (base-type-int))
+                                       :dims (list 2)))
+                            :out (make-type-value-array
+                                  :elem op.tval
+                                  :dims nil))
+                     :dims nil)
+     :index2d-t-m-n-x (make-type-value-array
+                       :elem (make-type-value-fun
+                              :in (list (make-type-value-array
+                                         :elem (type-value-base (base-type-int))
+                                         :dims (list 2)))
+                              :out (make-type-value-array
+                                    :elem op.tval
+                                    :dims nil))
+                       :dims nil)))
+  :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
+
+  ///
+
+  (defret type-value-kind-of-type-of-primop-value-fun
+    (implies (primop-value-funp op)
+             (equal (type-value-kind type) :array))
+    :hints (("Goal" :in-theory (enable primop-value-funp))))
+
+  (defret type-value-kind-of-elem-of-type-of-primop-value-fun
+    (implies (primop-value-funp op)
+             (equal (type-value-kind (type-value-array->elem type)) :fun))
+    :hints (("Goal" :in-theory (enable primop-value-funp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define arity-of-primop-value-fun ((op primop-valuep))
+  :guard (primop-value-funp op)
+  :returns (arity natp)
+  :short "Arity of a primitive operation value applicable to expression values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the number of expression arguments that the operation takes,
+     matching the @('prim-...') function that defines its semantics
+     in @(see primitives-evaluation):
+     1 for the unary operations, 2 for the binary ones.")
+   (xdoc::p
+    "We define this as the number of inputs
+     of the operation's function type (see @(tsee type-of-primop-value-fun)),
+     so that the arity cannot diverge from the type.
+     Like @(tsee type-of-primop-value-fun),
+     this function is restricted, via the guard,
+     to the values applicable to expression values."))
+  (len (type-value-fun->in
+        (type-value-array->elem (type-of-primop-value-fun op)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1421,60 +2298,144 @@
      A polymorphic operation like @('head'), @('tail'), or @('length')
      is associated to its uninstantiated stage."))
   (omap::from-alist
-   (list (cons "+" (expr-value-primop (primop-value-int-add)))
-         (cons "-" (expr-value-primop (primop-value-int-sub)))
-         (cons "*" (expr-value-primop (primop-value-int-mul)))
-         (cons "/" (expr-value-primop (primop-value-int-div)))
-         (cons "^" (expr-value-primop (primop-value-int-expt)))
-         (cons "mod" (expr-value-primop (primop-value-int-mod)))
-         (cons "max" (expr-value-primop (primop-value-int-max)))
-         (cons "min" (expr-value-primop (primop-value-int-min)))
-         (cons "bit-and" (expr-value-primop (primop-value-int-bit-and)))
-         (cons "bit-or" (expr-value-primop (primop-value-int-bit-or)))
-         (cons "bit-xor" (expr-value-primop (primop-value-int-bit-xor)))
-         (cons "shl" (expr-value-primop (primop-value-int-shl)))
-         (cons "shr" (expr-value-primop (primop-value-int-shr)))
-         (cons "bit-not" (expr-value-primop (primop-value-int-bit-not)))
-         (cons "popc" (expr-value-primop (primop-value-int-popc)))
-         (cons "==" (expr-value-primop (primop-value-int-eq)))
-         (cons "!=" (expr-value-primop (primop-value-int-neq)))
-         (cons "<" (expr-value-primop (primop-value-int-lt)))
-         (cons ">" (expr-value-primop (primop-value-int-gt)))
-         (cons "<=" (expr-value-primop (primop-value-int-leq)))
-         (cons ">=" (expr-value-primop (primop-value-int-geq)))
+   (list (cons "+" (expr-value-primop
+                    (primop-value-int-binary
+                     (int-binary-primop-add))))
+         (cons "-" (expr-value-primop
+                    (primop-value-int-binary
+                     (int-binary-primop-sub))))
+         (cons "*" (expr-value-primop
+                    (primop-value-int-binary
+                     (int-binary-primop-mul))))
+         (cons "/" (expr-value-primop
+                    (primop-value-int-binary
+                     (int-binary-primop-div))))
+         (cons "^" (expr-value-primop
+                    (primop-value-int-binary
+                     (int-binary-primop-expt))))
+         (cons "mod" (expr-value-primop
+                      (primop-value-int-binary
+                       (int-binary-primop-mod))))
+         (cons "max" (expr-value-primop
+                      (primop-value-int-binary
+                       (int-binary-primop-max))))
+         (cons "min" (expr-value-primop
+                      (primop-value-int-binary
+                       (int-binary-primop-min))))
+         (cons "bit-and" (expr-value-primop
+                          (primop-value-int-binary
+                           (int-binary-primop-bit-and))))
+         (cons "bit-or" (expr-value-primop
+                         (primop-value-int-binary
+                          (int-binary-primop-bit-or))))
+         (cons "bit-xor" (expr-value-primop
+                          (primop-value-int-binary
+                           (int-binary-primop-bit-xor))))
+         (cons "shl" (expr-value-primop
+                      (primop-value-int-binary
+                       (int-binary-primop-shl))))
+         (cons "shr" (expr-value-primop
+                      (primop-value-int-binary
+                       (int-binary-primop-shr))))
+         (cons "bit-not" (expr-value-primop
+                          (primop-value-int-unary
+                           (int-unary-primop-bit-not))))
+         (cons "popc" (expr-value-primop
+                       (primop-value-int-unary
+                        (int-unary-primop-popc))))
+         (cons "==" (expr-value-primop
+                     (primop-value-int-rel
+                      (int-rel-primop-eq))))
+         (cons "!=" (expr-value-primop
+                     (primop-value-int-rel
+                      (int-rel-primop-neq))))
+         (cons "<" (expr-value-primop
+                    (primop-value-int-rel
+                     (int-rel-primop-lt))))
+         (cons ">" (expr-value-primop
+                    (primop-value-int-rel
+                     (int-rel-primop-gt))))
+         (cons "<=" (expr-value-primop
+                     (primop-value-int-rel
+                      (int-rel-primop-leq))))
+         (cons ">=" (expr-value-primop
+                     (primop-value-int-rel
+                      (int-rel-primop-geq))))
          (cons "i->f" (expr-value-primop (primop-value-int-to-float)))
          (cons "i->bool" (expr-value-primop (primop-value-int-to-bool)))
-         (cons "f.+" (expr-value-primop (primop-value-float-add)))
-         (cons "f.-" (expr-value-primop (primop-value-float-sub)))
-         (cons "f.*" (expr-value-primop (primop-value-float-mul)))
-         (cons "f./" (expr-value-primop (primop-value-float-div)))
-         (cons "f.^" (expr-value-primop (primop-value-float-expt)))
-         (cons "f.max" (expr-value-primop (primop-value-float-max)))
-         (cons "f.min" (expr-value-primop (primop-value-float-min)))
-         (cons "sqrt" (expr-value-primop (primop-value-float-sqrt)))
-         (cons "f.sqrt" (expr-value-primop (primop-value-float-sqrt)))
-         (cons "f.==" (expr-value-primop (primop-value-float-eq)))
-         (cons "f.!=" (expr-value-primop (primop-value-float-neq)))
-         (cons "f.<" (expr-value-primop (primop-value-float-lt)))
-         (cons "f.>" (expr-value-primop (primop-value-float-gt)))
-         (cons "f.<=" (expr-value-primop (primop-value-float-leq)))
-         (cons "f.>=" (expr-value-primop (primop-value-float-geq)))
+         (cons "f.+" (expr-value-primop
+                      (primop-value-float-binary
+                       (float-binary-primop-add))))
+         (cons "f.-" (expr-value-primop
+                      (primop-value-float-binary
+                       (float-binary-primop-sub))))
+         (cons "f.*" (expr-value-primop
+                      (primop-value-float-binary
+                       (float-binary-primop-mul))))
+         (cons "f./" (expr-value-primop
+                      (primop-value-float-binary
+                       (float-binary-primop-div))))
+         (cons "f.^" (expr-value-primop
+                      (primop-value-float-binary
+                       (float-binary-primop-expt))))
+         (cons "f.max" (expr-value-primop
+                        (primop-value-float-binary
+                         (float-binary-primop-max))))
+         (cons "f.min" (expr-value-primop
+                        (primop-value-float-binary
+                         (float-binary-primop-min))))
+         (cons "sqrt" (expr-value-primop
+                       (primop-value-float-unary
+                        (float-unary-primop-sqrt))))
+         (cons "f.sqrt" (expr-value-primop
+                         (primop-value-float-unary
+                          (float-unary-primop-sqrt))))
+         (cons "f.==" (expr-value-primop
+                       (primop-value-float-rel
+                        (float-rel-primop-eq))))
+         (cons "f.!=" (expr-value-primop
+                       (primop-value-float-rel
+                        (float-rel-primop-neq))))
+         (cons "f.<" (expr-value-primop
+                      (primop-value-float-rel
+                       (float-rel-primop-lt))))
+         (cons "f.>" (expr-value-primop
+                      (primop-value-float-rel
+                       (float-rel-primop-gt))))
+         (cons "f.<=" (expr-value-primop
+                       (primop-value-float-rel
+                        (float-rel-primop-leq))))
+         (cons "f.>=" (expr-value-primop
+                       (primop-value-float-rel
+                        (float-rel-primop-geq))))
          (cons "truncate" (expr-value-primop (primop-value-float-truncate)))
          (cons "round" (expr-value-primop (primop-value-float-round)))
          (cons "ceiling" (expr-value-primop (primop-value-float-ceiling)))
          (cons "floor" (expr-value-primop (primop-value-float-floor)))
-         (cons "not" (expr-value-primop (primop-value-bool-not)))
-         (cons "and" (expr-value-primop (primop-value-bool-and)))
-         (cons "or" (expr-value-primop (primop-value-bool-or)))
-         (cons "bool.==" (expr-value-primop (primop-value-bool-eq)))
-         (cons "bool.!=" (expr-value-primop (primop-value-bool-neq)))
+         (cons "not" (expr-value-primop
+                      (primop-value-bool-unary
+                       (bool-unary-primop-not))))
+         (cons "and" (expr-value-primop
+                      (primop-value-bool-binary
+                       (bool-binary-primop-and))))
+         (cons "or" (expr-value-primop
+                     (primop-value-bool-binary
+                      (bool-binary-primop-or))))
+         (cons "bool.==" (expr-value-primop
+                          (primop-value-bool-rel
+                           (bool-rel-primop-eq))))
+         (cons "bool.!=" (expr-value-primop
+                          (primop-value-bool-rel
+                           (bool-rel-primop-neq))))
          (cons "bool->i" (expr-value-primop (primop-value-bool-to-int)))
          (cons "bool->f" (expr-value-primop (primop-value-bool-to-float)))
          (cons "head" (expr-value-primop (primop-value-head)))
          (cons "tail" (expr-value-primop (primop-value-tail)))
          (cons "length" (expr-value-primop (primop-value-length)))
          (cons "append" (expr-value-primop (primop-value-append)))
-         (cons "reverse" (expr-value-primop (primop-value-reverse))))))
+         (cons "reverse" (expr-value-primop (primop-value-reverse)))
+         (cons "index" (expr-value-primop (primop-value-index)))
+         (cons "index2d" (expr-value-primop (primop-value-index2d))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

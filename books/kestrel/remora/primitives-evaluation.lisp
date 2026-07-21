@@ -90,7 +90,8 @@
    (xdoc::p
     "The polymorphic primitives currently implemented are
      @(tsee prim-head), @(tsee prim-tail), @(tsee prim-length),
-     @(tsee prim-append), and @(tsee prim-reverse).")
+     @(tsee prim-append), @(tsee prim-reverse),
+     @(tsee prim-index), and @(tsee prim-index2d).")
    (xdoc::p
     "For integers, we currently model Remora integer values as unbounded
      mathematical integers, matching ACL2's own integer type.
@@ -1795,6 +1796,125 @@
              (expr-value-wfp val))
     :hyp (expr-value-wfp val1)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-index ((tval type-valuep)
+                    (m natp)
+                    (val1 expr-valuep)
+                    (val2 expr-valuep))
+  :guard (and (expr-value-wfp val1) (expr-value-wfp val2))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of vector indexing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('index') operation
+     (see the @(':index-t-m') summand of @(tsee primop-value)):
+     @('tval') and @('m') are the instantiation values,
+     and @('val1') and @('val2') are the argument cells.
+     According to the instantiated type of the operation,
+     the first argument cell is a vector of @('m') scalars,
+     the second argument cell is a scalar integer @('i'),
+     and the result is the @('i')-th element (zero-based) of the vector.
+     The guard requires the argument cells to be well-formed;
+     we defensively check that they have the expected dimensions,
+     and that the index is within bounds
+     (the interpreter in [impl] crashes on out-of-bounds indices,
+     while we return an error).")
+   (xdoc::p
+    "The type value @('tval') is currently unused,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cells
+     when those checks are extended to types."))
+  (declare (ignore tval))
+  (b* ((m (lnfix m))
+       ((unless (equal (dims-of-expr-value val1) (list m))) (reserr nil))
+       ((ok (int-value ival)) (check-expr-value-int val2))
+       (i ival.int)
+       ((unless (and (<= 0 i) (< i m))) (reserr nil))
+       (elems (expr-value-vector-elements val1))
+       ((unless (< i (len elems))) (reserr nil)))
+    (expr-value-fix (nth i elems)))
+  :guard-hints
+  (("Goal" :in-theory (enable expr-value-vectorp-to-consp-of-dims nfix)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-index
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (expr-value-wfp val1)
+    :hints
+    (("Goal"
+      :in-theory (enable expr-value-wfp-of-nth-when-expr-value-list-wfp nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-index2d ((tval type-valuep)
+                      (m natp)
+                      (n natp)
+                      (val1 expr-valuep)
+                      (val2 expr-valuep))
+  :guard (and (expr-value-wfp val1) (expr-value-wfp val2))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of matrix indexing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('index2d') operation
+     (see the @(':index2d-t-m-n') summand of @(tsee primop-value)):
+     @('tval'), @('m'), and @('n') are the instantiation values,
+     and @('val1') and @('val2') are the argument cells.
+     According to the instantiated type of the operation,
+     the first argument cell is an @('m') by @('n') matrix of scalars,
+     the second argument cell is a vector of two integers @('i') and @('j'),
+     and the result is the scalar at (zero-based) row @('i') and column @('j')
+     of the matrix.
+     The guard requires the argument cells to be well-formed;
+     we defensively check that they have the expected dimensions,
+     and that the indices are within bounds
+     (the interpreter in [impl] crashes on out-of-bounds indices,
+     while we return an error).")
+   (xdoc::p
+    "The type value @('tval') is currently unused,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cells
+     when those checks are extended to types."))
+  (declare (ignore tval))
+  (b* ((m (lnfix m))
+       (n (lnfix n))
+       ((unless (equal (dims-of-expr-value val1) (list m n))) (reserr nil))
+       ((unless (equal (dims-of-expr-value val2) (list 2))) (reserr nil))
+       (idxs (expr-value-vector-elements val2))
+       ((unless (equal (len idxs) 2)) (reserr nil))
+       ((ok (int-value ival)) (check-expr-value-int (expr-value-fix (nth 0 idxs))))
+       ((ok (int-value jval)) (check-expr-value-int (expr-value-fix (nth 1 idxs))))
+       (i ival.int)
+       (j jval.int)
+       ((unless (and (<= 0 i) (< i m))) (reserr nil))
+       ((unless (and (<= 0 j) (< j n))) (reserr nil))
+       (rows (expr-value-vector-elements val1))
+       ((unless (< i (len rows))) (reserr nil))
+       (row (expr-value-fix (nth i rows)))
+       ((unless (expr-value-vectorp row)) (reserr nil))
+       (elems (expr-value-vector-elements row))
+       ((unless (< j (len elems))) (reserr nil)))
+    (expr-value-fix (nth j elems)))
+  :guard-hints
+  (("Goal" :in-theory (enable expr-value-vectorp-to-consp-of-dims nfix)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-index2d
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (expr-value-wfp val1)
+    :hints
+    (("Goal"
+      :in-theory (enable expr-value-wfp-of-nth-when-expr-value-list-wfp nfix)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-primop-fun ((op primop-valuep) (args expr-value-listp))
@@ -1828,52 +1948,76 @@
         (reserr nil)))
     (primop-value-case
      op
-     :int-add (prim-int-add (first args) (second args))
-     :int-sub (prim-int-sub (first args) (second args))
-     :int-mul (prim-int-mul (first args) (second args))
-     :int-div (prim-int-div (first args) (second args))
-     :int-expt (prim-int-expt (first args) (second args))
-     :int-mod (prim-int-mod (first args) (second args))
-     :int-max (prim-int-max (first args) (second args))
-     :int-min (prim-int-min (first args) (second args))
-     :int-bit-and (prim-int-bit-and (first args) (second args))
-     :int-bit-or (prim-int-bit-or (first args) (second args))
-     :int-bit-xor (prim-int-bit-xor (first args) (second args))
-     :int-shl (prim-int-shl (first args) (second args))
-     :int-shr (prim-int-shr (first args) (second args))
-     :int-bit-not (prim-int-bit-not (first args))
-     :int-popc (prim-int-popc (first args))
-     :int-eq (prim-int-eq (first args) (second args))
-     :int-neq (prim-int-neq (first args) (second args))
-     :int-lt (prim-int-lt (first args) (second args))
-     :int-gt (prim-int-gt (first args) (second args))
-     :int-leq (prim-int-leq (first args) (second args))
-     :int-geq (prim-int-geq (first args) (second args))
+     :int-unary (int-unary-primop-case
+                 op.op
+                 :bit-not (prim-int-bit-not (first args))
+                 :popc (prim-int-popc (first args)))
+     :int-binary (int-binary-primop-case
+                  op.op
+                  :add (prim-int-add (first args) (second args))
+                  :sub (prim-int-sub (first args) (second args))
+                  :mul (prim-int-mul (first args) (second args))
+                  :div (prim-int-div (first args) (second args))
+                  :expt (prim-int-expt (first args) (second args))
+                  :mod (prim-int-mod (first args) (second args))
+                  :max (prim-int-max (first args) (second args))
+                  :min (prim-int-min (first args) (second args))
+                  :bit-and (prim-int-bit-and (first args) (second args))
+                  :bit-or (prim-int-bit-or (first args) (second args))
+                  :bit-xor (prim-int-bit-xor (first args) (second args))
+                  :shl (prim-int-shl (first args) (second args))
+                  :shr (prim-int-shr (first args) (second args)))
+     :int-binary-x (reserr :todo)
+     :int-rel (int-rel-primop-case
+               op.op
+               :eq (prim-int-eq (first args) (second args))
+               :neq (prim-int-neq (first args) (second args))
+               :lt (prim-int-lt (first args) (second args))
+               :gt (prim-int-gt (first args) (second args))
+               :leq (prim-int-leq (first args) (second args))
+               :geq (prim-int-geq (first args) (second args)))
+     :int-rel-x (reserr :todo)
      :int-to-float (prim-int-to-float (first args))
      :int-to-bool (prim-int-to-bool (first args))
-     :float-add (prim-float-add (first args) (second args))
-     :float-sub (prim-float-sub (first args) (second args))
-     :float-mul (prim-float-mul (first args) (second args))
-     :float-div (prim-float-div (first args) (second args))
-     :float-expt (prim-float-expt (first args) (second args))
-     :float-max (prim-float-max (first args) (second args))
-     :float-min (prim-float-min (first args) (second args))
-     :float-sqrt (prim-float-sqrt (first args))
-     :float-eq (prim-float-eq (first args) (second args))
-     :float-neq (prim-float-neq (first args) (second args))
-     :float-lt (prim-float-lt (first args) (second args))
-     :float-gt (prim-float-gt (first args) (second args))
-     :float-leq (prim-float-leq (first args) (second args))
-     :float-geq (prim-float-geq (first args) (second args))
+     :float-unary (float-unary-primop-case
+                   op.op
+                   :sqrt (prim-float-sqrt (first args)))
+     :float-binary (float-binary-primop-case
+                    op.op
+                    :add (prim-float-add (first args) (second args))
+                    :sub (prim-float-sub (first args) (second args))
+                    :mul (prim-float-mul (first args) (second args))
+                    :div (prim-float-div (first args) (second args))
+                    :expt (prim-float-expt (first args) (second args))
+                    :max (prim-float-max (first args) (second args))
+                    :min (prim-float-min (first args) (second args)))
+     :float-binary-x (reserr :todo)
+     :float-rel (float-rel-primop-case
+                 op.op
+                 :eq (prim-float-eq (first args) (second args))
+                 :neq (prim-float-neq (first args) (second args))
+                 :lt (prim-float-lt (first args) (second args))
+                 :gt (prim-float-gt (first args) (second args))
+                 :leq (prim-float-leq (first args) (second args))
+                 :geq (prim-float-geq (first args) (second args)))
+     :float-rel-x (reserr :todo)
      :float-truncate (prim-float-truncate (first args))
      :float-round (prim-float-round (first args))
      :float-ceiling (prim-float-ceiling (first args))
      :float-floor (prim-float-floor (first args))
-     :bool-not (prim-bool-not (first args))
-     :bool-and (prim-bool-and (first args) (second args))
-     :bool-or (prim-bool-or (first args) (second args))
-     :bool-eq (prim-bool-eq (first args) (second args))
-     :bool-neq (prim-bool-neq (first args) (second args))
+     :bool-unary (bool-unary-primop-case
+                  op.op
+                  :not (prim-bool-not (first args)))
+     :bool-binary (bool-binary-primop-case
+                   op.op
+                   :and (prim-bool-and (first args) (second args))
+                   :or (prim-bool-or (first args) (second args)))
+     :bool-binary-x (reserr :todo)
+     :bool-rel (bool-rel-primop-case
+                op.op
+                :eq (prim-bool-eq (first args) (second args))
+                :neq (prim-bool-neq (first args) (second args)))
+     :bool-rel-x (reserr :todo)
      :bool-to-int (prim-bool-to-int (first args))
      :bool-to-float (prim-bool-to-float (first args))
      :head (prog2$ (impossible) (reserr nil))
@@ -1894,10 +2038,21 @@
      :append-t-m-n (prog2$ (impossible) (reserr nil))
      :append-t-m-n-s (prim-append op.tval op.mval op.nval op.sval
                                   (first args) (second args))
+     :append-t-m-n-s-x (reserr :todo)
      :reverse (prog2$ (impossible) (reserr nil))
      :reverse-t (prog2$ (impossible) (reserr nil))
      :reverse-t-d (prog2$ (impossible) (reserr nil))
-     :reverse-t-d-s (prim-reverse op.tval op.dval op.sval (first args))))
+     :reverse-t-d-s (prim-reverse op.tval op.dval op.sval (first args))
+     :index (prog2$ (impossible) (reserr nil))
+     :index-t (prog2$ (impossible) (reserr nil))
+     :index-t-m (prim-index op.tval op.mval (first args) (second args))
+     :index-t-m-x (reserr :todo)
+     :index2d (prog2$ (impossible) (reserr nil))
+     :index2d-t (prog2$ (impossible) (reserr nil))
+     :index2d-t-m (prog2$ (impossible) (reserr nil))
+     :index2d-t-m-n (prim-index2d op.tval op.mval op.nval
+                                  (first args) (second args))
+     :index2d-t-m-n-x (reserr :todo)))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp
                                            arity-of-primop-value-fun
                                            type-of-primop-value-fun)))
@@ -1960,6 +2115,16 @@
                            (list (type-var-atom "t"))))
                   (reserr nil)))
               (expr-value-primop (primop-value-reverse-t tval)))
+   :index (b* (((unless (type-values-match-type-vars-p
+                           (list tval)
+                           (list (type-var-atom "t"))))
+                  (reserr nil)))
+            (expr-value-primop (primop-value-index-t tval)))
+   :index2d (b* (((unless (type-values-match-type-vars-p
+                           (list tval)
+                           (list (type-var-atom "t"))))
+                  (reserr nil)))
+            (expr-value-primop (primop-value-index2d-t tval)))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-tfunp
                                            type-values-match-type-vars-p)))
@@ -1998,8 +2163,13 @@
      a shape for the stages that also store a dimension.
      We check that the ispace value has the expected sort;
      then we construct the next instantiation stage of the operation,
-     which stores the ispace value received,
-     along with the previously received instantiation values.
+     which stores the ispace values received
+     (a dimension and a shape
+     for @('head'), @('tail'), @('length'), and @('reverse');
+     two dimensions and a shape for @('append');
+     a dimension for @('index');
+     two dimensions for @('index2d')),
+     along with the previously received type values.
      Anything else is an error."))
   (primop-value-case
    op
@@ -2076,6 +2246,25 @@
                          (make-primop-value-reverse-t-d-s :tval op.tval
                                                           :dval op.dval
                                                           :sval ival.val)))
+   :index-t (ispace-value-case
+             ival
+             :dim (expr-value-primop
+                   (make-primop-value-index-t-m :tval op.tval
+                                                :mval ival.val))
+             :shape (reserr nil))
+   :index2d-t (ispace-value-case
+               ival
+               :dim (expr-value-primop
+                     (make-primop-value-index2d-t-m :tval op.tval
+                                                    :mval ival.val))
+               :shape (reserr nil))
+   :index2d-t-m (ispace-value-case
+                 ival
+                 :dim (expr-value-primop
+                       (make-primop-value-index2d-t-m-n :tval op.tval
+                                                        :mval op.mval
+                                                        :nval ival.val))
+                 :shape (reserr nil))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp)))
 
