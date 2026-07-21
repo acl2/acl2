@@ -1211,38 +1211,54 @@
                      :int-binary-x t
                      :int-rel t
                      :int-rel-x t
+                     :int-to-float t
+                     :int-to-bool t
                      :float-unary t
                      :float-binary t
                      :float-binary-x t
                      :float-rel t
                      :float-rel-x t
+                     :float-truncate t
+                     :float-round t
+                     :float-ceiling t
+                     :float-floor t
                      :bool-unary t
                      :bool-binary t
                      :bool-binary-x t
                      :bool-rel t
                      :bool-rel-x t
+                     :bool-to-int t
+                     :bool-to-float t
                      :head nil
                      :head-t nil
                      :head-t-d nil
+                     :head-t-d-s t
                      :tail nil
                      :tail-t nil
                      :tail-t-d nil
+                     :tail-t-d-s t
                      :length nil
                      :length-t nil
                      :length-t-d nil
+                     :length-t-d-s t
                      :append nil
                      :append-t nil
                      :append-t-m nil
                      :append-t-m-n nil
+                     :append-t-m-n-s t
+                     :append-t-m-n-s-x t
                      :reverse nil
                      :reverse-t nil
                      :reverse-t-d nil
+                     :reverse-t-d-s t
                      :index nil
                      :index-t nil
+                     :index-t-m t
                      :index2d nil
                      :index2d-t nil
                      :index2d-t-m nil
-                     :otherwise t))
+                     :index2d-t-m-n t
+                     :index2d-t-m-n-x t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1265,24 +1281,54 @@
                      :int-binary-x nil
                      :int-rel nil
                      :int-rel-x nil
+                     :int-to-float nil
+                     :int-to-bool nil
                      :float-unary nil
                      :float-binary nil
                      :float-binary-x nil
                      :float-rel nil
                      :float-rel-x nil
+                     :float-truncate nil
+                     :float-round nil
+                     :float-ceiling nil
+                     :float-floor nil
                      :bool-unary nil
                      :bool-binary nil
                      :bool-binary-x nil
                      :bool-rel nil
                      :bool-rel-x nil
+                     :bool-to-int nil
+                     :bool-to-float nil
                      :head t
+                     :head-t nil
+                     :head-t-d nil
+                     :head-t-d-s nil
                      :tail t
+                     :tail-t nil
+                     :tail-t-d nil
+                     :tail-t-d-s nil
                      :length t
+                     :length-t nil
+                     :length-t-d nil
+                     :length-t-d-s nil
                      :append t
+                     :append-t nil
+                     :append-t-m nil
+                     :append-t-m-n nil
+                     :append-t-m-n-s nil
+                     :append-t-m-n-s-x nil
                      :reverse t
+                     :reverse-t nil
+                     :reverse-t-d nil
+                     :reverse-t-d-s nil
                      :index t
+                     :index-t nil
+                     :index-t-m nil
                      :index2d t
-                     :otherwise nil))
+                     :index2d-t nil
+                     :index2d-t-m nil
+                     :index2d-t-m-n nil
+                     :index2d-t-m-n-x nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1304,31 +1350,54 @@
                      :int-binary-x nil
                      :int-rel nil
                      :int-rel-x nil
+                     :int-to-float nil
+                     :int-to-bool nil
                      :float-unary nil
                      :float-binary nil
                      :float-binary-x nil
                      :float-rel nil
                      :float-rel-x nil
+                     :float-truncate nil
+                     :float-round nil
+                     :float-ceiling nil
+                     :float-floor nil
                      :bool-unary nil
                      :bool-binary nil
                      :bool-binary-x nil
                      :bool-rel nil
                      :bool-rel-x nil
+                     :bool-to-int nil
+                     :bool-to-float nil
+                     :head nil
                      :head-t t
                      :head-t-d t
+                     :head-t-d-s nil
+                     :tail nil
                      :tail-t t
                      :tail-t-d t
+                     :tail-t-d-s nil
+                     :length nil
                      :length-t t
                      :length-t-d t
+                     :length-t-d-s nil
+                     :append nil
                      :append-t t
                      :append-t-m t
                      :append-t-m-n t
+                     :append-t-m-n-s nil
+                     :append-t-m-n-s-x nil
+                     :reverse nil
                      :reverse-t t
                      :reverse-t-d t
+                     :reverse-t-d-s nil
+                     :index nil
                      :index-t t
+                     :index-t-m nil
+                     :index2d nil
                      :index2d-t t
                      :index2d-t-m t
-                     :otherwise nil))
+                     :index2d-t-m-n nil
+                     :index2d-t-m-n-x nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
