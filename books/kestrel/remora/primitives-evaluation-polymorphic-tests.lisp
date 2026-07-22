@@ -643,13 +643,14 @@
 (acl2::assert-event
  (reserrp (prim-sum (list 2) (expr-value-vector (list (bv t) (bv nil))))))
 
-; Via eval-primop-fun, including the arity check.
+; Via eval-primop-fun.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-sum-s :sval (list 3)) (list *vec3*))
+ (eval-primop-fun (make-primop-value-sum-s :sval (list 3)) *vec3*)
  (iv 6))
 
 ; Wrong number of argument cells.
 (acl2::assert-event
- (reserrp (eval-primop-fun (make-primop-value-sum-s :sval (list 3))
-                           (list *vec3* *vec3*))))
+ (reserrp
+  (eval-primop-fun-chain (make-primop-value-sum-s :sval (list 3))
+                         (list *vec3* *vec3*))))

@@ -144,6 +144,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-expr-value-list-int ((vals expr-value-listp))
+  :returns (ivals integer-list-resultp)
+  :short "Check if an expression value is an integer list value, returning it if so"
+  (b* (((when (endp vals)) nil)
+       ((ok (int-value ival)) (check-expr-value-int (car vals)))
+       ((ok rest) (check-expr-value-list-int (cdr vals))))
+    (cons ival.int rest)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-expr-value-float ((val expr-valuep))
   :returns (fval float-value-resultp)
   :short "Check if an expression value is a float value, returning it if so."
@@ -1923,20 +1933,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-value-list-ints ((vals expr-value-listp))
-  :returns (ints integer-list-resultp)
-  :short "Turn a list of expression values into a list of integers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This fails if any of the expression values is not a scalar integer."))
-  (b* (((when (endp vals)) nil)
-       ((ok (int-value ival)) (check-expr-value-int (car vals)))
-       ((ok rest) (expr-value-list-ints (cdr vals))))
-    (cons ival.int rest)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define prim-sum ((s nat-listp) (val1 expr-valuep))
   :guard (expr-value-wfp val1)
   :returns (val expr-value-resultp)
@@ -1959,11 +1955,11 @@
      and that all the atoms of the argument cell are integers.")
    (xdoc::p
     "We collect the atom values of the argument cell via @(tsee expr-value-atoms),
-     turn them into integers via @(tsee expr-value-list-ints),
+     turn them into integers via @(tsee check-expr-value-list-int),
      and add them via @(tsee integer-list-sum)."))
   (b* ((s (nat-list-fix s))
        ((unless (equal (dims-of-expr-value val1) s)) (reserr nil))
-       ((ok ints) (expr-value-list-ints (expr-value-atoms val1))))
+       ((ok ints) (check-expr-value-list-int (expr-value-atoms val1))))
     (expr-value-base (base-value-int (int-value (integer-list-sum ints)))))
   ///
 

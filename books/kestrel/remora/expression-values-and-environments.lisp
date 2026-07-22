@@ -1289,39 +1289,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines expr-value-atoms/list
-  :short "Collect the atoms of expression values."
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define expr-value-atoms ((val expr-valuep))
-    :returns (vals expr-value-listp)
-    :parents (expression-values-and-environments expr-value-atoms/list)
-    :short "Collect the atoms of an expression value."
-    (expr-value-case
-     val
-     :vector (expr-value-list-atoms val.elems)
-     :vector-empty nil
-     :otherwise (list (expr-value-fix val)))
-    :measure (expr-value-count val))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define expr-value-list-atoms ((vals expr-value-listp))
-    :returns (vals1 expr-value-listp)
-    :parents (expression-values-and-environments expr-value-atoms/list)
-    :short "Collect the atoms of a list of expression values."
-    (b* (((when (endp vals)) nil))
-      (append (expr-value-atoms (car vals))
-              (expr-value-list-atoms (cdr vals))))
-    :measure (expr-value-list-count vals))
-
-  ///
-
-  (fty::deffixequiv-mutual expr-value-atoms/list))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define expr-value-with-empty-dim ((dims nat-listp) (elem type-valuep))
   :guard (and (member-equal 0 dims)
               (not (type-value-case elem :array)))
@@ -1665,7 +1632,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines expr-value-atoms/list
+(defines expr-values-atoms
   :short "Collect the flattened list of atom values of expression values."
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1719,7 +1686,7 @@
 
   ///
 
-  (fty::deffixequiv-mutual expr-value-atoms/list))
+  (fty::deffixequiv-mutual expr-values-atoms))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
