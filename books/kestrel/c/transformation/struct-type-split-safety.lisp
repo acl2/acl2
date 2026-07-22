@@ -189,7 +189,7 @@
 
   (define type-may-refer-to-struct-spec-p ((type typep) (spec sts-struct-specp))
     :returns (yes/no booleanp)
-    :parents (struct-type-split-safety types-with-struct-spec-p)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if a type may refer to the struct type being split,
             directly or indirectly."
     :long
@@ -256,7 +256,7 @@
   (define type-list-may-refer-to-struct-spec-p ((types type-listp)
                                                 (spec sts-struct-specp))
     :returns (yes/no booleanp)
-    :parents (struct-type-split-safety types-with-struct-spec-p)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if (any element of) a list of types
             may refer to the struct type being split, directly or indirectly."
     (and (not (endp types))
@@ -269,7 +269,7 @@
   (define type-struni-tag/members-may-refer-to-struct-spec-p
     ((tystr-tag/mems type-struni-tag/members-p) (spec sts-struct-specp))
     :returns (yes/no booleanp)
-    :parents (struct-type-split-safety types-with-struct-spec-p)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if the portion of struct/union types
             corresponding to the tag and members
             may refer to the struct type being split, directly or indirectly."
@@ -295,7 +295,7 @@
   (define type-struni-member-may-refer-to-struct-spec-p
     ((mem type-struni-member-p) (spec sts-struct-specp))
     :returns (yes/no booleanp)
-    :parents (struct-type-split-safety types-with-struct-spec-p)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if a struct or union member
             may refer to the struct type being split, directly or indirectly."
     (type-may-refer-to-struct-spec-p (type-struni-member->type mem) spec)
@@ -306,7 +306,7 @@
   (define type-struni-member-list-may-refer-to-struct-spec-p
     ((mems type-struni-member-listp) (spec sts-struct-specp))
     :returns (yes/no booleanp)
-    :parents (struct-type-split-safety types-with-struct-spec-p)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if (any element of) a list of struct or union members
             may refer to the struct type being split, directly or indirectly."
     (and (not (endp mems))
@@ -320,7 +320,7 @@
   (define type-params-may-refer-to-struct-spec-p ((params type-params-p)
                                                   (spec sts-struct-specp))
     :returns (yes/no booleanp)
-    :parents (struct-type-split-safety types-with-struct-spec-p)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if a portion of a function type
             pertaining to the function parameters
             may refer to the struct type being split, directly or indirectly."
