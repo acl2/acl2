@@ -1576,20 +1576,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines expr-value-atoms/list
-  :short "Collect the atoms of expression values."
+  :short "Collect the flattened list of atom values of expression values."
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define expr-value-atoms ((val expr-valuep))
     :returns (vals expr-value-listp)
     :parents (expression-values-and-environments expr-value-atoms/list)
-    :short "Collect the atoms of an expression value."
+    :short "Collect the flattened list of atom values of an expression value."
     :long
     (xdoc::topstring
      (xdoc::p
       "Recall that we fold atom values into expression values
        (see @(tsee expr-value)):
-       the atoms of an array are the expression values at its leaves,
+       the atom values of an array are the expression values at its leaves,
        i.e. the ones that are neither vectors nor empty vectors.
        We return them in row-major order,
        i.e. in the order in which they occur in the nested vectors.")
@@ -1597,12 +1597,12 @@
       "This is the inverse of
        @(tsee expr-value-with-nonempty-dims),
        which builds an expression value
-       from its dimensions and from its atoms in the same order.
-       An empty vector has no atoms,
-       and a non-empty vector has the atoms of its elements.")
+       from its dimensions and from its atom values in the same order.
+       An empty vector has no atom values,
+       and a non-empty vector has the atom values of its elements.")
      (xdoc::p
       "This function is total:
-       every expression value that is not a vector is an atom,
+       every expression value that is not a vector is an atom value,
        including boxes and lambda abstractions."))
     (expr-value-case
      val
@@ -1616,11 +1616,11 @@
   (define expr-value-list-atoms ((vals expr-value-listp))
     :returns (vals1 expr-value-listp)
     :parents (expression-values-and-environments expr-value-atoms/list)
-    :short "Collect the atoms of a list of expression values."
+    :short "Collect the flattened list of atom values of a list of expression values."
     :long
     (xdoc::topstring
      (xdoc::p
-      "We concatenate the atoms of each expression value in the list,
+      "We concatenate the atom values of each expression value in the list,
        preserving the order."))
     (b* (((when (endp vals)) nil))
       (append (expr-value-atoms (car vals))

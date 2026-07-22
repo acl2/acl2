@@ -1957,7 +1957,7 @@
      (which the interpreter in [impl] does not use),
      and that all the atoms of the argument cell are integers.")
    (xdoc::p
-    "We collect the atoms of the argument cell via @(tsee expr-value-atoms),
+    "We collect the atom values of the argument cell via @(tsee expr-value-atoms),
      turn them into integers via @(tsee expr-value-list-ints),
      and add them via @(tsee integer-list-sum)."))
   (b* ((s (nat-list-fix s))
