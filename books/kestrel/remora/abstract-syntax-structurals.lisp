@@ -608,9 +608,13 @@
        (body (expr-fix body))
        (type? (type-option-fix type?)))
     (cond ((endp (cdr params)) body)
-          (t (expr-atom (make-atom-lambda :params (cdr params)
-                                          :body body
-                                          :type? type?))))))
+          ((endp (cddr params))
+           (expr-atom (make-atom-lambda :param (cadr params)
+                                        :body body
+                                        :type? type?)))
+          (t (expr-atom (make-atom-lambdan :params (cdr params)
+                                           :body body
+                                           :type? type?))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

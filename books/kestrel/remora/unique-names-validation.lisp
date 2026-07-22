@@ -261,7 +261,7 @@
 ;     (expr-atom (make-atom-base
 ;                 :lit (make-base-lit-int :lit (make-int-lit :digits '(#\0))))))
 ;   (defconst *lam*  ; (lambda ((x : int)) p)
-;     (expr-atom (make-atom-lambda
+;     (expr-atom (make-atom-lambdan
 ;                 :params (list (make-var+type?
 ;                                :var "x"
 ;                                :type? (type-option-some *int-type*)))

@@ -581,6 +581,11 @@
                 (and (expr-subst-no-capture-p bound subst)
                      (expr-subst-expr-vars-no-capture-p expr.body subst)))))
    (atom :lambda
+         (b* ((bound (set::insert (var+type?->var atom.param) nil))
+              (subst (omap::delete* bound (string-expr-map-fix subst))))
+           (and (expr-subst-no-capture-p bound subst)
+                (expr-subst-expr-vars-no-capture-p atom.body subst))))
+   (atom :lambdan
          (b* ((bound (set::mergesort (var+type?-list->var atom.params)))
               (subst (omap::delete* bound (string-expr-map-fix subst))))
            (and (expr-subst-no-capture-p bound subst)
@@ -985,9 +990,16 @@
             :binds binds
             :body (expr-subst-expr-vars expr.body subst))))
    (atom :lambda
-         (b* ((bound (set::mergesort (var+type?-list->var atom.params)))
+         (b* ((bound (set::insert (var+type?->var atom.param) nil))
               (subst (omap::delete* bound (string-expr-map-fix subst))))
            (make-atom-lambda
+            :param atom.param
+            :body (expr-subst-expr-vars atom.body subst)
+            :type? atom.type?)))
+   (atom :lambdan
+         (b* ((bound (set::mergesort (var+type?-list->var atom.params)))
+              (subst (omap::delete* bound (string-expr-map-fix subst))))
+           (make-atom-lambdan
             :params atom.params
             :body (expr-subst-expr-vars atom.body subst)
             :type? atom.type?)))
