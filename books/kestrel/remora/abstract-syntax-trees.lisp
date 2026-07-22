@@ -956,11 +956,10 @@
        which binds exactly one parameter,
        while the @(':lambdan') summand is sugar for
        a nesting of unary term lambda abstractions.
-       We plan to make the CST-to-AST mapping turn
+       The CST-to-AST mapping turns
        the term lambda abstractions with one parameter into @(':lambda'),
        and those with two or more parameters into @(':lambdan'),
-       similarly to type and ispace lambda abstractions;
-       currently all term lambda abstractions map to @(':lambdan').")
+       similarly to type and ispace lambda abstractions.")
      (xdoc::p
       "The @(':tlambda') summand is
        the main, core form of type lambda abstraction,
