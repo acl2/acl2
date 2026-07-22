@@ -2212,11 +2212,11 @@
      val
      :base (expr-value-fix val)
      :primop (expr-value-fix val)
-     :lambda (b* ((bound (set::mergesort (var+typevalue-list->var val.params)))
+     :lambda (b* ((bound (set::insert (var+typevalue->var val.param) nil))
                   (body-renam (omap::delete* bound
                                              (string-string-map-fix renam))))
                (make-expr-value-lambda
-                :params val.params
+                :param val.param
                 :body (expr-rename-expr-vars val.body body-renam)
                 :type? val.type?
                 :denv (expr-denv-rename-expr-vars val.denv renam)))
@@ -2552,26 +2552,20 @@
   ///
   (fty::deffixequiv type-value-option-rename-ispace-vars))
 
-(define var+typevalue-list-rename-ispace-vars ((params var+typevalue-listp)
-                                               (dim-renam string-string-mapp)
-                                               (shape-renam string-string-mapp))
-  :returns (new-params var+typevalue-listp)
-  :short "Rename ispace variables in the type values of a parameter list."
-  (b* (((when (endp params)) nil)
-       ((var+typevalue p) (car params)))
-    (cons (make-var+typevalue
-           :var p.var
-           :type (type-value-rename-ispace-vars p.type dim-renam shape-renam))
-          (var+typevalue-list-rename-ispace-vars (cdr params)
-                                                 dim-renam shape-renam)))
+(define var+typevalue-rename-ispace-vars ((param var+typevalue-p)
+                                          (dim-renam string-string-mapp)
+                                          (shape-renam string-string-mapp))
+  :returns (new-param var+typevalue-p)
+  :short "Rename ispace variables in the type value of a parameter."
+  (b* (((var+typevalue p) param))
+    (make-var+typevalue
+     :var p.var
+     :type (type-value-rename-ispace-vars p.type dim-renam shape-renam)))
   ///
-  (fty::deffixequiv var+typevalue-list-rename-ispace-vars)
-  (defret var+typevalue-list->var-of-var+typevalue-list-rename-ispace-vars
-    (equal (var+typevalue-list->var new-params)
-           (var+typevalue-list->var params))
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable var+typevalue-list->var)))))
+  (fty::deffixequiv var+typevalue-rename-ispace-vars)
+  (defret var+typevalue->var-of-var+typevalue-rename-ispace-vars
+    (equal (var+typevalue->var new-param)
+           (var+typevalue->var param))))
 
 (defines expr-value-rename-ispace-vars
   ;; The flag function is used by theorems in other books
@@ -2590,9 +2584,9 @@
      :base (expr-value-fix val)
      :primop (expr-value-fix val)
      :lambda (make-expr-value-lambda
-              :params (var+typevalue-list-rename-ispace-vars val.params
-                                                             dim-renam
-                                                             shape-renam)
+              :param (var+typevalue-rename-ispace-vars val.param
+                                                       dim-renam
+                                                       shape-renam)
               :body (expr-rename-ispace-vars val.body dim-renam shape-renam)
               :type? (type-value-option-rename-ispace-vars val.type?
                                                            dim-renam
@@ -2943,26 +2937,20 @@
   ///
   (fty::deffixequiv type-value-option-rename-type-vars))
 
-(define var+typevalue-list-rename-type-vars ((params var+typevalue-listp)
-                                               (atom-renam string-string-mapp)
-                                               (array-renam string-string-mapp))
-  :returns (new-params var+typevalue-listp)
-  :short "Rename type variables in the type values of a parameter list."
-  (b* (((when (endp params)) nil)
-       ((var+typevalue p) (car params)))
-    (cons (make-var+typevalue
-           :var p.var
-           :type (type-value-rename-type-vars p.type atom-renam array-renam))
-          (var+typevalue-list-rename-type-vars (cdr params)
-                                                 atom-renam array-renam)))
+(define var+typevalue-rename-type-vars ((param var+typevalue-p)
+                                        (atom-renam string-string-mapp)
+                                        (array-renam string-string-mapp))
+  :returns (new-param var+typevalue-p)
+  :short "Rename type variables in the type value of a parameter."
+  (b* (((var+typevalue p) param))
+    (make-var+typevalue
+     :var p.var
+     :type (type-value-rename-type-vars p.type atom-renam array-renam)))
   ///
-  (fty::deffixequiv var+typevalue-list-rename-type-vars)
-  (defret var+typevalue-list->var-of-var+typevalue-list-rename-type-vars
-    (equal (var+typevalue-list->var new-params)
-           (var+typevalue-list->var params))
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable var+typevalue-list->var)))))
+  (fty::deffixequiv var+typevalue-rename-type-vars)
+  (defret var+typevalue->var-of-var+typevalue-rename-type-vars
+    (equal (var+typevalue->var new-param)
+           (var+typevalue->var param))))
 
 (defines expr-value-rename-type-vars
   ;; The flag function is used by theorems in other books
@@ -2981,9 +2969,9 @@
      :base (expr-value-fix val)
      :primop (expr-value-fix val)
      :lambda (make-expr-value-lambda
-              :params (var+typevalue-list-rename-type-vars val.params
-                                                           atom-renam
-                                                           array-renam)
+              :param (var+typevalue-rename-type-vars val.param
+                                                     atom-renam
+                                                     array-renam)
               :body (expr-rename-type-vars val.body atom-renam array-renam)
               :type? (type-value-option-rename-type-vars val.type?
                                                          atom-renam
@@ -4932,7 +4920,7 @@
               (expr-denv-free-expr-vars val.denv)
               (set::difference
                (expr-free-expr-vars val.body)
-               (set::mergesort (var+typevalue-list->var val.params))))
+               (set::insert (var+typevalue->var val.param) nil)))
      :tlambda (set::union (expr-denv-free-expr-vars val.denv)
                           (expr-free-expr-vars val.body))
      :ilambda (set::union (expr-denv-free-expr-vars val.denv)
@@ -5053,7 +5041,10 @@
     (enable rename-var-string-of-delete*-when-not-relevant
             expr-rename-expr-vars-of-delete*-when-disjoint-typed
             delete*-commute-restricted
+            delete-commute-restricted
             emptyp-intersect3-binder-union
+            emptyp-intersect3-binder-plain
+            emptyp-intersect3-binder-delete
             emptyp-intersect-of-union-left-1
             emptyp-intersect-of-union-left-2
             not-in-when-emptyp-intersect-of-insert

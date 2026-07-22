@@ -1456,16 +1456,19 @@
       (atom-case
        atom
        :base (expr-value-base (eval-base-lit atom.lit))
-       :lambda (b* (((ok params) (eval-var+type?-list atom.params
-                                                      (expr-denv->tenv denv)))
-                    ((ok type?) (type-option-case
-                                 atom.type?
-                                 :none nil
-                                 :some (eval-type atom.type?.val
-                                                  (expr-denv->tenv denv)))))
+       :lambda (b* (((unless (consp atom.params)) (reserr nil))
+                    ((ok param) (eval-var+type? (car atom.params)
+                                                (expr-denv->tenv denv)))
+                    ((ok type?) (if (consp (cdr atom.params))
+                                    nil
+                                  (type-option-case
+                                   atom.type?
+                                   :none nil
+                                   :some (eval-type atom.type?.val
+                                                    (expr-denv->tenv denv))))))
                  (make-expr-value-lambda
-                  :params params
-                  :body atom.body
+                  :param param
+                  :body (lambda-curried-body atom.params atom.body atom.type?)
                   :type? type?
                   :denv (expr-denv-restrict
                          (expr-free-ispace-vars atom.body)
@@ -1647,11 +1650,14 @@
                                            (expr-denv->tenv denv))
                           :none nil)))
               (expr-denv-add-expr bind.var val denv))
-       :fun (b* (((ok params) (eval-var+type?-list bind.params
-                                                   (expr-denv->tenv denv)))
+       :fun (b* (((unless (consp bind.params)) (reserr nil))
+                 ((ok param) (eval-var+type? (car bind.params)
+                                             (expr-denv->tenv denv)))
                  (val (make-expr-value-lambda
-                       :params params
-                       :body bind.expr
+                       :param param
+                       :body (lambda-curried-body bind.params
+                                                  bind.expr
+                                                  bind.type?)
                        :type? nil
                        :denv (expr-denv-restrict
                               (expr-free-ispace-vars bind.expr)
@@ -2312,21 +2318,15 @@
       "This is the base case of term application,
        used by @(tsee eval-app-list) at each application position.
        If the function cell is a (scalar) lambda abstraction,
-       the argument cell must match the type of its first parameter.
+       the argument cell must match the type of its (single) parameter.
        We extend the dynamic environment contained in the lambda value
-       to associate the argument with the first parameter.
-       If that parameter is the only one,
-       we evaluate the body of the lambda abstraction
-       in the extended environment;
-       otherwise, the application yields the lambda abstraction value
-       without the first parameter and with the extended environment.")
-     (xdoc::p
-      "The case of two or more parameters is transitional:
-       when lambda abstraction values are made unary,
-       applying a lambda abstraction value will always
-       extend the environment and evaluate the body,
-       and the evaluation of the body (an inner lambda abstraction)
-       will create the value that binds the remaining parameters,
+       to associate the argument with the parameter,
+       and we evaluate the body of the lambda abstraction
+       in the extended environment.
+       For a lambda abstraction with two or more parameters,
+       the body is an inner lambda abstraction over the remaining parameters
+       (see @(tsee eval-atom)),
+       whose evaluation creates the value that binds those parameters,
        analogously to @(tsee eval-iapp) and @(tsee eval-tapp).")
      (xdoc::p
       "If the function cell is
@@ -2340,20 +2340,14 @@
       (expr-value-case
        funcell
        :lambda
-       (b* (((unless (consp funcell.params)) (reserr nil))
-            ((unless (expr-values-match-type-values-p
+       (b* (((unless (expr-values-match-type-values-p
                       (list argcell)
-                      (list (var+typevalue->type (car funcell.params)))))
+                      (list (var+typevalue->type funcell.param))))
              (reserr nil))
             (denv (expr-denv-add-expr
-                   (var+typevalue->var (car funcell.params))
+                   (var+typevalue->var funcell.param)
                    argcell
-                   funcell.denv))
-            ((when (consp (cdr funcell.params)))
-             (make-expr-value-lambda :params (cdr funcell.params)
-                                     :body funcell.body
-                                     :type? funcell.type?
-                                     :denv denv)))
+                   funcell.denv)))
          (eval-expr funcell.body denv (1- limit)))
        :primop (if (primop-value-funp funcell.val)
                    (eval-primop-fun funcell.val argcell)
