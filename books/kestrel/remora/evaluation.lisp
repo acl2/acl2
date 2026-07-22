@@ -969,7 +969,9 @@
                  (make-expr-value-vector-empty
                   :dims nil
                   :elem (type-value-base (base-type-int))))
-       :app (reserr :todo)
+       :app (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
+                 ((ok argval) (eval-expr expr.arg denv (1- limit))))
+              (eval-app funval (list argval) (1- limit)))
        :appn (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                   ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
                (eval-app funval argvals (1- limit)))
@@ -1831,6 +1833,10 @@
        after the function and the argument expressions have been evaluated:
        @('funval') is the expression value of the function,
        and @('argvals') are the expression values of the arguments.
+       It is used both for a unary term application (@(':app'),
+       with a single argument value)
+       and for an n-ary one (@(':appn') and @(':capp'),
+       with a list of argument values).
        Consistently with the curried view of term applications,
        the function value is applied to one argument value at a time:
        each application step consumes one argument value
@@ -1838,6 +1844,18 @@
        to which the remaining argument values are applied recursively;
        applying the function value to no argument values
        returns it unchanged.")
+     (xdoc::p
+      "Unlike @(tsee eval-tapp) and @(tsee eval-iapp),
+       which are unary and paired with the folds
+       @(tsee eval-tappn) and @(tsee eval-iappn),
+       this function takes the whole list of argument values at once.
+       This is because an application step over an empty principal frame
+       is handled by @(tsee eval-app-empty),
+       which needs all the remaining argument values
+       (an intermediate empty result would be
+       an empty array of function values,
+       from which the signature of the following steps
+       could not be recovered).")
      (xdoc::p
       "The function value must be an array, of any rank,
        whose elements are all lambda abstractions or primitive operations,
