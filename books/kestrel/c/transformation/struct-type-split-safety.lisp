@@ -51,22 +51,20 @@
    (xdoc::p
     "The STS transformation operates on a translation ensemble.
      The struct type to split is specified as
-     the tag (name) of a file-scope struct declaration
+     the tag (name) of a file-scope struct declaration,
+     or as the name of a file-scope @('typedef') struct declaration,
      in one of the translation units of the ensemble.
      But the transformation also splits
      all the compatible file-scope struct types in other translation units.
      More explicitly, each translation unit in the ensemble
      either has or does not have a file-scope struct type
-     with the tag specified to the STS transformation.
+     (declared just a struct type or as a @('typedef'), as above),
+     that is compatible with
+     the struct type specified to the STS transformation.
      The translation units that do not have it undergo no transformation.
-     For each translation unit that has it,
-     it either is compatible with the one to split or it is not;
-     in the latter case, the translation unit undergoes no transformation.
-     So only the translation units with
-     either exactly the struct type, or one compatible with it,
-     undergo transformation.
+     While each translation unit that has it undergoes the transformation.
      This is orchestrated by the STS transformation,
-     which will call these checking tools on
+     which calls these safety checks on
      each translation unit being transformed,
      to ensure that the transformation is applicable."))
   :order-subtopics t
@@ -94,7 +92,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod sts-struct-spec
-  :short "Fixtype of specifications of the struct type to split."
+  :short "Fixtype of specifications of the struct type being split."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -102,28 +100,18 @@
      the safety checks are applied to each translation unit
      that needs transformation.
      This translation unit contains, at the file scope,
-     either the exact struct type specified to the STS transformation
-     (as the tag name and optionally the translation unit file path,
-     where the latter defaults to the first translation unit),
+     either the exact struct type specified to the STS transformation,
      or one compatible with it.
-     Compatibility means that [C17:6.2.7/1]
-     the struct types have the same tag, members with compatible types, etc.
-     Since struct tags have no linkage [C17:6.2.2/6],
-     struct types with the same tag in different translation units
-     have different UIDs.")
+     The struct type may be declared directly, or via a @('typedef').
+     Either way, it is identified by a UID,
+     which the STS transformation passes to these safety checks.")
    (xdoc::p
     "Here we define a data structure that specifies
      the struct type being split in a given translation unit.
-     This will be created by the STS transformation for each translation unit.
-     Our checking tools take it and use it to check the translation unit.")
-   (xdoc::p
-    "This data structure consists of the UID, the tag, and the members.
-     Although this is more than needed to identify the struct type,
-     we use all this information to check that
-     there are no other similar struct declarations (e.g. in a block scope)."))
-  ((uid uid)
-   (tag ident)
-   (members type-struni-member-list))
+     The specification consists of a UID,
+     but we wrap it into a data structure for future extensibility.
+     This data structure is an input to the STS safety checks."))
+  ((uid uid))
   :pred sts-struct-specp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -141,13 +129,12 @@
      the fields of the @(':struct') summand of @(tsee type).
      The last input of this function specifies the struct type being split.
      We check whether the struct type consisting of the three fields
-     is a tagged one with the same tag and UID as the struct being split."))
-  (declare (ignore tunit?))
-  (b* (((sts-struct-spec spec)))
-    (and (type-struni-tag/members-case tag/members :tagged)
-         (b* ((tag (type-struni-tag/members-tagged->tag tag/members)))
-           (and (equal tag spec.tag)
-                (equal (uid-fix uid) spec.uid))))))
+     has the same UID as the struct type being split.
+     The other two inputs are unused,
+     but kept here for future extensibility."))
+  (declare (ignore tag/members tunit?))
+  (equal (sts-struct-spec->uid spec)
+         (uid-fix uid)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
