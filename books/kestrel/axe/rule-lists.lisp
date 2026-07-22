@@ -188,9 +188,13 @@
             if-same-branches
             if-of-t-and-nil-when-booleanp
             if-nil-t ; introduces NOT
+            ;; if-x-x-y-when-booleanp ; todo: uncomment
             ;; if-becomes-boolif-axe ; try this?
-
             not-of-if
+            ;; try these:
+            ;; if-x-y-x
+            ;; if-of-not-same-arg2
+            ;; if-of-not-same-arg3
 
             fix-when-acl2-numberp
             = ; introduces EQUAL
