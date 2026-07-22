@@ -1065,12 +1065,25 @@
       "A base literal is evaluated to a base value,
        which is embedded into an expression value.")
      (xdoc::p
-      "A lambda abstraction evaluates to a lambda value
-       with the same parameter variables,
-       whose associated types are evaluated to type values;
-       the optional body type, if present,
-       is likewise evaluated to a type value;
-       the body itself is not evaluated here,
+      "A term lambda abstraction evaluates to a lambda value,
+       which binds one parameter,
+       whose associated type is evaluated to a type value.
+       For the unary form,
+       the body of the value is the body of the abstraction,
+       and the optional body type, if present,
+       is evaluated to a type value and stored in the value.
+       The n-ary form must have at least one parameter:
+       the value binds the first parameter,
+       and its body is the term lambda abstraction
+       over the remaining parameters if there are any,
+       or otherwise the body of the given term lambda abstraction
+       (see @(tsee lambda-curried-body)),
+       so a term lambda abstraction with two or more parameters
+       stands for the nesting of unary ones, in curried style.
+       The optional body type travels with the innermost abstraction,
+       so it is stored in the value only when
+       the value binds the innermost parameter.
+       The body is not evaluated here,
        but only when the abstraction is applied.")
      (xdoc::p
       "A type lambda abstraction evaluates to
