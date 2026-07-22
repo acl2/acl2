@@ -181,6 +181,164 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(defines types-may-refer-to-struct-spec-p
+  :short "Check if types may refer to the struct type being split,
+          directly or indirectly."
+
+  ;;;;;;;;;;
+
+  (define type-may-refer-to-struct-spec-p ((type typep) (spec sts-struct-specp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-with-struct-spec-p)
+    :short "Check if a type may refer to the struct type being split,
+            directly or indirectly."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Most types fail the check because
+       they are not, and do not contain, struct types.")
+     (xdoc::p
+      "The check passes if we encounter the struct type being split.
+       For other struct types, we recursively check them,
+       via a separate ACL2 function,
+       the same used for union types.")
+     (xdoc::p
+      "For array, pointer, and function types,
+       we recursively check their constituents.")
+     (xdoc::p
+      "Unknown and unknown scalar types pass the check,
+       because they could be pointers to the struct type being split,
+       among other possibilities.
+       But unknown arithmetic and unknowno built-in types fail the check,
+       because they cannot be or refer to the struct type."))
+    (type-case
+     type
+     :void nil
+     :char nil
+     :schar nil
+     :uchar nil
+     :sshort nil
+     :ushort nil
+     :sint nil
+     :uint nil
+     :slong nil
+     :ulong nil
+     :sllong nil
+     :ullong nil
+     :float nil
+     :double nil
+     :ldouble nil
+     :floatc nil
+     :doublec nil
+     :ldoublec nil
+     :bool nil
+     :struct (or (struct-type-is-struct-spec-p type.uid
+                                               type.tunit?
+                                               type.tag/members
+                                               spec)
+                 (type-struni-tag/members-may-refer-to-struct-spec-p
+                  type.tag/members spec))
+     :union (type-struni-tag/members-may-refer-to-struct-spec-p
+             type.tag/members spec)
+     :enum nil
+     :array (type-may-refer-to-struct-spec-p type.of spec)
+     :pointer (type-may-refer-to-struct-spec-p type.to spec)
+     :function (or (type-may-refer-to-struct-spec-p type.ret spec)
+                   (type-params-may-refer-to-struct-spec-p type.params spec))
+     :unknown t
+     :unknown-builtin nil
+     :unknown-scalar t
+     :unknown-arithmetic nil)
+    :measure (type-count type))
+
+  ;;;;;;;;;;
+
+  (define type-list-may-refer-to-struct-spec-p ((types type-listp)
+                                                (spec sts-struct-specp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-with-struct-spec-p)
+    :short "Check if (any element of) a list of types
+            may refer to the struct type being split, directly or indirectly."
+    (and (not (endp types))
+         (or (type-may-refer-to-struct-spec-p (car types) spec)
+             (type-list-may-refer-to-struct-spec-p (cdr types) spec)))
+    :measure (type-list-count types))
+
+  ;;;;;;;;;;
+
+  (define type-struni-tag/members-may-refer-to-struct-spec-p
+    ((tystr-tag/mems type-struni-tag/members-p) (spec sts-struct-specp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-with-struct-spec-p)
+    :short "Check if the portion of struct/union types
+            corresponding to the tag and members
+            may refer to the struct type being split, directly or indirectly."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If we just have a tag,
+       we should look it up in the validation information,
+       so we can recursively check the struct type found there.
+       For now we just conservatively return @('t'),
+       but we plan to refine that.")
+     (xdoc::p
+      "If instead we have members, we recursively check them."))
+    (type-struni-tag/members-case
+     tystr-tag/mems
+     :tagged t ; TODO: refine
+     :untagged (type-struni-member-list-may-refer-to-struct-spec-p
+                tystr-tag/mems.members spec))
+    :measure (type-struni-tag/members-count tystr-tag/mems))
+
+  ;;;;;;;;;;
+
+  (define type-struni-member-may-refer-to-struct-spec-p
+    ((mem type-struni-member-p) (spec sts-struct-specp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-with-struct-spec-p)
+    :short "Check if a struct or union member
+            may refer to the struct type being split, directly or indirectly."
+    (type-may-refer-to-struct-spec-p (type-struni-member->type mem) spec)
+    :measure (type-struni-member-count mem))
+
+  ;;;;;;;;;;
+
+  (define type-struni-member-list-may-refer-to-struct-spec-p
+    ((mems type-struni-member-listp) (spec sts-struct-specp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-with-struct-spec-p)
+    :short "Check if (any element of) a list of struct or union members
+            may refer to the struct type being split, directly or indirectly."
+    (and (not (endp mems))
+         (or (type-struni-member-may-refer-to-struct-spec-p (car mems) spec)
+             (type-struni-member-list-may-refer-to-struct-spec-p (cdr mems)
+                                                                 spec)))
+    :measure (type-struni-member-list-count mems))
+
+  ;;;;;;;;;;
+
+  (define type-params-may-refer-to-struct-spec-p ((params type-params-p)
+                                                  (spec sts-struct-specp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-with-struct-spec-p)
+    :short "Check if a portion of a function type
+            pertaining to the function parameters
+            may refer to the struct type being split, directly or indirectly."
+    (type-params-case
+     params
+     :prototype (type-list-may-refer-to-struct-spec-p params.params spec)
+     :old-style (type-list-may-refer-to-struct-spec-p params.params spec)
+     :unspecified nil)
+    :measure (type-params-count params))
+
+  ;;;;;;;;;;
+
+  ///
+
+  (fty::deffixequiv-mutual types-may-refer-to-struct-spec-p))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define type-may-be-struct-spec-p ((type typep) (spec sts-struct-specp))
   :returns (yes/no booleanp)
   :short "Check if a type may be the struct type being split."
@@ -583,16 +741,13 @@
    (xdoc::p
     "This is the case exactly when
      neither the source nor the destination type
-     is the struct being split
-     or a pointer type to it,
-     or a pointer to a pointer type to it,
-     and so on."))
+     may refer to the struct type being split, directly or indirectly."))
   (or (and (tyname-unamb/anno-p tyname)
            (expr-unamb/anno-p arg)
            (b* ((src-type (expr-type arg))
                 (dst-type (type-vinfo->type (tyname->info tyname))))
-             (and (not (type-may-be-*pointer-to-struct-spec-p src-type spec))
-                  (not (type-may-be-*pointer-to-struct-spec-p dst-type spec)))))
+             (and (not (type-may-refer-to-struct-spec-p src-type spec))
+                  (not (type-may-refer-to-struct-spec-p dst-type spec)))))
       (sts-reject (expr-cast tyname arg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
