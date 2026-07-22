@@ -1,4 +1,4 @@
-; FTY Library
+; ABNF (Augmented Backus-Naur Form) Library
 ;
 ; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
