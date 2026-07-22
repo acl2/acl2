@@ -1930,8 +1930,7 @@
    (xdoc::p
     "This is the dynamic counterpart, for primitive operations,
      of evaluating the body of a lambda abstraction:
-     it is called, via @(tsee eval-primop-fun-chain),
-     by @(tsee eval-app-cell),
+     it is called by @(tsee eval-app-cell)
      on a scalar primitive operation and a scalar argument cell,
      after the rank-polymorphic lifting.
      Consistently with the curried view of term applications,
@@ -2122,13 +2121,12 @@
      Applying the operation to no argument cells returns it unchanged.")
    (xdoc::p
     "This function is transitional:
-     it is called by @(tsee eval-app-cell),
-     which currently receives all the argument cells
-     of a term application at once.
-     When term applications are evaluated
+     term applications are now evaluated
      one argument at a time, in curried style,
-     @(tsee eval-app-cell) will call @(tsee eval-primop-fun) directly,
-     and this function will be removed."))
+     with @(tsee eval-app-cell) calling @(tsee eval-primop-fun) directly,
+     so this function is no longer used there;
+     it is only used in some tests,
+     and it will be removed when those are reworked."))
   (b* (((when (endp args)) (expr-value-primop (primop-value-fix op)))
        ((ok val) (eval-primop-fun op (car args)))
        ((when (endp (cdr args))) val)
