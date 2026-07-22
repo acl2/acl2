@@ -14400,7 +14400,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     chk-package-reincarnation-import-restrictions ; [-restrictions2 version]
     untrace$-fn1 ; eval
     bdd-top ; (GCL only) si::sgc-on
-    defstobj-field-fns-raw-defs ; call to memoize-flush
+    defstobj-field-fns-raw-defs ; call to memoize-flush; CCL bug #446
     times-mod-m31 ; gcl has raw code
     #+acl2-devel iprint-ar-aref1
     prove ; #+write-arithmetic-goals
@@ -14457,7 +14457,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     set-cbd-fn1
     read-hons-copy-lambda-object-culprit ; reads wormhole data from oracle
     #+acl2-devel ilks-plist-worldp
-    defstobj-field-fns-raw-defs ; CCL bug #446
     chk-certificate-file
     get-cert-obj-and-cert-filename
     include-book-raw-error
@@ -28458,7 +28457,8 @@ Lisp definition."
 
 ; See break$.
 
-  (and (not (eq (debugger-enable *the-live-state*) :never))
+  (and (not (member-eq (debugger-enable *the-live-state*)
+                       '(:never :never!)))
        #+(and gcl (not cltl2))
        (break)
        #-(and gcl (not cltl2))
@@ -28641,7 +28641,7 @@ Lisp definition."
 
 (defun set-debugger-enable-fn (val state)
   (declare (xargs :guard (and (state-p state)
-                              (member-eq val '(t nil :never :break :bt
+                              (member-eq val '(t nil :never :never! :break :bt
                                                  :break-bt :bt-break)))
                   :guard-hints
                   (("Goal"

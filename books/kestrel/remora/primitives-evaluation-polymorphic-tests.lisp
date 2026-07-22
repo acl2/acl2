@@ -90,21 +90,22 @@
 (acl2::assert-event (reserrp (prim-length *tv-int* 2 nil *vec3*)))
 (acl2::assert-event (reserrp (prim-length *tv-int* 0 nil (iv 5))))
 
-; Via eval-primop-fun, including the arity check.
+; Via eval-primop-fun.
 
 (acl2::assert-equal
  (eval-primop-fun (make-primop-value-length-t-d-s :tval *tv-int*
                                                   :dval 3
                                                   :sval nil)
-                  (list *vec3*))
+                  *vec3*)
  (iv 3))
 
 ; Wrong number of argument cells.
 (acl2::assert-event
- (reserrp (eval-primop-fun (make-primop-value-length-t-d-s :tval *tv-int*
-                                                           :dval 3
-                                                           :sval nil)
-                           (list *vec3* *vec3*))))
+ (reserrp
+  (eval-primop-fun-chain (make-primop-value-length-t-d-s :tval *tv-int*
+                                                         :dval 3
+                                                         :sval nil)
+                         (list *vec3* *vec3*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -174,21 +175,22 @@
 (acl2::assert-event (reserrp (prim-head *tv-int* 1 nil *vec3*)))
 (acl2::assert-event (reserrp (prim-head *tv-int* 0 nil (iv 5))))
 
-; Via eval-primop-fun, including the arity check.
+; Via eval-primop-fun.
 
 (acl2::assert-equal
  (eval-primop-fun (make-primop-value-head-t-d-s :tval *tv-int*
                                                 :dval 2
                                                 :sval nil)
-                  (list *vec3*))
+                  *vec3*)
  (iv 1))
 
 ; Wrong number of argument cells.
 (acl2::assert-event
- (reserrp (eval-primop-fun (make-primop-value-head-t-d-s :tval *tv-int*
-                                                         :dval 2
-                                                         :sval nil)
-                           (list *vec3* *vec3*))))
+ (reserrp
+  (eval-primop-fun-chain (make-primop-value-head-t-d-s :tval *tv-int*
+                                                       :dval 2
+                                                       :sval nil)
+                         (list *vec3* *vec3*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -260,21 +262,22 @@
 (acl2::assert-event (reserrp (prim-tail *tv-int* 1 nil *vec3*)))
 (acl2::assert-event (reserrp (prim-tail *tv-int* 0 nil (iv 5))))
 
-; Via eval-primop-fun, including the arity check.
+; Via eval-primop-fun.
 
 (acl2::assert-equal
  (eval-primop-fun (make-primop-value-tail-t-d-s :tval *tv-int*
                                                 :dval 2
                                                 :sval nil)
-                  (list *vec3*))
+                  *vec3*)
  (expr-value-vector (list (iv 2) (iv 3))))
 
 ; Wrong number of argument cells.
 (acl2::assert-event
- (reserrp (eval-primop-fun (make-primop-value-tail-t-d-s :tval *tv-int*
-                                                         :dval 2
-                                                         :sval nil)
-                           (list *vec3* *vec3*))))
+ (reserrp
+  (eval-primop-fun-chain (make-primop-value-tail-t-d-s :tval *tv-int*
+                                                       :dval 2
+                                                       :sval nil)
+                         (list *vec3* *vec3*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -365,23 +368,28 @@
 (acl2::assert-event (reserrp (prim-append *tv-int* 3 3 nil *vec3* *mat23*)))
 (acl2::assert-event (reserrp (prim-append *tv-int* 0 0 nil (iv 5) (iv 5))))
 
-; Via eval-primop-fun, including the arity check.
+; Via eval-primop-fun-chain and eval-primop-fun.
 
+(acl2::assert-equal
+ (eval-primop-fun-chain (make-primop-value-append-t-m-n-s :tval *tv-int*
+                                                          :mval 3
+                                                          :nval 1
+                                                          :sval nil)
+                        (list *vec3* *vec1*))
+ (expr-value-vector (list (iv 1) (iv 2) (iv 3) (iv 1))))
+
+; One argument cell yields the next stage (partial application).
 (acl2::assert-equal
  (eval-primop-fun (make-primop-value-append-t-m-n-s :tval *tv-int*
                                                     :mval 3
                                                     :nval 1
                                                     :sval nil)
-                  (list *vec3* *vec1*))
- (expr-value-vector (list (iv 1) (iv 2) (iv 3) (iv 1))))
-
-; Wrong number of argument cells.
-(acl2::assert-event
- (reserrp (eval-primop-fun (make-primop-value-append-t-m-n-s :tval *tv-int*
-                                                             :mval 3
-                                                             :nval 1
-                                                             :sval nil)
-                           (list *vec3*))))
+                  *vec3*)
+ (expr-value-primop (make-primop-value-append-t-m-n-s-x :tval *tv-int*
+                                                        :mval 3
+                                                        :nval 1
+                                                        :sval nil
+                                                        :xval *vec3*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -456,21 +464,22 @@
 (acl2::assert-event (reserrp (prim-reverse *tv-int* 3 nil *mat23*)))
 (acl2::assert-event (reserrp (prim-reverse *tv-int* 0 nil (iv 5))))
 
-; Via eval-primop-fun, including the arity check.
+; Via eval-primop-fun.
 
 (acl2::assert-equal
  (eval-primop-fun (make-primop-value-reverse-t-d-s :tval *tv-int*
                                                    :dval 3
                                                    :sval nil)
-                  (list *vec3*))
+                  *vec3*)
  (expr-value-vector (list (iv 3) (iv 2) (iv 1))))
 
 ; Wrong number of argument cells.
 (acl2::assert-event
- (reserrp (eval-primop-fun (make-primop-value-reverse-t-d-s :tval *tv-int*
-                                                            :dval 3
-                                                            :sval nil)
-                           (list *vec3* *vec3*))))
+ (reserrp
+  (eval-primop-fun-chain (make-primop-value-reverse-t-d-s :tval *tv-int*
+                                                          :dval 3
+                                                          :sval nil)
+                         (list *vec3* *vec3*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -512,12 +521,12 @@
 ; Non-integer index.
 (acl2::assert-event (reserrp (prim-index *tv-int* 3 *vec3* (bv t))))
 
-; Via eval-primop-fun.
+; Via eval-primop-fun-chain.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-index-t-m :tval *tv-int*
-                                               :mval 3)
-                  (list *vec3* (iv 1)))
+ (eval-primop-fun-chain (make-primop-value-index-t-m :tval *tv-int*
+                                                     :mval 3)
+                        (list *vec3* (iv 1)))
  (iv 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -583,12 +592,65 @@
  (reserrp (prim-index2d *tv-int* 2 3 *vec3*
                         (expr-value-vector (list (iv 0) (iv 0))))))
 
+; Via eval-primop-fun-chain.
+
+(acl2::assert-equal
+ (eval-primop-fun-chain (make-primop-value-index2d-t-m-n :tval *tv-int*
+                                                         :mval 2
+                                                         :nval 3)
+                        (list *mat23*
+                              (expr-value-vector (list (iv 1) (iv 0)))))
+ (iv 4))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation sum:
+; instantiation stage transition and application of the final stage.
+; This operation has no type stage,
+; because it is monomorphic in the element type.
+
+; Ispace application: sum applied to a shape.
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-sum) (ispace-value-shape (list 3)))
+ (expr-value-primop (make-primop-value-sum-s :sval (list 3))))
+
+; A dimension where a shape is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-sum) (ispace-value-dim 3))))
+
+; Application of the fully instantiated operation.
+
+; Summing a vector.
+(acl2::assert-equal (prim-sum (list 3) *vec3*) (iv 6))
+
+; Summing a matrix adds all of its elements.
+(acl2::assert-equal (prim-sum (list 2 3) *mat23*) (iv 21))
+
+; Summing a scalar yields the scalar.
+(acl2::assert-equal (prim-sum nil (iv 5)) (iv 5))
+
+; Summing an empty vector yields zero.
+(acl2::assert-equal
+ (prim-sum (list 0) (make-expr-value-vector-empty :dims nil :elem *tv-int*))
+ (iv 0))
+
+; Cell dimensions not matching the instantiation.
+(acl2::assert-event (reserrp (prim-sum (list 2) *vec3*)))
+(acl2::assert-event (reserrp (prim-sum nil *vec3*)))
+
+; A cell whose atoms are not integers.
+(acl2::assert-event
+ (reserrp (prim-sum (list 2) (expr-value-vector (list (bv t) (bv nil))))))
+
 ; Via eval-primop-fun.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-index2d-t-m-n :tval *tv-int*
-                                                   :mval 2
-                                                   :nval 3)
-                  (list *mat23*
-                        (expr-value-vector (list (iv 1) (iv 0)))))
- (iv 4))
+ (eval-primop-fun (make-primop-value-sum-s :sval (list 3)) *vec3*)
+ (iv 6))
+
+; Wrong number of argument cells.
+(acl2::assert-event
+ (reserrp
+  (eval-primop-fun-chain (make-primop-value-sum-s :sval (list 3))
+                         (list *vec3* *vec3*))))

@@ -487,6 +487,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod type+type
+  :short "Fixtype of pairs consisting of two types."
+  ((type1 type)
+   (type2 type))
+  :pred type+type-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type+type-result
+  :short "Fixtype of
+          (i) pairs consisting of two types
+          and (ii) errors."
+  :ok type+type
+  :pred type+type-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod typelist+type
   :short "Fixtype of pairs consisting of
           a list of types and a type."
