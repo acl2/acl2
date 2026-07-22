@@ -969,9 +969,9 @@
                  (make-expr-value-vector-empty
                   :dims nil
                   :elem (type-value-base (base-type-int))))
-       :app (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
-                 ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
-              (eval-app funval argvals (1- limit)))
+       :appn (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
+                  ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
+               (eval-app funval argvals (1- limit)))
        :tapp (b* (((ok funval) (eval-expr expr.fun denv (1- limit)))
                   ((ok tval) (eval-type expr.arg
                                         (expr-denv->tenv denv))))

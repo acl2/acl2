@@ -1432,12 +1432,12 @@
                                       (shape-dims
                                        (list (dim-const (len expr.chars))))))
       :expr (expr-fix expr))
-     :app
+     :appn
      (b* (((ok (type+expr fe)) (check-expr expr.fun senv))
           ((ok (types+exprs aes)) (check-expr-list expr.args senv))
           ((ok type) (check-app fe.type aes.types)))
        (make-type+expr :type type
-                       :expr (make-expr-app :fun fe.expr :args aes.exprs)))
+                       :expr (make-expr-appn :fun fe.expr :args aes.exprs)))
      :tapp
      (b* (((ok (type+expr fe)) (check-expr expr.fun senv))
           ((ok type) (check-tapp fe.type expr.arg senv)))

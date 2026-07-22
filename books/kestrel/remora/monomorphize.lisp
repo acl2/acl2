@@ -40,7 +40,7 @@
   (xdoc::topstring
    (xdoc::p
     "Traverses a Remora program, replacing every @(':capp') call to a known
-     @(':cfun') that carries non-empty ispace arguments with a plain @(':app')
+     @(':cfun') that carries non-empty ispace arguments with a plain @(':appn')
      call to a freshly generated, fully-instantiated @(':fun') definition.
      The new function is built by binding the @(':cfun')'s ispace parameters to
      the evaluated nat values and partially evaluating dimensions throughout the
@@ -663,12 +663,12 @@
 
       :string (mv nil fn-info-map (expr-fix x))
 
-      :app (b* (((mv err fn-info-map new-fun)
-                 (mono-expr x.fun defs fn-info-map dim-var-map type-map))
-                ((when err) (mv err fn-info-map (expr-app new-fun x.args)))
-                ((mv err fn-info-map new-args)
-                 (mono-expr-list x.args defs fn-info-map dim-var-map type-map)))
-             (mv err fn-info-map (expr-app new-fun new-args)))
+      :appn (b* (((mv err fn-info-map new-fun)
+                  (mono-expr x.fun defs fn-info-map dim-var-map type-map))
+                 ((when err) (mv err fn-info-map (expr-appn new-fun x.args)))
+                 ((mv err fn-info-map new-args)
+                  (mono-expr-list x.args defs fn-info-map dim-var-map type-map)))
+              (mv err fn-info-map (expr-appn new-fun new-args)))
 
       :tapp (b* (((mv err fn-info-map new-fun)
                   (mono-expr x.fun defs fn-info-map dim-var-map type-map)))
@@ -742,7 +742,7 @@
                                   (inst-name (cfun-inst-name cfun-name tnames nats))
                                   (targ-tys  (type-list-option-case x.targs
                                                :some x.targs.val :none nil))
-                                  (mono-expr (expr-app (expr-var inst-name) new-args))
+                                  (mono-expr (expr-appn (expr-var inst-name) new-args))
                                   (def-entry (assoc-equal cfun-name defs))
                                   ; An unknown cfun is built-in: emit the same instance call
                                   ; as for a known cfun, but do not build/register an instance.

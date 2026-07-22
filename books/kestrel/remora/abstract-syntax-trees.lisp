@@ -857,7 +857,7 @@
      (xdoc::p
       "The non-emptiness of the atom list in @(':array'),
        of the expression list in @(':frame'),
-       of the argument lists of @(':app'), @(':tappn'), and @(':iappn')
+       of the argument lists of @(':appn'), @(':tappn'), and @(':iappn')
        (but not of @(':capp'), whose value arguments may be absent),
        of the bind list in @(':let'),
        and of the ispace-var list in @(':unbox')
@@ -884,8 +884,8 @@
     (:frame-empty ((dims nat-list)
                    (type type)))
     (:string ((chars char-lit-list)))
-    (:app ((fun expr)
-           (args expr-list)))
+    (:appn ((fun expr)
+            (args expr-list)))
     (:tapp ((fun expr)
             (arg type)))
     (:tappn ((fun expr)

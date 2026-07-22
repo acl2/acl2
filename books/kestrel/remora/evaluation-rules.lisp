@@ -251,14 +251,14 @@
                     (expr-denv-lookup-expr (expr-var->name expr) denv)))
     :enable eval-expr)
 
-  (defruled eval-expr-when-app
-    (implies (and (expr-case expr :app)
+  (defruled eval-expr-when-appn
+    (implies (and (expr-case expr :appn)
                   (not (zp limit))
                   (equal funval
-                         (eval-expr (expr-app->fun expr) denv (1- limit)))
+                         (eval-expr (expr-appn->fun expr) denv (1- limit)))
                   (expr-valuep funval)
                   (equal argvals
-                         (eval-expr-list (expr-app->args expr) denv (1- limit)))
+                         (eval-expr-list (expr-appn->args expr) denv (1- limit)))
                   (expr-value-listp argvals))
              (equal (eval-expr expr denv limit)
                     (eval-app funval argvals (1- limit))))
@@ -293,7 +293,7 @@
 
   (def-ruleset eval-rules
     '(eval-expr-when-var
-      eval-expr-when-app
+      eval-expr-when-appn
       eval-expr-list-when-atom
       eval-expr-list-when-consp
       eval-app-of-int-add-no-lifting
