@@ -210,11 +210,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The following fails but should succeed in the latest Remora, which is curried.
-; We must activate this test once our model of Remora is also curried.
-;; (test-check-top-expr
-;;  "
-;; (let ((fun (f (x Int) (y Int) : Int) (+ x y))
-;;       (val g (f 2)))
-;;   (g 3))
-;; ")
+; Full application of a two-parameter term lambda abstraction,
+; as a chain of unary applications.
+(test-check-top-expr
+ "((fn ((x Int) (y Int)) (+ x y)) 3 4)")
+
+; Partial application of a two-parameter term lambda abstraction:
+; its type is a (lifted) one-input function type over the remaining parameter.
+(test-check-top-expr
+ "((fn ((x Int) (y Int)) (+ x y)) 3)")
+
+; Completion of a partial application, as a chain of unary applications.
+(test-check-top-expr
+ "(((fn ((x Int) (y Int)) (+ x y)) 3) 4)")
+
+; Rank-polymorphic application over a non-scalar frame:
+; each argument's frame joins into the principal shape.
+(test-check-top-expr
+ "((fn ((x Int) (y Int)) (+ x y)) [1 2 3] [4 5 6])")
+
+; More arguments than parameters (over-application):
+; after the last parameter, the result is not a function type.
+(test-check-top-expr-fail
+ "((fn ((x Int)) x) 3 4)")
+
+; Partial application through a let-bound function:
+; g is the function partially applied to its first argument,
+; then applied to its second.
+; (This test was previously expected to fail before term application
+; was made curried.)
+(test-check-top-expr
+ "
+(let ((fun (f (x Int) (y Int) : Int) (+ x y))
+      (val g (f 2)))
+  (g 3))
+")

@@ -91,13 +91,37 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-fun ((type typep))
-  :returns (in+out typelist+type-resultp)
+  :returns (in+rest type+type-resultp)
   :short "Check if an atom type is a function type,
-          returning its input and output array types if successful."
-  (if (type-case type :fun)
-      (make-typelist+type :types (type-fun->in type)
-                          :type (type-fun->out type))
-    (reserr nil)))
+          peeling off its first input type if successful."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Consistently with the curried view of term applications
+     (see @(tsee expr)),
+     a function type is treated as
+     the nesting of one-input function types.
+     Accordingly, this matching operation peels off one input type:
+     if the type is a function type with at least one input,
+     we return the first input type,
+     along with the output type of the function type
+     if there are no other inputs,
+     or otherwise the function type over the remaining inputs.
+     A function type with no inputs fails to match.")
+   (xdoc::p
+    "Unlike @(tsee type-match-forall) and @(tsee type-match-product),
+     there is no unary form of function type to match directly:
+     a function type always has an explicit list of input types,
+     which will be similarly given a unary form."))
+  (b* (((unless (type-case type :fun)) (reserr nil))
+       (ins (type-fun->in type))
+       (out (type-fun->out type))
+       ((unless (consp ins)) (reserr nil)))
+    (make-type+type
+     :type1 (car ins)
+     :type2 (if (consp (cdr ins))
+                (make-type-fun :in (cdr ins) :out out)
+              out))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

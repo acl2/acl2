@@ -545,7 +545,7 @@
 (define pdoc-head-only-form ((head pdocp))
   :returns (out pdocp)
   :short "A parenthesized form with no body: just @('(head)').
-          Used by @(tsee expr-app) and friends when the argument list
+          Used by @(tsee expr-appn) and friends when the argument list
           is empty."
   (pdoc-paren head))
 
@@ -944,7 +944,7 @@
   (xdoc::topstring
    (xdoc::p
     "The AST @(tsee var+type?) fixtype is used by both
-     @(tsee atom-lambda)/@(tsee bind-fun)/@(tsee bind-cfun) parameter
+     @(tsee atom-lambdan)/@(tsee bind-fun)/@(tsee bind-cfun) parameter
      lists and (potentially) other binders.  In every case where it
      appears in our AST, the corresponding concrete syntax is the
      @('pat') rule of @('grammar.abnf'), namely @('\"(\" ws identifier
@@ -1220,11 +1220,14 @@
                                  (pdoc-concat (pdoc-line)
                                               (type-to-pdoc e.type))))
       :string (pdoc-text (string-lit-to-codepoints e.chars))
-      :app (b* (((ok fun) (expr-to-pdoc e.fun)))
-             (if (consp e.args)
-                 (b* (((ok args) (expr-list-to-pdoc e.args)))
-                   (pdoc-call-form fun args))
-               (pdoc-head-only-form fun)))
+      :app (b* (((ok fun) (expr-to-pdoc e.fun))
+                ((ok arg) (expr-to-pdoc e.arg)))
+             (pdoc-call-form fun arg))
+      :appn (b* (((ok fun) (expr-to-pdoc e.fun)))
+              (if (consp e.args)
+                  (b* (((ok args) (expr-list-to-pdoc e.args)))
+                    (pdoc-call-form fun args))
+                (pdoc-head-only-form fun)))
       :tapp (b* (((ok fun) (expr-to-pdoc e.fun)))
               (pdoc-prefix-form
                "t-app"
@@ -1320,12 +1323,18 @@
       :base (base-lit-to-pdoc a.lit)
       ;; We do not print the optional body type (a.type?):
       ;; it has no concrete syntax (it is computed by type checking).
-      :lambda (b* (((ok params) (pat-list-to-pdoc a.params))
+      :lambda (b* (((ok pat) (pat-to-pdoc a.param))
                    ((ok body) (expr-to-pdoc a.body)))
                 (pdoc-prefix-form
                  "fn"
-                 (pdoc-concat (pdoc-paren params)
+                 (pdoc-concat (pdoc-paren pat)
                               (pdoc-concat (pdoc-line) body))))
+      :lambdan (b* (((ok params) (pat-list-to-pdoc a.params))
+                    ((ok body) (expr-to-pdoc a.body)))
+                 (pdoc-prefix-form
+                  "fn"
+                  (pdoc-concat (pdoc-paren params)
+                               (pdoc-concat (pdoc-line) body))))
       :tlambda (b* (((ok body) (expr-to-pdoc a.body)))
                  (pdoc-prefix-form
                   "t-fn"
