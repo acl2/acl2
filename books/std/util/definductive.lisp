@@ -15,6 +15,7 @@
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/symbol-set" :dir :system)
+(include-book "kestrel/fty/symbol-set-set" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/legal-variable-listp" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
@@ -688,7 +689,7 @@
 (define defind-mutually-recursive-cliques ((pred-names symbol-listp)
                                            (irule-infos
                                             defind-irule-info-listp))
-  :returns (cliques set::setp)
+  :returns (cliques symbol-set-setp)
   :short "Set of the mutually recursive cliques formed by
           the predicates being defined, according to the rules."
   :long
@@ -726,7 +727,7 @@
      ((preds-to-do symbol-listp)
       (pred-names symbol-listp)
       (irule-infos defind-irule-info-listp))
-     :returns (cliques set::setp)
+     :returns (cliques symbol-set-setp)
      :parents nil
      (b* (((when (endp preds-to-do)) nil)
           (cliques (defind-mutually-recursive-cliques-loop
