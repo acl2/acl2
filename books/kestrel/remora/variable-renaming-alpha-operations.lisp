@@ -957,11 +957,22 @@
             :body (expr-rename-expr-vars-alpha-aux expr.body renam avoid))))
    (atom :lambda
          (b* (((mv fresh renam)
+               (expr-rename-alpha-bound (list (var+type?->var atom.param))
+                                        renam
+                                        (expr-free-expr-vars atom.body)))
+              (param (make-var+type? :var (car fresh)
+                                     :type? (var+type?->type? atom.param))))
+           (make-atom-lambda
+            :param param
+            :body (expr-rename-expr-vars-alpha-aux atom.body renam avoid)
+            :type? atom.type?)))
+   (atom :lambdan
+         (b* (((mv fresh renam)
                (expr-rename-alpha-bound (var+type?-list->var atom.params)
                                         renam
                                         (expr-free-expr-vars atom.body)))
               (params (var+type?-list-set-vars fresh atom.params)))
-           (make-atom-lambda
+           (make-atom-lambdan
             :params params
             :body (expr-rename-expr-vars-alpha-aux atom.body renam avoid)
             :type? atom.type?)))

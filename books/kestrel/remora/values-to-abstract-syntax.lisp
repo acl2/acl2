@@ -561,7 +561,7 @@
      :primop (primop-value-to-expr val.val)
      :lambda (b* ((atom
                    (make-atom-lambda
-                    :params (list (var+typevalue-to-var+type? val.param))
+                    :param (var+typevalue-to-var+type? val.param)
                     :body val.body
                     :type? (type-value-option-to-type-option val.type?)))
                   ((mv err atom) (atom-subst-expr-denv atom val.denv)))

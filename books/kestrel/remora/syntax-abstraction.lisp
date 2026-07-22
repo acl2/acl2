@@ -2137,13 +2137,25 @@
   ;; lambda = ( "fn" / λ ) ws "(" *( ws pat ) ws ")" ws exp
   (define abs-lambda ((tree abnf::treep))
     :returns (a atom-resultp)
-    :short "Abstract a @('lambda') to an @(tsee atom) @(':lambda')."
+    :short "Abstract a @('lambda') to
+            an @(tsee atom) @(':lambda') or @(':lambdan')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A term lambda abstraction with one parameter becomes
+       a unary term lambda abstraction @(':lambda');
+       one with two or more parameters becomes
+       an n-ary term lambda abstraction @(':lambdan')
+       (see @(tsee atom))."))
     (b* (((okf (abnf::tree-list-tuple8 sub))
           (abnf::check-tree-nonleaf-8 tree "lambda"))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf params) (abs-*-ws-pat sub.4th))
          ((okf body) (abs-exp body-tree)))
-      (make-atom-lambda :params params :body body :type? nil))
+      (if (and (consp params)
+               (endp (cdr params)))
+          (make-atom-lambda :param (car params) :body body :type? nil)
+        (make-atom-lambdan :params params :body body :type? nil)))
     :measure (abnf::tree-count tree))
 
   ;; type-lambda = ( "t-fn" / "tλ" ) ws "(" *( ws type-var ) ws ")" ws exp

@@ -951,6 +951,16 @@
        but we follow [arxiv], [thesis], and [impl],
        which all use a generic type.")
      (xdoc::p
+      "The @(':lambda') summand is
+       the main, core form of term lambda abstraction,
+       which binds exactly one parameter,
+       while the @(':lambdan') summand is sugar for
+       a nesting of unary term lambda abstractions.
+       The CST-to-AST mapping turns
+       the term lambda abstractions with one parameter into @(':lambda'),
+       and those with two or more parameters into @(':lambdan'),
+       similarly to type and ispace lambda abstractions.")
+     (xdoc::p
       "The @(':tlambda') summand is
        the main, core form of type lambda abstraction,
        which binds exactly one parameter,
@@ -969,11 +979,10 @@
        The CST-to-AST mapping turns
        the ispace lambda abstractions with one parameter into @(':ilambda'),
        and those with two or more parameters into @(':ilambdan'),
-       similarly to ispace applications (see @(tsee expr)).
-       The @(':lambda') summand will be similarly given a unary form.")
+       similarly to ispace applications (see @(tsee expr)).")
      (xdoc::p
       "The concrete syntax requires the parameter lists of
-       the @(':lambda'), @(':tlambdan'), and @(':ilambdan') summands
+       the @(':lambdan'), @(':tlambdan'), and @(':ilambdan') summands
        and the ispace list of @(':box') to be non-empty;
        this is not captured in this fixtype.")
      (xdoc::p
@@ -981,9 +990,12 @@
        is calculated and stored by the type checker.
        It is absent after parsing."))
     (:base ((lit base-lit)))
-    (:lambda ((params var+type?-list)
+    (:lambda ((param var+type?)
               (body expr)
               (type? type-option)))
+    (:lambdan ((params var+type?-list)
+               (body expr)
+               (type? type-option)))
     (:tlambda ((param type-var)
                (body expr)))
     (:tlambdan ((params type-var-list)

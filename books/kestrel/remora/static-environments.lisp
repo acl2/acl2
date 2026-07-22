@@ -126,6 +126,10 @@
      @('append'), @('reverse'), @('index'), and @('index2d') operations
      have polymorphic types:
      a universal type of a product type of a function type, as in [impl].
+     The @('sum') operation is polymorphic only in the shape,
+     not in the element type, which is always integer:
+     its type is a product type of a function type,
+     without an enclosing universal type, as in [impl].
      Like the monomorphic types,
      the whole type is a zero-rank array type,
      but the bodies of the universal and product types
@@ -201,6 +205,11 @@
                            (t-> ((t[] "&t" (shape++ "$m" "$n"))
                                  (t[] :int (shp 2)))
                                 "&t")))
+             (shp)))
+       (sum-type
+        (t[] (tpi ("@s")
+                  (t-> ((t[] :int "@s"))
+                       :int))
              (shp))))
     (omap::from-alist
      (list (cons "+" int-binop-type)
@@ -258,7 +267,8 @@
            (cons "append" append-type)
            (cons "reverse" reverse-type)
            (cons "index" index-type)
-           (cons "index2d" index2d-type)))))
+           (cons "index2d" index2d-type)
+           (cons "sum" sum-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
