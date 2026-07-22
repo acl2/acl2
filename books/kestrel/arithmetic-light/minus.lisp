@@ -27,6 +27,11 @@
          (rationalp (fix x)))
   :hints (("Goal" :cases ((rationalp x)))))
 
+(defthmd rationalp-of---alt
+    (equal (rationalp (- x))
+           (not (complex-rationalp x)))
+    :hints (("Goal" :cases ((complex-rationalp x)))))
+
 (defthm --of--
   (equal (- (- x))
          (fix x)))
