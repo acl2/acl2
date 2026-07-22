@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function unary--.
 ;
-; Copyright (C) 2019-2023 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -29,8 +29,8 @@
 
 (defthmd rationalp-of---alt
     (equal (rationalp (- x))
-           (not (complex-rationalp x)))
-    :hints (("Goal" :cases ((complex-rationalp x)))))
+           (not (complex/complex-rationalp x)))
+    :hints (("Goal" :cases ((complex/complex-rationalp x)))))
 
 (defthm --of--
   (equal (- (- x))
