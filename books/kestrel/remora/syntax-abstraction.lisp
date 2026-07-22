@@ -1900,13 +1900,25 @@
   ;; app-exp = exp *( ws exp )
   (define abs-app-exp ((tree abnf::treep))
     :returns (e expr-resultp)
-    :short "Abstract an @('app-exp') to an @(tsee expr) @(':app')."
+    :short "Abstract an @('app-exp') to
+            an @(tsee expr) @(':app') or @(':appn')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "An application to one argument becomes
+       a unary term application @(':app');
+       an application to two or more arguments becomes
+       an n-ary term application @(':appn')
+       (see @(tsee expr))."))
     (b* (((okf (abnf::tree-list-tuple2 sub))
           (abnf::check-tree-nonleaf-2 tree "app-exp"))
          ((okf fun-tree) (abnf::check-tree-list-1 sub.1st))
          ((okf fun) (abs-exp fun-tree))
          ((okf args) (abs-*-ws-exp sub.2nd)))
-      (make-expr-app :fun fun :args args))
+      (if (and (consp args)
+               (endp (cdr args)))
+          (make-expr-app :fun fun :arg (car args))
+        (make-expr-appn :fun fun :args args)))
     :measure (abnf::tree-count tree))
 
   ;; array-exp = "array" ws shape-lit *( ws atom )

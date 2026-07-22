@@ -31,7 +31,8 @@
                           float-valuep-when-result-not-error
                           booleanp-when-result-not-error
                           acl2::integerp-when-result-not-error
-                          acl2::integer-listp-when-result-not-error)))
+                          acl2::integer-listp-when-result-not-error
+                          expr-valuep-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1972,154 +1973,234 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-primop-fun ((op primop-valuep) (args expr-value-listp))
+(define eval-primop-fun ((op primop-valuep) (arg expr-valuep))
   :guard (and (primop-value-funp op)
-              (expr-value-list-wfp args))
+              (primop-value-wfp op)
+              (expr-value-wfp arg))
   :returns (val expr-value-resultp)
   :short "Evaluate the application of a primitive operation
-          to its argument cells."
+          to one argument cell."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the dynamic counterpart, for primitive operations,
      of evaluating the body of a lambda abstraction:
      it is called by @(tsee eval-app-cell)
-     on a scalar primitive operation and its scalar argument cells,
-     after the rank-polymorphic lifting.")
+     on a scalar primitive operation and a scalar argument cell,
+     after the rank-polymorphic lifting.
+     Consistently with the curried view of term applications,
+     the operation is applied to exactly one argument cell:
+     the application of a binary operation to its two arguments
+     goes through two applications of this function.")
    (xdoc::p
     "The guard requires the value to be applicable to expression values
      (see @(tsee primop-value-funp))
-     and the argument cells to be well-formed.
-     We check that the value is applied to the right number of argument cells;
-     then we dispatch on the operation,
-     calling the @('prim-...') function that defines the operation's semantics.
-     Anything else is an error.")
+     and the argument cell to be well-formed.
+     If the operation, at its current stage,
+     expects another argument value after this one
+     (i.e. it is the initial stage of a binary operation),
+     the application yields the next stage of the operation,
+     namely the @('-x') summand that stores the argument value;
+     this is a scalar primitive operation value,
+     applicable to the remaining argument value.
+     Otherwise, the argument cell is the last one,
+     and we call the @('prim-...') function
+     that defines the operation's semantics,
+     on the stored argument value (if any) and the argument cell.")
    (xdoc::p
-    "The result is well-formed when it is not an error,
-     because each @('prim-...') function returns
-     a scalar base value on success."))
-  (b* ((args (expr-value-list-fix args))
-       ((unless (equal (len args) (arity-of-primop-value-fun op)))
-        (reserr nil)))
+    "The guard additionally requires
+     the primitive operation value to be well-formed:
+     this ensures that the expression values stored in the stages, if any,
+     are well-formed,
+     as required (via guards and theorem hypotheses)
+     by the @('prim-...') functions
+     that are called on the stored values.")
+   (xdoc::p
+    "The result is well-formed when it is not an error:
+     the next-stage results are scalar primitive operation values
+     that store well-formed values,
+     and the @('prim-...') functions return well-formed values on success."))
+  (b* ((arg (expr-value-fix arg)))
     (primop-value-case
      op
      :int-unary (int-unary-primop-case
                  op.op
-                 :bit-not (prim-int-bit-not (first args))
-                 :popc (prim-int-popc (first args)))
-     :int-binary (int-binary-primop-case
-                  op.op
-                  :add (prim-int-add (first args) (second args))
-                  :sub (prim-int-sub (first args) (second args))
-                  :mul (prim-int-mul (first args) (second args))
-                  :div (prim-int-div (first args) (second args))
-                  :expt (prim-int-expt (first args) (second args))
-                  :mod (prim-int-mod (first args) (second args))
-                  :max (prim-int-max (first args) (second args))
-                  :min (prim-int-min (first args) (second args))
-                  :bit-and (prim-int-bit-and (first args) (second args))
-                  :bit-or (prim-int-bit-or (first args) (second args))
-                  :bit-xor (prim-int-bit-xor (first args) (second args))
-                  :shl (prim-int-shl (first args) (second args))
-                  :shr (prim-int-shr (first args) (second args)))
-     :int-binary-x (reserr :todo)
-     :int-rel (int-rel-primop-case
-               op.op
-               :eq (prim-int-eq (first args) (second args))
-               :neq (prim-int-neq (first args) (second args))
-               :lt (prim-int-lt (first args) (second args))
-               :gt (prim-int-gt (first args) (second args))
-               :leq (prim-int-leq (first args) (second args))
-               :geq (prim-int-geq (first args) (second args)))
-     :int-rel-x (reserr :todo)
-     :int-to-float (prim-int-to-float (first args))
-     :int-to-bool (prim-int-to-bool (first args))
+                 :bit-not (prim-int-bit-not arg)
+                 :popc (prim-int-popc arg))
+     :int-binary (expr-value-primop
+                  (make-primop-value-int-binary-x :op op.op :xval arg))
+     :int-binary-x (int-binary-primop-case
+                    op.op
+                    :add (prim-int-add op.xval arg)
+                    :sub (prim-int-sub op.xval arg)
+                    :mul (prim-int-mul op.xval arg)
+                    :div (prim-int-div op.xval arg)
+                    :expt (prim-int-expt op.xval arg)
+                    :mod (prim-int-mod op.xval arg)
+                    :max (prim-int-max op.xval arg)
+                    :min (prim-int-min op.xval arg)
+                    :bit-and (prim-int-bit-and op.xval arg)
+                    :bit-or (prim-int-bit-or op.xval arg)
+                    :bit-xor (prim-int-bit-xor op.xval arg)
+                    :shl (prim-int-shl op.xval arg)
+                    :shr (prim-int-shr op.xval arg))
+     :int-rel (expr-value-primop
+               (make-primop-value-int-rel-x :op op.op :xval arg))
+     :int-rel-x (int-rel-primop-case
+                 op.op
+                 :eq (prim-int-eq op.xval arg)
+                 :neq (prim-int-neq op.xval arg)
+                 :lt (prim-int-lt op.xval arg)
+                 :gt (prim-int-gt op.xval arg)
+                 :leq (prim-int-leq op.xval arg)
+                 :geq (prim-int-geq op.xval arg))
+     :int-to-float (prim-int-to-float arg)
+     :int-to-bool (prim-int-to-bool arg)
      :float-unary (float-unary-primop-case
                    op.op
-                   :sqrt (prim-float-sqrt (first args)))
-     :float-binary (float-binary-primop-case
-                    op.op
-                    :add (prim-float-add (first args) (second args))
-                    :sub (prim-float-sub (first args) (second args))
-                    :mul (prim-float-mul (first args) (second args))
-                    :div (prim-float-div (first args) (second args))
-                    :expt (prim-float-expt (first args) (second args))
-                    :max (prim-float-max (first args) (second args))
-                    :min (prim-float-min (first args) (second args)))
-     :float-binary-x (reserr :todo)
-     :float-rel (float-rel-primop-case
-                 op.op
-                 :eq (prim-float-eq (first args) (second args))
-                 :neq (prim-float-neq (first args) (second args))
-                 :lt (prim-float-lt (first args) (second args))
-                 :gt (prim-float-gt (first args) (second args))
-                 :leq (prim-float-leq (first args) (second args))
-                 :geq (prim-float-geq (first args) (second args)))
-     :float-rel-x (reserr :todo)
-     :float-truncate (prim-float-truncate (first args))
-     :float-round (prim-float-round (first args))
-     :float-ceiling (prim-float-ceiling (first args))
-     :float-floor (prim-float-floor (first args))
+                   :sqrt (prim-float-sqrt arg))
+     :float-binary (expr-value-primop
+                    (make-primop-value-float-binary-x :op op.op :xval arg))
+     :float-binary-x (float-binary-primop-case
+                      op.op
+                      :add (prim-float-add op.xval arg)
+                      :sub (prim-float-sub op.xval arg)
+                      :mul (prim-float-mul op.xval arg)
+                      :div (prim-float-div op.xval arg)
+                      :expt (prim-float-expt op.xval arg)
+                      :max (prim-float-max op.xval arg)
+                      :min (prim-float-min op.xval arg))
+     :float-rel (expr-value-primop
+                 (make-primop-value-float-rel-x :op op.op :xval arg))
+     :float-rel-x (float-rel-primop-case
+                   op.op
+                   :eq (prim-float-eq op.xval arg)
+                   :neq (prim-float-neq op.xval arg)
+                   :lt (prim-float-lt op.xval arg)
+                   :gt (prim-float-gt op.xval arg)
+                   :leq (prim-float-leq op.xval arg)
+                   :geq (prim-float-geq op.xval arg))
+     :float-truncate (prim-float-truncate arg)
+     :float-round (prim-float-round arg)
+     :float-ceiling (prim-float-ceiling arg)
+     :float-floor (prim-float-floor arg)
      :bool-unary (bool-unary-primop-case
                   op.op
-                  :not (prim-bool-not (first args)))
-     :bool-binary (bool-binary-primop-case
-                   op.op
-                   :and (prim-bool-and (first args) (second args))
-                   :or (prim-bool-or (first args) (second args)))
-     :bool-binary-x (reserr :todo)
-     :bool-rel (bool-rel-primop-case
-                op.op
-                :eq (prim-bool-eq (first args) (second args))
-                :neq (prim-bool-neq (first args) (second args)))
-     :bool-rel-x (reserr :todo)
-     :bool-to-int (prim-bool-to-int (first args))
-     :bool-to-float (prim-bool-to-float (first args))
+                  :not (prim-bool-not arg))
+     :bool-binary (expr-value-primop
+                   (make-primop-value-bool-binary-x :op op.op :xval arg))
+     :bool-binary-x (bool-binary-primop-case
+                     op.op
+                     :and (prim-bool-and op.xval arg)
+                     :or (prim-bool-or op.xval arg))
+     :bool-rel (expr-value-primop
+                (make-primop-value-bool-rel-x :op op.op :xval arg))
+     :bool-rel-x (bool-rel-primop-case
+                  op.op
+                  :eq (prim-bool-eq op.xval arg)
+                  :neq (prim-bool-neq op.xval arg))
+     :bool-to-int (prim-bool-to-int arg)
+     :bool-to-float (prim-bool-to-float arg)
      :head (prog2$ (impossible) (reserr nil))
      :head-t (prog2$ (impossible) (reserr nil))
      :head-t-d (prog2$ (impossible) (reserr nil))
-     :head-t-d-s (prim-head op.tval op.dval op.sval (first args))
+     :head-t-d-s (prim-head op.tval op.dval op.sval arg)
      :tail (prog2$ (impossible) (reserr nil))
      :tail-t (prog2$ (impossible) (reserr nil))
      :tail-t-d (prog2$ (impossible) (reserr nil))
-     :tail-t-d-s (prim-tail op.tval op.dval op.sval (first args))
+     :tail-t-d-s (prim-tail op.tval op.dval op.sval arg)
      :length (prog2$ (impossible) (reserr nil))
      :length-t (prog2$ (impossible) (reserr nil))
      :length-t-d (prog2$ (impossible) (reserr nil))
-     :length-t-d-s (prim-length op.tval op.dval op.sval (first args))
+     :length-t-d-s (prim-length op.tval op.dval op.sval arg)
      :append (prog2$ (impossible) (reserr nil))
      :append-t (prog2$ (impossible) (reserr nil))
      :append-t-m (prog2$ (impossible) (reserr nil))
      :append-t-m-n (prog2$ (impossible) (reserr nil))
-     :append-t-m-n-s (prim-append op.tval op.mval op.nval op.sval
-                                  (first args) (second args))
-     :append-t-m-n-s-x (reserr :todo)
+     :append-t-m-n-s (expr-value-primop
+                      (make-primop-value-append-t-m-n-s-x :tval op.tval
+                                                          :mval op.mval
+                                                          :nval op.nval
+                                                          :sval op.sval
+                                                          :xval arg))
+     :append-t-m-n-s-x (prim-append op.tval op.mval op.nval op.sval
+                                    op.xval arg)
      :reverse (prog2$ (impossible) (reserr nil))
      :reverse-t (prog2$ (impossible) (reserr nil))
      :reverse-t-d (prog2$ (impossible) (reserr nil))
-     :reverse-t-d-s (prim-reverse op.tval op.dval op.sval (first args))
+     :reverse-t-d-s (prim-reverse op.tval op.dval op.sval arg)
      :index (prog2$ (impossible) (reserr nil))
      :index-t (prog2$ (impossible) (reserr nil))
-     :index-t-m (prim-index op.tval op.mval (first args) (second args))
-     :index-t-m-x (reserr :todo)
+     :index-t-m (expr-value-primop
+                 (make-primop-value-index-t-m-x :tval op.tval
+                                                :mval op.mval
+                                                :xval arg))
+     :index-t-m-x (prim-index op.tval op.mval op.xval arg)
      :index2d (prog2$ (impossible) (reserr nil))
      :index2d-t (prog2$ (impossible) (reserr nil))
      :index2d-t-m (prog2$ (impossible) (reserr nil))
-     :index2d-t-m-n (prim-index2d op.tval op.mval op.nval
-                                  (first args) (second args))
-     :index2d-t-m-n-x (reserr :todo)
+     :index2d-t-m-n (expr-value-primop
+                     (make-primop-value-index2d-t-m-n-x :tval op.tval
+                                                        :mval op.mval
+                                                        :nval op.nval
+                                                        :xval arg))
+     :index2d-t-m-n-x (prim-index2d op.tval op.mval op.nval op.xval arg)
      :sum (prog2$ (impossible) (reserr nil))
-     :sum-s (prim-sum op.sval (first args))))
-  :guard-hints (("Goal" :in-theory (enable primop-value-funp
-                                           arity-of-primop-value-fun
-                                           type-of-primop-value-fun)))
+     :sum-s (prim-sum op.sval arg)))
+  :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///
 
   (defret expr-value-wfp-of-eval-primop-fun
     (implies (not (reserrp val))
              (expr-value-wfp val))
-    :hyp (expr-value-list-wfp args)))
+    :hyp (and (primop-value-wfp op)
+              (expr-value-wfp arg))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-primop-fun-chain ((op primop-valuep) (args expr-value-listp))
+  :guard (and (primop-value-funp op)
+              (primop-value-wfp op)
+              (expr-value-list-wfp args))
+  :returns (val expr-value-resultp)
+  :short "Evaluate the application of a primitive operation
+          to a list of argument cells, one after the other."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This chains applications of @(tsee eval-primop-fun):
+     the operation is applied to the first argument cell;
+     if there are more argument cells,
+     the result must be another applicable primitive operation value
+     (i.e. an @('-x') stage of a binary operation),
+     which is applied to the remaining argument cells.
+     Applying the operation to no argument cells returns it unchanged.")
+   (xdoc::p
+    "This function is transitional:
+     term applications are now evaluated
+     one argument at a time, in curried style,
+     with @(tsee eval-app-cell) calling @(tsee eval-primop-fun) directly,
+     so this function is no longer used there;
+     it is only used in some tests,
+     and it will be removed when those are reworked."))
+  (b* (((when (endp args)) (expr-value-primop (primop-value-fix op)))
+       ((ok val) (eval-primop-fun op (car args)))
+       ((when (endp (cdr args))) val)
+       ((unless (and (expr-value-case val :primop)
+                     (primop-value-funp (expr-value-primop->val val))))
+        (reserr nil)))
+    (eval-primop-fun-chain (expr-value-primop->val val) (cdr args)))
+  :measure (len args)
+
+  ///
+
+  (defret expr-value-wfp-of-eval-primop-fun-chain
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (and (primop-value-wfp op)
+              (expr-value-list-wfp args))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2192,7 +2273,8 @@
     (implies (not (reserrp val))
              (expr-value-wfp val))
     :hints (("Goal" :in-theory (enable expr-value-wfp
-                                       check-dims-of-expr-value)))))
+                                       check-dims-of-expr-value
+                                       check-dims-of-primop-value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2339,4 +2421,5 @@
     (implies (not (reserrp val))
              (expr-value-wfp val))
     :hints (("Goal" :in-theory (enable expr-value-wfp
-                                       check-dims-of-expr-value)))))
+                                       check-dims-of-expr-value
+                                       check-dims-of-primop-value)))))
