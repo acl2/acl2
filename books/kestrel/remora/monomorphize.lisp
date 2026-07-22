@@ -663,6 +663,13 @@
 
       :string (mv nil fn-info-map (expr-fix x))
 
+      :app (b* (((mv err fn-info-map new-fun)
+                 (mono-expr x.fun defs fn-info-map dim-var-map type-map))
+                ((when err) (mv err fn-info-map (expr-app new-fun x.arg)))
+                ((mv err fn-info-map new-arg)
+                 (mono-expr x.arg defs fn-info-map dim-var-map type-map)))
+             (mv err fn-info-map (expr-app new-fun new-arg)))
+
       :appn (b* (((mv err fn-info-map new-fun)
                   (mono-expr x.fun defs fn-info-map dim-var-map type-map))
                  ((when err) (mv err fn-info-map (expr-appn new-fun x.args)))

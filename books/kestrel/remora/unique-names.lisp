@@ -800,6 +800,10 @@
 
       :string (mv used (expr-fix x))
 
+      :app (b* (((mv used new-fun) (uniq-expr x.fun used r))
+                ((mv used new-arg) (uniq-expr x.arg used r)))
+             (mv used (expr-app new-fun new-arg)))
+
       :appn (b* (((mv used new-fun) (uniq-expr x.fun used r))
                  ((mv used new-args) (uniq-expr-list x.args used r)))
               (mv used (expr-appn new-fun new-args)))

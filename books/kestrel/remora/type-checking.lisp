@@ -1432,6 +1432,7 @@
                                       (shape-dims
                                        (list (dim-const (len expr.chars))))))
       :expr (expr-fix expr))
+     :app (reserr :todo)
      :appn
      (b* (((ok (type+expr fe)) (check-expr expr.fun senv))
           ((ok (types+exprs aes)) (check-expr-list expr.args senv))
