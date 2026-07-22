@@ -450,13 +450,13 @@
                                                      dim-renam
                                                      shape-renam
                                                      avoid))))
-   (type :sigma
+   (type :sigman
          (b* (((mv fresh-params dim-renam shape-renam)
                (dim/shape-rename-alpha-bound type.params
                                              dim-renam
                                              shape-renam
                                              (type-free-ispace-vars type.body))))
-           (make-type-sigma
+           (make-type-sigman
             :params fresh-params
             :body (type-rename-ispace-vars-alpha-aux type.body
                                                      dim-renam

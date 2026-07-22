@@ -202,7 +202,7 @@
   :short "Check if a type is a sum type,
           returning its ispace parameter variables and body array type
           if successful."
-  (if (type-case type :sigma)
-      (make-ispacevarlist+type :vars (type-sigma->params type)
-                               :type (type-sigma->body type))
+  (if (type-case type :sigman)
+      (make-ispacevarlist+type :vars (type-sigman->params type)
+                               :type (type-sigman->body type))
     (reserr nil)))

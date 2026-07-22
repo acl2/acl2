@@ -210,7 +210,7 @@
                 (type-rename-ispace-vars-no-capture-p type.body
                                                       dim-renam
                                                       shape-renam))))
-   (type :sigma
+   (type :sigman
          (b* (((mv bound-dim-vars bound-shape-vars dim-renam shape-renam)
                (dim/shape-rename-remove-bound (set::mergesort type.params)
                                               dim-renam
@@ -633,12 +633,12 @@
             :body (type-rename-ispace-vars type.body
                                            dim-renam
                                            shape-renam))))
-   (type :sigma
+   (type :sigman
          (b* (((mv & & dim-renam shape-renam)
                (dim/shape-rename-remove-bound (set::mergesort type.params)
                                               dim-renam
                                               shape-renam)))
-           (make-type-sigma
+           (make-type-sigman
             :params type.params
             :body (type-rename-ispace-vars type.body
                                            dim-renam

@@ -899,11 +899,11 @@
             (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc ty.params))
                          (pdoc-concat (pdoc-line)
                                       (type-to-pdoc ty.body))))
-      :sigma (pdoc-prefix-form
-              "Sigma"
-              (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc ty.params))
-                           (pdoc-concat (pdoc-line)
-                                        (type-to-pdoc ty.body)))))
+      :sigman (pdoc-prefix-form
+               "Sigma"
+               (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc ty.params))
+                            (pdoc-concat (pdoc-line)
+                                         (type-to-pdoc ty.body)))))
     :measure (type-count ty))
 
   (define type-list-to-pdoc ((tys type-listp))

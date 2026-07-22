@@ -282,7 +282,7 @@
      :foralln (check-type type.body (senv-add-type-vars type.params senv))
      :pi (check-type type.body (senv-add-ispace-var type.param senv))
      :pin (check-type type.body (senv-add-ispace-vars type.params senv))
-     :sigma (check-type type.body (senv-add-ispace-vars type.params senv)))
+     :sigman (check-type type.body (senv-add-ispace-vars type.params senv)))
     :measure (type-count type))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

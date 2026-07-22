@@ -359,12 +359,12 @@
              :denv (type-denv-restrict (type-free-ispace-vars type)
                                        (type-free-type-vars type)
                                        denv)))
-     :sigma (make-type-value-sigma
-             :params type.params
-             :body type.body
-             :denv (type-denv-restrict (type-free-ispace-vars type)
-                                       (type-free-type-vars type)
-                                       denv)))
+     :sigman (make-type-value-sigma
+              :params type.params
+              :body type.body
+              :denv (type-denv-restrict (type-free-ispace-vars type)
+                                        (type-free-type-vars type)
+                                        denv)))
     :measure (type-count type))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

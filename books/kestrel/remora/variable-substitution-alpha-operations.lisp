@@ -552,13 +552,13 @@
                                                     dim-subst
                                                     shape-subst
                                                     avoid))))
-   (type :sigma
+   (type :sigman
          (b* (((mv fresh-params dim-subst shape-subst)
                (dim/shape-subst-alpha-bound type.params
                                             dim-subst
                                             shape-subst
                                             (type-free-ispace-vars type.body))))
-           (make-type-sigma
+           (make-type-sigman
             :params fresh-params
             :body (type-subst-ispace-vars-alpha-aux type.body
                                                     dim-subst

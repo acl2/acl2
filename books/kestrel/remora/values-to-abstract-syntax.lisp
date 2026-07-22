@@ -152,7 +152,7 @@
      :pi (make-type-pi
           :param tval.param
           :body (type-subst-type-denv tval.body tval.denv))
-     :sigma (make-type-sigma
+     :sigma (make-type-sigman
              :params tval.params
              :body (type-subst-type-denv tval.body tval.denv)))
     :measure (type-value-count tval))
