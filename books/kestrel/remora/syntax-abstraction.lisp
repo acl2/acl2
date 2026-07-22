@@ -1900,13 +1900,25 @@
   ;; app-exp = exp *( ws exp )
   (define abs-app-exp ((tree abnf::treep))
     :returns (e expr-resultp)
-    :short "Abstract an @('app-exp') to an @(tsee expr) @(':app')."
+    :short "Abstract an @('app-exp') to
+            an @(tsee expr) @(':app') or @(':appn')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "An application to one argument becomes
+       a unary term application @(':app');
+       an application to two or more arguments becomes
+       an n-ary term application @(':appn')
+       (see @(tsee expr))."))
     (b* (((okf (abnf::tree-list-tuple2 sub))
           (abnf::check-tree-nonleaf-2 tree "app-exp"))
          ((okf fun-tree) (abnf::check-tree-list-1 sub.1st))
          ((okf fun) (abs-exp fun-tree))
          ((okf args) (abs-*-ws-exp sub.2nd)))
-      (make-expr-app :fun fun :args args))
+      (if (and (consp args)
+               (endp (cdr args)))
+          (make-expr-app :fun fun :arg (car args))
+        (make-expr-appn :fun fun :args args)))
     :measure (abnf::tree-count tree))
 
   ;; array-exp = "array" ws shape-lit *( ws atom )
@@ -2125,13 +2137,25 @@
   ;; lambda = ( "fn" / λ ) ws "(" *( ws pat ) ws ")" ws exp
   (define abs-lambda ((tree abnf::treep))
     :returns (a atom-resultp)
-    :short "Abstract a @('lambda') to an @(tsee atom) @(':lambda')."
+    :short "Abstract a @('lambda') to
+            an @(tsee atom) @(':lambda') or @(':lambdan')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A term lambda abstraction with one parameter becomes
+       a unary term lambda abstraction @(':lambda');
+       one with two or more parameters becomes
+       an n-ary term lambda abstraction @(':lambdan')
+       (see @(tsee atom))."))
     (b* (((okf (abnf::tree-list-tuple8 sub))
           (abnf::check-tree-nonleaf-8 tree "lambda"))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf params) (abs-*-ws-pat sub.4th))
          ((okf body) (abs-exp body-tree)))
-      (make-atom-lambda :params params :body body :type? nil))
+      (if (and (consp params)
+               (endp (cdr params)))
+          (make-atom-lambda :param (car params) :body body :type? nil)
+        (make-atom-lambdan :params params :body body :type? nil)))
     :measure (abnf::tree-count tree))
 
   ;; type-lambda = ( "t-fn" / "tλ" ) ws "(" *( ws type-var ) ws ")" ws exp

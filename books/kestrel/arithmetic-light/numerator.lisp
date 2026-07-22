@@ -41,17 +41,16 @@
   (equal (numerator (- x))
          (- (numerator x))))
 
-;move
 (local
- (defthmd not-rationalp-of--
-   (implies (and (not (rationalp x))
-                 (complex-rationalp x))
-            (not (rationalp (- x))))))
+ (defthmd rationalp-of---alt
+   (equal (rationalp (- x))
+          (not (complex/complex-rationalp x)))
+   :hints (("Goal" :cases ((complex/complex-rationalp x))))))
 
 (defthm numerator-of-+-of---and--
   (equal (numerator (+ (- x) (- y)))
          (- (numerator (+ x y))))
-  :hints (("Goal" :use ((:instance not-rationalp-of-- (x (+ x y)))
+  :hints (("Goal" :use ((:instance rationalp-of---alt (x (+ x y)))
                         (:instance numerator-of-- (x (+ x y))))
            :in-theory (disable numerator-of--))))
 

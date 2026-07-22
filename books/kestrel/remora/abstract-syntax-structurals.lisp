@@ -545,23 +545,19 @@
 (define forall-curried-body ((params type-var-listp) (body typep))
   :guard (consp params)
   :returns (new-body typep)
-  :short "Body of the unary universal type value
-          for a universal type with the given parameters."
+  :short "Peel the first parameter from a universal type
+          and return the remaining body type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Universal type values bind exactly one parameter
-     (see @(tsee type-value)),
-     consistently with the curried view of type applications:
-     a universal type with two or more parameters
-     evaluates to the unary universal type value
-     that binds the first parameter
-     and whose body is the universal type over the remaining parameters.
-     This function returns the body of the unary universal type value:
-     the body of the given universal type
-     if there are no parameters other than the first one,
-     or otherwise the universal type over the remaining parameters,
-     in the unary form if exactly one parameter remains."))
+    "A universal type with two or more parameters
+     is sugar for a nested sequence of one-parameter universal types.
+     This function treats an n-ary universal type with at least one parameter
+     as that sequence, or as itself if there is just one parameter,
+     and it returns the body of the outermost universal type.
+     This is the body of the whole universal type
+     when there is just one parameter,
+     otherwise it is another universal type, without the first parameter."))
   (b* ((params (type-var-list-fix params))
        (body (type-fix body)))
     (cond ((endp (cdr params)) body)
@@ -574,23 +570,12 @@
 (define pi-curried-body ((params ispace-var-listp) (body typep))
   :guard (consp params)
   :returns (new-body typep)
-  :short "Body of the unary product type value
-          for a product type with the given parameters."
+  :short "Peel the first parameter from a product type
+          and return the remaining body type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Product type values bind exactly one parameter
-     (see @(tsee type-value)),
-     consistently with the curried view of ispace applications:
-     a product type with two or more parameters
-     evaluates to the unary product type value
-     that binds the first parameter
-     and whose body is the product type over the remaining parameters.
-     This function returns the body of the unary product type value:
-     the body of the given product type
-     if there are no parameters other than the first one,
-     or otherwise the product type over the remaining parameters,
-     in the unary form if exactly one parameter remains."))
+    "This is analogous to @(tsee forall-curried-body)."))
   (b* ((params (ispace-var-list-fix params))
        (body (type-fix body)))
     (cond ((endp (cdr params)) body)
@@ -600,28 +585,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tlambda-curried-body ((params type-var-listp) (body exprp))
+(define lambda-curried-body ((params var+type?-listp)
+                             (body exprp)
+                             (type? type-optionp))
   :guard (consp params)
   :returns (new-body exprp)
-  :short "Body of the unary closure
-          for a type lambda abstraction with the given parameters."
+  :short "Peel the first parameter from a lambda abstraction
+          and return the remaining body expression."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Type lambda values bind exactly one parameter
-     (see @(tsee expr-value)),
-     consistently with the curried view of type applications:
-     a type lambda abstraction with two or more parameters
-     evaluates to the unary closure that binds the first parameter
-     and whose body is
-     the type lambda abstraction over the remaining parameters.
-     This function returns the body of the unary closure:
-     the body of the given type lambda abstraction
-     if there are no parameters other than the first one,
-     or otherwise the type lambda abstraction
-     over the remaining parameters,
-     as an atom expression,
-     in the unary form if exactly one parameter remains."))
+    "This is analogous to @(tsee forall-curried-body).")
+   (xdoc::p
+    "The optional body type annotation applies to the body,
+     so it travels with the innermost lambda abstraction:
+     if there are two or more parameters,
+     the returned lambda abstraction carries the annotation;
+     if there is just one parameter,
+     the annotation pertains to the returned body,
+     and it is up to the caller to use it as appropriate."))
+  (b* ((params (var+type?-list-fix params))
+       (body (expr-fix body))
+       (type? (type-option-fix type?)))
+    (cond ((endp (cdr params)) body)
+          ((endp (cddr params))
+           (expr-atom (make-atom-lambda :param (cadr params)
+                                        :body body
+                                        :type? type?)))
+          (t (expr-atom (make-atom-lambdan :params (cdr params)
+                                           :body body
+                                           :type? type?))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tlambda-curried-body ((params type-var-listp) (body exprp))
+  :guard (consp params)
+  :returns (new-body exprp)
+  :short "Peel the first parameter from a type lambda abstraction
+          and return the remaining body expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee forall-curried-body)."))
   (b* ((params (type-var-list-fix params))
        (body (expr-fix body)))
     (cond ((endp (cdr params)) body)
@@ -634,25 +639,12 @@
 (define ilambda-curried-body ((params ispace-var-listp) (body exprp))
   :guard (consp params)
   :returns (new-body exprp)
-  :short "Body of the unary closure
-          for an ispace lambda abstraction with the given parameters."
+  :short "Peel the first parameter from an ispace lambda abstraction
+          and return the remaining body expression."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Ispace lambda values bind exactly one parameter
-     (see @(tsee expr-value)),
-     consistently with the curried view of ispace applications:
-     an ispace lambda abstraction with two or more parameters
-     evaluates to the unary closure that binds the first parameter
-     and whose body is
-     the ispace lambda abstraction over the remaining parameters.
-     This function returns the body of the unary closure:
-     the body of the given ispace lambda abstraction
-     if there are no parameters other than the first one,
-     or otherwise the ispace lambda abstraction
-     over the remaining parameters,
-     as an atom expression,
-     in the unary form if exactly one parameter remains."))
+    "This is analogous to @(tsee forall-curried-body)."))
   (b* ((params (ispace-var-list-fix params))
        (body (expr-fix body)))
     (cond ((endp (cdr params)) body)

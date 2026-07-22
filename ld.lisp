@@ -1566,25 +1566,36 @@
 ; and aborting the inferior LD so that it fails to cleanup after itself.
 
   (mv-let
-   (signal val state)
-   #+acl2-loop-only
-   (ld-read-eval-print state)
-   #-acl2-loop-only
-   (progn (acl2-unwind *ld-level* t)
-          (when (not *wormholep*)
+    (signal val state)
+    #+acl2-loop-only
+    (ld-read-eval-print state)
+    #-acl2-loop-only
+    (progn (acl2-unwind *ld-level* t)
+           (when (not *wormholep*)
 
 ; This seems a reasonable place to reset *trace-level* in case a throw has
 ; been executed that leaves *trace-level* at an unfortunate value.  However, we
 ; don't want to mess with *trace-level* when reading forms inside a brr break
 ; or any other wormhole; hence the condition above.
 
-            (setq *trace-level* 0))
-          (ld-read-eval-print state))
-   (cond ((eq signal :continue)
-          (ld-loop state))
-         ((eq signal :return)
-          (value val))
-         (t (mv t nil state)))))
+             (setq *trace-level* 0))
+           (ld-read-eval-print state))
+    (cond ((eq signal :continue)
+           (ld-loop state))
+          ((eq signal :return)
+           (if (and (eq (debugger-enable state) :never!)
+                    (eq (f-get-global 'ld-level state) 1))
+               (pprogn (io? error nil state nil
+                            (error-fms nil 'top-level nil
+                                       "Normally the top-level LD loop would ~
+                                        exit here, but ~x0 = :NEVER! so that ~
+                                        exit has been disabled.~%"
+                                       (list
+                                        (cons #\0 '(debugger-enable state)))
+                                       state))
+                       (ld-loop state))
+             (value val)))
+          (t (mv t nil state)))))
 
 ; The following raw lisp special variable controls whether the raw lisp version
 ; of ld-fn-body, below, prints the header as per ld-verbose or does not.  The

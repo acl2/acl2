@@ -1224,11 +1224,22 @@
             :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid))))
    (atom :lambda
          (b* (((mv fresh subst)
+               (expr-subst-alpha-bound (list (var+type?->var atom.param))
+                                       subst
+                                       (expr-free-expr-vars atom.body)))
+              (param (make-var+type? :var (car fresh)
+                                     :type? (var+type?->type? atom.param))))
+           (make-atom-lambda
+            :param param
+            :body (expr-subst-expr-vars-alpha-aux atom.body subst avoid)
+            :type? atom.type?)))
+   (atom :lambdan
+         (b* (((mv fresh subst)
                (expr-subst-alpha-bound (var+type?-list->var atom.params)
                                        subst
                                        (expr-free-expr-vars atom.body)))
               (params (var+type?-list-set-vars fresh atom.params)))
-           (make-atom-lambda
+           (make-atom-lambdan
             :params params
             :body (expr-subst-expr-vars-alpha-aux atom.body subst avoid)
             :type? atom.type?)))
