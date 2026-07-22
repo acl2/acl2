@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bvchop")
-(include-book "unsigned-byte-p")
+(local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 
 ;(local (in-theory (disable floor-bounded-by-/))) ;causes forcing
