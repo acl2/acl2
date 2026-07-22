@@ -1116,25 +1116,25 @@
       (atom-case
        atom
        :base (expr-value-base (eval-base-lit atom.lit))
-       :lambda (b* (((unless (consp atom.params)) (reserr nil))
-                    ((ok param) (eval-var+type? (car atom.params)
-                                                (expr-denv->tenv denv)))
-                    ((ok type?) (if (consp (cdr atom.params))
-                                    nil
-                                  (type-option-case
-                                   atom.type?
-                                   :none nil
-                                   :some (eval-type atom.type?.val
-                                                    (expr-denv->tenv denv))))))
-                 (make-expr-value-lambda
-                  :param param
-                  :body (lambda-curried-body atom.params atom.body atom.type?)
-                  :type? type?
-                  :denv (expr-denv-restrict
-                         (expr-free-ispace-vars atom.body)
-                         (expr-free-type-vars atom.body)
-                         (atom-free-expr-vars atom)
-                         denv)))
+       :lambdan (b* (((unless (consp atom.params)) (reserr nil))
+                     ((ok param) (eval-var+type? (car atom.params)
+                                                 (expr-denv->tenv denv)))
+                     ((ok type?) (if (consp (cdr atom.params))
+                                     nil
+                                   (type-option-case
+                                    atom.type?
+                                    :none nil
+                                    :some (eval-type atom.type?.val
+                                                     (expr-denv->tenv denv))))))
+                  (make-expr-value-lambda
+                   :param param
+                   :body (lambda-curried-body atom.params atom.body atom.type?)
+                   :type? type?
+                   :denv (expr-denv-restrict
+                          (expr-free-ispace-vars atom.body)
+                          (expr-free-type-vars atom.body)
+                          (atom-free-expr-vars atom)
+                          denv)))
        :tlambda (make-expr-value-tlambda
                  :param atom.param
                  :body atom.body
@@ -1373,7 +1373,7 @@
                (expr-denv-add-expr bind.var val denv))
        :cfun (b* ((lambda-expr (make-expr-array
                                 :dims nil
-                                :atoms (list (make-atom-lambda
+                                :atoms (list (make-atom-lambdan
                                               :params bind.params
                                               :body bind.expr
                                               :type? bind.type))))

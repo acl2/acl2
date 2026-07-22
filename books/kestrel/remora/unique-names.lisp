@@ -99,8 +99,8 @@
                       (append (ispace-var-list->name expr.ispaces)
                               (append (expr-binder-names expr.target)
                                       (expr-binder-names expr.body)))))
-   (atom :lambda (append (var+type?-list->var atom.params)
-                         (expr-binder-names atom.body)))
+   (atom :lambdan (append (var+type?-list->var atom.params)
+                          (expr-binder-names atom.body)))
    (atom :tlambda (cons (type-var->name atom.param)
                         (expr-binder-names atom.body)))
    (atom :tlambdan (append (type-var-list->name atom.params)
@@ -883,17 +883,17 @@
     (atom-case x
       :base (mv used (atom-fix x))
 
-      :lambda (b* (((var-renamings r-) r)
-                   (typed-params (var+type?-list-rename-all-vars x.params r))
-                   (new-type? (type-option-rename-all-vars x.type? r))
-                   ((mv used new-params expr-renam)
-                    (uniq-expr-params typed-params used r-.avoid r-.expr))
-                   ((mv used new-body)
-                    (uniq-expr x.body used
-                               (change-var-renamings r :expr expr-renam))))
-                (mv used (make-atom-lambda :params new-params
-                                           :body new-body
-                                           :type? new-type?)))
+      :lambdan (b* (((var-renamings r-) r)
+                    (typed-params (var+type?-list-rename-all-vars x.params r))
+                    (new-type? (type-option-rename-all-vars x.type? r))
+                    ((mv used new-params expr-renam)
+                     (uniq-expr-params typed-params used r-.avoid r-.expr))
+                    ((mv used new-body)
+                     (uniq-expr x.body used
+                                (change-var-renamings r :expr expr-renam))))
+                 (mv used (make-atom-lambdan :params new-params
+                                             :body new-body
+                                             :type? new-type?)))
 
       :tlambda (b* (((var-renamings r-) r)
                     (name (type-var->name x.param))

@@ -338,7 +338,7 @@
           (bind-list-free-expr-vars expr.binds)
           (set::difference (expr-free-expr-vars expr.body)
                            (bind-list-bound-expr-vars expr.binds))))
-   (atom :lambda
+   (atom :lambdan
          (set::difference (expr-free-expr-vars atom.body)
                           (set::mergesort (var+type?-list->var atom.params))))
    (bind :fun
@@ -466,7 +466,7 @@
          (set::insert expr.var
                       (set::union (expr-all-expr-vars expr.target)
                                   (expr-all-expr-vars expr.body))))
-   (atom :lambda
+   (atom :lambdan
          (set::union (set::mergesort (var+type?-list->var atom.params))
                      (expr-all-expr-vars atom.body)))
    (bind :val

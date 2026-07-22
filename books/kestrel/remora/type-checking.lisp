@@ -1674,7 +1674,7 @@
      (make-type+atom
       :type (type-base (base-type-of-base-lit atom.lit))
       :atom (atom-fix atom))
-     :lambda
+     :lambdan
      (b* (((unless (no-duplicatesp-equal (var+type?-list->var atom.params)))
            (reserr nil))
           ((ok types) (var+type?-list->type-list-or-err atom.params))
@@ -1684,9 +1684,9 @@
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
         :type (make-type-fun :in types :out be.type)
-        :atom (make-atom-lambda :params atom.params
-                                :body be.expr
-                                :type? be.type)))
+        :atom (make-atom-lambdan :params atom.params
+                                 :body be.expr
+                                 :type? be.type)))
      :tlambda
      (b* ((senv (senv-add-type-var atom.param senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))

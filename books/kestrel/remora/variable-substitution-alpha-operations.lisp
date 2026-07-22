@@ -1222,13 +1222,13 @@
            (make-expr-let
             :binds binds
             :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid))))
-   (atom :lambda
+   (atom :lambdan
          (b* (((mv fresh subst)
                (expr-subst-alpha-bound (var+type?-list->var atom.params)
                                        subst
                                        (expr-free-expr-vars atom.body)))
               (params (var+type?-list-set-vars fresh atom.params)))
-           (make-atom-lambda
+           (make-atom-lambdan
             :params params
             :body (expr-subst-expr-vars-alpha-aux atom.body subst avoid)
             :type? atom.type?)))

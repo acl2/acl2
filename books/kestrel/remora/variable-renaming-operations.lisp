@@ -533,7 +533,7 @@
                    (renam (omap::delete* bound (string-string-map-fix renam))))
                 (and (renaming-no-capture-p bound renam)
                      (expr-rename-expr-vars-no-capture-p expr.body renam)))))
-   (atom :lambda
+   (atom :lambdan
          (b* ((bound (set::mergesort (var+type?-list->var atom.params)))
               (renam (omap::delete* bound (string-string-map-fix renam))))
            (and (renaming-no-capture-p bound renam)
@@ -980,10 +980,10 @@
            (make-expr-let
             :binds binds
             :body (expr-rename-expr-vars expr.body renam))))
-   (atom :lambda
+   (atom :lambdan
          (b* ((bound (set::mergesort (var+type?-list->var atom.params)))
               (renam (omap::delete* bound (string-string-map-fix renam))))
-           (make-atom-lambda
+           (make-atom-lambdan
             :params atom.params
             :body (expr-rename-expr-vars atom.body renam)
             :type? atom.type?)))

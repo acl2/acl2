@@ -944,7 +944,7 @@
   (xdoc::topstring
    (xdoc::p
     "The AST @(tsee var+type?) fixtype is used by both
-     @(tsee atom-lambda)/@(tsee bind-fun)/@(tsee bind-cfun) parameter
+     @(tsee atom-lambdan)/@(tsee bind-fun)/@(tsee bind-cfun) parameter
      lists and (potentially) other binders.  In every case where it
      appears in our AST, the corresponding concrete syntax is the
      @('pat') rule of @('grammar.abnf'), namely @('\"(\" ws identifier
@@ -1323,12 +1323,12 @@
       :base (base-lit-to-pdoc a.lit)
       ;; We do not print the optional body type (a.type?):
       ;; it has no concrete syntax (it is computed by type checking).
-      :lambda (b* (((ok params) (pat-list-to-pdoc a.params))
-                   ((ok body) (expr-to-pdoc a.body)))
-                (pdoc-prefix-form
-                 "fn"
-                 (pdoc-concat (pdoc-paren params)
-                              (pdoc-concat (pdoc-line) body))))
+      :lambdan (b* (((ok params) (pat-list-to-pdoc a.params))
+                    ((ok body) (expr-to-pdoc a.body)))
+                 (pdoc-prefix-form
+                  "fn"
+                  (pdoc-concat (pdoc-paren params)
+                               (pdoc-concat (pdoc-line) body))))
       :tlambda (b* (((ok body) (expr-to-pdoc a.body)))
                  (pdoc-prefix-form
                   "t-fn"

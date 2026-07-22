@@ -860,9 +860,9 @@
                                (atom-count x))
     (atom-case x
       :base    (mv nil fn-info-map (atom-fix x))
-      :lambda  (b* (((mv err fn-info-map new-body)
-                     (mono-expr x.body defs fn-info-map dim-var-map type-map)))
-                 (mv err fn-info-map (atom-lambda x.params new-body x.type?)))
+      :lambdan (b* (((mv err fn-info-map new-body)
+                    (mono-expr x.body defs fn-info-map dim-var-map type-map)))
+                (mv err fn-info-map (atom-lambdan x.params new-body x.type?)))
       :tlambda (b* (((mv err fn-info-map new-body)
                      (mono-expr x.body defs fn-info-map dim-var-map type-map)))
                  (mv err fn-info-map (atom-tlambda x.param new-body)))

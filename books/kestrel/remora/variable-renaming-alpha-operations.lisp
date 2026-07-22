@@ -955,13 +955,13 @@
            (make-expr-let
             :binds binds
             :body (expr-rename-expr-vars-alpha-aux expr.body renam avoid))))
-   (atom :lambda
+   (atom :lambdan
          (b* (((mv fresh renam)
                (expr-rename-alpha-bound (var+type?-list->var atom.params)
                                         renam
                                         (expr-free-expr-vars atom.body)))
               (params (var+type?-list-set-vars fresh atom.params)))
-           (make-atom-lambda
+           (make-atom-lambdan
             :params params
             :body (expr-rename-expr-vars-alpha-aux atom.body renam avoid)
             :type? atom.type?)))
