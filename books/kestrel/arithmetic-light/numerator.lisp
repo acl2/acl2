@@ -44,8 +44,8 @@
 (local
  (defthmd rationalp-of---alt
    (equal (rationalp (- x))
-          (not (complex-rationalp x)))
-   :hints (("Goal" :cases ((complex-rationalp x))))))
+          (not (complex/complex-rationalp x)))
+   :hints (("Goal" :cases ((complex/complex-rationalp x))))))
 
 (defthm numerator-of-+-of---and--
   (equal (numerator (+ (- x) (- y)))
