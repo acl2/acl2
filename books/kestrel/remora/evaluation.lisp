@@ -1116,6 +1116,22 @@
       (atom-case
        atom
        :base (expr-value-base (eval-base-lit atom.lit))
+       :lambda (b* (((ok param) (eval-var+type? atom.param
+                                                (expr-denv->tenv denv)))
+                    ((ok type?) (type-option-case
+                                 atom.type?
+                                 :none nil
+                                 :some (eval-type atom.type?.val
+                                                  (expr-denv->tenv denv)))))
+                 (make-expr-value-lambda
+                  :param param
+                  :body atom.body
+                  :type? type?
+                  :denv (expr-denv-restrict
+                         (expr-free-ispace-vars atom.body)
+                         (expr-free-type-vars atom.body)
+                         (atom-free-expr-vars atom)
+                         denv)))
        :lambdan (b* (((unless (consp atom.params)) (reserr nil))
                      ((ok param) (eval-var+type? (car atom.params)
                                                  (expr-denv->tenv denv)))

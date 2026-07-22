@@ -1323,6 +1323,12 @@
       :base (base-lit-to-pdoc a.lit)
       ;; We do not print the optional body type (a.type?):
       ;; it has no concrete syntax (it is computed by type checking).
+      :lambda (b* (((ok pat) (pat-to-pdoc a.param))
+                   ((ok body) (expr-to-pdoc a.body)))
+                (pdoc-prefix-form
+                 "fn"
+                 (pdoc-concat (pdoc-paren pat)
+                              (pdoc-concat (pdoc-line) body))))
       :lambdan (b* (((ok params) (pat-list-to-pdoc a.params))
                     ((ok body) (expr-to-pdoc a.body)))
                  (pdoc-prefix-form

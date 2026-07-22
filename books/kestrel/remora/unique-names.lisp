@@ -99,6 +99,8 @@
                       (append (ispace-var-list->name expr.ispaces)
                               (append (expr-binder-names expr.target)
                                       (expr-binder-names expr.body)))))
+   (atom :lambda (cons (var+type?->var atom.param)
+                       (expr-binder-names atom.body)))
    (atom :lambdan (append (var+type?-list->var atom.params)
                           (expr-binder-names atom.body)))
    (atom :tlambda (cons (type-var->name atom.param)
@@ -883,6 +885,22 @@
     (atom-case x
       :base (mv used (atom-fix x))
 
+      :lambda (b* (((var-renamings r-) r)
+                   (new-type? (type-option-rename-all-vars x.type? r))
+                   (new-atype? (type-option-rename-all-vars
+                                (var+type?->type? x.param) r))
+                   (new-var (fresh-bind-name (var+type?->var x.param)
+                                             used r-.avoid))
+                   (used (set::insert new-var (string-sfix used)))
+                   (expr-renam (extend-renaming (var+type?->var x.param)
+                                                new-var r-.expr))
+                   (new-param (make-var+type? :var new-var :type? new-atype?))
+                   ((mv used new-body)
+                    (uniq-expr x.body used
+                               (change-var-renamings r :expr expr-renam))))
+                (mv used (make-atom-lambda :param new-param
+                                           :body new-body
+                                           :type? new-type?)))
       :lambdan (b* (((var-renamings r-) r)
                     (typed-params (var+type?-list-rename-all-vars x.params r))
                     (new-type? (type-option-rename-all-vars x.type? r))

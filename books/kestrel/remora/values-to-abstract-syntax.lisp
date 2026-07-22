@@ -560,8 +560,8 @@
              (mv err (expr-atom (atom-base blit))))
      :primop (primop-value-to-expr val.val)
      :lambda (b* ((atom
-                   (make-atom-lambdan
-                    :params (list (var+typevalue-to-var+type? val.param))
+                   (make-atom-lambda
+                    :param (var+typevalue-to-var+type? val.param)
                     :body val.body
                     :type? (type-value-option-to-type-option val.type?)))
                   ((mv err atom) (atom-subst-expr-denv atom val.denv)))

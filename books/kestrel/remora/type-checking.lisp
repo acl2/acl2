@@ -1615,7 +1615,7 @@
        is independent from the static environment,
        and determined via separate functions.")
      (xdoc::p
-      "For a term abstraction,
+      "For an n-ary term abstraction,
        first we check that there are no duplicate bound variable names.
        We check that the types of the parameters are valid
        (see @(tsee check-type-list)).
@@ -1625,7 +1625,12 @@
        Its type is the output type of the function type of the abstraction,
        and its input types are the ones of the bound variables.
        We store the body's type into the optional type slot of
-       the returned lambda atom.")
+       the returned lambda atom.
+       A unary term abstraction is checked in the same way,
+       except that there is no duplicate check
+       (there is just one bound variable),
+       and its type is the unary function type
+       whose input type is the one of the parameter.")
      (xdoc::p
       "For an n-ary type abstraction,
        first we check that there are no duplicate bound variables;
@@ -1674,6 +1679,17 @@
      (make-type+atom
       :type (type-base (base-type-of-base-lit atom.lit))
       :atom (atom-fix atom))
+     :lambda
+     (b* (((ok type) (var+type?->type-or-err atom.param))
+          ((unless (check-type type senv)) (reserr nil))
+          ((ok type) (senv-expand-type type senv))
+          ((ok senv) (senv-add-var+type (var+type?->var atom.param) type senv))
+          ((ok (type+expr be)) (check-expr atom.body senv)))
+       (make-type+atom
+        :type (make-type-fun :in (list type) :out be.type)
+        :atom (make-atom-lambda :param atom.param
+                                :body be.expr
+                                :type? be.type)))
      :lambdan
      (b* (((unless (no-duplicatesp-equal (var+type?-list->var atom.params)))
            (reserr nil))
