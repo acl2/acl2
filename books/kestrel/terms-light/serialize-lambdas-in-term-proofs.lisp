@@ -187,12 +187,8 @@
             (no-duplicate-lambda-formals-in-termsp (strip-cdrs (non-trivial-bindings vars vals))))
    :hints (("Goal" :in-theory (enable non-trivial-bindings)))))
 
+;move up
 (local (include-book "kestrel/lists-light/remove1-equal" :dir :system))
-;move
-(defthm not-member-equal-of-remove1-equal-same
-  (implies (no-duplicatesp-equal l)
-           (not (member-equal x (remove1-equal x l))))
-  :hints (("Goal" :in-theory (enable remove1-equal))))
 
 (defthm no-duplicate-lambda-formals-in-termsp-of-remove1-equal
   (implies (no-duplicate-lambda-formals-in-termsp terms)
