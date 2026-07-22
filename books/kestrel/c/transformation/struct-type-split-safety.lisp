@@ -244,7 +244,9 @@
   (xdoc::topstring
    (xdoc::p
     "We check that the struct type being split
-     is not nested in array, union, or (other) struct types."))
+     is not nested in array or union types.
+     Nesting under other struct types is fine,
+     i.e. properly handled by the STS transformation."))
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -258,28 +260,42 @@
     (xdoc::topstring
      (xdoc::p
       "The @('nested') input indicates whether the @('type') input
-       is nested under some array or union or struct type.")
+       is nested under some type where
+       the struct type being split should not be nested
+       because the STS transformation does not support that nesting.")
      (xdoc::p
-      "Most types are safe because they do not contain other types.
-       When we reach a struct type, we compare it with the one being split:
-       if they are the same, and we are nested under some type,
-       the safety check fails, otherwise it succeeds.
-       We use separate functions to check the content of struct and union types.
-       For array types, we check the element type,
-       setting the @('nested') flag to @('t') since the element type is nested.
-       For pointer types, we leave the @('nested') flag as is;
+      "Most types are safe because they do not contain other types.")
+     (xdoc::p
+      "When we reach a struct type, we compare it with the one being split:
+       if they are the same, and the @('nested') flag is @('t'),
+       the safety check fails, otherwise it succeeds.")
+     (xdoc::p
+      "We use a separate function to check
+       the content of struct and union types.
+       The @('nested') flag passed to that function is
+       set to @('t') under a union,
+       and to @('nil') under a struct,
+       because we support nesting under structs but not under unions.")
+     (xdoc::p
+      "For array types, we check the element type,
+       setting the @('nested') flag to @('t')
+       since we do not support nesting under arrays.")
+     (xdoc::p
+      "For pointer types, we leave the @('nested') flag as is;
        although the struct type being split cannot be nested as such in them,
-       we also disallow nesting of pointers to the struct type being split.
-       For function types,
+       we also disallow nesting of pointers to the struct type being split.")
+     (xdoc::p
+      "For function types,
        we disallow the struct anywhere in the return type,
        passing @('t') as the nested flag for the return type;
-       but we pass the nested flag as is for parameters.
-       We regard an unknown type as unsafe, because it could be anything.
+       but we pass the nested flag as is for parameters.")
+     (xdoc::p
+      "We regard an unknown type as unsafe, because it could be anything.
        The same goes for an unknown scalar type,
        because it could be a pointer to an unsafe type
        (e.g. structs that contain the struct being split).
-       An unknown arithmetic type is safe,
-       because it can never contain the struct being split."))
+       But an unknown arithmetic type is safe,
+       because it can never be or contain the struct being split."))
     (type-case
      type
      :void t
@@ -307,8 +323,8 @@
                                                     type.tag/members
                                                     spec))
                  (sts-reject `(:nested ,(type-fix type)))
-               (type-struni-tag/members-sts-safep type.tag/members spec))
-     :union (type-struni-tag/members-sts-safep type.tag/members spec)
+               (type-struni-tag/members-sts-safep type.tag/members nil spec))
+     :union (type-struni-tag/members-sts-safep type.tag/members t spec)
      :enum t
      :array (type-sts-safep type.of t spec)
      :pointer (type-sts-safep type.to nested spec)
@@ -341,6 +357,7 @@
 
   (define type-struni-tag/members-sts-safep ((tystr-tag/mems
                                               type-struni-tag/members-p)
+                                             (nested booleanp)
                                              (spec sts-struct-specp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
@@ -350,10 +367,6 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This function takes no nested flag because
-       structure or union members are always implicitly nested.
-       I.e. it is as if the flag were implicitly @('t').")
-     (xdoc::p
       "A tag alone is safe, because it does not contain types;
        checks on the definition of the type referred to by the tag
        are performed elsewhere.
@@ -362,31 +375,26 @@
      tystr-tag/mems
      :tagged t
      :untagged (type-struni-member-list-sts-safep tystr-tag/mems.members
+                                                  nested
                                                   spec))
     :measure (type-struni-tag/members-count tystr-tag/mems))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define type-struni-member-sts-safep ((mem type-struni-member-p)
+                                        (nested booleanp)
                                         (spec sts-struct-specp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a struct/union member
             is safe for the STS transformation."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "This function takes no nested flag because
-       structure or union members are always implicitly nested.
-       I.e. it is as if the flag were implicitly @('t').
-       This is why we pass @('t') as the nested flag
-       to @(tsee type-sts-safep)."))
-    (type-sts-safep (type-struni-member->type mem) t spec)
+    (type-sts-safep (type-struni-member->type mem) nested spec)
     :measure (type-struni-member-count mem))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define type-struni-member-list-sts-safep ((mems type-struni-member-listp)
+                                             (nested booleanp)
                                              (spec sts-struct-specp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
@@ -397,8 +405,8 @@
      (xdoc::p
       "We check every member in turn."))
     (or (endp mems)
-        (and (type-struni-member-sts-safep (car mems) spec)
-             (type-struni-member-list-sts-safep (cdr mems) spec)))
+        (and (type-struni-member-sts-safep (car mems) nested spec)
+             (type-struni-member-list-sts-safep (cdr mems) nested spec)))
     :measure (type-struni-member-list-count mems))
 
   ;;;;;;;;;;;;;;;;;;;;
