@@ -18,12 +18,12 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
-(in-theory (disable (:e c::ulong-from-integer)
-                    (:e c::ulong-dec-const) ; ensures these are retained by simplify
-                    (:e c::ulong-hex-const)
-                    (:e c::ulong-oct-const)))
+(in-theory (disable (:e ulong-from-integer)
+                    (:e ulong-dec-const) ; ensures these are retained by simplify
+                    (:e ulong-hex-const)
+                    (:e ulong-oct-const)))
 
-(local (in-theory (enable c::long-bits c::ulong-max c::ulong-integerp c::ulong-integer-fix)))
+(local (in-theory (enable long-bits ulong-max ulong-integerp ulong-integer-fix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,92 +31,92 @@
 
 ;; ACL2 should already know the lower bound, by type reasoning
 (defthm <=-of-ulong-integer-fix-linear
-  (<= (c::ulong-integer-fix x) 18446744073709551615)
+  (<= (ulong-integer-fix x) 18446744073709551615)
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 (defthm unsigned-byte-p-of-ulong-integer-fix
   (implies (and (<= 64 size)
                 (integerp size))
-           (unsigned-byte-p size (c::ulong-integer-fix x))))
+           (unsigned-byte-p size (ulong-integer-fix x))))
 
 ;; ACL2 should already know the lower bound, by type reasoning
 (defthm <=-of-integer-from-ulong-linear
-  (<= (c::integer-from-ulong x) 18446744073709551615)
+  (<= (integer-from-ulong x) 18446744073709551615)
   :rule-classes :linear
-  :hints (("Goal" :in-theory (enable c::integer-from-ulong))))
+  :hints (("Goal" :in-theory (enable integer-from-ulong))))
 
 (defthm unsigned-byte-p-of-integer-from-ulong
   (implies (and (<= 64 size)
                 (integerp size))
-           (unsigned-byte-p size (c::integer-from-ulong x)))
-  :hints (("Goal" :in-theory (enable c::integer-from-ulong))))
+           (unsigned-byte-p size (integer-from-ulong x)))
+  :hints (("Goal" :in-theory (enable integer-from-ulong))))
 
-;; or enable c::ulong-integerp
+;; or enable ulong-integerp
 (defthm ulong-integerp-of-mod
-  (implies (and (<= y (expt 2 (c::long-bits)))
+  (implies (and (<= y (expt 2 (long-bits)))
                 (posp y)
                 (integerp x))
-           (c::ulong-integerp (mod x y)))
-  :hints (("Goal" :in-theory (enable c::ulong-integerp c::long-bits))))
+           (ulong-integerp (mod x y)))
+  :hints (("Goal" :in-theory (enable ulong-integerp long-bits))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Inversion theorems
 
 (defthm integer-from-ulong-of-ulong-dec-const
-  (equal (c::integer-from-ulong (c::ulong-dec-const x))
-         (c::ulong-integer-fix x))
-  :hints (("Goal" :in-theory (enable c::ulong-dec-const))))
+  (equal (integer-from-ulong (ulong-dec-const x))
+         (ulong-integer-fix x))
+  :hints (("Goal" :in-theory (enable ulong-dec-const))))
 
 (defthm integer-from-ulong-of-ulong-hex-const
-  (equal (c::integer-from-ulong (c::ulong-hex-const x))
-         (c::ulong-integer-fix x))
-  :hints (("Goal" :in-theory (enable c::ulong-hex-const))))
+  (equal (integer-from-ulong (ulong-hex-const x))
+         (ulong-integer-fix x))
+  :hints (("Goal" :in-theory (enable ulong-hex-const))))
 
 (defthm integer-from-ulong-of-ulong-oct-const
-  (equal (c::integer-from-ulong (c::ulong-oct-const x))
-         (c::ulong-integer-fix x))
-  :hints (("Goal" :in-theory (enable c::ulong-oct-const))))
+  (equal (integer-from-ulong (ulong-oct-const x))
+         (ulong-integer-fix x))
+  :hints (("Goal" :in-theory (enable ulong-oct-const))))
 
 ;; Enabled since this is essentially an inversion rule.
 ;; Or we could introduce bvplus.
 (defthm integer-from-ulong-of-ulong-from-integer-mod
   (implies (integerp x)
-           (equal (c::integer-from-ulong (c::ulong-from-integer-mod x))
-                  (mod x (expt 2 (c::long-bits)))))
-  :hints (("Goal" :in-theory (enable c::ulong-from-integer-mod c::integer-from-ulong c::ulongp))))
+           (equal (integer-from-ulong (ulong-from-integer-mod x))
+                  (mod x (expt 2 (long-bits)))))
+  :hints (("Goal" :in-theory (enable ulong-from-integer-mod integer-from-ulong ulongp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Conversions that introduce C operations:
 
-;; Converts + to c::add-ulong-ulong.
+;; Converts + to add-ulong-ulong.
 ;; Requires showing that the addition doesn't overflow.
 (defthmd ulong-from-integer-of-+-becomes-add-ulong-ulong
-  (implies (and (c::ulong-integerp (+ x y))
-                (c::ulong-integerp x)
-                (c::ulong-integerp y))
-           (equal (c::ulong-from-integer (+ x y))
-                  (c::add-ulong-ulong (c::ulong-from-integer x) (c::ulong-from-integer y))))
-  :hints (("Goal" :in-theory (enable c::add-ulong-ulong c::ulong-from-integer-mod))))
+  (implies (and (ulong-integerp (+ x y))
+                (ulong-integerp x)
+                (ulong-integerp y))
+           (equal (ulong-from-integer (+ x y))
+                  (add-ulong-ulong (ulong-from-integer x) (ulong-from-integer y))))
+  :hints (("Goal" :in-theory (enable add-ulong-ulong ulong-from-integer-mod))))
 
-;; Converts mod of + to c::add-ulong-ulong.
+;; Converts mod of + to add-ulong-ulong.
 (defthmd ulong-from-integer-of-mod-of-+-and-expt2-of-long-bits
-  (implies (and (c::ulong-integerp x)
-                (c::ulong-integerp y))
-           (equal (c::ulong-from-integer (mod (+ x y) (expt 2 (c::long-bits))))
-                  (c::add-ulong-ulong (c::ulong-from-integer x) (c::ulong-from-integer y))))
-  :hints (("Goal" :in-theory (enable c::add-ulong-ulong c::ulong-from-integer-mod))))
+  (implies (and (ulong-integerp x)
+                (ulong-integerp y))
+           (equal (ulong-from-integer (mod (+ x y) (expt 2 (long-bits))))
+                  (add-ulong-ulong (ulong-from-integer x) (ulong-from-integer y))))
+  :hints (("Goal" :in-theory (enable add-ulong-ulong ulong-from-integer-mod))))
 
-;; Converts mod of + to c::add-ulong-ulong.
+;; Converts mod of + to add-ulong-ulong.
 ;; May have to change when we parameterize the size of ulongs.
 (defthmd ulong-from-integer-of-mod-of-+-and-18446744073709551616
-  (implies (and (c::ulong-integerp x)
-                (c::ulong-integerp y))
-           (equal (c::ulong-from-integer (mod (+ x y) 18446744073709551616))
-                  (c::add-ulong-ulong (c::ulong-from-integer x) (c::ulong-from-integer y))))
-  :hints (("Goal" :in-theory (enable c::add-ulong-ulong c::ulong-from-integer-mod))))
+  (implies (and (ulong-integerp x)
+                (ulong-integerp y))
+           (equal (ulong-from-integer (mod (+ x y) 18446744073709551616))
+                  (add-ulong-ulong (ulong-from-integer x) (ulong-from-integer y))))
+  :hints (("Goal" :in-theory (enable add-ulong-ulong ulong-from-integer-mod))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -124,72 +124,72 @@
 
 ;; Converts lt-ulong-ulong to <
 (defthmd boolean-from-sint-of-lt-ulong-ulong
-  (equal (c::boolean-from-sint (c::lt-ulong-ulong x y))
-         (< (c::integer-from-ulong x) (c::integer-from-ulong y)))
-  :hints (("Goal" :in-theory (enable c::boolean-from-sint c::lt-ulong-ulong))))
+  (equal (boolean-from-sint (lt-ulong-ulong x y))
+         (< (integer-from-ulong x) (integer-from-ulong y)))
+  :hints (("Goal" :in-theory (enable boolean-from-sint lt-ulong-ulong))))
 
 ;; Converts le-ulong-ulong to <=
 (defthmd boolean-from-sint-of-le-ulong-ulong
-  (equal (c::boolean-from-sint (c::le-ulong-ulong x y))
-         (<= (c::integer-from-ulong x) (c::integer-from-ulong y)))
-  :hints (("Goal" :in-theory (enable c::boolean-from-sint c::le-ulong-ulong))))
+  (equal (boolean-from-sint (le-ulong-ulong x y))
+         (<= (integer-from-ulong x) (integer-from-ulong y)))
+  :hints (("Goal" :in-theory (enable boolean-from-sint le-ulong-ulong))))
 
 ;; Converts gt-ulong-ulong to >
 (defthmd boolean-from-sint-of-gt-ulong-ulong
-  (equal (c::boolean-from-sint (c::gt-ulong-ulong x y))
-         (> (c::integer-from-ulong x) (c::integer-from-ulong y)))
-  :hints (("Goal" :in-theory (enable c::boolean-from-sint c::gt-ulong-ulong))))
+  (equal (boolean-from-sint (gt-ulong-ulong x y))
+         (> (integer-from-ulong x) (integer-from-ulong y)))
+  :hints (("Goal" :in-theory (enable boolean-from-sint gt-ulong-ulong))))
 
 ;; Converts ge-ulong-ulong to >=
 (defthmd boolean-from-sint-of-ge-ulong-ulong
-  (equal (c::boolean-from-sint (c::ge-ulong-ulong x y))
-         (>= (c::integer-from-ulong x) (c::integer-from-ulong y)))
-  :hints (("Goal" :in-theory (enable c::boolean-from-sint c::ge-ulong-ulong))))
+  (equal (boolean-from-sint (ge-ulong-ulong x y))
+         (>= (integer-from-ulong x) (integer-from-ulong y)))
+  :hints (("Goal" :in-theory (enable boolean-from-sint ge-ulong-ulong))))
 
 ;; Converts eq-ulong-ulong to equal
 (defthmd boolean-from-sint-of-eq-ulong-ulong
-  (equal (c::boolean-from-sint (c::eq-ulong-ulong x y))
-         (equal (c::integer-from-ulong x) (c::integer-from-ulong y)))
-  :hints (("Goal" :in-theory (enable c::boolean-from-sint
-                                     c::eq-ulong-ulong))))
+  (equal (boolean-from-sint (eq-ulong-ulong x y))
+         (equal (integer-from-ulong x) (integer-from-ulong y)))
+  :hints (("Goal" :in-theory (enable boolean-from-sint
+                                     eq-ulong-ulong))))
 
 ;; Converts ne-ulong-ulong to equal
 (defthmd boolean-from-sint-of-ne-ulong-ulong
-  (equal (c::boolean-from-sint (c::ne-ulong-ulong x y))
-         (not (equal (c::integer-from-ulong x) (c::integer-from-ulong y))))
-  :hints (("Goal" :in-theory (enable c::boolean-from-sint
-                                     c::ne-ulong-ulong))))
+  (equal (boolean-from-sint (ne-ulong-ulong x y))
+         (not (equal (integer-from-ulong x) (integer-from-ulong y))))
+  :hints (("Goal" :in-theory (enable boolean-from-sint
+                                     ne-ulong-ulong))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd ulong-from-integer-becomes-ulong-dec-const-when-constant
   (implies (syntaxp (quotep x))
-           (equal (c::ulong-from-integer x)
-                  (c::ulong-dec-const x)))
-  :hints (("Goal" :in-theory (enable c::ulong-dec-const))))
+           (equal (ulong-from-integer x)
+                  (ulong-dec-const x)))
+  :hints (("Goal" :in-theory (enable ulong-dec-const))))
 
 (theory-invariant (incompatible (:rewrite ulong-from-integer-becomes-ulong-dec-const-when-constant)
-                                (:definition c::ulong-dec-const)))
+                                (:definition ulong-dec-const)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd c::ulong-from-integer-of-if
-  (equal (c::ulong-from-integer (if test tp ep))
-         (if test (c::ulong-from-integer tp) (c::ulong-from-integer ep))))
+(defthmd ulong-from-integer-of-if
+  (equal (ulong-from-integer (if test tp ep))
+         (if test (ulong-from-integer tp) (ulong-from-integer ep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; These can sometimes save us from having to enable ulong-removal-rules.
 
 (defthm ulongp-of-declar
-  (equal (c::ulongp (c::declar x))
-         (c::ulongp x))
-  :hints (("Goal" :in-theory (enable c::declar))))
+  (equal (ulongp (declar x))
+         (ulongp x))
+  :hints (("Goal" :in-theory (enable declar))))
 
 (defthm ulongp-of-assign
-  (equal (c::ulongp (c::assign x))
-         (c::ulongp x))
-  :hints (("Goal" :in-theory (enable c::assign))))
+  (equal (ulongp (assign x))
+         (ulongp x))
+  :hints (("Goal" :in-theory (enable assign))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -199,15 +199,15 @@
       ulong-from-integer-of-+-becomes-add-ulong-ulong
       ;; ulong-from-integer-of-mod-of-+-and-expt2-of-long-bits
       ulong-from-integer-of-mod-of-+-and-18446744073709551616
-      c::ulong-from-integer-of-if ; so that we convert the branches
+      ulong-from-integer-of-if ; so that we convert the branches
       )
   :redundant-okp t)
 
 ;; This theory converts C operations into ACL2 arithmetic operations.
 ;; It often has to be enabled in guard and termination proofs:
 (deftheory ulong-removal-rules
-    '(c::assign
-      c::declar
+    '(assign
+      declar
       ;; ;; these are triggered by conversion functions on the outside.  if needed we could be more aggressive
       ;; ;; and rewrite/open functions like add-uint-uint without conversion wrappers outside of them:
       ;; integer-from-ulong-of-add-ulong-ulong ; or we could introduce bvplus
@@ -222,14 +222,14 @@
       boolean-from-sint-of-ge-ulong-ulong
       boolean-from-sint-of-eq-ulong-ulong
       boolean-from-sint-of-ne-ulong-ulong
-      c::div-ulong-ulong-okp
-      c::rem-ulong-ulong-okp
-      c::shl-ulong-ulong-okp
-      c::shr-ulong-ulong-okp
-      c::ulong-integerp ; exposes unsigned-byte-p
-      c::long-bits
-      c::ulong-dec-const ; exposes ulong-from-integer
-      c::ulong-hex-const ; exposes ulong-from-integer
-      c::ulong-oct-const ; exposes ulong-from-integer
-      c::ulong-max)
+      div-ulong-ulong-okp
+      rem-ulong-ulong-okp
+      shl-ulong-ulong-okp
+      shr-ulong-ulong-okp
+      ulong-integerp ; exposes unsigned-byte-p
+      long-bits
+      ulong-dec-const ; exposes ulong-from-integer
+      ulong-hex-const ; exposes ulong-from-integer
+      ulong-oct-const ; exposes ulong-from-integer
+      ulong-max)
   :redundant-okp t)

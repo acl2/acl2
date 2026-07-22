@@ -118,7 +118,7 @@
   (implies (and (syntaxp (quotep k))
                 (power-of-2p k)
                 (integerp x)
-                (natp n))
+                (integerp n))
            (equal (bvchop n (* k x))
                   (* k (bvchop (- n (+ -1 (integer-length k))) x))))
   :hints (("Goal" ;:use (:instance bvchop-shift-gen (m (+ -1 (integer-length k))))
@@ -4381,7 +4381,8 @@
  (implies (integerp x)
           (equal (GETBIT 31 (+ 4294967296 x))
                  (GETBIT 31 x)))
- :hints (("Goal" :in-theory (enable getbit))))
+; :hints (("Goal" :in-theory (enable getbit)))
+ )
 
 ;move
 ; not safe, can loop when rewriting the binding hyp

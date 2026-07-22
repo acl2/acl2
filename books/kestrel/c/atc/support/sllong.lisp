@@ -13,22 +13,22 @@
 (include-book "kestrel/c/representation/integer-operations" :dir :system)
 (include-book "kestrel/c/atc/let-designations" :dir :system) ; for assign and declar
 
-(in-theory (disable (:e c::sllong-from-integer)
-                    (:e c::sllong-dec-const) ; ensures these are retained by simplify
-                    (:e c::sllong-hex-const)
-                    (:e c::sllong-oct-const)))
+(in-theory (disable (:e sllong-from-integer)
+                    (:e sllong-dec-const) ; ensures these are retained by simplify
+                    (:e sllong-hex-const)
+                    (:e sllong-oct-const)))
 
 ;; These can sometimes save us from having to enable sllong-removal-rules.
 
 (defthm sllongp-of-declar
-  (equal (c::sllongp (c::declar x))
-         (c::sllongp x))
-  :hints (("Goal" :in-theory (enable c::declar))))
+  (equal (sllongp (declar x))
+         (sllongp x))
+  :hints (("Goal" :in-theory (enable declar))))
 
 (defthm sllongp-of-assign
-  (equal (c::sllongp (c::assign x))
-         (c::sllongp x))
-  :hints (("Goal" :in-theory (enable c::assign))))
+  (equal (sllongp (assign x))
+         (sllongp x))
+  :hints (("Goal" :in-theory (enable assign))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -36,8 +36,8 @@
 ;; It often has to be enabled in guard and termination proofs:
 ;; todo: improve the name
 (deftheory sllong-removal-rules
-  '(c::assign
-    c::declar
+  '(assign
+    declar
     ;; these are triggered by conversion functions on the outside.  if needed we could be more aggressive
     ;; and rewrite/open functions like add-sllong-sllong without conversion wrappers outside of them:
     ;; integer-from-sllong-of-add-sllong-sllong
@@ -51,18 +51,25 @@
     ;; boolean-from-sllong-of-eq-sllong-sllong
     ;; boolean-from-sllong-of-ne-sllong-sllong
     ;; boolean-from-sllong-of-lognot-sllong
-    ;; c::sub-sllong-sllong-okp
-    ;; c::add-sllong-sllong-okp
-    ;; c::minus-sllong-okp
-    ;; c::mul-sllong-sllong-okp
-    ;; c::div-sllong-sllong-okp
-    ;; c::rem-sllong-sllong-okp
-    ;; c::shl-sllong-sllong-okp
-    ;; c::shr-sllong-sllong-okp
-    c::sllong-integerp ; exposes signed-byte-p
-    c::llong-bits
-    c::sllong-dec-const ; exposes sllong-from-integer
-    c::sllong-hex-const ; exposes sllong-from-integer
-    c::sllong-oct-const ; exposes sllong-from-integer
+    ;; sub-sllong-sllong-okp
+    ;; add-sllong-sllong-okp
+    ;; minus-sllong-okp
+    ;; mul-sllong-sllong-okp
+    ;; div-sllong-sllong-okp
+    ;; rem-sllong-sllong-okp
+    ;; shl-sllong-sllong-okp
+    ;; shr-sllong-sllong-okp
+    sllong-integerp ; exposes signed-byte-p
+    llong-bits
+    sllong-dec-const ; exposes sllong-from-integer
+    sllong-hex-const ; exposes sllong-from-integer
+    sllong-oct-const ; exposes sllong-from-integer
     )
+  :redundant-okp t)
+
+;; This theory introduces C operators
+(deftheory sllong-intro-rules
+    '(;;ushort-from-integer-of-+-of---arg1
+      ;;ushort-from-integer-of-+-of---arg2
+      )
   :redundant-okp t)

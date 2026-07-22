@@ -21,26 +21,6 @@
 (local (include-book "../lists-light/subsetp-equal"))
 (local (include-book "../typed-lists-light/symbol-listp"))
 
-;; Some of these could be moved to more general libraries:
-
-;; Substitution doesn't introduce lambdas if there were none to start with and
-;; there are none in the alist being used for substitution.
-(defthm-flag-sublis-var-simple
-  (defthm lambda-free-termp-of-sublis-var-simple
-    (implies (and (lambda-free-termp term)
-                  (lambda-free-termsp (strip-cdrs alist)))
-             (lambda-free-termp (sublis-var-simple alist term)))
-    :flag sublis-var-simple)
-  (defthm lambda-free-termsp-of-sublis-var-simple-lst
-    (implies (and (lambda-free-termsp terms)
-                  (lambda-free-termsp (strip-cdrs alist)))
-             (lambda-free-termsp (sublis-var-simple-lst alist terms)))
-    :flag sublis-var-simple-lst)
-  :hints (("Goal" :in-theory (enable sublis-var-simple
-                                     sublis-var-simple-lst))))
-
-;; End of library material
-
 ;; Expands away all lambdas in TERM (beta reduction).  This is similar to the
 ;; built-in function REMOVE-LAMBDAS, but that one does more (to preserve quote
 ;; normal form). For example: (remove-lambdas '((lambda (x y) (binary-+ x y))
@@ -103,31 +83,3 @@
                                      expand-lambdas-in-terms))))
 
 (verify-guards expand-lambdas-in-term)
-
-(defthm car-of-expand-lambdas-in-terms
-  (equal (car (expand-lambdas-in-terms terms))
-         (expand-lambdas-in-term (car terms)))
-  :hints (("Goal" :in-theory (enable expand-lambdas-in-terms))))
-
-;; Expanding lambdas creates a lambda-free term.
-(defthm-flag-expand-lambdas-in-term
-  (defthm lambda-free-termp-of-expand-lambdas-in-term
-    (implies (pseudo-termp term)
-             (lambda-free-termp (expand-lambdas-in-term term)))
-    :flag expand-lambdas-in-term)
-  (defthm lambda-free-term-listp-of-expand-lambdas-in-terms
-    (implies (pseudo-term-listp terms)
-             (lambda-free-termsp (expand-lambdas-in-terms terms)))
-    :flag expand-lambdas-in-terms)
-  :hints (("Goal" :in-theory (enable expand-lambdas-in-term
-                                     expand-lambdas-in-terms
-                                     pairlis$))))
-
-;; Since the new term is lambda-free
-(defthm not-consp-of-car-of-expand-lambdas-in-term
-  (implies (pseudo-termp term)
-           (not (consp (car (expand-lambdas-in-term term)))))
-  :hints (("Goal" :use (:instance lambda-free-termp-of-expand-lambdas-in-term)
-           ;; :expand (expand-lambdas-in-term term)
-           :in-theory (e/d (lambda-free-termp)
-                           (lambda-free-termp-of-expand-lambdas-in-term)))))

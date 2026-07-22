@@ -400,3 +400,41 @@
 (acl2::assert-equal (prim-float-floor (f-n0)) (iv 0))
 (acl2::assert-event (reserrp (prim-float-floor (f-ninf))))
 (acl2::assert-event (reserrp (prim-float-floor (f-nan))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Unary (curried) application of primitive operation values:
+; applying a binary operation to its first argument yields the next stage,
+; whose application to the second argument yields the result.
+
+(acl2::assert-equal
+ (eval-primop-fun (primop-value-int-binary (int-binary-primop-add)) (iv 2))
+ (expr-value-primop (make-primop-value-int-binary-x
+                     :op (int-binary-primop-add)
+                     :xval (iv 2))))
+
+(acl2::assert-equal
+ (eval-primop-fun (make-primop-value-int-binary-x :op (int-binary-primop-add)
+                                                  :xval (iv 2))
+                  (iv 3))
+ (iv 5))
+
+(acl2::assert-equal
+ (eval-primop-fun-chain (primop-value-int-binary (int-binary-primop-add))
+                        (list (iv 2) (iv 3)))
+ (iv 5))
+
+(acl2::assert-equal
+ (eval-primop-fun-chain (primop-value-int-rel (int-rel-primop-lt))
+                        (list (iv 2) (iv 3)))
+ (bv t))
+
+(acl2::assert-equal
+ (eval-primop-fun-chain (primop-value-float-binary (float-binary-primop-add))
+                        (list (fv 1/2) (fv 1/4)))
+ (fv 3/4))
+
+(acl2::assert-equal
+ (eval-primop-fun-chain (primop-value-bool-binary (bool-binary-primop-and))
+                        (list (bv t) (bv nil)))
+ (bv nil))

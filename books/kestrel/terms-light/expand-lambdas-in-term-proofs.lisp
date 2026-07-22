@@ -1,6 +1,6 @@
-; Proof of correctness of expand-lambdas-in-term
+; Proof about expand-lambdas-in-term
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,8 +12,6 @@
 
 ;; This book proves that the meaning of terms (expressed wrt an evaluator) is
 ;; preserved by expand-lambdas-in-term.
-
-;; TODO: Prove that the result is lambda-free.
 
 (include-book "expand-lambdas-in-term")
 (include-book "make-lambda-term-simple")
@@ -44,11 +42,30 @@
 
 ;todo: automate some of this?
 
+(defthm car-of-expand-lambdas-in-terms
+  (equal (car (expand-lambdas-in-terms terms))
+         (expand-lambdas-in-term (car terms)))
+  :hints (("Goal" :in-theory (enable expand-lambdas-in-terms))))
+
 (defthm cdr-of-expand-lambdas-in-terms
   (equal (cdr (expand-lambdas-in-terms terms))
          (expand-lambdas-in-terms (cdr terms)))
   :hints (("Goal" :induct (len terms)
            :in-theory (enable (:i len) expand-lambdas-in-terms))))
+
+;; Expanding lambdas creates a lambda-free term.
+(defthm-flag-expand-lambdas-in-term
+  (defthm lambda-free-termp-of-expand-lambdas-in-term
+    (implies (pseudo-termp term)
+             (lambda-free-termp (expand-lambdas-in-term term)))
+    :flag expand-lambdas-in-term)
+  (defthm lambda-free-term-listp-of-expand-lambdas-in-terms
+    (implies (pseudo-term-listp terms)
+             (lambda-free-termsp (expand-lambdas-in-terms terms)))
+    :flag expand-lambdas-in-terms)
+  :hints (("Goal" :in-theory (enable expand-lambdas-in-term
+                                     expand-lambdas-in-terms
+                                     pairlis$))))
 
 (local
  (mutual-recursion
@@ -158,3 +175,13 @@
                             empty-eval-of-fncall-args
                             free-vars-in-terms)
                            (empty-eval-of-fncall-args-back)))))
+
+
+;; Since the new term is lambda-free
+(defthm not-consp-of-car-of-expand-lambdas-in-term
+  (implies (pseudo-termp term)
+           (not (consp (car (expand-lambdas-in-term term)))))
+  :hints (("Goal" :use (:instance lambda-free-termp-of-expand-lambdas-in-term)
+           ;; :expand (expand-lambdas-in-term term)
+           :in-theory (e/d (lambda-free-termp)
+                           (lambda-free-termp-of-expand-lambdas-in-term)))))
