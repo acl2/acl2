@@ -838,11 +838,10 @@
       "The @(':app') summand is the main, core form of term application,
        while the @(':appn') summand is sugar for
        a left-nested chain of the unary applications to one argument at a time.
-       We plan to make the CST-to-AST mapping turn
+       The CST-to-AST mapping turns
        applications to one argument into @(':app'),
        and applications to two or more arguments into @(':appn'),
-       similarly to type and ispace applications;
-       currently all term applications map to @(':appn').")
+       similarly to type and ispace applications.")
      (xdoc::p
       "The @(':tapp') summand is the main, core form of type application,
        while the @(':tappn') summand is sugar for
