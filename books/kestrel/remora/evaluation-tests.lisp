@@ -116,3 +116,18 @@
 (t-app (t-app (frame [0] (Forall (&t &u) (Pi ($d) (-> ((A &t $d)) Int)))) Int)
        Int)
 ")
+
+; Application of a two-parameter term lambda abstraction,
+; as a chain of unary applications through a unary closure:
+; the first argument creates a closure binding the first parameter,
+; whose body is the inner one-parameter lambda abstraction,
+; and the second argument completes the application.
+(test-eval-top-expr
+ "((fn ((x Int) (y Int)) (+ x y)) 3 4)")
+
+; The same, with rank-polymorphic lifting over a non-scalar frame:
+; the first (lifted) application step produces
+; an array of unary closures (one per frame position),
+; to which the second argument array is applied element-wise.
+(test-eval-top-expr
+ "((fn ((x Int) (y Int)) (+ x y)) [1 2 3] [4 5 6])")

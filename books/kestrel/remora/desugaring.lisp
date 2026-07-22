@@ -205,7 +205,7 @@
                              :args (ispace-list-desugar expr.iargs.val))
                       :none fun-targs))
                     (fun-targs-iargs-args
-                     (make-expr-app
+                     (make-expr-appn
                       :fun fun-targs-iargs
                       :args (expr-list-desugar expr.args))))
                  fun-targs-iargs-args))

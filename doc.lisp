@@ -34903,7 +34903,6 @@ Subtopics
       and J Strother Moore, is distributed with ACL2 and is licensed
       under the terms of the [30m[47mLICENSE[0m[0m file distributed with ACL2.")
  (DOUBLE-FLOAT (POINTERS) "See [df].")
- (DOUBLE-FLOAT (POINTERS) "See [df].")
  (DOUBLE-REWRITE
   (REWRITE)
   "Cause a term to be rewritten twice
@@ -106839,6 +106838,10 @@ Changes to Existing Features
   misleading but has been fixed.  Thanks to Eric Smith for noticing
   this problem.
 
+  The macro [30m[47munion-theories[0m[0m now takes any number of arguments.  See
+  [union-theories].  Thanks to Eric Smith for suggesting this
+  enhancement.
+
 
 New Features
 
@@ -106929,6 +106932,33 @@ Changes at the System Level
   (GCL only) Added code for proper handling of floating-point
   exceptions on arm and riscv64 platforms.  Thanks to Camm Maguire
   for major help with this.
+
+  It is now possible to make it impossible (we believe) to interact
+  directly with raw Lisp, at least for ACL2 built on CCL and SBCL.
+
+    * A new argument, [30m[47mnever![0m[0m, is available for [30m[47m[set-debugger-enable][0m[0m.  When
+      [30m[47m(set-debugger-enable :never!)[0m[0m is evaluated, the effect is the
+      same as evaluating [30m[47m(set-debugger-enable :never)[0m[0m --- in
+      particular, [30m[47m[break$][0m[0m does not enter the Lisp debugger ---
+      except that in addition, you cannot exit the ACL2 loop.  This
+      effectively disables [30m[47m:q[0m[0m as a means for going into raw Lisp (and
+      also [30m[47m(value :q)[0m[0m, etc.; see [q].
+
+    * Formerly, interrupts in SBCL could, on rare occasions, cause the Lisp
+      debugger to be entered.  That has (we believe) been fixed for
+      SBCL, and it was already handled for CCL.
+
+    * So to avoid the possibility of interaction with raw Lisp for ACL2
+      built on CCL or SBCL, you can do the following, provided trust
+      tags are avoided (see [defttag]).
+
+          ; Disable entering the debugger and disable existing the ACL2 loop:
+          (set-debugger-enable :never!)
+          (push-untouchable set-debugger-enable-fn t)
+          (push-untouchable debugger-enable nil)
+
+          ; Disable entering raw-mode:
+          (push-untouchable set-raw-mode-on t)
 
 
 EMACS Support
@@ -136231,6 +136261,7 @@ Subtopics
     (set-debugger-enable :bt-break) ; as above, but print a backtrace first
     (set-debugger-enable :bt)       ; print a backtrace but do not enter debugger
     (set-debugger-enable :never)    ; disable all breaks into the debugger
+    (set-debugger-enable :never!)   ; disable entering raw Lisp entirely
     (set-debugger-enable nil)       ; disable debugger except when calling break$
 
   [3mIntroduction.[0m Suppose we define [30m[47mfoo[0m[0m in [30m[47m:[0m[0m[30m[47m[program][0m[0m mode to take the
@@ -136310,11 +136341,15 @@ Subtopics
   not only for Lisp errors but also when executing [30m[47m(break$)[0m[0m.
 
     (set-debugger-enable :never)
+    (set-debugger-enable :never!)
 
-  The discussion above also applies to interrupts (from [30m[47mControl-C[0m[0m) in
-  some, but not all, host Common Lisps --- perhaps all except for
-  non-ANSI GCL, where interrupts will likely always put you into the
-  debugger.
+  Furthermore, when the argument is [30m[47m:never![0m[0m then exits from the ACL2
+  top-level-loop are disabled as well.  We believe that, at least for
+  ACL2 built on CCL or SBCL, this prevents all direct interaction
+  with raw Lisp unless [30m[47m[set-raw-mode][0m[0m is invoked, which requires a
+  trust tag.
+
+  The discussion above applies to interrupts (from [30m[47mControl-C[0m[0m) as well.
 
   It remains to discuss options [30m[47m:break[0m[0m, [30m[47m:bt[0m[0m, [30m[47m:break-bt[0m[0m, and [30m[47m:bt-break[0m[0m.
   Option [30m[47m:break[0m[0m is synonymous with option [30m[47mt[0m[0m, while option [30m[47m:bt[0m[0m prints
@@ -158475,11 +158510,11 @@ Subtopics
                     (theory 'arith-patch))
 
     General Form:
-    (union-theories th1 th2)
+    (union-theories th1 th2 ... thn)
 
-  where [30m[47mth1[0m[0m and [30m[47mth2[0m[0m are theories (see [theories]).  To each of the
+  where each [30m[47mthi[0m[0m is a theory (see [theories]).  To each of the
   arguments there corresponds a runic theory.  This function returns
-  the union of those two runic [theories], represented as a list and
+  the union of those runic [theories], represented as a list and
   ordered chronologically.
 
   This ``function'' is actually a macro that expands to a term

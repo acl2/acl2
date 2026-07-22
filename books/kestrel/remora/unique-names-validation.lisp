@@ -283,8 +283,8 @@
 ;      :body (make-expr-let
 ;             :binds (list (make-bind-val :var "p" :type? (type-option-none)
 ;                                         :expr *five*))
-;             :body (make-expr-app :fun (expr-var "f")
-;                                  :args (list *zero*)))))
+;             :body (make-expr-appn :fun (expr-var "f")
+;                                   :args (list *zero*)))))
 ;
 ; evaluated to 5 --- (eval-top-expr *cex1* 1000) found the dynamically
 ; bound p --- while its uniquification evaluated to an error (the free

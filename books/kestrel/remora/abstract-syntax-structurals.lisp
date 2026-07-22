@@ -585,6 +585,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define lambda-curried-body ((params var+type?-listp)
+                             (body exprp)
+                             (type? type-optionp))
+  :guard (consp params)
+  :returns (new-body exprp)
+  :short "Peel the first parameter from a lambda abstraction
+          and return the remaining body expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee forall-curried-body).")
+   (xdoc::p
+    "The optional body type annotation applies to the body,
+     so it travels with the innermost lambda abstraction:
+     if there are two or more parameters,
+     the returned lambda abstraction carries the annotation;
+     if there is just one parameter,
+     the annotation pertains to the returned body,
+     and it is up to the caller to use it as appropriate."))
+  (b* ((params (var+type?-list-fix params))
+       (body (expr-fix body))
+       (type? (type-option-fix type?)))
+    (cond ((endp (cdr params)) body)
+          (t (expr-atom (make-atom-lambda :params (cdr params)
+                                          :body body
+                                          :type? type?))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tlambda-curried-body ((params type-var-listp) (body exprp))
   :guard (consp params)
   :returns (new-body exprp)

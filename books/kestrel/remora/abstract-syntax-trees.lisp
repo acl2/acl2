@@ -820,7 +820,8 @@
        empty frames with the type of the cells,
        string literals,
        applications of expressions to expressions
-       (called `term applications' in the Remora publications),
+       (called `term applications' in the Remora publications)
+       (unary or n-ary),
        applications of expressions to types (unary or n-ary),
        applications of expressions to ispaces (unary or n-ary),
        combined applications of expressions to types/ispaces/expressions,
@@ -833,6 +834,14 @@
        and returns the body expression;
        it is optionally annotated by its type
        (the type of the whole unboxing expression).")
+     (xdoc::p
+      "The @(':app') summand is the main, core form of term application,
+       while the @(':appn') summand is sugar for
+       a left-nested chain of the unary applications to one argument at a time.
+       The CST-to-AST mapping turns
+       applications to one argument into @(':app'),
+       and applications to two or more arguments into @(':appn'),
+       similarly to type and ispace applications.")
      (xdoc::p
       "The @(':tapp') summand is the main, core form of type application,
        while the @(':tappn') summand is sugar for
@@ -857,7 +866,7 @@
      (xdoc::p
       "The non-emptiness of the atom list in @(':array'),
        of the expression list in @(':frame'),
-       of the argument lists of @(':app'), @(':tappn'), and @(':iappn')
+       of the argument lists of @(':appn'), @(':tappn'), and @(':iappn')
        (but not of @(':capp'), whose value arguments may be absent),
        of the bind list in @(':let'),
        and of the ispace-var list in @(':unbox')
@@ -885,7 +894,9 @@
                    (type type)))
     (:string ((chars char-lit-list)))
     (:app ((fun expr)
-           (args expr-list)))
+           (arg expr)))
+    (:appn ((fun expr)
+            (args expr-list)))
     (:tapp ((fun expr)
             (arg type)))
     (:tappn ((fun expr)

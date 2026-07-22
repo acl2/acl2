@@ -109691,6 +109691,18 @@ it."
 ; When *debug-on* is t, the debug info now goes to (standard-co state) instead
 ; of Lisp standard output.
 
+; The files Makefile and books/Makefile serve only one purpose: to cause an
+; error when using a make utility other than GNU make (which invokes
+; GNUmakefile).  Both Makefile and books/Makefile have been simplified.  Thanks
+; to Grant Jurgensen and Eric Smith for the suggestion.
+
+; Removed duplicate occurrence of defstobj-field-fns-raw-defs in
+; *initial-program-fns-with-raw-code*.  Thanks to Eric Smith for pointing this
+; out.
+
+; Removed duplicate commands (defpointer double-float df) in
+; books/system/doc/acl2-doc.lisp.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -109753,6 +109765,9 @@ it."
  <p>The message printed by @(':set-guard-checking :none') was somewhat
  misleading but has been fixed.  Thanks to Eric Smith for noticing this
  problem.</p>
+
+ <p>The macro @('union-theories') now takes any number of arguments.  See @(see
+ union-theories).  Thanks to Eric Smith for suggesting this enhancement.</p>
 
  <h3>New Features</h3>
 
@@ -109838,6 +109853,38 @@ it."
  <p>(GCL only) Added code for proper handling of floating-point exceptions on
  arm and riscv64 platforms.  Thanks to Camm Maguire for major help with
  this.</p>
+
+ <p>It is now possible to make it impossible (we believe) to interact directly
+ with raw Lisp, at least for ACL2 built on CCL and SBCL.</p>
+
+ <ul>
+
+ <li>A new argument, @('never!'), is available for @(tsee set-debugger-enable).
+ When @('(set-debugger-enable :never!)') is evaluated, the effect is the same
+ as evaluating @('(set-debugger-enable :never)') &mdash; in particular, @(tsee
+ break$) does not enter the Lisp debugger &mdash; except that in addition, you
+ cannot exit the ACL2 loop.  This effectively disables @(':q') as a means for
+ going into raw Lisp (and also @('(value :q)'), etc.; see @(see q).</li>
+
+ <li>Formerly, interrupts in SBCL could, on rare occasions, cause the Lisp
+ debugger to be entered.  That has (we believe) been fixed for SBCL, and it was
+ already handled for CCL.</li>
+
+ <li>So to avoid the possibility of interaction with raw Lisp for ACL2 built on
+ CCL or SBCL, you can do the following, provided trust tags are avoided (see
+ @(see defttag)).
+
+ @({
+ ; Disable entering the debugger and disable existing the ACL2 loop:
+ (set-debugger-enable :never!)
+ (push-untouchable set-debugger-enable-fn t)
+ (push-untouchable debugger-enable nil)
+
+ ; Disable entering raw-mode:
+ (push-untouchable set-raw-mode-on t)
+ })</li>
+
+ </ul>
 
  <h3>EMACS Support</h3>
 
@@ -136359,6 +136406,7 @@ work on <tt>(q x)</tt>.</p>
   (set-debugger-enable :bt-break) ; as above, but print a backtrace first
   (set-debugger-enable :bt)       ; print a backtrace but do not enter debugger
   (set-debugger-enable :never)    ; disable all breaks into the debugger
+  (set-debugger-enable :never!)   ; disable entering raw Lisp entirely
   (set-debugger-enable nil)       ; disable debugger except when calling break$
  })
 
@@ -136450,11 +136498,16 @@ work on <tt>(q x)</tt>.</p>
 
  @({
   (set-debugger-enable :never)
- })
+  (set-debugger-enable :never!)
+})
 
- <p>The discussion above also applies to interrupts (from @('Control-C')) in
- some, but not all, host Common Lisps &mdash; perhaps all except for non-ANSI
- GCL, where interrupts will likely always put you into the debugger.</p>
+ <p>Furthermore, when the argument is @(':never!') then exits from the ACL2
+ top-level-loop are disabled as well.  We believe that, at least for ACL2 built
+ on CCL or SBCL, this prevents all direct interaction with raw Lisp unless
+ @(tsee set-raw-mode) is invoked, which requires a trust tag.</p>
+
+ <p>The discussion above applies to interrupts (from @('Control-C')) as
+ well.</p>
 
  <p>It remains to discuss options @(':break'), @(':bt'), @(':break-bt'), and
  @(':bt-break').  Option @(':break') is synonymous with option @('t'), while
@@ -158623,12 +158676,12 @@ introduction-to-the-tau-system) for more information about Tau.</dd>
                   (theory 'arith-patch))
 
   General Form:
-  (union-theories th1 th2)
+  (union-theories th1 th2 ... thn)
  })
 
- <p>where @('th1') and @('th2') are theories (see @(see theories)).  To each of
- the arguments there corresponds a runic theory.  This function returns the
- union of those two runic @(see theories), represented as a list and ordered
+ <p>where each @('thi') is a theory (see @(see theories)).  To each of the
+ arguments there corresponds a runic theory.  This function returns the union
+ of those runic @(see theories), represented as a list and ordered
  chronologically.</p>
 
  <p>This ``function'' is actually a macro that expands to a term mentioning the
@@ -174803,7 +174856,7 @@ expand function call at the current subterm, without simplifying"
 (defpointer disjoin system-utilities)
 (defpointer disjoin2 system-utilities)
 (defpointer do-not-induct hints t)
-(defpointer double-float df)
+; (defpointer double-float df) ; included with other df-related defpointers below.
 (defpointer doublet-listp system-utilities)
 (defpointer dynamically-monitor-rewrites dmr)
 (defpointer dumb-negate-lit system-utilities)
