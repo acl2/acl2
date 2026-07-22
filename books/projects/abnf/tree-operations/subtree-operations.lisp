@@ -13,6 +13,7 @@
 (include-book "../notation/semantics")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/basic/nfix" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -84,3 +85,95 @@
   ///
 
   (fty::deffixequiv-mutual trees-in-trees))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod tree-path-step
+  :short "Fixtype of steps of paths of subtrees in trees."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is an element of a path of a subtree in a tree;
+     see @(tsee tree-path).
+     A non-leaf tree has a list of lists of trees as branches,
+     corresponding to a concatenation of repetitions of elements.
+     A step selects one of the trees in the branches:
+     @('conc') selects a list of trees from the concatenation,
+     corresponding to a repetition,
+     and @('rep') selects a tree from the repetition,
+     corresponding to an element."))
+  ((conc nat)
+   (rep nat))
+  :pred tree-path-stepp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist tree-path
+  :short "Fixtype of paths of subtrees in trees."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A path is a list of zero or more steps (see @(tsee tree-path-step)),
+     which navigate from the root of a tree towards the leaves of the tree.
+     The empty path is the path of the whole tree,
+     as a (non-strict) subtree of itself."))
+  :elt-type tree-path-step
+  :true-listp t
+  :elementp-of-nil nil
+  :pred tree-pathp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist tree-path-list
+  :short "Fixtype of lists of paths of subtrees in trees."
+  :elt-type tree-path
+  :true-listp t
+  :elementp-of-nil t
+  :pred tree-path-listp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defset tree-path-set
+  :short "Fixtype of sets of paths of subtrees in trees."
+  :elt-type tree-path
+  :elementp-of-nil t
+  :pred tree-path-setp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-tree-path ((path tree-pathp) (tree treep))
+  :returns (tree? tree-optionp)
+  :short "Check if a path is valid in a tree,
+          returning the subtree if successful."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check if the paths stays within the tree,
+     reaching a subtree of the treee,
+     which we return.
+     Otherwise we return @('nil').")
+   (xdoc::p
+    "The empty path is always valid.
+     A non-empty path is valid iff
+     the tree is a non-leaf tree,
+     the first step of the path selects
+     an existing subtree in the branches,
+     and the rest of the path is valid for the subtree."))
+  (b* (((when (endp path)) (tree-fix tree))
+       ((unless (tree-case tree :nonleaf)) nil)
+       ((tree-path-step step) (car path))
+       (subtreess (tree-nonleaf->branches tree))
+       ((unless (< step.conc (len subtreess))) nil)
+       (subtrees (nth step.conc subtreess))
+       ((unless (< step.rep (len subtrees))) nil)
+       (subtree (nth step.rep subtrees)))
+    (check-tree-path (cdr path) subtree))
+  :guard-hints (("Goal" :in-theory (enable true-listp-when-tree-listp))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define tree-at-path ((path tree-pathp) (tree abnf::treep))
+  :guard (check-tree-path path tree)
+  :returns (sub abnf::treep)
+  :short "Subtree of a tree at a valid path."
+  (tree-fix (check-tree-path path tree)))
