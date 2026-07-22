@@ -21,7 +21,8 @@
   (xdoc::topstring
    (xdoc::evmac-section-intro
     (xdoc::p
-     "This transformation targets a struct type, identified by its tag.
+     "This transformation targets a struct type, identified by its tag
+      or one of its @('typedef') aliases.
       The transformation splits it into two struct types:
       the \"left\" struct type keeps the original tag
       and the members not selected for splitting,
