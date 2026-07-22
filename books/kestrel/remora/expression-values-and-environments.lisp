@@ -230,28 +230,27 @@
        to @($\\mathit{Val}$) in [thesis],
        but with a different yet equivalent structure.")
      (xdoc::p
-      "The parameters of a lambda value associate
-       type values, not types, to the variables:
-       the parameter types are evaluated
+      "The parameter of a lambda value associates
+       a type value, not a type, to the variable:
+       the parameter type is evaluated
        when the lambda abstraction is evaluated,
        while the body is evaluated
        when the lambda abstraction is applied.
        The same goes for the optional type of the body of the lambda value,
-       which mirrors the one in the AST for lambda abstraction atoms.")
+       which mirrors the one in the AST for lambda abstraction atoms;
+       it is present only when the lambda value binds
+       the innermost parameter of a lambda abstraction
+       (see below), which is the one whose body carries the annotation.")
      (xdoc::p
-      "An ispace lambda value binds exactly one parameter:
-       consistently with the curried view of ispace applications
+      "All three kinds of lambda values bind exactly one parameter:
+       consistently with the curried view of
+       ispace, type, and term applications
        (see @(tsee expr)),
-       an ispace lambda abstraction with two or more parameters
-       evaluates to the unary ispace lambda value
+       a lambda abstraction with two or more parameters
+       evaluates to the unary lambda value
        that binds the first parameter,
-       whose body is the ispace lambda abstraction
-       over the remaining parameters.
-       A type lambda value similarly binds exactly one parameter,
-       consistently with the curried view of type applications.
-       The remaining kind of lambda values
-       still binds all its parameters at once;
-       it will be similarly made unary.")
+       whose body is the lambda abstraction
+       over the remaining parameters.")
      (xdoc::p
       "This fixtype does not capture constraints like
        the non-emptiness of the expression value list in @(':vector'),
@@ -264,7 +263,7 @@
        the environment contains exactly those free variables."))
     (:base ((val base-value)))
     (:primop ((val primop-value)))
-    (:lambda ((params var+typevalue-list)
+    (:lambda ((param var+typevalue)
               (body expr)
               (type? type-value-option)
               (denv expr-denv)))
@@ -603,6 +602,10 @@
      (xdoc::p
       "Base and abstraction values always satisfy dimension constraints
        and have the empty list of dimensions.
+       Primitive operation values also have the empty list of dimensions,
+       but the expression values stored in their instantiation stages, if any,
+       must satisfy the dimension constraints
+       (see @(tsee check-dims-of-primop-value)).
        Box values also have the empty list of dimensions,
        but their boxed value must satisfy the dimension constraints.")
      (xdoc::p
@@ -629,7 +632,8 @@
     (expr-value-case
      val
      :base nil
-     :primop nil
+     :primop (b* (((ok &) (check-dims-of-primop-value val.val)))
+               nil)
      :lambda (b* (((ok &) (check-dims-of-expr-denv val.denv)))
                nil)
      :tlambda (b* (((ok &) (check-dims-of-expr-denv val.denv)))
@@ -827,7 +831,78 @@
   (xdoc::topstring
    (xdoc::p
     "The primitive operation value must satisfy the dimension constraints."))
-  (not (reserrp (check-dims-of-primop-value val))))
+  (not (reserrp (check-dims-of-primop-value val)))
+
+  ///
+
+  (defrule expr-value-wfp-of-x-stage-xvals
+    (and (implies (primop-value-case op :int-binary-x)
+                  (equal (expr-value-wfp (primop-value-int-binary-x->xval op))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :int-rel-x)
+                  (equal (expr-value-wfp (primop-value-int-rel-x->xval op))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :float-binary-x)
+                  (equal (expr-value-wfp
+                          (primop-value-float-binary-x->xval op))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :float-rel-x)
+                  (equal (expr-value-wfp (primop-value-float-rel-x->xval op))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :bool-binary-x)
+                  (equal (expr-value-wfp (primop-value-bool-binary-x->xval op))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :bool-rel-x)
+                  (equal (expr-value-wfp (primop-value-bool-rel-x->xval op))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :append-t-m-n-s-x)
+                  (equal (expr-value-wfp
+                          (primop-value-append-t-m-n-s-x->xval op))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :index-t-m-x)
+                  (equal (expr-value-wfp (primop-value-index-t-m-x->xval op))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :index2d-t-m-n-x)
+                  (equal (expr-value-wfp
+                          (primop-value-index2d-t-m-n-x->xval op))
+                         (primop-value-wfp op))))
+    :enable (primop-value-wfp expr-value-wfp)
+    :expand ((check-dims-of-primop-value op)))
+
+  (defrule primop-value-wfp-of-x-stage-constructors
+    (and (equal (primop-value-wfp (primop-value-int-binary-x op xval))
+                (expr-value-wfp xval))
+         (equal (primop-value-wfp (primop-value-int-rel-x op xval))
+                (expr-value-wfp xval))
+         (equal (primop-value-wfp (primop-value-float-binary-x op xval))
+                (expr-value-wfp xval))
+         (equal (primop-value-wfp (primop-value-float-rel-x op xval))
+                (expr-value-wfp xval))
+         (equal (primop-value-wfp (primop-value-bool-binary-x op xval))
+                (expr-value-wfp xval))
+         (equal (primop-value-wfp (primop-value-bool-rel-x op xval))
+                (expr-value-wfp xval))
+         (equal (primop-value-wfp
+                 (primop-value-append-t-m-n-s-x tval mval nval sval xval))
+                (expr-value-wfp xval))
+         (equal (primop-value-wfp (primop-value-index-t-m-x tval mval xval))
+                (expr-value-wfp xval))
+         (equal (primop-value-wfp
+                 (primop-value-index2d-t-m-n-x tval mval nval xval))
+                (expr-value-wfp xval)))
+    :enable (primop-value-wfp expr-value-wfp)
+    :expand ((check-dims-of-primop-value (primop-value-int-binary-x op xval))
+             (check-dims-of-primop-value (primop-value-int-rel-x op xval))
+             (check-dims-of-primop-value (primop-value-float-binary-x op xval))
+             (check-dims-of-primop-value (primop-value-float-rel-x op xval))
+             (check-dims-of-primop-value (primop-value-bool-binary-x op xval))
+             (check-dims-of-primop-value (primop-value-bool-rel-x op xval))
+             (check-dims-of-primop-value
+              (primop-value-append-t-m-n-s-x tval mval nval sval xval))
+             (check-dims-of-primop-value
+              (primop-value-index-t-m-x tval mval xval))
+             (check-dims-of-primop-value
+              (primop-value-index2d-t-m-n-x tval mval nval xval)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1043,13 +1118,28 @@
     (expr-value-wfp (expr-value-base base))
     :enable (expr-value-wfp check-dims-of-expr-value))
 
+  (defrule expr-value-wfp-of-expr-value-primop
+    (equal (expr-value-wfp (expr-value-primop opval))
+           (primop-value-wfp opval))
+    :enable (expr-value-wfp
+             primop-value-wfp)
+    :expand (check-dims-of-expr-value (expr-value-primop opval)))
+
+  (defrule primop-value-wfp-of-expr-value-primop->val
+    (implies (expr-value-case val :primop)
+             (equal (primop-value-wfp (expr-value-primop->val val))
+                    (expr-value-wfp val)))
+    :enable (expr-value-wfp
+             primop-value-wfp)
+    :expand (check-dims-of-expr-value val))
+
   (defrule expr-value-wfp-of-expr-value-lambda
     (implies (expr-denv-wfp denv)
-             (expr-value-wfp (expr-value-lambda params body type? denv)))
+             (expr-value-wfp (expr-value-lambda param body type? denv)))
     :enable (expr-value-wfp
              expr-denv-wfp-alt-def)
     :expand (check-dims-of-expr-value
-             (expr-value-lambda params body type? denv)))
+             (expr-value-lambda param body type? denv)))
 
   (defrule expr-denv-wfp-of-expr-value-lambda->denv
     (implies (and (expr-value-wfp val)
@@ -2192,33 +2282,38 @@
     "In term application (see @(tsee eval-expr)),
      this ACL2 function is used to return
      the dimensions of the cells
-     expected for each argument of a function value,
+     expected for each remaining argument of a function value,
      one list of dimensions per argument.
      These determine how each argument array
      is split into a frame and cells,
-     and hence the frames over which the application is lifted.")
+     and hence the frames over which the application is lifted.
+     Only the first of these dimension lists
+     is used at each unary application step,
+     but a primitive operation value may still expect
+     more than one argument (see below).")
    (xdoc::p
     "We obtain a representative function leaf
      (see @(tsee expr-value-first-fun)),
      and read its signature.
-     For a lambda abstraction,
-     the parameters must all have array types,
-     whose dimensions are returned.
+     A lambda abstraction value binds one parameter,
+     whose type is an array type
+     whose dimensions we return, as a one-element list.
      For a primitive operation,
-     we likewise read the input types of its function type
+     we read the input types of its (residual) function type
      (see @(tsee type-of-primop-value-fun)),
      which are all array types,
-     and return their dimensions.
-     It is an error if the value is not a function value,
-     or if a lambda abstraction's parameters
-     do not all have array types."))
+     and return their dimensions;
+     this list has one element for the operations
+     that still expect one argument,
+     and two elements for the ones that still expect two arguments.
+     It is an error if the value is not a function value."))
   (b* ((fval (expr-value-first-fun funval))
        ((when (reserrp fval)) (reserr nil)))
     (expr-value-case
      fval
-     :lambda (b* ((tvals (var+typevalue-list->type
-                          (expr-value-lambda->params fval))))
-               (dims-of-type-value-list tvals))
+     :lambda (list (dims-of-type-value
+                    (var+typevalue->type
+                     (expr-value-lambda->param fval))))
      :primop (b* ((tvals (type-value-fun->in
                           (type-value-array->elem
                            (type-of-primop-value-fun

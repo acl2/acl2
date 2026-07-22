@@ -4420,16 +4420,8 @@
        (safep
         (b* (((when unsafe) t)
              ((unless current-tag?) nil)
-             ((mv erp members)
-              (c$::type-struni-tag/members->members
-                (c$::type-struct->tag/members current-type?)
-                uid
-                completions))
              ((when erp) nil)
-             (spec (make-sts-struct-spec
-                     :uid uid
-                     :tag current-tag?
-                     :members members)))
+             (spec (make-sts-struct-spec :uid uid)))
           (trans-unit-sts-safep tunit spec)))
        ((unless safep)
         (reterr (sts-error-in-translation-unit

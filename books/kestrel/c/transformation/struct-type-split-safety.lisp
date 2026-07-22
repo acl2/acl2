@@ -30,11 +30,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "That transformation is work in progress,
-     as are the safety checks provided here.
-     The two will be connected once the safety checks are practical
-     (currently they are very preliminary and conservative).")
-   (xdoc::p
     "The STS (= Struct Type Split) transformation is safe,
      in the sense that it suitably preserves code functionality,
      only provided that the struct type is not used in certain ways.
@@ -44,7 +39,7 @@
      making it unsafe to split the struct type.")
    (xdoc::p
     "Here we provide checkers that
-     code uses (values of) the struct type being split
+     code uses the struct type being split
      only in safe ways with respect to the STS transformation.
      These checkers operate on ASTs annotated by validation.")
    (xdoc::p
@@ -56,22 +51,20 @@
    (xdoc::p
     "The STS transformation operates on a translation ensemble.
      The struct type to split is specified as
-     the tag (name) of a file-scope struct declaration
+     the tag (name) of a file-scope struct declaration,
+     or as the name of a file-scope @('typedef') struct declaration,
      in one of the translation units of the ensemble.
      But the transformation also splits
      all the compatible file-scope struct types in other translation units.
      More explicitly, each translation unit in the ensemble
      either has or does not have a file-scope struct type
-     with the tag specified to the STS transformation.
+     (declared just a struct type or as a @('typedef'), as above),
+     that is compatible with
+     the struct type specified to the STS transformation.
      The translation units that do not have it undergo no transformation.
-     For each translation unit that has it,
-     it either is compatible with the one to split or it is not;
-     in the latter case, the translation unit undergoes no transformation.
-     So only the translation units with
-     either exactly the struct type, or one compatible with it,
-     undergo transformation.
+     While each translation unit that has it undergoes the transformation.
      This is orchestrated by the STS transformation,
-     which will call these checking tools on
+     which calls these safety checks on
      each translation unit being transformed,
      to ensure that the transformation is applicable."))
   :order-subtopics t
@@ -99,7 +92,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod sts-struct-spec
-  :short "Fixtype of specifications of the struct type to split."
+  :short "Fixtype of specifications of the struct type being split."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -107,28 +100,18 @@
      the safety checks are applied to each translation unit
      that needs transformation.
      This translation unit contains, at the file scope,
-     either the exact struct type specified to the STS transformation
-     (as the tag name and optionally the translation unit file path,
-     where the latter defaults to the first translation unit),
+     either the exact struct type specified to the STS transformation,
      or one compatible with it.
-     Compatibility means that [C17:6.2.7/1]
-     the struct types have the same tag, members with compatible types, etc.
-     Since struct tags have no linkage [C17:6.2.2/6],
-     struct types with the same tag in different translation units
-     have different UIDs.")
+     The struct type may be declared directly, or via a @('typedef').
+     Either way, it is identified by a UID,
+     which the STS transformation passes to these safety checks.")
    (xdoc::p
     "Here we define a data structure that specifies
      the struct type being split in a given translation unit.
-     This will be created by the STS transformation for each translation unit.
-     Our checking tools take it and use it to check the translation unit.")
-   (xdoc::p
-    "This data structure consists of the UID, the tag, and the members.
-     Although this is more than needed to identify the struct type,
-     we use all this information to check that
-     there are no other similar struct declarations (e.g. in a block scope)."))
-  ((uid uid)
-   (tag ident)
-   (members type-struni-member-list))
+     The specification consists of a UID,
+     but we wrap it into a data structure for future extensibility.
+     This data structure is an input to the STS safety checks."))
+  ((uid uid))
   :pred sts-struct-specp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -146,13 +129,12 @@
      the fields of the @(':struct') summand of @(tsee type).
      The last input of this function specifies the struct type being split.
      We check whether the struct type consisting of the three fields
-     is a tagged one with the same tag and UID as the struct being split."))
-  (declare (ignore tunit?))
-  (b* (((sts-struct-spec spec)))
-    (and (type-struni-tag/members-case tag/members :tagged)
-         (b* ((tag (type-struni-tag/members-tagged->tag tag/members)))
-           (and (equal tag spec.tag)
-                (equal (uid-fix uid) spec.uid))))))
+     has the same UID as the struct type being split.
+     The other two inputs are unused,
+     but kept here for future extensibility."))
+  (declare (ignore tag/members tunit?))
+  (equal (sts-struct-spec->uid spec)
+         (uid-fix uid)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -196,6 +178,164 @@
       (and (type-case type :pointer)
            (type-is-*pointer-to-struct-spec-p (type-pointer->to type) spec)))
   :measure (type-count type))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defines types-may-refer-to-struct-spec-p
+  :short "Check if types may refer to the struct type being split,
+          directly or indirectly."
+
+  ;;;;;;;;;;
+
+  (define type-may-refer-to-struct-spec-p ((type typep) (spec sts-struct-specp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
+    :short "Check if a type may refer to the struct type being split,
+            directly or indirectly."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Most types fail the check because
+       they are not, and do not contain, struct types.")
+     (xdoc::p
+      "The check passes if we encounter the struct type being split.
+       For other struct types, we recursively check them,
+       via a separate ACL2 function,
+       the same used for union types.")
+     (xdoc::p
+      "For array, pointer, and function types,
+       we recursively check their constituents.")
+     (xdoc::p
+      "Unknown and unknown scalar types pass the check,
+       because they could be pointers to the struct type being split,
+       among other possibilities.
+       But unknown arithmetic and unknowno built-in types fail the check,
+       because they cannot be or refer to the struct type."))
+    (type-case
+     type
+     :void nil
+     :char nil
+     :schar nil
+     :uchar nil
+     :sshort nil
+     :ushort nil
+     :sint nil
+     :uint nil
+     :slong nil
+     :ulong nil
+     :sllong nil
+     :ullong nil
+     :float nil
+     :double nil
+     :ldouble nil
+     :floatc nil
+     :doublec nil
+     :ldoublec nil
+     :bool nil
+     :struct (or (struct-type-is-struct-spec-p type.uid
+                                               type.tunit?
+                                               type.tag/members
+                                               spec)
+                 (type-struni-tag/members-may-refer-to-struct-spec-p
+                  type.tag/members spec))
+     :union (type-struni-tag/members-may-refer-to-struct-spec-p
+             type.tag/members spec)
+     :enum nil
+     :array (type-may-refer-to-struct-spec-p type.of spec)
+     :pointer (type-may-refer-to-struct-spec-p type.to spec)
+     :function (or (type-may-refer-to-struct-spec-p type.ret spec)
+                   (type-params-may-refer-to-struct-spec-p type.params spec))
+     :unknown t
+     :unknown-builtin nil
+     :unknown-scalar t
+     :unknown-arithmetic nil)
+    :measure (type-count type))
+
+  ;;;;;;;;;;
+
+  (define type-list-may-refer-to-struct-spec-p ((types type-listp)
+                                                (spec sts-struct-specp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
+    :short "Check if (any element of) a list of types
+            may refer to the struct type being split, directly or indirectly."
+    (and (not (endp types))
+         (or (type-may-refer-to-struct-spec-p (car types) spec)
+             (type-list-may-refer-to-struct-spec-p (cdr types) spec)))
+    :measure (type-list-count types))
+
+  ;;;;;;;;;;
+
+  (define type-struni-tag/members-may-refer-to-struct-spec-p
+    ((tystr-tag/mems type-struni-tag/members-p) (spec sts-struct-specp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
+    :short "Check if the portion of struct/union types
+            corresponding to the tag and members
+            may refer to the struct type being split, directly or indirectly."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If we just have a tag,
+       we should look it up in the validation information,
+       so we can recursively check the struct type found there.
+       For now we just conservatively return @('t'),
+       but we plan to refine that.")
+     (xdoc::p
+      "If instead we have members, we recursively check them."))
+    (type-struni-tag/members-case
+     tystr-tag/mems
+     :tagged t ; TODO: refine
+     :untagged (type-struni-member-list-may-refer-to-struct-spec-p
+                tystr-tag/mems.members spec))
+    :measure (type-struni-tag/members-count tystr-tag/mems))
+
+  ;;;;;;;;;;
+
+  (define type-struni-member-may-refer-to-struct-spec-p
+    ((mem type-struni-member-p) (spec sts-struct-specp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
+    :short "Check if a struct or union member
+            may refer to the struct type being split, directly or indirectly."
+    (type-may-refer-to-struct-spec-p (type-struni-member->type mem) spec)
+    :measure (type-struni-member-count mem))
+
+  ;;;;;;;;;;
+
+  (define type-struni-member-list-may-refer-to-struct-spec-p
+    ((mems type-struni-member-listp) (spec sts-struct-specp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
+    :short "Check if (any element of) a list of struct or union members
+            may refer to the struct type being split, directly or indirectly."
+    (and (not (endp mems))
+         (or (type-struni-member-may-refer-to-struct-spec-p (car mems) spec)
+             (type-struni-member-list-may-refer-to-struct-spec-p (cdr mems)
+                                                                 spec)))
+    :measure (type-struni-member-list-count mems))
+
+  ;;;;;;;;;;
+
+  (define type-params-may-refer-to-struct-spec-p ((params type-params-p)
+                                                  (spec sts-struct-specp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
+    :short "Check if a portion of a function type
+            pertaining to the function parameters
+            may refer to the struct type being split, directly or indirectly."
+    (type-params-case
+     params
+     :prototype (type-list-may-refer-to-struct-spec-p params.params spec)
+     :old-style (type-list-may-refer-to-struct-spec-p params.params spec)
+     :unspecified nil)
+    :measure (type-params-count params))
+
+  ;;;;;;;;;;
+
+  ///
+
+  (fty::deffixequiv-mutual types-may-refer-to-struct-spec-p))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -262,7 +402,9 @@
   (xdoc::topstring
    (xdoc::p
     "We check that the struct type being split
-     is not nested in array, union, or (other) struct types."))
+     is not nested in array or union types.
+     Nesting under other struct types is fine,
+     i.e. properly handled by the STS transformation."))
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -276,28 +418,42 @@
     (xdoc::topstring
      (xdoc::p
       "The @('nested') input indicates whether the @('type') input
-       is nested under some array or union or struct type.")
+       is nested under some type where
+       the struct type being split should not be nested
+       because the STS transformation does not support that nesting.")
      (xdoc::p
-      "Most types are safe because they do not contain other types.
-       When we reach a struct type, we compare it with the one being split:
-       if they are the same, and we are nested under some type,
-       the safety check fails, otherwise it succeeds.
-       We use separate functions to check the content of struct and union types.
-       For array types, we check the element type,
-       setting the @('nested') flag to @('t') since the element type is nested.
-       For pointer types, we leave the @('nested') flag as is;
+      "Most types are safe because they do not contain other types.")
+     (xdoc::p
+      "When we reach a struct type, we compare it with the one being split:
+       if they are the same, and the @('nested') flag is @('t'),
+       the safety check fails, otherwise it succeeds.")
+     (xdoc::p
+      "We use a separate function to check
+       the content of struct and union types.
+       The @('nested') flag passed to that function is
+       set to @('t') under a union,
+       and to @('nil') under a struct,
+       because we support nesting under structs but not under unions.")
+     (xdoc::p
+      "For array types, we check the element type,
+       setting the @('nested') flag to @('t')
+       since we do not support nesting under arrays.")
+     (xdoc::p
+      "For pointer types, we leave the @('nested') flag as is;
        although the struct type being split cannot be nested as such in them,
-       we also disallow nesting of pointers to the struct type being split.
-       For function types,
+       we also disallow nesting of pointers to the struct type being split.")
+     (xdoc::p
+      "For function types,
        we disallow the struct anywhere in the return type,
        passing @('t') as the nested flag for the return type;
-       but we pass the nested flag as is for parameters.
-       We regard an unknown type as unsafe, because it could be anything.
+       but we pass the nested flag as is for parameters.")
+     (xdoc::p
+      "We regard an unknown type as unsafe, because it could be anything.
        The same goes for an unknown scalar type,
        because it could be a pointer to an unsafe type
        (e.g. structs that contain the struct being split).
-       An unknown arithmetic type is safe,
-       because it can never contain the struct being split."))
+       But an unknown arithmetic type is safe,
+       because it can never be or contain the struct being split."))
     (type-case
      type
      :void t
@@ -325,8 +481,8 @@
                                                     type.tag/members
                                                     spec))
                  (sts-reject `(:nested ,(type-fix type)))
-               (type-struni-tag/members-sts-safep type.tag/members spec))
-     :union (type-struni-tag/members-sts-safep type.tag/members spec)
+               (type-struni-tag/members-sts-safep type.tag/members nil spec))
+     :union (type-struni-tag/members-sts-safep type.tag/members t spec)
      :enum t
      :array (type-sts-safep type.of t spec)
      :pointer (type-sts-safep type.to nested spec)
@@ -359,6 +515,7 @@
 
   (define type-struni-tag/members-sts-safep ((tystr-tag/mems
                                               type-struni-tag/members-p)
+                                             (nested booleanp)
                                              (spec sts-struct-specp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
@@ -368,10 +525,6 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This function takes no nested flag because
-       structure or union members are always implicitly nested.
-       I.e. it is as if the flag were implicitly @('t').")
-     (xdoc::p
       "A tag alone is safe, because it does not contain types;
        checks on the definition of the type referred to by the tag
        are performed elsewhere.
@@ -380,31 +533,26 @@
      tystr-tag/mems
      :tagged t
      :untagged (type-struni-member-list-sts-safep tystr-tag/mems.members
+                                                  nested
                                                   spec))
     :measure (type-struni-tag/members-count tystr-tag/mems))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define type-struni-member-sts-safep ((mem type-struni-member-p)
+                                        (nested booleanp)
                                         (spec sts-struct-specp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a struct/union member
             is safe for the STS transformation."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "This function takes no nested flag because
-       structure or union members are always implicitly nested.
-       I.e. it is as if the flag were implicitly @('t').
-       This is why we pass @('t') as the nested flag
-       to @(tsee type-sts-safep)."))
-    (type-sts-safep (type-struni-member->type mem) t spec)
+    (type-sts-safep (type-struni-member->type mem) nested spec)
     :measure (type-struni-member-count mem))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define type-struni-member-list-sts-safep ((mems type-struni-member-listp)
+                                             (nested booleanp)
                                              (spec sts-struct-specp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
@@ -415,8 +563,8 @@
      (xdoc::p
       "We check every member in turn."))
     (or (endp mems)
-        (and (type-struni-member-sts-safep (car mems) spec)
-             (type-struni-member-list-sts-safep (cdr mems) spec)))
+        (and (type-struni-member-sts-safep (car mems) nested spec)
+             (type-struni-member-list-sts-safep (cdr mems) nested spec)))
     :measure (type-struni-member-list-count mems))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -593,16 +741,13 @@
    (xdoc::p
     "This is the case exactly when
      neither the source nor the destination type
-     is the struct being split
-     or a pointer type to it,
-     or a pointer to a pointer type to it,
-     and so on."))
+     may refer to the struct type being split, directly or indirectly."))
   (or (and (tyname-unamb/anno-p tyname)
            (expr-unamb/anno-p arg)
            (b* ((src-type (expr-type arg))
                 (dst-type (type-vinfo->type (tyname->info tyname))))
-             (and (not (type-may-be-*pointer-to-struct-spec-p src-type spec))
-                  (not (type-may-be-*pointer-to-struct-spec-p dst-type spec)))))
+             (and (not (type-may-refer-to-struct-spec-p src-type spec))
+                  (not (type-may-refer-to-struct-spec-p dst-type spec)))))
       (sts-reject (expr-cast tyname arg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -778,7 +923,7 @@
      (and its values, and pointers to its values)
      only in ways that are safe for the STS transformation.")
    (xdoc::p
-    "The predicates should start at the @(tsee exprs/decls/stmts) clique.
+    "The predicates start at the @(tsee exprs/decls/stmts) clique.
      It is not hard to see that
      all the ASTs in @(see c$::abstract-syntax-trees) before that clique
      do not contain anything directly related to structs.
@@ -792,21 +937,6 @@
      all the ASTs that precede the @(tsee exprs/decls/stmts) clique
      should be deemed safe when taken in isolation,
      and thus we do not need to define any predicates on them.")
-   (xdoc::p
-    "However, above we said `should' because, for now,
-     we are including the @(tsee stor-spec) and @(tsee type-qual) fixtypes,
-     so that we can exclude
-     the @('_Atomic') type qualifier
-     and the @('auto') storage specifier.
-     In general, for now we want to reject code
-     where the struct type is qualified as being atomic,
-     because it is not clear how that interacts with
-     transformations such as splitting the struct;
-     so we just forbid that type qualifier.
-     The reason for excluding the @('auto') storage specifier
-     is that, in C23, it does type inference,
-     which might resolve to the struct type being split,
-     and so we exclude that for now.")
    (xdoc::p
     "The predicates end at the @(tsee trans-unit) type,
      because these checks operate on one translation unit at a time.")
@@ -947,8 +1077,13 @@
      This is because the type may denote the struct type being split,
      without that being immediately syntactically apparent.")
    (xdoc::p
-    "@('__auto_type') is excluded for the same reason as
-     the storage specifier @('auto') explained earlier.")
+    "@('__auto_type') is excluded because it does type inference,
+     and so we need to think of this more carefully.
+     In C23, the @('auto') storage class specifier also does type inference,
+     and so it should be treated the same way (excluded for now).
+     However, for now the STS transformation is expressly limited to C17
+     (the transformation checks that explicitly),
+     and so we can accept the @('auto') storage class specifier for now.")
    (xdoc::p
     "We allow all alignment specifiers,
      because they do not seem related to the struct type being split.")
@@ -995,10 +1130,19 @@
    (xdoc::p
     "We reject translation items that are
      preprocessing constructs preserved by our preprocessor.
-     We do not have transformations working on those yet."))
-  :types (stor-spec
-          type-qual
-          exprs/decls/stmts
+     We do not have transformations working on those yet.")
+   (xdoc::p
+    "Like we exclude the @('_Atomic') type specifier
+     applied to the struct type being split,
+     we should also exclude the @('_Atomic') type qualifier
+     applied to the struct type being split.
+     Currently this is a bit cumbersome to check because
+     that type qualifier may not be immediately before the struct type.
+     We should extend our model of types with an atomic flag,
+     which is more generally useful,
+     and then we should be able to check atomic type
+     without looking directly at specifiers and qualifiers."))
+  :types (exprs/decls/stmts
           fundef
           ext-declon
           trans-items
@@ -1008,9 +1152,7 @@
   :combine and
   :extra-args ((spec sts-struct-specp))
   :override
-  ((stor-spec :auto (sts-reject (stor-spec-fix stor-spec)))
-   (type-qual :atomic (sts-reject (type-qual-fix type-qual)))
-   (expr :gensel (sts-reject (expr-fix expr)))
+  ((expr :gensel (sts-reject (expr-fix expr)))
    (expr :complit (and (tyname-sts-safep expr.type spec)
                        (desiniter-list-sts-safep expr.elems spec)
                        (tyname-info-sts-safep expr.type spec)))

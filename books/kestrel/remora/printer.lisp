@@ -545,7 +545,7 @@
 (define pdoc-head-only-form ((head pdocp))
   :returns (out pdocp)
   :short "A parenthesized form with no body: just @('(head)').
-          Used by @(tsee expr-app) and friends when the argument list
+          Used by @(tsee expr-appn) and friends when the argument list
           is empty."
   (pdoc-paren head))
 
@@ -1220,11 +1220,14 @@
                                  (pdoc-concat (pdoc-line)
                                               (type-to-pdoc e.type))))
       :string (pdoc-text (string-lit-to-codepoints e.chars))
-      :app (b* (((ok fun) (expr-to-pdoc e.fun)))
-             (if (consp e.args)
-                 (b* (((ok args) (expr-list-to-pdoc e.args)))
-                   (pdoc-call-form fun args))
-               (pdoc-head-only-form fun)))
+      :app (b* (((ok fun) (expr-to-pdoc e.fun))
+                ((ok arg) (expr-to-pdoc e.arg)))
+             (pdoc-call-form fun arg))
+      :appn (b* (((ok fun) (expr-to-pdoc e.fun)))
+              (if (consp e.args)
+                  (b* (((ok args) (expr-list-to-pdoc e.args)))
+                    (pdoc-call-form fun args))
+                (pdoc-head-only-form fun)))
       :tapp (b* (((ok fun) (expr-to-pdoc e.fun)))
               (pdoc-prefix-form
                "t-app"
