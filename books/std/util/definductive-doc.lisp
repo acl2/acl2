@@ -233,13 +233,20 @@
        All the rule names @('rule[1]'), ..., @('rule[r]') must be distinct;
        there must be at least one rule, i.e. @('r') must be positive.")
      (xdoc::p
-      "There must be at least one rule
-       with a premise of the form (i) above.
-       That is, the rules must be recursive,
-       otherwise the predicate could be more simply defined
+      "The predicates being defined must be all mutually recursive:
+       every predicate must depend on itself and on every other predicate,
+       directly or indirectly,
+       where a predicate @('p[i]') depends on a predicate @('p[j]') when
+       some rule has @('p[i]') in its conclusion and @('p[j]') in some premise.
+       For a single predicate (the only case currently supported),
+       this means that there must be at least one rule
+       with a premise of the form (i) above;
+       without such a recursive rule,
+       the predicate could be more simply defined
        without using inference rules.
-       This condition will be generalized when
-       we remove the restriction to one predicate mentioned above.")
+       Predicates that are not all mutually recursive
+       should be defined by separate uses of this macro,
+       in dependency order.")
      (xdoc::p
       "There must be at least one rule
        whose premises all have the form (ii) above.
