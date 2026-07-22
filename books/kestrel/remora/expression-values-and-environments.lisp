@@ -1639,7 +1639,7 @@
 
   (define expr-value-atoms ((val expr-valuep))
     :returns (vals expr-value-listp)
-    :parents (expression-values-and-environments expr-value-atoms/list)
+    :parents (expression-values-and-environments expr-values-atoms)
     :short "Collect the flattened list of atom values of an expression value."
     :long
     (xdoc::topstring
@@ -1672,7 +1672,7 @@
 
   (define expr-value-list-atoms ((vals expr-value-listp))
     :returns (vals1 expr-value-listp)
-    :parents (expression-values-and-environments expr-value-atoms/list)
+    :parents (expression-values-and-environments expr-values-atoms)
     :short "Collect the flattened list of atom values of a list of expression values."
     :long
     (xdoc::topstring
