@@ -50,6 +50,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled pos-gte-twice-divisor
+  :short "If a positive integer divides a larger natural number,
+          the latter is at least twice the former."
   (implies (and (natp x)
                 (posp y)
                 (integerp (/ x y))
