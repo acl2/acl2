@@ -263,8 +263,8 @@
   (xdoc::topstring
    (xdoc::p
     "A premise has the form of
-     (i) a call of a @('p[i]') predicate
-     on some terms not containing the predicates being defined,
+     (i) a @('p[i]') predicate applied to
+     some terms not containing the predicates being defined,
      or (ii) some term not containing the predicates being defined."))
   (:pred ((name symbol)
           (args defind-term-info-list)))
@@ -313,8 +313,8 @@
   (xdoc::topstring
    (xdoc::p
     "Conclusions always have the form of
-     a call of a @('p[i]') predicate
-     on some terms not containing the predicates being defined.
+     a @('p[i]') predicate applied to
+     some terms not containing the predicates being defined.
      It is like the @(':pred') case of @(tsee defind-premise-info)."))
   ((name symbol)
    (args defind-term-info-list))
@@ -980,8 +980,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the premise has the form of a call of a predicate being defined,
-     the terms to translate are the arguments of the call;
+    "If the premise contains a predicate being defined,
+     the terms to translate are the arguments of the predicate;
      otherwise, the term to translate is the whole premise.
      The test for the form of the premise is
      the same one used in @(tsee defind-process-premise).")
@@ -1029,8 +1029,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the conclusion has the form of a call of a predicate being defined,
-     the terms to translate are the arguments of the call;
+    "If the conclusion contains a predicate being defined,
+     the terms to translate are the arguments of the predicate;
      otherwise, there are no terms to translate,
      because validation rejects the conclusion in phase 3."))
   (if (and (true-listp concl)
@@ -1136,7 +1136,7 @@
                              (translations defind-translation-omapp))
   :returns (mv erp (infos defind-term-info-listp))
   :short "Process the arguments of a premise or conclusion of a rule
-          that has the form of a call of a predicate being defined."
+          that contains a predicate being defined."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1177,7 +1177,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This must have the form of a call of a predicate @('p[i]').")
+    "This must have the form of a predicate @('p[i]') applied to some terms.")
    (xdoc::p
     "The @('desc') input of this function is
      a description of the conclusion, for error messages."))
@@ -1196,7 +1196,7 @@
        (pred-info (defind-lookup-pred pred-name pred-infos))
        ((unless pred-info)
         (reterr (msg "~@0 must have the form of ~
-                      a call of one of the predicates among ~&1, ~
+                      one of the predicates among ~&1 applied to some terms, ~
                       but ~x2 is not one of them."
                      desc (defind-pred-info-list->name pred-infos) pred-name)))
        (pred-formals (defind-pred-info->formals pred-info))
@@ -1226,7 +1226,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This may have the form of a call of a @('p[i]') predicate,
+    "This may contain a @('p[i]') predicate,
      as in @(tsee defind-process-conclusion),
      or it may be some other term not involving
      the predicates being defined.")
@@ -1263,7 +1263,7 @@
           (retok (make-defind-premise-info-pred :name pred-name
                                                 :args arg-infos)))
       (b* ((desc (msg "Since ~@0 does not have the form of ~
-                       a call of one of the predicates among ~&1, ~
+                       one of the predicates among ~&1 applied to some terms, ~
                        it"
                       (msg-downcase-first desc) pred-names))
            ((erp info) (defind-process-term prem desc translations)))
@@ -2640,8 +2640,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If a premise is a call of a @('p[i]') predicate,
-     we generate an equality between the premise and the call.
+    "If a premise contains a @('p[i]') predicate,
+     we generate an equality between the premise and the variable.
      Otherwise, we just generate the premise itself.")
    (xdoc::p
     "The @('num') input keep track of the number in
