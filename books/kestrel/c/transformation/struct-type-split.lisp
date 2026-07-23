@@ -266,7 +266,7 @@
     "A ``splittable'' type,
      for the purpose of the @(see struct-type-split) transformation,
      is a struct type with the expected UID,
-     or a pointer to a splittable type.")
+     or an array of or pointer to a splittable type.")
    (xdoc::p
     "Since types may be partially or completely unknown,
      we may not be able to precisely resolve whether a type is splittable.
@@ -280,6 +280,7 @@
     :unknown-scalar :unknown
     :unknown-arithmetic nil
     :struct (c$::uid-equal struct-uid type.uid)
+    :array (sts-splittablep type.of struct-uid)
     :pointer (sts-splittablep type.to struct-uid)
     :otherwise nil)
   :measure (c$::type-count type))
@@ -339,8 +340,8 @@
        and stays @('t') through struct types and their members
        (including anonymous struct members,
        whose members are promoted into the containing struct type),
-       but becomes @('nil') through unions and arrays,
-       whose splittable members are not supported."))
+       but becomes @('nil') through unions and through arrays
+       that are not themselves splittable."))
     (type-case
       type
       :unknown :unknown
@@ -399,7 +400,7 @@
     :long
     (xdoc::topstring-p
      "Parameters of splittable type
-      (i.e. the split struct type, possibly behind pointers)
+      (i.e. the split struct type, possibly within arrays or behind pointers)
       are not unsupported occurrences,
       because such parameters are supported:
       they are split in place,
@@ -438,7 +439,7 @@
       it stays @('t') through named members and anonymous struct members
       (whose splittable members are promoted into,
       and registered under, the containing struct type),
-      and is cleared through unions and arrays
+      and is cleared through unions and nonsplittable arrays
       (see @(tsee type-struct-occurs-unsupported-p)).")
     (if (endp members)
         nil
@@ -476,7 +477,7 @@
     in an unsupported context,
     in which case @('splitp') is @('nil').
     Any other type
-    (e.g. an array of the split struct type,
+    (e.g. a union containing the split struct type,
     or a function type whose return type
     is the split struct type)
     is rejected, since the transformation cannot split it.
@@ -505,7 +506,7 @@
        ((when (eq occurs t))
         (retmsg$ "The split struct type may appear in a type ~
                   only as the struct type itself, ~
-                  possibly behind pointers, ~
+                  possibly within arrays or behind pointers, ~
                   but it occurs in an unsupported context.~%~@0"
                  (context-msg-type type ienv dialect))))
     (retok nil)))
@@ -521,8 +522,8 @@
           struct or union type only as a directly splittable member."
   :long
   (xdoc::topstring-p
-   "A member of splittable type (the split struct type, possibly behind
-    pointers) is supported: it is split in place when the enclosing type
+   "A member of splittable type (the split struct type, possibly within arrays
+    or behind pointers) is supported: it is split in place when the enclosing type
     is a struct (see @(tsee struct-declon-sts-split)), and rejected later
     when the enclosing type is a union.
     The exception is when the enclosing type is the split struct type
@@ -531,7 +532,7 @@
     A directly splittable member of an anonymous struct member
     is also supported (split in place, registered under the enclosing
     struct type); other occurrences of the split struct type within a member
-    (e.g. in an array, or in a union) are rejected.")
+    (e.g. in a union or function type) are rejected.")
   (b* (((when (endp members)) nil)
        ((c$::type-struni-member member) (first members))
        ((when (eq (sts-splittablep member.type struct-uid) t))
@@ -546,8 +547,8 @@
        ((when (eq occurs t))
         (msg$ "The split struct type may appear in a member ~
                of a struct or union type only directly ~
-               (possibly behind pointers) as a member of a struct type, ~
-               not e.g. in an array or in a union.")))
+               (possibly within arrays or behind pointers) as a member of a ~
+               struct type, not e.g. in a union or function type.")))
     (sts-check-completion-members (rest members) struct-uid entry-uid)))
 
 (define sts-check-completions
@@ -650,7 +651,7 @@
       (the right one with the member name replaced by its right name),
       and @('type?') is the splittable member's type.")
     (xdoc::li
-     "@(':route') --- the designators reach @emph{into} a member of
+     "@(':route') --- the designators reach <emph>into</emph> a member of
       splittable type (e.g. @('.s.f')); the initializer is routed by
       rewriting the splittable member's name to its right name when the
       designated submember belongs to the right struct type.
@@ -733,7 +734,8 @@
   :verify-guards :after-returns)
 
 (define desiniter-sts-rightp
-  ((desiniter desiniterp)
+  ((target-type c$::typep)
+   (desiniter desiniterp)
    (eff-designors designor-listp)
    (st sts-split-statep))
   :guard (desiniter-annop desiniter)
@@ -751,15 +753,40 @@
     The initializer is routed right
     when the member is in the right member set.")
   (b* (((reterr) nil)
+       (target-type (c$::type-fix target-type))
        (eff-designors (designor-list-fix eff-designors))
-       ((unless (and (consp eff-designors)
-                     (designor-case (car eff-designors) :dot)))
+       ((unless (consp eff-designors))
         (retmsg$ "Could not determine the member designated by an ~
                   initializer of a split structure type.~%~@0"
                  (context-msg-desiniter desiniter
                                         (sts-split-state->dialect st))))
-       (name (c$::designor-dot->name (car eff-designors))))
-    (retok (and (in name (sts-split-state->right-set st)) t))))
+       (designor (designor-fix (car eff-designors)))
+       (rest (designor-list-fix (cdr eff-designors))))
+    (type-case
+      target-type
+      :struct
+      (b* (((unless (designor-case designor :dot))
+            (retmsg$ "Could not determine the member designated by an ~
+                      initializer of a split structure type.~%~@0"
+                     (context-msg-desiniter
+                       desiniter
+                       (sts-split-state->dialect st))))
+           (name (c$::designor-dot->name designor)))
+        (retok (and (in name (sts-split-state->right-set st)) t)))
+      :array
+      (b* (((unless (designor-case designor :sub))
+            (retmsg$ "Could not determine the element designated by an ~
+                      initializer of an array of split structure type.~%~@0"
+                     (context-msg-desiniter
+                       desiniter
+                       (sts-split-state->dialect st)))))
+        (desiniter-sts-rightp target-type.of desiniter rest st))
+      :otherwise
+      (retmsg$ "Could not determine the member designated by an ~
+                initializer of a split structure type.~%~@0"
+               (context-msg-desiniter desiniter
+                                      (sts-split-state->dialect st)))))
+  :measure (designor-list-count eff-designors))
 
 (define struct-declor-sts-rightp
   ((struct-declor struct-declorp)
@@ -882,6 +909,218 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defines declor/dirdeclor-explicitly-sized-arrayp-aux
+  :short "Check whether the type built by a declarator is, so far,
+          an explicitly sized array type."
+
+  (define declor-explicitly-sized-arrayp-aux
+    ((declor declorp)
+     (arrayp booleanp))
+    :returns (yes/no booleanp)
+    :parents (declor/dirdeclor-explicitly-sized-arrayp-aux)
+    (b* (((declor declor) declor)
+         (arrayp (acl2::bool-fix arrayp))
+         ;; Pointer derivation makes the current outermost type a pointer.
+         (arrayp (and (endp declor.pointers) arrayp)))
+      (dirdeclor-explicitly-sized-arrayp-aux declor.direct arrayp))
+    :measure (declor-count declor))
+
+  (define dirdeclor-explicitly-sized-arrayp-aux
+    ((dirdeclor dirdeclorp)
+     (arrayp booleanp))
+    :returns (yes/no booleanp)
+    :parents (declor/dirdeclor-explicitly-sized-arrayp-aux)
+    (b* ((arrayp (acl2::bool-fix arrayp)))
+      (dirdeclor-case
+        dirdeclor
+        :ident arrayp
+        :paren
+        (declor-explicitly-sized-arrayp-aux dirdeclor.inner arrayp)
+        :array
+        (dirdeclor-explicitly-sized-arrayp-aux
+          dirdeclor.declor
+          (and dirdeclor.size? t))
+        :array-static1
+        (dirdeclor-explicitly-sized-arrayp-aux dirdeclor.declor t)
+        :array-static2
+        (dirdeclor-explicitly-sized-arrayp-aux dirdeclor.declor t)
+        :array-star
+        (dirdeclor-explicitly-sized-arrayp-aux dirdeclor.declor nil)
+        :function-params
+        (dirdeclor-explicitly-sized-arrayp-aux dirdeclor.declor nil)
+        :function-names
+        (dirdeclor-explicitly-sized-arrayp-aux dirdeclor.declor nil)))
+    :measure (dirdeclor-count dirdeclor))
+
+  :verify-guards :after-returns)
+
+(define declor-explicitly-sized-arrayp
+  ((declor declorp))
+  :returns (yes/no booleanp)
+  :short "Check whether a declarator explicitly declares an array
+          with a specified outermost size."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This follows the nesting of the declarator while tracking its outermost
+     derived type.  It does not look through a typedef name that supplies the
+     base type.")
+   (xdoc::p
+    "This is a temporary syntactic workaround for the fact that the type
+     annotations currently distinguish array types from other types,
+     but do not retain enough information to distinguish complete from
+     incomplete array types.  In particular, this function neither identifies
+     the last member of a struct nor recognizes a flexible array member
+     semantically."))
+  (declor-explicitly-sized-arrayp-aux declor nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sts-desiniter-effective-designors
+  ((desiniter desiniterp))
+  :guard (desiniter-annop desiniter)
+  :returns (designors designor-listp)
+  :short "The syntactic or validator-inferred designators of an initializer."
+  (b* (((desiniter desiniter) desiniter)
+       ((c$::desiniter-vinfo info) desiniter.info))
+    (if (consp desiniter.designors)
+        desiniter.designors
+      info.designors)))
+
+(define sts-array-desiniter-index
+  ((desiniter desiniterp)
+   (dialect c::dialectp))
+  :guard (desiniter-annop desiniter)
+  :returns (mv (er? maybe-msgp)
+               (index natp)
+               (index-expr const-exprp))
+  :short "The largest outer array index selected by an initializer."
+  :long
+  (xdoc::topstring-p
+   "The first effective designator must be an array designator with a known
+    nonnegative value.  For a GCC range designator, the upper endpoint is
+    returned.")
+  (b* (((reterr) 0 (c$::irr-const-expr))
+       (designors (sts-desiniter-effective-designors desiniter))
+       ((unless (consp designors))
+        (retmsg$ "Could not determine the array element designated by an ~
+                  initializer of a split array type.~%~@0"
+                 (context-msg-desiniter desiniter dialect)))
+       (designor (designor-fix (car designors)))
+       ((unless (designor-case designor :sub))
+        (retmsg$ "Could not determine the array element designated by an ~
+                  initializer of a split array type.~%~@0"
+                 (context-msg-desiniter desiniter dialect)))
+       ((c$::designor-sub designor) designor)
+       (index-expr
+         (c$::const-expr-option-case
+           designor.range?
+           :some designor.range?.val
+           :none designor.index))
+       ((unless (c$::const-expr-vinfop
+                  (c$::const-expr->info index-expr)))
+        (retmsg$ "INTERNAL ERROR. ~
+                  An array initializer designator has no constant-expression ~
+                  annotation.~%~@0"
+                 (context-msg-desiniter desiniter dialect)))
+       (index?
+         (c$::value-to-integer
+           (c$::const-expr-vinfo->value
+             (c$::const-expr->info index-expr))))
+       ((unless (natp index?))
+        (retmsg$ "Could not determine the nonnegative array index designated ~
+                  by an initializer of a split array type.~%~@0"
+                 (context-msg-desiniter desiniter dialect))))
+    (retok index? index-expr)))
+
+(define sts-array-initer-max-index
+  ((desiniters desiniter-listp)
+   (dialect c::dialectp))
+  :guard (desiniter-list-annop desiniters)
+  :returns (mv (er? maybe-msgp)
+               (index? acl2::maybe-natp)
+               (index-expr? c$::const-expr-optionp))
+  :short "The largest outer array index selected by an initializer list."
+  (b* (((reterr) nil nil)
+       ((when (endp desiniters))
+        (retok nil nil))
+       ((erp index index-expr)
+        (sts-array-desiniter-index (car desiniters) dialect))
+       ((erp rest-index? rest-index-expr?)
+        (sts-array-initer-max-index (cdr desiniters) dialect)))
+    (if (and rest-index? (< (nfix index) (nfix rest-index?)))
+        (retok rest-index? rest-index-expr?)
+      (retok index index-expr)))
+  :measure (desiniter-list-count desiniters))
+
+(define sts-zero-desiniter
+  ()
+  :returns (desiniter desiniterp)
+  :short "An undesignated zero initializer."
+  (c$::make-desiniter
+    :designors nil
+    :initer
+    (c$::make-initer-single
+      :expr
+      (c$::make-expr-const
+        :const
+        (c$::const-int
+          (c$::make-iconst
+            :core (c$::make-dec/oct/hex-const-oct
+                    :leading-zeros 1
+                    :value 0)))))))
+
+(define sts-array-extent-desiniter
+  ((index const-exprp))
+  :returns (desiniter desiniterp)
+  :short "A zero initializer at an array index, used to preserve array extent."
+  (c$::make-desiniter
+    :designors (list (c$::make-designor-sub :index index :range? nil))
+    :initer (c$::make-initer-list
+              :elems (list (sts-zero-desiniter))
+              :final-comma nil)))
+
+(define sts-normalize-split-initer-lists
+  ((left desiniter-listp)
+   (right desiniter-listp)
+   (max-index-expr? c$::const-expr-optionp)
+   (left-has-max booleanp)
+   (right-has-max booleanp))
+  :returns (mv (left$ desiniter-listp)
+               (right$ desiniter-listp))
+  :short "Make two initializer partitions nonempty when necessary,
+          while preserving an inferred array extent."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For an array initializer, @('max-index-expr?') is the largest outer
+     array index selected by the original initializer.  A partition with no
+     initializer at that index receives a zero initializer there, so arrays
+     of unknown size are completed to the same size.")
+   (xdoc::p
+    "Otherwise, when exactly one partition is empty, it receives an
+     undesignated zero initializer.  This avoids generating an empty
+     initializer list and preserves the implicit zero-initialization of
+     members omitted by the original initializer."))
+  (b* ((left (desiniter-list-fix left))
+       (right (desiniter-list-fix right))
+       (left-has-max (acl2::bool-fix left-has-max))
+       (right-has-max (acl2::bool-fix right-has-max)))
+    (c$::const-expr-option-case
+      max-index-expr?
+      :some
+      (b* ((witness (sts-array-extent-desiniter max-index-expr?.val)))
+        (mv (if left-has-max left (cons witness left))
+            (if right-has-max right (cons witness right))))
+      :none
+      (cond ((and (endp left) (consp right))
+             (mv (list (sts-zero-desiniter)) right))
+            ((and (consp left) (endp right))
+             (mv left (list (sts-zero-desiniter))))
+            (t (mv left right))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define sts-split-inplace-member-declors
   ((struct-declors struct-declor-listp)
    (enclosing-uid c$::uidp)
@@ -903,7 +1142,13 @@
     and the right names assigned so far, in @('member-names')).
     The mapping from each original member name to its right name
     is recorded in the @('member-map') of the state,
-    keyed by the unique identifier of the enclosing struct type.")
+    keyed by the unique identifier of the enclosing struct type.
+    Ideally, the applicability check for a flexible array member would inspect
+    the type of the last member of the struct and determine whether that type
+    is incomplete.  Until the type annotations retain array completeness,
+    this function instead uses @(tsee declor-explicitly-sized-arrayp) as a
+    conservative syntactic check on every array member of splittable type.
+    Thus this function does not itself track whether a member is last.")
   (b* ((member-names (ident-set-fix member-names))
        (st (sts-split-state-fix st))
        ((reterr) nil nil member-names st)
@@ -915,6 +1160,20 @@
                   An unnamed member has the split struct type."))
        ((when sd.expr?)
         (retmsg$ "A bit-field may not have the split struct type."))
+       ((c$::type-vinfo info) sd.info)
+       ;; In valid standard C, an incomplete array member can only be the last
+       ;; member of its struct.  The ideal check would inspect that last
+       ;; member's semantic type.  Array completeness is currently absent
+       ;; from the type annotation, so use the declarator syntax as a
+       ;; temporary, conservative proxy instead.
+       ((when (and (c$::type-case info.type :array)
+                   (not (declor-explicitly-sized-arrayp sd.declor?))))
+        (retmsg$ "An array member of splittable type must have an explicit ~
+                  size in its member declarator; flexible array members are ~
+                  not supported.~%~@0"
+                 (context-msg-struct-declor
+                   sd
+                   (sts-split-state->dialect st))))
        (name (declor->ident sd.declor?))
        (right-name (fresh-ident name member-names))
        (member-names (insert right-name member-names))
@@ -1080,18 +1339,34 @@
         :arrsub
         (b* (((erp left-arg1 right-arg1? st)
               (expr-sts-split expr.arg1 st))
-             ((when right-arg1?)
-              (retmsg$ "Splits are not supported in the first subexpression ~
-                        of an array subscript expression.~%~@0"
-                       (context-msg-expr expr (sts-split-state->dialect st))))
              ((erp left-arg2 right-arg2? st)
-              (expr-sts-split expr.arg2 st)))
+              (expr-sts-split expr.arg2 st))
+             ((when (and right-arg1? right-arg2?))
+              (retmsg$ "Splits are not supported in both subexpressions ~
+                        of an array subscript expression.~%~@0"
+                       (context-msg-expr expr
+                                         (sts-split-state->dialect st))))
+             ((when (and right-arg1?
+                         (not (expr-purep left-arg2))))
+              (retmsg$ "Cannot split an array subscript expression ~
+                        whose index expression has side effects.~%~@0"
+                       (context-msg-expr expr
+                                         (sts-split-state->dialect st))))
+             ((when (and right-arg2?
+                         (not (expr-purep left-arg1))))
+              (retmsg$ "Cannot split an array subscript expression ~
+                        whose index expression has side effects.~%~@0"
+                       (context-msg-expr expr
+                                         (sts-split-state->dialect st)))))
           (retok (make-expr-arrsub :arg1 left-arg1
                                    :arg2 left-arg2)
-                 (if right-arg2?
-                     (make-expr-arrsub :arg1 left-arg1
-                                       :arg2 right-arg2?)
-                   nil)
+                 (cond (right-arg1?
+                        (make-expr-arrsub :arg1 right-arg1?
+                                          :arg2 left-arg2))
+                       (right-arg2?
+                       (make-expr-arrsub :arg1 left-arg1
+                                          :arg2 right-arg2?))
+                       (t nil))
                  st))
         :funcall
         (b* (((erp left-fun right-fun? st)
@@ -1195,8 +1470,19 @@
               (tyname-sts-split expr.type st))
              (complit-type
                (c$::type-vinfo->type (c$::tyname->info expr.type)))
-             ((erp left-elems right-elems st)
-              (desiniter-list-sts-split splitp complit-type expr.elems st)))
+             ((erp max-index? max-index-expr?)
+              (if (and splitp (c$::type-case complit-type :array))
+                  (sts-array-initer-max-index
+                    expr.elems
+                    (sts-split-state->dialect st))
+                (retok nil nil)))
+             ((erp left-elems right-elems left-has-max right-has-max st)
+              (desiniter-list-sts-split
+                splitp complit-type max-index? expr.elems st))
+             ((mv left-elems right-elems)
+              (sts-normalize-split-initer-lists
+                left-elems right-elems max-index-expr?
+                left-has-max right-has-max)))
           (retok (make-expr-complit :type left-tyname
                                     :elems left-elems
                                     :final-comma expr.final-comma)
@@ -2069,9 +2355,21 @@
                    nil)
                  st))
         :list
-        (b* (((erp left-elems right-elems st)
-              (desiniter-list-sts-split splitp target-type?
-                                        initer.elems st)))
+        (b* (((erp max-index? max-index-expr?)
+              (if (and splitp
+                       target-type?
+                       (c$::type-case target-type? :array))
+                  (sts-array-initer-max-index
+                    initer.elems
+                    (sts-split-state->dialect st))
+                (retok nil nil)))
+             ((erp left-elems right-elems left-has-max right-has-max st)
+              (desiniter-list-sts-split
+                splitp target-type? max-index? initer.elems st))
+             ((mv left-elems right-elems)
+              (sts-normalize-split-initer-lists
+                left-elems right-elems max-index-expr?
+                left-has-max right-has-max)))
           (retok (c$::make-initer-list :elems left-elems
                                        :final-comma initer.final-comma)
                  (if splitp
@@ -2180,10 +2478,14 @@
                          A member of splittable type is initialized within ~
                          the initializer of the split struct type itself.~%~@0"
                         (context-msg-desiniter desiniter dialect)))
-              (split-as-struct (and sub-type?
-                                    (c$::type-case sub-type? :struct)))
+              (split-subobjectp
+                (and sub-type?
+                     (eq (sts-splittablep
+                           sub-type?
+                           (sts-split-state->target-struct-uid st))
+                         t)))
               ((erp left-initer right-initer? st)
-               (initer-sts-split desiniter.initer split-as-struct
+               (initer-sts-split desiniter.initer split-subobjectp
                                  sub-type? st))
               ((unless right-initer?)
                (retmsg$ "Failed to split the initializer ~
@@ -2221,21 +2523,28 @@
            (retok nil nil new-desiniter new-desiniter st)))
         ;; Otherwise: recurse into the value with the designated subobject type.
         (t
-         (b* (((erp left-initer right-initer? st)
-               (initer-sts-split desiniter.initer nil sub-type? st))
-              ((when right-initer?)
-               (retmsg$ "Splits are not supported ~
-                         within designated initializers.~%~@0"
-                        (context-msg-desiniter desiniter dialect)))
+         (b* ((split-subobjectp
+                (and sub-type?
+                     (eq (sts-splittablep
+                           sub-type?
+                           (sts-split-state->target-struct-uid st))
+                         t)))
+              ((erp left-initer right-initer? st)
+               (initer-sts-split desiniter.initer split-subobjectp
+                                 sub-type? st))
               (new-desiniter (c$::make-desiniter :designors designors
                                                  :initer left-initer
                                                  :info desiniter.info))
+              ((when (and right-initer? (not splitp)))
+               (retmsg$ "INTERNAL ERROR. ~
+                         A split subobject initializer was found outside ~
+                         the initializer of a split type.~%~@0"
+                        (context-msg-desiniter desiniter dialect)))
               ((unless splitp)
                (retok nil nil new-desiniter new-desiniter st))
               ((unless (c$::initer-purep left-initer))
                (retmsg$ "Initializers must be pure when split apart.~%~@0"
                         (context-msg-desiniter desiniter dialect)))
-              ((erp rightp) (desiniter-sts-rightp desiniter eff-designors st))
               ;; Make implicit designations explicit,
               ;; since the implicit ordering is generally not preserved
               ;; by the partition into left and right initializer lists.
@@ -2243,19 +2552,35 @@
                 (if (consp desiniter.designors)
                     new-desiniter
                   (c$::change-desiniter new-desiniter
-                                        :designors eff-designors))))
+                                        :designors eff-designors)))
+              (right-desiniter
+                (if right-initer?
+                    (c$::change-desiniter new-desiniter
+                                          :initer right-initer?)
+                  new-desiniter))
+              ((when right-initer?)
+               (retok nil t new-desiniter right-desiniter st))
+              ((unless target-type?)
+               (retmsg$ "INTERNAL ERROR. ~
+                         The target type of a split initializer is missing.~%~@0"
+                        (context-msg-desiniter desiniter dialect)))
+              ((erp rightp)
+               (desiniter-sts-rightp target-type? desiniter eff-designors st)))
            (retok rightp nil new-desiniter new-desiniter st)))))
     :measure (desiniter-count desiniter))
 
   (define desiniter-list-sts-split
     ((splitp booleanp)
      (target-type? c$::type-optionp)
+     (max-index? acl2::maybe-natp)
      (desiniter-list desiniter-listp)
      (st sts-split-statep))
     :guard (desiniter-list-annop desiniter-list)
     :returns (mv (er? maybe-msgp)
                  (left-desiniter-list desiniter-listp)
                  (right-desiniter-list desiniter-listp)
+                 (left-has-max booleanp)
+                 (right-has-max booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a designated initializer list."
@@ -2269,27 +2594,52 @@
       with members of splittable type split in place
       (see @(tsee desiniter-sts-split)).")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil nil st)
+         ((reterr) nil nil nil nil st)
          ((when (endp desiniter-list))
-          (retok nil nil st))
+          (retok nil nil nil nil st))
+         ((erp index -)
+          (if max-index?
+              (sts-array-desiniter-index
+                (car desiniter-list)
+                (sts-split-state->dialect st))
+            (retok 0 (c$::irr-const-expr))))
+         (head-has-max
+           (and max-index?
+                (equal (nfix index) (nfix max-index?))))
          ((erp rightp inplacep left-desiniter right-desiniter st)
           (desiniter-sts-split (car desiniter-list)
                                splitp target-type? st))
-         ((erp left-rest right-rest st)
-          (desiniter-list-sts-split splitp target-type?
+         ((erp left-rest right-rest left-rest-has-max right-rest-has-max st)
+          (desiniter-list-sts-split splitp target-type? max-index?
                                     (cdr desiniter-list) st))
          ((unless splitp)
           (b* ((left-list (if inplacep
                               (list* left-desiniter right-desiniter left-rest)
                             (cons left-desiniter left-rest))))
-            (retok left-list left-list st))))
-      (if rightp
+            (retok left-list left-list nil nil st)))
+         (left-headp (or inplacep (not rightp)))
+         (right-headp (or inplacep rightp))
+         (left-has-max
+           (or left-rest-has-max (and head-has-max left-headp)))
+         (right-has-max
+           (or right-rest-has-max (and head-has-max right-headp))))
+      (if inplacep
+          (retok (cons left-desiniter left-rest)
+                 (cons right-desiniter right-rest)
+                 left-has-max
+                 right-has-max
+                 st)
+        (if rightp
           (retok left-rest
                  (cons right-desiniter right-rest)
+                 left-has-max
+                 right-has-max
                  st)
         (retok (cons left-desiniter left-rest)
                right-rest
-               st)))
+               left-has-max
+               right-has-max
+               st))))
     :measure (desiniter-list-count desiniter-list))
 
   (define designor-sts-split
@@ -2465,6 +2815,13 @@
               (retmsg$ "Splits are not supported in array sizes.~%~@0"
                        (context-msg-dirdeclor dirdeclor
                                               (sts-split-state->dialect st))))
+             ((when (and dsplitp
+                         (not (expr-option-purep left-size?))))
+              (retmsg$ "Cannot split an array declaration ~
+                        whose size expression has side effects.~%~@0"
+                       (context-msg-dirdeclor
+                         dirdeclor
+                         (sts-split-state->dialect st))))
              (left-dirdeclor
                (c$::make-dirdeclor-array :declor left-declor
                                          :qualspecs qualspecs
@@ -2488,6 +2845,13 @@
               (retmsg$ "Splits are not supported in array sizes.~%~@0"
                        (context-msg-dirdeclor dirdeclor
                                               (sts-split-state->dialect st))))
+             ((when (and dsplitp
+                         (not (expr-purep left-size))))
+              (retmsg$ "Cannot split an array declaration ~
+                        whose size expression has side effects.~%~@0"
+                       (context-msg-dirdeclor
+                         dirdeclor
+                         (sts-split-state->dialect st))))
              (left-dirdeclor
                (c$::make-dirdeclor-array-static1 :declor left-declor
                                                  :qualspecs qualspecs
@@ -2511,6 +2875,13 @@
               (retmsg$ "Splits are not supported in array sizes.~%~@0"
                        (context-msg-dirdeclor dirdeclor
                                               (sts-split-state->dialect st))))
+             ((when (and dsplitp
+                         (not (expr-purep left-size))))
+              (retmsg$ "Cannot split an array declaration ~
+                        whose size expression has side effects.~%~@0"
+                       (context-msg-dirdeclor
+                         dirdeclor
+                         (sts-split-state->dialect st))))
              (left-dirdeclor
                (c$::make-dirdeclor-array-static2 :declor left-declor
                                                  :qualspecs qualspecs
@@ -2668,6 +3039,13 @@
                        (context-msg-dirabsdeclor
                          dirabsdeclor
                          (sts-split-state->dialect st))))
+             ((when (and right-declor?
+                         (not (expr-option-purep left-size?))))
+              (retmsg$ "Cannot split an array declaration ~
+                        whose size expression has side effects.~%~@0"
+                       (context-msg-dirabsdeclor
+                         dirabsdeclor
+                         (sts-split-state->dialect st))))
              (left-dirabsdeclor
                (c$::make-dirabsdeclor-array :declor? left-declor?
                                             :qualspecs qualspecs
@@ -2692,6 +3070,13 @@
                        (context-msg-dirabsdeclor
                          dirabsdeclor
                          (sts-split-state->dialect st))))
+             ((when (and right-declor?
+                         (not (expr-purep left-size))))
+              (retmsg$ "Cannot split an array declaration ~
+                        whose size expression has side effects.~%~@0"
+                       (context-msg-dirabsdeclor
+                         dirabsdeclor
+                         (sts-split-state->dialect st))))
              (left-dirabsdeclor
                (c$::make-dirabsdeclor-array-static1 :declor? left-declor?
                                                     :qualspecs qualspecs
@@ -2713,6 +3098,13 @@
               (expr-sts-split dirabsdeclor.size st))
              ((when right-size?)
               (retmsg$ "Splits are not supported in array sizes.~%~@0"
+                       (context-msg-dirabsdeclor
+                         dirabsdeclor
+                         (sts-split-state->dialect st))))
+             ((when (and right-declor?
+                         (not (expr-purep left-size))))
+              (retmsg$ "Cannot split an array declaration ~
+                        whose size expression has side effects.~%~@0"
                        (context-msg-dirabsdeclor
                          dirabsdeclor
                          (sts-split-state->dialect st))))
@@ -3105,8 +3497,8 @@
                 (sts-member-host-override struct-declon.declors enclosing-uid?)
                 st))
              ((when specquals-splitp)
-              ;; The member has the split struct type (possibly behind
-              ;; pointers); split it in place.
+              ;; The member has the split struct type (possibly within arrays
+              ;; or behind pointers); split it in place.
               (b* (((when splitp)
                     (retmsg$ "The split struct type may not contain ~
                               itself as a member.~%~@0"
