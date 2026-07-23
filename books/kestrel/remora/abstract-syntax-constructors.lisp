@@ -239,8 +239,8 @@
   (xdoc::topstring
    (xdoc::p
     "Strings and base type keywords are auto-coerced to types."))
-  `(type-fun (list ,@(type-terms-from-vars/bases/others intypes))
-             ,(type-term-from-var/base/other outtype)))
+  `(type-funn (list ,@(type-terms-from-vars/bases/others intypes))
+              ,(type-term-from-var/base/other outtype)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

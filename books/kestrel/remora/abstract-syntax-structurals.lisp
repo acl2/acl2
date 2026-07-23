@@ -360,7 +360,7 @@
              :base t
              :array nil
              :bracket nil
-             :fun t
+             :funn t
              :forall t
              :foralln t
              :pi t

@@ -263,7 +263,7 @@
 (test-parse "(array [0] (-> Int Bool))"
             (make-expr-array-empty
              :dims '(0)
-             :type (make-type-fun
+             :type (make-type-funn
                     :in (list (make-type-base :type (base-type-int)))
                     :out (make-type-base :type (base-type-bool)))))
 

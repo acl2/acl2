@@ -330,9 +330,9 @@
                    (natss (ispace-value-list-to-dims ivals))
                    (nats (append-all natss)))
                 (make-type-value-array :elem elem-tval :dims nats))
-     :fun (b* (((ok in-tvals) (eval-type-list type.in denv))
-               ((ok out-tval) (eval-type type.out denv)))
-            (make-type-value-fun :in in-tvals :out out-tval))
+     :funn (b* (((ok in-tvals) (eval-type-list type.in denv))
+                ((ok out-tval) (eval-type type.out denv)))
+             (make-type-value-fun :in in-tvals :out out-tval))
      :forall (make-type-value-forall
               :param type.param
               :body type.body
@@ -1490,7 +1490,7 @@
                                               :body bind.expr
                                               :type? bind.type))))
                   ((ok in) (var+type?-list->type-list-or-err bind.params))
-                  (lambda-type (make-type-fun
+                  (lambda-type (make-type-funn
                                 :in in
                                 :out bind.type))
                   ((mv iexpr itype)

@@ -144,8 +144,8 @@
      :array (make-type-array
              :elem (type-value-to-type tval.elem)
              :ispace (ispace-shape (shape-dims (dim-const-list tval.dims))))
-     :fun (make-type-fun :in (type-value-list-to-type-list tval.in)
-                         :out (type-value-to-type tval.out))
+     :fun (make-type-funn :in (type-value-list-to-type-list tval.in)
+                          :out (type-value-to-type tval.out))
      :forall (make-type-forall
               :param tval.param
               :body (type-subst-type-denv tval.body tval.denv))

@@ -221,7 +221,7 @@
                      :some (b* ((in (var+type?-list->type-list-or-err params)))
                              (if (reserrp in)
                                  nil
-                               (make-type-fun :in in :out type?.val)))
+                               (make-type-funn :in in :out type?.val)))
                      :none nil))
                    (lambda-expr
                     (make-expr-array
@@ -295,7 +295,7 @@
                     (lambda-type?
                      (if (reserrp in)
                          nil
-                       (b* ((lambda-type (make-type-fun :in in :out type))
+                       (b* ((lambda-type (make-type-funn :in in :out type))
                             (ilambda-lambda-type
                              (ispace-var-list-option-case
                               bind.iparams?

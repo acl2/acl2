@@ -113,14 +113,14 @@
      there is no unary form of function type to match directly:
      a function type always has an explicit list of input types,
      which will be similarly given a unary form."))
-  (b* (((unless (type-case type :fun)) (reserr nil))
-       (ins (type-fun->in type))
-       (out (type-fun->out type))
+  (b* (((unless (type-case type :funn)) (reserr nil))
+       (ins (type-funn->in type))
+       (out (type-funn->out type))
        ((unless (consp ins)) (reserr nil)))
     (make-type+type
      :type1 (car ins)
      :type2 (if (consp (cdr ins))
-                (make-type-fun :in (cdr ins) :out out)
+                (make-type-funn :in (cdr ins) :out out)
               out))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -276,8 +276,8 @@
      :bracket (and (check-type type.elem senv)
                    (type-atomp type.elem)
                    (check-ispace-list type.ispaces senv))
-     :fun (and (check-type-list type.in senv)
-               (check-type type.out senv))
+     :funn (and (check-type-list type.in senv)
+                (check-type type.out senv))
      :forall (check-type type.body (senv-add-type-var type.param senv))
      :foralln (check-type type.body (senv-add-type-vars type.params senv))
      :pi (check-type type.body (senv-add-ispace-var type.param senv))
@@ -1726,7 +1726,7 @@
           ((ok senv) (senv-add-var+type (var+type?->var atom.param) type senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
-        :type (make-type-fun :in (list type) :out be.type)
+        :type (make-type-funn :in (list type) :out be.type)
         :atom (make-atom-lambda :param atom.param
                                 :body be.expr
                                 :type? be.type)))
@@ -1739,7 +1739,7 @@
           ((ok senv) (senv-add-vars+types atom.params senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
-        :type (make-type-fun :in types :out be.type)
+        :type (make-type-funn :in types :out be.type)
         :atom (make-atom-lambdan :params atom.params
                                  :body be.expr
                                  :type? be.type)))
@@ -1964,7 +1964,7 @@
        (make-senv+bind
         :senv (senv-add-var+type bind.var
                                  (make-type-array
-                                  :elem (make-type-fun
+                                  :elem (make-type-funn
                                          :in types
                                          :out ee.type)
                                   :ispace (ispace-shape (shape-dims nil)))
@@ -2027,7 +2027,7 @@
           ((ok senv-body) (senv-add-vars+types bind.params senv-iparams))
           ((ok (type+expr ee)) (check-expr bind.expr senv-body))
           ((unless (type-equivp ee.type btype)) (reserr nil))
-          (fun-type (make-type-fun :in types :out btype))
+          (fun-type (make-type-funn :in types :out btype))
           (fun-type (ispace-var-list-option-case
                      bind.iparams?
                      :some (make-type-pin :params bind.iparams?.val
