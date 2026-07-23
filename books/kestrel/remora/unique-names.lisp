@@ -95,6 +95,10 @@
   ((expr :let (append (bind-list-names expr.binds)
                       (append (bind-list-binder-names expr.binds)
                               (expr-binder-names expr.body))))
+   (expr :unbox (cons expr.var
+                      (append (ispace-var-list->name (list expr.ispace))
+                              (append (expr-binder-names expr.target)
+                                      (expr-binder-names expr.body)))))
    (expr :unboxn (cons expr.var
                        (append (ispace-var-list->name expr.ispaces)
                                (append (expr-binder-names expr.target)
@@ -540,6 +544,25 @@
                                 dim-renam shape-renam)))
     (mv used (cons new-var new-rest) dim-renam shape-renam)))
 
+(defret len-of-uniq-ispace-var-params
+  (equal (len new-params) (len params))
+  :fn uniq-ispace-var-params
+  :hints (("Goal" :induct t
+          :in-theory (enable uniq-ispace-var-params len))))
+
+(defret true-listp-of-uniq-ispace-var-params
+  (true-listp new-params)
+  :fn uniq-ispace-var-params
+  :rule-classes :type-prescription
+  :hints (("Goal" :induct t
+          :in-theory (enable uniq-ispace-var-params))))
+
+(defret consp-of-uniq-ispace-var-params
+  (implies (consp params)
+           (consp new-params))
+  :fn uniq-ispace-var-params
+  :hints (("Goal" :in-theory (enable uniq-ispace-var-params))))
+
 ; Freshness and USED-growth facts for the three parameter uniquification
 ; functions above, in the four-conjunct form that the main traversal's
 ; DEFRET-MUTUAL below uses uniformly: the names of the returned parameters
@@ -836,6 +859,31 @@
                                   (ispace-list-option-rename-ispace-vars
                                    x.iargs r-.dim r-.shape)
                                   new-args)))
+
+      :unbox (b* (((var-renamings r-) r)
+                  ((mv used new-target) (uniq-expr x.target used r))
+                  ;; The result type is outside the scope of the unboxed
+                  ;; ispace, so we rename it under the incoming renamings.
+                  (new-type? (type-option-rename-all-vars x.type? r))
+                  ;; Freshen the single ispace variable via the same helper
+                  ;; as :unboxn, on a singleton list, so that the freshness
+                  ;; facts of UNIQ-ISPACE-VAR-PARAMS apply directly.
+                  ((mv used new-ispaces dim-renam shape-renam)
+                   (uniq-ispace-var-params (list x.ispace) used r-.avoid
+                                           r-.dim r-.shape))
+                  (new-var (fresh-bind-name x.var used r-.avoid))
+                  (used (set::insert new-var (string-sfix used)))
+                  (expr-renam (extend-renaming x.var new-var r-.expr))
+                  (body-r (change-var-renamings r
+                                                :dim dim-renam
+                                                :shape shape-renam
+                                                :expr expr-renam))
+                  ((mv used new-body) (uniq-expr x.body used body-r)))
+               (mv used (make-expr-unbox :ispace (car new-ispaces)
+                                         :var new-var
+                                         :target new-target
+                                         :body new-body
+                                         :type? new-type?)))
 
       :unboxn (b* (((var-renamings r-) r)
                    ((mv used new-target) (uniq-expr x.target used r))
@@ -1177,6 +1225,17 @@
 ; stated against") needs only the containments, discharged by the
 ; monotonicity rules above.
 
+; For the unary :UNBOX case, UNIQ-EXPR freshens the single ispace variable
+; through UNIQ-ISPACE-VAR-PARAMS on a singleton list and rebuilds the atom
+; with (CAR NEW-ISPACES).  This rewrites (LIST (CAR NEW-ISPACES)) back to
+; NEW-ISPACES (whose length is 1, via LEN-OF-UNIQ-ISPACE-VAR-PARAMS), so that
+; the binder names match UNIQ-ISPACE-VAR-PARAMS-FACTS as in the :UNBOXN case.
+(defruledl list-of-car-when-len-1
+  (implies (and (true-listp x)
+                (equal (len x) 1))
+           (equal (list (car x)) x))
+  :enable len)
+
 (defret-mutual uniquify-names-impl-facts
   (defret uniq-expr-facts
     (b* ((names (expr-binder-names new-x)))
@@ -1253,7 +1312,10 @@
                      not-member-equal-when-subsetp-equal
                      subsetp-equal-transitive-1
                      subsetp-equal-transitive-2
-                     member-equal-transport-2)
+                     member-equal-transport-2
+                     len
+                     len-of-uniq-ispace-var-params
+                     list-of-car-when-len-1)
                     (return-type-of-uniq-expr.new-used
                      return-type-of-uniq-expr-list.new-used
                      return-type-of-uniq-atom.new-used

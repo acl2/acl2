@@ -203,6 +203,10 @@
    (type :sigman
          (set::difference (type-free-ispace-vars type.body)
                           (set::mergesort type.params)))
+   (expr :unbox
+         (set::union (expr-free-ispace-vars expr.target)
+                     (set::delete expr.ispace
+                                  (expr-free-ispace-vars expr.body))))
    (expr :unboxn
          (set::union (expr-free-ispace-vars expr.target)
                      (set::difference (expr-free-ispace-vars expr.body)
@@ -330,6 +334,10 @@
   :combine set::union
   :override
   ((expr :var (set::insert expr.name nil))
+   (expr :unbox
+         (set::union (expr-free-expr-vars expr.target)
+                     (set::delete expr.var
+                                  (expr-free-expr-vars expr.body))))
    (expr :unboxn
          (set::union (expr-free-expr-vars expr.target)
                      (set::delete expr.var
@@ -467,6 +475,10 @@
   :combine set::union
   :override
   ((expr :var (set::insert expr.name nil))
+   (expr :unbox
+         (set::insert expr.var
+                      (set::union (expr-all-expr-vars expr.target)
+                                  (expr-all-expr-vars expr.body))))
    (expr :unboxn
          (set::insert expr.var
                       (set::union (expr-all-expr-vars expr.target)

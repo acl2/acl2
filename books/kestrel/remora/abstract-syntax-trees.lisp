@@ -888,6 +888,16 @@
        @($\\mathfrak{a}\\ \\mathfrak{a}\\ldots$) and @($e\\ e\\ldots$),
        while [arxiv] paper does not.")
      (xdoc::p
+      "The @(':unbox') summand is the main, core form of unboxing,
+       which binds exactly one ispace variable,
+       while the @(':unboxn') summand is sugar for
+       a nesting of unary unboxings.
+       We plan to make the CST-to-AST mapping turn
+       the unboxings with one ispace variable into @(':unbox'),
+       and those with two or more ispace variables into @(':unboxn'),
+       similarly to the other constructs;
+       currently all unboxings map to @(':unboxn').")
+     (xdoc::p
       "The optional type of the body of an unbox expression
        (i.e. the result type of the unboxing)
        is calculated and stored by the type checker.
@@ -919,6 +929,11 @@
             (targs type-list-option)
             (iargs ispace-list-option)
             (args expr-list)))
+    (:unbox ((ispace ispace-var)
+             (var string)
+             (target expr)
+             (body expr)
+             (type? type-option)))
     (:unboxn ((ispaces ispace-var-list)
               (var string)
               (target expr)

@@ -1329,6 +1329,7 @@
        first we check that the ispace variables have no duplicates;
        two variables with the same name but different sorts
        (one dimension and one shape) count as distinct.
+       This no-duplicates check is omitted for unary unboxing expressions.
        We check the target expression,
        which must be an array type of a sum type.
        In [arxiv] and [thesis],
@@ -1508,6 +1509,44 @@
                               :targs expr.targs
                               :iargs expr.iargs
                               :args aes.exprs)))
+     :unbox
+     (b* (((ok (type+expr targ)) (check-expr expr.target senv))
+          ((ok target-arr-type+ispace) (type-match-array targ.type))
+          (sum-type (type+ispace->type target-arr-type+ispace))
+          (sum-ispace (type+ispace->ispace target-arr-type+ispace))
+          (sum-shape (shape-from-ispace sum-ispace))
+          ((ok sum-vars+type) (type-match-sum sum-type))
+          (sum-vars (ispacevarlist+type->vars sum-vars+type))
+          (sum-body-type (ispacevarlist+type->type sum-vars+type))
+          ((unless (= 1 (len sum-vars))) (reserr nil))
+          ((ok (string-string-map-pair renaming))
+           (check-ispace-var-renaming sum-vars (list expr.ispace)))
+          (sum-body-type-renam
+           (type-rename-ispace-vars-alpha sum-body-type
+                                          renaming.1st
+                                          renaming.2nd))
+          (senv (senv-add-ispace-var expr.ispace senv))
+          (senv (senv-add-var+type expr.var sum-body-type-renam senv))
+          ((ok (type+expr be)) (check-expr expr.body senv))
+          ((unless (set::emptyp
+                    (set::intersect (set::insert expr.ispace nil)
+                                    (type-free-ispace-vars be.type))))
+           (reserr nil))
+          ((ok arr-type+ispace) (type-match-array be.type))
+          (body-atom-type (type+ispace->type arr-type+ispace))
+          (body-ispace (type+ispace->ispace arr-type+ispace))
+          (body-shape (shape-from-ispace body-ispace))
+          (type (make-type-array :elem body-atom-type
+                                 :ispace (ispace-shape
+                                          (shape-append
+                                           (list sum-shape body-shape))))))
+       (make-type+expr
+        :type type
+        :expr (make-expr-unbox :ispace expr.ispace
+                               :var expr.var
+                               :target targ.expr
+                               :body be.expr
+                               :type? type)))
      :unboxn
      (b* (((unless (no-duplicatesp-equal expr.ispaces)) (reserr nil))
           ((ok (type+expr targ)) (check-expr expr.target senv))

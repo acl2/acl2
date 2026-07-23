@@ -1280,6 +1280,25 @@
                    (pdoc-concat
                     (ispace-list-option-to-pdoc e.iargs)
                     args-doc)))))))
+      :unbox
+      ;; Surface form (grammar unbox-spec):
+      ;;   *( ispace-var ws ) identifier ws exp
+      ;; The optional result type (e.type?) has no concrete syntax,
+      ;; so it is not printed.
+      ;; A unary unbox always has exactly one ispace var.
+      (b* ((ispaces-prefix (pdoc-concat (ispace-var-list-to-pdoc
+                                         (list e.ispace))
+                                        (pdoc-line)))
+           ((ok target) (expr-to-pdoc e.target))
+           ((ok body) (expr-to-pdoc e.body)))
+        (pdoc-prefix-form
+         "unbox"
+         (pdoc-concat
+          (pdoc-paren
+           (pdoc-concat ispaces-prefix
+                        (pdoc-concat (pdoc-text (utf8-string=>codepoints e.var))
+                                     (pdoc-concat (pdoc-line) target))))
+          (pdoc-concat (pdoc-line) body))))
       :unboxn
       ;; Surface form (grammar unbox-spec):
       ;;   *( ispace-var ws ) identifier ws exp
