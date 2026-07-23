@@ -621,16 +621,15 @@
                 (symbol-sfix deps)))
      :hints
      (("Goal"
-       :in-theory (e/d (symbol-sfix o-p o-finp o<)
+       :in-theory (e/d (symbol-sfix o-p o-finp o<
+                        defind-direct-dependencies-subset-all-called)
                        (set::expand-cardinality-of-difference))
-       :use ((:instance gap-cardinality-decreases
-                        (u (defind-called-preds-in-premises-of-irules
-                            irule-infos))
-                        (d (symbol-sfix deps))
-                        (x (defind-preds-direct-dependencies
-                             (symbol-sfix deps) irule-infos)))
-             (:instance defind-direct-dependencies-subset-all-called
-                        (preds (symbol-sfix deps)))))))))
+       :use (:instance gap-cardinality-decreases
+                       (u (defind-called-preds-in-premises-of-irules
+                           irule-infos))
+                       (d (symbol-sfix deps))
+                       (x (defind-preds-direct-dependencies
+                            (symbol-sfix deps) irule-infos))))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
