@@ -853,6 +853,8 @@ int main(void) {
 
 (acl2::must-succeed*
   ;; An array member of splittable element type is split in place.
+  ;; Direct designators through the array route individual fields and split
+  ;; whole designated elements.
   (c$::input-files :files '("array-member.c")
                    :const *old*)
 
@@ -882,7 +884,7 @@ struct outer {
   int w;
 };
 
-static struct outer o = {.arr = {[0] = {.x = 1}, [1] = {.x = 3}}, .arr_0 = {[0] = {.z = 2}, [1] = {.z = 4}}, .w = 9};
+static struct outer o = {.arr[0].x = 1, .arr_0[0].z = 2, .arr[1] = {.x = 3}, .arr_0[1] = {.z = 4}, .w = 9};
 
 int main(void) {
   return o.arr[0].x + o.arr_0[1].z;

@@ -9,7 +9,9 @@ struct outer {
 };
 
 static struct outer o = {
-  .arr = { [0] = { .x = 1, .z = 2 }, [1] = { .x = 3, .z = 4 } },
+  .arr[0].x = 1,
+  .arr[0].z = 2,
+  .arr[1] = { .x = 3, .z = 4 },
   .w = 9
 };
 

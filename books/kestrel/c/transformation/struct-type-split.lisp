@@ -622,6 +622,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define sts-designors-after-arrays
+  ((designors designor-listp)
+   (target-type c$::typep))
+  :returns (mv (er? maybe-msgp)
+               (remaining-designors designor-listp)
+               (type c$::typep))
+  :short "Follow designators through zero or more array types."
+  :long
+  (xdoc::topstring-p
+   "While the current type is an array and a designator remains,
+    the designator must be a subscript and is consumed.
+    The returned type is the type reached after those subscripts,
+    and @('remaining-designors') contains any designators not consumed.")
+  (b* (((reterr) nil (c$::type-fix target-type))
+       (target-type (c$::type-fix target-type)))
+    (if (c$::type-case target-type :array)
+      (b* (((when (endp designors))
+            (retok nil target-type))
+           (designor (designor-fix (car designors)))
+           ((unless (designor-case designor :sub))
+            (retmsg$ "An array subscript designator was expected while ~
+                      following designators through an array type.")))
+        (sts-designors-after-arrays
+          (cdr designors) (c$::type-array->of target-type)))
+      (retok (designor-list-fix designors) target-type)))
+  :measure (designor-list-count designors))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define sts-init-designors-split-point
   ((designors designor-listp)
    (target-type c$::typep)
@@ -641,18 +670,19 @@
      We walk the designators, advancing the current type,
      until we either reach a member of splittable type
      or exhaust the designators.
-     The @('action') return classifies the outcome:")
+    The @('action') return classifies the outcome:")
    (xdoc::ul
     (xdoc::li
-     "@(':inplace') --- the designators reach a whole member of splittable type,
-      which must be split in place into a left and a right member.
+     "@(':inplace') --- the designators reach a whole subobject of splittable
+      type, which must be split in place into a left and a right subobject.
       @('left-designors') and @('right-designors') are the designators
       of the resulting two initializers
       (the right one with the member name replaced by its right name),
-      and @('type?') is the splittable member's type.")
+      and @('type?') is the splittable subobject's type.")
     (xdoc::li
      "@(':route') --- the designators reach <emph>into</emph> a member of
-      splittable type (e.g. @('.s.f')); the initializer is routed by
+      splittable type (e.g. @('.s.f') or @('.a[0].f')); the initializer is
+      routed by
       rewriting the splittable member's name to its right name when the
       designated submember belongs to the right struct type.
       @('left-designors') holds the rewritten designators.")
@@ -684,27 +714,40 @@
                                       member-name
                                       (sts-split-state->member-map st)))
                  ((unless right-name?)
-                  (retmsg$ "INTERNAL ERROR. ~
-                            The split member ~x0 has no right name."
-                           member-name)))
-              (if (endp rest)
-                  ;; The whole member is initialized: split it in place.
+                   (retmsg$ "INTERNAL ERROR. ~
+                             The split member ~x0 has no right name."
+                            member-name))
+                 ((erp remaining-designors split-point-type)
+                  (sts-designors-after-arrays rest member-type))
+                 (left-first
+                   (c$::make-designor-dot :name member-name))
+                 (right-first
+                   (c$::make-designor-dot :name right-name?))
+                 ((unless (consp remaining-designors))
                   (retok :inplace
-                         (list (c$::make-designor-dot :name member-name))
-                         (list (c$::make-designor-dot :name right-name?))
-                         member-type)
-                ;; A submember is designated: route by the right member set.
-                (b* ((next (car rest))
-                     ((unless (designor-case next :dot))
-                      (retmsg$ "Unsupported designator into a split member."))
-                     (sub-name (c$::designor-dot->name next))
-                     (rightp (and (in sub-name (sts-split-state->right-set st))
-                                  t))
-                     (first-designor
-                       (if rightp
-                           (c$::make-designor-dot :name right-name?)
-                         (c$::make-designor-dot :name member-name))))
-                  (retok :route (cons first-designor rest) nil nil)))))
+                         (cons left-first rest)
+                         (cons right-first rest)
+                         split-point-type))
+                 ((unless (and
+                            (c$::type-case split-point-type :struct)
+                            (c$::uid-equal
+                              (c$::type-struct->uid split-point-type)
+                              target-uid)))
+                  (retmsg$ "INTERNAL ERROR. ~
+                            Designators were scanned within a nonsplittable ~
+                            type."))
+                 (next (designor-fix (car remaining-designors)))
+                 ((unless (designor-case next :dot))
+                  (retmsg$ "A member designator was expected within ~
+                            the split struct type."))
+                 (sub-name (c$::designor-dot->name next))
+                 (rightp (and (in sub-name
+                                  (sts-split-state->right-set st))
+                              t)))
+              (retok :route
+                     (cons (if rightp right-first left-first) rest)
+                     nil
+                     nil)))
            ;; Not splittable: descend into the member.
            ((erp action left-designors right-designors type?)
             (sts-init-designors-split-point rest member-type st)))
@@ -745,7 +788,8 @@
           is routed to the right structure type."
   :long
   (xdoc::topstring-p
-   "The first effective designator determines the designated member.
+   "After following any leading array designators,
+    the first remaining effective designator determines the designated member.
     The effective designators are the syntactic designators when present,
     and otherwise the designators recorded by the validator,
     rebased relative to the object being initialized
@@ -755,38 +799,28 @@
   (b* (((reterr) nil)
        (target-type (c$::type-fix target-type))
        (eff-designors (designor-list-fix eff-designors))
-       ((unless (consp eff-designors))
+       ((mv scan-er remaining-designors target-type)
+        (sts-designors-after-arrays eff-designors target-type))
+       ((when scan-er)
+        (retmsg$ "~@0~%~@1"
+                 scan-er
+                 (context-msg-desiniter desiniter
+                                        (sts-split-state->dialect st))))
+       ((unless (and (c$::type-case target-type :struct)
+                     (consp remaining-designors)))
         (retmsg$ "Could not determine the member designated by an ~
                   initializer of a split structure type.~%~@0"
                  (context-msg-desiniter desiniter
                                         (sts-split-state->dialect st))))
-       (designor (designor-fix (car eff-designors)))
-       (rest (designor-list-fix (cdr eff-designors))))
-    (type-case
-      target-type
-      :struct
-      (b* (((unless (designor-case designor :dot))
-            (retmsg$ "Could not determine the member designated by an ~
-                      initializer of a split structure type.~%~@0"
-                     (context-msg-desiniter
-                       desiniter
-                       (sts-split-state->dialect st))))
-           (name (c$::designor-dot->name designor)))
-        (retok (and (in name (sts-split-state->right-set st)) t)))
-      :array
-      (b* (((unless (designor-case designor :sub))
-            (retmsg$ "Could not determine the element designated by an ~
-                      initializer of an array of split structure type.~%~@0"
-                     (context-msg-desiniter
-                       desiniter
-                       (sts-split-state->dialect st)))))
-        (desiniter-sts-rightp target-type.of desiniter rest st))
-      :otherwise
-      (retmsg$ "Could not determine the member designated by an ~
-                initializer of a split structure type.~%~@0"
-               (context-msg-desiniter desiniter
-                                      (sts-split-state->dialect st)))))
-  :measure (designor-list-count eff-designors))
+       (designor (designor-fix (car remaining-designors)))
+       ((unless (designor-case designor :dot))
+        (retmsg$ "Could not determine the member designated by an ~
+                  initializer of a split structure type.~%~@0"
+                 (context-msg-desiniter
+                   desiniter
+                   (sts-split-state->dialect st))))
+       (name (c$::designor-dot->name designor)))
+    (retok (and (in name (sts-split-state->right-set st)) t))))
 
 (define struct-declor-sts-rightp
   ((struct-declor struct-declorp)
