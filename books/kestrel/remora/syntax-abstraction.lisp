@@ -1387,13 +1387,25 @@
   ;;              ws type
   (define abs-sigma-type ((tree abnf::treep))
     :returns (ty type-resultp)
-    :short "Abstract a @('sigma-type') to a @(tsee type) @(':sigma')."
+    :short "Abstract a @('sigma-type') to
+            a @(tsee type) @(':sigma') or @(':sigman')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A sum type with one variable becomes
+       a unary sum type @(':sigma');
+       one with two or more variables becomes
+       an n-ary sum type @(':sigman')
+       (see @(tsee type))."))
     (b* (((okf (abnf::tree-list-tuple8 sub))
           (abnf::check-tree-nonleaf-8 tree "sigma-type"))
          ((okf params) (abs-*-ws-ispace-var sub.4th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf body) (abs-type body-tree)))
-      (make-type-sigma :params params :body body))
+      (if (and (consp params)
+               (endp (cdr params)))
+          (make-type-sigma :param (car params) :body body)
+        (make-type-sigman :params params :body body)))
     :measure (abnf::tree-count tree))
 
   (define abs-ws-type ((tree abnf::treep))
@@ -2039,18 +2051,18 @@
   ;; unbox-exp = "unbox" ws "(" ws unbox-spec ws ")" ws exp
   (define abs-unbox-exp ((tree abnf::treep))
     :returns (e expr-resultp)
-    :short "Abstract an @('unbox-exp') to an @(tsee expr) @(':unbox')."
+    :short "Abstract an @('unbox-exp') to an @(tsee expr) @(':unboxn')."
     (b* (((okf (abnf::tree-list-tuple9 sub))
           (abnf::check-tree-nonleaf-9 tree "unbox-exp"))
          ((okf spec-tree) (abnf::check-tree-list-1 sub.5th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.9th))
          ((okf info) (abs-unbox-spec spec-tree))
          ((okf body) (abs-exp body-tree)))
-      (make-expr-unbox :ispaces (unbox-spec-info->ispaces info)
-                       :var (unbox-spec-info->var info)
-                       :target (unbox-spec-info->target info)
-                       :body body
-                       :type? nil))
+      (make-expr-unboxn :ispaces (unbox-spec-info->ispaces info)
+                        :var (unbox-spec-info->var info)
+                        :target (unbox-spec-info->target info)
+                        :body body
+                        :type? nil))
     :measure (abnf::tree-count tree))
 
   ;; unbox-spec = *( ispace-var ws ) identifier ws exp

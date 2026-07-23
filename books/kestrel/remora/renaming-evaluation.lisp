@@ -344,11 +344,11 @@
                                                 dim-renam
                                                 shape-renam)))
      :sigma (b* (((mv & & body-dim-renam body-shape-renam)
-                  (dim/shape-rename-remove-bound (set::mergesort tval.params)
+                  (dim/shape-rename-remove-bound (set::insert tval.param nil)
                                                  dim-renam
                                                  shape-renam)))
               (make-type-value-sigma
-               :params tval.params
+               :param tval.param
                :body (type-rename-ispace-vars tval.body
                                               body-dim-renam
                                               body-shape-renam)
@@ -1085,6 +1085,27 @@
                    (var (car params))
                    (rest (cdr params)))))
 
+(defrule type-rename-ispace-vars-of-sigma-curried-body
+  (implies (and (ispace-var-listp params)
+                (consp params))
+           (b* (((mv & & dim1 shape1)
+                 (dim/shape-rename-remove-bound (set::insert (car params) nil)
+                                                dim-renam shape-renam))
+                ((mv & & dim-all shape-all)
+                 (dim/shape-rename-remove-bound (set::mergesort params)
+                                                dim-renam shape-renam)))
+             (equal (type-rename-ispace-vars (sigma-curried-body params body)
+                                             dim1 shape1)
+                    (sigma-curried-body params
+                                        (type-rename-ispace-vars body
+                                                                 dim-all
+                                                                 shape-all)))))
+  :enable (sigma-curried-body
+           mergesort-when-singleton)
+  :use ((:instance dim/shape-rename-remove-bound-of-insert-then-rest
+                   (var (car params))
+                   (rest (cdr params)))))
+
 ; The ispace-variable analogue for the currying of universal types:
 ; since universal types bind no ispace variables,
 ; the renaming maps are not reduced, and the commutation is direct.
@@ -1376,7 +1397,7 @@
           :body (type-rename-type-vars tval.body atom-renam array-renam)
           :denv (type-denv-rename-type-vars tval.denv atom-renam array-renam))
      :sigma (make-type-value-sigma
-             :params tval.params
+             :param tval.param
              :body (type-rename-type-vars tval.body atom-renam array-renam)
              :denv (type-denv-rename-type-vars tval.denv
                                                atom-renam
@@ -1871,6 +1892,17 @@
                                                           array-renam))))
   :enable pi-curried-body)
 
+(defrule type-rename-type-vars-of-sigma-curried-body
+  (implies (and (ispace-var-listp params)
+                (consp params))
+           (equal (type-rename-type-vars (sigma-curried-body params body)
+                                         atom-renam array-renam)
+                  (sigma-curried-body params
+                                      (type-rename-type-vars body
+                                                             atom-renam
+                                                             array-renam))))
+  :enable sigma-curried-body)
+
 ; The type-variable commutation for the currying of universal types
 ; mirrors the ispace-variable one for the currying of product types:
 ; the crux is again that removing the first parameter and then the
@@ -2229,7 +2261,7 @@
                :body (expr-rename-expr-vars val.body renam)
                :denv (expr-denv-rename-expr-vars val.denv renam))
      :box (make-expr-value-box
-           :ispaces val.ispaces
+           :ispace val.ispace
            :array (expr-value-rename-expr-vars val.array renam)
            :type val.type)
      :vector (expr-value-vector
@@ -2613,7 +2645,7 @@
                                                      dim-renam
                                                      shape-renam)))
      :box (make-expr-value-box
-           :ispaces val.ispaces
+           :ispace val.ispace
            :array (expr-value-rename-ispace-vars val.array
                                                  dim-renam
                                                  shape-renam)
@@ -2998,7 +3030,7 @@
                                                  atom-renam
                                                  array-renam))
      :box (make-expr-value-box
-           :ispaces val.ispaces
+           :ispace val.ispace
            :array (expr-value-rename-type-vars val.array
                                                atom-renam
                                                array-renam)

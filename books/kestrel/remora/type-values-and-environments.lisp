@@ -69,17 +69,13 @@
        This fixtype currently does not enforce the constraint that
        the environments contain exactly those free variables.")
      (xdoc::p
-      "A product type value binds exactly one parameter:
-       consistently with the curried view of ispace applications
-       (see @(tsee expr)),
-       a product type with two or more parameters
-       evaluates to the unary product type value
+      "Universal, product, and sum type value bind exactly one parameter.
+       Consistently with the curried view of type and ispace applications,
+       a universal, product, or sum type with two or more parameters
+       evaluates to the unary universal, product, or sum type value
        that binds the first parameter,
-       whose body is the product type over the remaining parameters.
-       A universal type value similarly binds exactly one parameter,
-       consistently with the curried view of type applications.
-       Sum type values still bind all their parameters at once;
-       they will be similarly made unary."))
+       whose body is the universal, product, or sum type
+       over the remaining parameters."))
     (:base ((type base-type)))
     (:array ((elem type-value)
              (dims nat-list)))
@@ -91,7 +87,7 @@
     (:pi ((param ispace-var)
           (body type)
           (denv type-denv)))
-    (:sigma ((params ispace-var-list)
+    (:sigma ((param ispace-var)
              (body type)
              (denv type-denv)))
     :pred type-valuep

@@ -233,13 +233,20 @@
        All the rule names @('rule[1]'), ..., @('rule[r]') must be distinct;
        there must be at least one rule, i.e. @('r') must be positive.")
      (xdoc::p
-      "There must be at least one rule
-       with a premise of the form (i) above.
-       That is, the rules must be recursive,
-       otherwise the predicate could be more simply defined
+      "The predicates being defined must be all mutually recursive:
+       every predicate must depend on itself and on every other predicate,
+       directly or indirectly,
+       where a predicate @('p[i]') depends on a predicate @('p[j]') when
+       some rule has @('p[i]') in its conclusion and @('p[j]') in some premise.
+       For a single predicate (the only case currently supported),
+       this means that there must be at least one rule
+       with a premise of the form (i) above;
+       without such a recursive rule,
+       the predicate could be more simply defined
        without using inference rules.
-       This condition will be generalized when
-       we remove the restriction to one predicate mentioned above.")
+       Predicates that are not all mutually recursive
+       should be defined by separate uses of this macro,
+       in dependency order.")
      (xdoc::p
       "There must be at least one rule
        whose premises all have the form (ii) above.
@@ -409,7 +416,9 @@
        The theorem for each rule is an implication
        whose antecedents are the premises
        and whose consequent is the conclusion.
-       Both premises of forms (i) and (ii) (see above) are included.")
+       Both premises of forms (i) and (ii) (see above) are included.
+       For a rule without premises,
+       the theorem is just the conclusion, without implication.")
      (xdoc::p
       "If XDOC is generated, all these theorems are put
        in a @(tsee defsection) whose name is obtained by
@@ -449,6 +458,8 @@
        with the premises as antecedents
        and with the conclusions as consequents,
        quantified over the free variables in the rules.
+       For a rule without premises,
+       the body is just the conclusion, without implication.
        For a rule without free variables,
        there is no quantification,
        and a nullary @(tsee defun) is generated instead.")

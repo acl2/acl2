@@ -95,10 +95,10 @@
   ((expr :let (append (bind-list-names expr.binds)
                       (append (bind-list-binder-names expr.binds)
                               (expr-binder-names expr.body))))
-   (expr :unbox (cons expr.var
-                      (append (ispace-var-list->name expr.ispaces)
-                              (append (expr-binder-names expr.target)
-                                      (expr-binder-names expr.body)))))
+   (expr :unboxn (cons expr.var
+                       (append (ispace-var-list->name expr.ispaces)
+                               (append (expr-binder-names expr.target)
+                                       (expr-binder-names expr.body)))))
    (atom :lambda (cons (var+type?->var atom.param)
                        (expr-binder-names atom.body)))
    (atom :lambdan (append (var+type?-list->var atom.params)
@@ -837,27 +837,27 @@
                                    x.iargs r-.dim r-.shape)
                                   new-args)))
 
-      :unbox (b* (((var-renamings r-) r)
-                  ((mv used new-target) (uniq-expr x.target used r))
-                  ;; The result type is outside the scope of the unboxed
-                  ;; ispaces, so we rename it under the incoming renamings.
-                  (new-type? (type-option-rename-all-vars x.type? r))
-                  ((mv used new-ispaces dim-renam shape-renam)
-                   (uniq-ispace-var-params x.ispaces used r-.avoid
-                                           r-.dim r-.shape))
-                  (new-var (fresh-bind-name x.var used r-.avoid))
-                  (used (set::insert new-var (string-sfix used)))
-                  (expr-renam (extend-renaming x.var new-var r-.expr))
-                  (body-r (change-var-renamings r
-                                                :dim dim-renam
-                                                :shape shape-renam
-                                                :expr expr-renam))
-                  ((mv used new-body) (uniq-expr x.body used body-r)))
-               (mv used (make-expr-unbox :ispaces new-ispaces
-                                         :var new-var
-                                         :target new-target
-                                         :body new-body
-                                         :type? new-type?)))
+      :unboxn (b* (((var-renamings r-) r)
+                   ((mv used new-target) (uniq-expr x.target used r))
+                   ;; The result type is outside the scope of the unboxed
+                   ;; ispaces, so we rename it under the incoming renamings.
+                   (new-type? (type-option-rename-all-vars x.type? r))
+                   ((mv used new-ispaces dim-renam shape-renam)
+                    (uniq-ispace-var-params x.ispaces used r-.avoid
+                                            r-.dim r-.shape))
+                   (new-var (fresh-bind-name x.var used r-.avoid))
+                   (used (set::insert new-var (string-sfix used)))
+                   (expr-renam (extend-renaming x.var new-var r-.expr))
+                   (body-r (change-var-renamings r
+                                                 :dim dim-renam
+                                                 :shape shape-renam
+                                                 :expr expr-renam))
+                   ((mv used new-body) (uniq-expr x.body used body-r)))
+               (mv used (make-expr-unboxn :ispaces new-ispaces
+                                          :var new-var
+                                          :target new-target
+                                          :body new-body
+                                          :type? new-type?)))
 
       :bracket (b* (((mv used new-es) (uniq-expr-list x.exprs used r)))
                  (mv used (expr-bracket new-es)))

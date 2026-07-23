@@ -112,10 +112,10 @@
                     (type-wf-ast-p (bind-cfun->type bind))
                     (expr-wf-ast-p (bind-cfun->expr bind))))
    ;; Unbox binds a string variable; check it.
-   (expr :unbox (and (ispace-var-list-wf-ast-p (expr-unbox->ispaces expr))
-                     (valid-identifier-string-p (expr-unbox->var expr))
-                     (expr-wf-ast-p (expr-unbox->target expr))
-                     (expr-wf-ast-p (expr-unbox->body expr))))
+   (expr :unboxn (and (ispace-var-list-wf-ast-p (expr-unboxn->ispaces expr))
+                      (valid-identifier-string-p (expr-unboxn->var expr))
+                      (expr-wf-ast-p (expr-unboxn->target expr))
+                      (expr-wf-ast-p (expr-unboxn->body expr))))
    ;; Grammar non-emptiness requirement (bracket-frame = "[" ws exp *( ws exp ) ws "]").
    (expr :bracket (and (consp (expr-bracket->exprs expr))
                        (expr-list-wf-ast-p (expr-bracket->exprs expr)))))
