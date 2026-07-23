@@ -282,7 +282,8 @@
      :foralln (check-type type.body (senv-add-type-vars type.params senv))
      :pi (check-type type.body (senv-add-ispace-var type.param senv))
      :pin (check-type type.body (senv-add-ispace-vars type.params senv))
-     :sigma (check-type type.body (senv-add-ispace-vars type.params senv)))
+     :sigma (check-type type.body (senv-add-ispace-var type.param senv))
+     :sigman (check-type type.body (senv-add-ispace-vars type.params senv)))
     :measure (type-count type))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1507,7 +1508,7 @@
                               :targs expr.targs
                               :iargs expr.iargs
                               :args aes.exprs)))
-     :unbox
+     :unboxn
      (b* (((unless (no-duplicatesp-equal expr.ispaces)) (reserr nil))
           ((ok (type+expr targ)) (check-expr expr.target senv))
           ((ok target-arr-type+ispace) (type-match-array targ.type))
@@ -1541,11 +1542,11 @@
                                            (list sum-shape body-shape))))))
        (make-type+expr
         :type type
-        :expr (make-expr-unbox :ispaces expr.ispaces
-                               :var expr.var
-                               :target targ.expr
-                               :body be.expr
-                               :type? type)))
+        :expr (make-expr-unboxn :ispaces expr.ispaces
+                                :var expr.var
+                                :target targ.expr
+                                :body be.expr
+                                :type? type)))
      :bracket
      (b* (((unless (consp expr.exprs)) (reserr nil))
           ((ok (types+exprs es)) (check-expr-list expr.exprs senv))

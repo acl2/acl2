@@ -249,6 +249,17 @@
                                                      shape-subst))))
    (type :sigma
          (b* (((mv dim-subst shape-subst)
+               (dim/shape-subst-remove-bound (set::insert type.param nil)
+                                             dim-subst
+                                             shape-subst)))
+           (and (dim/shape-subst-no-capture-p (set::insert type.param nil)
+                                              dim-subst
+                                              shape-subst)
+                (type-subst-ispace-vars-no-capture-p type.body
+                                                     dim-subst
+                                                     shape-subst))))
+   (type :sigman
+         (b* (((mv dim-subst shape-subst)
                (dim/shape-subst-remove-bound (set::mergesort type.params)
                                              dim-subst
                                              shape-subst)))
@@ -258,7 +269,7 @@
                 (type-subst-ispace-vars-no-capture-p type.body
                                                      dim-subst
                                                      shape-subst))))
-   (expr :unbox
+   (expr :unboxn
          (and (expr-subst-ispace-vars-no-capture-p expr.target
                                                    dim-subst
                                                    shape-subst)
@@ -569,7 +580,7 @@
   :default t
   :combine and
   :override
-  ((expr :unbox
+  ((expr :unboxn
          (and (expr-subst-expr-vars-no-capture-p expr.target subst)
               (b* ((subst (omap::delete expr.var (string-expr-map-fix subst))))
                 (and (expr-subst-no-capture-p (set::insert expr.var nil) subst)
@@ -679,15 +690,24 @@
                                               dim-subst
                                               shape-subst))))
    (type :sigma (b* (((mv dim-subst shape-subst)
-                      (dim/shape-subst-remove-bound (set::mergesort type.params)
+                      (dim/shape-subst-remove-bound (set::insert type.param nil)
                                                     dim-subst
                                                     shape-subst)))
                   (make-type-sigma
-                   :params type.params
+                   :param type.param
                    :body (type-subst-ispace-vars type.body
                                                  dim-subst
                                                  shape-subst))))
-   (expr :unbox
+   (type :sigman (b* (((mv dim-subst shape-subst)
+                       (dim/shape-subst-remove-bound (set::mergesort type.params)
+                                                     dim-subst
+                                                     shape-subst)))
+                   (make-type-sigman
+                    :params type.params
+                    :body (type-subst-ispace-vars type.body
+                                                  dim-subst
+                                                  shape-subst))))
+   (expr :unboxn
          (b* ((target (expr-subst-ispace-vars expr.target
                                               dim-subst
                                               shape-subst))
@@ -700,7 +720,7 @@
                (dim/shape-subst-remove-bound (set::mergesort expr.ispaces)
                                              dim-subst
                                              shape-subst)))
-           (make-expr-unbox
+           (make-expr-unboxn
             :ispaces expr.ispaces
             :var expr.var
             :target target
@@ -972,10 +992,10 @@
                 (if var+expr
                     (cdr var+expr)
                   (expr-var expr.name))))
-   (expr :unbox
+   (expr :unboxn
          (b* ((target (expr-subst-expr-vars expr.target subst))
               (subst (omap::delete expr.var (string-expr-map-fix subst))))
-           (make-expr-unbox
+           (make-expr-unboxn
             :ispaces expr.ispaces
             :var expr.var
             :target target

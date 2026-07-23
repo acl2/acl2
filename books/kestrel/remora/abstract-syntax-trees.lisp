@@ -451,12 +451,20 @@
        The CST-to-AST mapping turns
        the product types with one parameter into @(':pi'),
        and those with two or more parameters into @(':pin'),
-       similarly to ispace applications (see @(tsee expr)).
-       The @(':sigma') summand
-       will be similarly given a unary form.")
+       similarly to ispace applications (see @(tsee expr)).")
+     (xdoc::p
+      "The @(':sigma') summand is
+       the main, core form of sum type,
+       which binds exactly one parameter,
+       while the @(':sigman') summand is sugar for
+       a nesting of unary sum types.
+       The CST-to-AST mapping turns
+       the sum types with one parameter into @(':sigma'),
+       and those with two or more parameters into @(':sigman'),
+       similarly to product types.")
      (xdoc::p
       "The concrete syntax requires the parameter lists of
-       @(':foralln'), @(':pin'), and @(':sigma') to be non-empty;
+       @(':foralln'), @(':pin'), and @(':sigman') to be non-empty;
        this is not captured in this fixtype."))
     (:var ((var type-var)))
     (:base ((type base-type)))
@@ -474,8 +482,10 @@
           (body type)))
     (:pin ((params ispace-var-list)
            (body type)))
-    (:sigma ((params ispace-var-list)
+    (:sigma ((param ispace-var)
              (body type)))
+    (:sigman ((params ispace-var-list)
+              (body type)))
     :pred typep)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -869,7 +879,7 @@
        of the argument lists of @(':appn'), @(':tappn'), and @(':iappn')
        (but not of @(':capp'), whose value arguments may be absent),
        of the bind list in @(':let'),
-       and of the ispace-var list in @(':unbox')
+       and of the ispace-var list in @(':unboxn')
        is not captured in this fixtype.
        The FTY @(':require') feature does not seem to work here,
        perhaps because of the interaction with the mutually recursive fixtypes.
@@ -909,11 +919,11 @@
             (targs type-list-option)
             (iargs ispace-list-option)
             (args expr-list)))
-    (:unbox ((ispaces ispace-var-list)
-             (var string)
-             (target expr)
-             (body expr)
-             (type? type-option)))
+    (:unboxn ((ispaces ispace-var-list)
+              (var string)
+              (target expr)
+              (body expr)
+              (type? type-option)))
     (:bracket ((exprs expr-list)))
     (:let ((binds bind-list)
            (body expr)))

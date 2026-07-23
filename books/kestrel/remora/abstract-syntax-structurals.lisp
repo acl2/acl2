@@ -365,7 +365,8 @@
              :foralln t
              :pi t
              :pin t
-             :sigma t))
+             :sigma t
+             :sigman t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -582,6 +583,24 @@
           ((endp (cddr params))
            (make-type-pi :param (cadr params) :body body))
           (t (make-type-pin :params (cdr params) :body body)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sigma-curried-body ((params ispace-var-listp) (body typep))
+  :guard (consp params)
+  :returns (new-body typep)
+  :short "Peel the first parameter from a sum type
+          and return the remaining body type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee pi-curried-body)."))
+  (b* ((params (ispace-var-list-fix params))
+       (body (type-fix body)))
+    (cond ((endp (cdr params)) body)
+          ((endp (cddr params))
+           (make-type-sigma :param (cadr params) :body body))
+          (t (make-type-sigman :params (cdr params) :body body)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

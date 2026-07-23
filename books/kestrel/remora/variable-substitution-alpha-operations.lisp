@@ -554,17 +554,29 @@
                                                     avoid))))
    (type :sigma
          (b* (((mv fresh-params dim-subst shape-subst)
-               (dim/shape-subst-alpha-bound type.params
+               (dim/shape-subst-alpha-bound (list type.param)
                                             dim-subst
                                             shape-subst
                                             (type-free-ispace-vars type.body))))
            (make-type-sigma
+            :param (car fresh-params)
+            :body (type-subst-ispace-vars-alpha-aux type.body
+                                                    dim-subst
+                                                    shape-subst
+                                                    avoid))))
+   (type :sigman
+         (b* (((mv fresh-params dim-subst shape-subst)
+               (dim/shape-subst-alpha-bound type.params
+                                            dim-subst
+                                            shape-subst
+                                            (type-free-ispace-vars type.body))))
+           (make-type-sigman
             :params fresh-params
             :body (type-subst-ispace-vars-alpha-aux type.body
                                                     dim-subst
                                                     shape-subst
                                                     avoid))))
-   (expr :unbox
+   (expr :unboxn
          (b* ((target (expr-subst-ispace-vars-alpha-aux expr.target
                                                         dim-subst
                                                         shape-subst
@@ -574,7 +586,7 @@
                                             dim-subst
                                             shape-subst
                                             (expr-free-ispace-vars expr.body))))
-           (make-expr-unbox
+           (make-expr-unboxn
             :ispaces fresh-ispaces
             :var expr.var
             :target target
@@ -1199,13 +1211,13 @@
                 (if var+expr
                     (cdr var+expr)
                   (expr-var expr.name))))
-   (expr :unbox
+   (expr :unboxn
          (b* ((target (expr-subst-expr-vars-alpha-aux expr.target subst avoid))
               ((mv fresh subst)
                (expr-subst-alpha-bound (list expr.var)
                                        subst
                                        (expr-free-expr-vars expr.body))))
-           (make-expr-unbox
+           (make-expr-unboxn
             :ispaces expr.ispaces
             :var (car fresh)
             :target target

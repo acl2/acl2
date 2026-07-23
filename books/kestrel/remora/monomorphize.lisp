@@ -777,11 +777,11 @@
            ((when err) (mv err fn-info-map new-expr)))
         (mv nil fn-info-map new-expr))
 
-      :unbox (b* (((mv err fn-info-map new-target)
-                   (mono-expr x.target defs fn-info-map dim-var-map type-map))
-                  ((when err) (mv err fn-info-map (expr-unbox x.ispaces x.var new-target x.body x.type?)))
-                  ((mv err fn-info-map new-body) (mono-expr x.body defs fn-info-map dim-var-map type-map)))
-               (mv err fn-info-map (expr-unbox x.ispaces x.var new-target new-body x.type?)))
+      :unboxn (b* (((mv err fn-info-map new-target)
+                    (mono-expr x.target defs fn-info-map dim-var-map type-map))
+                   ((when err) (mv err fn-info-map (expr-unboxn x.ispaces x.var new-target x.body x.type?)))
+                   ((mv err fn-info-map new-body) (mono-expr x.body defs fn-info-map dim-var-map type-map)))
+                (mv err fn-info-map (expr-unboxn x.ispaces x.var new-target new-body x.type?)))
 
       :bracket (b* (((mv err fn-info-map new-es)
                      (mono-expr-list x.exprs defs fn-info-map dim-var-map type-map)))

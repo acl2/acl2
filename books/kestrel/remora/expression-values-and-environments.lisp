@@ -252,6 +252,19 @@
        whose body is the lambda abstraction
        over the remaining parameters.")
      (xdoc::p
+      "A box value binds exactly one witness:
+       consistently with the curried view of sum types
+       (see @(tsee type)),
+       a box with two or more witnesses
+       stands for the nesting of unary box values,
+       where the outer box binds the first witness
+       and its array value is the box value over the remaining witnesses
+       (see @(tsee eval-atom)).
+       The type value of a box is the sum type value it inhabits;
+       for a nested box, each inner box carries
+       the sum type value obtained from the outer one
+       by instantiating it with the witness just bound.")
+     (xdoc::p
       "This fixtype does not capture constraints like
        the non-emptiness of the expression value list in @(':vector'),
        and the dimension and type consistency of the elements of a @(':vector').
@@ -273,7 +286,7 @@
     (:ilambda ((param ispace-var)
                (body expr)
                (denv expr-denv)))
-    (:box ((ispaces ispace-value-list)
+    (:box ((ispace ispace-value)
            (array expr-value)
            (type type-value)))
     (:vector ((elems expr-value-list)))
@@ -1180,10 +1193,10 @@
     :expand (check-dims-of-expr-value val))
 
   (defrule expr-value-wfp-of-expr-value-box
-    (equal (expr-value-wfp (expr-value-box ispaces array type))
+    (equal (expr-value-wfp (expr-value-box ispace array type))
            (expr-value-wfp array))
     :enable expr-value-wfp
-    :expand (check-dims-of-expr-value (expr-value-box ispaces array type)))
+    :expand (check-dims-of-expr-value (expr-value-box ispace array type)))
 
   (defrule expr-value-wfp-of-expr-value-vector-empty
     (expr-value-wfp (expr-value-vector-empty dims elem))

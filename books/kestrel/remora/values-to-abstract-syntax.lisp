@@ -136,8 +136,8 @@
        into the body (see @(tsee type-subst-type-denv)),
        and we rebuild the (universal, product, or sum) type
        with the parameters and the resulting body.
-       Since universal and product type values are unary,
-       they are rebuilt as unary universal and product types."))
+       Since universal, product, and sum type values are unary,
+       they are rebuilt as unary universal, product, and sum types."))
     (type-value-case
      tval
      :base (type-base tval.type)
@@ -153,7 +153,7 @@
           :param tval.param
           :body (type-subst-type-denv tval.body tval.denv))
      :sigma (make-type-sigma
-             :params tval.params
+             :param tval.param
              :body (type-subst-type-denv tval.body tval.denv)))
     :measure (type-value-count tval))
 
@@ -576,7 +576,7 @@
             (mv err
                 (expr-atom
                  (make-atom-box
-                  :ispaces (ispace-value-list-to-ispaces val.ispaces)
+                  :ispaces (list (ispace-value-to-ispace val.ispace))
                   :array array
                   :type (type-value-to-type val.type)))))
      :vector (b* (((mv err exprs) (expr-value-list-to-exprs val.elems)))
