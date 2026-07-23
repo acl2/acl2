@@ -1387,13 +1387,25 @@
   ;;              ws type
   (define abs-sigma-type ((tree abnf::treep))
     :returns (ty type-resultp)
-    :short "Abstract a @('sigma-type') to a @(tsee type) @(':sigman')."
+    :short "Abstract a @('sigma-type') to
+            a @(tsee type) @(':sigma') or @(':sigman')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A sum type with one variable becomes
+       a unary sum type @(':sigma');
+       one with two or more variables becomes
+       an n-ary sum type @(':sigman')
+       (see @(tsee type))."))
     (b* (((okf (abnf::tree-list-tuple8 sub))
           (abnf::check-tree-nonleaf-8 tree "sigma-type"))
          ((okf params) (abs-*-ws-ispace-var sub.4th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf body) (abs-type body-tree)))
-      (make-type-sigman :params params :body body))
+      (if (and (consp params)
+               (endp (cdr params)))
+          (make-type-sigma :param (car params) :body body)
+        (make-type-sigman :params params :body body)))
     :measure (abnf::tree-count tree))
 
   (define abs-ws-type ((tree abnf::treep))

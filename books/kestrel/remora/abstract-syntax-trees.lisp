@@ -458,11 +458,10 @@
        which binds exactly one parameter,
        while the @(':sigman') summand is sugar for
        a nesting of unary sum types.
-       We plan to make the CST-to-AST mapping turn
+       The CST-to-AST mapping turns
        the sum types with one parameter into @(':sigma'),
        and those with two or more parameters into @(':sigman'),
-       similarly to product types;
-       currently all sum types map to @(':sigman').")
+       similarly to product types.")
      (xdoc::p
       "The concrete syntax requires the parameter lists of
        @(':foralln'), @(':pin'), and @(':sigman') to be non-empty;
