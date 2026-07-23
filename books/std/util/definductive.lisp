@@ -480,40 +480,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defind-called-preds-in-premises ((infos defind-premise-info-listp))
-  :returns (called-preds symbol-setp)
-  :short "Predicates called by the premises of a rule."
+(define defind-preds-in-premises ((infos defind-premise-info-listp))
+  :returns (preds symbol-setp)
+  :short "Predicates in the premises of a rule."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are the names in the premises of the @(':pred') kind,
-     i.e. the premises that are calls of predicates being defined;
+     i.e. the premises that contain predicates being defined;
      the premises of the @(':other') kind
-     do not call any predicate being defined."))
+     contain no predicate being defined."))
   (b* (((when (endp infos)) nil)
-       (called-preds (defind-called-preds-in-premises (cdr infos)))
+       (preds (defind-preds-in-premises (cdr infos)))
        (info (car infos)))
     (defind-premise-info-case
       info
-      :pred (set::insert info.name called-preds)
-      :other called-preds))
+      :pred (set::insert info.name preds)
+      :other preds))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define defind-called-preds-in-premises-of-irules
+(define defind-preds-in-premises-of-irules
   ((irule-infos defind-irule-info-listp))
-  :returns (called-preds symbol-setp)
-  :short "Predicates called by the premises of the given rules."
+  :returns (preds symbol-setp)
+  :short "Predicates in the premises of the given rules."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is @(tsee defind-called-preds-in-premises)
+    "This is @(tsee defind-preds-in-premises)
      unioned over all the given rules."))
   (b* (((when (endp irule-infos)) nil)
        ((defind-irule-info info) (car irule-infos)))
-    (set::union (defind-called-preds-in-premises info.premises)
-                (defind-called-preds-in-premises-of-irules (cdr irule-infos))))
+    (set::union (defind-preds-in-premises info.premises)
+                (defind-preds-in-premises-of-irules (cdr irule-infos))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -526,13 +526,12 @@
   (xdoc::topstring
    (xdoc::p
     "A predicate @('p[i]') directly depends on a predicate @('p[j]') when
-     some rule has @('p[i]') in its conclusion
-     and calls @('p[j]') in some premise.
+     some rule has @('p[i]') in its conclusion and @('p[j]') in some premise.
      This function returns the set of all the predicates
      on which any of the predicates in @('preds') directly depends:
      it goes through the rules,
-     and collects the predicates called by the premises of
-     the rules whose conclusions call predicates in @('preds').")
+     and collects the predicates in the premises of
+     the rules whose conclusion predicate is in @('preds').")
    (xdoc::p
     "This function operates on a set of predicates,
      instead of a single predicate,
@@ -541,26 +540,26 @@
      the direct dependencies of all its elements at once.")
    (xdoc::p
     "The direct dependencies of any set of predicates are always
-     among the predicates called by the premises of the rules
-     (see @(tsee defind-called-preds-in-premises-of-irules)),
+     among the predicates in the premises of the rules
+     (see @(tsee defind-preds-in-premises-of-irules)),
      as expressed by the theorem below."))
   (b* (((when (endp irule-infos)) nil)
        (deps (defind-preds-direct-dependencies preds (cdr irule-infos)))
        ((defind-irule-info info) (car irule-infos)))
     (if (set::in (defind-conclusion-info->name info.conclusion)
                  (symbol-sfix preds))
-        (set::union (defind-called-preds-in-premises info.premises) deps)
+        (set::union (defind-preds-in-premises info.premises) deps)
       deps))
   :verify-guards :after-returns
 
   ///
 
-  (defruled defind-direct-dependencies-subset-all-called
+  (defruled defind-direct-dependencies-subset-preds-in-premises
     (set::subset (defind-preds-direct-dependencies preds irule-infos)
-                 (defind-called-preds-in-premises-of-irules irule-infos))
-    :induct (defind-called-preds-in-premises-of-irules irule-infos)
+                 (defind-preds-in-premises-of-irules irule-infos))
+    :induct (defind-preds-in-premises-of-irules irule-infos)
     :enable (defind-preds-direct-dependencies
-             defind-called-preds-in-premises-of-irules
+             defind-preds-in-premises-of-irules
              set::subset-transitive
              set::pick-a-point-subset-strategy
              set::subset-in)))
@@ -590,14 +589,15 @@
      This is exactly how @(tsee defind-pred-recursivep) is defined.")
    (xdoc::p
     "The iteration terminates because the set of dependencies grows
-     within the fixed universe of all called predicates
-     (see @(tsee defind-called-preds-in-premises-of-irules)):
+     within the fixed universe of
+     all the predicates in the premises of the rules
+     (see @(tsee defind-preds-in-premises-of-irules)):
      each round that does not stop
      adds at least one predicate to the dependencies,
      so the ``gap'' between that universe and the dependencies,
      measured by its cardinality, strictly decreases.
      We use the fact that the direct dependencies are within that universe
-     (see @('defind-direct-dependencies-subset-all-called'))."))
+     (see @('defind-direct-dependencies-subset-preds-in-premises'))."))
   (defind-pred-dependencies-loop
     (defind-preds-direct-dependencies
       (set::insert (symbol-lfix pred-name) nil)
@@ -617,18 +617,19 @@
        (defind-pred-dependencies-loop new-deps irule-infos))
      :measure (set::cardinality
                (set::difference
-                (defind-called-preds-in-premises-of-irules irule-infos)
+                (defind-preds-in-premises-of-irules irule-infos)
                 (symbol-sfix deps)))
      ;; GAP-CARDINALITY-DECREASES rewrites the measure decrease;
-     ;; DEFIND-DIRECT-DEPENDENCIES-SUBSET-ALL-CALLED relieves its hypothesis.
-     ;; UNION-EMPTYP-X and DIFFERENCE-EMPTYP-Y are disabled so that the
-     ;; (union d x) and (difference u d) patterns that the former matches
+     ;; its hypothesis is relieved by
+     ;; DEFIND-DIRECT-DEPENDENCIES-SUBSET-PREDS-IN-PREMISES.
+     ;; UNION-EMPTYP-X and DIFFERENCE-EMPTYP-Y are disabled so that
+     ;; the (union d x) and (difference u d) patterns that the former matches
      ;; survive the degenerate case where DEPS is the empty set.
      :hints
      (("Goal"
        :in-theory (e/d (symbol-sfix o-p o-finp o<
                         gap-cardinality-decreases
-                        defind-direct-dependencies-subset-all-called)
+                        defind-direct-dependencies-subset-preds-in-premises)
                        (set::expand-cardinality-of-difference
                         set::union-emptyp-x
                         set::difference-emptyp-y)))))))
