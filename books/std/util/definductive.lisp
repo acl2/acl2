@@ -619,17 +619,19 @@
                (set::difference
                 (defind-called-preds-in-premises-of-irules irule-infos)
                 (symbol-sfix deps)))
+     ;; GAP-CARDINALITY-DECREASES rewrites the measure decrease;
+     ;; DEFIND-DIRECT-DEPENDENCIES-SUBSET-ALL-CALLED relieves its hypothesis.
+     ;; UNION-EMPTYP-X and DIFFERENCE-EMPTYP-Y are disabled so that the
+     ;; (union d x) and (difference u d) patterns that the former matches
+     ;; survive the degenerate case where DEPS is the empty set.
      :hints
      (("Goal"
        :in-theory (e/d (symbol-sfix o-p o-finp o<
+                        gap-cardinality-decreases
                         defind-direct-dependencies-subset-all-called)
-                       (set::expand-cardinality-of-difference))
-       :use (:instance gap-cardinality-decreases
-                       (u (defind-called-preds-in-premises-of-irules
-                           irule-infos))
-                       (d (symbol-sfix deps))
-                       (x (defind-preds-direct-dependencies
-                            (symbol-sfix deps) irule-infos))))))))
+                       (set::expand-cardinality-of-difference
+                        set::union-emptyp-x
+                        set::difference-emptyp-y)))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
