@@ -43,6 +43,51 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Library extensions.
+
+; These are generic theorems about osets, not specific to DEFINDUCTIVE;
+; at some point they could be moved to a more central library.
+; The main one is GAP-CARDINALITY-DECREASES: if X is within a universe U,
+; and adding X to D actually adds something (i.e. their union is not already
+; a subset of D), then the "gap" U minus D strictly shrinks in cardinality.
+; It is used to justify the termination of DEFIND-PRED-DEPENDENCIES below.
+; The two local lemmas before it serve only to prove it.
+
+(defruledl difference-of-union-subset-difference
+  (set::subset (set::difference u (set::union d x))
+               (set::difference u d))
+  :enable set::difference-over-union)
+
+(defruledl head-of-difference-of-union-in-x-and-not-in-d
+  (implies (not (set::subset (set::union d x) d))
+           (and (set::in (set::head (set::difference (set::union d x) d))
+                         x)
+                (not (set::in (set::head (set::difference (set::union d x) d))
+                              d))))
+  :use (:instance set::in-head
+                  (set::x (set::difference (set::union d x) d))))
+
+(defruledl gap-cardinality-decreases
+  (implies (and (set::subset x u)
+                (not (set::subset (set::union d x) d)))
+           (< (set::cardinality (set::difference u (set::union d x)))
+              (set::cardinality (set::difference u d))))
+  :enable (difference-of-union-subset-difference
+           head-of-difference-of-union-in-x-and-not-in-d)
+  :use ((:instance set::proper-subset-cardinality
+                   (set::x (set::difference u (set::union d x)))
+                   (set::y (set::difference u d)))
+        (:instance set::subset-in
+                   (set::a (set::head (set::difference (set::union d x) d)))
+                   (set::x (set::difference u d))
+                   (set::y (set::difference u (set::union d x))))
+        (:instance set::subset-in
+                   (set::a (set::head (set::difference (set::union d x) d)))
+                   (set::x x)
+                   (set::y u))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (xdoc::evmac-topic-implementation
 
  definductive
@@ -453,11 +498,7 @@
     "These are the names in the premises of the @(':pred') kind,
      i.e. the premises that are calls of predicates being defined;
      the premises of the @(':other') kind
-     do not call any predicate being defined.")
-   (xdoc::p
-    "This is the basic ingredient of
-     the dependency relation among the predicates being defined:
-     see @(tsee defind-preds-direct-dependencies)."))
+     do not call any predicate being defined."))
   (b* (((when (endp infos)) nil)
        (called-preds (defind-called-preds-in-premises (cdr infos)))
        (info (car infos)))
@@ -469,9 +510,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(define defind-called-preds-in-premises-of-irules
+  ((irule-infos defind-irule-info-listp))
+  :returns (called-preds symbol-setp)
+  :short "Predicates called by the premises of the given rules."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is @(tsee defind-called-preds-in-premises)
+     unioned over all the given rules."))
+  (b* (((when (endp irule-infos)) nil)
+       ((defind-irule-info info) (car irule-infos)))
+    (set::union (defind-called-preds-in-premises info.premises)
+                (defind-called-preds-in-premises-of-irules (cdr irule-infos))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define defind-preds-direct-dependencies ((pred-names symbol-setp)
-                                          (irule-infos
-                                           defind-irule-info-listp))
+                                          (irule-infos defind-irule-info-listp))
   :returns (deps symbol-setp)
   :short "Predicates on which given predicates directly depend."
   :long
@@ -490,7 +547,12 @@
      instead of a single predicate,
      so that @(tsee defind-pred-dependencies) can use this function
      to extend a whole set of predicates with
-     the direct dependencies of all its elements at once."))
+     the direct dependencies of all its elements at once.")
+   (xdoc::p
+    "The direct dependencies of any set of predicates are always
+     among the predicates called by the premises of the rules
+     (see @(tsee defind-called-preds-in-premises-of-irules)),
+     as expressed by the theorem below."))
   (b* (((when (endp irule-infos)) nil)
        (deps (defind-preds-direct-dependencies pred-names (cdr irule-infos)))
        ((defind-irule-info info) (car irule-infos)))
@@ -498,12 +560,23 @@
                  (symbol-sfix pred-names))
         (set::union (defind-called-preds-in-premises info.premises) deps)
       deps))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defruled defind-direct-dependencies-subset-all-called
+    (set::subset (defind-preds-direct-dependencies preds irule-infos)
+                 (defind-called-preds-in-premises-of-irules irule-infos))
+    :induct (defind-called-preds-in-premises-of-irules irule-infos)
+    :enable (defind-preds-direct-dependencies
+             defind-called-preds-in-premises-of-irules
+             set::subset-transitive
+             set::pick-a-point-subset-strategy
+             set::subset-in)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define defind-pred-dependencies ((pred-name symbolp)
-                                  (pred-names symbol-listp)
                                   (irule-infos defind-irule-info-listp))
   :returns (deps symbol-setp)
   :short "Predicates on which a given predicate depends,
@@ -525,47 +598,52 @@
      directly or through other predicates.
      This is exactly how @(tsee defind-pred-recursivep) is defined.")
    (xdoc::p
-    "The @('pred-names') input must list
-     all the predicates being defined.
-     It is used solely as fuel that ensures
-     the termination of the iteration,
-     one element per round, and it never actually runs out:
-     if the initial set of direct dependencies is empty,
-     the first round adds nothing and the iteration stops there;
-     otherwise, each round except the last one
-     adds at least one predicate to a set that
-     starts with at least one predicate
-     and never exceeds the number of predicates being defined
-     (because it only contains predicates being defined),
-     so the rounds never exceed that number.
-     (If the fuel did run out,
-     the result would just under-approximate the dependencies.)"))
+    "The iteration terminates because the set of dependencies grows
+     within the fixed universe of all called predicates
+     (see @(tsee defind-called-preds-in-premises-of-irules)):
+     each round that does not stop
+     adds at least one predicate to the dependencies,
+     so the ``gap'' between that universe and the dependencies,
+     measured by its cardinality, strictly decreases.
+     We use the fact that the direct dependencies are within that universe
+     (see @('defind-direct-dependencies-subset-all-called'))."))
   (defind-pred-dependencies-loop
-    pred-names
     (defind-preds-direct-dependencies
       (set::insert (symbol-lfix pred-name) nil)
       irule-infos)
     irule-infos)
 
   :prepwork
-  ((define defind-pred-dependencies-loop ((fuel symbol-listp)
-                                          (deps symbol-setp)
-                                          (irule-infos
-                                           defind-irule-info-listp))
+  ((define defind-pred-dependencies-loop ((deps symbol-setp)
+                                          (irule-infos defind-irule-info-listp))
      :returns (final-deps symbol-setp)
      :parents nil
      (b* ((deps (symbol-sfix deps))
-          ((when (endp fuel)) deps)
           (new-deps (set::union deps
                                 (defind-preds-direct-dependencies
                                   deps irule-infos)))
           ((when (set::subset new-deps deps)) deps))
-       (defind-pred-dependencies-loop (cdr fuel) new-deps irule-infos)))))
+       (defind-pred-dependencies-loop new-deps irule-infos))
+     :measure (set::cardinality
+               (set::difference
+                (defind-called-preds-in-premises-of-irules irule-infos)
+                (symbol-sfix deps)))
+     :hints
+     (("Goal"
+       :in-theory (e/d (symbol-sfix o-p o-finp o<)
+                       (set::expand-cardinality-of-difference))
+       :use ((:instance gap-cardinality-decreases
+                        (u (defind-called-preds-in-premises-of-irules
+                            irule-infos))
+                        (d (symbol-sfix deps))
+                        (x (defind-preds-direct-dependencies
+                             (symbol-sfix deps) irule-infos)))
+             (:instance defind-direct-dependencies-subset-all-called
+                        (preds (symbol-sfix deps)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define defind-pred-recursivep ((pred-name symbolp)
-                                (pred-names symbol-listp)
                                 (irule-infos defind-irule-info-listp))
   :returns (yes/no booleanp)
   :short "Check if a predicate is recursive."
@@ -585,13 +663,9 @@
      With multiple predicates, the relation is less direct:
      a predicate is recursive if and only if
      it is on a cycle of the direct dependency relation,
-     each arc of which comes from a recursive rule.")
-   (xdoc::p
-    "The @('pred-names') input must list
-     all the predicates being defined;
-     see @(tsee defind-pred-dependencies)."))
+     each arc of which comes from a recursive rule."))
   (set::in (symbol-lfix pred-name)
-           (defind-pred-dependencies pred-name pred-names irule-infos)))
+           (defind-pred-dependencies pred-name irule-infos)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -608,27 +682,25 @@
      in the same order, which is convenient for error messages.
      All the predicates are recursive exactly when
      the result is empty."))
-  (defind-nonrecursive-preds-loop pred-names pred-names irule-infos)
+  (defind-nonrecursive-preds-loop pred-names irule-infos)
 
   :prepwork
-  ((define defind-nonrecursive-preds-loop ((preds-to-check symbol-listp)
-                                           (pred-names symbol-listp)
-                                           (irule-infos
-                                            defind-irule-info-listp))
+  ((define defind-nonrecursive-preds-loop
+     ((preds-to-check symbol-listp)
+      (irule-infos defind-irule-info-listp))
      :returns (nonrec-preds symbol-listp)
      :parents nil
      (b* (((when (endp preds-to-check)) nil)
           (nonrec-preds (defind-nonrecursive-preds-loop
-                          (cdr preds-to-check) pred-names irule-infos))
+                          (cdr preds-to-check) irule-infos))
           (pred-name (symbol-lfix (car preds-to-check)))
-          ((when (defind-pred-recursivep pred-name pred-names irule-infos))
+          ((when (defind-pred-recursivep pred-name irule-infos))
            nonrec-preds))
        (cons pred-name nonrec-preds)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define defind-pred-clique ((pred-name symbolp)
-                            (pred-names symbol-listp)
                             (irule-infos defind-irule-info-listp))
   :returns (clique symbol-setp)
   :short "Mutually recursive clique of a predicate."
@@ -655,19 +727,14 @@
      the strongly connected components of the dependency graph,
      except that a non-recursive predicate
      (a vertex without a cycle through it)
-     does not form a component by itself, and belongs to no clique.")
-   (xdoc::p
-    "The @('pred-names') input must list
-     all the predicates being defined;
-     see @(tsee defind-pred-dependencies)."))
+     does not form a component by itself, and belongs to no clique."))
   (defind-pred-clique-loop
-    (defind-pred-dependencies pred-name pred-names irule-infos)
-    pred-name pred-names irule-infos)
+    (defind-pred-dependencies pred-name irule-infos)
+    pred-name irule-infos)
 
   :prepwork
   ((define defind-pred-clique-loop ((deps symbol-setp)
                                     (pred-name symbolp)
-                                    (pred-names symbol-listp)
                                     (irule-infos defind-irule-info-listp))
      :returns (clique symbol-setp)
      :parents nil
@@ -675,10 +742,9 @@
            (t (b* ((p (set::head deps))
                    (clique (defind-pred-clique-loop
                              (set::tail deps)
-                             pred-name pred-names irule-infos)))
+                             pred-name irule-infos)))
                 (if (set::in (symbol-lfix pred-name)
-                             (defind-pred-dependencies
-                               p pred-names irule-infos))
+                             (defind-pred-dependencies p irule-infos))
                     (set::insert p clique)
                   clique))))
      :verify-guards :after-returns
@@ -720,20 +786,18 @@
      to a single predicate,
      and possibly for relaxing, in the future,
      the requirement that all the predicates are mutually recursive."))
-  (defind-mutually-recursive-cliques-loop pred-names pred-names irule-infos)
+  (defind-mutually-recursive-cliques-loop pred-names irule-infos)
 
   :prepwork
   ((define defind-mutually-recursive-cliques-loop
      ((preds-to-do symbol-listp)
-      (pred-names symbol-listp)
       (irule-infos defind-irule-info-listp))
      :returns (cliques symbol-set-setp)
      :parents nil
      (b* (((when (endp preds-to-do)) nil)
           (cliques (defind-mutually-recursive-cliques-loop
-                     (cdr preds-to-do) pred-names irule-infos))
-          (clique (defind-pred-clique
-                    (car preds-to-do) pred-names irule-infos))
+                     (cdr preds-to-do) irule-infos))
+          (clique (defind-pred-clique (car preds-to-do) irule-infos))
           ((when (set::emptyp clique)) cliques))
        (set::insert clique cliques))
      :verify-guards :after-returns)))
