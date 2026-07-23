@@ -37,6 +37,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (definductive dimeq-infrules
+  :short "Equivalence of dimensions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The inference rules say that:")
+   (xdoc::ul
+    (xdoc::li
+     "It is an equivalence relation,
+      i.e. reflexive, symmetric, and transitive.")
+    (xdoc::li
+     "The addition of no dimensions is equivalent to the dimension 0.")
+    (xdoc::li
+     "The addition of one dimension is equivalent to that dimension."))
+   (xdoc::p
+    "More rules need to be added, obviously."))
 
   :preds ((dimeq dim1 dim2))
 
@@ -55,6 +70,16 @@
            (dimp dim3)
            (dimeq dim1 dim2)
            (dimeq dim2 dim3))
-          (dimeq dim1 dim3))))
+          (dimeq dim1 dim3))
 
-; TODO: more rules
+   (add0 ()
+         (dimeq (dim-add nil)
+                (dim-const 0)))
+
+   (add1 ((dimp dim))
+         (dimeq (dim-add (list dim))
+                dim))
+
+   ;; TODO: add more rules
+
+   ))

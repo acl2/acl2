@@ -15844,7 +15844,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defconst *default-state*
   (list nil nil
         *initial-global-table*
-        nil nil 1 nil nil nil nil nil))
+        nil nil 1 nil nil nil
+
+; The following field makes it possible for (open-output-channel :string
+; :character state) to return a non-nil channel when state is *default-state*,
+; as is expected by channel-to-string.
+
+        '((:string :character 2))
+        nil))
 
 (defun build-state1 (open-input-channels
    open-output-channels global-table
