@@ -1772,6 +1772,28 @@
         :type (make-type-pin :params atom.params :body be.type)
         :atom (make-atom-ilambdan :params atom.params :body be.expr)))
      :box
+     (b* (((unless (check-ispace-list (list atom.ispace) senv)) (reserr nil))
+          (ispaces (senv-expand-ispace-list (list atom.ispace) senv))
+          ((unless (type-atomp atom.type)) (reserr nil))
+          ((unless (check-type atom.type senv)) (reserr nil))
+          ((ok box-type) (senv-expand-type atom.type senv))
+          ((ok vars+type) (type-match-sum box-type))
+          (vars (ispacevarlist+type->vars vars+type))
+          (body-type (ispacevarlist+type->type vars+type))
+          ((ok (stringdimmap+stringshapemap maps))
+           (check-ispace-params-and-args vars ispaces))
+          (body-type-subst
+           (type-subst-ispace-vars-alpha body-type
+                                         maps.dim-map
+                                         maps.shape-map))
+          ((ok (type+expr ae)) (check-expr atom.array senv))
+          ((unless (type-equivp ae.type body-type-subst)) (reserr nil)))
+       (make-type+atom
+        :type box-type
+        :atom (make-atom-box :ispace atom.ispace
+                             :array ae.expr
+                             :type atom.type)))
+     :boxn
      (b* (((unless (check-ispace-list atom.ispaces senv)) (reserr nil))
           (ispaces (senv-expand-ispace-list atom.ispaces senv))
           ((unless (type-atomp atom.type)) (reserr nil))
@@ -1790,9 +1812,9 @@
           ((unless (type-equivp ae.type body-type-subst)) (reserr nil)))
        (make-type+atom
         :type box-type
-        :atom (make-atom-box :ispaces atom.ispaces
-                             :array ae.expr
-                             :type atom.type))))
+        :atom (make-atom-boxn :ispaces atom.ispaces
+                              :array ae.expr
+                              :type atom.type))))
     :measure (atom-count atom))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

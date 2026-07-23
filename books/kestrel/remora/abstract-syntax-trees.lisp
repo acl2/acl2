@@ -1005,9 +1005,19 @@
        and those with two or more parameters into @(':ilambdan'),
        similarly to ispace applications (see @(tsee expr)).")
      (xdoc::p
+      "The @(':box') summand is
+       the main, core form of box construction,
+       which packs exactly one ispace witness,
+       while the @(':boxn') summand is sugar for
+       a nesting of unary box constructions.
+       The CST-to-AST mapping turns
+       the box constructions with one ispace into @(':box'),
+       and those with two or more ispaces into @(':boxn'),
+       similarly to sum types (see @(tsee type)).")
+     (xdoc::p
       "The concrete syntax requires the parameter lists of
        the @(':lambdan'), @(':tlambdan'), and @(':ilambdan') summands
-       and the ispace list of @(':box') to be non-empty;
+       and the ispace list of @(':boxn') to be non-empty;
        this is not captured in this fixtype.")
      (xdoc::p
       "The optional type of the body of a lambda abstraction
@@ -1028,9 +1038,12 @@
                (body expr)))
     (:ilambdan ((params ispace-var-list)
                 (body expr)))
-    (:box ((ispaces ispace-list)
+    (:box ((ispace ispace)
            (array expr)
            (type type)))
+    (:boxn ((ispaces ispace-list)
+            (array expr)
+            (type type)))
     :pred atomp)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

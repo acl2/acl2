@@ -1279,12 +1279,18 @@
                  (expr-free-type-vars atom.body)
                  (expr-free-expr-vars atom.body)
                  denv)))
-       :box (b* (((ok ivals) (eval-ispace-list atom.ispaces
-                                               (type-denv->ienv
-                                                (expr-denv->tenv denv))))
+       :box (b* (((ok ival) (eval-ispace atom.ispace
+                                         (type-denv->ienv
+                                          (expr-denv->tenv denv))))
                  ((ok arrayval) (eval-expr atom.array denv (1- limit)))
                  ((ok tval) (eval-type atom.type (expr-denv->tenv denv))))
-              (box-nest ivals arrayval tval))))
+              (make-expr-value-box :ispace ival :array arrayval :type tval))
+       :boxn (b* (((ok ivals) (eval-ispace-list atom.ispaces
+                                                (type-denv->ienv
+                                                 (expr-denv->tenv denv))))
+                  ((ok arrayval) (eval-expr atom.array denv (1- limit)))
+                  ((ok tval) (eval-type atom.type (expr-denv->tenv denv))))
+               (box-nest ivals arrayval tval))))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -2240,7 +2240,16 @@
   ;; box-expr = "box" ws "(" *( ws ispace ) ws ")" ws exp ws type
   (define abs-box-expr ((tree abnf::treep))
     :returns (a atom-resultp)
-    :short "Abstract a @('box-expr') to an @(tsee atom) @(':box')."
+    :short "Abstract a @('box-expr') to
+            an @(tsee atom) @(':box') or @(':boxn')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A box construction with one ispace becomes
+       a unary box @(':box');
+       one with two or more ispaces becomes
+       an n-ary box @(':boxn')
+       (see @(tsee atom))."))
     (b* (((okf (abnf::tree-list-tuple10 sub))
           (abnf::check-tree-nonleaf-10 tree "box-expr"))
          ((okf e-tree) (abnf::check-tree-list-1 sub.8th))
@@ -2248,7 +2257,10 @@
          ((okf ispaces) (abs-*-ws-ispace sub.4th))
          ((okf array) (abs-exp e-tree))
          ((okf ty) (abs-type te-tree)))
-      (make-atom-box :ispaces ispaces :array array :type ty))
+      (if (and (consp ispaces)
+               (endp (cdr ispaces)))
+          (make-atom-box :ispace (car ispaces) :array array :type ty)
+        (make-atom-boxn :ispaces ispaces :array array :type ty)))
     :measure (abnf::tree-count tree))
 
   ;; ------------------------------------------------------------------

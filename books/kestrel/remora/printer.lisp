@@ -1383,13 +1383,24 @@
              (pdoc-prefix-form
               "box"
               (pdoc-concat
-               (pdoc-paren (ispace-list-to-pdoc a.ispaces))
+               (pdoc-paren (ispace-list-to-pdoc (list a.ispace)))
                (pdoc-concat
                 (pdoc-line)
                 (pdoc-concat
                  array
                  (pdoc-concat (pdoc-line)
-                              (type-to-pdoc a.type))))))))
+                              (type-to-pdoc a.type)))))))
+      :boxn (b* (((ok array) (expr-to-pdoc a.array)))
+              (pdoc-prefix-form
+               "box"
+               (pdoc-concat
+                (pdoc-paren (ispace-list-to-pdoc a.ispaces))
+                (pdoc-concat
+                 (pdoc-line)
+                 (pdoc-concat
+                  array
+                  (pdoc-concat (pdoc-line)
+                               (type-to-pdoc a.type))))))))
     :measure (atom-count a))
 
   (define atom-list-to-pdoc ((as atom-listp))

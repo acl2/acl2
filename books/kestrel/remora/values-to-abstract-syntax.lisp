@@ -576,7 +576,7 @@
             (mv err
                 (expr-atom
                  (make-atom-box
-                  :ispaces (list (ispace-value-to-ispace val.ispace))
+                  :ispace (ispace-value-to-ispace val.ispace)
                   :array array
                   :type (type-value-to-type val.type)))))
      :vector (b* (((mv err exprs) (expr-value-list-to-exprs val.elems)))

@@ -1023,10 +1023,16 @@
 
       :box (b* (((var-renamings r-) r)
                 ((mv used new-array) (uniq-expr x.array used r)))
-             (mv used (atom-box (ispace-list-rename-ispace-vars
-                                 x.ispaces r-.dim r-.shape)
+             (mv used (atom-box (ispace-rename-ispace-vars
+                                 x.ispace r-.dim r-.shape)
                                 new-array
-                                (type-rename-all-vars x.type r))))))
+                                (type-rename-all-vars x.type r))))
+      :boxn (b* (((var-renamings r-) r)
+                 ((mv used new-array) (uniq-expr x.array used r)))
+              (mv used (atom-boxn (ispace-list-rename-ispace-vars
+                                   x.ispaces r-.dim r-.shape)
+                                  new-array
+                                  (type-rename-all-vars x.type r))))))
 
   (define uniq-atom-list ((x atom-listp) (used string-setp) (r var-renamings-p))
     :short "Uniquify binder names in a list of atoms."
