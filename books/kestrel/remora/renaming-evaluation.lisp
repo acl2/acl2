@@ -16,9 +16,9 @@
 (include-book "kestrel/utilities/defopeners" :dir :system)
 
 (include-book "portcullis")
-(include-book "oset-omaps")
 
-(local (include-book "std/omaps/top" :dir :system))
+(local (include-book "osets"))
+(local (include-book "omaps"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -10,32 +10,22 @@
 
 (in-package "REMORA")
 
+(include-book "std/osets/top" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
-(include-book "std/osets/top" :dir :system)
-(include-book "std/omaps/top" :dir :system)
 
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ oset-omaps
+(defxdoc+ osets
   :parents (library-extensions)
-  :short "Theorems about finite sets (osets) and finite maps (omaps)
-          used in the Remora library but more general."
+  :short "Library extensions for osets."
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule car-of-assoc
-  (implies (omap::assoc key map)
-           (equal (car (omap::assoc key map))
-                  key))
-  :rule-classes ((:rewrite :backchain-limit-lst 1))
-  :induct t
-  :enable omap::assoc)
 
 (defruled emptyp-intersect-of-union-left-1
   (implies (set::emptyp (set::intersect (set::union a b) c))
@@ -64,41 +54,6 @@
                    (set::a k)
                    (set::x (set::intersect (set::insert k s)
                                            b)))))
-
-(defruled delete*-of-delete*-commute
-  (equal (omap::delete* keys1 (omap::delete* keys2 map))
-         (omap::delete* keys2 (omap::delete* keys1 map)))
-  :expand ((omap::ext-equal (omap::delete* keys1 (omap::delete* keys2 map))
-                            (omap::delete* keys2 (omap::delete* keys1 map)))
-           (omap::ext-equal (omap::delete* keys2 (omap::delete* keys1 map))
-                            (omap::delete* keys1 (omap::delete* keys2 map))))
-  :use ((:instance omap::ext-equal-becomes-equal
-                   (omap::x (omap::delete* keys1 (omap::delete* keys2 map)))
-                   (omap::y (omap::delete* keys2 (omap::delete* keys1 map))))))
-
-(defruled delete*-of-delete-commute
-  (equal (omap::delete v (omap::delete* keys map))
-         (omap::delete* keys (omap::delete v map)))
-  :expand ((omap::ext-equal (omap::delete v (omap::delete* keys map))
-                            (omap::delete* keys (omap::delete v map)))
-           (omap::ext-equal (omap::delete* keys (omap::delete v map))
-                            (omap::delete v (omap::delete* keys map))))
-  :use ((:instance omap::ext-equal-becomes-equal
-                   (omap::x (omap::delete v (omap::delete* keys map)))
-                   (omap::y (omap::delete* keys (omap::delete v map))))))
-
-(defruled delete*-commute-restricted
-  (implies (syntaxp (and (symbolp bound)
-                         (not (symbolp p))))
-           (equal (omap::delete* p (omap::delete* bound map))
-                  (omap::delete* bound (omap::delete* p map))))
-  :use ((:instance delete*-of-delete*-commute (keys1 p) (keys2 bound))))
-
-(defruled delete-commute-restricted
-  (implies (syntaxp (symbolp bound))
-           (equal (omap::delete v (omap::delete* bound map))
-                  (omap::delete* bound (omap::delete v map))))
-  :use ((:instance delete*-of-delete-commute (keys bound))))
 
 (defruled emptyp-intersect3-binder-union
   (implies (set::emptyp
