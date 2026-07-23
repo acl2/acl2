@@ -88,6 +88,7 @@
 (include-book "string-result")
 (include-book "strings-decimal-fty")
 (include-book "symbol-set")
+(include-book "symbol-set-set")
 (include-book "dec-digit-char")
 (include-book "hex-digit-char")
 (include-book "oct-digit-char")

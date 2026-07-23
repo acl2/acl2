@@ -106863,6 +106863,16 @@ Bug Fixes
   relevant to a fix |
   https://acl2.zulip.kestrel.institute/#narrow/channel/19-general/topic/Non-ASCII.20characters.20in.20ACL2.20source.20files/near/40162}.
 
+  Fixed a soundness bug in the macro [30m[47mchannel-to-string[0m[0m, which is used
+  in functions like [30m[47m[fms-to-string][0m[0m (see [printing-to-strings]).
+  Thanks to Grant Jurgensen for reporting this bug and providing a
+  helpful analysis of it.  The fix is to the constant
+  [30m[47m*default-state*[0m[0m.  In particular, the following is no longer
+  provable by ACL2.
+
+    (equal (car (open-output-channel :string :character *default-state*))
+           nil)
+
   Checks were improved to avoid raw Lisp errors in the following
   situations:
 
@@ -134183,9 +134193,9 @@ Subtopics
 
   To understand how safe-mode works we refer to the notion of
   ``executable-counterpart''; see [evaluation] for relevant
-  background.  ACL2 arranges for that for the executable-counterpart
-  of any program mode function, [30m[47mF[0m[0m, then for every called subroutine [30m[47mG[0m[0m
-  of [30m[47mF[0m[0m that is in program mode, the executable-counterpart of [30m[47mG[0m[0m is
+  background.  ACL2 arranges that for the executable-counterpart of
+  any program mode function, [30m[47mF[0m[0m, then for every called subroutine [30m[47mG[0m[0m of
+  [30m[47mF[0m[0m that is in program mode, the executable-counterpart of [30m[47mG[0m[0m is
   called rather than the raw Lisp function for [30m[47mG[0m[0m.  This may result in
   an attempt to evaluate a so-called ``[program-only]'' function in
   safe-mode, which is illegal.  See [safe-mode-cheat-sheet] for
