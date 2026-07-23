@@ -148,8 +148,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Because uint-array-length is just an alias for len of the elements
-;; TODO: More of these -- add to def-array-support.
-;; TODO: Should this be a linear rule?
+;; TODO: More of these -- add to def-array-support?
+;; TODO: Should this be a linear rule?  Well, it might be good to have it in the type-alist.
+;; Real question is why are we seeing both equivalent formulations?  Just enable c::uint-array-length?
 (defthm uint-array-length-def-forward
   (equal (uint-array-length array)
          (len (uint-array->elements array)))
