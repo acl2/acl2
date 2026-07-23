@@ -43,48 +43,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Library extensions.
+; Library extension.
 
-; These are generic theorems about osets, not specific to DEFINDUCTIVE;
-; at some point they could be moved to a more central library.
-; The main one is GAP-CARDINALITY-DECREASES: if X is within a universe U,
+; GAP-CARDINALITY-DECREASES is a generic theorem about osets,
+; not specific to DEFINDUCTIVE;
+; at some point it could be moved to a more central library.
+; It says that, if X is within a universe U,
 ; and adding X to D actually adds something (i.e. their union is not already
 ; a subset of D), then the "gap" U minus D strictly shrinks in cardinality.
 ; It is used to justify the termination of DEFIND-PRED-DEPENDENCIES below.
-; The two local lemmas before it serve only to prove it.
-
-(defruledl difference-of-union-subset-difference
-  (set::subset (set::difference u (set::union d x))
-               (set::difference u d))
-  :enable set::difference-over-union)
-
-(defruledl head-of-difference-of-union-in-x-and-not-in-d
-  (implies (not (set::subset (set::union d x) d))
-           (and (set::in (set::head (set::difference (set::union d x) d))
-                         x)
-                (not (set::in (set::head (set::difference (set::union d x) d))
-                              d))))
-  :use (:instance set::in-head
-                  (set::x (set::difference (set::union d x) d))))
+; The strictness witness is the head of (difference (union d x) d),
+; which is in X (hence in U) but not in D.
 
 (defruledl gap-cardinality-decreases
   (implies (and (set::subset x u)
                 (not (set::subset (set::union d x) d)))
            (< (set::cardinality (set::difference u (set::union d x)))
               (set::cardinality (set::difference u d))))
-  :enable (difference-of-union-subset-difference
-           head-of-difference-of-union-in-x-and-not-in-d)
-  :use ((:instance set::proper-subset-cardinality
-                   (set::x (set::difference u (set::union d x)))
-                   (set::y (set::difference u d)))
-        (:instance set::subset-in
-                   (set::a (set::head (set::difference (set::union d x) d)))
-                   (set::x (set::difference u d))
-                   (set::y (set::difference u (set::union d x))))
-        (:instance set::subset-in
-                   (set::a (set::head (set::difference (set::union d x) d)))
-                   (set::x x)
-                   (set::y u))))
+  :hints
+  (("Goal"
+    :in-theory (acl2::enable* set::expensive-rules)
+    :use ((:instance set::proper-subset-cardinality
+                     (set::x (set::difference u (set::union d x)))
+                     (set::y (set::difference u d)))
+          (:instance set::in-head
+                     (set::x (set::difference (set::union d x) d)))
+          (:instance set::subset-in
+                     (set::a (set::head (set::difference (set::union d x) d)))
+                     (set::x x)
+                     (set::y u))
+          (:instance set::subset-in
+                     (set::a (set::head (set::difference (set::union d x) d)))
+                     (set::x (set::difference u d))
+                     (set::y (set::difference u (set::union d x))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
