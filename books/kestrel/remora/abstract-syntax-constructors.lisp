@@ -238,9 +238,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Strings and base type keywords are auto-coerced to types."))
-  `(type-funn (list ,@(type-terms-from-vars/bases/others intypes))
-              ,(type-term-from-var/base/other outtype)))
+    "Strings and base type keywords are auto-coerced to types.")
+   (xdoc::p
+    "A single input type produces a unary @(':fun') type term;
+     two or more (or zero) inputs produce an n-ary @(':funn') type term.
+     The count is available at macro-expansion time."))
+  (if (and (consp intypes)
+           (endp (cdr intypes)))
+      `(type-fun ,(type-term-from-var/base/other (car intypes))
+                 ,(type-term-from-var/base/other outtype))
+    `(type-funn (list ,@(type-terms-from-vars/bases/others intypes))
+                ,(type-term-from-var/base/other outtype))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

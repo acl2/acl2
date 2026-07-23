@@ -1303,7 +1303,8 @@
   ;; arrow-type = ( "->" / %x2192 ) ws "(" *( ws type ) ws ")" ws type
   (define abs-arrow-type ((tree abnf::treep))
     :returns (ty type-resultp)
-    :short "Abstract an @('arrow-type') to a @(tsee type) @(':fun')."
+    :short "Abstract an @('arrow-type') to
+            a @(tsee type) @(':fun') or @(':funn')."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -1311,9 +1312,14 @@
        (see the parser's @('parse-arrow-type')):
        the parenthesized-list form produces 8 tree-lists,
        while the single-argument form produces 5;
-       we dispatch on the count.
-       The single-argument form abstracts to
-       a @(':fun') with a singleton input list,
+       we dispatch on the count.")
+     (xdoc::p
+      "A function type with one input becomes
+       a unary function type @(':fun');
+       one with two or more inputs becomes
+       an n-ary function type @(':funn')
+       (see @(tsee type)).
+       The single-argument form always has one input,
        so @('(-> T R)') and @('(-> (T) R)') have the same AST."))
     (b* (((okf treess) (abnf::check-tree-nonleaf tree "arrow-type")))
       (case (len treess)
@@ -1322,14 +1328,17 @@
                 ((okf in) (abs-*-ws-type sub.4th))
                 ((okf out-tree) (abnf::check-tree-list-1 sub.8th))
                 ((okf out) (abs-type out-tree)))
-             (make-type-funn :in in :out out)))
+             (if (and (consp in)
+                      (endp (cdr in)))
+                 (make-type-fun :in (car in) :out out)
+               (make-type-funn :in in :out out))))
         (5 (b* (((okf (abnf::tree-list-tuple5 sub))
                  (abnf::check-tree-list-list-5 treess))
                 ((okf in-tree) (abnf::check-tree-list-1 sub.3rd))
                 ((okf in) (abs-type in-tree))
                 ((okf out-tree) (abnf::check-tree-list-1 sub.5th))
                 ((okf out) (abs-type out-tree)))
-             (make-type-funn :in (list in) :out out)))
+             (make-type-fun :in in :out out)))
         (otherwise
          (reserrf (list :arrow-type-shape (len treess))))))
     :measure (abnf::tree-count tree))

@@ -258,13 +258,12 @@
 
 ;; ---- Arrow types: single argument type without parentheses ----
 
-;; (-> T R) abbreviates (-> (T) R): both abstract to the same :fun AST
-;; with a singleton input list.
+;; (-> T R) abbreviates (-> (T) R): both abstract to the same unary :fun AST.
 (test-parse "(array [0] (-> Int Bool))"
             (make-expr-array-empty
              :dims '(0)
-             :type (make-type-funn
-                    :in (list (make-type-base :type (base-type-int)))
+             :type (make-type-fun
+                    :in (make-type-base :type (base-type-int))
                     :out (make-type-base :type (base-type-bool)))))
 
 ;; A single argument type that itself starts with "(" backtracks out of
