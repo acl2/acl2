@@ -2051,18 +2051,37 @@
   ;; unbox-exp = "unbox" ws "(" ws unbox-spec ws ")" ws exp
   (define abs-unbox-exp ((tree abnf::treep))
     :returns (e expr-resultp)
-    :short "Abstract an @('unbox-exp') to an @(tsee expr) @(':unboxn')."
+    :short "Abstract an @('unbox-exp') to
+            an @(tsee expr) @(':unbox') or @(':unboxn')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "An unboxing with one ispace variable becomes
+       a unary unboxing @(':unbox');
+       one with two or more ispace variables becomes
+       an n-ary unboxing @(':unboxn')
+       (see @(tsee expr))."))
     (b* (((okf (abnf::tree-list-tuple9 sub))
           (abnf::check-tree-nonleaf-9 tree "unbox-exp"))
          ((okf spec-tree) (abnf::check-tree-list-1 sub.5th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.9th))
          ((okf info) (abs-unbox-spec spec-tree))
-         ((okf body) (abs-exp body-tree)))
-      (make-expr-unboxn :ispaces (unbox-spec-info->ispaces info)
-                        :var (unbox-spec-info->var info)
-                        :target (unbox-spec-info->target info)
-                        :body body
-                        :type? nil))
+         ((okf body) (abs-exp body-tree))
+         (ispaces (unbox-spec-info->ispaces info))
+         (var (unbox-spec-info->var info))
+         (target (unbox-spec-info->target info)))
+      (if (and (consp ispaces)
+               (endp (cdr ispaces)))
+          (make-expr-unbox :ispace (car ispaces)
+                           :var var
+                           :target target
+                           :body body
+                           :type? nil)
+        (make-expr-unboxn :ispaces ispaces
+                          :var var
+                          :target target
+                          :body body
+                          :type? nil)))
     :measure (abnf::tree-count tree))
 
   ;; unbox-spec = *( ispace-var ws ) identifier ws exp

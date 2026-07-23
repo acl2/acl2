@@ -892,11 +892,10 @@
        which binds exactly one ispace variable,
        while the @(':unboxn') summand is sugar for
        a nesting of unary unboxings.
-       We plan to make the CST-to-AST mapping turn
+       The CST-to-AST mapping turns
        the unboxings with one ispace variable into @(':unbox'),
        and those with two or more ispace variables into @(':unboxn'),
-       similarly to the other constructs;
-       currently all unboxings map to @(':unboxn').")
+       similarly to the other constructs.")
      (xdoc::p
       "The optional type of the body of an unbox expression
        (i.e. the result type of the unboxing)
