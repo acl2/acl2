@@ -230,7 +230,7 @@
                 (type-rename-ispace-vars-no-capture-p type.body
                                                       dim-renam
                                                       shape-renam))))
-   (expr :unbox
+   (expr :unboxn
          (and (expr-rename-ispace-vars-no-capture-p expr.target
                                                     dim-renam
                                                     shape-renam)
@@ -531,7 +531,7 @@
   :default t
   :combine and
   :override
-  ((expr :unbox
+  ((expr :unboxn
          (and (expr-rename-expr-vars-no-capture-p expr.target renam)
               (b* ((renam
                     (omap::delete expr.var (string-string-map-fix renam))))
@@ -663,7 +663,7 @@
             :body (type-rename-ispace-vars type.body
                                            dim-renam
                                            shape-renam))))
-   (expr :unbox
+   (expr :unboxn
          (b* ((target (expr-rename-ispace-vars expr.target
                                                dim-renam
                                                shape-renam))
@@ -676,7 +676,7 @@
                (dim/shape-rename-remove-bound (set::mergesort expr.ispaces)
                                               dim-renam
                                               shape-renam)))
-           (make-expr-unbox
+           (make-expr-unboxn
             :ispaces expr.ispaces
             :var expr.var
             :target target
@@ -988,10 +988,10 @@
                 (if var+name
                     (expr-var (cdr var+name))
                   (expr-var expr.name))))
-   (expr :unbox
+   (expr :unboxn
          (b* ((target (expr-rename-expr-vars expr.target renam))
               (renam (omap::delete expr.var (string-string-map-fix renam))))
-           (make-expr-unbox
+           (make-expr-unboxn
             :ispaces expr.ispaces
             :var expr.var
             :target target

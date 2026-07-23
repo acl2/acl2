@@ -2051,18 +2051,18 @@
   ;; unbox-exp = "unbox" ws "(" ws unbox-spec ws ")" ws exp
   (define abs-unbox-exp ((tree abnf::treep))
     :returns (e expr-resultp)
-    :short "Abstract an @('unbox-exp') to an @(tsee expr) @(':unbox')."
+    :short "Abstract an @('unbox-exp') to an @(tsee expr) @(':unboxn')."
     (b* (((okf (abnf::tree-list-tuple9 sub))
           (abnf::check-tree-nonleaf-9 tree "unbox-exp"))
          ((okf spec-tree) (abnf::check-tree-list-1 sub.5th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.9th))
          ((okf info) (abs-unbox-spec spec-tree))
          ((okf body) (abs-exp body-tree)))
-      (make-expr-unbox :ispaces (unbox-spec-info->ispaces info)
-                       :var (unbox-spec-info->var info)
-                       :target (unbox-spec-info->target info)
-                       :body body
-                       :type? nil))
+      (make-expr-unboxn :ispaces (unbox-spec-info->ispaces info)
+                        :var (unbox-spec-info->var info)
+                        :target (unbox-spec-info->target info)
+                        :body body
+                        :type? nil))
     :measure (abnf::tree-count tree))
 
   ;; unbox-spec = *( ispace-var ws ) identifier ws exp

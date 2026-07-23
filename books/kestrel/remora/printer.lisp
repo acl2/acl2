@@ -1280,7 +1280,7 @@
                    (pdoc-concat
                     (ispace-list-option-to-pdoc e.iargs)
                     args-doc)))))))
-      :unbox
+      :unboxn
       ;; Surface form (grammar unbox-spec):
       ;;   *( ispace-var ws ) identifier ws exp
       ;; The optional result type (e.type?) has no concrete syntax,

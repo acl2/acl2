@@ -474,7 +474,7 @@
                                                      dim-renam
                                                      shape-renam
                                                      avoid))))
-   (expr :unbox
+   (expr :unboxn
          (b* ((target (expr-rename-ispace-vars-alpha-aux expr.target
                                                          dim-renam
                                                          shape-renam
@@ -484,7 +484,7 @@
                                              dim-renam
                                              shape-renam
                                              (expr-free-ispace-vars expr.body))))
-           (make-expr-unbox
+           (make-expr-unboxn
             :ispaces fresh-ispaces
             :var expr.var
             :target target
@@ -942,13 +942,13 @@
                 (if var+name
                     (expr-var (cdr var+name))
                   (expr-var expr.name))))
-   (expr :unbox
+   (expr :unboxn
          (b* ((target (expr-rename-expr-vars-alpha-aux expr.target renam avoid))
               ((mv fresh renam)
                (expr-rename-alpha-bound (list expr.var)
                                         renam
                                         (expr-free-expr-vars expr.body))))
-           (make-expr-unbox
+           (make-expr-unboxn
             :ispaces expr.ispaces
             :var (car fresh)
             :target target

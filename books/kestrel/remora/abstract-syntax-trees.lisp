@@ -879,7 +879,7 @@
        of the argument lists of @(':appn'), @(':tappn'), and @(':iappn')
        (but not of @(':capp'), whose value arguments may be absent),
        of the bind list in @(':let'),
-       and of the ispace-var list in @(':unbox')
+       and of the ispace-var list in @(':unboxn')
        is not captured in this fixtype.
        The FTY @(':require') feature does not seem to work here,
        perhaps because of the interaction with the mutually recursive fixtypes.
@@ -919,11 +919,11 @@
             (targs type-list-option)
             (iargs ispace-list-option)
             (args expr-list)))
-    (:unbox ((ispaces ispace-var-list)
-             (var string)
-             (target expr)
-             (body expr)
-             (type? type-option)))
+    (:unboxn ((ispaces ispace-var-list)
+              (var string)
+              (target expr)
+              (body expr)
+              (type? type-option)))
     (:bracket ((exprs expr-list)))
     (:let ((binds bind-list)
            (body expr)))

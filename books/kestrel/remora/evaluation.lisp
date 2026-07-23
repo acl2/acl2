@@ -1067,19 +1067,19 @@
                     :none funval))
                   ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
                (eval-app funval argvals (1- limit)))
-       :unbox (b* (((ok targetval) (eval-expr expr.target denv (1- limit)))
-                   ((ok tval) (type-option-case
-                               expr.type?
-                               :some (eval-type expr.type?.val
-                                                (expr-denv->tenv denv))
-                               :none (reserr nil))))
-                (eval-unbox targetval
-                            expr.ispaces
-                            expr.var
-                            expr.body
-                            tval
-                            denv
-                            (1- limit)))
+       :unboxn (b* (((ok targetval) (eval-expr expr.target denv (1- limit)))
+                    ((ok tval) (type-option-case
+                                expr.type?
+                                :some (eval-type expr.type?.val
+                                                 (expr-denv->tenv denv))
+                                :none (reserr nil))))
+                 (eval-unbox targetval
+                             expr.ispaces
+                             expr.var
+                             expr.body
+                             tval
+                             denv
+                             (1- limit)))
        :bracket (b* (((ok vals) (eval-expr-list expr.exprs denv (1- limit)))
                      ((unless (consp vals)) (reserr nil))
                      ((unless (list-repeatp (dims-of-expr-value-list vals)))
