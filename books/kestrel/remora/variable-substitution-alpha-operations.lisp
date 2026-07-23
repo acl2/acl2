@@ -552,6 +552,18 @@
                                                     dim-subst
                                                     shape-subst
                                                     avoid))))
+   (type :sigma
+         (b* (((mv fresh-params dim-subst shape-subst)
+               (dim/shape-subst-alpha-bound (list type.param)
+                                            dim-subst
+                                            shape-subst
+                                            (type-free-ispace-vars type.body))))
+           (make-type-sigma
+            :param (car fresh-params)
+            :body (type-subst-ispace-vars-alpha-aux type.body
+                                                    dim-subst
+                                                    shape-subst
+                                                    avoid))))
    (type :sigman
          (b* (((mv fresh-params dim-subst shape-subst)
                (dim/shape-subst-alpha-bound type.params

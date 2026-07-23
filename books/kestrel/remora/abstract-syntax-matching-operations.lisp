@@ -202,7 +202,20 @@
   :short "Check if a type is a sum type,
           returning its ispace parameter variables and body array type
           if successful."
-  (if (type-case type :sigman)
-      (make-ispacevarlist+type :vars (type-sigman->params type)
-                               :type (type-sigman->body type))
-    (reserr nil)))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Both the unary and n-ary forms of sum type are matched.
+     Unlike @(tsee type-match-product), which peels off one variable
+     (consistently with the curried view of ispace applications),
+     this operation returns all the parameter variables at once,
+     because the box and unbox constructs that eliminate sum types
+     bind all their witnesses together for now;
+     a unary sum type yields a single-element list."))
+  (type-case
+   type
+   :sigma (make-ispacevarlist+type :vars (list (type-sigma->param type))
+                                   :type (type-sigma->body type))
+   :sigman (make-ispacevarlist+type :vars (type-sigman->params type)
+                                    :type (type-sigman->body type))
+   :otherwise (reserr nil)))

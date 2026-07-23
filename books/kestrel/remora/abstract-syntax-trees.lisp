@@ -451,9 +451,18 @@
        The CST-to-AST mapping turns
        the product types with one parameter into @(':pi'),
        and those with two or more parameters into @(':pin'),
-       similarly to ispace applications (see @(tsee expr)).
-       The @(':sigman') summand
-       will be similarly given a unary form.")
+       similarly to ispace applications (see @(tsee expr)).")
+     (xdoc::p
+      "The @(':sigma') summand is
+       the main, core form of sum type,
+       which binds exactly one parameter,
+       while the @(':sigman') summand is sugar for
+       a nesting of unary sum types.
+       We plan to make the CST-to-AST mapping turn
+       the sum types with one parameter into @(':sigma'),
+       and those with two or more parameters into @(':sigman'),
+       similarly to product types;
+       currently all sum types map to @(':sigman').")
      (xdoc::p
       "The concrete syntax requires the parameter lists of
        @(':foralln'), @(':pin'), and @(':sigman') to be non-empty;
@@ -474,6 +483,8 @@
           (body type)))
     (:pin ((params ispace-var-list)
            (body type)))
+    (:sigma ((param ispace-var)
+             (body type)))
     (:sigman ((params ispace-var-list)
               (body type)))
     :pred typep)

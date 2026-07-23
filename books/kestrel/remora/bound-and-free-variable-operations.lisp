@@ -199,6 +199,7 @@
    (type :pin
          (set::difference (type-free-ispace-vars type.body)
                           (set::mergesort type.params)))
+   (type :sigma (set::delete type.param (type-free-ispace-vars type.body)))
    (type :sigman
          (set::difference (type-free-ispace-vars type.body)
                           (set::mergesort type.params)))
@@ -387,6 +388,7 @@
    (type :pin
          (set::union (set::mergesort type.params)
                      (type-all-ispace-vars type.body)))
+   (type :sigma (set::insert type.param (type-all-ispace-vars type.body)))
    (type :sigman
          (set::union (set::mergesort type.params)
                      (type-all-ispace-vars type.body)))

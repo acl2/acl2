@@ -435,11 +435,29 @@
                                                        maps.4th)))
                     (type-equivp body1 body2))
              :otherwise nil))
+     :sigma (b* ((type2 (normalize-scalar-type type2)))
+              (type-case
+               type2
+               :sigma (b* ((used (set::union (type-all-ispace-vars type1)
+                                             (type-all-ispace-vars type2)))
+                           (maps (fresh-ispace-var-renaming (list type1.param)
+                                                            (list type2.param)
+                                                            used))
+                           ((when (reserrp maps)) nil)
+                           ((string-string-map-quadruple maps) maps)
+                           (body1 (type-rename-ispace-vars type1.body
+                                                           maps.1st
+                                                           maps.2nd))
+                           (body2 (type-rename-ispace-vars type2.body
+                                                           maps.3rd
+                                                           maps.4th)))
+                        (type-equivp body1 body2))
+               :otherwise nil))
      :sigman (b* ((type2 (normalize-scalar-type type2)))
                (type-case
                 type2
                 :sigman (b* ((used (set::union (type-all-ispace-vars type1)
-                                              (type-all-ispace-vars type2)))
+                                               (type-all-ispace-vars type2)))
                              (maps (fresh-ispace-var-renaming type1.params
                                                               type2.params
                                                               used))

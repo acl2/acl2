@@ -247,6 +247,17 @@
                 (type-subst-ispace-vars-no-capture-p type.body
                                                      dim-subst
                                                      shape-subst))))
+   (type :sigma
+         (b* (((mv dim-subst shape-subst)
+               (dim/shape-subst-remove-bound (set::insert type.param nil)
+                                             dim-subst
+                                             shape-subst)))
+           (and (dim/shape-subst-no-capture-p (set::insert type.param nil)
+                                              dim-subst
+                                              shape-subst)
+                (type-subst-ispace-vars-no-capture-p type.body
+                                                     dim-subst
+                                                     shape-subst))))
    (type :sigman
          (b* (((mv dim-subst shape-subst)
                (dim/shape-subst-remove-bound (set::mergesort type.params)
@@ -678,6 +689,15 @@
                 :body (type-subst-ispace-vars type.body
                                               dim-subst
                                               shape-subst))))
+   (type :sigma (b* (((mv dim-subst shape-subst)
+                      (dim/shape-subst-remove-bound (set::insert type.param nil)
+                                                    dim-subst
+                                                    shape-subst)))
+                  (make-type-sigma
+                   :param type.param
+                   :body (type-subst-ispace-vars type.body
+                                                 dim-subst
+                                                 shape-subst))))
    (type :sigman (b* (((mv dim-subst shape-subst)
                        (dim/shape-subst-remove-bound (set::mergesort type.params)
                                                      dim-subst

@@ -899,6 +899,11 @@
             (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc ty.params))
                          (pdoc-concat (pdoc-line)
                                       (type-to-pdoc ty.body))))
+      :sigma (pdoc-prefix-form
+              "Sigma"
+              (pdoc-concat (pdoc-paren (ispace-var-to-pdoc ty.param))
+                           (pdoc-concat (pdoc-line)
+                                        (type-to-pdoc ty.body))))
       :sigman (pdoc-prefix-form
                "Sigma"
                (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc ty.params))

@@ -309,7 +309,7 @@
       "For a function type, we evaluate input and output types,
        and put the resulting type values together into a function type value.")
      (xdoc::p
-      "Universal, product, and sum types evaluate to themselves.
+      "Universal, product, and sum types evaluate essentially to themselves.
        They are treated like lambda abstractions.
        The resulting type values include dynamic environments
        with the bindings for
@@ -359,12 +359,19 @@
              :denv (type-denv-restrict (type-free-ispace-vars type)
                                        (type-free-type-vars type)
                                        denv)))
-     :sigman (make-type-value-sigma
-              :params type.params
-              :body type.body
-              :denv (type-denv-restrict (type-free-ispace-vars type)
-                                        (type-free-type-vars type)
-                                        denv)))
+     :sigma (make-type-value-sigma
+             :param type.param
+             :body type.body
+             :denv (type-denv-restrict (type-free-ispace-vars type)
+                                       (type-free-type-vars type)
+                                       denv))
+     :sigman (b* (((unless (consp type.params)) (reserr nil)))
+               (make-type-value-sigma
+                :param (car type.params)
+                :body (sigma-curried-body type.params type.body)
+                :denv (type-denv-restrict (type-free-ispace-vars type)
+                                          (type-free-type-vars type)
+                                          denv))))
     :measure (type-count type))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
