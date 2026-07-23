@@ -43,7 +43,7 @@
 
 (local
  (defthmd rationalp-of---alt
-   (equal (rationalp (- x))
+   (equal (real/rationalp (- x))
           (not (complex/complex-rationalp x)))
    :hints (("Goal" :cases ((complex/complex-rationalp x))))))
 
