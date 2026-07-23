@@ -319,9 +319,9 @@
                                                   shape-renam)
              :dims tval.dims)
      :fun (make-type-value-fun
-           :in (type-value-list-rename-ispace-vars tval.in
-                                                   dim-renam
-                                                   shape-renam)
+           :in (type-value-rename-ispace-vars tval.in
+                                              dim-renam
+                                              shape-renam)
            :out (type-value-rename-ispace-vars tval.out
                                                dim-renam
                                                shape-renam))
@@ -422,6 +422,25 @@
   ;;   :fn type-value-list-rename-ispace-vars
   ;;   :hints (("Goal" :in-theory (enable not-reserrp-when-type-value-listp))))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Renaming a function type value built from a list of inputs and an output
+; is the same as building it from the renamed inputs and the renamed output.
+; This is needed to evaluate n-ary function types, which curry into nestings.
+
+(local (acl2::defopeners type-value-rename-ispace-vars))
+
+(defrule type-value-rename-ispace-vars-of-make-arrow-type-value
+  (equal (type-value-rename-ispace-vars (make-arrow-type-value in out)
+                                        dim-renam
+                                        shape-renam)
+         (make-arrow-type-value
+          (type-value-list-rename-ispace-vars in dim-renam shape-renam)
+          (type-value-rename-ispace-vars out dim-renam shape-renam)))
+  :induct t
+  :enable (make-arrow-type-value
+           type-value-list-rename-ispace-vars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1374,9 +1393,9 @@
                                                 array-renam)
              :dims tval.dims)
      :fun (make-type-value-fun
-           :in (type-value-list-rename-type-vars tval.in
-                                                 atom-renam
-                                                 array-renam)
+           :in (type-value-rename-type-vars tval.in
+                                            atom-renam
+                                            array-renam)
            :out (type-value-rename-type-vars tval.out
                                              atom-renam
                                              array-renam))
@@ -1469,6 +1488,23 @@
     (not (reserrp new-tvals))
     :fn type-value-list-rename-type-vars
     :hints (("Goal" :in-theory (enable not-reserrp-when-type-value-listp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The type-variable counterpart of the lemma about ispace variables above.
+
+(local (acl2::defopeners type-value-rename-type-vars))
+
+(defrule type-value-rename-type-vars-of-make-arrow-type-value
+  (equal (type-value-rename-type-vars (make-arrow-type-value in out)
+                                      atom-renam
+                                      array-renam)
+         (make-arrow-type-value
+          (type-value-list-rename-type-vars in atom-renam array-renam)
+          (type-value-rename-type-vars out atom-renam array-renam)))
+  :induct t
+  :enable (make-arrow-type-value
+           type-value-list-rename-type-vars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

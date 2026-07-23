@@ -138,21 +138,19 @@
        with the parameters and the resulting body.
        Since universal, product, and sum type values are unary,
        they are rebuilt as unary universal, product, and sum types.
-       Function type values are still n-ary;
-       we rebuild them as unary function types (@(':fun'))
-       when they have a single input,
-       and as n-ary function types (@(':funn')) otherwise."))
+       Function type values are unary as well,
+       so they are rebuilt as unary function types;
+       a nesting of function type values,
+       which is how a function with two or more inputs is represented,
+       is rebuilt as the corresponding nesting of unary function types."))
     (type-value-case
      tval
      :base (type-base tval.type)
      :array (make-type-array
              :elem (type-value-to-type tval.elem)
              :ispace (ispace-shape (shape-dims (dim-const-list tval.dims))))
-     :fun (b* ((in (type-value-list-to-type-list tval.in))
-               (out (type-value-to-type tval.out)))
-            (if (and (consp in) (endp (cdr in)))
-                (make-type-fun :in (car in) :out out)
-              (make-type-funn :in in :out out)))
+     :fun (make-type-fun :in (type-value-to-type tval.in)
+                         :out (type-value-to-type tval.out))
      :forall (make-type-forall
               :param tval.param
               :body (type-subst-type-denv tval.body tval.denv))

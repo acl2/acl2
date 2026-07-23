@@ -14,6 +14,7 @@
 
 (include-book "std/basic/two-nats-measure" :dir :system)
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
@@ -75,11 +76,20 @@
        evaluates to the unary universal, product, or sum type value
        that binds the first parameter,
        whose body is the universal, product, or sum type
-       over the remaining parameters."))
+       over the remaining parameters.")
+     (xdoc::p
+      "A function type value has exactly one input.
+       Consistently with the curried view of term applications,
+       a function type with two or more inputs
+       evaluates to a nesting of one-input function type values
+       (see @(tsee make-arrow-type-value));
+       its inputs and its final output can be recovered via
+       @(tsee arrow-type-value-inputs)
+       and @(tsee arrow-type-value-output)."))
     (:base ((type base-type)))
     (:array ((elem type-value)
              (dims nat-list)))
-    (:fun ((in type-value-list)
+    (:fun ((in type-value)
            (out type-value)))
     (:forall ((param type-var)
               (body type)
@@ -215,6 +225,70 @@
   :returns (dimss nat-list-listp)
   :short "Lift @(tsee dims-of-type-value) to lists."
   (dims-of-type-value x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-arrow-type-value ((in type-value-listp) (out type-valuep))
+  :returns (tval type-valuep)
+  :short "Build a function type value from
+          a list of input type values and an output type value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A function type value has exactly one input.
+     Consistently with the curried view of term applications,
+     a function with two or more inputs is built as
+     a nesting of one-input function type values,
+     while a function with a single input
+     is a one-input function type value directly.
+     A function with no inputs is just the output;
+     this does not arise for the primitive operations,
+     which are the main use of this constructor."))
+  (if (endp in)
+      (type-value-fix out)
+    (make-type-value-fun :in (car in)
+                         :out (make-arrow-type-value (cdr in) out)))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define arrow-type-value-inputs ((tval type-valuep))
+  :returns (ins type-value-listp)
+  :short "Input type values of a function type value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This walks the nesting of one-input function type values,
+     collecting the input of each,
+     until a type value that is not a function type value is reached.
+     For the primitive operations,
+     whose final output is never a function type value,
+     this returns exactly the inputs
+     that @(tsee make-arrow-type-value) was given."))
+  (if (type-value-case tval :fun)
+      (cons (type-value-fun->in tval)
+            (arrow-type-value-inputs (type-value-fun->out tval)))
+    nil)
+  :measure (type-value-count tval))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define arrow-type-value-output ((tval type-valuep))
+  :returns (out type-valuep)
+  :short "Final output type value of a function type value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This walks the nesting of one-input function type values
+     to the final output, i.e. the ultimate codomain,
+     which for the primitive operations
+     is not a function type value.
+     A type value that is not a function type value
+     is returned unchanged."))
+  (if (type-value-case tval :fun)
+      (arrow-type-value-output (type-value-fun->out tval))
+    (type-value-fix tval))
+  :measure (type-value-count tval))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
