@@ -518,7 +518,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define defind-preds-direct-dependencies ((pred-names symbol-setp)
+(define defind-preds-direct-dependencies ((preds symbol-setp)
                                           (irule-infos defind-irule-info-listp))
   :returns (deps symbol-setp)
   :short "Predicates on which given predicates directly depend."
@@ -529,10 +529,10 @@
      some rule has @('p[i]') in its conclusion
      and calls @('p[j]') in some premise.
      This function returns the set of all the predicates
-     on which any of the predicates in @('pred-names') directly depends:
+     on which any of the predicates in @('preds') directly depends:
      it goes through the rules,
      and collects the predicates called by the premises of
-     the rules whose conclusions call predicates in @('pred-names').")
+     the rules whose conclusions call predicates in @('preds').")
    (xdoc::p
     "This function operates on a set of predicates,
      instead of a single predicate,
@@ -545,10 +545,10 @@
      (see @(tsee defind-called-preds-in-premises-of-irules)),
      as expressed by the theorem below."))
   (b* (((when (endp irule-infos)) nil)
-       (deps (defind-preds-direct-dependencies pred-names (cdr irule-infos)))
+       (deps (defind-preds-direct-dependencies preds (cdr irule-infos)))
        ((defind-irule-info info) (car irule-infos)))
     (if (set::in (defind-conclusion-info->name info.conclusion)
-                 (symbol-sfix pred-names))
+                 (symbol-sfix preds))
         (set::union (defind-called-preds-in-premises info.premises) deps)
       deps))
   :verify-guards :after-returns
