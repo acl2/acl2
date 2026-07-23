@@ -2261,7 +2261,7 @@
                :body (expr-rename-expr-vars val.body renam)
                :denv (expr-denv-rename-expr-vars val.denv renam))
      :box (make-expr-value-box
-           :ispaces val.ispaces
+           :ispace val.ispace
            :array (expr-value-rename-expr-vars val.array renam)
            :type val.type)
      :vector (expr-value-vector
@@ -2645,7 +2645,7 @@
                                                      dim-renam
                                                      shape-renam)))
      :box (make-expr-value-box
-           :ispaces val.ispaces
+           :ispace val.ispace
            :array (expr-value-rename-ispace-vars val.array
                                                  dim-renam
                                                  shape-renam)
@@ -3030,7 +3030,7 @@
                                                  atom-renam
                                                  array-renam))
      :box (make-expr-value-box
-           :ispaces val.ispaces
+           :ispace val.ispace
            :array (expr-value-rename-type-vars val.array
                                                atom-renam
                                                array-renam)
