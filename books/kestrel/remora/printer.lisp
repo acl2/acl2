@@ -874,6 +874,11 @@
                  (pdoc-concat (type-to-pdoc ty.elem)
                               (pdoc-concat (pdoc-line)
                                            (ispace-list-to-pdoc ty.ispaces)))))
+      :fun (pdoc-prefix-form
+            "->"
+            (pdoc-concat (pdoc-paren (type-to-pdoc ty.in))
+                         (pdoc-concat (pdoc-line)
+                                      (type-to-pdoc ty.out))))
       :funn (pdoc-prefix-form
              "->"
              (pdoc-concat (pdoc-paren (type-list-to-pdoc ty.in))

@@ -357,6 +357,12 @@
                                     (shape-list-from-ispace-list
                                      type2.ispaces)))))
                    :otherwise nil)))
+     :fun (b* ((type2 (normalize-scalar-type type2)))
+            (type-case
+             type2
+             :fun (and (type-equivp type1.in type2.in)
+                       (type-equivp type1.out type2.out))
+             :otherwise nil))
      :funn (b* ((type2 (normalize-scalar-type type2)))
              (type-case
               type2

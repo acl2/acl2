@@ -433,6 +433,17 @@
        product types (quantified over ispace parameters),
        and sum types (quantified over ispace parameters).")
      (xdoc::p
+      "The @(':fun') summand is
+       the main, core form of function type,
+       which has exactly one input type,
+       while the @(':funn') summand is sugar for
+       a nesting of one-input function types.
+       We plan to make the CST-to-AST mapping turn
+       the function types with one input into @(':fun'),
+       and those with two or more inputs into @(':funn'),
+       similarly to term applications;
+       currently all function types map to @(':funn').")
+     (xdoc::p
       "The @(':forall') summand is
        the main, core form of universal type,
        which binds exactly one parameter,
@@ -472,6 +483,8 @@
              (ispace ispace)))
     (:bracket ((elem type)
                (ispaces ispace-list)))
+    (:fun ((in type)
+           (out type)))
     (:funn ((in type-list)
             (out type)))
     (:forall ((param type-var)

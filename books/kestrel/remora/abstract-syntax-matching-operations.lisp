@@ -97,23 +97,24 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "A unary function type is matched directly:
+     we return its input type and its output type.")
+   (xdoc::p
     "Consistently with the curried view of term applications
      (see @(tsee expr)),
-     a function type is treated as
+     an n-ary function type is treated as
      the nesting of one-input function types.
      Accordingly, this matching operation peels off one input type:
-     if the type is a function type with at least one input,
+     if the type is an n-ary function type with at least one input,
      we return the first input type,
      along with the output type of the function type
      if there are no other inputs,
      or otherwise the function type over the remaining inputs.
-     A function type with no inputs fails to match.")
-   (xdoc::p
-    "Unlike @(tsee type-match-forall) and @(tsee type-match-product),
-     there is no unary form of function type to match directly:
-     a function type always has an explicit list of input types,
-     which will be similarly given a unary form."))
-  (b* (((unless (type-case type :funn)) (reserr nil))
+     An n-ary function type with no inputs fails to match."))
+  (b* (((when (type-case type :fun))
+        (make-type+type :type1 (type-fun->in type)
+                        :type2 (type-fun->out type)))
+       ((unless (type-case type :funn)) (reserr nil))
        (ins (type-funn->in type))
        (out (type-funn->out type))
        ((unless (consp ins)) (reserr nil)))

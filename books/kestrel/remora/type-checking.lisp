@@ -276,6 +276,8 @@
      :bracket (and (check-type type.elem senv)
                    (type-atomp type.elem)
                    (check-ispace-list type.ispaces senv))
+     :fun (and (check-type type.in senv)
+               (check-type type.out senv))
      :funn (and (check-type-list type.in senv)
                 (check-type type.out senv))
      :forall (check-type type.body (senv-add-type-var type.param senv))
