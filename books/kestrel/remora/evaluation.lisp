@@ -1493,9 +1493,10 @@
                                               :body bind.expr
                                               :type? bind.type))))
                   ((ok in) (var+type?-list->type-list-or-err bind.params))
-                  (lambda-type (make-type-funn
-                                :in in
-                                :out bind.type))
+                  (lambda-type (if (and (consp in) (endp (cdr in)))
+                                   (make-type-fun :in (car in)
+                                                  :out bind.type)
+                                 (make-type-funn :in in :out bind.type)))
                   ((mv iexpr itype)
                    (ispace-var-list-option-case
                     bind.iparams?

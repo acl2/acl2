@@ -1728,7 +1728,7 @@
           ((ok senv) (senv-add-var+type (var+type?->var atom.param) type senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
-        :type (make-type-funn :in (list type) :out be.type)
+        :type (make-type-fun :in type :out be.type)
         :atom (make-atom-lambda :param atom.param
                                 :body be.expr
                                 :type? be.type)))
@@ -1741,7 +1741,9 @@
           ((ok senv) (senv-add-vars+types atom.params senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
-        :type (make-type-funn :in types :out be.type)
+        :type (if (and (consp types) (endp (cdr types)))
+                  (make-type-fun :in (car types) :out be.type)
+                (make-type-funn :in types :out be.type))
         :atom (make-atom-lambdan :params atom.params
                                  :body be.expr
                                  :type? be.type)))
@@ -1962,13 +1964,14 @@
           ((ok senv-body) (senv-add-vars+types bind.params senv))
           ((ok (type+expr ee)) (check-expr bind.expr senv-body))
           ((unless (check-bind-type-annotation bind.type? ee.type senv))
-           (reserr nil)))
+           (reserr nil))
+          (fun-type (if (and (consp types) (endp (cdr types)))
+                        (make-type-fun :in (car types) :out ee.type)
+                      (make-type-funn :in types :out ee.type))))
        (make-senv+bind
         :senv (senv-add-var+type bind.var
                                  (make-type-array
-                                  :elem (make-type-funn
-                                         :in types
-                                         :out ee.type)
+                                  :elem fun-type
                                   :ispace (ispace-shape (shape-dims nil)))
                                  senv)
         :bind (make-bind-fun :var bind.var
@@ -2029,7 +2032,9 @@
           ((ok senv-body) (senv-add-vars+types bind.params senv-iparams))
           ((ok (type+expr ee)) (check-expr bind.expr senv-body))
           ((unless (type-equivp ee.type btype)) (reserr nil))
-          (fun-type (make-type-funn :in types :out btype))
+          (fun-type (if (and (consp types) (endp (cdr types)))
+                        (make-type-fun :in (car types) :out btype)
+                      (make-type-funn :in types :out btype)))
           (fun-type (ispace-var-list-option-case
                      bind.iparams?
                      :some (make-type-pin :params bind.iparams?.val
