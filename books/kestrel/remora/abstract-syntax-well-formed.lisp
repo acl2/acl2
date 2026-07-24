@@ -112,8 +112,7 @@
                     (type-wf-ast-p (bind-cfun->type bind))
                     (expr-wf-ast-p (bind-cfun->expr bind))))
    ;; Unbox binds a string variable; check it.
-   (expr :unbox (and (ispace-var-list-wf-ast-p
-                      (list (expr-unbox->ispace expr)))
+   (expr :unbox (and (ispace-var-wf-ast-p (expr-unbox->ispace expr))
                      (valid-identifier-string-p (expr-unbox->var expr))
                      (expr-wf-ast-p (expr-unbox->target expr))
                      (expr-wf-ast-p (expr-unbox->body expr))))
