@@ -321,4 +321,16 @@
     (equal (type-corep (nest-forall-types params body))
            (type-corep body))
     :induct t
-    :enable nest-forall-types))
+    :enable nest-forall-types)
+
+  (defrule type-corep-of-nest-pi-types
+    (equal (type-corep (nest-pi-types params body))
+           (type-corep body))
+    :induct t
+    :enable nest-pi-types)
+
+  (defrule type-corep-of-nest-sigma-types
+    (equal (type-corep (nest-sigma-types params body))
+           (type-corep body))
+    :induct t
+    :enable nest-sigma-types))
