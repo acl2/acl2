@@ -10,7 +10,6 @@
 
 (in-package "REMORA")
 
-(include-book "abstract-syntax-core")
 (include-book "abstract-syntax-derived-fixtypes")
 (include-book "lists")
 
@@ -23,7 +22,7 @@
 
 (acl2::controlled-configuration)
 
-(local (in-theory (enable* ast-corep-rules)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local (in-theory (enable typep-when-result-not-error
                           type-listp-when-result-not-error)))
@@ -94,15 +93,7 @@
 (std::defprojection shape-dims-list ((x dim-list-listp))
   :returns (shapes shape-listp)
   :short "Lift @(tsee shape-dims) to lists."
-  (shape-dims x)
-
-  ///
-
-  (defruled shape-list-corep-of-shape-dims-list-of-list-to-singletons
-    (shape-list-corep (shape-dims-list (list-to-singletons dims)))
-    :induct t
-    :enable (list-to-singletons
-             shape-corep-when-dims-and-singleton)))
+  (shape-dims x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -123,13 +114,7 @@
 (std::defprojection atom-base-list ((x base-lit-listp))
   :returns (atoms atom-listp)
   :short "Lift @(tsee atom-base) to lists."
-  (atom-base x)
-
-  ///
-
-  (defrule atom-list-corep-of-atom-base-list
-    (atom-list-corep (atom-base-list lits))
-    :induct t))
+  (atom-base x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -153,15 +138,7 @@
   :guard (expr-list-case-array x)
   :returns (atomss atom-list-listp)
   :short "Lift @(tsee expr-array->atoms) to lists."
-  (expr-array->atoms x)
-
-  ///
-
-  (defrule atom-list-list-corep-of-expr-array-list->atoms
-    (implies (and (expr-list-corep exprs)
-                  (expr-list-case-array exprs))
-             (atom-list-list-corep (expr-array-list->atoms exprs)))
-    :induct t))
+  (expr-array->atoms x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -177,15 +154,7 @@
   :guard (expr-list-case-frame x)
   :returns (exprss expr-list-listp)
   :short "Lift @(tsee expr-frame->exprs) to lists."
-  (expr-frame->exprs x)
-
-  ///
-
-  (defrule expr-list-list-corep-of-expr-frame-list->exprs
-    (implies (and (expr-list-corep exprs)
-                  (expr-list-case-frame exprs))
-             (expr-list-list-corep (expr-frame-list->exprs exprs)))
-    :induct t))
+  (expr-frame->exprs x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -201,15 +170,7 @@
   :guard (ispace-list-case-shape x)
   :returns (shapes shape-listp)
   :short "Lift @(tsee ispace-shape->shape) to lists."
-  (ispace-shape->shape x)
-
-  ///
-
-  (defrule shape-list-corep-of-ispace-shape-list->shape
-    (implies (and (ispace-list-corep ispaces)
-                  (ispace-list-case-shape ispaces))
-             (shape-list-corep (ispace-shape-list->shape ispaces)))
-    :induct t))
+  (ispace-shape->shape x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -228,14 +189,7 @@
     (type-option-case
      type?
      :none (reserr nil)
-     :some type?.val))
-
-  ///
-
-  (defruled type-corep-of-var+type?->type-or-err
-    (implies (and (var+type?-corep x)
-                  (not (reserrp (var+type?->type-or-err x))))
-             (type-corep (var+type?->type-or-err x)))))
+     :some type?.val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -246,17 +200,7 @@
   (b* (((when (endp x)) nil)
        ((ok type) (var+type?->type-or-err (car x)))
        ((ok types) (var+type?-list->type-list-or-err (cdr x))))
-    (cons type types))
-
-  ///
-
-  (defruled type-list-corep-of-var+type?-list->type-list
-    (implies (and (var+type?-list-corep x)
-                  (not (reserrp (var+type?-list->type-list-or-err x))))
-             (type-list-corep (var+type?-list->type-list-or-err x)))
-    :induct t
-    :enable (var+type?-list->type-list-or-err
-             type-corep-of-var+type?->type-or-err)))
+    (cons type types)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

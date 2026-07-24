@@ -16,7 +16,11 @@
 
 (include-book "kestrel/fty/deffold-map" :dir :system)
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+
 (acl2::controlled-configuration)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local (in-theory (enable* ast-corep-rules)))
 

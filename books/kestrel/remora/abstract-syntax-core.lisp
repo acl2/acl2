@@ -10,12 +10,13 @@
 
 (in-package "REMORA")
 
-(include-book "abstract-syntax-trees")
+(include-book "abstract-syntax-structurals")
 
 (include-book "lists")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
-(include-book "kestrel/utilities/ordinals" :dir :system)
+
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -249,3 +250,57 @@
                     not-bind-corep-when-cfun
                     expr-list-corep-of-append-all
                     atom-list-corep-of-append-all)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection corep-theorems-about-structurals
+  :short "Some theorems about
+          the core AST predicates over some structural operations."
+
+  (local (in-theory (enable* ast-corep-rules)))
+
+  (defruled shape-list-corep-of-shape-dims-list-of-list-to-singletons
+    (shape-list-corep (shape-dims-list (list-to-singletons dims)))
+    :induct t
+    :enable (list-to-singletons
+             shape-corep-when-dims-and-singleton))
+
+  (defrule atom-list-corep-of-atom-base-list
+    (atom-list-corep (atom-base-list lits))
+    :induct t
+    :enable atom-base-list)
+
+  (defrule atom-list-list-corep-of-expr-array-list->atoms
+    (implies (and (expr-list-corep exprs)
+                  (expr-list-case-array exprs))
+             (atom-list-list-corep (expr-array-list->atoms exprs)))
+    :induct t
+    :enable expr-array-list->atoms)
+
+  (defrule expr-list-list-corep-of-expr-frame-list->exprs
+    (implies (and (expr-list-corep exprs)
+                  (expr-list-case-frame exprs))
+             (expr-list-list-corep (expr-frame-list->exprs exprs)))
+    :induct t
+    :enable expr-frame-list->exprs)
+
+  (defrule shape-list-corep-of-ispace-shape-list->shape
+    (implies (and (ispace-list-corep ispaces)
+                  (ispace-list-case-shape ispaces))
+             (shape-list-corep (ispace-shape-list->shape ispaces)))
+    :induct t
+    :enable ispace-shape-list->shape)
+
+  (defruled type-corep-of-var+type?->type-or-err
+    (implies (and (var+type?-corep x)
+                  (not (reserrp (var+type?->type-or-err x))))
+             (type-corep (var+type?->type-or-err x)))
+    :enable var+type?->type-or-err)
+
+  (defruled type-list-corep-of-var+type?-list->type-list
+    (implies (and (var+type?-list-corep x)
+                  (not (reserrp (var+type?-list->type-list-or-err x))))
+             (type-list-corep (var+type?-list->type-list-or-err x)))
+    :induct t
+    :enable (var+type?-list->type-list-or-err
+             type-corep-of-var+type?->type-or-err)))
