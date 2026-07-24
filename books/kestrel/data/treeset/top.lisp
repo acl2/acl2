@@ -20,6 +20,7 @@
 (include-book "insert")
 (include-book "delete")
 (include-book "generic-typed")
+(include-book "generic-count")
 (include-book "induction")
 (include-book "union")
 (include-book "intersect")
