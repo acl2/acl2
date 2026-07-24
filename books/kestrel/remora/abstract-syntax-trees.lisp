@@ -892,6 +892,9 @@
       "A bracketed expression must have at least one sub-expression,
        but this is not enforced in this fixtype.")
      (xdoc::p
+      "A @('let') expressions must have at least one bind,
+       but this is not enforced in this fixtype.")
+     (xdoc::p
       "[impl] has only unary ASTs for applications and unboxing."))
     (:var ((name string)))
     (:atom ((atom atom)))
@@ -931,7 +934,7 @@
               (body expr)
               (type? type-option)))
     (:bracket ((exprs expr-list))) ; one or more
-    (:let ((binds bind-list)
+    (:let ((binds bind-list) ; one or more
            (body expr)))
     :pred exprp)
 
