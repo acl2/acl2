@@ -28,8 +28,7 @@
    (xdoc::p
     "The fixtype constructors of ASTs are inherently fairly verbose.
      We provide more readable constructors, mainly in the form of macros.
-     These can be regarded as forming a sort of
-     embedded domain-specific language for Remora.")
+     These can be regarded as an embedded domain-specific language for Remora.")
    (xdoc::p
     "We start by providing constructors for ispaces and types.
      We plan to add constructors for other ASTs as well."))
@@ -122,7 +121,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The string denoting a variable must start with @('$') or @('@')."))
+    "The string denoting a variable must start with @('$') or @('@').")
+   (xdoc::p
+    "Dimensions are lifted to shapes."))
   (cond ((stringp dim/shape)
          (b* (((mv prefix name) (var-string-split dim/shape '(#\$ #\@))))
            (case prefix
