@@ -330,9 +330,12 @@
                    (natss (ispace-value-list-to-dims ivals))
                    (nats (append-all natss)))
                 (make-type-value-array :elem elem-tval :dims nats))
-     :fun (b* (((ok in-tvals) (eval-type-list type.in denv))
+     :fun (b* (((ok in-tval) (eval-type type.in denv))
                ((ok out-tval) (eval-type type.out denv)))
-            (make-type-value-fun :in in-tvals :out out-tval))
+            (make-type-value-fun :in in-tval :out out-tval))
+     :funn (b* (((ok in-tvals) (eval-type-list type.in denv))
+                ((ok out-tval) (eval-type type.out denv)))
+             (make-arrow-type-value in-tvals out-tval))
      :forall (make-type-value-forall
               :param type.param
               :body type.body
@@ -1067,6 +1070,19 @@
                     :none funval))
                   ((ok argvals) (eval-expr-list expr.args denv (1- limit))))
                (eval-app funval argvals (1- limit)))
+       :unbox (b* (((ok targetval) (eval-expr expr.target denv (1- limit)))
+                   ((ok tval) (type-option-case
+                               expr.type?
+                               :some (eval-type expr.type?.val
+                                                (expr-denv->tenv denv))
+                               :none (reserr nil))))
+                (eval-unbox targetval
+                            (list expr.ispace)
+                            expr.var
+                            expr.body
+                            tval
+                            denv
+                            (1- limit)))
        :unboxn (b* (((ok targetval) (eval-expr expr.target denv (1- limit)))
                     ((ok tval) (type-option-case
                                 expr.type?
@@ -1266,12 +1282,18 @@
                  (expr-free-type-vars atom.body)
                  (expr-free-expr-vars atom.body)
                  denv)))
-       :box (b* (((ok ivals) (eval-ispace-list atom.ispaces
-                                               (type-denv->ienv
-                                                (expr-denv->tenv denv))))
+       :box (b* (((ok ival) (eval-ispace atom.ispace
+                                         (type-denv->ienv
+                                          (expr-denv->tenv denv))))
                  ((ok arrayval) (eval-expr atom.array denv (1- limit)))
                  ((ok tval) (eval-type atom.type (expr-denv->tenv denv))))
-              (box-nest ivals arrayval tval))))
+              (make-expr-value-box :ispace ival :array arrayval :type tval))
+       :boxn (b* (((ok ivals) (eval-ispace-list atom.ispaces
+                                                (type-denv->ienv
+                                                 (expr-denv->tenv denv))))
+                  ((ok arrayval) (eval-expr atom.array denv (1- limit)))
+                  ((ok tval) (eval-type atom.type (expr-denv->tenv denv))))
+               (box-nest ivals arrayval tval))))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1471,9 +1493,10 @@
                                               :body bind.expr
                                               :type? bind.type))))
                   ((ok in) (var+type?-list->type-list-or-err bind.params))
-                  (lambda-type (make-type-fun
-                                :in in
-                                :out bind.type))
+                  (lambda-type (if (and (consp in) (endp (cdr in)))
+                                   (make-type-fun :in (car in)
+                                                  :out bind.type)
+                                 (make-type-funn :in in :out bind.type)))
                   ((mv iexpr itype)
                    (ispace-var-list-option-case
                     bind.iparams?

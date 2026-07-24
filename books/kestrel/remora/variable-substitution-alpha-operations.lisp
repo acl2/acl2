@@ -576,6 +576,24 @@
                                                     dim-subst
                                                     shape-subst
                                                     avoid))))
+   (expr :unbox
+         (b* ((target (expr-subst-ispace-vars-alpha-aux expr.target
+                                                        dim-subst
+                                                        shape-subst
+                                                        avoid))
+              ((mv fresh-ispaces dim-subst shape-subst)
+               (dim/shape-subst-alpha-bound (list expr.ispace)
+                                            dim-subst
+                                            shape-subst
+                                            (expr-free-ispace-vars expr.body))))
+           (make-expr-unbox
+            :ispace (car fresh-ispaces)
+            :var expr.var
+            :target target
+            :body (expr-subst-ispace-vars-alpha-aux expr.body
+                                                    dim-subst
+                                                    shape-subst
+                                                    avoid))))
    (expr :unboxn
          (b* ((target (expr-subst-ispace-vars-alpha-aux expr.target
                                                         dim-subst
@@ -1211,6 +1229,17 @@
                 (if var+expr
                     (cdr var+expr)
                   (expr-var expr.name))))
+   (expr :unbox
+         (b* ((target (expr-subst-expr-vars-alpha-aux expr.target subst avoid))
+              ((mv fresh subst)
+               (expr-subst-alpha-bound (list expr.var)
+                                       subst
+                                       (expr-free-expr-vars expr.body))))
+           (make-expr-unbox
+            :ispace expr.ispace
+            :var (car fresh)
+            :target target
+            :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid))))
    (expr :unboxn
          (b* ((target (expr-subst-expr-vars-alpha-aux expr.target subst avoid))
               ((mv fresh subst)

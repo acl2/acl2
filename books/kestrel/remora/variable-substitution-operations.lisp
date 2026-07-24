@@ -269,6 +269,20 @@
                 (type-subst-ispace-vars-no-capture-p type.body
                                                      dim-subst
                                                      shape-subst))))
+   (expr :unbox
+         (and (expr-subst-ispace-vars-no-capture-p expr.target
+                                                   dim-subst
+                                                   shape-subst)
+              (b* (((mv dim-subst shape-subst)
+                    (dim/shape-subst-remove-bound (set::insert expr.ispace nil)
+                                                  dim-subst
+                                                  shape-subst)))
+                (and (dim/shape-subst-no-capture-p (set::insert expr.ispace nil)
+                                                   dim-subst
+                                                   shape-subst)
+                     (expr-subst-ispace-vars-no-capture-p expr.body
+                                                          dim-subst
+                                                          shape-subst)))))
    (expr :unboxn
          (and (expr-subst-ispace-vars-no-capture-p expr.target
                                                    dim-subst
@@ -580,7 +594,12 @@
   :default t
   :combine and
   :override
-  ((expr :unboxn
+  ((expr :unbox
+         (and (expr-subst-expr-vars-no-capture-p expr.target subst)
+              (b* ((subst (omap::delete expr.var (string-expr-map-fix subst))))
+                (and (expr-subst-no-capture-p (set::insert expr.var nil) subst)
+                     (expr-subst-expr-vars-no-capture-p expr.body subst)))))
+   (expr :unboxn
          (and (expr-subst-expr-vars-no-capture-p expr.target subst)
               (b* ((subst (omap::delete expr.var (string-expr-map-fix subst))))
                 (and (expr-subst-no-capture-p (set::insert expr.var nil) subst)
@@ -707,6 +726,27 @@
                     :body (type-subst-ispace-vars type.body
                                                   dim-subst
                                                   shape-subst))))
+   (expr :unbox
+         (b* ((target (expr-subst-ispace-vars expr.target
+                                              dim-subst
+                                              shape-subst))
+              ;; The result type is outside the scope of the unboxed ispace,
+              ;; so we substitute it under the original (unreduced) maps.
+              (type? (type-option-subst-ispace-vars expr.type?
+                                                    dim-subst
+                                                    shape-subst))
+              ((mv dim-subst shape-subst)
+               (dim/shape-subst-remove-bound (set::insert expr.ispace nil)
+                                             dim-subst
+                                             shape-subst)))
+           (make-expr-unbox
+            :ispace expr.ispace
+            :var expr.var
+            :target target
+            :body (expr-subst-ispace-vars expr.body
+                                          dim-subst
+                                          shape-subst)
+            :type? type?)))
    (expr :unboxn
          (b* ((target (expr-subst-ispace-vars expr.target
                                               dim-subst
@@ -992,6 +1032,16 @@
                 (if var+expr
                     (cdr var+expr)
                   (expr-var expr.name))))
+   (expr :unbox
+         (b* ((target (expr-subst-expr-vars expr.target subst))
+              (subst (omap::delete expr.var (string-expr-map-fix subst))))
+           (make-expr-unbox
+            :ispace expr.ispace
+            :var expr.var
+            :target target
+            :body (expr-subst-expr-vars expr.body subst)
+            ;; the result type has no expression variables, so we carry it
+            :type? expr.type?)))
    (expr :unboxn
          (b* ((target (expr-subst-expr-vars expr.target subst))
               (subst (omap::delete expr.var (string-expr-map-fix subst))))

@@ -876,9 +876,14 @@
                                            (ispace-list-to-pdoc ty.ispaces)))))
       :fun (pdoc-prefix-form
             "->"
-            (pdoc-concat (pdoc-paren (type-list-to-pdoc ty.in))
+            (pdoc-concat (type-to-pdoc ty.in)
                          (pdoc-concat (pdoc-line)
                                       (type-to-pdoc ty.out))))
+      :funn (pdoc-prefix-form
+             "->"
+             (pdoc-concat (pdoc-paren (type-list-to-pdoc ty.in))
+                          (pdoc-concat (pdoc-line)
+                                       (type-to-pdoc ty.out))))
       :forall (pdoc-prefix-form
                "Forall"
                (pdoc-concat (pdoc-paren (type-var-to-pdoc ty.param))
@@ -1280,6 +1285,25 @@
                    (pdoc-concat
                     (ispace-list-option-to-pdoc e.iargs)
                     args-doc)))))))
+      :unbox
+      ;; Surface form (grammar unbox-spec):
+      ;;   *( ispace-var ws ) identifier ws exp
+      ;; The optional result type (e.type?) has no concrete syntax,
+      ;; so it is not printed.
+      ;; A unary unbox always has exactly one ispace var.
+      (b* ((ispaces-prefix (pdoc-concat (ispace-var-list-to-pdoc
+                                         (list e.ispace))
+                                        (pdoc-line)))
+           ((ok target) (expr-to-pdoc e.target))
+           ((ok body) (expr-to-pdoc e.body)))
+        (pdoc-prefix-form
+         "unbox"
+         (pdoc-concat
+          (pdoc-paren
+           (pdoc-concat ispaces-prefix
+                        (pdoc-concat (pdoc-text (utf8-string=>codepoints e.var))
+                                     (pdoc-concat (pdoc-line) target))))
+          (pdoc-concat (pdoc-line) body))))
       :unboxn
       ;; Surface form (grammar unbox-spec):
       ;;   *( ispace-var ws ) identifier ws exp
@@ -1364,13 +1388,24 @@
              (pdoc-prefix-form
               "box"
               (pdoc-concat
-               (pdoc-paren (ispace-list-to-pdoc a.ispaces))
+               (pdoc-paren (ispace-list-to-pdoc (list a.ispace)))
                (pdoc-concat
                 (pdoc-line)
                 (pdoc-concat
                  array
                  (pdoc-concat (pdoc-line)
-                              (type-to-pdoc a.type))))))))
+                              (type-to-pdoc a.type)))))))
+      :boxn (b* (((ok array) (expr-to-pdoc a.array)))
+              (pdoc-prefix-form
+               "box"
+               (pdoc-concat
+                (pdoc-paren (ispace-list-to-pdoc a.ispaces))
+                (pdoc-concat
+                 (pdoc-line)
+                 (pdoc-concat
+                  array
+                  (pdoc-concat (pdoc-line)
+                               (type-to-pdoc a.type))))))))
     :measure (atom-count a))
 
   (define atom-list-to-pdoc ((as atom-listp))

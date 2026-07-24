@@ -474,6 +474,24 @@
                                                      dim-renam
                                                      shape-renam
                                                      avoid))))
+   (expr :unbox
+         (b* ((target (expr-rename-ispace-vars-alpha-aux expr.target
+                                                         dim-renam
+                                                         shape-renam
+                                                         avoid))
+              ((mv fresh-ispaces dim-renam shape-renam)
+               (dim/shape-rename-alpha-bound (list expr.ispace)
+                                             dim-renam
+                                             shape-renam
+                                             (expr-free-ispace-vars expr.body))))
+           (make-expr-unbox
+            :ispace (car fresh-ispaces)
+            :var expr.var
+            :target target
+            :body (expr-rename-ispace-vars-alpha-aux expr.body
+                                                     dim-renam
+                                                     shape-renam
+                                                     avoid))))
    (expr :unboxn
          (b* ((target (expr-rename-ispace-vars-alpha-aux expr.target
                                                          dim-renam
@@ -942,6 +960,17 @@
                 (if var+name
                     (expr-var (cdr var+name))
                   (expr-var expr.name))))
+   (expr :unbox
+         (b* ((target (expr-rename-expr-vars-alpha-aux expr.target renam avoid))
+              ((mv fresh renam)
+               (expr-rename-alpha-bound (list expr.var)
+                                        renam
+                                        (expr-free-expr-vars expr.body))))
+           (make-expr-unbox
+            :ispace expr.ispace
+            :var (car fresh)
+            :target target
+            :body (expr-rename-expr-vars-alpha-aux expr.body renam avoid))))
    (expr :unboxn
          (b* ((target (expr-rename-expr-vars-alpha-aux expr.target renam avoid))
               ((mv fresh renam)

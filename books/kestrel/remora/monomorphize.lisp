@@ -777,6 +777,11 @@
            ((when err) (mv err fn-info-map new-expr)))
         (mv nil fn-info-map new-expr))
 
+      :unbox (b* (((mv err fn-info-map new-target)
+                   (mono-expr x.target defs fn-info-map dim-var-map type-map))
+                  ((when err) (mv err fn-info-map (expr-unbox x.ispace x.var new-target x.body x.type?)))
+                  ((mv err fn-info-map new-body) (mono-expr x.body defs fn-info-map dim-var-map type-map)))
+               (mv err fn-info-map (expr-unbox x.ispace x.var new-target new-body x.type?)))
       :unboxn (b* (((mv err fn-info-map new-target)
                     (mono-expr x.target defs fn-info-map dim-var-map type-map))
                    ((when err) (mv err fn-info-map (expr-unboxn x.ispaces x.var new-target x.body x.type?)))
@@ -880,7 +885,10 @@
                   (mv err fn-info-map (atom-ilambdan x.params new-body)))
       :box     (b* (((mv err fn-info-map new-array)
                      (mono-expr x.array defs fn-info-map dim-var-map type-map)))
-                 (mv err fn-info-map (atom-box x.ispaces new-array x.type)))))
+                 (mv err fn-info-map (atom-box x.ispace new-array x.type)))
+      :boxn    (b* (((mv err fn-info-map new-array)
+                     (mono-expr x.array defs fn-info-map dim-var-map type-map)))
+                 (mv err fn-info-map (atom-boxn x.ispaces new-array x.type)))))
 
   (define mono-atom-list ((x atom-listp) (defs bind-mapp)
                           (fn-info-map fn-info-mapp) (dim-var-map acl2::string-nat-mapp) (type-map string-type-mapp))
