@@ -488,6 +488,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define nest-fun-types ((in type-listp) (out typep))
+  :returns (type typep)
+  :short "Nest zero or more unary function types,
+          from zero or more input types and one final output type."
+  (cond ((endp in) (type-fix out))
+        (t (make-type-fun :in (car in)
+                          :out (nest-fun-types (cdr in) out))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-forall-types ((params type-var-listp) (body typep))
+  :returns (type typep)
+  :short "Nest zero or more unary universal types,
+          from zero or more parameters and one final body type."
+  (cond ((endp params) (type-fix body))
+        (t (make-type-forall :param (car params)
+                             :body (nest-forall-types (cdr params) body))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-pi-types ((params ispace-var-listp) (body typep))
+  :returns (type typep)
+  :short "Nest zero or more unary product types,
+          from zero or more parameters and one final body type."
+  (cond ((endp params) (type-fix body))
+        (t (make-type-pi :param (car params)
+                         :body (nest-pi-types (cdr params) body))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-sigma-types ((params ispace-var-listp) (body typep))
+  :returns (type typep)
+  :short "Nest zero or more unary sum types,
+          from zero or more parameters and one final body type."
+  (cond ((endp params) (type-fix body))
+        (t (make-type-sigma :param (car params)
+                            :body (nest-sigma-types (cdr params) body))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define forall-curried-body ((params type-var-listp) (body typep))
   :guard (consp params)
   :returns (new-body typep)
