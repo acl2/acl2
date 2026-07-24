@@ -127,6 +127,9 @@
     "A bracket type is turned into an array type
      whose shape is the concatenation of the shapes.")
    (xdoc::p
+    "An n-ary function type is turnes into
+     a nest of zero or more unary function types.")
+   (xdoc::p
     "An atom expression is turned into a 0-rank array expression.")
    (xdoc::p
     "A non-empty string is turned into an array expression
@@ -183,6 +186,8 @@
                              (ispace-shape-list->shape
                               (ispace-list-desugar-in-splice
                                (ispace-list-desugar type.ispaces)))))))
+   (type :funn (nest-fun-types (type-list-desugar type.in)
+                               (type-desugar type.out)))
    (expr :atom (make-expr-array :dims nil
                                 :atoms (list (atom-desugar expr.atom))))
    (expr :string (if (consp expr.chars)
@@ -191,8 +196,8 @@
                       :atoms (atom-base-list
                               (base-lit-int-list
                                (char-lit-list-desugar expr.chars))))
-                     (make-expr-array-empty :dims (list 0)
-                                            :type (type-base (base-type-int)))))
+                   (make-expr-array-empty :dims (list 0)
+                                          :type (type-base (base-type-int)))))
    (expr :capp (b* ((fun (expr-desugar expr.fun))
                     (fun-targs
                      (type-list-option-case

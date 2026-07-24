@@ -45,8 +45,7 @@
     "We exclude:")
    (xdoc::ul
     (xdoc::li
-     "Shapes with non-singleton lists of dimensions
-      (the @(':dims') summand of @(tsee shape)),
+     "Shapes with non-singleton lists of dimensions,
       because they are expressible as concatenations of
       shapes with singleton lists of dimensions.")
     (xdoc::li
@@ -55,6 +54,11 @@
     (xdoc::li
      "Bracket types,
       because they are expressible as array types.")
+    (xdoc::li
+     "N-ary function types,
+      because they are expressible as nests of one or more unary function types
+      (one when the AST corresponds to a type @('(-> (T) R)'),
+      i.e. with a parenthesized single input type).")
     (xdoc::li
      "Atom expressions,
       because they are expressible as 0-rank array expressions.")
@@ -146,6 +150,7 @@
                      (endp (cdr shape.dims))))
    (shape :splice nil)
    (type :bracket nil)
+   (type :funn nil)
    (expr :atom nil)
    (expr :string nil)
    (expr :capp nil)
