@@ -80,6 +80,10 @@
      "Bracket expressions,
       because they are expressible as array expressions.")
     (xdoc::li
+     "N-ary expression, type, and ispace abstractions,
+      because they are expressible as nests of
+      two or more unary expression, type, and ispace abstractions.")
+    (xdoc::li
      "Function bindings,
       because they are expressible as value bindings
       (to lambda abstractions)."))
@@ -169,6 +173,9 @@
    (expr :iappn nil)
    (expr :capp nil)
    (expr :bracket nil)
+   (atom :lambdan nil)
+   (atom :tlambdan nil)
+   (atom :ilambdan nil)
    (bind :fun nil)
    (bind :tfun nil)
    (bind :ifun nil)
@@ -217,6 +224,21 @@
              (atom-corep atom))
     :enable atom-corep)
 
+  (defruled not-atom-corep-when-lambdan
+    (implies (equal (atom-kind atom) :lambdan)
+             (not (atom-corep atom)))
+    :enable atom-corep)
+
+  (defruled not-atom-corep-when-tlambdan
+    (implies (equal (atom-kind atom) :tlambdan)
+             (not (atom-corep atom)))
+    :enable atom-corep)
+
+  (defruled not-atom-corep-when-ilambdan
+    (implies (equal (atom-kind atom) :ilambdan)
+             (not (atom-corep atom)))
+    :enable atom-corep)
+
   (defruled not-bind-corep-when-fun
     (implies (equal (bind-kind bind) :fun)
              (not (bind-corep bind)))
@@ -263,6 +285,9 @@
                     type-corep-when-base
                     expr-corep-when-var
                     atom-corep-when-base
+                    not-atom-corep-when-lambdan
+                    not-atom-corep-when-tlambdan
+                    not-atom-corep-when-ilambdan
                     not-bind-corep-when-fun
                     not-bind-corep-when-tfun
                     not-bind-corep-when-ifun

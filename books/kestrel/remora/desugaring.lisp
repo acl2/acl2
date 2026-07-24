@@ -154,8 +154,25 @@
      Bracket expressions are never empty in concrete syntax;
      we should carry that invariant to the AST here.")
    (xdoc::p
+    "An n-ary expression, type, or ispace abstraction is turned into
+     a nest of unary expression, type, or ispace abstractions.
+     Since the result must be an atom,
+     the outermost abstraction is built here,
+     over the first parameter,
+     with the remaining parameters nested inside its body.
+     An n-ary abstraction always has at least one parameter,
+     but this is not captured in the abstract syntax,
+     so we use an arbitrary parameter
+     if the list of parameters is empty.")
+   (xdoc::p
     "All function bindings are turned into value bindings,
-     with an appropriate lambda abstraction.
+     with an appropriate nest of lambda abstractions.
+     If a function binding has no parameters,
+     there is no abstraction to build,
+     and the expression of the value binding is just the body;
+     this is consistent with
+     a function type with no inputs being just the output type,
+     and an application with no arguments being just the function.
      As explained in @(tsee ast-corep),
      in general it is not possible to desugar @('let'),
      but at least we can desugar its function bindings.
@@ -240,6 +257,30 @@
    (expr :bracket (b* ((exprs (expr-list-desugar expr.exprs)))
                     (make-expr-frame :dims (list (len exprs))
                                      :exprs exprs)))
+   (atom :lambdan (b* ((params (var+type?-list-desugar atom.params))
+                       (body (expr-desugar atom.body))
+                       (type? (type-option-desugar atom.type?))
+                       (param (if (consp params) ; always true
+                                  (car params)
+                                (make-var+type? :var "" :type? nil))))
+                    (make-atom-lambda
+                     :param param
+                     :body (nest-lambda-exprs (cdr params) body type?)
+                     :type? (if (endp (cdr params)) type? nil))))
+   (atom :tlambdan (b* ((body (expr-desugar atom.body))
+                        (param (if (consp atom.params) ; always true
+                                   (car atom.params)
+                                 (type-var-atom ""))))
+                     (make-atom-tlambda
+                      :param param
+                      :body (nest-tlambda-exprs (cdr atom.params) body))))
+   (atom :ilambdan (b* ((body (expr-desugar atom.body))
+                        (param (if (consp atom.params) ; always true
+                                   (car atom.params)
+                                 (ispace-var-dim ""))))
+                     (make-atom-ilambda
+                      :param param
+                      :body (nest-ilambda-exprs (cdr atom.params) body))))
    (bind :fun (b* ((params (var+type?-list-desugar bind.params))
                    (type? (type-option-desugar bind.type?))
                    (expr (expr-desugar bind.expr))
@@ -251,12 +292,7 @@
                                  nil
                                (nest-fun-types in type?.val)))
                      :none nil))
-                   (lambda-expr
-                    (make-expr-array
-                     :dims nil
-                     :atoms (list (make-atom-lambdan :params params
-                                                     :body expr
-                                                     :type? type?)))))
+                   (lambda-expr (nest-lambda-exprs params expr type?)))
                 (make-bind-val :var bind.var
                                :type? lambda-type?
                                :expr lambda-expr)))
@@ -267,11 +303,7 @@
                       type?
                       :some (nest-forall-types bind.params type?.val)
                       :none nil))
-                    (lambda-expr
-                     (make-expr-array
-                      :dims nil
-                      :atoms (list (make-atom-tlambdan :params bind.params
-                                                       :body expr)))))
+                    (lambda-expr (nest-tlambda-exprs bind.params expr)))
                  (make-bind-val :var bind.var
                                 :type? lambda-type?
                                 :expr lambda-expr)))
@@ -282,40 +314,24 @@
                       type?
                       :some (nest-pi-types bind.params type?.val)
                       :none nil))
-                    (lambda-expr
-                     (make-expr-array
-                      :dims nil
-                      :atoms (list (make-atom-ilambdan :params bind.params
-                                                       :body expr)))))
+                    (lambda-expr (nest-ilambda-exprs bind.params expr)))
                  (make-bind-val :var bind.var
                                 :type? lambda-type?
                                 :expr lambda-expr)))
    (bind :cfun (b* ((params (var+type?-list-desugar bind.params))
                     (type (type-desugar bind.type))
                     (expr (expr-desugar bind.expr))
-                    (lambda-expr
-                     (make-expr-array
-                      :dims nil
-                      :atoms (list (make-atom-lambdan :params params
-                                                      :body expr
-                                                      :type? type))))
+                    (lambda-expr (nest-lambda-exprs params expr type))
                     (ilambda-lambda-expr
                      (ispace-var-list-option-case
                       bind.iparams?
-                      :some (make-expr-array
-                             :dims nil
-                             :atoms (list (make-atom-ilambdan
-                                           :params bind.iparams?.val
-                                           :body lambda-expr)))
+                      :some (nest-ilambda-exprs bind.iparams?.val lambda-expr)
                       :none lambda-expr))
                     (tlambda-ilambda-lambda-expr
                      (type-var-list-option-case
                       bind.tparams?
-                      :some (make-expr-array
-                             :dims nil
-                             :atoms (list (make-atom-tlambdan
-                                           :params bind.tparams?.val
-                                           :body ilambda-lambda-expr)))
+                      :some (nest-tlambda-exprs bind.tparams?.val
+                                                ilambda-lambda-expr)
                       :none ilambda-lambda-expr))
                     (in (var+type?-list->type-list-or-err params))
                     (lambda-type?
