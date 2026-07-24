@@ -14,8 +14,9 @@
 (include-book "lists")
 (include-book "nat-lists")
 (include-book "integer-lists")
+(include-book "osets")
+(include-book "omaps")
 (include-book "unit-types")
-(include-book "oset-omaps")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,5 +32,6 @@
                     lists
                     nat-lists
                     integer-lists
-                    unit-types
-                    oset-omap-theorems))
+                    osets
+                    omaps
+                    unit-types))

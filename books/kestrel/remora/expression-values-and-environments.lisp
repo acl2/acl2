@@ -2063,59 +2063,59 @@
                   :dims nil))
        (int-binop-tv
         (make-type-value-array
-         :elem (make-type-value-fun :in (list int-tv int-tv) :out int-tv)
+         :elem (make-arrow-type-value (list int-tv int-tv) int-tv)
          :dims nil))
        (int-unop-tv
         (make-type-value-array
-         :elem (make-type-value-fun :in (list int-tv) :out int-tv)
+         :elem (make-arrow-type-value (list int-tv) int-tv)
          :dims nil))
        (int-relop-tv
         (make-type-value-array
-         :elem (make-type-value-fun :in (list int-tv int-tv) :out bool-tv)
+         :elem (make-arrow-type-value (list int-tv int-tv) bool-tv)
          :dims nil))
        (int-to-float-tv
         (make-type-value-array
-         :elem (make-type-value-fun :in (list int-tv) :out float-tv)
+         :elem (make-arrow-type-value (list int-tv) float-tv)
          :dims nil))
        (int-to-bool-tv
         (make-type-value-array
-         :elem (make-type-value-fun :in (list int-tv) :out bool-tv)
+         :elem (make-arrow-type-value (list int-tv) bool-tv)
          :dims nil))
        (float-binop-tv
         (make-type-value-array
-         :elem (make-type-value-fun :in (list float-tv float-tv) :out float-tv)
+         :elem (make-arrow-type-value (list float-tv float-tv) float-tv)
          :dims nil))
        (float-unop-tv
         (make-type-value-array
-         :elem (make-type-value-fun :in (list float-tv) :out float-tv)
+         :elem (make-arrow-type-value (list float-tv) float-tv)
          :dims nil))
        (float-relop-tv
         (make-type-value-array
-         :elem (make-type-value-fun :in (list float-tv float-tv) :out bool-tv)
+         :elem (make-arrow-type-value (list float-tv float-tv) bool-tv)
          :dims nil))
        (float-to-int-tv
         (make-type-value-array
-         :elem (make-type-value-fun :in (list float-tv) :out int-tv)
+         :elem (make-arrow-type-value (list float-tv) int-tv)
          :dims nil))
        (float-to-bool-tv
         (make-type-value-array
-         :elem (make-type-value-fun :in (list float-tv) :out bool-tv)
+         :elem (make-arrow-type-value (list float-tv) bool-tv)
          :dims nil))
        (bool-unop-tv
         (make-type-value-array
-         :elem (make-type-value-fun :in (list bool-tv) :out bool-tv)
+         :elem (make-arrow-type-value (list bool-tv) bool-tv)
          :dims nil))
        (bool-binop-tv
         (make-type-value-array
-         :elem (make-type-value-fun :in (list bool-tv bool-tv) :out bool-tv)
+         :elem (make-arrow-type-value (list bool-tv bool-tv) bool-tv)
          :dims nil))
        (bool-to-int-tv
         (make-type-value-array
-         :elem (make-type-value-fun :in (list bool-tv) :out int-tv)
+         :elem (make-arrow-type-value (list bool-tv) int-tv)
          :dims nil))
        (bool-to-float-tv
         (make-type-value-array
-         :elem (make-type-value-fun :in (list bool-tv) :out float-tv)
+         :elem (make-arrow-type-value (list bool-tv) float-tv)
          :dims nil)))
     (primop-value-case
      op
@@ -2146,123 +2146,123 @@
      :head-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :head-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :head-t-d-s (make-type-value-array
-                  :elem (make-type-value-fun
-                         :in (list (make-type-value-array
-                                    :elem op.tval
-                                    :dims (cons (1+ op.dval) op.sval)))
-                         :out (make-type-value-array
-                               :elem op.tval
-                               :dims op.sval))
+                  :elem (make-arrow-type-value
+                         (list (make-type-value-array
+                                :elem op.tval
+                                :dims (cons (1+ op.dval) op.sval)))
+                         (make-type-value-array
+                          :elem op.tval
+                          :dims op.sval))
                   :dims nil)
      :tail (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t-d-s (make-type-value-array
-                  :elem (make-type-value-fun
-                         :in (list (make-type-value-array
-                                    :elem op.tval
-                                    :dims (cons (1+ op.dval) op.sval)))
-                         :out (make-type-value-array
-                               :elem op.tval
-                               :dims (cons op.dval op.sval)))
+                  :elem (make-arrow-type-value
+                         (list (make-type-value-array
+                                :elem op.tval
+                                :dims (cons (1+ op.dval) op.sval)))
+                         (make-type-value-array
+                          :elem op.tval
+                          :dims (cons op.dval op.sval)))
                   :dims nil)
      :length (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t-d-s (make-type-value-array
-                    :elem (make-type-value-fun
-                           :in (list (make-type-value-array
-                                      :elem op.tval
-                                      :dims (cons op.dval op.sval)))
-                           :out int-tv)
+                    :elem (make-arrow-type-value
+                           (list (make-type-value-array
+                                  :elem op.tval
+                                  :dims (cons op.dval op.sval)))
+                           int-tv)
                     :dims nil)
      :append (prog2$ (impossible) (type-value-base (base-type-bool)))
      :append-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :append-t-m (prog2$ (impossible) (type-value-base (base-type-bool)))
      :append-t-m-n (prog2$ (impossible) (type-value-base (base-type-bool)))
      :append-t-m-n-s (make-type-value-array
-                      :elem (make-type-value-fun
-                             :in (list (make-type-value-array
-                                        :elem op.tval
-                                        :dims (cons op.mval op.sval))
-                                       (make-type-value-array
-                                        :elem op.tval
-                                        :dims (cons op.nval op.sval)))
-                             :out (make-type-value-array
-                                   :elem op.tval
-                                   :dims (cons (+ op.mval op.nval) op.sval)))
+                      :elem (make-arrow-type-value
+                             (list (make-type-value-array
+                                    :elem op.tval
+                                    :dims (cons op.mval op.sval))
+                                   (make-type-value-array
+                                    :elem op.tval
+                                    :dims (cons op.nval op.sval)))
+                             (make-type-value-array
+                              :elem op.tval
+                              :dims (cons (+ op.mval op.nval) op.sval)))
                       :dims nil)
      :append-t-m-n-s-x (make-type-value-array
-                        :elem (make-type-value-fun
-                               :in (list (make-type-value-array
-                                          :elem op.tval
-                                          :dims (cons op.nval op.sval)))
-                               :out (make-type-value-array
-                                     :elem op.tval
-                                     :dims (cons (+ op.mval op.nval) op.sval)))
+                        :elem (make-arrow-type-value
+                               (list (make-type-value-array
+                                      :elem op.tval
+                                      :dims (cons op.nval op.sval)))
+                               (make-type-value-array
+                                :elem op.tval
+                                :dims (cons (+ op.mval op.nval) op.sval)))
                         :dims nil)
      :reverse (prog2$ (impossible) (type-value-base (base-type-bool)))
      :reverse-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :reverse-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :reverse-t-d-s (make-type-value-array
-                     :elem (make-type-value-fun
-                            :in (list (make-type-value-array
-                                       :elem op.tval
-                                       :dims (cons op.dval op.sval)))
-                            :out (make-type-value-array
-                                  :elem op.tval
-                                  :dims (cons op.dval op.sval)))
+                     :elem (make-arrow-type-value
+                            (list (make-type-value-array
+                                   :elem op.tval
+                                   :dims (cons op.dval op.sval)))
+                            (make-type-value-array
+                             :elem op.tval
+                             :dims (cons op.dval op.sval)))
                      :dims nil)
      :index (prog2$ (impossible) (type-value-base (base-type-bool)))
      :index-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :index-t-m (make-type-value-array
-                 :elem (make-type-value-fun
-                        :in (list (make-type-value-array
-                                   :elem op.tval
-                                   :dims (list op.mval))
-                                  int-tv)
-                        :out (make-type-value-array
-                              :elem op.tval
-                              :dims nil))
+                 :elem (make-arrow-type-value
+                        (list (make-type-value-array
+                               :elem op.tval
+                               :dims (list op.mval))
+                              int-tv)
+                        (make-type-value-array
+                         :elem op.tval
+                         :dims nil))
                  :dims nil)
      :index-t-m-x (make-type-value-array
-                   :elem (make-type-value-fun
-                          :in (list int-tv)
-                          :out (make-type-value-array
-                                :elem op.tval
-                                :dims nil))
+                   :elem (make-arrow-type-value
+                          (list int-tv)
+                          (make-type-value-array
+                           :elem op.tval
+                           :dims nil))
                    :dims nil)
      :index2d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :index2d-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :index2d-t-m (prog2$ (impossible) (type-value-base (base-type-bool)))
      :index2d-t-m-n (make-type-value-array
-                     :elem (make-type-value-fun
-                            :in (list (make-type-value-array
-                                       :elem op.tval
-                                       :dims (list op.mval op.nval))
-                                      (make-type-value-array
-                                       :elem (type-value-base (base-type-int))
-                                       :dims (list 2)))
-                            :out (make-type-value-array
-                                  :elem op.tval
-                                  :dims nil))
+                     :elem (make-arrow-type-value
+                            (list (make-type-value-array
+                                   :elem op.tval
+                                   :dims (list op.mval op.nval))
+                                  (make-type-value-array
+                                   :elem (type-value-base (base-type-int))
+                                   :dims (list 2)))
+                            (make-type-value-array
+                             :elem op.tval
+                             :dims nil))
                      :dims nil)
      :index2d-t-m-n-x (make-type-value-array
-                       :elem (make-type-value-fun
-                              :in (list (make-type-value-array
-                                         :elem (type-value-base (base-type-int))
-                                         :dims (list 2)))
-                              :out (make-type-value-array
-                                    :elem op.tval
-                                    :dims nil))
+                       :elem (make-arrow-type-value
+                              (list (make-type-value-array
+                                     :elem (type-value-base (base-type-int))
+                                     :dims (list 2)))
+                              (make-type-value-array
+                               :elem op.tval
+                               :dims nil))
                        :dims nil)
      :sum (prog2$ (impossible) (type-value-base (base-type-bool)))
      :sum-s (make-type-value-array
-             :elem (make-type-value-fun
-                    :in (list (make-type-value-array
-                               :elem (type-value-base (base-type-int))
-                               :dims op.sval))
-                    :out int-tv)
+             :elem (make-arrow-type-value
+                    (list (make-type-value-array
+                           :elem (type-value-base (base-type-int))
+                           :dims op.sval))
+                    int-tv)
              :dims nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
@@ -2276,7 +2276,8 @@
   (defret type-value-kind-of-elem-of-type-of-primop-value-fun
     (implies (primop-value-funp op)
              (equal (type-value-kind (type-value-array->elem type)) :fun))
-    :hints (("Goal" :in-theory (enable primop-value-funp)))))
+    :hints (("Goal" :in-theory (enable primop-value-funp
+                                       make-arrow-type-value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2298,7 +2299,7 @@
      Like @(tsee type-of-primop-value-fun),
      this function is restricted, via the guard,
      to the values applicable to expression values."))
-  (len (type-value-fun->in
+  (len (arrow-type-value-inputs
         (type-value-array->elem (type-of-primop-value-fun op)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2397,6 +2398,8 @@
      For a primitive operation,
      we read the input types of its (residual) function type
      (see @(tsee type-of-primop-value-fun)),
+     by walking the nesting of one-input function type values
+     (see @(tsee arrow-type-value-inputs)),
      which are all array types,
      and return their dimensions;
      this list has one element for the operations
@@ -2410,7 +2413,7 @@
      :lambda (list (dims-of-type-value
                     (var+typevalue->type
                      (expr-value-lambda->param fval))))
-     :primop (b* ((tvals (type-value-fun->in
+     :primop (b* ((tvals (arrow-type-value-inputs
                           (type-value-array->elem
                            (type-of-primop-value-fun
                             (expr-value-primop->val fval))))))
@@ -2435,8 +2438,10 @@
    (xdoc::p
     "We read the codomain from a representative function leaf
      (see @(tsee expr-value-first-fun)):
-     for a primitive operation, it is the output of its function type
-     (see @(tsee type-of-primop-value-fun));
+     for a primitive operation, it is the final output of its function type
+     (see @(tsee type-of-primop-value-fun)),
+     reached by walking the nesting of one-input function type values
+     (see @(tsee arrow-type-value-output));
      for a lambda abstraction, it is the body type stored in the value,
      which must be present,
      because evaluation is only meaningful on
@@ -2445,15 +2450,15 @@
      but for now we return an error if there is no type.
      If instead the function value is an empty array,
      there is no leaf, but its element type value is the function type,
-     whose output type we return."))
+     whose final output type we return."))
   (b* (((when (expr-value-case funval :vector-empty))
         (b* ((elem (expr-value-vector-empty->elem funval))
              ((unless (type-value-case elem :fun)) (reserr nil)))
-          (type-value-fun->out elem)))
+          (arrow-type-value-output elem)))
        ((ok fval) (expr-value-first-fun funval)))
     (expr-value-case
      fval
-     :primop (type-value-fun->out
+     :primop (arrow-type-value-output
               (type-value-array->elem (type-of-primop-value-fun fval.val)))
      :lambda (b* ((type? (expr-value-lambda->type? fval)))
                (type-value-option-case

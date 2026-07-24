@@ -1866,6 +1866,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(define defind-proof-kind-fn-name ((pred-name symbolp) (name symbolp))
+  :returns (fn-name symbolp)
+  :short "Name of the kind function of a @('p[i]-proof') fixtype."
+  (packn-pos (list (defind-proof-type-name pred-name name) '-kind)
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-kind$inline-fn-name ((pred-name symbolp) (name symbolp))
+  :returns (fn-name symbolp)
+  :short "Name of the @('$inline') kind function of a @('p[i]-proof') fixtype."
+  (packn-pos (list (defind-proof-kind-fn-name pred-name name) '$inline)
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
 (define defind-proof-count-fn-name ((pred-name symbolp) (name symbolp))
   :returns (fn-name symbolp)
   :short "Name of the count function of a @('p[i]-proof') fixtype."
@@ -3443,7 +3459,38 @@
     "For now we generate a single theorem,
      because we only support one predicate,
      as stated in @(tsee definductive).
-     So all the hints go here."))
+     So all the hints go here.")
+   (xdoc::p
+    "We generate computed hints with @(':use') hints
+     of the necessity theorems for the various rules,
+     each targeted to the inference rule that it pertains to.
+     Putting them all in a single @(':use') hint makes the proofs slow,
+     even with a moderate number of inference rules
+     (that is what an initial implementation did).
+     The theorem has in fact one computed hints,
+     which is a @(tsee cond) with one branch for each inference rule.
+     The loop function returns, for each inference rule,
+     a branch of the @(tsee cond).
+     The condition says that the clause contains
+     the equality of the summand kind of the proof value
+     with the one corresponding to the inference rule;
+     more precisely, that the negation appears in the clause,
+     because it is a clause, and the equality is a hypothesis.
+     But for the last branch and inference rule,
+     the clause actually contains the positive equalities
+     with all the summand kinds before the last one,
+     which are conjunctive hypotheses saying that
+     the proof kind is not any of those kinds
+     (i.e. it is the last kind, since kinds are exhaustive).
+     This is why the loop function takes the very first proof kind as argument,
+     so that, for the last branch, we can check the presence of
+     the equality of the proof kind with that kind.
+     This assumes that there are at least two proof kinds,
+     which is certainly currently the case,
+     because we enforce that there is just one predicate
+     with a recursive rule and with a non-recursive rule
+     (i.e. two rules);
+     but we need to think about this when we generalize things."))
   (b* ((thm-name (defind-pred-alt-when-proof-valid-thm-name pred-name name))
        (valid-fn (defind-proof-valid-fn-name pred-name name))
        (proof (defind-proof-var-name name))
@@ -3452,11 +3499,13 @@
        (concl-fn (defind-proof-concl-fn-name pred-name name))
        (pred-alt (defind-pred-alt-fn-name pred-name name))
        (concls (defind-concl-formal-var-names pred-formals name))
-       ((mv irule-valid-fns irule-concl-accs lemma-instances)
-        (defind-gen-pred-alt-when-proof-valid-thm-loop irule-infos name))
-       (poss-thm (defind-proof-kind-poss-thm-name pred-name name))
-       (equal-thm (defind-equal-of-assert-thm-name pred-name name))
-       (fix-thm (defind-assert-fix-id-thm-name pred-name name)))
+       ((unless (consp irule-infos))
+        (raise "Internal error: no inference rules.")
+        '(_))
+       (first-kind
+        (defind-irule-tag (defind-irule-info->name (car irule-infos))))
+       (hint-branches (defind-gen-pred-alt-when-proof-valid-thm-loop
+                        irule-infos name first-kind)))
     `(defruled ,thm-name
        (implies (and ,@prop-calls
                      (,valid-fn ,proof))
@@ -3464,29 +3513,29 @@
                   (,pred-alt ,@concls)))
        :induct t
        :in-theory '(,valid-fn
-                    ,@irule-valid-fns
-                    ,concl-fn
-                    ,poss-thm
-                    ,equal-thm
-                    ,fix-thm
-                    ,@irule-concl-accs)
-       :hints ('(:use ,lemma-instances))))
+                    eql)
+       :hints ((cond ,@hint-branches))))
+  :no-function nil
 
   :prepwork
   ((define defind-gen-pred-alt-when-proof-valid-thm-loop
      ((infos defind-irule-info-listp)
-      (name symbolp))
+      (name symbolp)
+      (first-kind symbolp))
      :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
-     :returns (mv (irule-valid-fns symbol-listp)
-                  (irule-acc-thms symbol-listp)
-                  (lemma-instances true-listp))
+     :returns (hint-branches true-listp)
      :parents nil
-     (b* (((when (endp infos)) (mv nil nil nil))
+     (b* (((when (endp infos)) nil)
           ((defind-irule-info info) (car infos))
           ((defind-conclusion-info cinfo) info.conclusion)
-          (irule-valid-fn (defind-irule-valid-fn-name cinfo.name info.name name))
-          (irule-acc-thm
-           (defind-proof-concl-acc-return-thm-name cinfo.name info.name name))
+          (proof-kind (defind-proof-kind$inline-fn-name cinfo.name name))
+          (proof (defind-proof-var-name name))
+          (kind (defind-irule-tag info.name))
+          (lastp (endp (cdr infos)))
+          (literal (if lastp
+                       `(equal (,proof-kind ,proof) ',(symbol-lfix first-kind))
+                     `(not (equal (,proof-kind ,proof) ',kind))))
+          (cond `(member-equal ',literal clause))
           (necc/def-rule
            (if (defind-irule-groundp info)
                (defind-pred-alt-irule-fn-name cinfo.name info.name name)
@@ -3497,11 +3546,27 @@
                              (list `(,(set::head vars) ,witcall))
                            (defind-gen-irule-mv-nth-doublets vars 0 witcall)))
           (lemma-instance `(:instance ,necc/def-rule ,@inst-doublets))
-          ((mv irule-valid-fns irule-acc-thms lemma-instances)
-           (defind-gen-pred-alt-when-proof-valid-thm-loop (cdr infos) name)))
-       (mv (cons irule-valid-fn irule-valid-fns)
-           (cons irule-acc-thm irule-acc-thms)
-           (cons lemma-instance lemma-instances)))
+          (valid-fn (defind-proof-valid-fn-name cinfo.name name))
+          (irule-valid-fn (defind-irule-valid-fn-name cinfo.name info.name name))
+          (equal-thm (defind-equal-of-assert-thm-name cinfo.name name))
+          (fix-thm (defind-assert-fix-id-thm-name cinfo.name name))
+          (irule-acc-thm
+           (defind-proof-concl-acc-return-thm-name cinfo.name info.name name))
+          (concl-fn (defind-proof-concl-fn-name cinfo.name name))
+          (concl-thm (defind-proof-concl-return-thm-name cinfo.name name))
+          (hint-branch
+           `(,cond
+             '(:use ,lemma-instance
+               :expand (,concl-fn ,proof)
+               :in-theory '(,valid-fn
+                            ,irule-valid-fn
+                            ,equal-thm
+                            ,fix-thm
+                            ,concl-thm
+                            ,irule-acc-thm))))
+          (hint-branches (defind-gen-pred-alt-when-proof-valid-thm-loop
+                           (cdr infos) name first-kind)))
+       (cons hint-branch hint-branches))
      :guard-hints (("Goal" :in-theory (enable set::cardinality))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

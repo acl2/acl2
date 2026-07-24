@@ -276,8 +276,10 @@
      :bracket (and (check-type type.elem senv)
                    (type-atomp type.elem)
                    (check-ispace-list type.ispaces senv))
-     :fun (and (check-type-list type.in senv)
+     :fun (and (check-type type.in senv)
                (check-type type.out senv))
+     :funn (and (check-type-list type.in senv)
+                (check-type type.out senv))
      :forall (check-type type.body (senv-add-type-var type.param senv))
      :foralln (check-type type.body (senv-add-type-vars type.params senv))
      :pi (check-type type.body (senv-add-ispace-var type.param senv))
@@ -1329,6 +1331,7 @@
        first we check that the ispace variables have no duplicates;
        two variables with the same name but different sorts
        (one dimension and one shape) count as distinct.
+       This no-duplicates check is omitted for unary unboxing expressions.
        We check the target expression,
        which must be an array type of a sum type.
        In [arxiv] and [thesis],
@@ -1508,6 +1511,44 @@
                               :targs expr.targs
                               :iargs expr.iargs
                               :args aes.exprs)))
+     :unbox
+     (b* (((ok (type+expr targ)) (check-expr expr.target senv))
+          ((ok target-arr-type+ispace) (type-match-array targ.type))
+          (sum-type (type+ispace->type target-arr-type+ispace))
+          (sum-ispace (type+ispace->ispace target-arr-type+ispace))
+          (sum-shape (shape-from-ispace sum-ispace))
+          ((ok sum-vars+type) (type-match-sum sum-type))
+          (sum-vars (ispacevarlist+type->vars sum-vars+type))
+          (sum-body-type (ispacevarlist+type->type sum-vars+type))
+          ((unless (= 1 (len sum-vars))) (reserr nil))
+          ((ok (string-string-map-pair renaming))
+           (check-ispace-var-renaming sum-vars (list expr.ispace)))
+          (sum-body-type-renam
+           (type-rename-ispace-vars-alpha sum-body-type
+                                          renaming.1st
+                                          renaming.2nd))
+          (senv (senv-add-ispace-var expr.ispace senv))
+          (senv (senv-add-var+type expr.var sum-body-type-renam senv))
+          ((ok (type+expr be)) (check-expr expr.body senv))
+          ((unless (set::emptyp
+                    (set::intersect (set::insert expr.ispace nil)
+                                    (type-free-ispace-vars be.type))))
+           (reserr nil))
+          ((ok arr-type+ispace) (type-match-array be.type))
+          (body-atom-type (type+ispace->type arr-type+ispace))
+          (body-ispace (type+ispace->ispace arr-type+ispace))
+          (body-shape (shape-from-ispace body-ispace))
+          (type (make-type-array :elem body-atom-type
+                                 :ispace (ispace-shape
+                                          (shape-append
+                                           (list sum-shape body-shape))))))
+       (make-type+expr
+        :type type
+        :expr (make-expr-unbox :ispace expr.ispace
+                               :var expr.var
+                               :target targ.expr
+                               :body be.expr
+                               :type? type)))
      :unboxn
      (b* (((unless (no-duplicatesp-equal expr.ispaces)) (reserr nil))
           ((ok (type+expr targ)) (check-expr expr.target senv))
@@ -1687,7 +1728,7 @@
           ((ok senv) (senv-add-var+type (var+type?->var atom.param) type senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
-        :type (make-type-fun :in (list type) :out be.type)
+        :type (make-type-fun :in type :out be.type)
         :atom (make-atom-lambda :param atom.param
                                 :body be.expr
                                 :type? be.type)))
@@ -1700,7 +1741,9 @@
           ((ok senv) (senv-add-vars+types atom.params senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
-        :type (make-type-fun :in types :out be.type)
+        :type (if (and (consp types) (endp (cdr types)))
+                  (make-type-fun :in (car types) :out be.type)
+                (make-type-funn :in types :out be.type))
         :atom (make-atom-lambdan :params atom.params
                                  :body be.expr
                                  :type? be.type)))
@@ -1733,6 +1776,28 @@
         :type (make-type-pin :params atom.params :body be.type)
         :atom (make-atom-ilambdan :params atom.params :body be.expr)))
      :box
+     (b* (((unless (check-ispace-list (list atom.ispace) senv)) (reserr nil))
+          (ispaces (senv-expand-ispace-list (list atom.ispace) senv))
+          ((unless (type-atomp atom.type)) (reserr nil))
+          ((unless (check-type atom.type senv)) (reserr nil))
+          ((ok box-type) (senv-expand-type atom.type senv))
+          ((ok vars+type) (type-match-sum box-type))
+          (vars (ispacevarlist+type->vars vars+type))
+          (body-type (ispacevarlist+type->type vars+type))
+          ((ok (stringdimmap+stringshapemap maps))
+           (check-ispace-params-and-args vars ispaces))
+          (body-type-subst
+           (type-subst-ispace-vars-alpha body-type
+                                         maps.dim-map
+                                         maps.shape-map))
+          ((ok (type+expr ae)) (check-expr atom.array senv))
+          ((unless (type-equivp ae.type body-type-subst)) (reserr nil)))
+       (make-type+atom
+        :type box-type
+        :atom (make-atom-box :ispace atom.ispace
+                             :array ae.expr
+                             :type atom.type)))
+     :boxn
      (b* (((unless (check-ispace-list atom.ispaces senv)) (reserr nil))
           (ispaces (senv-expand-ispace-list atom.ispaces senv))
           ((unless (type-atomp atom.type)) (reserr nil))
@@ -1751,9 +1816,9 @@
           ((unless (type-equivp ae.type body-type-subst)) (reserr nil)))
        (make-type+atom
         :type box-type
-        :atom (make-atom-box :ispaces atom.ispaces
-                             :array ae.expr
-                             :type atom.type))))
+        :atom (make-atom-boxn :ispaces atom.ispaces
+                              :array ae.expr
+                              :type atom.type))))
     :measure (atom-count atom))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1899,13 +1964,14 @@
           ((ok senv-body) (senv-add-vars+types bind.params senv))
           ((ok (type+expr ee)) (check-expr bind.expr senv-body))
           ((unless (check-bind-type-annotation bind.type? ee.type senv))
-           (reserr nil)))
+           (reserr nil))
+          (fun-type (if (and (consp types) (endp (cdr types)))
+                        (make-type-fun :in (car types) :out ee.type)
+                      (make-type-funn :in types :out ee.type))))
        (make-senv+bind
         :senv (senv-add-var+type bind.var
                                  (make-type-array
-                                  :elem (make-type-fun
-                                         :in types
-                                         :out ee.type)
+                                  :elem fun-type
                                   :ispace (ispace-shape (shape-dims nil)))
                                  senv)
         :bind (make-bind-fun :var bind.var
@@ -1966,7 +2032,9 @@
           ((ok senv-body) (senv-add-vars+types bind.params senv-iparams))
           ((ok (type+expr ee)) (check-expr bind.expr senv-body))
           ((unless (type-equivp ee.type btype)) (reserr nil))
-          (fun-type (make-type-fun :in types :out btype))
+          (fun-type (if (and (consp types) (endp (cdr types)))
+                        (make-type-fun :in (car types) :out btype)
+                      (make-type-funn :in types :out btype)))
           (fun-type (ispace-var-list-option-case
                      bind.iparams?
                      :some (make-type-pin :params bind.iparams?.val
