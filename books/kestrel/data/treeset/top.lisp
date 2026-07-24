@@ -19,13 +19,13 @@
 (include-book "extensionality")
 (include-book "insert")
 (include-book "delete")
+(include-book "iter")
 (include-book "generic-typed")
 (include-book "generic-count")
 (include-book "induction")
 (include-book "union")
 (include-book "intersect")
 (include-book "diff")
-(include-book "iter")
 (include-book "fty")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

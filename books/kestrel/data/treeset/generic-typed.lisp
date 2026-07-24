@@ -24,6 +24,7 @@
 (include-book "subset-defs")
 (include-book "insert-defs")
 (include-book "delete-defs")
+(include-book "iter-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -40,6 +41,7 @@
 (local (include-book "subset"))
 (local (include-book "insert"))
 (local (include-book "delete"))
+(local (include-book "iter"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -267,6 +269,29 @@
   (implies (set-all-genericp set)
            (set-all-genericp (delete x set)))
   :enable set-all-genericp-pick-a-point-polar)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define iter-all-genericp ((iter iterp))
+  (or (donep iter)
+      (and (genericp (value iter))
+           (iter-all-genericp (next iter))))
+  :measure (iter-measure iter))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled iter-all-genericp-becomes-set-all-genericp
+  (equal (iter-all-genericp iter)
+         (set-all-genericp (from-iter iter)))
+  :induct t
+  :enable (iter-all-genericp
+           set-all-genericp
+           value))
+
+(defrule iter-all-genericp-of-iter
+  (equal (iter-all-genericp (iter set))
+         (set-all-genericp set))
+  :enable iter-all-genericp-becomes-set-all-genericp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
