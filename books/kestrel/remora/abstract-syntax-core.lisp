@@ -303,4 +303,11 @@
              (type-list-corep (var+type?-list->type-list-or-err x)))
     :induct t
     :enable (var+type?-list->type-list-or-err
-             type-corep-of-var+type?->type-or-err)))
+             type-corep-of-var+type?->type-or-err))
+
+  (defrule type-corep-of-nest-fun-types
+    (equal (type-corep (nest-fun-types in out))
+           (and (type-list-corep in)
+                (type-corep out)))
+    :induct t
+    :enable nest-fun-types))
