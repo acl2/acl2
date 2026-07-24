@@ -563,6 +563,60 @@
         (t (nest-iapp-exprs (make-expr-iapp :fun fun :arg (car args))
                             (cdr args)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-lambda-exprs ((params var+type?-listp)
+                           (body exprp)
+                           (type? type-optionp))
+  :returns (expr exprp)
+  :short "Nest zero or more unary expression abstractions,
+          from zero or more parameters,
+          one final body expression,
+          and the optional type of that body."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The optional type annotation applies to the body,
+     so it travels with the innermost abstraction,
+     as in @(tsee lambda-curried-body);
+     the outer abstractions carry no annotation."))
+  (cond ((endp params) (expr-fix body))
+        (t (make-expr-array
+            :dims nil
+            :atoms (list (make-atom-lambda
+                          :param (car params)
+                          :body (nest-lambda-exprs (cdr params) body type?)
+                          :type? (if (endp (cdr params)) type? nil))))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-tlambda-exprs ((params type-var-listp) (body exprp))
+  :returns (expr exprp)
+  :short "Nest zero or more unary type abstractions,
+          from zero or more parameters and one final body expression."
+  (cond ((endp params) (expr-fix body))
+        (t (make-expr-array
+            :dims nil
+            :atoms (list (make-atom-tlambda
+                          :param (car params)
+                          :body (nest-tlambda-exprs (cdr params) body))))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-ilambda-exprs ((params ispace-var-listp) (body exprp))
+  :returns (expr exprp)
+  :short "Nest zero or more unary ispace abstractions,
+          from zero or more parameters and one final body expression."
+  (cond ((endp params) (expr-fix body))
+        (t (make-expr-array
+            :dims nil
+            :atoms (list (make-atom-ilambda
+                          :param (car params)
+                          :body (nest-ilambda-exprs (cdr params) body))))))
+  :verify-guards :after-returns)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define forall-curried-body ((params type-var-listp) (body typep))
