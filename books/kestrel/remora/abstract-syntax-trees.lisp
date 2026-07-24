@@ -889,6 +889,9 @@
        the type of the whole unboxing expression;
        this type is absent after parsing, calculated by the type checker.")
      (xdoc::p
+      "A bracketed expression must have at least one sub-expression,
+       but this is not enforced in this fixtype.")
+     (xdoc::p
       "[impl] has only unary ASTs for applications and unboxing."))
     (:var ((name string)))
     (:atom ((atom atom)))
@@ -927,7 +930,7 @@
               (target expr)
               (body expr)
               (type? type-option)))
-    (:bracket ((exprs expr-list)))
+    (:bracket ((exprs expr-list))) ; one or more
     (:let ((binds bind-list)
            (body expr)))
     :pred exprp)
