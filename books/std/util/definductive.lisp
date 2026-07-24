@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3492,8 +3493,11 @@
      The theorem has in fact one computed hints,
      which is a @(tsee cond) with one branch for each inference rule.
      The loop function returns, for each inference rule,
-     a branch of the @(tsee cond).
-     The condition says that the clause contains
+     a branch of the computed @(tsee cond) hint used in the recursive case,
+     along with the necessity theorem instance
+     and the rule validity and conclusion accessor theorems used (flattened)
+     in the non-recursive case.
+     The computed condition says that the clause contains
      the equality of the summand kind of the proof value
      with the one corresponding to the inference rule;
      more precisely, that the negation appears in the clause,
@@ -3577,13 +3581,6 @@
                   (lemma-instances true-listp)
                   (irule-valid-fns symbol-listp)
                   (irule-acc-thms symbol-listp))
-     :parents nil
-     :short "Return, for each inference rule,
-             a branch of the computed @(tsee cond) hint
-             used in the recursive case,
-             along with the necessity theorem instance
-             and the rule validity and conclusion accessor theorems
-             used (flattened) in the non-recursive case."
      (b* (((when (endp infos)) (mv nil nil nil nil))
           ((defind-irule-info info) (car infos))
           ((defind-conclusion-info cinfo) info.conclusion)
