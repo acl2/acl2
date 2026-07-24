@@ -141,7 +141,8 @@
      The empty string is turned into an empty array expression
      with the type of integers.")
    (xdoc::p
-    "A combined application is turned into its constituent applications,
+    "A combined application is turned into
+     nests of unary applications,
      also based on whether type and ispace arguments are present or not.")
    (xdoc::p
     "A bracket expression is turned into a frame expression
@@ -211,21 +212,21 @@
                     (fun-targs
                      (type-list-option-case
                       expr.targs
-                      :some (make-expr-tappn
-                             :fun fun
-                             :args (type-list-desugar expr.targs.val))
+                      :some (nest-tapp-exprs
+                             fun
+                             (type-list-desugar expr.targs.val))
                       :none fun))
                     (fun-targs-iargs
                      (ispace-list-option-case
                       expr.iargs
-                      :some (make-expr-iappn
-                             :fun fun-targs
-                             :args (ispace-list-desugar expr.iargs.val))
+                      :some (nest-iapp-exprs
+                             fun-targs
+                             (ispace-list-desugar expr.iargs.val))
                       :none fun-targs))
                     (fun-targs-iargs-args
-                     (make-expr-appn
-                      :fun fun-targs-iargs
-                      :args (expr-list-desugar expr.args))))
+                     (nest-app-exprs
+                      fun-targs-iargs
+                      (expr-list-desugar expr.args))))
                  fun-targs-iargs-args))
    (expr :bracket (b* ((exprs (expr-list-desugar expr.exprs)))
                     (make-expr-frame :dims (list (len exprs))
