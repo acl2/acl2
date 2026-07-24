@@ -727,6 +727,117 @@ int main(void) {
   :with-output-off nil)
 
 (acl2::must-succeed*
+  ;; Multidimensional arrays, arrays of pointers, abstract array declarators,
+  ;; ordinary and [*] parameter arrays, and VLAs with pure bounds.
+  (c$::input-files :files '("array-declarators.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right"
+                     :unsafe t)
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/array-declarators.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+static struct point matrix[2][3];
+
+static struct point_right matrix_0[2][3];
+
+static struct point *ptrs[2];
+
+static struct point_right *ptrs_0[2];
+
+static int first(struct point (*)[3], struct point_right (*)[3]);
+
+static int sum(int, struct point [*][3], struct point_right [*][3]);
+
+static int sum(int n, struct point a[n][3], struct point_right a_0[n][3]) {
+  return a[1][2].x + a_0[1][2].z;
+}
+
+static int first(struct point (*p)[3], struct point_right (*p_0)[3]) {
+  return (*p)[0].x + (*p_0)[0].z;
+}
+
+static int use_vla(int n) {
+  struct point vla[n][2];
+  struct point_right vla_0[n][2];
+  vla[0][1].x = 1;
+  vla_0[0][1].z = 2;
+  return vla[0][1].x + vla_0[0][1].z;
+}
+
+int main(void) {
+  ptrs[0] = &matrix[0][0];
+  ptrs_0[0] = &matrix_0[0][0];
+  return sum(2, matrix, matrix_0) + first(matrix, matrix_0) + ptrs[0]->x + use_vla(2);
+}
+")
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; Whole-array member initializers, multidimensional designators, an inferred
+  ;; extent whose maximum index routes right, and an array compound literal.
+  (c$::input-files :files '("array-initializers.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right"
+                     :unsafe t)
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/array-initializers.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+struct holder {
+  struct point grid[2][3];
+  struct point_right grid_0[2][3];
+};
+
+static struct holder h = {.grid = {[0][1] = {.x = 1}, [1][2].x = 3}, .grid_0 = {[0][1] = {.z = 2}, [1][2].z = 4}};
+
+static struct point inferred[] = {[5] = {0}, [2].x = 5};
+
+static struct point_right inferred_0[] = {[5].z = 6};
+
+static int sum(struct point a[2], struct point_right a_0[2]) {
+  return a[0].x + a_0[1].z;
+}
+
+int main(void) {
+  return h.grid[0][1].x + h.grid_0[1][2].z + inferred[2].x + inferred_0[5].z + sum((struct point [2]) {[0] = {.x = 7}, [1] = {.x = 9}}, (struct point_right [2]) {[0] = {.z = 8}, [1] = {.z = 10}});
+}
+")
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
   ;; A split array bound is duplicated into the left and right declarations,
   ;; so an effectful bound is rejected.
   (c$::input-files :files '("array-vla-effectful.c")

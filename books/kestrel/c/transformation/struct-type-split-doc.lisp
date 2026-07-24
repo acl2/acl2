@@ -261,7 +261,8 @@
        since the implicit positional order
        is not preserved by the split.
        If all explicit initializers are routed to one side,
-       the other side is initialized with @('{0}'),
+       the other side receives a zero initializer
+       (at the largest effective index when preserving an inferred array size),
        preserving the implicit zero-initialization of omitted members
        without relying on empty initializer braces.")
      (xdoc::li

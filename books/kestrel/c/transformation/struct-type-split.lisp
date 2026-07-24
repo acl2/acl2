@@ -64,10 +64,15 @@
       The name is <emph>not</emph> changed.
       The ``right struct type'' is a new struct type
       with just the right members.
-      A ``left object'' is an object with the left struct type
-      (possibly with some level of pointers).
-      A ``right object'' is an object with the right struct type
-      (again, possible with some level of pointers)."))))
+      A ``splittable type'' is the target struct type,
+      or an array of or pointer to a splittable type
+      (see @(tsee sts-splittablep)).
+      The corresponding ``left type'' and ``right type''
+      are obtained by replacing the target struct type
+      with the left and right struct types, respectively,
+      while preserving the surrounding arrays and pointers.
+      A ``left object'' or ``right object'' is an object
+      of the corresponding left or right type."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
