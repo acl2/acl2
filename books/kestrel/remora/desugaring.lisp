@@ -130,6 +130,9 @@
     "An n-ary function type is turnes into
      a nest of zero or more unary function types.")
    (xdoc::p
+    "An n-ary universal, product, or sum type is turned into
+     a nest of two or more unary universal, product, or sum types.")
+   (xdoc::p
     "An atom expression is turned into a 0-rank array expression.")
    (xdoc::p
     "A non-empty string is turned into an array expression
@@ -188,6 +191,12 @@
                                (ispace-list-desugar type.ispaces)))))))
    (type :funn (nest-fun-types (type-list-desugar type.in)
                                (type-desugar type.out)))
+   (type :foralln (nest-forall-types type.params
+                                     (type-desugar type.body)))
+   (type :pin (nest-pi-types type.params
+                             (type-desugar type.body)))
+   (type :sigman (nest-sigma-types type.params
+                                   (type-desugar type.body)))
    (expr :atom (make-expr-array :dims nil
                                 :atoms (list (atom-desugar expr.atom))))
    (expr :string (if (consp expr.chars)
@@ -261,8 +270,7 @@
                     (lambda-type?
                      (type-option-case
                       type?
-                      :some (make-type-pin :params bind.params
-                                           :body type?.val)
+                      :some (nest-pi-types bind.params type?.val)
                       :none nil))
                     (lambda-expr
                      (make-expr-array
@@ -307,8 +315,8 @@
                             (ilambda-lambda-type
                              (ispace-var-list-option-case
                               bind.iparams?
-                              :some (make-type-pin :params bind.iparams?.val
-                                                   :body lambda-type)
+                              :some (nest-pi-types bind.iparams?.val
+                                                   lambda-type)
                               :none lambda-type)))
                          (type-var-list-option-case
                           bind.tparams?

@@ -60,6 +60,10 @@
       (one when the AST corresponds to a type @('(-> (T) R)'),
       i.e. with a parenthesized single input type).")
     (xdoc::li
+     "N-ary universal, product, and sum types,
+      because they are expressible as nests of
+      two or more unary universal, product, and sum types.")
+    (xdoc::li
      "Atom expressions,
       because they are expressible as 0-rank array expressions.")
     (xdoc::li
@@ -151,6 +155,9 @@
    (shape :splice nil)
    (type :bracket nil)
    (type :funn nil)
+   (type :foralln nil)
+   (type :pin nil)
+   (type :sigman nil)
    (expr :atom nil)
    (expr :string nil)
    (expr :capp nil)
