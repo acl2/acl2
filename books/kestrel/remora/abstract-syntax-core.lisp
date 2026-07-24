@@ -315,4 +315,10 @@
            (and (type-list-corep in)
                 (type-corep out)))
     :induct t
-    :enable nest-fun-types))
+    :enable nest-fun-types)
+
+  (defrule type-corep-of-nest-forall-types
+    (equal (type-corep (nest-forall-types params body))
+           (type-corep body))
+    :induct t
+    :enable nest-forall-types))
