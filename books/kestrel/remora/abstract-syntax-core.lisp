@@ -340,4 +340,25 @@
     (equal (type-corep (nest-sigma-types params body))
            (type-corep body))
     :induct t
-    :enable nest-sigma-types))
+    :enable nest-sigma-types)
+
+  (defrule expr-corep-of-nest-app-exprs
+    (equal (expr-corep (nest-app-exprs fun args))
+           (and (expr-corep fun)
+                (expr-list-corep args)))
+    :induct t
+    :enable nest-app-exprs)
+
+  (defrule expr-corep-of-nest-tapp-exprs
+    (equal (expr-corep (nest-tapp-exprs fun args))
+           (and (expr-corep fun)
+                (type-list-corep args)))
+    :induct t
+    :enable nest-tapp-exprs)
+
+  (defrule expr-corep-of-nest-iapp-exprs
+    (equal (expr-corep (nest-iapp-exprs fun args))
+           (and (expr-corep fun)
+                (ispace-list-corep args)))
+    :induct t
+    :enable nest-iapp-exprs))
