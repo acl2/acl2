@@ -530,6 +530,39 @@
                             :body (nest-sigma-types (cdr params) body))))
   :verify-guards :after-returns)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-app-exprs ((fun exprp) (args expr-listp))
+  :returns (expr exprp)
+  :short "Nest zero or more unary term applications,
+          from one initial function expression
+          and zero or more argument expressions."
+  (cond ((endp args) (expr-fix fun))
+        (t (nest-app-exprs (make-expr-app :fun fun :arg (car args))
+                           (cdr args)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-tapp-exprs ((fun exprp) (args type-listp))
+  :returns (expr exprp)
+  :short "Nest zero or more unary type applications,
+          from one initial function expression
+          and zero or more argument types."
+  (cond ((endp args) (expr-fix fun))
+        (t (nest-tapp-exprs (make-expr-tapp :fun fun :arg (car args))
+                            (cdr args)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-iapp-exprs ((fun exprp) (args ispace-listp))
+  :returns (expr exprp)
+  :short "Nest zero or more unary ispace applications,
+          from one initial function expression
+          and zero or more argument ispaces."
+  (cond ((endp args) (expr-fix fun))
+        (t (nest-iapp-exprs (make-expr-iapp :fun fun :arg (car args))
+                            (cdr args)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define forall-curried-body ((params type-var-listp) (body typep))
