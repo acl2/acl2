@@ -13,6 +13,7 @@
 
 (include-book "types")
 (include-book "abstract-syntax-operations")
+(include-book "validation-annotations")
 
 (include-book "kestrel/fty/nat-option" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
@@ -649,12 +650,19 @@
                         (index-cexpr
                           (make-const-expr
                             :expr (make-expr-const
-                                    :const (const-int index-iconst?))))
+                                    :const (const-int index-iconst?))
+                            :info
+                            (make-const-expr-vinfo
+                              :value (eval-iconst index-iconst? ienv))))
                         (range-cexpr?
                           (and range-iconst?
                                (make-const-expr
                                  :expr (make-expr-const
-                                         :const (const-int range-iconst?))))))
+                                         :const (const-int range-iconst?))
+                                 :info
+                                 (make-const-expr-vinfo
+                                   :value
+                                   (eval-iconst range-iconst? ienv))))))
                      (retok (make-designor-sub
                               :index index-cexpr
                               :range? range-cexpr?)))
