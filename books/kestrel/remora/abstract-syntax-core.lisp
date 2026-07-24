@@ -70,6 +70,10 @@
      "String literals,
       because they are expressible as array expressions.")
     (xdoc::li
+     "N-ary expression, type, and ispace applications,
+      because they are expressible as nests of
+      two or more unary expression, type, and ispace applications.")
+    (xdoc::li
      "Combined applications,
       because they are expressible as simpler applications.")
     (xdoc::li
@@ -134,7 +138,7 @@
     "We could also desugar ispace and type bindings
      to applications of ispace and type lambda abstractions,
      since their parameters are just ispace and type variables,
-     which do not require anything extra (like types for term variables).
+     which do not require anything extra (like types for variables).
      We should also desugar @('let')s with multiple bindings
      to multiple @('let')s with single bindings."))
   :types (shapes/ispaces
@@ -160,6 +164,9 @@
    (type :sigman nil)
    (expr :atom nil)
    (expr :string nil)
+   (expr :appn nil)
+   (expr :tappn nil)
+   (expr :iappn nil)
    (expr :capp nil)
    (expr :bracket nil)
    (bind :fun nil)

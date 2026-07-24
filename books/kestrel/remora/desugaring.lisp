@@ -141,6 +141,9 @@
      The empty string is turned into an empty array expression
      with the type of integers.")
    (xdoc::p
+    "An n-ary expression, type, or ispace application is turned into
+     a nest of zero or more unary expression, type, or ispace applications.")
+   (xdoc::p
     "A combined application is turned into
      nests of unary applications,
      also based on whether type and ispace arguments are present or not.")
@@ -160,7 +163,7 @@
      then the value binding includes the optional type as well,
      obtained by combining the function binding's type
      with parts of the function binding:
-     for a term function binding, it is a function type;
+     for an expression function binding, it is a function type;
      for a type function binding, it is a universal type;
      for an ispace function binding, it is a product type.
      A combined function binding results in nested lambda abstractions."))
@@ -208,6 +211,12 @@
                                (char-lit-list-desugar expr.chars))))
                    (make-expr-array-empty :dims (list 0)
                                           :type (type-base (base-type-int)))))
+   (expr :appn (nest-app-exprs (expr-desugar expr.fun)
+                               (expr-list-desugar expr.args)))
+   (expr :tappn (nest-tapp-exprs (expr-desugar expr.fun)
+                                 (type-list-desugar expr.args)))
+   (expr :iappn (nest-iapp-exprs (expr-desugar expr.fun)
+                                 (ispace-list-desugar expr.args)))
    (expr :capp (b* ((fun (expr-desugar expr.fun))
                     (fun-targs
                      (type-list-option-case
