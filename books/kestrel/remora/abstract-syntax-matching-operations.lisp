@@ -42,7 +42,7 @@
 
 (define type-match-array ((type typep))
   :returns (type+ispace type+ispace-resultp)
-  :short "Check if an array type is a non-variable array type or an atom type,
+  :short "Check if a type is a non-variable array type or an atom type,
           returning its elements' atom type and its ispace if successful."
   :long
   (xdoc::topstring
@@ -72,7 +72,7 @@
 
 (define type-list-match-array ((types type-listp))
   :returns (types+ispaces type+ispace-list-resultp)
-  :short "Check if all the array types in a list are @(':array') summands,
+  :short "Check if all the types in a list are @(':array') summands,
           returning the list of their elements' atom types and its ispaces
           if successful."
   (b* (((when (endp types)) nil)
@@ -92,7 +92,7 @@
 
 (define type-match-fun ((type typep))
   :returns (in+rest type+type-resultp)
-  :short "Check if an atom type is a function type,
+  :short "Check if a type is a function type,
           peeling off its first input type if successful."
   :long
   (xdoc::topstring
@@ -128,7 +128,7 @@
 
 (define type-match-forall ((type typep))
   :returns (var+type typevar+type-resultp)
-  :short "Check if an atom type is a universal type,
+  :short "Check if a type is a universal type,
           peeling off its first type parameter variable if successful."
   :long
   (xdoc::topstring
@@ -164,7 +164,7 @@
 
 (define type-match-product ((type typep))
   :returns (var+type ispacevar+type-resultp)
-  :short "Check if an atom type is a product type,
+  :short "Check if a type is a product type,
           peeling off its first ispace parameter variable if successful."
   :long
   (xdoc::topstring
