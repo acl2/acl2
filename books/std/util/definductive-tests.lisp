@@ -157,19 +157,81 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-fail
- (definductive no-recursive-rule
+; A non-recursive predicate is allowed:
+; the generated proof validity function is not recursive,
+; so it carries no measure and its theorems avoid induction.
+
+(must-succeed*
+
+ (definductive all-base-ground
    :preds ((p x))
    :irules ((ax ()
-                (p 0)))))
+                (p 0))))
+
+ (must-be-redundant
+  (defthm p-ax
+    (p 0)))
+
+ (must-be-redundant
+  (defthm p-alt-when-p
+    (implies (and (p-alt-ax-p)
+                  (p x))
+             (p-alt x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-fail
- (definductive no-recursive-rule-with-premises
+(must-succeed*
+
+ (definductive all-base-premise
    :preds ((p x))
    :irules ((ax ((natp x))
-                (p x)))))
+                (p x))))
+
+ (must-be-redundant
+  (defthm p-ax
+    (implies (natp x)
+             (p x))))
+
+ (must-be-redundant
+  (defthm p-alt-when-p
+    (implies (and (p-alt-ax-p)
+                  (p x))
+             (p-alt x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A non-recursive predicate with more than one rule
+; and with premise-only (existentially quantified) variables:
+; this exercises the multiple-proof-kind and witness-extraction paths
+; of the non-recursive minimality proof.
+
+(must-succeed*
+
+ (defstub r (* *) => *)
+
+ (definductive all-base-multivar
+   :preds ((m a))
+   :irules ((pair ((r x y))
+                  (m (cons x y)))
+            (proj ((r x y))
+                  (m x))))
+
+ (must-be-redundant
+  (defthm m-pair
+    (implies (r x y)
+             (m (cons x y)))))
+
+ (must-be-redundant
+  (defthm m-proj
+    (implies (r x y)
+             (m x))))
+
+ (must-be-redundant
+  (defthm m-alt-when-m
+    (implies (and (m-alt-pair-p)
+                  (m-alt-proj-p)
+                  (m a))
+             (m-alt a)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

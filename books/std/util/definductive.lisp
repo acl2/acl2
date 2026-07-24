@@ -1366,24 +1366,27 @@
    (xdoc::p
     "Besides processing the individual rules,
      we check that the rule names are all distinct,
-     that the predicates being defined form
-     a single mutually recursive clique,
      and that at least one rule is non-recursive
-     (which provides a base case for the inductive definition).")
+     (which provides a base case for the inductive definition:
+     without it, the smallest predicate satisfying the rules is empty).")
    (xdoc::p
-    "The clique condition is checked in two steps,
-     to provide more precise error messages:
-     first we check that every predicate is recursive
-     (see @(tsee defind-nonrecursive-preds));
-     then we check that the predicates form just one clique,
+    "A single predicate is allowed to be non-recursive;
+     it just yields a non-recursive proof validity function.
+     But multiple predicates must be mutually recursive,
+     i.e. they must form a single clique of mutual dependency:
+     we check this in two steps,
+     for more precise error messages,
+     first checking that every predicate is recursive
+     (see @(tsee defind-nonrecursive-preds)),
+     then checking that they form just one clique
+     (see @(tsee defind-mutually-recursive-cliques)),
      which, being the only one, must consist of all the predicates.
-     With a single predicate (the only case currently supported),
-     the first step amounts to the requirement,
-     previously checked directly,
-     that at least one rule is recursive,
-     and the second step never fails if the first one succeeds:
-     the one recursive predicate forms the one required clique.
-     With multiple predicates, either step may fail."))
+     Predicates that are not mutually recursive
+     can be defined by separate uses of the macro,
+     in dependency order.
+     Since currently only one predicate is supported,
+     the mutual recursion checks are never triggered;
+     they are in preparation for lifting that restriction."))
   (b* (((reterr) nil)
        ((unless irules-suppliedp)
         (reterr (msg "The :IRULES input must be supplied.")))
@@ -1401,21 +1404,26 @@
                       but there are duplicates among ~&0."
                      irule-names)))
        (pred-names (defind-pred-info-list->name pred-infos))
-       (nonrec-preds (defind-nonrecursive-preds pred-names infos))
+       (multiplep (consp (cdr pred-names)))
+       (nonrec-preds (and multiplep
+                          (defind-nonrecursive-preds pred-names infos)))
        ((when (consp nonrec-preds))
-        (reterr (msg "Every predicate being defined must be recursive, ~
-                      i.e. it must depend on itself, ~
+        (reterr (msg "When multiple predicates are being defined, ~
+                      each of them must be recursive, ~
+                      i.e. must depend on itself, ~
                       directly or indirectly, ~
                       where a predicate P depends on a predicate Q when ~
                       some rule in the :IRULES input ~
                       has P in its conclusion and Q in some premise. ~
                       This does not hold for ~&0. ~
-                      Note that a non-recursive predicate ~
-                      can be defined without using DEFINDUCTIVE."
+                      A non-recursive predicate ~
+                      can be defined by a separate use of DEFINDUCTIVE."
                      nonrec-preds)))
-       (cliques (defind-mutually-recursive-cliques pred-names infos))
-       ((unless (equal cliques
-                       (set::insert (set::mergesort pred-names) nil)))
+       (cliques (and multiplep
+                     (defind-mutually-recursive-cliques pred-names infos)))
+       ((when (and multiplep
+                   (not (equal cliques
+                               (set::insert (set::mergesort pred-names) nil)))))
         (reterr (msg "The predicates being defined must be ~
                       all mutually recursive, ~
                       i.e. they must form ~
@@ -2877,8 +2885,21 @@
      as well as fixing theorems and hints for this function.
      Once we generalize to multiple @('p[i]') predicates,
      this has to become part of a @(tsee defines),
-     and some of these hints, and the fixing, must go under there."))
-  (b* ((fn-name (defind-proof-valid-fn-name pred-name name))
+     and some of these hints, and the fixing, must go under there.")
+   (xdoc::p
+    "If the predicate is not recursive
+     (see @(tsee defind-pred-recursivep)),
+     the @('p[i]-proof') fixtype is not recursive,
+     so this function is not recursive either.
+     In that case we omit the @(':measure'),
+     termination hints,
+     and @(':induct') hints.
+     For a single predicate, this is the case
+     exactly when no rule is recursive.
+     When we generalize to multiple predicates,
+     this criterion will be about the recursion within the clique."))
+  (b* ((recursivep (defind-pred-recursivep pred-name infos))
+       (fn-name (defind-proof-valid-fn-name pred-name name))
        (fn-formal (defind-proof-var-name name))
        (proof-recog (defind-proof-recog-name pred-name name))
        (proof-case (defind-proof-case-name pred-name name))
@@ -2894,7 +2915,7 @@
     `(define ,fn-name ((,fn-formal ,proof-recog))
        :returns (yes/no booleanp
                         :hints (("Goal"
-                                 :induct t
+                                 ,@(and recursivep '(:induct t))
                                  :in-theory '(,fn-name
                                               ,@return-thms))))
        ,@(and xdocp
@@ -2903,17 +2924,18 @@
                                   (str::downcase-string (symbol-name pred-name))
                                   "').")))
        (,proof-case ,fn-formal ,@keywords+terms)
-       :measure (,count-fn ,fn-formal)
-       :hints (("Goal" :in-theory '(o-p
-                                    o-finp
-                                    o<
-                                    (:t ,count-fn)
-                                    (:e tau-system)
-                                    ,poss-thm
-                                    ,@count-thms)))
+       ,@(and recursivep
+              `(:measure (,count-fn ,fn-formal)
+                :hints (("Goal" :in-theory '(o-p
+                                             o-finp
+                                             o<
+                                             (:t ,count-fn)
+                                             (:e tau-system)
+                                             ,poss-thm
+                                             ,@count-thms)))))
        :verify-guards nil
        :hooks ((:fix :hints (("Goal"
-                              :induct t
+                              ,@(and recursivep '(:induct t))
                               :in-theory '(,fn-name
                                            ,kind-fixing-thm
                                            ,@prem-fixing-thms
@@ -3485,13 +3507,21 @@
      This is why the loop function takes the very first proof kind as argument,
      so that, for the last branch, we can check the presence of
      the equality of the proof kind with that kind.
-     This assumes that there are at least two proof kinds,
-     which is certainly currently the case,
-     because we enforce that there is just one predicate
-     with a recursive rule and with a non-recursive rule
-     (i.e. two rules);
-     but we need to think about this when we generalize things."))
-  (b* ((thm-name (defind-pred-alt-when-proof-valid-thm-name pred-name name))
+     This @(tsee cond) hint is used when the predicate is recursive
+     (see @(tsee defind-pred-recursivep)):
+     then there are at least two proof kinds,
+     namely at least one recursive rule and at least one base rule,
+     which the last-branch logic relies on.")
+   (xdoc::p
+    "When the predicate is not recursive,
+     the proof validity function is not recursive,
+     so there is no induction,
+     and the goal is a bounded case analysis on the proof kind.
+     In that case we prove the theorem directly,
+     with a single @(':use') of the necessity theorems of all the rules,
+     opening the relevant functions."))
+  (b* ((recursivep (defind-pred-recursivep pred-name irule-infos))
+       (thm-name (defind-pred-alt-when-proof-valid-thm-name pred-name name))
        (valid-fn (defind-proof-valid-fn-name pred-name name))
        (proof (defind-proof-var-name name))
        (assert (defind-assert-type-name pred-name name))
@@ -3504,17 +3534,37 @@
         '(_))
        (first-kind
         (defind-irule-tag (defind-irule-info->name (car irule-infos))))
-       (hint-branches (defind-gen-pred-alt-when-proof-valid-thm-loop
-                        irule-infos name first-kind)))
+       ((mv hint-branches lemma-instances irule-valid-fns irule-acc-thms)
+        (defind-gen-pred-alt-when-proof-valid-thm-loop
+          irule-infos name first-kind))
+       (formula
+        `(implies (and ,@prop-calls
+                       (,valid-fn ,proof))
+                  (b* (((,assert ,concl) (,concl-fn ,proof)))
+                    (,pred-alt ,@concls))))
+       ((when recursivep)
+        `(defruled ,thm-name
+           ,formula
+           :induct t
+           :in-theory '(,valid-fn
+                        eql)
+           :hints ((cond ,@hint-branches))))
+       (poss-thm (defind-proof-kind-poss-thm-name pred-name name))
+       (equal-thm (defind-equal-of-assert-thm-name pred-name name))
+       (fix-thm (defind-assert-fix-id-thm-name pred-name name))
+       (concl-thm (defind-proof-concl-return-thm-name pred-name name)))
     `(defruled ,thm-name
-       (implies (and ,@prop-calls
-                     (,valid-fn ,proof))
-                (b* (((,assert ,concl) (,concl-fn ,proof)))
-                  (,pred-alt ,@concls)))
-       :induct t
+       ,formula
+       :expand (,concl-fn ,proof)
+       :use ,lemma-instances
        :in-theory '(,valid-fn
-                    eql)
-       :hints ((cond ,@hint-branches))))
+                    ,concl-fn
+                    ,poss-thm
+                    ,equal-thm
+                    ,fix-thm
+                    ,concl-thm
+                    ,@irule-valid-fns
+                    ,@irule-acc-thms)))
   :no-function nil
 
   :prepwork
@@ -3523,9 +3573,18 @@
       (name symbolp)
       (first-kind symbolp))
      :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
-     :returns (hint-branches true-listp)
+     :returns (mv (hint-branches true-listp)
+                  (lemma-instances true-listp)
+                  (irule-valid-fns symbol-listp)
+                  (irule-acc-thms symbol-listp))
      :parents nil
-     (b* (((when (endp infos)) nil)
+     :short "Return, for each inference rule,
+             a branch of the computed @(tsee cond) hint
+             used in the recursive case,
+             along with the necessity theorem instance
+             and the rule validity and conclusion accessor theorems
+             used (flattened) in the non-recursive case."
+     (b* (((when (endp infos)) (mv nil nil nil nil))
           ((defind-irule-info info) (car infos))
           ((defind-conclusion-info cinfo) info.conclusion)
           (proof-kind (defind-proof-kind$inline-fn-name cinfo.name name))
@@ -3564,9 +3623,13 @@
                             ,fix-thm
                             ,concl-thm
                             ,irule-acc-thm))))
-          (hint-branches (defind-gen-pred-alt-when-proof-valid-thm-loop
-                           (cdr infos) name first-kind)))
-       (cons hint-branch hint-branches))
+          ((mv hint-branches lemma-instances irule-valid-fns irule-acc-thms)
+           (defind-gen-pred-alt-when-proof-valid-thm-loop
+             (cdr infos) name first-kind)))
+       (mv (cons hint-branch hint-branches)
+           (cons lemma-instance lemma-instances)
+           (cons irule-valid-fn irule-valid-fns)
+           (cons irule-acc-thm irule-acc-thms)))
      :guard-hints (("Goal" :in-theory (enable set::cardinality))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
