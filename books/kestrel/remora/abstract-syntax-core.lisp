@@ -368,4 +368,24 @@
            (and (expr-corep fun)
                 (ispace-list-corep args)))
     :induct t
-    :enable nest-iapp-exprs))
+    :enable nest-iapp-exprs)
+
+  (defrule expr-corep-of-nest-lambda-exprs
+    (implies (and (var+type?-list-corep params)
+                  (expr-corep body)
+                  (type-option-corep type?))
+             (expr-corep (nest-lambda-exprs params body type?)))
+    :induct t
+    :enable nest-lambda-exprs)
+
+  (defrule expr-corep-of-nest-tlambda-exprs
+    (equal (expr-corep (nest-tlambda-exprs params body))
+           (expr-corep body))
+    :induct t
+    :enable nest-tlambda-exprs)
+
+  (defrule expr-corep-of-nest-ilambda-exprs
+    (equal (expr-corep (nest-ilambda-exprs params body))
+           (expr-corep body))
+    :induct t
+    :enable nest-ilambda-exprs))
