@@ -28,10 +28,11 @@
       and the members not selected for splitting,
       while the new \"right\" struct type receives a new tag
       and the selected members.
-      Objects of the struct type are split into two objects accordingly,
+      Objects of splittable type are split into two objects accordingly,
       with declarations, initializers, and member access expressions
       routed to the appropriate side.
-      Members of other struct types that have it (possibly behind pointers)
+      Members of other struct types that have it
+      (possibly within arrays or behind pointers)
       as their type are likewise split in place into a left and a right member,
       while the containing struct types are otherwise left unchanged.
       Struct types with the same tag in other translation units
@@ -151,17 +152,20 @@
     (xdoc::ul
      (xdoc::li
       "The struct type may appear in the type of
-       an object, parameter, or type name
-       only as the struct type itself, possibly behind pointers.
-       Function parameters of such types are supported,
+       an object, parameter, or type name as a <emph>splittable type</emph>:
+       the struct type itself,
+       or an array of or pointer to a splittable type.
+       An object of array type is split into parallel left and right arrays,
+       preserving its array declarators.
+       Function parameters of splittable type are supported,
        and are split in place,
        in function definitions, function declarations, and call sites.
-       The struct type may not appear in an array type
-       or a function return type;
+       The struct type may not appear in a function return type;
        such occurrences are detected and reported as errors.")
      (xdoc::li
       "A member of another struct type whose type is splittable
-       (the struct type itself, possibly behind pointers) is supported:
+       (the struct type itself, possibly within arrays or behind pointers)
+       is supported:
        each such member is split in place into a left and a right member,
        in the definition of the containing struct type
        and in its initializers and member access expressions.
@@ -173,6 +177,31 @@
        A struct type that contains the split struct type only transitively,
        through a member of another struct type,
        is left unchanged.
+       An array member of splittable type must have its size specified
+       explicitly in the member declarator.
+       Flexible array members are not supported, because splitting one would
+       produce two flexible array members in the containing struct.
+       Ideally, this restriction would be checked by inspecting the semantic
+       type of the last member of each struct definition and determining
+       whether it is an incomplete array type.
+       The current implementation does not explicitly track the last member.
+       Instead, because the validator's type annotations do not retain array
+       completeness, it temporarily uses
+       @(tsee declor-explicitly-sized-arrayp) to require an explicit outermost
+       array size in every splittable array member declarator.
+       For valid standard C input, where an incomplete array member can only
+       occur last, this syntactic check catches a direct flexible array member.
+       The check does not look through typedefs:
+       an array member whose size is supplied by a typedef is conservatively
+       rejected as well.
+       An anonymous struct member may precede a direct flexible array member;
+       its promoted named members count toward the flexible-array constraint,
+       and the direct flexible array member is still rejected by this check.
+       A struct containing a flexible array member cannot itself be embedded
+       as a member of another struct in standard C, even as the last anonymous
+       member.  Nonetheless, the transformation recursively visits anonymous
+       struct definitions and rejects such a nested flexible array member if
+       the input validator or a language extension admits it.
        The struct type may not, however,
        be a member of a union type
        (whether directly or as an anonymous union member),
@@ -180,7 +209,8 @@
        such occurrences are detected and reported as errors.")
      (xdoc::li
       "Typedefs whose denoted type is splittable
-       (the struct type itself, possibly behind pointers) are supported.
+       (the struct type itself, possibly within arrays or behind pointers)
+       are supported.
        Each such typedef is split into a parallel right typedef
        of the corresponding right type,
        and uses of the typedef name are split accordingly.
@@ -188,6 +218,26 @@
        @('typedef struct foo_right *foo_p_0;'),
        and a use @('foo_p x;') is split into @('foo_p x;') and @('foo_p_0 x_0;').
        Typedef chains are handled as well.")
+     (xdoc::li
+      "When an array object is split,
+       its bound expression is duplicated into the left and right declarations.
+       The bound must therefore be pure (i.e. side-effect-free);
+       an effectful bound is detected and reported as an error.
+       If an array of unknown size is completed by its initializer,
+       the largest effective array index is preserved in both initializer
+       partitions, using a zero initializer when necessary,
+       so the two resulting arrays have the same inferred size.
+       If an effective array index is unknown, the transformation reports an
+       error.")
+     (xdoc::li
+      "Array subscripting is supported.
+       When the array operand splits,
+       the index expression is duplicated into the left and right expressions,
+       so the index must be pure.
+       More generally, if either subexpression of a subscript splits,
+       the other must be pure;
+       an effectful duplicated subexpression is detected and reported as an
+       error.")
      (xdoc::li
       "The struct type must not appear in certain expression contexts,
        such as @('sizeof') and @('_Alignof') expressions;
@@ -202,14 +252,20 @@
      (xdoc::li
       "Initializers that are split apart must be pure
        (i.e. side-effect-free),
-       since splitting reorders and, for split members, duplicates them.
-       This applies to the initializer lists of the struct type itself,
+       since splitting reorders and, for split subobjects, duplicates them.
+       This applies to the initializer lists of splittable types,
+       including arrays of the struct type,
        and to the initializers of members of splittable type
        in other struct types.
        Initializers which are split apart
-       are given explicit member designations,
+       are given explicit designations,
        since the implicit positional order
-       is not preserved by the split.")
+       is not preserved by the split.
+       If all explicit initializers are routed to one side,
+       the other side receives a zero initializer
+       (at the largest effective index when preserving an inferred array size),
+       preserving the implicit zero-initialization of omitted members
+       without relying on empty initializer braces.")
      (xdoc::li
       "The code ensemble must use the C17 standard;
        this is checked by the transformation.
@@ -228,6 +284,32 @@
      "The following are temporary limitations which will hopefully be removed
       in the future with improvements to the implementation.")
     (xdoc::ul
+     (xdoc::li
+      "The validator's type representation does not retain C type qualifiers.
+       The transformation preserves qualifier syntax when it duplicates
+       declarations, but it does not account for qualifier semantics when it
+       splits, duplicates, or reorders operations.
+       In particular, accesses to @('volatile')-qualified objects may be split,
+       duplicated, or reordered, and an operation on an @('_Atomic')-qualified
+       object may be split into multiple non-atomic operations.
+       This also applies when a duplicated expression, such as an array bound
+       or index, accesses a qualified object whose type is otherwise unrelated
+       to the split struct type.
+       These cases are not currently detected, so code whose behavior depends
+       on @('volatile') or @('_Atomic') semantics is not supported in portions
+       affected by the transformation.")
+     (xdoc::li
+      "The current safety checker rejects arrays containing the split struct
+       type.  Thus, although the transformation itself supports such arrays,
+       they can currently be transformed only with @(':unsafe t').")
+     (xdoc::li
+      "The validator does not retain array lengths in its type representation.
+       After advancing past the first positional array initializer,
+       it therefore records the remaining initializer position as unknown.
+       If a later positional initializer needs to be split,
+       the transformation reports an error because it has no effective array
+       designator with which to route the initializer.
+       Explicit array designators avoid this limitation.")
      (xdoc::li
       "The transformation checks that expressions requiring lvalues
        (the operands of the address and increment/decrement operators,
