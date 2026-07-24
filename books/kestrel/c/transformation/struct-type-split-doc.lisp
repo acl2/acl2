@@ -177,31 +177,10 @@
        A struct type that contains the split struct type only transitively,
        through a member of another struct type,
        is left unchanged.
-       An array member of splittable type must have its size specified
-       explicitly in the member declarator.
        Flexible array members are not supported, because splitting one would
        produce two flexible array members in the containing struct.
-       Ideally, this restriction would be checked by inspecting the semantic
-       type of the last member of each struct definition and determining
-       whether it is an incomplete array type.
-       The current implementation does not explicitly track the last member.
-       Instead, because the validator's type annotations do not retain array
-       completeness, it temporarily uses
-       @(tsee declor-explicitly-sized-arrayp) to require an explicit outermost
-       array size in every splittable array member declarator.
-       For valid standard C input, where an incomplete array member can only
-       occur last, this syntactic check catches a direct flexible array member.
-       The check does not look through typedefs:
-       an array member whose size is supplied by a typedef is conservatively
-       rejected as well.
-       An anonymous struct member may precede a direct flexible array member;
-       its promoted named members count toward the flexible-array constraint,
-       and the direct flexible array member is still rejected by this check.
-       A struct containing a flexible array member cannot itself be embedded
-       as a member of another struct in standard C, even as the last anonymous
-       member.  Nonetheless, the transformation recursively visits anonymous
-       struct definitions and rejects such a nested flexible array member if
-       the input validator or a language extension admits it.
+       The check for flexible array members is currently overapproximate
+       and may erroneously flag fixed-size arrays.
        The struct type may not, however,
        be a member of a union type
        (whether directly or as an anonymous union member),
@@ -236,8 +215,8 @@
        so the index must be pure.
        More generally, if either subexpression of a subscript splits,
        the other must be pure;
-       an effectful duplicated subexpression is detected and reported as an
-       error.")
+       an effectful duplicated subexpression is detected
+       and reported as an error.")
      (xdoc::li
       "The struct type must not appear in certain expression contexts,
        such as @('sizeof') and @('_Alignof') expressions;
@@ -298,10 +277,6 @@
        These cases are not currently detected, so code whose behavior depends
        on @('volatile') or @('_Atomic') semantics is not supported in portions
        affected by the transformation.")
-     (xdoc::li
-      "The current safety checker rejects arrays containing the split struct
-       type.  Thus, although the transformation itself supports such arrays,
-       they can currently be transformed only with @(':unsafe t').")
      (xdoc::li
       "The validator does not retain array lengths in its type representation.
        After advancing past the first positional array initializer,
