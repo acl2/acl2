@@ -2913,7 +2913,7 @@
        pstate)
      :array-static1
      (b* ((pstate (print-dirdeclor dirdeclor.declor pstate))
-          (pstate (print-astring "static " pstate))
+          (pstate (print-astring "[static " pstate))
           (pstate (if dirdeclor.qualspecs
                       (b* ((pstate (print-typequal/attribspec-list
                                     dirdeclor.qualspecs
@@ -3055,7 +3055,7 @@
                        (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
-          (pstate (print-astring "static " pstate))
+          (pstate (print-astring "[static " pstate))
           (pstate (if dirabsdeclor.qualspecs
                       (b* ((pstate (print-typequal/attribspec-list
                                     dirabsdeclor.qualspecs

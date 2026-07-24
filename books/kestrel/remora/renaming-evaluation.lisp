@@ -16,9 +16,9 @@
 (include-book "kestrel/utilities/defopeners" :dir :system)
 
 (include-book "portcullis")
-(include-book "oset-omaps")
 
-(local (include-book "std/omaps/top" :dir :system))
+(local (include-book "osets"))
+(local (include-book "omaps"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -319,9 +319,9 @@
                                                   shape-renam)
              :dims tval.dims)
      :fun (make-type-value-fun
-           :in (type-value-list-rename-ispace-vars tval.in
-                                                   dim-renam
-                                                   shape-renam)
+           :in (type-value-rename-ispace-vars tval.in
+                                              dim-renam
+                                              shape-renam)
            :out (type-value-rename-ispace-vars tval.out
                                                dim-renam
                                                shape-renam))
@@ -344,11 +344,11 @@
                                                 dim-renam
                                                 shape-renam)))
      :sigma (b* (((mv & & body-dim-renam body-shape-renam)
-                  (dim/shape-rename-remove-bound (set::mergesort tval.params)
+                  (dim/shape-rename-remove-bound (set::insert tval.param nil)
                                                  dim-renam
                                                  shape-renam)))
               (make-type-value-sigma
-               :params tval.params
+               :param tval.param
                :body (type-rename-ispace-vars tval.body
                                               body-dim-renam
                                               body-shape-renam)
@@ -422,6 +422,25 @@
   ;;   :fn type-value-list-rename-ispace-vars
   ;;   :hints (("Goal" :in-theory (enable not-reserrp-when-type-value-listp))))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Renaming a function type value built from a list of inputs and an output
+; is the same as building it from the renamed inputs and the renamed output.
+; This is needed to evaluate n-ary function types, which curry into nestings.
+
+(local (acl2::defopeners type-value-rename-ispace-vars))
+
+(defrule type-value-rename-ispace-vars-of-make-arrow-type-value
+  (equal (type-value-rename-ispace-vars (make-arrow-type-value in out)
+                                        dim-renam
+                                        shape-renam)
+         (make-arrow-type-value
+          (type-value-list-rename-ispace-vars in dim-renam shape-renam)
+          (type-value-rename-ispace-vars out dim-renam shape-renam)))
+  :induct t
+  :enable (make-arrow-type-value
+           type-value-list-rename-ispace-vars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1085,6 +1104,27 @@
                    (var (car params))
                    (rest (cdr params)))))
 
+(defrule type-rename-ispace-vars-of-sigma-curried-body
+  (implies (and (ispace-var-listp params)
+                (consp params))
+           (b* (((mv & & dim1 shape1)
+                 (dim/shape-rename-remove-bound (set::insert (car params) nil)
+                                                dim-renam shape-renam))
+                ((mv & & dim-all shape-all)
+                 (dim/shape-rename-remove-bound (set::mergesort params)
+                                                dim-renam shape-renam)))
+             (equal (type-rename-ispace-vars (sigma-curried-body params body)
+                                             dim1 shape1)
+                    (sigma-curried-body params
+                                        (type-rename-ispace-vars body
+                                                                 dim-all
+                                                                 shape-all)))))
+  :enable (sigma-curried-body
+           mergesort-when-singleton)
+  :use ((:instance dim/shape-rename-remove-bound-of-insert-then-rest
+                   (var (car params))
+                   (rest (cdr params)))))
+
 ; The ispace-variable analogue for the currying of universal types:
 ; since universal types bind no ispace variables,
 ; the renaming maps are not reduced, and the commutation is direct.
@@ -1353,9 +1393,9 @@
                                                 array-renam)
              :dims tval.dims)
      :fun (make-type-value-fun
-           :in (type-value-list-rename-type-vars tval.in
-                                                 atom-renam
-                                                 array-renam)
+           :in (type-value-rename-type-vars tval.in
+                                            atom-renam
+                                            array-renam)
            :out (type-value-rename-type-vars tval.out
                                              atom-renam
                                              array-renam))
@@ -1376,7 +1416,7 @@
           :body (type-rename-type-vars tval.body atom-renam array-renam)
           :denv (type-denv-rename-type-vars tval.denv atom-renam array-renam))
      :sigma (make-type-value-sigma
-             :params tval.params
+             :param tval.param
              :body (type-rename-type-vars tval.body atom-renam array-renam)
              :denv (type-denv-rename-type-vars tval.denv
                                                atom-renam
@@ -1448,6 +1488,23 @@
     (not (reserrp new-tvals))
     :fn type-value-list-rename-type-vars
     :hints (("Goal" :in-theory (enable not-reserrp-when-type-value-listp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The type-variable counterpart of the lemma about ispace variables above.
+
+(local (acl2::defopeners type-value-rename-type-vars))
+
+(defrule type-value-rename-type-vars-of-make-arrow-type-value
+  (equal (type-value-rename-type-vars (make-arrow-type-value in out)
+                                      atom-renam
+                                      array-renam)
+         (make-arrow-type-value
+          (type-value-list-rename-type-vars in atom-renam array-renam)
+          (type-value-rename-type-vars out atom-renam array-renam)))
+  :induct t
+  :enable (make-arrow-type-value
+           type-value-list-rename-type-vars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1871,6 +1928,17 @@
                                                           array-renam))))
   :enable pi-curried-body)
 
+(defrule type-rename-type-vars-of-sigma-curried-body
+  (implies (and (ispace-var-listp params)
+                (consp params))
+           (equal (type-rename-type-vars (sigma-curried-body params body)
+                                         atom-renam array-renam)
+                  (sigma-curried-body params
+                                      (type-rename-type-vars body
+                                                             atom-renam
+                                                             array-renam))))
+  :enable sigma-curried-body)
+
 ; The type-variable commutation for the currying of universal types
 ; mirrors the ispace-variable one for the currying of product types:
 ; the crux is again that removing the first parameter and then the
@@ -2229,7 +2297,7 @@
                :body (expr-rename-expr-vars val.body renam)
                :denv (expr-denv-rename-expr-vars val.denv renam))
      :box (make-expr-value-box
-           :ispaces val.ispaces
+           :ispace val.ispace
            :array (expr-value-rename-expr-vars val.array renam)
            :type val.type)
      :vector (expr-value-vector
@@ -2613,7 +2681,7 @@
                                                      dim-renam
                                                      shape-renam)))
      :box (make-expr-value-box
-           :ispaces val.ispaces
+           :ispace val.ispace
            :array (expr-value-rename-ispace-vars val.array
                                                  dim-renam
                                                  shape-renam)
@@ -2998,7 +3066,7 @@
                                                  atom-renam
                                                  array-renam))
      :box (make-expr-value-box
-           :ispaces val.ispaces
+           :ispace val.ispace
            :array (expr-value-rename-type-vars val.array
                                                atom-renam
                                                array-renam)

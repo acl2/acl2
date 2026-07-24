@@ -109786,6 +109786,17 @@ it."
  href='https://acl2.zulip.kestrel.institute/#narrow/channel/19-general/topic/Non-ASCII.20characters.20in.20ACL2.20source.20files/near/40162'>pointing
  out this bug as well as code relevant to a fix</a>.</p>
 
+ <p>Fixed a soundness bug in the macro @('channel-to-string'), which is used in
+ functions like @(tsee fms-to-string) (see @(see printing-to-strings)).  Thanks
+ to Grant Jurgensen for reporting this bug and providing a helpful analysis of
+ it.  The fix is to the constant @('*default-state*').  In particular, the
+ following is no longer provable by ACL2.</p>
+
+ @({
+ (equal (car (open-output-channel :string :character *default-state*))
+        nil)
+ })
+
  <p>Checks were improved to avoid raw Lisp errors in the following situations:</p>
 
  <ul>
@@ -134251,7 +134262,7 @@ work on <tt>(q x)</tt>.</p>
 
  <p>To understand how safe-mode works we refer to the notion of
  ``executable-counterpart''; see @(see evaluation) for relevant background.
- ACL2 arranges for that for the executable-counterpart of any program mode
+ ACL2 arranges that for the executable-counterpart of any program mode
  function, @('F'), then for every called subroutine @('G') of @('F') that is in
  program mode, the executable-counterpart of @('G') is called rather than the
  raw Lisp function for @('G').  This may result in an attempt to evaluate a

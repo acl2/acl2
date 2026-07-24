@@ -309,7 +309,7 @@
       "For a function type, we evaluate input and output types,
        and put the resulting type values together into a function type value.")
      (xdoc::p
-      "Universal, product, and sum types evaluate to themselves.
+      "Universal, product, and sum types evaluate essentially to themselves.
        They are treated like lambda abstractions.
        The resulting type values include dynamic environments
        with the bindings for
@@ -330,9 +330,12 @@
                    (natss (ispace-value-list-to-dims ivals))
                    (nats (append-all natss)))
                 (make-type-value-array :elem elem-tval :dims nats))
-     :fun (b* (((ok in-tvals) (eval-type-list type.in denv))
+     :fun (b* (((ok in-tval) (eval-type type.in denv))
                ((ok out-tval) (eval-type type.out denv)))
-            (make-type-value-fun :in in-tvals :out out-tval))
+            (make-type-value-fun :in in-tval :out out-tval))
+     :funn (b* (((ok in-tvals) (eval-type-list type.in denv))
+                ((ok out-tval) (eval-type type.out denv)))
+             (make-arrow-type-value in-tvals out-tval))
      :forall (make-type-value-forall
               :param type.param
               :body type.body
@@ -360,11 +363,18 @@
                                        (type-free-type-vars type)
                                        denv)))
      :sigma (make-type-value-sigma
-             :params type.params
+             :param type.param
              :body type.body
              :denv (type-denv-restrict (type-free-ispace-vars type)
                                        (type-free-type-vars type)
-                                       denv)))
+                                       denv))
+     :sigman (b* (((unless (consp type.params)) (reserr nil)))
+               (make-type-value-sigma
+                :param (car type.params)
+                :body (sigma-curried-body type.params type.body)
+                :denv (type-denv-restrict (type-free-ispace-vars type)
+                                          (type-free-type-vars type)
+                                          denv))))
     :measure (type-count type))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -781,6 +791,65 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define box-nest ((ivals ispace-value-listp)
+                  (arrayval expr-valuep)
+                  (tval type-valuep))
+  :returns (val expr-value-resultp)
+  :short "Build a nested box value from a list of witness ispace values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called by @(tsee eval-atom) to build a box value.
+     A box with two or more witnesses stands for
+     the nesting of unary box values, in curried style,
+     mirroring the nesting of unary sum types.
+     Given the list of witness ispace values,
+     the array value, and the sum type value of the whole box,
+     we build that nesting.")
+   (xdoc::p
+    "For a single witness, we build a unary box value directly,
+     whose type value is the given sum type value.
+     For two or more witnesses,
+     we build a unary box value binding the first witness,
+     whose array value is the box value over the remaining witnesses.
+     The type value of that inner box is obtained
+     by instantiating the given sum type value with the first witness:
+     we extend the captured environment with the witness
+     and evaluate the deferred body,
+     analogously to @(tsee eval-iapp) on a product type value.
+     The sort check on the witness is expected to always succeed
+     for a box value that comes from type checking;
+     we plan to eliminate it via a well-formedness invariant."))
+  (b* (((when (endp ivals)) (reserr nil))
+       ((when (endp (cdr ivals)))
+        (make-expr-value-box :ispace (car ivals) :array arrayval :type tval))
+       ((unless (type-value-case tval :sigma)) (reserr nil))
+       (param (type-value-sigma->param tval))
+       ((unless (ispace-values-match-ispace-vars-p (list (car ivals))
+                                                   (list param)))
+        (reserr nil))
+       (tenv (type-denv-add-ispace param
+                                   (car ivals)
+                                   (type-value-sigma->denv tval)))
+       ((ok subtval) (eval-type (type-value-sigma->body tval) tenv))
+       ((ok inner) (box-nest (cdr ivals) arrayval subtval)))
+    (make-expr-value-box :ispace (car ivals) :array inner :type tval))
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable expr-valuep-when-result-not-error)))
+  :hooks ((:fix :hints (("Goal" :induct t))))
+
+  ///
+
+  (defret expr-value-wfp-of-box-nest
+    (implies (and (not (reserrp val))
+                  (expr-value-wfp arrayval))
+             (expr-value-wfp val))
+    :hints (("Goal"
+             :induct (box-nest ivals arrayval tval)
+             :in-theory (enable expr-value-wfp-of-expr-value-box)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines eval-exprs/atoms/binds
   :short "Evaluate expressions, atoms, and bindings."
   :long
@@ -1008,12 +1077,25 @@
                                                 (expr-denv->tenv denv))
                                :none (reserr nil))))
                 (eval-unbox targetval
-                            expr.ispaces
+                            (list expr.ispace)
                             expr.var
                             expr.body
                             tval
                             denv
                             (1- limit)))
+       :unboxn (b* (((ok targetval) (eval-expr expr.target denv (1- limit)))
+                    ((ok tval) (type-option-case
+                                expr.type?
+                                :some (eval-type expr.type?.val
+                                                 (expr-denv->tenv denv))
+                                :none (reserr nil))))
+                 (eval-unbox targetval
+                             expr.ispaces
+                             expr.var
+                             expr.body
+                             tval
+                             denv
+                             (1- limit)))
        :bracket (b* (((ok vals) (eval-expr-list expr.exprs denv (1- limit)))
                      ((unless (consp vals)) (reserr nil))
                      ((unless (list-repeatp (dims-of-expr-value-list vals)))
@@ -1200,14 +1282,18 @@
                  (expr-free-type-vars atom.body)
                  (expr-free-expr-vars atom.body)
                  denv)))
-       :box (b* (((ok ivals) (eval-ispace-list atom.ispaces
-                                               (type-denv->ienv
-                                                (expr-denv->tenv denv))))
+       :box (b* (((ok ival) (eval-ispace atom.ispace
+                                         (type-denv->ienv
+                                          (expr-denv->tenv denv))))
                  ((ok arrayval) (eval-expr atom.array denv (1- limit)))
                  ((ok tval) (eval-type atom.type (expr-denv->tenv denv))))
-              (make-expr-value-box :ispaces ivals
-                                   :array arrayval
-                                   :type tval))))
+              (make-expr-value-box :ispace ival :array arrayval :type tval))
+       :boxn (b* (((ok ivals) (eval-ispace-list atom.ispaces
+                                                (type-denv->ienv
+                                                 (expr-denv->tenv denv))))
+                  ((ok arrayval) (eval-expr atom.array denv (1- limit)))
+                  ((ok tval) (eval-type atom.type (expr-denv->tenv denv))))
+               (box-nest ivals arrayval tval))))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1407,9 +1493,10 @@
                                               :body bind.expr
                                               :type? bind.type))))
                   ((ok in) (var+type?-list->type-list-or-err bind.params))
-                  (lambda-type (make-type-fun
-                                :in in
-                                :out bind.type))
+                  (lambda-type (if (and (consp in) (endp (cdr in)))
+                                   (make-type-fun :in (car in)
+                                                  :out bind.type)
+                                 (make-type-funn :in in :out bind.type)))
                   ((mv iexpr itype)
                    (ispace-var-list-option-case
                     bind.iparams?
@@ -2088,13 +2175,16 @@
        @(tsee eval-expr) returns an error if it is absent.")
      (xdoc::p
       "If the target is a scalar box value,
-       we check that its ispace values match,
-       in number and sorts,
-       the ispace variables of the unboxing expression;
-       we extend the dynamic environment
-       to bind the ispace variables to the box's ispace values
-       and the term variable to the box's array value;
-       and we evaluate the body in the extended environment.")
+       we bind the first ispace variable of the unboxing expression
+       to the box's witness ispace value,
+       after checking that they match in sort.
+       If more ispace variables remain,
+       the box's array value is itself a box value
+       (a nested box, see @(tsee box-nest)),
+       and we recursively unbox it over the remaining ispace variables.
+       Otherwise this is the last ispace variable:
+       we bind the term variable to the box's array value
+       and evaluate the body in the extended environment.")
      (xdoc::p
       "If the target is a non-empty vector,
        i.e. a non-empty array of boxes,
@@ -2115,11 +2205,22 @@
       (expr-value-case
        target
        :box
-       (b* (((unless (ispace-values-match-ispace-vars-p target.ispaces ispaces))
+       (b* (((unless (consp ispaces)) (reserr nil))
+            ;; TODO: eliminate the sort check via a well-formedness invariant
+            ((unless (ispace-values-match-ispace-vars-p
+                      (list target.ispace) (list (car ispaces))))
              (reserr nil))
-            (denv (expr-denv-add-ispaces ispaces target.ispaces denv))
-            (denv (expr-denv-add-expr var target.array denv)))
-         (eval-expr body denv (1- limit)))
+            (denv (expr-denv-add-ispace (car ispaces) target.ispace denv)))
+         (if (endp (cdr ispaces))
+             (b* ((denv (expr-denv-add-expr var target.array denv)))
+               (eval-expr body denv (1- limit)))
+           (eval-unbox target.array
+                       (cdr ispaces)
+                       var
+                       body
+                       type
+                       denv
+                       (1- limit))))
        :vector
        (b* (((ok vals)
              (eval-unbox-list target.elems ispaces var body type denv (1- limit)))

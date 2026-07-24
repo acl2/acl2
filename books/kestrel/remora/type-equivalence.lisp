@@ -270,7 +270,14 @@
      (xdoc::p
       "In the case of two function types,
        we recursively check the equivalence
-       of the input and output types.")
+       of the input and output types.
+       A unary function type is never equivalent to an n-ary one,
+       not even to one with a single input type,
+       which may come from the concrete syntax
+       (see @(tsee type));
+       as remarked below for universal and product types,
+       relating the sugar and core forms is left for
+       a planned rework of type equivalence.")
      (xdoc::p
       "In the case of two universal types,
        we use @(tsee fresh-type-var-renaming) to check that
@@ -360,9 +367,15 @@
      :fun (b* ((type2 (normalize-scalar-type type2)))
             (type-case
              type2
-             :fun (and (type-list-equivp type1.in type2.in)
+             :fun (and (type-equivp type1.in type2.in)
                        (type-equivp type1.out type2.out))
              :otherwise nil))
+     :funn (b* ((type2 (normalize-scalar-type type2)))
+             (type-case
+              type2
+              :funn (and (type-list-equivp type1.in type2.in)
+                         (type-equivp type1.out type2.out))
+              :otherwise nil))
      :forall (b* ((type2 (normalize-scalar-type type2)))
                (type-case
                 type2
@@ -440,8 +453,8 @@
                type2
                :sigma (b* ((used (set::union (type-all-ispace-vars type1)
                                              (type-all-ispace-vars type2)))
-                           (maps (fresh-ispace-var-renaming type1.params
-                                                            type2.params
+                           (maps (fresh-ispace-var-renaming (list type1.param)
+                                                            (list type2.param)
                                                             used))
                            ((when (reserrp maps)) nil)
                            ((string-string-map-quadruple maps) maps)
@@ -452,7 +465,25 @@
                                                            maps.3rd
                                                            maps.4th)))
                         (type-equivp body1 body2))
-               :otherwise nil)))
+               :otherwise nil))
+     :sigman (b* ((type2 (normalize-scalar-type type2)))
+               (type-case
+                type2
+                :sigman (b* ((used (set::union (type-all-ispace-vars type1)
+                                               (type-all-ispace-vars type2)))
+                             (maps (fresh-ispace-var-renaming type1.params
+                                                              type2.params
+                                                              used))
+                             ((when (reserrp maps)) nil)
+                             ((string-string-map-quadruple maps) maps)
+                             (body1 (type-rename-ispace-vars type1.body
+                                                             maps.1st
+                                                             maps.2nd))
+                             (body2 (type-rename-ispace-vars type2.body
+                                                             maps.3rd
+                                                             maps.4th)))
+                          (type-equivp body1 body2))
+                :otherwise nil)))
     :measure (+ (type-count type1) (type-count type2)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

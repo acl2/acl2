@@ -28,8 +28,7 @@
    (xdoc::p
     "The fixtype constructors of ASTs are inherently fairly verbose.
      We provide more readable constructors, mainly in the form of macros.
-     These can be regarded as forming a sort of
-     embedded domain-specific language for Remora.")
+     These can be regarded as an embedded domain-specific language for Remora.")
    (xdoc::p
     "We start by providing constructors for ispaces and types.
      We plan to add constructors for other ASTs as well."))
@@ -122,7 +121,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The string denoting a variable must start with @('$') or @('@')."))
+    "The string denoting a variable must start with @('$') or @('@').")
+   (xdoc::p
+    "Dimensions are lifted to shapes."))
   (cond ((stringp dim/shape)
          (b* (((mv prefix name) (var-string-split dim/shape '(#\$ #\@))))
            (case prefix
@@ -238,9 +239,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Strings and base type keywords are auto-coerced to types."))
-  `(type-fun (list ,@(type-terms-from-vars/bases/others intypes))
-             ,(type-term-from-var/base/other outtype)))
+    "Strings and base type keywords are auto-coerced to types.")
+   (xdoc::p
+    "A single input type produces a unary @(':fun') type term;
+     two or more (or zero) inputs produce an n-ary @(':funn') type term.
+     The count is available at macro-expansion time."))
+  (if (and (consp intypes)
+           (endp (cdr intypes)))
+      `(type-fun ,(type-term-from-var/base/other (car intypes))
+                 ,(type-term-from-var/base/other outtype))
+    `(type-funn (list ,@(type-terms-from-vars/bases/others intypes))
+                ,(type-term-from-var/base/other outtype))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -266,5 +275,5 @@
   :short "Construct a sum type term from
           a parenthesized list of variable strings (parameters)
           and a type term (body)."
-  `(type-sigma (list ,@(ispace-var-terms-from-strings params))
-               ,(type-term-from-var/base/other type)))
+  `(type-sigman (list ,@(ispace-var-terms-from-strings params))
+                ,(type-term-from-var/base/other type)))

@@ -1303,7 +1303,8 @@
   ;; arrow-type = ( "->" / %x2192 ) ws "(" *( ws type ) ws ")" ws type
   (define abs-arrow-type ((tree abnf::treep))
     :returns (ty type-resultp)
-    :short "Abstract an @('arrow-type') to a @(tsee type) @(':fun')."
+    :short "Abstract an @('arrow-type') to
+            a @(tsee type) @(':fun') or @(':funn')."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -1311,10 +1312,17 @@
        (see the parser's @('parse-arrow-type')):
        the parenthesized-list form produces 8 tree-lists,
        while the single-argument form produces 5;
-       we dispatch on the count.
-       The single-argument form abstracts to
-       a @(':fun') with a singleton input list,
-       so @('(-> T R)') and @('(-> (T) R)') have the same AST."))
+       we dispatch on the count.")
+     (xdoc::p
+      "The parenthesized-list form becomes
+       an n-ary function type @(':funn'),
+       even when the list consists of just one input type;
+       the single-argument form becomes
+       a unary function type @(':fun')
+       (see @(tsee type)).
+       This way, the AST preserves the information about
+       whether the input type is parenthesized:
+       @('(-> (T) R)') and @('(-> T R)') have different ASTs."))
     (b* (((okf treess) (abnf::check-tree-nonleaf tree "arrow-type")))
       (case (len treess)
         (8 (b* (((okf (abnf::tree-list-tuple8 sub))
@@ -1322,14 +1330,14 @@
                 ((okf in) (abs-*-ws-type sub.4th))
                 ((okf out-tree) (abnf::check-tree-list-1 sub.8th))
                 ((okf out) (abs-type out-tree)))
-             (make-type-fun :in in :out out)))
+             (make-type-funn :in in :out out)))
         (5 (b* (((okf (abnf::tree-list-tuple5 sub))
                  (abnf::check-tree-list-list-5 treess))
                 ((okf in-tree) (abnf::check-tree-list-1 sub.3rd))
                 ((okf in) (abs-type in-tree))
                 ((okf out-tree) (abnf::check-tree-list-1 sub.5th))
                 ((okf out) (abs-type out-tree)))
-             (make-type-fun :in (list in) :out out)))
+             (make-type-fun :in in :out out)))
         (otherwise
          (reserrf (list :arrow-type-shape (len treess))))))
     :measure (abnf::tree-count tree))
@@ -1387,13 +1395,25 @@
   ;;              ws type
   (define abs-sigma-type ((tree abnf::treep))
     :returns (ty type-resultp)
-    :short "Abstract a @('sigma-type') to a @(tsee type) @(':sigma')."
+    :short "Abstract a @('sigma-type') to
+            a @(tsee type) @(':sigma') or @(':sigman')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A sum type with one variable becomes
+       a unary sum type @(':sigma');
+       one with two or more variables becomes
+       an n-ary sum type @(':sigman')
+       (see @(tsee type))."))
     (b* (((okf (abnf::tree-list-tuple8 sub))
           (abnf::check-tree-nonleaf-8 tree "sigma-type"))
          ((okf params) (abs-*-ws-ispace-var sub.4th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf body) (abs-type body-tree)))
-      (make-type-sigma :params params :body body))
+      (if (and (consp params)
+               (endp (cdr params)))
+          (make-type-sigma :param (car params) :body body)
+        (make-type-sigman :params params :body body)))
     :measure (abnf::tree-count tree))
 
   (define abs-ws-type ((tree abnf::treep))
@@ -2039,18 +2059,37 @@
   ;; unbox-exp = "unbox" ws "(" ws unbox-spec ws ")" ws exp
   (define abs-unbox-exp ((tree abnf::treep))
     :returns (e expr-resultp)
-    :short "Abstract an @('unbox-exp') to an @(tsee expr) @(':unbox')."
+    :short "Abstract an @('unbox-exp') to
+            an @(tsee expr) @(':unbox') or @(':unboxn')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "An unboxing with one ispace variable becomes
+       a unary unboxing @(':unbox');
+       one with two or more ispace variables becomes
+       an n-ary unboxing @(':unboxn')
+       (see @(tsee expr))."))
     (b* (((okf (abnf::tree-list-tuple9 sub))
           (abnf::check-tree-nonleaf-9 tree "unbox-exp"))
          ((okf spec-tree) (abnf::check-tree-list-1 sub.5th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.9th))
          ((okf info) (abs-unbox-spec spec-tree))
-         ((okf body) (abs-exp body-tree)))
-      (make-expr-unbox :ispaces (unbox-spec-info->ispaces info)
-                       :var (unbox-spec-info->var info)
-                       :target (unbox-spec-info->target info)
-                       :body body
-                       :type? nil))
+         ((okf body) (abs-exp body-tree))
+         (ispaces (unbox-spec-info->ispaces info))
+         (var (unbox-spec-info->var info))
+         (target (unbox-spec-info->target info)))
+      (if (and (consp ispaces)
+               (endp (cdr ispaces)))
+          (make-expr-unbox :ispace (car ispaces)
+                           :var var
+                           :target target
+                           :body body
+                           :type? nil)
+        (make-expr-unboxn :ispaces ispaces
+                          :var var
+                          :target target
+                          :body body
+                          :type? nil)))
     :measure (abnf::tree-count tree))
 
   ;; unbox-spec = *( ispace-var ws ) identifier ws exp
@@ -2209,7 +2248,16 @@
   ;; box-expr = "box" ws "(" *( ws ispace ) ws ")" ws exp ws type
   (define abs-box-expr ((tree abnf::treep))
     :returns (a atom-resultp)
-    :short "Abstract a @('box-expr') to an @(tsee atom) @(':box')."
+    :short "Abstract a @('box-expr') to
+            an @(tsee atom) @(':box') or @(':boxn')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A box construction with one ispace becomes
+       a unary box @(':box');
+       one with two or more ispaces becomes
+       an n-ary box @(':boxn')
+       (see @(tsee atom))."))
     (b* (((okf (abnf::tree-list-tuple10 sub))
           (abnf::check-tree-nonleaf-10 tree "box-expr"))
          ((okf e-tree) (abnf::check-tree-list-1 sub.8th))
@@ -2217,7 +2265,10 @@
          ((okf ispaces) (abs-*-ws-ispace sub.4th))
          ((okf array) (abs-exp e-tree))
          ((okf ty) (abs-type te-tree)))
-      (make-atom-box :ispaces ispaces :array array :type ty))
+      (if (and (consp ispaces)
+               (endp (cdr ispaces)))
+          (make-atom-box :ispace (car ispaces) :array array :type ty)
+        (make-atom-boxn :ispaces ispaces :array array :type ty)))
     :measure (abnf::tree-count tree))
 
   ;; ------------------------------------------------------------------

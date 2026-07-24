@@ -38,8 +38,7 @@
 
  (must-be-redundant
   (defthm r*-refl
-    (implies (and)
-             (r* x x))))
+    (r* x x)))
 
  (must-be-redundant
   (defthm r*-trans
@@ -68,8 +67,7 @@
 
  (must-be-redundant
   (defthm p-base
-    (implies (and)
-             (p nil))))
+    (p nil)))
 
  (must-be-redundant
   (defthm p-step
@@ -101,8 +99,7 @@
 
  (must-be-redundant
   (defthm gnd-ax
-    (implies (and)
-             (gnd 0))))
+    (gnd 0)))
 
  (must-be-redundant
   (defthm gnd-step
@@ -135,8 +132,7 @@
 
  (must-be-redundant
   (defthm bn-base
-    (implies (and)
-             (bn 0))))
+    (bn 0)))
 
  (must-be-redundant
   (defthm bn-step

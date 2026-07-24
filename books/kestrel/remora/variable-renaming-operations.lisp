@@ -212,6 +212,16 @@
                                                       shape-renam))))
    (type :sigma
          (b* (((mv bound-dim-vars bound-shape-vars dim-renam shape-renam)
+               (dim/shape-rename-remove-bound (set::insert type.param nil)
+                                              dim-renam
+                                              shape-renam)))
+           (and (renaming-no-capture-p bound-dim-vars dim-renam)
+                (renaming-no-capture-p bound-shape-vars shape-renam)
+                (type-rename-ispace-vars-no-capture-p type.body
+                                                      dim-renam
+                                                      shape-renam))))
+   (type :sigman
+         (b* (((mv bound-dim-vars bound-shape-vars dim-renam shape-renam)
                (dim/shape-rename-remove-bound (set::mergesort type.params)
                                               dim-renam
                                               shape-renam)))
@@ -221,6 +231,19 @@
                                                       dim-renam
                                                       shape-renam))))
    (expr :unbox
+         (and (expr-rename-ispace-vars-no-capture-p expr.target
+                                                    dim-renam
+                                                    shape-renam)
+              (b* (((mv bound-dim-vars bound-shape-vars dim-renam shape-renam)
+                    (dim/shape-rename-remove-bound (set::insert expr.ispace nil)
+                                                   dim-renam
+                                                   shape-renam)))
+                (and (renaming-no-capture-p bound-dim-vars dim-renam)
+                     (renaming-no-capture-p bound-shape-vars shape-renam)
+                     (expr-rename-ispace-vars-no-capture-p expr.body
+                                                           dim-renam
+                                                           shape-renam)))))
+   (expr :unboxn
          (and (expr-rename-ispace-vars-no-capture-p expr.target
                                                     dim-renam
                                                     shape-renam)
@@ -527,6 +550,12 @@
                     (omap::delete expr.var (string-string-map-fix renam))))
                 (and (renaming-no-capture-p (set::insert expr.var nil) renam)
                      (expr-rename-expr-vars-no-capture-p expr.body renam)))))
+   (expr :unboxn
+         (and (expr-rename-expr-vars-no-capture-p expr.target renam)
+              (b* ((renam
+                    (omap::delete expr.var (string-string-map-fix renam))))
+                (and (renaming-no-capture-p (set::insert expr.var nil) renam)
+                     (expr-rename-expr-vars-no-capture-p expr.body renam)))))
    (expr :let
          (and (bind-list-rename-expr-vars-no-capture-p expr.binds renam)
               (b* ((bound (bind-list-bound-expr-vars expr.binds))
@@ -635,15 +664,46 @@
                                            shape-renam))))
    (type :sigma
          (b* (((mv & & dim-renam shape-renam)
-               (dim/shape-rename-remove-bound (set::mergesort type.params)
+               (dim/shape-rename-remove-bound (set::insert type.param nil)
                                               dim-renam
                                               shape-renam)))
            (make-type-sigma
+            :param type.param
+            :body (type-rename-ispace-vars type.body
+                                           dim-renam
+                                           shape-renam))))
+   (type :sigman
+         (b* (((mv & & dim-renam shape-renam)
+               (dim/shape-rename-remove-bound (set::mergesort type.params)
+                                              dim-renam
+                                              shape-renam)))
+           (make-type-sigman
             :params type.params
             :body (type-rename-ispace-vars type.body
                                            dim-renam
                                            shape-renam))))
    (expr :unbox
+         (b* ((target (expr-rename-ispace-vars expr.target
+                                               dim-renam
+                                               shape-renam))
+              ;; The result type is outside the scope of the unboxed ispace,
+              ;; so we rename it under the original (unreduced) maps.
+              (type? (type-option-rename-ispace-vars expr.type?
+                                                     dim-renam
+                                                     shape-renam))
+              ((mv & & dim-renam shape-renam)
+               (dim/shape-rename-remove-bound (set::insert expr.ispace nil)
+                                              dim-renam
+                                              shape-renam)))
+           (make-expr-unbox
+            :ispace expr.ispace
+            :var expr.var
+            :target target
+            :body (expr-rename-ispace-vars expr.body
+                                           dim-renam
+                                           shape-renam)
+            :type? type?)))
+   (expr :unboxn
          (b* ((target (expr-rename-ispace-vars expr.target
                                                dim-renam
                                                shape-renam))
@@ -656,7 +716,7 @@
                (dim/shape-rename-remove-bound (set::mergesort expr.ispaces)
                                               dim-renam
                                               shape-renam)))
-           (make-expr-unbox
+           (make-expr-unboxn
             :ispaces expr.ispaces
             :var expr.var
             :target target
@@ -972,6 +1032,16 @@
          (b* ((target (expr-rename-expr-vars expr.target renam))
               (renam (omap::delete expr.var (string-string-map-fix renam))))
            (make-expr-unbox
+            :ispace expr.ispace
+            :var expr.var
+            :target target
+            :body (expr-rename-expr-vars expr.body renam)
+            ;; the result type has no expression variables, so we carry it
+            :type? expr.type?)))
+   (expr :unboxn
+         (b* ((target (expr-rename-expr-vars expr.target renam))
+              (renam (omap::delete expr.var (string-string-map-fix renam))))
+           (make-expr-unboxn
             :ispaces expr.ispaces
             :var expr.var
             :target target
