@@ -270,7 +270,14 @@
      (xdoc::p
       "In the case of two function types,
        we recursively check the equivalence
-       of the input and output types.")
+       of the input and output types.
+       A unary function type is never equivalent to an n-ary one,
+       not even to one with a single input type,
+       which may come from the concrete syntax
+       (see @(tsee type));
+       as remarked below for universal and product types,
+       relating the sugar and core forms is left for
+       a planned rework of type equivalence.")
      (xdoc::p
       "In the case of two universal types,
        we use @(tsee fresh-type-var-renaming) to check that

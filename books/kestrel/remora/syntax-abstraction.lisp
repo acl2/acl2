@@ -1314,13 +1314,15 @@
        while the single-argument form produces 5;
        we dispatch on the count.")
      (xdoc::p
-      "A function type with one input becomes
-       a unary function type @(':fun');
-       one with two or more inputs becomes
-       an n-ary function type @(':funn')
+      "The parenthesized-list form becomes
+       an n-ary function type @(':funn'),
+       even when the list consists of just one input type;
+       the single-argument form becomes
+       a unary function type @(':fun')
        (see @(tsee type)).
-       The single-argument form always has one input,
-       so @('(-> T R)') and @('(-> (T) R)') have the same AST."))
+       This way, the AST preserves the information about
+       whether the input type is parenthesized:
+       @('(-> (T) R)') and @('(-> T R)') have different ASTs."))
     (b* (((okf treess) (abnf::check-tree-nonleaf tree "arrow-type")))
       (case (len treess)
         (8 (b* (((okf (abnf::tree-list-tuple8 sub))
@@ -1328,10 +1330,7 @@
                 ((okf in) (abs-*-ws-type sub.4th))
                 ((okf out-tree) (abnf::check-tree-list-1 sub.8th))
                 ((okf out) (abs-type out-tree)))
-             (if (and (consp in)
-                      (endp (cdr in)))
-                 (make-type-fun :in (car in) :out out)
-               (make-type-funn :in in :out out))))
+             (make-type-funn :in in :out out)))
         (5 (b* (((okf (abnf::tree-list-tuple5 sub))
                  (abnf::check-tree-list-list-5 treess))
                 ((okf in-tree) (abnf::check-tree-list-1 sub.3rd))
