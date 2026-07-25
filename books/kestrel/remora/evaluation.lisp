@@ -23,6 +23,7 @@
 
 (local (include-book "lists"))
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
