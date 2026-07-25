@@ -16,6 +16,7 @@
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/symbol-set" :dir :system)
+(include-book "kestrel/fty/symbol-set-list" :dir :system)
 (include-book "kestrel/fty/symbol-set-set" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/legal-variable-listp" :dir :system)
@@ -44,15 +45,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Library extension.
+; Library extensions.
 
-; GAP-CARDINALITY-DECREASES is a generic theorem about osets,
-; not specific to DEFINDUCTIVE;
-; at some point it could be moved to a more central library.
-; It says that, if X is within a universe U,
-; and adding X to D actually adds something (i.e. their union is not already
-; a subset of D), then the "gap" U minus D strictly shrinks in cardinality.
-; It is used to justify the termination of DEFIND-PRED-DEPENDENCIES below.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; If X is within a universe U,
+; and adding X to D actually adds something
+; (i.e. their union is not already a subset of D),
+; then the "gap" U minus D strictly shrinks in cardinality.
 ; The strictness witness is the head of (difference (union d x) d),
 ; which is in X (hence in U) but not in D.
 
@@ -77,6 +77,35 @@
                      (set::a (set::head (set::difference (set::union d x) d)))
                      (set::x (set::difference u d))
                      (set::y (set::difference u (set::union d x))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Removing from a set U a non-empty subset X of it
+; strictly shrinks the cardinality.
+; The strictness witness is the head of X,
+; which is in U but not in (DIFFERENCE U X).
+
+(defruledl difference-cardinality-decreases
+  (implies (and (set::subset x u)
+                (not (set::emptyp x)))
+           (< (set::cardinality (set::difference u x))
+              (set::cardinality u)))
+  :hints
+  (("Goal"
+    :in-theory (acl2::enable* set::expensive-rules)
+    :use ((:instance set::proper-subset-cardinality
+                     (set::x (set::difference u x))
+                     (set::y u))
+          (:instance set::in-head
+                     (set::x x))
+          (:instance set::subset-in
+                     (set::a (set::head x))
+                     (set::x x)
+                     (set::y u))
+          (:instance set::subset-in
+                     (set::a (set::head x))
+                     (set::x u)
+                     (set::y (set::difference u x)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -824,6 +853,112 @@
                                 (symbol-sfix preds))))
         info.name))
     (defind-rule-deriving-pred pred-name preds (cdr irule-infos))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-pred-levels ((preds symbol-setp)
+                            (irule-infos defind-irule-info-listp))
+  :returns (mv (levels symbol-set-listp)
+               (unleveled symbol-setp))
+  :short "Organize the predicates being defined into levels."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A predicate is at level 0 if
+     some rule can derive it from the empty set of predicates
+     (see @(tsee defind-rule-deriving-pred)),
+     i.e. some rule has the predicate as its conclusion
+     and no premises that are predicates being defined.
+     A predicate is at level @('n+1') if
+     it is not at any of the levels 0 to @('n'),
+     and some rule can derive it from
+     predicates at levels 0 to @('n').
+     Not every predicate is necessarily at some level,
+     e.g. if the predicate appears in the conclusion of only one rule,
+     and that rule has the same predicate in a premise.")
+   (xdoc::p
+    "We compute the levels iteratively, starting from no levels:
+     each round goes through the predicates not yet at any level,
+     and finds the ones that some rule can derive
+     from the predicates at the levels found so far;
+     these predicates, if any, form the next level.
+     We stop when a round finds no new level.
+     Termination is justified by the fact that
+     each round that finds a (non-empty) new level
+     strictly shrinks the set of the predicates not yet at any level.")
+   (xdoc::p
+    "We return the list of the levels in order:
+     the element at position @('n') of the list is
+     the set of the predicates at level @('n');
+     each level is a non-empty set.
+     We also return the set of the predicates at no level,
+     which is empty exactly when all the predicates are at some level."))
+  (defind-pred-levels-loop preds nil irule-infos)
+
+  :prepwork
+  ((define defind-pred-levels-loop ((unleveled symbol-setp)
+                                    (leveled symbol-setp)
+                                    (irule-infos defind-irule-info-listp))
+     :returns (mv (levels symbol-set-listp)
+                  (still-unleveled symbol-setp))
+     :parents nil
+     (b* ((unleveled (symbol-sfix unleveled))
+          (leveled (symbol-sfix leveled))
+          (irule-infos (defind-irule-info-list-fix irule-infos))
+          ((when (set::emptyp unleveled)) (mv nil nil))
+          (new-leveled (defind-pred-levels-round unleveled leveled irule-infos))
+          ((when (set::emptyp new-leveled)) (mv nil unleveled))
+          ((mv levels still-unleveled)
+           (defind-pred-levels-loop (set::difference unleveled new-leveled)
+             (set::union new-leveled leveled)
+             irule-infos)))
+       (mv (cons new-leveled levels) still-unleveled))
+     :measure (set::cardinality (symbol-sfix unleveled))
+     ;; DIFFERENCE-CARDINALITY-DECREASES rewrites the measure decrease;
+     ;; its subset hypothesis is relieved by
+     ;; SUBSET-OF-DEFIND-PRED-LEVELS-ROUND.
+     ;; EXPAND-CARDINALITY-OF-DIFFERENCE is disabled so that
+     ;; the (cardinality (difference u x)) pattern
+     ;; that the former matches is not rewritten away.
+     :hints
+     (("Goal"
+       :in-theory (e/d (o-p
+                        o-finp
+                        o<
+                        symbol-sfix
+                        difference-cardinality-decreases)
+                       (set::expand-cardinality-of-difference))))
+     :verify-guards :after-returns
+
+     :prepwork
+     ((define defind-pred-levels-round ((preds-to-do symbol-setp)
+                                        (leveled symbol-setp)
+                                        (irule-infos defind-irule-info-listp))
+        :returns (new-leveled symbol-setp)
+        :parents nil
+        (b* ((leveled (symbol-sfix leveled))
+             (irule-infos (defind-irule-info-list-fix irule-infos))
+             ((when (set::emptyp (symbol-sfix preds-to-do))) nil)
+             (pred (set::head preds-to-do))
+             (new-leveled (defind-pred-levels-round
+                            (set::tail preds-to-do)
+                            leveled
+                            irule-infos)))
+          (if (defind-rule-deriving-pred pred leveled irule-infos)
+              (set::insert pred new-leveled)
+            new-leveled))
+        :prepwork ((local (in-theory (enable symbol-sfix))))
+        :verify-guards :after-returns
+
+        ///
+
+        (defret subset-of-defind-pred-levels-round
+          (implies (symbol-setp preds-to-do)
+                   (set::subset new-leveled preds-to-do))
+          :hints (("Goal"
+                   :induct t
+                   :in-theory (acl2::enable* set::expensive-rules
+                                             symbol-sfix)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
