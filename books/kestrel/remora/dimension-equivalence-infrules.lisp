@@ -214,6 +214,11 @@
               (dimeq (dim- (dim- x y))
                      (dim- y x)))
 
+   (sub2 ((dimp x)
+          (dimp y))
+         (dimeq (dim- x y)
+                (dim+ x (dim- y))))
+
    (sub2m ((dimp x)
            (dim-listp ys)
            (consp ys))
