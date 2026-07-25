@@ -500,8 +500,7 @@
     (("Goal" :in-theory (enable shape-desugar
                                 shape-list-desugar
                                 ispace-desugar
-                                ispace-list-desugar
-                                shape-corep))))
+                                ispace-list-desugar))))
 
   (defret ispace-list-option-desugar-when-ispace-list-option-corep
     (equal result (ispace-list-option-fix ispace-list-option))
@@ -520,7 +519,7 @@
       :fn type-list-desugar)
     :mutual-recursion types-desugar
     :hints
-    (("Goal" :in-theory (enable type-desugar type-list-desugar type-corep))))
+    (("Goal" :in-theory (enable type-desugar type-list-desugar))))
 
   (defret type-option-desugar-when-type-option-corep
     (equal result (type-option-fix type-option))
