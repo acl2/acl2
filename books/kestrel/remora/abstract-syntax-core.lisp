@@ -197,13 +197,6 @@
              (shape-corep shape))
     :enable shape-corep)
 
-  (defruled shape-corep-when-dims-and-singleton
-    (implies (and (shape-case shape :dims)
-                  (consp (shape-dims->dims shape))
-                  (endp (cdr (shape-dims->dims shape))))
-             (shape-corep shape))
-    :enable shape-corep)
-
   (defruled shape-corep-when-dims
     (implies (shape-case shape :dims)
              (equal (shape-corep shape)
@@ -361,7 +354,6 @@
 
   (add-to-ruleset ast-corep-rules
                   '(shape-corep-when-var
-                    shape-corep-when-dims-and-singleton
                     shape-corep-when-dims
                     not-shape-corep-when-splice
                     ispace-corep-when-dim
@@ -403,8 +395,7 @@
   (defruled shape-list-corep-of-shape-dims-list-of-list-to-singletons
     (shape-list-corep (shape-dims-list (list-to-singletons dims)))
     :induct t
-    :enable (list-to-singletons
-             shape-corep-when-dims-and-singleton))
+    :enable list-to-singletons)
 
   (defrule atom-list-corep-of-atom-base-list
     (atom-list-corep (atom-base-list lits))
