@@ -213,8 +213,8 @@
    (sub2m ((dimp x)
            (dim-listp ys)
            (consp ys))
-         (dimeq (dim-sub (cons x ys))
-                (dim- x (dim-add ys))))
+          (dimeq (dim-sub (cons x ys))
+                 (dim- x (dim-add ys))))
 
    (sub2-const ((natp d1)
                 (natp d2)
