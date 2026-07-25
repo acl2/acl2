@@ -137,7 +137,7 @@
    (add2-const ((natp d1)
                 (natp d2))
                (dimeq (dim+ (dim-const d1) (dim-const d2))
-                      (dim+ (dim-const (+ d1 d2)))))
+                      (dim-const (+ d1 d2))))
 
    (mul0 ()
          (dimeq (dim*)
@@ -172,7 +172,7 @@
    (mul2-const ((natp d1)
                 (natp d2))
                (dimeq (dim* (dim-const d1) (dim-const d2))
-                      (dim* (dim-const (* d1 d2)))))
+                      (dim-const (* d1 d2))))
 
    ;; TODO: substraction rules
 
