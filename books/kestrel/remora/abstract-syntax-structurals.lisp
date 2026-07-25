@@ -617,6 +617,55 @@
                           :body (nest-ilambda-exprs (cdr params) body))))))
   :verify-guards :after-returns)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-unbox-exprs ((ispaces ispace-var-listp)
+                          (var stringp)
+                          (target exprp)
+                          (body exprp)
+                          (type? type-optionp))
+  :returns (expr exprp)
+  :short "Nest zero or more unary unboxing expressions,
+          from zero or more ispace variables,
+          one bound variable,
+          one target expression,
+          one final body expression,
+          and the optional type of the whole expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Only the outermost unboxing has the target expression
+     and the optional type,
+     which is the type of the whole unboxing expression;
+     each inner one unboxes the bound variable itself
+     and carries no type.
+     Since a target is outside the scope of the binding,
+     the variable used as target at each inner level
+     refers to the binding of the enclosing level,
+     and the final body sees the fully unboxed value."))
+  (cond ((endp ispaces) (expr-fix body))
+        (t (make-expr-unbox
+            :ispace (car ispaces)
+            :var var
+            :target target
+            :body (nest-unbox-exprs-loop (cdr ispaces) var body)
+            :type? type?)))
+
+  :prepwork
+  ((define nest-unbox-exprs-loop ((ispaces ispace-var-listp)
+                                  (var stringp)
+                                  (body exprp))
+     :returns (expr exprp)
+     :parents nil
+     (cond ((endp ispaces) (expr-fix body))
+           (t (make-expr-unbox
+               :ispace (car ispaces)
+               :var var
+               :target (expr-var var)
+               :body (nest-unbox-exprs-loop (cdr ispaces) var body)
+               :type? nil)))
+     :verify-guards :after-returns)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define forall-curried-body ((params type-var-listp) (body typep))
