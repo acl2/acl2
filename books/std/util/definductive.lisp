@@ -33,6 +33,7 @@
 
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/utilities/msgp" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/system/all-vars" :dir :system))
 (local (include-book "std/system/pseudo-event-form-listp" :dir :system))
 (local (include-book "std/alists/pairlis" :dir :system))
@@ -657,7 +658,7 @@
      ;; survive the degenerate case where DEPS is the empty set.
      :hints
      (("Goal"
-       :in-theory (e/d (symbol-sfix o-p o-finp o<
+       :in-theory (e/d (symbol-sfix
                         gap-cardinality-decreases
                         defind-direct-dependencies-subset-preds-in-premises)
                        (set::expand-cardinality-of-difference
@@ -922,10 +923,7 @@
      ;; that the former matches is not rewritten away.
      :hints
      (("Goal"
-       :in-theory (e/d (o-p
-                        o-finp
-                        o<
-                        symbol-sfix
+       :in-theory (e/d (symbol-sfix
                         difference-cardinality-decreases)
                        (set::expand-cardinality-of-difference))))
      :verify-guards :after-returns
