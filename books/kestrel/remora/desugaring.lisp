@@ -574,7 +574,6 @@
                                         atom-list-desugar
                                         bind-desugar
                                         bind-list-desugar
-                                        expr-corep
                                         ast-corep-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
