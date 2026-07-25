@@ -149,6 +149,10 @@
             (dimeq (dim+ 0 x)
                    x))
 
+   (add2-inv ((dimp x))
+             (dimeq (dim+ x (dim- x))
+                    (dim-const 0)))
+
    (add2-const ((natp d1)
                 (natp d2))
                (dimeq (dim+ (dim-const d1) (dim-const d2))
@@ -195,11 +199,6 @@
                   (dimeq (dim* x (dim+ y z))
                          (dim+ (dim* x y) (dim* x z))))
 
-   (sub1-mul ((dimp x)
-              (dimp y))
-             (dimeq (dim- (dim* x y))
-                    (dim* (dim- x) y)))
-
    (sub2 ((dimp x)
           (dimp y))
          (dimeq (dim- x y)
@@ -209,10 +208,4 @@
            (dim-listp ys)
            (consp ys))
           (dimeq (dim-sub (cons x ys))
-                 (dim- x (dim-add ys))))
-
-   (sub2-const ((natp d1)
-                (natp d2)
-                (>= d1 d2))
-               (dimeq (dim- (dim-const d1) (dim-const d2))
-                      (dim-const (- d1 d2))))))
+                 (dim- x (dim-add ys))))))
