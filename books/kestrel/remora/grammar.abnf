@@ -7,6 +7,8 @@
 ;
 ; For reference see also "The Semantics of Rank Polymorphism"
 ; https://arxiv.org/abs/1907.00509v1 (mentioned below as "the paper").
+; Note that the paper calls "index" what is now "ispace" in Remora.
+
 ;
 ; The input is assumed to be a sequence of valid Unicode characters
 ; not including surrogates, as represented by the natural numbers
@@ -194,8 +196,6 @@ ifun-sig        = identifier ws "(" *( ws ispace-var ) ws ")"
 type-bind       = %s"type" ws type-var ws type
 
 ispace-bind     = %s"ispace" ws ispace-var ws ispace
-                 ; NOTE: the paper (linked above) calls this concept
-                 ; "index".
 
 at-fun-bind     = %s"fun" ws "(" ws at-fun-sig ws ")" ws exp
 
