@@ -189,6 +189,12 @@
                (dimeq (dim* (dim-const d1) (dim-const d2))
                       (dim-const (* d1 d2))))
 
+   (mul-add-distr ((dimp x)
+                   (dimp y)
+                   (dimp z))
+                  (dimeq (dim* x (dim+ y z))
+                         (dim+ (dim* x y) (dim* x z))))
+
    (sub1-add ((dimp x)
               (dimp y))
              (dimeq (dim- (dim+ x y))
