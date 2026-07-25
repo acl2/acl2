@@ -195,24 +195,10 @@
                   (dimeq (dim* x (dim+ y z))
                          (dim+ (dim* x y) (dim* x z))))
 
-   (sub1-add ((dimp x)
-              (dimp y))
-             (dimeq (dim- (dim+ x y))
-                    (dim+ (dim- x) (dim- y))))
-
    (sub1-mul ((dimp x)
               (dimp y))
              (dimeq (dim- (dim* x y))
                     (dim* (dim- x) y)))
-
-   (sub1-sub1 ((dimp x))
-              (dimeq (dim- (dim- x))
-                     x))
-
-   (sub1-sub2 ((dimp x)
-               (dimp y))
-              (dimeq (dim- (dim- x y))
-                     (dim- y x)))
 
    (sub2 ((dimp x)
           (dimp y))
