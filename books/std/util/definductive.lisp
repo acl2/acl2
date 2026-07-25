@@ -717,34 +717,40 @@
 (define defind-pred-clique ((pred-name symbolp)
                             (irule-infos defind-irule-info-listp))
   :returns (clique symbol-setp)
-  :short "Mutually recursive clique of a predicate."
+  :short "Clique of a predicate."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the set of the predicates @('p[i]') such that
+    "This is the set consisting of the predicate @('pred-name') itself,
+     plus the predicates @('p[i]') such that
      the predicate @('pred-name') depends on @('p[i]')
      and @('p[i]') depends on @('pred-name'),
      directly or indirectly
      (see @(tsee defind-pred-dependencies)).
-     We calculate it by going through the dependencies of the predicate
-     and retaining the ones whose dependencies include the predicate.")
+     We calculate it by going through the dependencies of the predicate,
+     retaining the ones whose dependencies include the predicate,
+     and adding the predicate itself;
+     so the clique is never empty.")
    (xdoc::p
     "If the predicate is recursive,
-     the clique includes the predicate itself,
+     it is among its own dependencies,
      because mutual dependency with itself is just recursion;
-     so the clique is not empty.
+     so it would be in the clique
+     even without explicitly adding it.
      If instead the predicate is not recursive,
-     the clique is empty:
-     mutual dependency between the predicate and any @('p[i]')
-     would compose into a dependency of the predicate on itself.
-     In graph terminology, the non-empty cliques are
+     it has no mutual dependency with any other predicate,
+     because that would compose into
+     a dependency of the predicate on itself;
+     so the clique is the singleton of the predicate.
+     In graph terminology, the cliques are
      the strongly connected components of the dependency graph,
-     except that a non-recursive predicate
+     where a non-recursive predicate
      (a vertex without a cycle through it)
-     does not form a component by itself, and belongs to no clique."))
-  (defind-pred-clique-loop
-    (defind-pred-dependencies pred-name irule-infos)
-    pred-name irule-infos)
+     forms a trivial component by itself."))
+  (set::insert (symbol-lfix pred-name)
+               (defind-pred-clique-loop
+                 (defind-pred-dependencies pred-name irule-infos)
+                 pred-name irule-infos))
 
   :prepwork
   ((define defind-pred-clique-loop ((deps symbol-setp)
@@ -766,11 +772,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define defind-mutually-recursive-cliques ((pred-names symbol-listp)
-                                           (irule-infos
-                                            defind-irule-info-listp))
+(define defind-cliques ((pred-names symbol-listp)
+                        (irule-infos defind-irule-info-listp))
   :returns (cliques symbol-set-setp)
-  :short "Set of the mutually recursive cliques formed by
+  :short "Set of the cliques formed by
           the predicates being defined, according to the rules."
   :long
   (xdoc::topstring
@@ -778,17 +783,15 @@
     "The rules induce a dependency relation
      among the predicates being defined
      (see @(tsee defind-preds-direct-dependencies)),
-     which partitions the recursive predicates
-     (see @(tsee defind-pred-recursivep))
-     into maximal cliques of mutual dependency
-     (see @(tsee defind-pred-clique));
-     the non-recursive predicates (if any) belong to no clique.
+     which partitions the predicates into cliques
+     (see @(tsee defind-pred-clique)),
+     where in particular each non-recursive predicate
+     forms a singleton clique by itself.
      This function returns the set of the cliques,
      which is thus a set of non-empty sets of predicate names.")
    (xdoc::p
     "We go through the predicates,
-     and we insert the clique of each predicate into the result,
-     skipping over the empty cliques of the non-recursive predicates.
+     and we insert the clique of each predicate into the result.
      The predicates of a clique all contribute the same clique,
      which appears just once in the result, which is a set.")
    (xdoc::p
@@ -800,19 +803,16 @@
      to a single predicate,
      and possibly for relaxing, in the future,
      the requirement that all the predicates are mutually recursive."))
-  (defind-mutually-recursive-cliques-loop pred-names irule-infos)
+  (defind-cliques-loop pred-names irule-infos)
 
   :prepwork
-  ((define defind-mutually-recursive-cliques-loop
-     ((preds-to-do symbol-listp)
-      (irule-infos defind-irule-info-listp))
+  ((define defind-cliques-loop ((preds-to-do symbol-listp)
+                                (irule-infos defind-irule-info-listp))
      :returns (cliques symbol-set-setp)
      :parents nil
      (b* (((when (endp preds-to-do)) nil)
-          (cliques (defind-mutually-recursive-cliques-loop
-                     (cdr preds-to-do) irule-infos))
-          (clique (defind-pred-clique (car preds-to-do) irule-infos))
-          ((when (set::emptyp clique)) cliques))
+          (cliques (defind-cliques-loop (cdr preds-to-do) irule-infos))
+          (clique (defind-pred-clique (car preds-to-do) irule-infos)))
        (set::insert clique cliques))
      :verify-guards :after-returns)))
 
@@ -1505,7 +1505,9 @@
                                (pred-infos defind-pred-info-listp)
                                (translations defind-translation-omapp))
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-  :returns (mv erp (infos defind-irule-info-listp))
+  :returns (mv erp
+               (infos defind-irule-info-listp)
+               (levels symbol-set-listp))
   :short "Process the @(':irules') input."
   :long
   (xdoc::topstring
@@ -1526,6 +1528,9 @@
      with multiple predicates, the levels will do more work,
      when the restriction to a single predicate is lifted.")
    (xdoc::p
+    "We return the levels along with the rule information,
+     for use in event generation.")
+   (xdoc::p
     "A single predicate is allowed to be non-recursive;
      it just yields a non-recursive proof validity function.
      But multiple predicates must be mutually recursive,
@@ -1535,7 +1540,7 @@
      first checking that every predicate is recursive
      (see @(tsee defind-nonrecursive-preds)),
      then checking that they form just one clique
-     (see @(tsee defind-mutually-recursive-cliques)),
+     (see @(tsee defind-cliques)),
      which, being the only one, must consist of all the predicates.
      Predicates that are not mutually recursive
      can be defined by separate uses of the macro,
@@ -1543,7 +1548,7 @@
      Since currently only one predicate is supported,
      the mutual recursion checks are never triggered;
      they are in preparation for lifting that restriction."))
-  (b* (((reterr) nil)
+  (b* (((reterr) nil nil)
        ((unless irules-suppliedp)
         (reterr (msg "The :IRULES input must be supplied.")))
        ((unless (and (true-listp irules)
@@ -1576,7 +1581,7 @@
                       can be defined by a separate use of DEFINDUCTIVE."
                      nonrec-preds)))
        (cliques (and multiplep
-                     (defind-mutually-recursive-cliques pred-names infos)))
+                     (defind-cliques pred-names infos)))
        ((when (and multiplep
                    (not (equal cliques
                                (set::insert (set::mergesort pred-names) nil)))))
@@ -1590,7 +1595,7 @@
                       by separate uses of DEFINDUCTIVE, ~
                       in dependency order."
                      cliques)))
-       ((mv & unleveled)
+       ((mv levels unleveled)
         (defind-pred-levels (set::mergesort pred-names) infos))
        ((unless (set::emptyp unleveled))
         (reterr (msg "Every predicate being defined ~
@@ -1610,7 +1615,7 @@
                       the generated fixtype of its proofs would be empty, ~
                       but fixtypes must be non-empty."
                      unleveled))))
-    (retok infos))
+    (retok infos levels))
 
   :prepwork
   ((define defind-process-irules-loop ((irules true-listp)
@@ -1769,6 +1774,7 @@
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (mv erp
                (irule-infos defind-irule-info-listp)
+               (levels symbol-set-listp)
                (parents symbol-listp)
                short
                long
@@ -1782,8 +1788,8 @@
    (xdoc::p
     "See @(tsee defind-process-inputs-1) for
      a description of the three phases of input processing."))
-  (b* (((reterr) nil nil nil nil nil)
-       ((erp irule-infos)
+  (b* (((reterr) nil nil nil nil nil nil)
+       ((erp irule-infos levels)
         (defind-process-irules irules irules-suppliedp
           pred-infos translations))
        ((erp parents short long xdocp)
@@ -1791,7 +1797,7 @@
           parents parents-suppliedp
           short short-suppliedp
           long long-suppliedp)))
-    (retok irule-infos parents short long xdocp))
+    (retok irule-infos levels parents short long xdocp))
 
   ///
 
@@ -3976,7 +3982,7 @@
         (defind-process-inputs-1 name preds preds-suppliedp irules wrld))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp))
        (translations (defind-process-inputs-2 terms state))
-       ((mv erp irule-infos parents short long xdocp)
+       ((mv erp irule-infos ?levels parents short long xdocp)
         (defind-process-inputs-3
           irules irules-suppliedp
           parents parents-suppliedp
