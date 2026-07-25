@@ -412,16 +412,6 @@
   (not (defind-premise-info-list-case-other
          (defind-irule-info->premises info))))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(define defind-irule-info-list-some-nonrecursivep ((infos
-                                                    defind-irule-info-listp))
-  :returns (yes/no booleanp)
-  :short "Check if at least a rule is not recursive."
-  (and (not (endp infos))
-       (or (not (defind-irule-info-recursivep (car infos)))
-           (defind-irule-info-list-some-nonrecursivep (cdr infos)))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defind-lookup-pred ((pred-name symbolp) (infos defind-pred-info-listp))
@@ -1522,9 +1512,19 @@
    (xdoc::p
     "Besides processing the individual rules,
      we check that the rule names are all distinct,
-     and that at least one rule is non-recursive
-     (which provides a base case for the inductive definition:
-     without it, the smallest predicate satisfying the rules is empty).")
+     and that every predicate is at some level
+     (see @(tsee defind-pred-levels)).
+     A predicate at no level would have no proof trees:
+     the generated fixtype of its proofs would be empty,
+     but fixtypes, like all ACL2 types, must be non-empty;
+     concretely, FTY would reject the generated fixtype,
+     for lack of a base case.
+     For a single predicate (the only case currently supported),
+     being at some level amounts to being at level 0,
+     i.e. to the existence of a non-recursive rule,
+     which provides a base case for the inductive definition;
+     with multiple predicates, the levels will do more work,
+     when the restriction to a single predicate is lifted.")
    (xdoc::p
     "A single predicate is allowed to be non-recursive;
      it just yields a non-recursive proof validity function.
@@ -1590,13 +1590,26 @@
                       by separate uses of DEFINDUCTIVE, ~
                       in dependency order."
                      cliques)))
-       ((unless (defind-irule-info-list-some-nonrecursivep infos))
-        (reterr (msg "The :IRULES input must include ~
-                      at least one non-recursive rule, ~
-                      i.e. a rule without the predicate in its premises. ~
-                      With the supplied rules, ~
-                      the predicate would be defined to be empty, ~
-                      for lack of a base case."))))
+       ((mv & unleveled)
+        (defind-pred-levels (set::mergesort pred-names) infos))
+       ((unless (set::emptyp unleveled))
+        (reterr (msg "Every predicate being defined ~
+                      must be at some level: ~
+                      a predicate is at level 0 if ~
+                      some rule in the :IRULES input ~
+                      has the predicate as its conclusion ~
+                      and no premises that are ~
+                      calls of the predicates being defined; ~
+                      a predicate is at a higher level if ~
+                      some rule has the predicate as its conclusion ~
+                      and all its premises that are ~
+                      calls of the predicates being defined ~
+                      call predicates at lower levels. ~
+                      This does not hold for ~&0. ~
+                      For a predicate at no level, ~
+                      the generated fixtype of its proofs would be empty, ~
+                      but fixtypes must be non-empty."
+                     unleveled))))
     (retok infos))
 
   :prepwork
