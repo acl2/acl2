@@ -74,7 +74,9 @@
      Subtractions of two or more dimensions are equivalent to additions of
      the first dimension and the subtraction of the reamining dimensions.
      Subtractions of three or more dimensions reduce to binary subtractions
-     between the first dimension and the sum of the remaining dimensions."))
+     between the first dimension and the sum of the remaining dimensions.
+     A subtraction of two constant dimensions is equivalent to
+     a constant dimension of the difference, provided it is not negative."))
 
   :preds ((dimeq dim1 dim2))
 
@@ -212,4 +214,10 @@
            (dim-listp ys)
            (consp ys))
          (dimeq (dim-sub (cons x ys))
-                (dim- x (dim-add ys))))))
+                (dim- x (dim-add ys))))
+
+   (sub2-const ((natp d1)
+                (natp d2)
+                (>= d1 d2))
+               (dimeq (dim- (dim-const d1) (dim-const d2))
+                      (dim-const (- d1 d2))))))
