@@ -41,33 +41,25 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The inference rules say that:")
-   (xdoc::ul
-    (xdoc::li
-     "It is an equivalence relation,
-      i.e. reflexive, symmetric, and transitive.")
-    (xdoc::p
-     "It is a congruence with respect to
-      additions, subtractions, and multiplications.")
-    (xdoc::li
-     "The addition of no dimensions is equivalent to the dimension 0.")
-    (xdoc::li
-     "The addition of one dimension is equivalent to that dimension.")
-    (xdoc::li
-     "The addition of three or more dimensions is equivalent to
-      left-nested additions of two dimensions.
-      This reduces n-ary additions with three or more addends
-      to binary additions, which the following rules are about.")
-    (xdoc::li
-     "The addition of dimensions is commutative and associative,
-      and it has 0 as identity.")
-    (xdoc::li
-     "The addition of two constant dimensions reduces to their sum.")
-    (xdoc::li
-     "Multiplication is subject to rules analogous to addition."))
+    "The rules say that the relation is an equivalence,
+     and a congruence with respect to
+     additions, subtractions, and multiplications.")
    (xdoc::p
-    "We need to add rules for subtractio,
-     in a way that does not require the production of negative dimensions."))
+    "The rules say that
+     the addition of no dimensions is equivalent to the 0 dimension,
+     the addition of one dimension is equivalent to that dimension,
+     and that the addition of three or more dimensions is equivalent to
+     a nest of additions of two elements each.
+     Thus, the laws of addition can be stated on binary additions:
+     commutativity, associativity, and identity.
+     The addition of (two) constant dimensions
+     is equivalent to a single dimension consisting of the calculated sum.")
+   (xdoc::p
+    "The rules for multiplication are quite analogous to addition.")
+   (xdoc::p
+    "The rules for subtraction are more complicated,
+     because of the lack of symmetry (compared to addition and multiplication),
+     and also to avoid creating negative dimensions in calculations."))
 
   :preds ((dimeq dim1 dim2))
 
@@ -147,8 +139,6 @@
                (dimeq (dim+ (dim-const d1) (dim-const d2))
                       (dim+ (dim-const (+ d1 d2)))))
 
-   ;; TODO: subtraction rules
-
    (mul0 ()
          (dimeq (dim*)
                 (dim-const 1)))
@@ -182,4 +172,8 @@
    (mul2-const ((natp d1)
                 (natp d2))
                (dimeq (dim* (dim-const d1) (dim-const d2))
-                      (dim* (dim-const (* d1 d2)))))))
+                      (dim* (dim-const (* d1 d2)))))
+
+   ;; TODO: substraction rules
+
+   ))
