@@ -71,10 +71,8 @@
      or to non-additions and non-multiplications);
      there is a rule for unary subtraction,
      and one for binary subtraction.
-     Subtractions of two or more dimensions are equivalent to additions of
-     the first dimension and the subtraction of the reamining dimensions.
-     Subtractions of three or more dimensions reduce to binary subtractions
-     between the first dimension and the sum of the remaining dimensions.
+     A subtraction of two or more dimensions is equivalent to the subtraction
+     between the first dimension and the addition of the reamining dimensions.
      A subtraction of two constant dimensions is equivalent to
      a constant dimension of the difference, provided it is not negative."))
 
@@ -92,7 +90,7 @@
 
    (trans ((dimp x)
            (dimp y)
-           (dimp x)
+           (dimp z)
            (dimeq x y)
            (dimeq y z))
           (dimeq x z))
@@ -183,7 +181,7 @@
                       (dim* x (dim* y z))))
 
    (mul2-id ((dimp x))
-            (dimeq (dim* 0 x)
+            (dimeq (dim* 1 x)
                    x))
 
    (mul2-const ((natp d1)
