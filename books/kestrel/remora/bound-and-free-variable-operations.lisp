@@ -12,6 +12,9 @@
 
 (include-book "abstract-syntax-structurals")
 
+(include-book "kestrel/fty/deffold-reduce" :dir :system)
+
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration)
