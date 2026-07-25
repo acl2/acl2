@@ -224,6 +224,46 @@
              (expr-corep expr))
     :enable expr-corep)
 
+  (defruled not-expr-corep-when-atom
+    (implies (equal (expr-kind expr) :atom)
+             (not (expr-corep expr)))
+    :enable expr-corep)
+
+  (defruled not-expr-corep-when-string
+    (implies (equal (expr-kind expr) :string)
+             (not (expr-corep expr)))
+    :enable expr-corep)
+
+  (defruled not-expr-corep-when-appn
+    (implies (equal (expr-kind expr) :appn)
+             (not (expr-corep expr)))
+    :enable expr-corep)
+
+  (defruled not-expr-corep-when-tappn
+    (implies (equal (expr-kind expr) :tappn)
+             (not (expr-corep expr)))
+    :enable expr-corep)
+
+  (defruled not-expr-corep-when-iappn
+    (implies (equal (expr-kind expr) :iappn)
+             (not (expr-corep expr)))
+    :enable expr-corep)
+
+  (defruled not-expr-corep-when-capp
+    (implies (equal (expr-kind expr) :capp)
+             (not (expr-corep expr)))
+    :enable expr-corep)
+
+  (defruled not-expr-corep-when-unboxn
+    (implies (equal (expr-kind expr) :unboxn)
+             (not (expr-corep expr)))
+    :enable expr-corep)
+
+  (defruled not-expr-corep-when-bracket
+    (implies (equal (expr-kind expr) :bracket)
+             (not (expr-corep expr)))
+    :enable expr-corep)
+
   (defruled atom-corep-when-base
     (implies (atom-case atom :base)
              (atom-corep atom))
@@ -289,6 +329,14 @@
                     type-corep-when-var
                     type-corep-when-base
                     expr-corep-when-var
+                    not-expr-corep-when-atom
+                    not-expr-corep-when-string
+                    not-expr-corep-when-appn
+                    not-expr-corep-when-tappn
+                    not-expr-corep-when-iappn
+                    not-expr-corep-when-capp
+                    not-expr-corep-when-unboxn
+                    not-expr-corep-when-bracket
                     atom-corep-when-base
                     not-atom-corep-when-lambdan
                     not-atom-corep-when-tlambdan
