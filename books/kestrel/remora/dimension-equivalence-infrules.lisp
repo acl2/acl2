@@ -59,7 +59,22 @@
    (xdoc::p
     "The rules for subtraction are more complicated,
      because of the lack of symmetry (compared to addition and multiplication),
-     and also to avoid creating negative dimensions in calculations."))
+     and also to avoid creating negative dimensions in calculations.
+     There are no explicit rules for the subtraction of no dimensions,
+     because it is illegal in fact;
+     it is only equivalent to itself, via reflexivity.
+     There are rules for the subtraction of one dimension,
+     for different forms of that one dimension,
+     except for constants and variables:
+     there is a rule for binary addition and one for binary multiplication
+     (since non-binary ones can be reduced to binary,
+     or to non-additions and non-multiplications);
+     there is a rule for unary subtraction,
+     and one for binary subtraction.
+     Subtractions of two or more dimensions are equivalent to additions of
+     the first dimension and the subtraction of the reamining dimensions.
+     Subtractions of three or more dimensions reduce to binary subtractions
+     between the first dimension and the sum of the remaining dimensions."))
 
   :preds ((dimeq dim1 dim2))
 
@@ -82,27 +97,27 @@
 
    (cong-add ((dimp x)
               (dimp y)
-              (dim-listp pre)
-              (dim-listp post)
+              (dim-listp ws)
+              (dim-listp us)
               (dimeq x y))
-             (dimeq (dim-add (append pre (list x) post))
-                    (dim-add (append pre (list y) post))))
+             (dimeq (dim-add (append ws (list x) us))
+                    (dim-add (append ws (list y) us))))
 
    (cong-sub ((dimp x)
               (dimp y)
-              (dim-listp pre)
-              (dim-listp post)
+              (dim-listp ws)
+              (dim-listp us)
               (dimeq x y))
-             (dimeq (dim-sub (append pre (list x) post))
-                    (dim-sub (append pre (list y) post))))
+             (dimeq (dim-sub (append ws (list x) us))
+                    (dim-sub (append ws (list y) us))))
 
    (cong-mul ((dimp x)
               (dimp y)
-              (dim-listp pre)
-              (dim-listp post)
+              (dim-listp ws)
+              (dim-listp us)
               (dimeq x y))
-             (dimeq (dim-mul (append pre (list x) post))
-                    (dim-mul (append pre (list y) post))))
+             (dimeq (dim-mul (append ws (list x) us))
+                    (dim-mul (append ws (list y) us))))
 
    (add0 ()
          (dimeq (dim+)
@@ -115,9 +130,9 @@
    (add3m ((dimp x)
            (dimp y)
            (dimp z)
-           (dim-listp rest))
-          (dimeq (dim-add (list* x y z rest))
-                 (dim-add (cons (dim+ (dim+ x y) z) rest))))
+           (dim-listp ws))
+          (dimeq (dim-add (list* x y z ws))
+                 (dim-add (cons (dim+ (dim+ x y) z) ws))))
 
    (add2-comm ((dimp x)
                (dimp y))
@@ -150,9 +165,9 @@
    (mul3m ((dimp x)
            (dimp y)
            (dimp z)
-           (dim-listp rest))
-          (dimeq (dim-mul (list* x y z rest))
-                 (dim-mul (cons (dim* (dim* x y) z) rest))))
+           (dim-listp ws))
+          (dimeq (dim-mul (list* x y z ws))
+                 (dim-mul (cons (dim* (dim* x y) z) ws))))
 
    (mul2-comm ((dimp x)
                (dimp y))
@@ -174,6 +189,27 @@
                (dimeq (dim* (dim-const d1) (dim-const d2))
                       (dim-const (* d1 d2))))
 
-   ;; TODO: substraction rules
+   (sub1-add ((dimp x)
+              (dimp y))
+             (dimeq (dim- (dim+ x y))
+                    (dim+ (dim- x) (dim- y))))
 
-   ))
+   (sub1-mul ((dimp x)
+              (dimp y))
+             (dimeq (dim- (dim* x y))
+                    (dim* (dim- x) y)))
+
+   (sub1-sub1 ((dimp x))
+              (dimeq (dim- (dim- x))
+                     x))
+
+   (sub1-sub2 ((dimp x)
+               (dimp y))
+              (dimeq (dim- (dim- x y))
+                     (dim- y x)))
+
+   (sub2m ((dimp x)
+           (dim-listp ys)
+           (consp ys))
+         (dimeq (dim-sub (cons x ys))
+                (dim- x (dim-add ys))))))
