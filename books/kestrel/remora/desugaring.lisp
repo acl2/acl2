@@ -127,11 +127,11 @@
     "A bracket type is turned into an array type
      whose shape is the concatenation of the shapes.")
    (xdoc::p
-    "An n-ary function type is turnes into
-     a nest of zero or more unary function types.")
+    "An n-ary function type is turned into
+     a nest of unary function types.")
    (xdoc::p
     "An n-ary universal, product, or sum type is turned into
-     a nest of two or more unary universal, product, or sum types.")
+     a nest of unary universal, product, or sum types.")
    (xdoc::p
     "An atom expression is turned into a 0-rank array expression.")
    (xdoc::p
@@ -142,11 +142,15 @@
      with the type of integers.")
    (xdoc::p
     "An n-ary expression, type, or ispace application is turned into
-     a nest of zero or more unary expression, type, or ispace applications.")
+     a nest of unary expression, type, or ispace applications.")
    (xdoc::p
     "A combined application is turned into
      nests of unary applications,
      also based on whether type and ispace arguments are present or not.")
+   (xdoc::p
+    "An n-ary unboxing expression is turned into
+     a nest of unary unboxing expressions,
+     all binding the same variable (see @(tsee nest-unbox-exprs)).")
    (xdoc::p
     "A bracket expression is turned into a frame expression
      with a single dimension that is the number of sub-expressions,
@@ -254,6 +258,11 @@
                       fun-targs-iargs
                       (expr-list-desugar expr.args))))
                  fun-targs-iargs-args))
+   (expr :unboxn (nest-unbox-exprs expr.ispaces
+                                   expr.var
+                                   (expr-desugar expr.target)
+                                   (expr-desugar expr.body)
+                                   (type-option-desugar expr.type?)))
    (expr :bracket (b* ((exprs (expr-list-desugar expr.exprs)))
                     (make-expr-frame :dims (list (len exprs))
                                      :exprs exprs)))

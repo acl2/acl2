@@ -77,6 +77,10 @@
      "Combined applications,
       because they are expressible as simpler applications.")
     (xdoc::li
+     "N-ary unboxing expressions,
+      because they are expressible as nests of
+      two or more unary unboxing expressions.")
+    (xdoc::li
      "Bracket expressions,
       because they are expressible as array expressions.")
     (xdoc::li
@@ -172,6 +176,7 @@
    (expr :tappn nil)
    (expr :iappn nil)
    (expr :capp nil)
+   (expr :unboxn nil)
    (expr :bracket nil)
    (atom :lambdan nil)
    (atom :tlambdan nil)
