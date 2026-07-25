@@ -123,7 +123,8 @@
     "The operations from @('+') to @('bool->f') have monomorphic types:
      zero-rank array types of function types between base types.
      The @('head'), @('tail'), @('length'),
-     @('append'), @('reverse'), @('index'), and @('index2d') operations
+     @('append'), @('reverse'), @('index'), @('index2d'),
+     and @('reshape') operations
      have polymorphic types:
      a universal type of a product type of a function type, as in [impl].
      The @('sum') operation is polymorphic only in the shape,
@@ -210,6 +211,12 @@
         (t[] (tpi ("@s")
                   (t-> ((t[] :int "@s"))
                        :int))
+             (shp)))
+       (reshape-type
+        (t[] (tforall ("&t")
+                      (tpi ("@s1" "@s2")
+                           (t-> ((t[] "&t" "@s1"))
+                                (t[] "&t" "@s2"))))
              (shp))))
     (omap::from-alist
      (list (cons "+" int-binop-type)
@@ -268,7 +275,8 @@
            (cons "reverse" reverse-type)
            (cons "index" index-type)
            (cons "index2d" index2d-type)
-           (cons "sum" sum-type)))))
+           (cons "sum" sum-type)
+           (cons "reshape" reshape-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
