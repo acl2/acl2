@@ -166,7 +166,6 @@
      We should also desugar @('let')s with multiple bindings
      to multiple @('let')s with single bindings."))
   :types (shapes/ispaces
-          ispace-list-option
           types
           type-option
           var+type?

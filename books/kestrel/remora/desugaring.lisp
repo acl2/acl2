@@ -189,7 +189,6 @@
      for an ispace function binding, it is a product type.
      A combined function binding results in nested lambda abstractions."))
   :types (shapes/ispaces
-          ispace-list-option
           types
           type-option
           var+type?
@@ -412,11 +411,6 @@
               ispace-list-desugar
               shape-list-corep-of-shape-dims-list-of-list-to-singletons))))
 
-  (defret ispace-list-option-corep-of-ispace-list-option-desugar
-    (ispace-list-option-corep result)
-    :fn ispace-list-option-desugar
-    :hints (("Goal" :in-theory (enable ispace-list-option-desugar))))
-
   (defret-mutual types-corep-of-types-desugar
     (defret type-corep-of-type-desugar
       (type-corep result)
@@ -501,12 +495,6 @@
                                 shape-list-desugar
                                 ispace-desugar
                                 ispace-list-desugar))))
-
-  (defret ispace-list-option-desugar-when-ispace-list-option-corep
-    (equal result (ispace-list-option-fix ispace-list-option))
-    :hyp (ispace-list-option-corep ispace-list-option)
-    :fn ispace-list-option-desugar
-    :hints (("Goal" :in-theory (enable ispace-list-option-desugar))))
 
   (defret-mutual types-desugar-when-types-corep
     (defret type-desugar-when-type-corep
@@ -600,10 +588,6 @@
   (defrule ispace-list-desugar-idempotent
     (equal (ispace-list-desugar (ispace-list-desugar ispaces))
            (ispace-list-desugar ispaces)))
-
-  (defrule ispace-list-option-desugar-idempotent
-    (equal (ispace-list-option-desugar (ispace-list-option-desugar ispaces?))
-           (ispace-list-option-desugar ispaces?)))
 
   (defrule type-desugar-idempotent
     (equal (type-desugar (type-desugar type))
