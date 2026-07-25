@@ -72,7 +72,7 @@
      there is a rule for unary subtraction,
      and one for binary subtraction.
      A subtraction of two or more dimensions is equivalent to the subtraction
-     between the first dimension and the addition of the reamining dimensions.
+     between the first dimension and the addition of the remaining dimensions.
      A subtraction of two constant dimensions is equivalent to
      a constant dimension of the difference, provided it is not negative."))
 
