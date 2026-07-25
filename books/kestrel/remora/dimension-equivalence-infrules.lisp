@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "abstract-syntax-trees")
+(include-book "abstract-syntax-constructors")
 
 (include-book "std/util/definductive" :dir :system)
 
@@ -46,40 +46,140 @@
     (xdoc::li
      "It is an equivalence relation,
       i.e. reflexive, symmetric, and transitive.")
+    (xdoc::p
+     "It is a congruence with respect to
+      additions, subtractions, and multiplications.")
     (xdoc::li
      "The addition of no dimensions is equivalent to the dimension 0.")
     (xdoc::li
-     "The addition of one dimension is equivalent to that dimension."))
+     "The addition of one dimension is equivalent to that dimension.")
+    (xdoc::li
+     "The addition of three or more dimensions is equivalent to
+      left-nested additions of two dimensions.
+      This reduces n-ary additions with three or more addends
+      to binary additions, which the following rules are about.")
+    (xdoc::li
+     "The addition of dimensions is commutative and associative,
+      and it has 0 as identity.")
+    (xdoc::li
+     "The addition of two constant dimensions reduces to their sum.")
+    (xdoc::li
+     "Multiplication is subject to rules analogous to addition."))
    (xdoc::p
-    "More rules need to be added, obviously."))
+    "We need to add rules for subtractio,
+     in a way that does not require the production of negative dimensions."))
 
   :preds ((dimeq dim1 dim2))
 
   :irules
 
-  ((refl ((dimp dim))
-         (dimeq dim dim))
+  ((refl ((dimp x))
+         (dimeq x x))
 
-   (symm ((dimp dim1)
-          (dimp dim2)
-          (dimeq dim1 dim2))
-         (dimeq dim2 dim1))
+   (symm ((dimp x)
+          (dimp y)
+          (dimeq x y))
+         (dimeq y x))
 
-   (trans ((dimp dim1)
-           (dimp dim2)
-           (dimp dim3)
-           (dimeq dim1 dim2)
-           (dimeq dim2 dim3))
-          (dimeq dim1 dim3))
+   (trans ((dimp x)
+           (dimp y)
+           (dimp x)
+           (dimeq x y)
+           (dimeq y z))
+          (dimeq x z))
+
+   (cong-add ((dimp x)
+              (dimp y)
+              (dim-listp pre)
+              (dim-listp post)
+              (dimeq x y))
+             (dimeq (dim-add (append pre (list x) post))
+                    (dim-add (append pre (list y) post))))
+
+   (cong-sub ((dimp x)
+              (dimp y)
+              (dim-listp pre)
+              (dim-listp post)
+              (dimeq x y))
+             (dimeq (dim-sub (append pre (list x) post))
+                    (dim-sub (append pre (list y) post))))
+
+   (cong-mul ((dimp x)
+              (dimp y)
+              (dim-listp pre)
+              (dim-listp post)
+              (dimeq x y))
+             (dimeq (dim-mul (append pre (list x) post))
+                    (dim-mul (append pre (list y) post))))
 
    (add0 ()
-         (dimeq (dim-add nil)
+         (dimeq (dim+)
                 (dim-const 0)))
 
-   (add1 ((dimp dim))
-         (dimeq (dim-add (list dim))
-                dim))
+   (add1 ((dimp x))
+         (dimeq (dim+ x)
+                x))
 
-   ;; TODO: add more rules
+   (add3m ((dimp x)
+           (dimp y)
+           (dimp z)
+           (dim-listp rest))
+          (dimeq (dim-add (list* x y z rest))
+                 (dim-add (cons (dim+ (dim+ x y) z) rest))))
 
-   ))
+   (add2-comm ((dimp x)
+               (dimp y))
+              (dimeq (dim+ x y)
+                     (dim+ y x)))
+
+   (add2-assoc ((dimp x)
+                (dimp y)
+                (dimp z))
+               (dimeq (dim+ (dim+ x y) z)
+                      (dim+ x (dim+ y z))))
+
+   (add2-id ((dimp x))
+            (dimeq (dim+ 0 x)
+                   x))
+
+   (add2-const ((natp d1)
+                (natp d2))
+               (dimeq (dim+ (dim-const d1) (dim-const d2))
+                      (dim+ (dim-const (+ d1 d2)))))
+
+   ;; TODO: subtraction rules
+
+   (mul0 ()
+         (dimeq (dim*)
+                (dim-const 1)))
+
+   (mul1 ((dimp x))
+         (dimeq (dim* x)
+                x))
+
+   (mul3m ((dimp x)
+           (dimp y)
+           (dimp z)
+           (dim-listp rest))
+          (dimeq (dim-mul (list* x y z rest))
+                 (dim-mul (cons (dim* (dim* x y) z) rest))))
+
+   (mul2-comm ((dimp x)
+               (dimp y))
+              (dimeq (dim* x y)
+                     (dim* y x)))
+
+   (mul2-assoc ((dimp x)
+                (dimp y)
+                (dimp z))
+               (dimeq (dim* (dim* x y) z)
+                      (dim* x (dim* y z))))
+
+   (mul2-id ((dimp x))
+            (dimeq (dim* 0 x)
+                   x))
+
+   (mul2-const ((natp d1)
+                (natp d2))
+               (dimeq (dim* (dim-const d1) (dim-const d2))
+                      (dim* (dim-const (* d1 d2)))))))
