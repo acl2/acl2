@@ -860,7 +860,7 @@
 ;; over f is defined as follows:
 
 (defun trivial-embedding (e k f)
-  (if (and (extensionp e f) (not (equal e f)))
+  (if (and (extends e f) (not (equal e f)))
       (cons (flift (primitive e) e k)
             (trivial-embedding (cdr e) k f))
     ()))
@@ -878,7 +878,7 @@
     ()))
 
 (defthmd trivial-embedding-aux-rewrite
-  (implies (extensionp e d)
+  (implies (and (extensionp e d) (extensionp d f))
            (equal (trivial-embedding-aux e d k f)
                   (trivial-embedding d k f))))
 
@@ -926,7 +926,7 @@
 ;; If phi embeds e in g and psi embeds g in k, then the composition embeds e in k:
 
 (defun comp-embedding (psi phi e k f)
-  (if (and (extensionp e f) (not (equal e f)))
+  (if (and (extends e f) (not (equal e f)))
       (cons (embed (car phi) psi k f)
             (comp-embedding psi (cdr phi) (cdr e) k f))
     ()))
@@ -1117,7 +1117,7 @@
 ;; The definition of the inverse isomorphism emulates the definition of phi1:
           
 (defun inv-embedding-aux (phi e k d f)
-  (and (extensionp k d) (extensionp d f) (not (equal d f))
+  (and (extends k d) (extends d f) (not (equal d f))
        (cons (embedding-inv (flift (primitive d) d k) phi e k f)
              (inv-embedding-aux phi e k (cdr d) f))))
 

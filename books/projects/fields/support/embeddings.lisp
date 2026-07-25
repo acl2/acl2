@@ -7589,7 +7589,7 @@
 ;; over f is defined as follows:
 
 (defun trivial-embedding (e k f)
-  (if (and (extensionp e f) (not (equal e f)))
+  (if (and (extends e f) (not (equal e f)))
       (cons (flift (primitive e) e k)
             (trivial-embedding (cdr e) k f))
     ()))
@@ -7607,7 +7607,7 @@
     ()))
 
 (defthmd trivial-embedding-aux-rewrite
-  (implies (extensionp e d)
+  (implies (and (extensionp e d) (extensionp d f))
            (equal (trivial-embedding-aux e d k f)
                   (trivial-embedding d k f))))
 
@@ -7673,7 +7673,7 @@
 ;; If phi embeds e in g and psi embeds g in k, then the composition embeds e in k:
 
 (defun comp-embedding (psi phi e k f)
-  (if (and (extensionp e f) (not (equal e f)))
+  (if (and (extends e f) (not (equal e f)))
       (cons (embed (car phi) psi k f)
             (comp-embedding psi (cdr phi) (cdr e) k f))
     ()))
@@ -8368,18 +8368,46 @@
 ;; We define the inverse of an embedding phi of e in k over f:
           
 (defun inv-embedding-aux (phi e k d f)
-  (and (extensionp k d) (extensionp d f) (not (equal d f))
+  (and (extends k d) (extends d f) (not (equal d f))
        (cons (embedding-inv (flift (primitive d) d k) phi e k f)
              (inv-embedding-aux phi e k (cdr d) f))))
 
 (defun inv-embedding (phi e k f)
   (inv-embedding-aux phi e k k f))
 
+(defun inv-embedding-aux-alt (phi e k d f)
+  (and (extensionp k d) (extensionp d f) (not (equal d f))
+       (cons (embedding-inv (flift (primitive d) d k) phi e k f)
+             (inv-embedding-aux-alt phi e k (cdr d) f))))
+
+(defun inv-embedding-alt (phi e k f)
+  (inv-embedding-aux-alt phi e k k f))
+
+(defthm inv-embedding-aux-aux-alt
+  (implies (and (extensionp k d) (extensionp d f))
+           (equal (inv-embedding-aux-alt phi e k d f)
+	          (inv-embedding-aux phi e k d f))))
+
 ;; The following is proved by functional instantiantion of phi1-phi0:
 
 (defmacro inv-embedding-mac ()
   '(and (extensionp e f) (extensionp k f)
         (iso-embeddingp phi e k f)))
+
+(defthmd embeddingp-inv-embedding-aux-alt
+  (implies (and (extensionp e f) (extensionp k f)
+		(iso-embeddingp phi e k f))
+           (and (embeddingp (inv-embedding-aux-alt phi e k k f) k e f)
+	        (implies (feltp x k)
+                         (equal (embed x (inv-embedding-aux-alt phi e k k f) e f)
+	                        (embedding-inv x phi e k f)))))
+  :hints (("Goal" :use ((:functional-instance phi1-phi0
+                          (e0 (lambda () (if (inv-embedding-mac) k (e0))))
+                          (k0 (lambda () (if (inv-embedding-mac) e (k0))))
+                          (b0 (lambda () (if (inv-embedding-mac) f (b0))))
+                          (phi0 (lambda (x) (if (inv-embedding-mac) (embedding-inv x phi e k f) (phi0 x))))
+			  (phi1-aux (lambda (d) (if (inv-embedding-mac) (inv-embedding-aux-alt phi e k d f) (phi1-aux d))))
+			  (phi1 (lambda () (if (inv-embedding-mac) (inv-embedding-aux-alt phi e k k f) (phi1)))))))))
 
 (defthmd embeddingp-inv-embedding-aux
   (implies (and (extensionp e f) (extensionp k f)
@@ -8388,15 +8416,10 @@
 	        (implies (feltp x k)
                          (equal (embed x (inv-embedding-aux phi e k k f) e f)
 	                        (embedding-inv x phi e k f)))))
-  :hints (("Goal" :use ((:functional-instance phi1-phi0
-                          (e0 (lambda () (if (inv-embedding-mac) k (e0))))
-                          (k0 (lambda () (if (inv-embedding-mac) e (k0))))
-                          (b0 (lambda () (if (inv-embedding-mac) f (b0))))
-                          (phi0 (lambda (x) (if (inv-embedding-mac) (embedding-inv x phi e k f) (phi0 x))))
-			  (phi1-aux (lambda (d) (if (inv-embedding-mac) (inv-embedding-aux phi e k d f) (phi1-aux d))))
-			  (phi1 (lambda () (if (inv-embedding-mac) (inv-embedding-aux phi e k k f) (phi1)))))))))
+  :hints (("Goal" :use (embeddingp-inv-embedding-aux-alt))))
 
-;; Instantiate embeddingp-inv-embedding-aux:
+
+;; Instantiate embeddingp-inv-embedding-aux-alt:
 
 (defthmd embeddingp-inv-embedding
   (implies (and (extensionp e f) (extensionp k f)
@@ -8406,7 +8429,7 @@
                          (equal (embed x (inv-embedding phi e k f) e f)
 	                        (embedding-inv x phi e k f)))))
   :hints (("Goal" :in-theory (enable inv-embedding)
-                  :use (embeddingp-inv-embedding-aux))))
+                  :use (embeddingp-inv-embedding-aux-alt))))
 
 (local-defthmd comp-inv-embedding-1
   (implies (and (extensionp e f) (extensionp k f) (iso-embeddingp phi e k f)
@@ -8508,7 +8531,6 @@
   :hints (("Goal" :in-theory (enable id-embedding-id)
                   :use (comp-inv-embedding
                         (:instance pembed-comp-embedding (phi (inv-embedding phi e k f)) (psi phi) (e k) (g e))))))
-
 
 ;;-------------------------------------------------------
 
