@@ -8,7 +8,6 @@
 ; For reference see also "The Semantics of Rank Polymorphism"
 ; https://arxiv.org/abs/1907.00509v1 (mentioned below as "the paper").
 ; Note that the paper calls "index" what is now "ispace" in Remora.
-
 ;
 ; The input is assumed to be a sequence of valid Unicode characters
 ; not including surrogates, as represented by the natural numbers
