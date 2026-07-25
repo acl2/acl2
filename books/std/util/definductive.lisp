@@ -897,21 +897,21 @@
   (defind-pred-levels-loop preds nil irule-infos)
 
   :prepwork
-  ((define defind-pred-levels-loop ((unleveled symbol-setp)
+
+  ((local (in-theory (enable emptyp-of-symbol-sfix)))
+
+   (define defind-pred-levels-loop ((unleveled symbol-setp)
                                     (leveled symbol-setp)
                                     (irule-infos defind-irule-info-listp))
      :returns (mv (levels symbol-set-listp)
                   (still-unleveled symbol-setp))
      :parents nil
-     (b* ((unleveled (symbol-sfix unleveled))
-          (leveled (symbol-sfix leveled))
-          (irule-infos (defind-irule-info-list-fix irule-infos))
-          ((when (set::emptyp unleveled)) (mv nil nil))
+     (b* (((when (set::emptyp (symbol-sfix unleveled))) (mv nil nil))
           (new-leveled (defind-pred-levels-round unleveled leveled irule-infos))
           ((when (set::emptyp new-leveled)) (mv nil unleveled))
           ((mv levels still-unleveled)
            (defind-pred-levels-loop (set::difference unleveled new-leveled)
-             (set::union new-leveled leveled)
+             (set::union new-leveled (symbol-sfix leveled))
              irule-infos)))
        (mv (cons new-leveled levels) still-unleveled))
      :measure (set::cardinality (symbol-sfix unleveled))
@@ -921,11 +921,8 @@
      ;; EXPAND-CARDINALITY-OF-DIFFERENCE is disabled so that
      ;; the (cardinality (difference u x)) pattern
      ;; that the former matches is not rewritten away.
-     :hints
-     (("Goal"
-       :in-theory (e/d (symbol-sfix
-                        difference-cardinality-decreases)
-                       (set::expand-cardinality-of-difference))))
+     :hints (("Goal" :in-theory (e/d (difference-cardinality-decreases)
+                                     (set::expand-cardinality-of-difference))))
      :verify-guards :after-returns
 
      :prepwork
@@ -934,9 +931,7 @@
                                         (irule-infos defind-irule-info-listp))
         :returns (new-leveled symbol-setp)
         :parents nil
-        (b* ((leveled (symbol-sfix leveled))
-             (irule-infos (defind-irule-info-list-fix irule-infos))
-             ((when (set::emptyp (symbol-sfix preds-to-do))) nil)
+        (b* (((when (set::emptyp (symbol-sfix preds-to-do))) nil)
              (pred (set::head preds-to-do))
              (new-leveled (defind-pred-levels-round
                             (set::tail preds-to-do)
@@ -945,7 +940,6 @@
           (if (defind-rule-deriving-pred pred leveled irule-infos)
               (set::insert pred new-leveled)
             new-leveled))
-        :prepwork ((local (in-theory (enable symbol-sfix))))
         :verify-guards :after-returns
 
         ///
@@ -955,8 +949,7 @@
                    (set::subset new-leveled preds-to-do))
           :hints (("Goal"
                    :induct t
-                   :in-theory (acl2::enable* set::expensive-rules
-                                             symbol-sfix)))))))))
+                   :in-theory (acl2::enable* set::expensive-rules)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
