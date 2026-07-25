@@ -204,6 +204,18 @@
              (shape-corep shape))
     :enable shape-corep)
 
+  (defruled shape-corep-when-dims
+    (implies (shape-case shape :dims)
+             (equal (shape-corep shape)
+                    (and (consp (shape-dims->dims shape))
+                         (endp (cdr (shape-dims->dims shape))))))
+    :enable shape-corep)
+
+  (defruled not-shape-corep-when-splice
+    (implies (equal (shape-kind shape) :splice)
+             (not (shape-corep shape)))
+    :enable shape-corep)
+
   (defruled ispace-corep-when-dim
     (implies (ispace-case ispace :dim)
              (ispace-corep ispace))
@@ -217,6 +229,31 @@
   (defruled type-corep-when-base
     (implies (type-case type :base)
              (type-corep type))
+    :enable type-corep)
+
+  (defruled not-type-corep-when-bracket
+    (implies (equal (type-kind type) :bracket)
+             (not (type-corep type)))
+    :enable type-corep)
+
+  (defruled not-type-corep-when-funn
+    (implies (equal (type-kind type) :funn)
+             (not (type-corep type)))
+    :enable type-corep)
+
+  (defruled not-type-corep-when-foralln
+    (implies (equal (type-kind type) :foralln)
+             (not (type-corep type)))
+    :enable type-corep)
+
+  (defruled not-type-corep-when-pin
+    (implies (equal (type-kind type) :pin)
+             (not (type-corep type)))
+    :enable type-corep)
+
+  (defruled not-type-corep-when-sigman
+    (implies (equal (type-kind type) :sigman)
+             (not (type-corep type)))
     :enable type-corep)
 
   (defruled expr-corep-when-var
@@ -325,9 +362,16 @@
   (add-to-ruleset ast-corep-rules
                   '(shape-corep-when-var
                     shape-corep-when-dims-and-singleton
+                    shape-corep-when-dims
+                    not-shape-corep-when-splice
                     ispace-corep-when-dim
                     type-corep-when-var
                     type-corep-when-base
+                    not-type-corep-when-bracket
+                    not-type-corep-when-funn
+                    not-type-corep-when-foralln
+                    not-type-corep-when-pin
+                    not-type-corep-when-sigman
                     expr-corep-when-var
                     not-expr-corep-when-atom
                     not-expr-corep-when-string
