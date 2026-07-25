@@ -41,40 +41,37 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The rules say that the relation is an equivalence,
-     and a congruence with respect to
-     additions, subtractions, and multiplications.")
+    "This is essentially an equational theory over multivariate polynomials,
+     with variadic additions and multiplications,
+     and with a Lisp-like notion of variadic subtraction.")
    (xdoc::p
-    "The rules say that
-     the addition of no dimensions is equivalent to the 0 dimension,
-     the addition of one dimension is equivalent to that dimension,
-     and that the addition of three or more dimensions is equivalent to
-     a nest of additions of two elements each.
-     Thus, the laws of addition can be stated on binary additions:
-     commutativity, associativity, and identity.
-     The addition of (two) constant dimensions
-     is equivalent to a single dimension consisting of the calculated sum.")
+    "We start with the obligatory equivalence rules
+     (reflexivity, symmetry, and transitivity),
+     and with congruence rules for all the arithmetic operations.")
    (xdoc::p
-    "The rules for multiplication are quite analogous to addition.")
+    "We reduce all variadic additions to binary ones or to non-additions,
+     via the rules @('add0'), @('add1'), and @('add3m').
+     We do the same for multiplications,
+     via the rules @('mul0'), @('mul1'), and @('mul3m').
+     We reduce all variadic subtractions to unary ones:
+     the nullary one is illegal (only equivalent to itself, via reflexivity);
+     a subtraction of two or more dimensions reduces to
+     the addition of the first one and
+     the unary subtraction of the sum of the remaining ones,
+     via the rule @('sub2m').")
    (xdoc::p
-    "The rules for subtraction are more complicated,
-     because of the lack of symmetry (compared to addition and multiplication),
-     and also to avoid creating negative dimensions in calculations.
-     There are no explicit rules for the subtraction of no dimensions,
-     because it is illegal in fact;
-     it is only equivalent to itself, via reflexivity.
-     There are rules for the subtraction of one dimension,
-     for different forms of that one dimension,
-     except for constants and variables:
-     there is a rule for binary addition and one for binary multiplication
-     (since non-binary ones can be reduced to binary,
-     or to non-additions and non-multiplications);
-     there is a rule for unary subtraction,
-     and one for binary subtraction.
-     A subtraction of two or more dimensions is equivalent to the subtraction
-     between the first dimension and the addition of the remaining dimensions.
-     A subtraction of two constant dimensions is equivalent to
-     a constant dimension of the difference, provided it is not negative."))
+    "With the above reductions available,
+     we are in a standard situation with binary addition and multiplication,
+     and with negation (additive inverse).
+     We have rules for:
+     commutativity, associativity, and identity of addition and multiplication;
+     distributivity of multiplication over addition;
+     and inversion of addition.")
+   (xdoc::p
+    "We also have two rules to calculate
+     additions and multiplications of constants.
+     Technically the one for multiplication could be derived via induction,
+     but we prefer to have it explicit."))
 
   :preds ((dimeq dim1 dim2))
 
@@ -134,30 +131,6 @@
           (dimeq (dim-add (list* x y z ws))
                  (dim-add (cons (dim+ (dim+ x y) z) ws))))
 
-   (add2-comm ((dimp x)
-               (dimp y))
-              (dimeq (dim+ x y)
-                     (dim+ y x)))
-
-   (add2-assoc ((dimp x)
-                (dimp y)
-                (dimp z))
-               (dimeq (dim+ (dim+ x y) z)
-                      (dim+ x (dim+ y z))))
-
-   (add2-id ((dimp x))
-            (dimeq (dim+ 0 x)
-                   x))
-
-   (add2-inv ((dimp x))
-             (dimeq (dim+ x (dim- x))
-                    (dim-const 0)))
-
-   (add2-const ((natp d1)
-                (natp d2))
-               (dimeq (dim+ (dim-const d1) (dim-const d2))
-                      (dim-const (+ d1 d2))))
-
    (mul0 ()
          (dimeq (dim*)
                 (dim-const 1)))
@@ -173,39 +146,58 @@
           (dimeq (dim-mul (list* x y z ws))
                  (dim-mul (cons (dim* (dim* x y) z) ws))))
 
-   (mul2-comm ((dimp x)
-               (dimp y))
-              (dimeq (dim* x y)
-                     (dim* y x)))
-
-   (mul2-assoc ((dimp x)
-                (dimp y)
-                (dimp z))
-               (dimeq (dim* (dim* x y) z)
-                      (dim* x (dim* y z))))
-
-   (mul2-id ((dimp x))
-            (dimeq (dim* 1 x)
-                   x))
-
-   (mul2-const ((natp d1)
-                (natp d2))
-               (dimeq (dim* (dim-const d1) (dim-const d2))
-                      (dim-const (* d1 d2))))
-
-   (mul-add-distr ((dimp x)
-                   (dimp y)
-                   (dimp z))
-                  (dimeq (dim* x (dim+ y z))
-                         (dim+ (dim* x y) (dim* x z))))
-
-   (sub2 ((dimp x)
-          (dimp y))
-         (dimeq (dim- x y)
-                (dim+ x (dim- y))))
-
    (sub2m ((dimp x)
            (dim-listp ys)
            (consp ys))
           (dimeq (dim-sub (cons x ys))
-                 (dim- x (dim-add ys))))))
+                 (dim+ x (dim- (dim-add ys)))))
+
+   (add-comm ((dimp x)
+              (dimp y))
+             (dimeq (dim+ x y)
+                    (dim+ y x)))
+
+   (add-assoc ((dimp x)
+               (dimp y)
+               (dimp z))
+              (dimeq (dim+ (dim+ x y) z)
+                     (dim+ x (dim+ y z))))
+
+   (add-id ((dimp x))
+           (dimeq (dim+ 0 x)
+                  x))
+
+   (add-inv ((dimp x))
+            (dimeq (dim+ x (dim- x))
+                   (dim-const 0)))
+
+   (add-const ((natp d1)
+               (natp d2))
+              (dimeq (dim+ (dim-const d1) (dim-const d2))
+                     (dim-const (+ d1 d2))))
+
+   (mul-comm ((dimp x)
+              (dimp y))
+             (dimeq (dim* x y)
+                    (dim* y x)))
+
+   (mul-assoc ((dimp x)
+               (dimp y)
+               (dimp z))
+              (dimeq (dim* (dim* x y) z)
+                     (dim* x (dim* y z))))
+
+   (mul-id ((dimp x))
+           (dimeq (dim* 1 x)
+                  x))
+
+   (mul-const ((natp d1)
+               (natp d2))
+              (dimeq (dim* (dim-const d1) (dim-const d2))
+                     (dim-const (* d1 d2))))
+
+   (distrib ((dimp x)
+             (dimp y)
+             (dimp z))
+            (dimeq (dim* x (dim+ y z))
+                   (dim+ (dim* x y) (dim* x z))))))
