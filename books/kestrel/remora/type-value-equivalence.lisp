@@ -13,6 +13,7 @@
 (include-book "values-to-abstract-syntax")
 (include-book "type-equivalence")
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 

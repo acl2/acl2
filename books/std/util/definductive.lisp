@@ -798,6 +798,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-rule-deriving-pred ((pred-name symbolp)
+                                   (preds symbol-setp)
+                                   (irule-infos defind-irule-info-listp))
+  :returns (rule? symbolp)
+  :short "Find the first rule, if any, that
+          has a given predicate as its conclusion
+          and whose premises only contain predicates in a given set."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We go through the rules in order,
+     and we return the name of the first rule that
+     has the predicate @('pred-name') in its conclusion
+     and whose premise predicates (see @(tsee defind-preds-in-premises))
+     are all in the @('preds') set;
+     we return @('nil') if there is no such rule.
+     Such a rule can derive the predicate,
+     given that the predicates in the set can be derived."))
+  (b* (((when (endp irule-infos)) nil)
+       ((defind-irule-info info) (car irule-infos))
+       ((when (and (equal (defind-conclusion-info->name info.conclusion)
+                          (symbol-lfix pred-name))
+                   (set::subset (defind-preds-in-premises info.premises)
+                                (symbol-sfix preds))))
+        info.name))
+    (defind-rule-deriving-pred pred-name preds (cdr irule-infos))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod defind-translation
   :short "Fixtype of translations of terms."
   :long

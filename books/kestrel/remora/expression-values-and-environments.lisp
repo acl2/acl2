@@ -24,6 +24,7 @@
 
 (local (include-book "arithmetic"))
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
