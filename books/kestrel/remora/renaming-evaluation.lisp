@@ -431,15 +431,15 @@
 
 (local (acl2::defopeners type-value-rename-ispace-vars))
 
-(defrule type-value-rename-ispace-vars-of-make-arrow-type-value
-  (equal (type-value-rename-ispace-vars (make-arrow-type-value in out)
+(defrule type-value-rename-ispace-vars-of-nest-function-type-values
+  (equal (type-value-rename-ispace-vars (nest-function-type-values in out)
                                         dim-renam
                                         shape-renam)
-         (make-arrow-type-value
+         (nest-function-type-values
           (type-value-list-rename-ispace-vars in dim-renam shape-renam)
           (type-value-rename-ispace-vars out dim-renam shape-renam)))
   :induct t
-  :enable (make-arrow-type-value
+  :enable (nest-function-type-values
            type-value-list-rename-ispace-vars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1495,15 +1495,15 @@
 
 (local (acl2::defopeners type-value-rename-type-vars))
 
-(defrule type-value-rename-type-vars-of-make-arrow-type-value
-  (equal (type-value-rename-type-vars (make-arrow-type-value in out)
+(defrule type-value-rename-type-vars-of-nest-function-type-values
+  (equal (type-value-rename-type-vars (nest-function-type-values in out)
                                       atom-renam
                                       array-renam)
-         (make-arrow-type-value
+         (nest-function-type-values
           (type-value-list-rename-type-vars in atom-renam array-renam)
           (type-value-rename-type-vars out atom-renam array-renam)))
   :induct t
-  :enable (make-arrow-type-value
+  :enable (nest-function-type-values
            type-value-list-rename-type-vars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
