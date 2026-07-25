@@ -413,4 +413,17 @@
     (equal (expr-corep (nest-ilambda-exprs params body))
            (expr-corep body))
     :induct t
-    :enable nest-ilambda-exprs))
+    :enable nest-ilambda-exprs)
+
+  (defrule expr-corep-of-nest-unbox-exprs
+    (implies (and (expr-corep target)
+                  (expr-corep body)
+                  (type-option-corep type?))
+             (expr-corep (nest-unbox-exprs ispaces var target body type?)))
+    :enable nest-unbox-exprs
+    :prep-lemmas
+    ((defrule expr-corep-of-nest-unbox-exprs-loop
+       (equal (expr-corep (nest-unbox-exprs-loop ispaces var body))
+              (expr-corep body))
+       :induct t
+       :enable nest-unbox-exprs-loop))))
