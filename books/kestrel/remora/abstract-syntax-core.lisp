@@ -140,6 +140,22 @@
      towards requiring fewer type annotations,
      thus matching our current abstract syntax.")
    (xdoc::p
+    "We also do not exclude n-ary boxing atoms,
+     although they are expressible as nests of unary boxing atoms.
+     A boxing atom includes a type,
+     which for a unary boxing atom must be
+     a sum type with a single parameter.
+     Each inner boxing atom of a nest would thus need a new type,
+     obtained from the type of the n-ary boxing atom
+     by peeling off and substituting one parameter at a time.
+     But that type may be a type variable,
+     whose expansion requires a static environment;
+     and the substitution must avoid variable capture.
+     As with @('let'),
+     this goes beyond a purely syntactic transformation.
+     We plan to desugar n-ary boxing atoms in the future,
+     in concert with changes to other parts of the formalization.")
+   (xdoc::p
     "We desugar the four function bindings to value bindings.
      So the core has ispace, type, and value bindings.")
    (xdoc::p
