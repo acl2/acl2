@@ -18,6 +18,7 @@
 (include-book "kestrel/fty/set-list" :dir :system)
 (include-book "kestrel/fty/symbol-set" :dir :system)
 (include-book "kestrel/fty/symbol-set-list" :dir :system)
+(include-book "kestrel/fty/symbol-set-list-list" :dir :system)
 (include-book "kestrel/fty/symbol-set-set" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/legal-variable-listp" :dir :system)
@@ -994,22 +995,34 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defind-pred-levels ((preds symbol-setp)
+                            (preds-in-previous-cliques symbol-setp)
                             (irule-infos defind-irule-info-listp))
   :returns (mv (levels symbol-set-listp)
                (unleveled symbol-setp))
-  :short "Organize the predicates being defined into levels."
+  :short "Organize a set of predicates into levels."
   :long
   (xdoc::topstring
    (xdoc::p
+    "The levels of the predicates in @('preds') are relative to
+     the predicates in @('preds-in-previous-cliques'),
+     which are taken to be derivable:
+     when @('preds') is a clique,
+     @('preds-in-previous-cliques') consists of
+     the predicates of the preceding cliques in dependency order
+     (see @(tsee defind-leveled-cliques)).")
+   (xdoc::p
     "A predicate is at level 0 if
-     some rule can derive it from the empty set of predicates
+     some rule can derive it from
+     the predicates in @('preds-in-previous-cliques')
      (see @(tsee defind-rule-deriving-pred)),
      i.e. some rule has the predicate as its conclusion
-     and no premises that are predicates being defined.
+     and all its premises that are predicates being defined
+     contain predicates in @('preds-in-previous-cliques').
      A predicate is at level @('n+1') if
      it is not at any of the levels 0 to @('n'),
      and some rule can derive it from
-     predicates at levels 0 to @('n').
+     predicates at levels 0 to @('n')
+     or in @('preds-in-previous-cliques').
      Not every predicate is necessarily at some level,
      e.g. if the predicate appears in the conclusion of only one rule,
      and that rule has the same predicate in a premise.")
@@ -1017,7 +1030,8 @@
     "We compute the levels iteratively, starting from no levels:
      each round goes through the predicates not yet at any level,
      and finds the ones that some rule can derive
-     from the predicates at the levels found so far;
+     from the predicates at the levels found so far
+     or in @('preds-in-previous-cliques');
      these predicates, if any, form the next level.
      We stop when a round finds no new level.
      Termination is justified by the fact that
@@ -1030,7 +1044,7 @@
      each level is a non-empty set.
      We also return the set of the predicates at no level,
      which is empty exactly when all the predicates are at some level."))
-  (defind-pred-levels-loop preds nil irule-infos)
+  (defind-pred-levels-loop preds preds-in-previous-cliques irule-infos)
 
   :prepwork
 
@@ -1086,6 +1100,61 @@
           :hints (("Goal"
                    :induct t
                    :in-theory (acl2::enable* set::expensive-rules)))))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-leveled-cliques ((pred-names symbol-listp)
+                                (irule-infos defind-irule-info-listp))
+  :returns (mv (leveled-cliques symbol-set-list-listp)
+               (unleveled symbol-setp))
+  :short "Organize the predicates being defined into
+          cliques in dependency order,
+          each clique organized into levels."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We calculate the cliques formed by the predicates,
+     we put them in dependency order,
+     and we organize each clique into levels.
+     The premise predicates of the rules that derive the predicates of a clique
+     are all in the clique itself or in preceding cliques;
+     so the levels of each clique are calculated
+     by taking the predicates in the preceding cliques as derivable.")
+   (xdoc::p
+    "We return the list of the cliques in dependency order,
+     each organized into levels:
+     the element at position @('n') of the outer list consists of
+     the levels of the @('n')-th clique in dependency order;
+     see @(tsee defind-pred-levels) for
+     the meaning of each inner list of levels.
+     We also return the set of the predicates at no level,
+     unioned over all the cliques,
+     which is empty exactly when
+     every predicate is at some level in its clique."))
+  (b* ((cliques (defind-cliques pred-names irule-infos))
+       (ordered-cliques (defind-order-cliques cliques irule-infos)))
+    (defind-leveled-cliques-loop ordered-cliques nil irule-infos))
+
+  :prepwork
+  ((define defind-leveled-cliques-loop ((cliques-to-do symbol-set-listp)
+                                        (preds-in-previous-cliques symbol-setp)
+                                        (irule-infos defind-irule-info-listp))
+     :returns (mv (leveled-cliques symbol-set-list-listp)
+                  (unleveled symbol-setp))
+     :parents nil
+     (b* (((when (endp cliques-to-do)) (mv nil nil))
+          (clique (car cliques-to-do))
+          ((mv levels clique-unleveled)
+           (defind-pred-levels clique preds-in-previous-cliques irule-infos))
+          ((mv leveled-cliques unleveled)
+           (defind-leveled-cliques-loop
+             (cdr cliques-to-do)
+             (set::union (symbol-sfix clique)
+                         (symbol-sfix preds-in-previous-cliques))
+             irule-infos)))
+       (mv (cons levels leveled-cliques)
+           (set::union clique-unleveled unleveled)))
+     :verify-guards :after-returns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1742,7 +1811,7 @@
                       in dependency order."
                      cliques)))
        ((mv levels unleveled)
-        (defind-pred-levels (set::mergesort pred-names) infos))
+        (defind-pred-levels (set::mergesort pred-names) nil infos))
        ((unless (set::emptyp unleveled))
         (reterr (msg "Every predicate being defined ~
                       must be at some level: ~
