@@ -12,6 +12,9 @@
 
 (include-book "abstract-syntax-structurals")
 
+(include-book "kestrel/fty/deffold-reduce" :dir :system)
+
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration)
@@ -199,10 +202,15 @@
    (type :pin
          (set::difference (type-free-ispace-vars type.body)
                           (set::mergesort type.params)))
-   (type :sigma
+   (type :sigma (set::delete type.param (type-free-ispace-vars type.body)))
+   (type :sigman
          (set::difference (type-free-ispace-vars type.body)
                           (set::mergesort type.params)))
    (expr :unbox
+         (set::union (expr-free-ispace-vars expr.target)
+                     (set::delete expr.ispace
+                                  (expr-free-ispace-vars expr.body))))
+   (expr :unboxn
          (set::union (expr-free-ispace-vars expr.target)
                      (set::difference (expr-free-ispace-vars expr.body)
                                       (set::mergesort expr.ispaces))))
@@ -333,6 +341,10 @@
          (set::union (expr-free-expr-vars expr.target)
                      (set::delete expr.var
                                   (expr-free-expr-vars expr.body))))
+   (expr :unboxn
+         (set::union (expr-free-expr-vars expr.target)
+                     (set::delete expr.var
+                                  (expr-free-expr-vars expr.body))))
    (expr :let
          (set::union
           (bind-list-free-expr-vars expr.binds)
@@ -387,7 +399,8 @@
    (type :pin
          (set::union (set::mergesort type.params)
                      (type-all-ispace-vars type.body)))
-   (type :sigma
+   (type :sigma (set::insert type.param (type-all-ispace-vars type.body)))
+   (type :sigman
          (set::union (set::mergesort type.params)
                      (type-all-ispace-vars type.body)))
    (bind :ifun
@@ -466,6 +479,10 @@
   :override
   ((expr :var (set::insert expr.name nil))
    (expr :unbox
+         (set::insert expr.var
+                      (set::union (expr-all-expr-vars expr.target)
+                                  (expr-all-expr-vars expr.body))))
+   (expr :unboxn
          (set::insert expr.var
                       (set::union (expr-all-expr-vars expr.target)
                                   (expr-all-expr-vars expr.body))))

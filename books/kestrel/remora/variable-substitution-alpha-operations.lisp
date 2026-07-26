@@ -13,6 +13,7 @@
 (include-book "variable-substitution-operations")
 (include-book "fresh-variable-operations")
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration)
@@ -554,11 +555,23 @@
                                                     avoid))))
    (type :sigma
          (b* (((mv fresh-params dim-subst shape-subst)
-               (dim/shape-subst-alpha-bound type.params
+               (dim/shape-subst-alpha-bound (list type.param)
                                             dim-subst
                                             shape-subst
                                             (type-free-ispace-vars type.body))))
            (make-type-sigma
+            :param (car fresh-params)
+            :body (type-subst-ispace-vars-alpha-aux type.body
+                                                    dim-subst
+                                                    shape-subst
+                                                    avoid))))
+   (type :sigman
+         (b* (((mv fresh-params dim-subst shape-subst)
+               (dim/shape-subst-alpha-bound type.params
+                                            dim-subst
+                                            shape-subst
+                                            (type-free-ispace-vars type.body))))
+           (make-type-sigman
             :params fresh-params
             :body (type-subst-ispace-vars-alpha-aux type.body
                                                     dim-subst
@@ -570,11 +583,29 @@
                                                         shape-subst
                                                         avoid))
               ((mv fresh-ispaces dim-subst shape-subst)
-               (dim/shape-subst-alpha-bound expr.ispaces
+               (dim/shape-subst-alpha-bound (list expr.ispace)
                                             dim-subst
                                             shape-subst
                                             (expr-free-ispace-vars expr.body))))
            (make-expr-unbox
+            :ispace (car fresh-ispaces)
+            :var expr.var
+            :target target
+            :body (expr-subst-ispace-vars-alpha-aux expr.body
+                                                    dim-subst
+                                                    shape-subst
+                                                    avoid))))
+   (expr :unboxn
+         (b* ((target (expr-subst-ispace-vars-alpha-aux expr.target
+                                                        dim-subst
+                                                        shape-subst
+                                                        avoid))
+              ((mv fresh-ispaces dim-subst shape-subst)
+               (dim/shape-subst-alpha-bound expr.ispaces
+                                            dim-subst
+                                            shape-subst
+                                            (expr-free-ispace-vars expr.body))))
+           (make-expr-unboxn
             :ispaces fresh-ispaces
             :var expr.var
             :target target
@@ -1206,6 +1237,17 @@
                                        subst
                                        (expr-free-expr-vars expr.body))))
            (make-expr-unbox
+            :ispace expr.ispace
+            :var (car fresh)
+            :target target
+            :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid))))
+   (expr :unboxn
+         (b* ((target (expr-subst-expr-vars-alpha-aux expr.target subst avoid))
+              ((mv fresh subst)
+               (expr-subst-alpha-bound (list expr.var)
+                                       subst
+                                       (expr-free-expr-vars expr.body))))
+           (make-expr-unboxn
             :ispaces expr.ispaces
             :var (car fresh)
             :target target

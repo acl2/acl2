@@ -256,57 +256,8 @@
 
 ;;-------------------------------------------
 
-;; For the proof, we need some results from linear algebra pertaining to the solutions of a homogeneous
-;; system of linear equations.  These results are proved in "../linear/reduction.lisp" for the generic
-;; field f0.  We can easily prove by functional instantiation that they hold for an arbitrary field e.
-
-;; In embeddings.lisp, we define several functions pertaining to lists of elements of a field e.  We
-;; shall require some additional definitions.
-
-;; Addition, scalar multiplication, and dot product:
-
-(defun elist-add (x y e)
-  (if (consp x)
-      (cons (fadd (car x) (car y) e)
-            (elist-add (cdr x) (cdr y) e))
-    ()))
-
-(defun elist-scalar-mul (c x e)
-  (if (consp x)
-      (cons (fmul c (car x) e)
-            (elist-scalar-mul c (cdr x) e))
-    ()))
-
-(defun edot (x y e)
-  (if (consp x)
-      (fadd (fmul (car x) (car y) e)
-            (edot (cdr x) (cdr y) e)
-	    e)
-    (fzero e)))
-
-;; mxn matrix over e:
-
-(defun ematp (a m n e)
-  (declare (xargs :measure (nfix m)))
-  (if (zp m)
-      (null a)
-    (and (consp a)
-	 (elistnp (car a) n e)
-	 (ematp (cdr a) (1- m) n e))))
-
-;; Matrix multiplication:
-
-(defun edot-list (x l e)
-  (if (consp l)
-      (cons (edot x (car l) e)
-            (edot-list x (cdr l) e))
-    ()))
-
-(defund emat* (a b e)
-  (if (consp a)
-      (cons (edot-list (car a) (transpose-mat b) e)
-            (emat* (cdr a) b e))
-    ()))
+;; For the proof, we need some results from linear algebra ("../linear/") pertaining to matrix algebra
+;; and homogeneous systems of linear equations.
 
 ;; Solution of a system of linear m equations in n unknowns, represented as an mxn matrix:
 
@@ -321,7 +272,7 @@
        (esolutionp x a (elistn0 (len a) e) e)))
 
 ;; We need the following lemmas, proved by functional instantiation of the corresponding lemmas in
-;; "../linear/fmat.lisp":
+;; "../linear/fmat":
 
 (defthmd emat-entry-diff-lemma
   (implies (and (fieldp e) (posp m) (posp n) (ematp a m n e) (ematp b m n e) (not (equal a b)))
@@ -357,7 +308,7 @@
 	          (edot-list (nth i a) (transpose-mat b) e))))
 
 ;; The next 3 results are proved by functional instantiation of corresponding results in
-;; "../linear/reduction.lisp".
+;; "../linear/reduction".
 
 ;; The solution set is closed un addition and scalar multiplication:
 
@@ -2235,8 +2186,8 @@
 	          (flift x k e))))
 
 ;; To prove that (fixing-autos k e f) forms a subgroup of g, we must prove the appropriate instances of the 6 
-;; lemmas listed in the comment preceding the definition of defsubgroup ("../groups/groups.lisp").  The first
-;; 4 are trivial:
+;; lemmas listed in the comment preceding the definition of defsubgroup ("../groups/groups").  The first 4
+;; are trivial:
 
 (defthm dlistp-fixing-autos
   (implies (and (extensionp e k) (extensionp k f))

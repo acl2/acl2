@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -15,6 +16,7 @@
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/symbol-set" :dir :system)
+(include-book "kestrel/fty/symbol-set-set" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/legal-variable-listp" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
@@ -39,6 +41,42 @@
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (acl2::controlled-configuration)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Library extension.
+
+; GAP-CARDINALITY-DECREASES is a generic theorem about osets,
+; not specific to DEFINDUCTIVE;
+; at some point it could be moved to a more central library.
+; It says that, if X is within a universe U,
+; and adding X to D actually adds something (i.e. their union is not already
+; a subset of D), then the "gap" U minus D strictly shrinks in cardinality.
+; It is used to justify the termination of DEFIND-PRED-DEPENDENCIES below.
+; The strictness witness is the head of (difference (union d x) d),
+; which is in X (hence in U) but not in D.
+
+(defruledl gap-cardinality-decreases
+  (implies (and (set::subset x u)
+                (not (set::subset (set::union d x) d)))
+           (< (set::cardinality (set::difference u (set::union d x)))
+              (set::cardinality (set::difference u d))))
+  :hints
+  (("Goal"
+    :in-theory (acl2::enable* set::expensive-rules)
+    :use ((:instance set::proper-subset-cardinality
+                     (set::x (set::difference u (set::union d x)))
+                     (set::y (set::difference u d)))
+          (:instance set::in-head
+                     (set::x (set::difference (set::union d x) d)))
+          (:instance set::subset-in
+                     (set::a (set::head (set::difference (set::union d x) d)))
+                     (set::x x)
+                     (set::y u))
+          (:instance set::subset-in
+                     (set::a (set::head (set::difference (set::union d x) d)))
+                     (set::x (set::difference u d))
+                     (set::y (set::difference u (set::union d x))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -226,8 +264,8 @@
   (xdoc::topstring
    (xdoc::p
     "A premise has the form of
-     (i) a call of a @('p[i]') predicate
-     on some terms not containing the predicates being defined,
+     (i) a @('p[i]') predicate applied to
+     some terms not containing the predicates being defined,
      or (ii) some term not containing the predicates being defined."))
   (:pred ((name symbol)
           (args defind-term-info-list)))
@@ -276,8 +314,8 @@
   (xdoc::topstring
    (xdoc::p
     "Conclusions always have the form of
-     a call of a @('p[i]') predicate
-     on some terms not containing the predicates being defined.
+     a @('p[i]') predicate applied to
+     some terms not containing the predicates being defined.
      It is like the @(':pred') case of @(tsee defind-premise-info)."))
   ((name symbol)
    (args defind-term-info-list))
@@ -337,18 +375,12 @@
   (xdoc::topstring
    (xdoc::p
     "This is the case when at least one premise is a @(':pred'),
-     i.e. when not all are @(':other') premises."))
+     i.e. when not all are @(':other') premises.")
+   (xdoc::p
+    "See @(tsee defind-pred-recursivep)
+     for the related notion of recursive predicate."))
   (not (defind-premise-info-list-case-other
          (defind-irule-info->premises info))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define defind-irule-info-list-some-recursivep ((infos defind-irule-info-listp))
-  :returns (yes/no booleanp)
-  :short "Check if at least a rule is recursive."
-  (and (not (endp infos))
-       (or (defind-irule-info-recursivep (car infos))
-           (defind-irule-info-list-some-recursivep (cdr infos)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -446,6 +478,352 @@
    (xdoc::p
     "This is the case when the rule has no free variables."))
   (set::emptyp (defind-irule-info-free-vars info)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-preds-in-premises ((infos defind-premise-info-listp))
+  :returns (preds symbol-setp)
+  :short "Predicates in the premises of a rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the names in the premises of the @(':pred') kind,
+     i.e. the premises that contain predicates being defined;
+     the premises of the @(':other') kind
+     contain no predicate being defined."))
+  (b* (((when (endp infos)) nil)
+       (preds (defind-preds-in-premises (cdr infos)))
+       (info (car infos)))
+    (defind-premise-info-case
+      info
+      :pred (set::insert info.name preds)
+      :other preds))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-preds-in-premises-of-irules
+  ((irule-infos defind-irule-info-listp))
+  :returns (preds symbol-setp)
+  :short "Predicates in the premises of the given rules."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is @(tsee defind-preds-in-premises)
+     unioned over all the given rules."))
+  (b* (((when (endp irule-infos)) nil)
+       ((defind-irule-info info) (car irule-infos)))
+    (set::union (defind-preds-in-premises info.premises)
+                (defind-preds-in-premises-of-irules (cdr irule-infos))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-preds-direct-dependencies ((preds symbol-setp)
+                                          (irule-infos defind-irule-info-listp))
+  :returns (deps symbol-setp)
+  :short "Predicates on which given predicates directly depend."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A predicate @('p[i]') directly depends on a predicate @('p[j]') when
+     some rule has @('p[i]') in its conclusion and @('p[j]') in some premise.
+     This function returns the set of all the predicates
+     on which any of the predicates in @('preds') directly depends:
+     it goes through the rules,
+     and collects the predicates in the premises of
+     the rules whose conclusion predicate is in @('preds').")
+   (xdoc::p
+    "This function operates on a set of predicates,
+     instead of a single predicate,
+     so that @(tsee defind-pred-dependencies) can use this function
+     to extend a whole set of predicates with
+     the direct dependencies of all its elements at once.")
+   (xdoc::p
+    "The direct dependencies of any set of predicates are always
+     among the predicates in the premises of the rules
+     (see @(tsee defind-preds-in-premises-of-irules)),
+     as expressed by the theorem below."))
+  (b* (((when (endp irule-infos)) nil)
+       (deps (defind-preds-direct-dependencies preds (cdr irule-infos)))
+       ((defind-irule-info info) (car irule-infos)))
+    (if (set::in (defind-conclusion-info->name info.conclusion)
+                 (symbol-sfix preds))
+        (set::union (defind-preds-in-premises info.premises) deps)
+      deps))
+  :verify-guards :after-returns
+
+  ///
+
+  (defruled defind-direct-dependencies-subset-preds-in-premises
+    (set::subset (defind-preds-direct-dependencies preds irule-infos)
+                 (defind-preds-in-premises-of-irules irule-infos))
+    :induct (defind-preds-in-premises-of-irules irule-infos)
+    :enable (defind-preds-direct-dependencies
+             defind-preds-in-premises-of-irules
+             set::subset-transitive
+             set::pick-a-point-subset-strategy
+             set::subset-in)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-pred-dependencies ((pred-name symbolp)
+                                  (irule-infos defind-irule-info-listp))
+  :returns (deps symbol-setp)
+  :short "Predicates on which a given predicate depends,
+          directly or indirectly."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the transitive closure of
+     the direct dependency relation on the given predicate
+     (see @(tsee defind-preds-direct-dependencies)):
+     starting with the direct dependencies of the predicate,
+     we repeatedly add the direct dependencies of the set,
+     until nothing new is added.")
+   (xdoc::p
+    "Since the closure is transitive but not reflexive,
+     the predicate is not automatically among its own dependencies:
+     it is among them if and only if it is recursive,
+     i.e. if it depends on itself,
+     directly or through other predicates.
+     This is exactly how @(tsee defind-pred-recursivep) is defined.")
+   (xdoc::p
+    "The iteration terminates because the set of dependencies grows
+     within the fixed universe of
+     all the predicates in the premises of the rules
+     (see @(tsee defind-preds-in-premises-of-irules)):
+     each round that does not stop
+     adds at least one predicate to the dependencies,
+     so the ``gap'' between that universe and the dependencies,
+     measured by its cardinality, strictly decreases.
+     We use the fact that the direct dependencies are within that universe
+     (see @('defind-direct-dependencies-subset-preds-in-premises'))."))
+  (defind-pred-dependencies-loop
+    (defind-preds-direct-dependencies
+      (set::insert (symbol-lfix pred-name) nil)
+      irule-infos)
+    irule-infos)
+
+  :prepwork
+  ((define defind-pred-dependencies-loop ((deps symbol-setp)
+                                          (irule-infos defind-irule-info-listp))
+     :returns (final-deps symbol-setp)
+     :parents nil
+     (b* ((deps (symbol-sfix deps))
+          (new-deps (set::union deps
+                                (defind-preds-direct-dependencies
+                                  deps irule-infos)))
+          ((when (set::subset new-deps deps)) deps))
+       (defind-pred-dependencies-loop new-deps irule-infos))
+     :measure (set::cardinality
+               (set::difference
+                (defind-preds-in-premises-of-irules irule-infos)
+                (symbol-sfix deps)))
+     ;; GAP-CARDINALITY-DECREASES rewrites the measure decrease;
+     ;; its hypothesis is relieved by
+     ;; DEFIND-DIRECT-DEPENDENCIES-SUBSET-PREDS-IN-PREMISES.
+     ;; UNION-EMPTYP-X and DIFFERENCE-EMPTYP-Y are disabled so that
+     ;; the (union d x) and (difference u d) patterns that the former matches
+     ;; survive the degenerate case where DEPS is the empty set.
+     :hints
+     (("Goal"
+       :in-theory (e/d (symbol-sfix o-p o-finp o<
+                        gap-cardinality-decreases
+                        defind-direct-dependencies-subset-preds-in-premises)
+                       (set::expand-cardinality-of-difference
+                        set::union-emptyp-x
+                        set::difference-emptyp-y)))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-pred-recursivep ((pred-name symbolp)
+                                (irule-infos defind-irule-info-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a predicate is recursive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check if the predicate depends on itself,
+     directly or indirectly through other predicates being defined,
+     i.e. check if the predicate is among its own dependencies
+     (see @(tsee defind-pred-dependencies)).")
+   (xdoc::p
+    "Note the difference with @(tsee defind-irule-info-recursivep),
+     which checks whether a single rule is recursive.
+     When a single predicate is being defined
+     (the only case currently supported),
+     the predicate is recursive if and only if some rule is recursive.
+     With multiple predicates, the relation is less direct:
+     a predicate is recursive if and only if
+     it is on a cycle of the direct dependency relation,
+     each arc of which comes from a recursive rule."))
+  (set::in (symbol-lfix pred-name)
+           (defind-pred-dependencies pred-name irule-infos)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-nonrecursive-preds ((pred-names symbol-listp)
+                                   (irule-infos defind-irule-info-listp))
+  :returns (nonrec-preds symbol-listp)
+  :short "List of the predicates that are not recursive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We go through the predicates being defined,
+     and we collect the ones that are not recursive
+     (see @(tsee defind-pred-recursivep)),
+     in the same order, which is convenient for error messages.
+     All the predicates are recursive exactly when
+     the result is empty."))
+  (defind-nonrecursive-preds-loop pred-names irule-infos)
+
+  :prepwork
+  ((define defind-nonrecursive-preds-loop
+     ((preds-to-check symbol-listp)
+      (irule-infos defind-irule-info-listp))
+     :returns (nonrec-preds symbol-listp)
+     :parents nil
+     (b* (((when (endp preds-to-check)) nil)
+          (nonrec-preds (defind-nonrecursive-preds-loop
+                          (cdr preds-to-check) irule-infos))
+          (pred-name (symbol-lfix (car preds-to-check)))
+          ((when (defind-pred-recursivep pred-name irule-infos))
+           nonrec-preds))
+       (cons pred-name nonrec-preds)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-pred-clique ((pred-name symbolp)
+                            (irule-infos defind-irule-info-listp))
+  :returns (clique symbol-setp)
+  :short "Mutually recursive clique of a predicate."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the set of the predicates @('p[i]') such that
+     the predicate @('pred-name') depends on @('p[i]')
+     and @('p[i]') depends on @('pred-name'),
+     directly or indirectly
+     (see @(tsee defind-pred-dependencies)).
+     We calculate it by going through the dependencies of the predicate
+     and retaining the ones whose dependencies include the predicate.")
+   (xdoc::p
+    "If the predicate is recursive,
+     the clique includes the predicate itself,
+     because mutual dependency with itself is just recursion;
+     so the clique is not empty.
+     If instead the predicate is not recursive,
+     the clique is empty:
+     mutual dependency between the predicate and any @('p[i]')
+     would compose into a dependency of the predicate on itself.
+     In graph terminology, the non-empty cliques are
+     the strongly connected components of the dependency graph,
+     except that a non-recursive predicate
+     (a vertex without a cycle through it)
+     does not form a component by itself, and belongs to no clique."))
+  (defind-pred-clique-loop
+    (defind-pred-dependencies pred-name irule-infos)
+    pred-name irule-infos)
+
+  :prepwork
+  ((define defind-pred-clique-loop ((deps symbol-setp)
+                                    (pred-name symbolp)
+                                    (irule-infos defind-irule-info-listp))
+     :returns (clique symbol-setp)
+     :parents nil
+     (cond ((set::emptyp (symbol-sfix deps)) nil)
+           (t (b* ((p (set::head deps))
+                   (clique (defind-pred-clique-loop
+                             (set::tail deps)
+                             pred-name irule-infos)))
+                (if (set::in (symbol-lfix pred-name)
+                             (defind-pred-dependencies p irule-infos))
+                    (set::insert p clique)
+                  clique))))
+     :verify-guards :after-returns
+     :prepwork ((local (in-theory (enable symbol-sfix)))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-mutually-recursive-cliques ((pred-names symbol-listp)
+                                           (irule-infos
+                                            defind-irule-info-listp))
+  :returns (cliques symbol-set-setp)
+  :short "Set of the mutually recursive cliques formed by
+          the predicates being defined, according to the rules."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The rules induce a dependency relation
+     among the predicates being defined
+     (see @(tsee defind-preds-direct-dependencies)),
+     which partitions the recursive predicates
+     (see @(tsee defind-pred-recursivep))
+     into maximal cliques of mutual dependency
+     (see @(tsee defind-pred-clique));
+     the non-recursive predicates (if any) belong to no clique.
+     This function returns the set of the cliques,
+     which is thus a set of non-empty sets of predicate names.")
+   (xdoc::p
+    "We go through the predicates,
+     and we insert the clique of each predicate into the result,
+     skipping over the empty cliques of the non-recursive predicates.
+     The predicates of a clique all contribute the same clique,
+     which appears just once in the result, which is a set.")
+   (xdoc::p
+    "Currently @(tsee definductive) requires the predicates
+     to form exactly one clique, consisting of all of them
+     (see @(tsee defind-process-irules)).
+     But this function is more general than that check,
+     in preparation for lifting the current restriction
+     to a single predicate,
+     and possibly for relaxing, in the future,
+     the requirement that all the predicates are mutually recursive."))
+  (defind-mutually-recursive-cliques-loop pred-names irule-infos)
+
+  :prepwork
+  ((define defind-mutually-recursive-cliques-loop
+     ((preds-to-do symbol-listp)
+      (irule-infos defind-irule-info-listp))
+     :returns (cliques symbol-set-setp)
+     :parents nil
+     (b* (((when (endp preds-to-do)) nil)
+          (cliques (defind-mutually-recursive-cliques-loop
+                     (cdr preds-to-do) irule-infos))
+          (clique (defind-pred-clique (car preds-to-do) irule-infos))
+          ((when (set::emptyp clique)) cliques))
+       (set::insert clique cliques))
+     :verify-guards :after-returns)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-rule-deriving-pred ((pred-name symbolp)
+                                   (preds symbol-setp)
+                                   (irule-infos defind-irule-info-listp))
+  :returns (rule? symbolp)
+  :short "Find the first rule, if any, that
+          has a given predicate as its conclusion
+          and whose premises only contain predicates in a given set."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We go through the rules in order,
+     and we return the name of the first rule that
+     has the predicate @('pred-name') in its conclusion
+     and whose premise predicates (see @(tsee defind-preds-in-premises))
+     are all in the @('preds') set;
+     we return @('nil') if there is no such rule.
+     Such a rule can derive the predicate,
+     given that the predicates in the set can be derived."))
+  (b* (((when (endp irule-infos)) nil)
+       ((defind-irule-info info) (car irule-infos))
+       ((when (and (equal (defind-conclusion-info->name info.conclusion)
+                          (symbol-lfix pred-name))
+                   (set::subset (defind-preds-in-premises info.premises)
+                                (symbol-sfix preds))))
+        info.name))
+    (defind-rule-deriving-pred pred-name preds (cdr irule-infos))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -632,8 +1010,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the premise has the form of a call of a predicate being defined,
-     the terms to translate are the arguments of the call;
+    "If the premise contains a predicate being defined,
+     the terms to translate are the arguments of the predicate;
      otherwise, the term to translate is the whole premise.
      The test for the form of the premise is
      the same one used in @(tsee defind-process-premise).")
@@ -681,8 +1059,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the conclusion has the form of a call of a predicate being defined,
-     the terms to translate are the arguments of the call;
+    "If the conclusion contains a predicate being defined,
+     the terms to translate are the arguments of the predicate;
      otherwise, there are no terms to translate,
      because validation rejects the conclusion in phase 3."))
   (if (and (true-listp concl)
@@ -788,7 +1166,7 @@
                              (translations defind-translation-omapp))
   :returns (mv erp (infos defind-term-info-listp))
   :short "Process the arguments of a premise or conclusion of a rule
-          that has the form of a call of a predicate being defined."
+          that contains a predicate being defined."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -829,7 +1207,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This must have the form of a call of a predicate @('p[i]').")
+    "This must have the form of a predicate @('p[i]') applied to some terms.")
    (xdoc::p
     "The @('desc') input of this function is
      a description of the conclusion, for error messages."))
@@ -848,7 +1226,7 @@
        (pred-info (defind-lookup-pred pred-name pred-infos))
        ((unless pred-info)
         (reterr (msg "~@0 must have the form of ~
-                      a call of one of the predicates among ~&1, ~
+                      one of the predicates among ~&1 applied to some terms, ~
                       but ~x2 is not one of them."
                      desc (defind-pred-info-list->name pred-infos) pred-name)))
        (pred-formals (defind-pred-info->formals pred-info))
@@ -878,7 +1256,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This may have the form of a call of a @('p[i]') predicate,
+    "This may contain a @('p[i]') predicate,
      as in @(tsee defind-process-conclusion),
      or it may be some other term not involving
      the predicates being defined.")
@@ -915,7 +1293,7 @@
           (retok (make-defind-premise-info-pred :name pred-name
                                                 :args arg-infos)))
       (b* ((desc (msg "Since ~@0 does not have the form of ~
-                       a call of one of the predicates among ~&1, ~
+                       one of the predicates among ~&1 applied to some terms, ~
                        it"
                       (msg-downcase-first desc) pred-names))
            ((erp info) (defind-process-term prem desc translations)))
@@ -1013,6 +1391,32 @@
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (mv erp (infos defind-irule-info-listp))
   :short "Process the @(':irules') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Besides processing the individual rules,
+     we check that the rule names are all distinct,
+     and that at least one rule is non-recursive
+     (which provides a base case for the inductive definition:
+     without it, the smallest predicate satisfying the rules is empty).")
+   (xdoc::p
+    "A single predicate is allowed to be non-recursive;
+     it just yields a non-recursive proof validity function.
+     But multiple predicates must be mutually recursive,
+     i.e. they must form a single clique of mutual dependency:
+     we check this in two steps,
+     for more precise error messages,
+     first checking that every predicate is recursive
+     (see @(tsee defind-nonrecursive-preds)),
+     then checking that they form just one clique
+     (see @(tsee defind-mutually-recursive-cliques)),
+     which, being the only one, must consist of all the predicates.
+     Predicates that are not mutually recursive
+     can be defined by separate uses of the macro,
+     in dependency order.
+     Since currently only one predicate is supported,
+     the mutual recursion checks are never triggered;
+     they are in preparation for lifting that restriction."))
   (b* (((reterr) nil)
        ((unless irules-suppliedp)
         (reterr (msg "The :IRULES input must be supplied.")))
@@ -1029,14 +1433,37 @@
                       must be all distinct, ~
                       but there are duplicates among ~&0."
                      irule-names)))
-       ((unless (defind-irule-info-list-some-recursivep infos))
-        (reterr (msg "The :IRULES input must include ~
-                      at least one recursive rule, ~
-                      i.e. a rule with the predicate in some premises. ~
-                      With the supplied rules, ~
-                      the predicate would not be recursive, ~
-                      and thus could be more simply defined ~
-                      without using DEFINDUCTIVE.")))
+       (pred-names (defind-pred-info-list->name pred-infos))
+       (multiplep (consp (cdr pred-names)))
+       (nonrec-preds (and multiplep
+                          (defind-nonrecursive-preds pred-names infos)))
+       ((when (consp nonrec-preds))
+        (reterr (msg "When multiple predicates are being defined, ~
+                      each of them must be recursive, ~
+                      i.e. must depend on itself, ~
+                      directly or indirectly, ~
+                      where a predicate P depends on a predicate Q when ~
+                      some rule in the :IRULES input ~
+                      has P in its conclusion and Q in some premise. ~
+                      This does not hold for ~&0. ~
+                      A non-recursive predicate ~
+                      can be defined by a separate use of DEFINDUCTIVE."
+                     nonrec-preds)))
+       (cliques (and multiplep
+                     (defind-mutually-recursive-cliques pred-names infos)))
+       ((when (and multiplep
+                   (not (equal cliques
+                               (set::insert (set::mergesort pred-names) nil)))))
+        (reterr (msg "The predicates being defined must be ~
+                      all mutually recursive, ~
+                      i.e. they must form ~
+                      a single clique of mutual dependency. ~
+                      Instead, with the rules in the :IRULES input, ~
+                      the predicates form the cliques ~x0. ~
+                      Predicates in different cliques can be defined ~
+                      by separate uses of DEFINDUCTIVE, ~
+                      in dependency order."
+                     cliques)))
        ((unless (defind-irule-info-list-some-nonrecursivep infos))
         (reterr (msg "The :IRULES input must include ~
                       at least one non-recursive rule, ~
@@ -1235,6 +1662,40 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-event-generation definductive)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-conjunction ((conjuncts true-listp))
+  :returns (term "An untranslated term.")
+  :short "Generate a conjunction of zero or more untranslated terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there are no conjuncts, we generate @('t').
+     If there is exactly one conjunct, we generate that conjunct.
+     If there are two or more conjuncts, we generate an @(tsee and) of them.
+     This way, we avoid generating empty and singleton conjunctions."))
+  (cond ((endp conjuncts) t)
+        ((endp (cdr conjuncts)) (car conjuncts))
+        (t `(and ,@(true-list-fix conjuncts)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-implication ((antecedents true-listp) consequent)
+  :returns (term "An untranslated term.")
+  :short "Generate an implication of a consequent
+          from zero or more antecedents,
+          all untranslated terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there are no antecedents, we generate just the consequent.
+     Otherwise, we generate an @(tsee implies)
+     whose antecedent is the conjunction of the antecedents.
+     This way, we avoid generating implications with trivial antecedents."))
+  (if (consp antecedents)
+      `(implies ,(defind-gen-conjunction antecedents) ,consequent)
+    consequent))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1442,6 +1903,22 @@
              (symbol-lfix name)))
 
 ;;;;;;;;;;;;;;;;;;;;
+
+(define defind-proof-kind-fn-name ((pred-name symbolp) (name symbolp))
+  :returns (fn-name symbolp)
+  :short "Name of the kind function of a @('p[i]-proof') fixtype."
+  (packn-pos (list (defind-proof-type-name pred-name name) '-kind)
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-kind$inline-fn-name ((pred-name symbolp) (name symbolp))
+  :returns (fn-name symbolp)
+  :short "Name of the @('$inline') kind function of a @('p[i]-proof') fixtype."
+  (packn-pos (list (defind-proof-kind-fn-name pred-name name) '$inline)
+             (symbol-lfix name)))
+
+;;;;;;;;;;
 
 (define defind-proof-count-fn-name ((pred-name symbolp) (name symbolp))
   :returns (fn-name symbolp)
@@ -2217,8 +2694,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If a premise is a call of a @('p[i]') predicate,
-     we generate an equality between the premise and the call.
+    "If a premise contains a @('p[i]') predicate,
+     we generate an equality between the premise and the variable.
      Otherwise, we just generate the premise itself.")
    (xdoc::p
     "The @('num') input keep track of the number in
@@ -2438,8 +2915,21 @@
      as well as fixing theorems and hints for this function.
      Once we generalize to multiple @('p[i]') predicates,
      this has to become part of a @(tsee defines),
-     and some of these hints, and the fixing, must go under there."))
-  (b* ((fn-name (defind-proof-valid-fn-name pred-name name))
+     and some of these hints, and the fixing, must go under there.")
+   (xdoc::p
+    "If the predicate is not recursive
+     (see @(tsee defind-pred-recursivep)),
+     the @('p[i]-proof') fixtype is not recursive,
+     so this function is not recursive either.
+     In that case we omit the @(':measure'),
+     termination hints,
+     and @(':induct') hints.
+     For a single predicate, this is the case
+     exactly when no rule is recursive.
+     When we generalize to multiple predicates,
+     this criterion will be about the recursion within the clique."))
+  (b* ((recursivep (defind-pred-recursivep pred-name infos))
+       (fn-name (defind-proof-valid-fn-name pred-name name))
        (fn-formal (defind-proof-var-name name))
        (proof-recog (defind-proof-recog-name pred-name name))
        (proof-case (defind-proof-case-name pred-name name))
@@ -2455,7 +2945,7 @@
     `(define ,fn-name ((,fn-formal ,proof-recog))
        :returns (yes/no booleanp
                         :hints (("Goal"
-                                 :induct t
+                                 ,@(and recursivep '(:induct t))
                                  :in-theory '(,fn-name
                                               ,@return-thms))))
        ,@(and xdocp
@@ -2464,17 +2954,18 @@
                                   (str::downcase-string (symbol-name pred-name))
                                   "').")))
        (,proof-case ,fn-formal ,@keywords+terms)
-       :measure (,count-fn ,fn-formal)
-       :hints (("Goal" :in-theory '(o-p
-                                    o-finp
-                                    o<
-                                    (:t ,count-fn)
-                                    (:e tau-system)
-                                    ,poss-thm
-                                    ,@count-thms)))
+       ,@(and recursivep
+              `(:measure (,count-fn ,fn-formal)
+                :hints (("Goal" :in-theory '(o-p
+                                             o-finp
+                                             o<
+                                             (:t ,count-fn)
+                                             (:e tau-system)
+                                             ,poss-thm
+                                             ,@count-thms)))))
        :verify-guards nil
        :hooks ((:fix :hints (("Goal"
-                              :induct t
+                              ,@(and recursivep '(:induct t))
                               :in-theory '(,fn-name
                                            ,kind-fixing-thm
                                            ,@prem-fixing-thms
@@ -2563,6 +3054,7 @@
             prem-of-constr-thms
             other-prems)
         (defind-gen-irule-proof-fn-loop info.name info.premises 1 name))
+       (all-hyps (append subproof-hyps other-prems subproof-eqs))
        (proof-var (defind-proof-var-name name))
        (proof-recog (defind-proof-recog-name cinfo.name name))
        (proof-return (defind-proof-constr-return-thm cinfo.name info.name name))
@@ -2619,9 +3111,8 @@
        ///
        (defret ,valid-thm
          (,proof-valid-fn ,proof-var)
-         :hyp (and ,@subproof-hyps
-                   ,@other-prems
-                   ,@subproof-eqs)
+         ,@(and all-hyps
+                (list :hyp (defind-gen-conjunction all-hyps)))
          :hints (("Goal"
                   :use (:instance ,suff/def-thm
                                   (,concl (,assert ,@concl-args))
@@ -2653,6 +3144,7 @@
                            ,concl-thm))))
   :no-function nil
   :guard-hints (("Goal" :in-theory (enable set::sets-are-true-lists)))
+
   :prepwork
   ((define defind-gen-irule-proof-fn-loop ((irule-name symbolp)
                                            (infos defind-premise-info-listp)
@@ -2791,7 +3283,7 @@
        (return-thm
         (defind-irule-proof-return-thm-name cinfo.name info.name name)))
     `(defruled ,thm-name
-       (implies (and ,@pred-hyps ,@other-hyps) ,concl)
+       ,(defind-gen-implication (append pred-hyps other-hyps) concl)
        ,@(and pred-hyps
               (list :expand pred-hyps))
        :use ((:instance ,pred-suff
@@ -2803,6 +3295,7 @@
                     ,return-thm)))
   :no-function nil
   :guard-hints (("Goal" :in-theory (enable set::sets-are-true-lists)))
+
   :prepwork
   ((define defind-gen-irule-thm-loop ((infos defind-premise-info-listp)
                                       (num posp)
@@ -2908,13 +3401,14 @@
        (concl `(,(defind-pred-alt-fn-name cinfo.name name)
                 ,@(defind-term-info-list->uterm cinfo.args)))
        (vars (defind-irule-info-free-vars info))
+       (body/matrix (defind-gen-implication prems concl))
        (event (if (defind-irule-groundp info)
                   `(defun ,fn-name ()
                      (declare (xargs :verify-guards nil))
-                     (implies (and ,@prems) ,concl))
+                     ,body/matrix)
                 `(defun-sk ,fn-name ()
                    (declare (xargs :verify-guards nil))
-                   (forall ,vars (implies (and ,@prems) ,concl)))))
+                   (forall ,vars ,body/matrix))))
        (call `(,fn-name)))
     (mv event call)))
 
@@ -2957,6 +3451,7 @@
                     info.premises cinfo.name info.name 1 name))
        (wit (defind-irule-witness-fn-name cinfo.name info.name name)))
     `(,wit ,concl-arg ,@prem-args))
+
   :prepwork
   ((define defind-gen-irule-witness-call-loop ((infos defind-premise-info-listp)
                                                (pred-name symbolp)
@@ -3016,8 +3511,50 @@
     "For now we generate a single theorem,
      because we only support one predicate,
      as stated in @(tsee definductive).
-     So all the hints go here."))
-  (b* ((thm-name (defind-pred-alt-when-proof-valid-thm-name pred-name name))
+     So all the hints go here.")
+   (xdoc::p
+    "We generate computed hints with @(':use') hints
+     of the necessity theorems for the various rules,
+     each targeted to the inference rule that it pertains to.
+     Putting them all in a single @(':use') hint makes the proofs slow,
+     even with a moderate number of inference rules
+     (that is what an initial implementation did).
+     The theorem has in fact one computed hints,
+     which is a @(tsee cond) with one branch for each inference rule.
+     The loop function returns, for each inference rule,
+     a branch of the computed @(tsee cond) hint used in the recursive case,
+     along with the necessity theorem instance
+     and the rule validity and conclusion accessor theorems used (flattened)
+     in the non-recursive case.
+     The computed condition says that the clause contains
+     the equality of the summand kind of the proof value
+     with the one corresponding to the inference rule;
+     more precisely, that the negation appears in the clause,
+     because it is a clause, and the equality is a hypothesis.
+     But for the last branch and inference rule,
+     the clause actually contains the positive equalities
+     with all the summand kinds before the last one,
+     which are conjunctive hypotheses saying that
+     the proof kind is not any of those kinds
+     (i.e. it is the last kind, since kinds are exhaustive).
+     This is why the loop function takes the very first proof kind as argument,
+     so that, for the last branch, we can check the presence of
+     the equality of the proof kind with that kind.
+     This @(tsee cond) hint is used when the predicate is recursive
+     (see @(tsee defind-pred-recursivep)):
+     then there are at least two proof kinds,
+     namely at least one recursive rule and at least one base rule,
+     which the last-branch logic relies on.")
+   (xdoc::p
+    "When the predicate is not recursive,
+     the proof validity function is not recursive,
+     so there is no induction,
+     and the goal is a bounded case analysis on the proof kind.
+     In that case we prove the theorem directly,
+     with a single @(':use') of the necessity theorems of all the rules,
+     opening the relevant functions."))
+  (b* ((recursivep (defind-pred-recursivep pred-name irule-infos))
+       (thm-name (defind-pred-alt-when-proof-valid-thm-name pred-name name))
        (valid-fn (defind-proof-valid-fn-name pred-name name))
        (proof (defind-proof-var-name name))
        (assert (defind-assert-type-name pred-name name))
@@ -3025,40 +3562,65 @@
        (concl-fn (defind-proof-concl-fn-name pred-name name))
        (pred-alt (defind-pred-alt-fn-name pred-name name))
        (concls (defind-concl-formal-var-names pred-formals name))
-       ((mv irule-valid-fns irule-concl-accs lemma-instances)
-        (defind-gen-pred-alt-when-proof-valid-thm-loop irule-infos name))
+       ((unless (consp irule-infos))
+        (raise "Internal error: no inference rules.")
+        '(_))
+       (first-kind
+        (defind-irule-tag (defind-irule-info->name (car irule-infos))))
+       ((mv hint-branches lemma-instances irule-valid-fns irule-acc-thms)
+        (defind-gen-pred-alt-when-proof-valid-thm-loop
+          irule-infos name first-kind))
+       (formula
+        `(implies (and ,@prop-calls
+                       (,valid-fn ,proof))
+                  (b* (((,assert ,concl) (,concl-fn ,proof)))
+                    (,pred-alt ,@concls))))
+       ((when recursivep)
+        `(defruled ,thm-name
+           ,formula
+           :induct t
+           :in-theory '(,valid-fn
+                        eql)
+           :hints ((cond ,@hint-branches))))
        (poss-thm (defind-proof-kind-poss-thm-name pred-name name))
        (equal-thm (defind-equal-of-assert-thm-name pred-name name))
-       (fix-thm (defind-assert-fix-id-thm-name pred-name name)))
+       (fix-thm (defind-assert-fix-id-thm-name pred-name name))
+       (concl-thm (defind-proof-concl-return-thm-name pred-name name)))
     `(defruled ,thm-name
-       (implies (and ,@prop-calls
-                     (,valid-fn ,proof))
-                (b* (((,assert ,concl) (,concl-fn ,proof)))
-                  (,pred-alt ,@concls)))
-       :induct t
+       ,formula
+       :expand (,concl-fn ,proof)
+       :use ,lemma-instances
        :in-theory '(,valid-fn
-                    ,@irule-valid-fns
                     ,concl-fn
                     ,poss-thm
                     ,equal-thm
                     ,fix-thm
-                    ,@irule-concl-accs)
-       :hints ('(:use ,lemma-instances))))
+                    ,concl-thm
+                    ,@irule-valid-fns
+                    ,@irule-acc-thms)))
+  :no-function nil
+
   :prepwork
   ((define defind-gen-pred-alt-when-proof-valid-thm-loop
      ((infos defind-irule-info-listp)
-      (name symbolp))
+      (name symbolp)
+      (first-kind symbolp))
      :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
-     :returns (mv (irule-valid-fns symbol-listp)
-                  (irule-acc-thms symbol-listp)
-                  (lemma-instances true-listp))
-     :parents nil
-     (b* (((when (endp infos)) (mv nil nil nil))
+     :returns (mv (hint-branches true-listp)
+                  (lemma-instances true-listp)
+                  (irule-valid-fns symbol-listp)
+                  (irule-acc-thms symbol-listp))
+     (b* (((when (endp infos)) (mv nil nil nil nil))
           ((defind-irule-info info) (car infos))
           ((defind-conclusion-info cinfo) info.conclusion)
-          (irule-valid-fn (defind-irule-valid-fn-name cinfo.name info.name name))
-          (irule-acc-thm
-           (defind-proof-concl-acc-return-thm-name cinfo.name info.name name))
+          (proof-kind (defind-proof-kind$inline-fn-name cinfo.name name))
+          (proof (defind-proof-var-name name))
+          (kind (defind-irule-tag info.name))
+          (lastp (endp (cdr infos)))
+          (literal (if lastp
+                       `(equal (,proof-kind ,proof) ',(symbol-lfix first-kind))
+                     `(not (equal (,proof-kind ,proof) ',kind))))
+          (cond `(member-equal ',literal clause))
           (necc/def-rule
            (if (defind-irule-groundp info)
                (defind-pred-alt-irule-fn-name cinfo.name info.name name)
@@ -3069,11 +3631,31 @@
                              (list `(,(set::head vars) ,witcall))
                            (defind-gen-irule-mv-nth-doublets vars 0 witcall)))
           (lemma-instance `(:instance ,necc/def-rule ,@inst-doublets))
-          ((mv irule-valid-fns irule-acc-thms lemma-instances)
-           (defind-gen-pred-alt-when-proof-valid-thm-loop (cdr infos) name)))
-       (mv (cons irule-valid-fn irule-valid-fns)
-           (cons irule-acc-thm irule-acc-thms)
-           (cons lemma-instance lemma-instances)))
+          (valid-fn (defind-proof-valid-fn-name cinfo.name name))
+          (irule-valid-fn (defind-irule-valid-fn-name cinfo.name info.name name))
+          (equal-thm (defind-equal-of-assert-thm-name cinfo.name name))
+          (fix-thm (defind-assert-fix-id-thm-name cinfo.name name))
+          (irule-acc-thm
+           (defind-proof-concl-acc-return-thm-name cinfo.name info.name name))
+          (concl-fn (defind-proof-concl-fn-name cinfo.name name))
+          (concl-thm (defind-proof-concl-return-thm-name cinfo.name name))
+          (hint-branch
+           `(,cond
+             '(:use ,lemma-instance
+               :expand (,concl-fn ,proof)
+               :in-theory '(,valid-fn
+                            ,irule-valid-fn
+                            ,equal-thm
+                            ,fix-thm
+                            ,concl-thm
+                            ,irule-acc-thm))))
+          ((mv hint-branches lemma-instances irule-valid-fns irule-acc-thms)
+           (defind-gen-pred-alt-when-proof-valid-thm-loop
+             (cdr infos) name first-kind)))
+       (mv (cons hint-branch hint-branches)
+           (cons lemma-instance lemma-instances)
+           (cons irule-valid-fn irule-valid-fns)
+           (cons irule-acc-thm irule-acc-thms)))
      :guard-hints (("Goal" :in-theory (enable set::cardinality))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

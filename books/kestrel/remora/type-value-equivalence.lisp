@@ -13,6 +13,7 @@
 (include-book "values-to-abstract-syntax")
 (include-book "type-equivalence")
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
@@ -94,7 +95,7 @@
              :otherwise nil)
      :fun (type-value-case
            tval2
-           :fun (and (type-value-list-equivp tval1.in tval2.in)
+           :fun (and (type-value-equivp tval1.in tval2.in)
                      (type-value-equivp tval1.out tval2.out))
            :otherwise nil)
      :forall (type-value-case
