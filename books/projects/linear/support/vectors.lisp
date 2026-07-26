@@ -204,6 +204,24 @@
          (flistn0 (vdim)))
   :hints (("Goal" :use ((:instance vcoords0-unique (x (v0)) (c (flistn0 (vdim))))))))
 
+;; Coordinates of a sum:
+
+(defthmd vcoords0-v+
+  (implies (and (vp x) (vp y))
+           (equal (vcoords0 (v+ x y))
+	          (flist-add (vcoords0 x) (vcoords0 y))))
+  :hints (("Goal" :use ((:instance vcoords0-unique (x (v+ x y)) (c (flist-add (vcoords0 x) (vcoords0 y))))
+                        (:instance vcomb-add (n (vdim)) (l (vbasis0)) (x (vcoords0 x)) (y (vcoords0 y)))))))
+
+;; Coordinates of a scalar product:
+
+(defthmd vcoords0-v*
+  (implies (and (vp x) (fp c))
+           (equal (vcoords0 (v* c x))
+	          (flist-scalar-mul c (vcoords0 x))))
+  :hints (("Goal" :use ((:instance vcoords0-unique (x (v* c x)) (c (flist-scalar-mul c (vcoords0 x))))
+                        (:instance vcomb-scalar-mul (n (vdim)) (l (vbasis0)) (x (vcoords0 x)))))))
+
 
 ;;---------------------------------------------------------------------------------------------------------------------
 ;;  Linear Dependence
@@ -496,7 +514,7 @@
   (implies (and (posp m) (vlistnp l m) (vdepp l))
 	   (let ((c (vdep-coeffs l)))
 	     (and (flistnp c m)
-		  (not (= c (flistn0 m)))
+		  (not (equal c (flistn0 m)))
 		  (equal (vcomb c l) (v0)))))
   :hints (("Goal" :in-theory (disable vbasis0-spans)
                   :use (vdepp-vcomb-v0-3 vdepp-vcomb-v0-4 posp-vdim
@@ -848,6 +866,17 @@
   :hints (("Goal" :in-theory (enable vdepp vindepp)
                   :use (posp-vdim (:instance row-rank<=n (a (vcoord-mat l)) (n (vdim)))))))
 
+;; Combining vdepp-vcomb-v0 with vdep-if->-dim, we can construct a linear dependency of a list of more
+;; than(vdim) vectors:
+
+(defthmd vcomb-v0-if->-dim
+  (implies (and (posp m) (vlistnp l m) (> m (vdim)))
+	   (let ((c (vdep-coeffs l)))
+	     (and (flistnp c m)
+		  (not (equal c (flistn0 m)))
+		  (equal (vcomb c l) (v0)))))
+  :hints (("Goal" :use (vdepp-vcomb-v0 vdep-if->-dim))))
+
 ;; Let l be a list of vectors and let x be a vector.  Suppose l is linearly independent and (cons x l)
 ;; is linearly dependent.  We shall construct a list of scalars (vcoords x l) such that
 ;; x = (vcomb (vcoords x l) l).  By vdepp-vcomb-v0,  we have a list c = (vdep-coeffs (cons x b)) such that
@@ -872,7 +901,7 @@
   (implies (and (vlistnp l n) (posp n) (vp x) (vindepp l) (vdepp (cons x l)) (posp (vdim)))
            (let ((c (vdep-coeffs (cons x l))))
 	     (and (flistnp c (1+ n))
-		  (not (= (car c) (f0)))
+		  (not (equal (car c) (f0)))
 	          (equal (vcomb c (cons x l)) (v0)))))
   :hints (("Goal" :use ((:instance vdepp-vcomb-v0 (m (1+ n)) (l (cons x l)))
                         (:instance vindepp-vcomb-v0 (m n) (c (cdr (vdep-coeffs (cons x l)))))))))
@@ -1600,6 +1629,24 @@
          (flistn0 (wdim)))
   :hints (("Goal" :use ((:instance wcoords0-unique (x (w0)) (c (flistn0 (wdim))))))))
 
+;; Coordinates of a sum:
+
+(defthmd wcoords0-w+
+  (implies (and (wp x) (wp y))
+           (equal (wcoords0 (w+ x y))
+	          (flist-add (wcoords0 x) (wcoords0 y))))
+  :hints (("Goal" :use ((:instance wcoords0-unique (x (w+ x y)) (c (flist-add (wcoords0 x) (wcoords0 y))))
+                        (:instance wcomb-add (n (wdim)) (l (wbasis0)) (x (wcoords0 x)) (y (wcoords0 y)))))))
+
+;; Coordinates of a scalar product:
+
+(defthmd wcoords0-w*
+  (implies (and (wp x) (fp c))
+           (equal (wcoords0 (w* c x))
+	          (flist-scalar-mul c (wcoords0 x))))
+  :hints (("Goal" :use ((:instance wcoords0-unique (x (w* c x)) (c (flist-scalar-mul c (wcoords0 x))))
+                        (:instance wcomb-scalar-mul (n (wdim)) (l (wbasis0)) (x (wcoords0 x)))))))
+
 ;; We define the coordinate matrix of a list of wectors:
 
 (defun wcoord-mat (l)
@@ -1877,7 +1924,7 @@
   (implies (and (posp m) (wlistnp l m) (wdepp l))
 	   (let ((c (wdep-coeffs l)))
 	     (and (flistnp c m)
-		  (not (= c (flistn0 m)))
+		  (not (equal c (flistn0 m)))
 		  (equal (wcomb c l) (w0)))))
   :hints (("Goal" :in-theory (disable wbasis0-spans)
                   :use (wdepp-wcomb-w0-3 wdepp-wcomb-w0-4 posp-wdim
@@ -2818,21 +2865,27 @@
 (defund lin-mat ()
   (wcoord-mat (lin-list (vbasis0))))
 
-(defthmd lin-mat-lin
-  (implies (and (vp x))
-           (equal (wcoords0 (lin x))
-	          (car (fmat* (list (vcoords0 x)) (lin-mat)))))
-  :hints (("Goal" :in-theory (enable lin-mat)
-                  :use (vbasis0-spans vlistnp-basis flistnp-vcoords0 
-		        (:instance lin-vcomb (c (vcoords0 x)) (l (vbasis0)) (n (vdim)))
-			(:instance wcoords0-wcomb (m (vdim)) (c (vcoords0 x)) (l (lin-list (vbasis0))))))))
+(in-theory (disable (lin-mat)))
 
+(defthm fmatp-lin-mat
+  (fmatp (lin-mat) (vdim) (wdim))
+  :hints (("Goal" :in-theory (enable lin-mat))))
+ 
 ;; Proof: Let c = (vcoords0 x). By vbasis0-spans, x = (vcomb c (vbasis0)), and by lin-vcomb,
 ;; (lin x) = (wcomb c (lin-list (wbasis0))).  Thus, by wcoords0-wcomb,
 
 ;;   (wcoords0 (lin x)) = (wcoords0 (wcomb c (wbasis0)))
 ;;                     = (car (fmat* (list c) (wcoord-mat (wbasis0))))
 ;; 		       = (car (fmat* (list (vcoords0 x)) (lin-mat)))  
+
+(defthmd lin-mat-lin
+  (implies (vp x)
+           (equal (wcoords0 (lin x))
+                  (car (fmat* (list (vcoords0 x)) (lin-mat)))))
+  :hints (("goal" :in-theory (enable lin-mat)
+                  :use (vbasis0-spans vlistnp-basis flistnp-vcoords0
+                        (:instance lin-vcomb (c (vcoords0 x)) (l (vbasis0)) (n (vdim)))
+                        (:instance wcoords0-wcomb (m (vdim)) (c (vcoords0 x)) (l (lin-list (vbasis0))))))))
 
 ;; lin is injective if the following is true:
 
@@ -2938,7 +2991,7 @@
 				                        (c (vcoords (lin-preimage (wunspanned (lin-list (vbasis0)))) (vbasis0))))
 			(:instance lin-vcomb (n (vdim)) (l (vbasis0))
 				             (c (vcoords (lin-preimage (wunspanned (lin-list (vbasis0)))) (vbasis0))))))))
-									       
+							       
 (defthmd injection-surjection-dim-=
   (implies (lin-injective-p)
            (iff (lin-surjective-p)
@@ -2956,6 +3009,428 @@
 ;; x = (lin-preimage y), and c = (vcoords x (vbasis0)).  By wp-wunspanned and lin-surjective-p-lemma, (wp y), (vp x),
 ;; and (lin x) = y.  By vbasisp-vbasis0 and vbasis-spans, (flistnp c (vdim)) and x = (vcomb c (vbasis0)).  By lin-vcomb,
 ;; y = (wcomb c l), contradicting wunspanned-not-wcomb.
+
+
+;; If lin is both injective and surjective, then we can construct an inverse linear transformation from W to V.
+;; Unlike the function lin-preimage, this construction is algorithmic, requiring no Skolem functions.
+;; This will be important in our formalization of Galois theory, which will involve the functional instantiation
+;; of the lemma lin-lin-inv below, resulting in an executable definition of the inverse operator of the Galois group.
+
+;; First we show that if lin is injective, then (row-rank (lin-mat)) = (vdim).
+;; Let m = (vdim), n = (wdim), a = (lin-mat), ar = (row-reduce a), and p = (row-reduce-mat a).
+;; Let z = (funit (1- m) m) and z' = (car (fmat* (list z) p)).  Then 
+
+;;   (car (fmat* (list z') (inverse-mat p))) = (car (fmat* (list (car (fmat* (list z) p))) (inverse-mat p)))
+;;                                           = (car (fmat* (fmat* (list z) p) (inverse-mat p)))
+;;                                           = (car (fmat* (list z) (fmat* p (inverse-mat p))))
+;;                                           = (car (list z))
+;;                                           = z
+
+;; and since z != (flistn0 n), it follows that z' != (flistn0 n).
+;; Suppose (row-rank a) < m.  Then the final row of ar is zero: (flist0p (row (1- m) ar)).  It is easily shown that
+
+;;   (car (fmat* (list z) ar)) = (flistn0 n),
+
+;; which implies
+
+;;   (car (fmat* (list z') a)) = (car (fmat* (fmat* (list z) p) a)) = (car (fmat* (list z) ar)) = (flistn0 n).
+
+(local-defund ar% () (row-reduce (lin-mat)))
+
+(local-defund p% () (row-reduce-mat (lin-mat)))
+
+(local-defund z% () (funit (1- (vdim)) (vdim)))
+
+(local-defund z1% () (car (fmat* (list (z%)) (p%))))
+
+(local (in-theory (disable (z%) (z1%) (ar%) (p%))))
+
+(local-defthm fmatp-p%
+  (fmatp (p%) (vdim) (vdim))
+  :hints (("Goal" :in-theory (enable p%)
+                  :use ((:instance fmatp-row-reduce-mat (a (lin-mat)) (m (vdim)) (n (wdim)))))))
+
+(local-defthmd fmatp-ar%
+  (fmatp (ar%) (vdim) (wdim))
+  :hints (("Goal" :in-theory (enable ar%)
+                  :use ((:instance fmatp-row-reduce (a (lin-mat)) (m (vdim)) (n (wdim)))))))
+
+(local-defthm flistnp-z%
+  (flistnp (z%) (vdim))
+  :hints (("Goal" :in-theory (enable z%))))
+
+(local-defthm fmatp-list-z%
+  (fmatp (list (z%)) 1 (vdim))
+  :hints (("Goal" :in-theory (enable fmatp))))
+
+(local-defthmd fmatp-z%-p%
+  (fmatp (fmat* (list (z%)) (p%)) 1 (vdim))  
+  :hints (("Goal" :use ((:instance fmatp-fmat* (a (list (z%))) (b (p%)) (m 1) (n (vdim)) (p (vdim)))))))
+
+(local-defthm flistnp-z1%
+  (flistnp (z1%) (vdim))
+  :hints (("Goal" :in-theory (enable z1%)
+                  :use (fmatp-z%-p%))))
+
+(local-defthmd fmatp-list-car
+  (implies (fmatp a 1 (vdim))
+           (equal (list (car a)) a)))
+
+(local-defthmd list-z1%
+  (equal (list (z1%)) (fmat* (list (z%)) (p%)))
+  :hints (("Goal" :in-theory (enable z1%))))
+
+(in-theory (disable fmat*))
+
+(local-defthmd fmatp-list-z1%-1
+  (equal (fmat* (list (z1%)) (inverse-mat (p%)))
+         (fmat* (fmat* (list (z%)) (p%)) (inverse-mat (p%))))
+  :hints (("Goal" :in-theory (enable list-z1%))))
+
+(in-theory (disable (lin-mat)))
+
+(local-defthm invertiblep-p%
+  (invertiblep (p%) (vdim))
+  :hints (("Goal" :in-theory (e/d (p%) (fmatp-lin-mat))
+                  :use (fmatp-lin-mat
+		        (:instance invertiblep-row-reduce-mat (a (lin-mat)) (m (vdim)) (n (wdim)))))))
+
+(local-defthmd fmatp-inverse-p%
+  (and (fmatp (inverse-mat (p%)) (vdim) (vdim))
+       (equal (fmat* (p%) (inverse-mat (p%)))
+              (id-fmat (vdim))))
+  :hints (("Goal" :use ((:instance invertiblep-sufficient (a (p%)) (n (vdim)))))))
+
+(local-defthmd fmatp-list-z1%-2
+  (equal (fmat* (list (z1%)) (inverse-mat (p%)))
+         (fmat* (list (z%)) (id-fmat (vdim))))
+  :hints (("Goal" :use (fmatp-list-z1%-1 fmatp-inverse-p%
+                        (:instance fmat*-assoc (a (list (z%))) (b (p%)) (c (inverse-mat (p%))) (m 1) (n (vdim)) (p (vdim)) (q (vdim)))))))
+
+(local-defthmd fmatp-list-z1%
+  (equal (fmat* (list (z1%)) (inverse-mat (p%)))
+         (list (z%)))
+  :hints (("Goal" :use (fmatp-list-z1%-2
+                        (:instance id-fmat-right (a (list (z%))) (m 1) (n (vdim)))))))
+
+(local-defthmd z1*-nonzero-1
+  (equal (entry 0 (1- (vdim)) (fmat* (list (flistn0 (vdim))) (inverse-mat (p%))))
+         (fdot (flistn0 (vdim)) (col (1- (vdim)) (inverse-mat (p%)))))
+  :hints (("Goal" :use (fmatp-inverse-p%
+                        (:instance fmat*-entry (a (list (flistn0 (vdim)))) (b (inverse-mat (p%))) (m 1) (n (vdim)) (p (vdim)) (i 0) (j (1- (vdim))))))))
+
+(local-defthmd z1*-nonzero-2
+  (flistnp (col (1- (vdim)) (inverse-mat (p%))) (vdim))
+  :hints (("Goal" :use (fmatp-inverse-p%
+                        (:instance flistnp-col (a (inverse-mat (p%))) (m (vdim)) (n (vdim)) (j (1- (vdim))))))))
+
+(local-defthmd z1*-nonzero-3
+  (equal (entry 0 (1- (vdim)) (fmat* (list (flistn0 (vdim))) (inverse-mat (p%))))
+         (f0))
+  :hints (("Goal" :use (z1*-nonzero-1 z1*-nonzero-2))))
+
+(local-defthmd z1*-nonzero-4
+  (equal (entry 0 (1- (vdim)) (list (z%)))
+         (f1))
+  :hints (("Goal" :in-theory (enable z%)
+                  :use ((:instance nth-funit (i (1- (vdim))) (j (1- (vdim))) (n (vdim)))))))
+
+(local-defthmd z1*-nonzero
+  (not (equal (z1%) (flistn0 (vdim))))
+  :hints (("Goal" :use (fmatp-list-z1% z1*-nonzero-3 z1*-nonzero-4 f1f0))))
+
+(local-defthmd flist0p-last-row
+  (implies (< (row-rank (lin-mat)) (vdim))
+           (flist0p (nth (1- (vdim)) (ar%))))
+  :hints (("Goal" :in-theory (enable fmatp-row-reduce row-rank ar%)
+                  :use ((:instance num-nonzero-rows-nonzero (a (ar%)) (m (vdim)) (n (wdim)) (i (1- (vdim))))
+		        (:instance row-echelon-p-row-reduce (a (lin-mat)) (m (vdim)) (n (wdim)))))))
+
+(local-defthmd nth-col-ar%
+  (implies (and (< (row-rank (lin-mat)) (vdim))
+                (natp j) (< j (wdim)))
+	   (equal (nth (1- (vdim)) (col j (ar%)))
+	          (f0)))
+  :hints (("Goal" :use (flist0p-last-row fmatp-ar%
+                        (:instance nth-col (a (ar%)) (i (1- (vdim))))
+			(:instance nth-flist0p (x (nth (1- (vdim)) (ar%))) (i j))))))
+
+(local-defthmd entry-fmat*-z%-ar%
+  (implies (and (< (row-rank (lin-mat)) (vdim))
+                (natp j) (< j (wdim)))
+	   (equal (entry 0 j (fmat* (list (z%)) (ar%)))
+	          (f0)))
+  :hints (("Goal" :in-theory (enable z%)
+                  :use (fmatp-ar% nth-col-ar%
+                        (:instance fmat*-entry (a (list (z%))) (b (ar%)) (m 1) (n (vdim)) (p (wdim)) (i 0))
+			(:instance nth-flist0p (x (nth (1- (vdim)) (ar%))) (i j))))))
+
+(local-defthmd fmat*-z%-ar%
+  (implies (< (row-rank (lin-mat)) (vdim))
+	   (equal (fmat* (list (z%)) (ar%))
+	          (list (flistn0 (wdim)))))
+  :hints (("Goal" :use (fmatp-ar%
+                        (:instance fmatp-fmat* (a (list (z%))) (b (ar%)) (m 1) (n (vdim)) (p (wdim)))
+                        (:instance fmat-entry-diff-lemma (a (list (flistn0 (wdim)))) (b (fmat* (list (z%)) (ar%))) (m 1) (n (wdim)))
+			(:instance entry-fmat*-z%-ar% (j (cdr (entry-diff (list (flistn0 (wdim))) (fmat* (list (z%)) (ar%))))))))))
+
+(local-defthmd fmat*-z1%-a-1
+  (equal (fmat* (list (z1%)) (lin-mat))
+         (fmat* (fmat* (list (z%)) (p%)) (lin-mat)))
+  :hints (("Goal" :in-theory (enable z1%)
+                  :use ((:instance fmatp-list-car (a (fmat* (list (z%)) (p%))))
+		        (:instance fmatp-fmat* (a (list (z%))) (b (p%)) (m 1) (n (vdim)) (p (vdim)))))))
+
+(local-defthmd fmat*-z1%-a-2
+  (equal (fmat* (list (z1%)) (lin-mat))
+         (fmat* (list (z%)) (fmat* (p%) (lin-mat))))
+  :hints (("Goal" :use (fmat*-z1%-a-1
+                        (:instance fmat*-assoc (a (list (z%))) (b (p%)) (c (lin-mat)) (m 1) (n (vdim)) (p (vdim)) (q (wdim)))))))
+
+(local-defthmd fmat*-p%-lin-mat
+  (equal (fmat* (p%) (lin-mat))
+         (ar%))
+  :hints (("Goal" :in-theory (enable ar% p%)
+                  :use ((:instance row-ops-mat-row-reduce (a (lin-mat)) (m (vdim)) (n (wdim)))))))
+
+(local-defthmd fmat*-z1%-a-3
+  (equal (fmat* (list (z1%)) (lin-mat))
+         (fmat* (list (z%)) (ar%)))
+  :hints (("Goal" :use (fmat*-z1%-a-2 fmat*-p%-lin-mat))))
+
+(local-defthmd fmat*-z1%-a
+  (implies (< (row-rank (lin-mat)) (vdim))
+           (equal (car (fmat* (list (z1%)) (lin-mat)))
+                  (flistn0 (wdim))))
+  :hints (("Goal" :use (fmat*-z1%-a-3 fmat*-z%-ar%))))
+
+;; Let x = (vcomb z' (vbasis0)).  Then (vp x) and x != (v0).  By vcoords0-unique, (vcoords0 x) = z'.  By lin-mat-lin,
+
+;;   (wcoords0 (lin x)) = (car (fmat* (list z') a)) = (flistn0 n)
+
+;; and hence, (lin x) = (w0), contradicting injectivity:
+
+(local-defund x% () (vcomb (z1%) (vbasis0)))
+
+(local (in-theory (disable (x%))))
+
+(local-defthm vp-x%
+  (vp (x%))
+  :hints (("Goal" :in-theory (enable x%))))
+
+(local-defthmd x%-nonzero
+  (not (equal (x%) (v0)))
+  :hints (("Goal" :in-theory (enable x%)
+                  :use (z1*-nonzero
+		        (:instance vbasis0-lin-indep (c (z1%)))))))
+
+(local-defthm vcoords0-x%
+  (equal (vcoords0 (x%))
+         (z1%))
+  :hints (("Goal" :in-theory (enable x%)
+                  :use (vp-x% (:instance vcoords0-unique (x (x%)) (c (z1%)))))))
+
+(local-defthmd wcoords0-lin-x%
+  (implies (< (row-rank (lin-mat)) (vdim))
+           (equal (wcoords0 (lin (x%)))
+	          (flistn0 (wdim))))
+  :hints (("Goal" :use (fmat*-z1%-a (:instance lin-mat-lin (x (x%)))))))
+
+(local-defthmd lin-x%-w0
+  (implies (< (row-rank (lin-mat)) (vdim))
+           (equal (lin (x%))
+	          (w0)))
+  :hints (("Goal" :use (wcoords0-lin-x% (:instance wbasis0-spans (x (lin (x%))))))))
+
+(defthmd row-rank-lin-mat
+  (implies (lin-injective-p)
+           (equal (row-rank (lin-mat))
+                  (vdim)))
+  :hints (("Goal" :use (lin-x%-w0 x%-nonzero
+                        (:instance lin-injective-p-lemma (x (x%)))
+			(:instance row-rank<=m (a (lin-mat)) (m (vdim)) (n (wdim)))))))
+
+;; Now suppose lin is both injective and surjective.  Then m = n and a is invertible.  We define
+
+(defund lin-inv (y)
+  (vcomb (car (fmat* (list (wcoords0 y)) (inverse-mat (lin-mat))))
+         (vbasis0)))
+
+;; It is easily verified that lin-inv satisfies the properties of a linear transformation:
+
+(local-defthm lli-1
+  (implies (and (lin-injective-p) (= (vdim) (wdim)))
+           (invertiblep (lin-mat) (wdim)))
+  :hints (("Goal" :in-theory (enable invertiblep)
+                  :use (row-rank-lin-mat))))
+
+(local-defthm lli-2
+  (implies (and (lin-injective-p) (= (vdim) (wdim)))
+           (let ((m (inverse-mat (lin-mat))))
+	     (and (fmatp m (wdim) (wdim))
+	          (equal (fmat* m (lin-mat)) (id-fmat (wdim))))))
+  :hints (("Goal" :in-theory (disable fmatp-lin-mat)
+                  :use (lli-1 fmatp-lin-mat
+                        (:instance invertiblep-sufficient (a (lin-mat)) (n (wdim)))))))
+
+(local-defthmd lin-inv-w+-1
+  (implies (and (posp n) (fmatp b n n) (flistnp x n) (flistnp y n))
+           (equal (car (fmat* (list (flist-add x y)) b))
+	          (flist-add (car (fmat* (list x) b)) (car (fmat* (list y) b)))))
+  :hints (("Goal":in-theory (enable fmat*)
+                 :use ((:instance fmat*-dist-1 (m 1) (p n) (a1 (list x)) (a2 (list y)))))))
+
+(local-defthmd lin-inv-w+-2
+  (implies (and (fmatp b n n) (posp n) (flistnp x n))
+           (flistnp (car (fmat* (list x) b)) n))
+  :hints (("Goal":use ((:instance fmatp-fmat* (a (list x)) (m 1) (p n))))))
+
+(defthmd lin-inv-w+
+  (implies (and (lin-injective-p) (= (vdim) (wdim))
+                (wp x) (wp y))
+           (equal (lin-inv (w+ x y))
+	          (v+ (lin-inv x) (lin-inv y))))
+  :hints (("Goal":in-theory (enable lin-inv)
+                 :use (wcoords0-w+ lli-2
+		       (:instance vcomb-add (n (vdim)) (l (vbasis0))
+		                            (x (car (fmat* (list (wcoords0 x)) (inverse-mat (lin-mat)))))
+		                            (y (car (fmat* (list (wcoords0 y)) (inverse-mat (lin-mat))))))
+		       (:instance lin-inv-w+-2 (n (vdim)) (x (wcoords0 x)) (b (inverse-mat (lin-mat))))
+		       (:instance lin-inv-w+-2 (n (vdim)) (x (wcoords0 y)) (b (inverse-mat (lin-mat))))
+                       (:instance lin-inv-w+-1 (x (wcoords0 x)) (y (wcoords0 y)) (n (vdim)) (b (inverse-mat (lin-mat))))))))
+
+(local-defthmd lin-inv-w*-1
+  (implies (and (posp n) (fmatp b n n) (flistnp x n) (fp c))
+           (equal (car (fmat* (list (flist-scalar-mul c x)) b))
+	          (flist-scalar-mul c (car (fmat* (list x) b)))))
+  :hints (("Goal":in-theory (enable fmat*)
+                 :use ((:instance fmat*-fmat-scalar-mul-1 (m 1) (p n) (a (list x)))))))
+
+(defthmd lin-inv-w*
+  (implies (and (lin-injective-p) (= (vdim) (wdim))
+                (wp x) (fp c))
+           (equal (lin-inv (w* c x))
+	          (v* c (lin-inv x))))
+  :hints (("Goal":in-theory (enable lin-inv)
+                 :use (wcoords0-w* lli-2
+		       (:instance vcomb-scalar-mul (n (vdim)) (l (vbasis0))
+		                                   (x (car (fmat* (list (wcoords0 x)) (inverse-mat (lin-mat))))))
+		       (:instance lin-inv-w+-2 (n (vdim)) (x (wcoords0 x)) (b (inverse-mat (lin-mat))))
+                       (:instance lin-inv-w*-1 (x (wcoords0 x)) (n (vdim)) (b (inverse-mat (lin-mat))))))))
+
+(local-defthmd fdot-list-flistn0
+  (implies (and (fmatp a m n) (natp m) (natp n))
+           (equal (fdot-list (flistn0 n) a)
+	          (flistn0 m))))
+
+(local-defthmd fmat*-flistn0
+  (implies (and (fmatp a m n) (posp m) (posp n))
+           (equal (car (fmat* (list (flistn0 m)) a))
+	          (flistn0 n)))
+  :hints (("Goal" :expand ((FMAT* (list(FLISTN0 M)) A))
+                  :use (fmatp-transpose
+                        (:instance fdot-list-flistn0 (a (transpose-mat a)) (m n) (n m))))))
+
+(defthmd lin-inv-w0
+  (implies (and (lin-injective-p) (= (vdim) (wdim)))
+           (equal (lin-inv (w0)) (v0)))
+  :hints (("Goal" :in-theory (enable lin-inv)
+                  :use (wcoords0-w0 lli-2
+	                (:instance fmat*-flistn0 (m (vdim)) (n (vdim)) (a (inverse-mat (lin-mat))))
+	                (:instance vcomb-flistn0 (l (vbasis0)) (n (vdim)))))))
+
+;; Suppose (wp y) and let x = (lin-inv y).  Then (vp x).  We shall show that (lin x) = y.  By vcoords0-unique,
+
+;;   (vcoords0 x) = (car (fmat* (list (wcoords0 y)) (inverse-mat (lin-mat))).
+
+;; By lin-mat-lin,
+
+;;   (wcoords0 (lin x)) = (car (fmat* (list (vcoords0 x)) (lin-mat)))
+;;                      = (car (fmat* (list (car (fmat* (list (wcoords0 y)) (inverse-mat (lin-mat))))) (lin-mat)))
+;;                      = (car (fmat* (fmat* (list (wcoords0 y)) (inverse-mat (lin-mat))) (lin-mat)))
+;;                      = (car (fmat* (list (wcoords0 y)) (fmat* (inverse-mat (lin-mat)) (lin-mat))))
+;;                      = (car (list (wcoords0 y))
+;;                      = (wcoords0 y)
+
+;; which implies (lin x) = y.
+
+(local-defthmd lli-3
+  (implies (wp y)
+           (fmatp (list (wcoords0 y)) 1 (wdim))))
+
+(local-defthm lli-4
+  (implies (and (lin-injective-p) (= (vdim) (wdim)) (wp y))
+           (fmatp (fmat* (list (wcoords0 y)) (inverse-mat (lin-mat))) 1 (wdim)))
+  :hints (("Goal" :use (lli-2 lli-3
+                        (:instance fmatp-fmat* (a (list (wcoords0 y))) (b (inverse-mat (lin-mat))) (m 1) (n (wdim)) (p (wdim)))))))
+
+(local-defthm lli-5
+  (implies (and (lin-injective-p) (= (vdim) (wdim)) (wp y))
+           (flistnp (car (fmat* (list (wcoords0 y)) (inverse-mat (lin-mat)))) (wdim)))
+  :hints (("Goal" :use (lli-4))))
+
+(local-defthm lli-6
+  (implies (and (lin-injective-p) (= (vdim) (wdim)) (wp y))
+           (let ((x (lin-inv y)))
+             (and (vp x)
+	          (equal (vcoords0 x)
+	                 (car (fmat* (list (wcoords0 y)) (inverse-mat (lin-mat))))))))
+  :hints (("Goal" :in-theory (enable lin-inv)
+                  :use (lli-5
+		        (:instance vcoords0-unique (x (lin-inv y)) (c (car (fmat* (list (wcoords0 y)) (inverse-mat (lin-mat))))))))))
+
+(defthm vp-lin-inv
+  (implies (and (lin-injective-p) (= (vdim) (wdim)) (wp y))
+           (vp (lin-inv y)))
+  :hints (("Goal" :use lli-6)))
+
+(local-defthm lli-7
+  (implies (and (lin-injective-p) (= (vdim) (wdim)) (wp y))
+           (let ((x (lin-inv y)))
+             (and (vp x)
+	          (equal (wcoords0 (lin x))
+	                 (car (fmat* (list (car (fmat* (list (wcoords0 y)) (inverse-mat (lin-mat))))) (lin-mat)))))))
+  :hints (("Goal" :use (lli-6
+		        (:instance lin-mat-lin (x (lin-inv y)))))))
+
+(local-defthm lli-8
+  (implies (and (lin-injective-p) (= (vdim) (wdim)) (wp y))
+           (let ((x (lin-inv y)))
+             (and (vp x)
+	          (equal (wcoords0 (lin x))
+	                 (car (fmat* (fmat* (list (wcoords0 y)) (inverse-mat (lin-mat))) (lin-mat)))))))
+  :hints (("Goal" :use (lli-7 lli-4
+		        (:instance fmatp-list-car (a (fmat* (list (wcoords0 y)) (inverse-mat (lin-mat)))))))))
+
+(local-defthm lli-9
+  (implies (and (lin-injective-p) (= (vdim) (wdim)) (wp y))
+           (let ((x (lin-inv y)))
+             (and (vp x)
+	          (equal (wcoords0 (lin x))
+	                 (car (fmat* (list (wcoords0 y)) (id-fmat (wdim))))))))
+  :hints (("Goal" :in-theory (disable fmatp-lin-mat)
+                  :use (lli-8 lli-2 lli-3 fmatp-lin-mat
+		        (:instance fmat*-assoc (a (list (wcoords0 y))) (b (inverse-mat (lin-mat))) (c (lin-mat)) (m 1) (n (wdim)) (p (wdim)) (q (wdim)))))))
+
+(local-defthm lli-10
+  (implies (and (lin-injective-p) (= (vdim) (wdim)) (wp y))
+           (let ((x (lin-inv y)))
+             (and (vp x)
+	          (equal (wcoords0 (lin x))
+	                 (wcoords0 y)))))
+  :hints (("Goal" :use (lli-9 lli-3
+		        (:instance id-fmat-right (a (list (wcoords0 y))) (m 1) (n (wdim)))))))
+
+(defthmd lin-lin-inv
+  (implies (and (lin-injective-p)
+                (lin-surjective-p)
+                (wp y))
+           (let ((x (lin-inv y)))
+             (and (vp x)
+                  (equal (lin x) y))))
+  :hints (("Goal" :use (lli-10 injection-surjection-dim-=
+                        (:instance wbasis0-spans (x y))
+			(:instance wbasis0-spans (x (lin (lin-inv y))))))))
 
 #|
 ;;---------------------------------------------------------------------------------------------------------------------
