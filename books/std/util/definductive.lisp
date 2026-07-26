@@ -50,6 +50,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Variant of CONSP-UNDER-IFF-WHEN-TRUE-LISTP
+; in [books]/std/lists/true-listp.lisp.
+
+(defruled consp-under-iff-when-true-listp-no-backchain-limit
+  (implies (true-listp x)
+           (iff (consp x) x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; If X is within a universe U,
 ; and adding X to D actually adds something
 ; (i.e. their union is not already a subset of D),
@@ -898,9 +907,11 @@
              irule-infos)))
        (append cliques-to-add ordered-rest))
      :measure (set::cardinality (symbol-set-set-fix cliques-to-do))
-     ;; The measure decrease is ensured by
-     ;; CARDINALITY-DECREASE-OF-DEFIND-ORDER-CLIQUES-ROUND.STILL.
      :verify-guards :after-returns
+     :guard-hints
+     (("Goal"
+       :in-theory (enable true-listp-when-symbol-set-listp
+                          consp-under-iff-when-true-listp-no-backchain-limit)))
 
      :prepwork
 
@@ -927,11 +938,6 @@
         :verify-guards :after-returns
 
         ///
-
-        (defret true-listp-of-defind-order-cliques-round.cliques-to-add
-          (true-listp cliques-to-add)
-          :rule-classes :type-prescription
-          :hints (("Goal" :induct t)))
 
         (defret cardinality-upper-bound-of-defind-order-cliques-round.still
           (implies (symbol-set-setp cliques-to-do)
