@@ -24,6 +24,7 @@
 
 (local (include-book "arithmetic"))
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -359,7 +360,13 @@
        so it has no type stage:
        @(':sum') is the uninstantiated operation, and
        @(':sum-s') is the operation applied to
-       a list of natural numbers for its shape parameter."))
+       a list of natural numbers for its shape parameter.
+       Conversely, an operation may have several stages
+       for the same kind of value:
+       @('reshape') has no dimension stage,
+       but has two shape stages,
+       @(':reshape-t-s1') and @(':reshape-t-s1-s2'),
+       for its two shape parameters."))
     (:int-unary ((op int-unary-primop)))
     (:int-binary ((op int-binary-primop)))
     (:int-binary-x ((op int-binary-primop)
@@ -453,6 +460,13 @@
                        (xval expr-value)))
     (:sum ())
     (:sum-s ((sval nat-list)))
+    (:reshape ())
+    (:reshape-t ((tval type-value)))
+    (:reshape-t-s1 ((tval type-value)
+                    (s1val nat-list)))
+    (:reshape-t-s1-s2 ((tval type-value)
+                       (s1val nat-list)
+                       (s2val nat-list)))
     :pred primop-valuep
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -793,7 +807,19 @@
              repeat
              len
              acl2::not-reserrp-when-nat-list-listp)
-    :prep-books ((local (include-book "arithmetic-3/top" :dir :system)))))
+    :prep-books ((local (include-book "arithmetic-3/top" :dir :system))))
+
+  (defruled check-dims-of-expr-value-list-of-append
+    (equal (check-dims-of-expr-value-list (append vals1 vals2))
+           (b* (((ok dimss1) (check-dims-of-expr-value-list vals1))
+                ((ok dimss2) (check-dims-of-expr-value-list vals2)))
+             (append dimss1 dimss2)))
+    :induct t
+    :enable (check-dims-of-expr-value-list
+             append
+             acl2::not-reserrp-when-nat-list-listp
+             acl2::nat-listp-when-result-not-error
+             acl2::nat-list-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1697,9 +1723,112 @@
               (expr-value-list-atoms (cdr vals))))
     :measure (expr-value-list-count vals))
 
+  :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
+
   ///
 
-  (fty::deffixequiv-mutual expr-values-atoms))
+  (fty::deffixequiv-mutual expr-values-atoms)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual check-dims-of-expr-values-atoms
+    (defret check-dims-of-expr-value-list-of-expr-value-atoms
+      (equal (check-dims-of-expr-value-list vals)
+             (repeat (len vals) nil))
+      :hyp (not (reserrp (check-dims-of-expr-value val)))
+      :fn expr-value-atoms)
+    (defret check-dims-of-expr-value-list-of-expr-value-list-atoms
+      (equal (check-dims-of-expr-value-list vals1)
+             (repeat (len vals1) nil))
+      :hyp (not (reserrp (check-dims-of-expr-value-list vals)))
+      :fn expr-value-list-atoms)
+    :hints (("Goal"
+             :expand ((check-dims-of-expr-value val))
+             :in-theory (enable expr-value-atoms
+                                expr-value-list-atoms
+                                check-dims-of-expr-value
+                                check-dims-of-expr-value-list
+                                check-dims-of-expr-value-list-of-append
+                                append-of-repeats-same
+                                acl2::not-reserrp-when-nat-list-listp
+                                acl2::nat-listp-when-result-not-error
+                                acl2::nat-list-listp-when-result-not-error
+                                repeat
+                                len
+                                nfix))))
+
+  (defret-mutual len-of-expr-values-atoms
+    (defret len-of-expr-value-atoms
+      (equal (len vals)
+             (nat-list-product (check-dims-of-expr-value val)))
+      :hyp (not (reserrp (check-dims-of-expr-value val)))
+      :fn expr-value-atoms)
+    (defret len-of-expr-value-list-atoms
+      (equal (len vals1)
+             (* (len vals)
+                (nat-list-product
+                 (car (check-dims-of-expr-value-list vals)))))
+      :hyp (and (not (reserrp (check-dims-of-expr-value-list vals)))
+                (list-repeatp (check-dims-of-expr-value-list vals)))
+      :fn expr-value-list-atoms)
+    :hints (("Goal"
+             :expand ((check-dims-of-expr-value val))
+             :in-theory (enable expr-value-atoms
+                                expr-value-list-atoms
+                                check-dims-of-expr-value
+                                check-dims-of-expr-value-list
+                                nat-list-product
+                                list-repeatp
+                                acl2::not-reserrp-when-nat-list-listp
+                                acl2::nat-listp-when-result-not-error
+                                acl2::nat-list-listp-when-result-not-error
+                                len
+                                nfix))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret expr-value-list-wfp-of-expr-value-atoms
+    (expr-value-list-wfp vals)
+    :hyp (expr-value-wfp val)
+    :fn expr-value-atoms
+    :hints (("Goal"
+             :in-theory (enable expr-value-wfp
+                                expr-value-list-wfp-alt-def
+                                acl2::not-reserrp-when-nat-list-listp))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret expr-value-list-wfp-of-expr-value-list-atoms
+    (expr-value-list-wfp vals1)
+    :hyp (expr-value-list-wfp vals)
+    :fn expr-value-list-atoms
+    :hints (("Goal"
+             :in-theory (enable expr-value-list-wfp-alt-def
+                                acl2::not-reserrp-when-nat-list-listp))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret dims-of-expr-value-list-of-expr-value-atoms
+    (equal (dims-of-expr-value-list vals)
+           (repeat (len vals) nil))
+    :hyp (expr-value-wfp val)
+    :fn expr-value-atoms
+    :hints (("Goal"
+             :in-theory
+             (enable expr-value-wfp
+                     expr-value-list-wfp-alt-def
+                     dims-of-expr-value-list-when-expr-value-list-wfp
+                     acl2::not-reserrp-when-nat-list-listp))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret len-of-expr-value-atoms-when-expr-value-wfp
+    (equal (len vals)
+           (nat-list-product (dims-of-expr-value val)))
+    :hyp (expr-value-wfp val)
+    :fn expr-value-atoms
+    :hints (("Goal" :in-theory (enable expr-value-wfp
+                                       dims-of-expr-value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1782,7 +1911,11 @@
                      :index2d-t-m-n t
                      :index2d-t-m-n-x t
                      :sum nil
-                     :sum-s t))
+                     :sum-s t
+                     :reshape nil
+                     :reshape-t nil
+                     :reshape-t-s1 nil
+                     :reshape-t-s1-s2 t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1855,7 +1988,11 @@
                      :index2d-t-m-n nil
                      :index2d-t-m-n-x nil
                      :sum nil
-                     :sum-s nil))
+                     :sum-s nil
+                     :reshape t
+                     :reshape-t nil
+                     :reshape-t-s1 nil
+                     :reshape-t-s1-s2 nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1927,7 +2064,11 @@
                      :index2d-t-m-n nil
                      :index2d-t-m-n-x nil
                      :sum t
-                     :sum-s nil))
+                     :sum-s nil
+                     :reshape nil
+                     :reshape-t t
+                     :reshape-t-s1 t
+                     :reshape-t-s1-s2 nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2009,6 +2150,9 @@
                      :index2d-t-m-n (primop-value-index2d)
                      :index2d-t-m-n-x (primop-value-index2d)
                      :sum-s (primop-value-sum)
+                     :reshape-t (primop-value-reshape)
+                     :reshape-t-s1 (primop-value-reshape)
+                     :reshape-t-s1-s2 (primop-value-reshape)
                      :otherwise (primop-value-fix op)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2063,59 +2207,59 @@
                   :dims nil))
        (int-binop-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list int-tv int-tv) int-tv)
+         :elem (nest-function-type-values (list int-tv int-tv) int-tv)
          :dims nil))
        (int-unop-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list int-tv) int-tv)
+         :elem (nest-function-type-values (list int-tv) int-tv)
          :dims nil))
        (int-relop-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list int-tv int-tv) bool-tv)
+         :elem (nest-function-type-values (list int-tv int-tv) bool-tv)
          :dims nil))
        (int-to-float-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list int-tv) float-tv)
+         :elem (nest-function-type-values (list int-tv) float-tv)
          :dims nil))
        (int-to-bool-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list int-tv) bool-tv)
+         :elem (nest-function-type-values (list int-tv) bool-tv)
          :dims nil))
        (float-binop-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list float-tv float-tv) float-tv)
+         :elem (nest-function-type-values (list float-tv float-tv) float-tv)
          :dims nil))
        (float-unop-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list float-tv) float-tv)
+         :elem (nest-function-type-values (list float-tv) float-tv)
          :dims nil))
        (float-relop-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list float-tv float-tv) bool-tv)
+         :elem (nest-function-type-values (list float-tv float-tv) bool-tv)
          :dims nil))
        (float-to-int-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list float-tv) int-tv)
+         :elem (nest-function-type-values (list float-tv) int-tv)
          :dims nil))
        (float-to-bool-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list float-tv) bool-tv)
+         :elem (nest-function-type-values (list float-tv) bool-tv)
          :dims nil))
        (bool-unop-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list bool-tv) bool-tv)
+         :elem (nest-function-type-values (list bool-tv) bool-tv)
          :dims nil))
        (bool-binop-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list bool-tv bool-tv) bool-tv)
+         :elem (nest-function-type-values (list bool-tv bool-tv) bool-tv)
          :dims nil))
        (bool-to-int-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list bool-tv) int-tv)
+         :elem (nest-function-type-values (list bool-tv) int-tv)
          :dims nil))
        (bool-to-float-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list bool-tv) float-tv)
+         :elem (nest-function-type-values (list bool-tv) float-tv)
          :dims nil)))
     (primop-value-case
      op
@@ -2146,7 +2290,7 @@
      :head-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :head-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :head-t-d-s (make-type-value-array
-                  :elem (make-arrow-type-value
+                  :elem (nest-function-type-values
                          (list (make-type-value-array
                                 :elem op.tval
                                 :dims (cons (1+ op.dval) op.sval)))
@@ -2158,7 +2302,7 @@
      :tail-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t-d-s (make-type-value-array
-                  :elem (make-arrow-type-value
+                  :elem (nest-function-type-values
                          (list (make-type-value-array
                                 :elem op.tval
                                 :dims (cons (1+ op.dval) op.sval)))
@@ -2170,7 +2314,7 @@
      :length-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t-d-s (make-type-value-array
-                    :elem (make-arrow-type-value
+                    :elem (nest-function-type-values
                            (list (make-type-value-array
                                   :elem op.tval
                                   :dims (cons op.dval op.sval)))
@@ -2181,7 +2325,7 @@
      :append-t-m (prog2$ (impossible) (type-value-base (base-type-bool)))
      :append-t-m-n (prog2$ (impossible) (type-value-base (base-type-bool)))
      :append-t-m-n-s (make-type-value-array
-                      :elem (make-arrow-type-value
+                      :elem (nest-function-type-values
                              (list (make-type-value-array
                                     :elem op.tval
                                     :dims (cons op.mval op.sval))
@@ -2193,7 +2337,7 @@
                               :dims (cons (+ op.mval op.nval) op.sval)))
                       :dims nil)
      :append-t-m-n-s-x (make-type-value-array
-                        :elem (make-arrow-type-value
+                        :elem (nest-function-type-values
                                (list (make-type-value-array
                                       :elem op.tval
                                       :dims (cons op.nval op.sval)))
@@ -2205,7 +2349,7 @@
      :reverse-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :reverse-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :reverse-t-d-s (make-type-value-array
-                     :elem (make-arrow-type-value
+                     :elem (nest-function-type-values
                             (list (make-type-value-array
                                    :elem op.tval
                                    :dims (cons op.dval op.sval)))
@@ -2216,7 +2360,7 @@
      :index (prog2$ (impossible) (type-value-base (base-type-bool)))
      :index-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :index-t-m (make-type-value-array
-                 :elem (make-arrow-type-value
+                 :elem (nest-function-type-values
                         (list (make-type-value-array
                                :elem op.tval
                                :dims (list op.mval))
@@ -2226,7 +2370,7 @@
                          :dims nil))
                  :dims nil)
      :index-t-m-x (make-type-value-array
-                   :elem (make-arrow-type-value
+                   :elem (nest-function-type-values
                           (list int-tv)
                           (make-type-value-array
                            :elem op.tval
@@ -2236,7 +2380,7 @@
      :index2d-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :index2d-t-m (prog2$ (impossible) (type-value-base (base-type-bool)))
      :index2d-t-m-n (make-type-value-array
-                     :elem (make-arrow-type-value
+                     :elem (nest-function-type-values
                             (list (make-type-value-array
                                    :elem op.tval
                                    :dims (list op.mval op.nval))
@@ -2248,7 +2392,7 @@
                              :dims nil))
                      :dims nil)
      :index2d-t-m-n-x (make-type-value-array
-                       :elem (make-arrow-type-value
+                       :elem (nest-function-type-values
                               (list (make-type-value-array
                                      :elem (type-value-base (base-type-int))
                                      :dims (list 2)))
@@ -2258,12 +2402,24 @@
                        :dims nil)
      :sum (prog2$ (impossible) (type-value-base (base-type-bool)))
      :sum-s (make-type-value-array
-             :elem (make-arrow-type-value
+             :elem (nest-function-type-values
                     (list (make-type-value-array
                            :elem (type-value-base (base-type-int))
                            :dims op.sval))
                     int-tv)
-             :dims nil)))
+             :dims nil)
+     :reshape (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :reshape-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :reshape-t-s1 (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :reshape-t-s1-s2 (make-type-value-array
+                       :elem (nest-function-type-values
+                              (list (make-type-value-array
+                                     :elem op.tval
+                                     :dims op.s1val))
+                              (make-type-value-array
+                               :elem op.tval
+                               :dims op.s2val))
+                       :dims nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///
@@ -2277,7 +2433,7 @@
     (implies (primop-value-funp op)
              (equal (type-value-kind (type-value-array->elem type)) :fun))
     :hints (("Goal" :in-theory (enable primop-value-funp
-                                       make-arrow-type-value)))))
+                                       nest-function-type-values)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2977,7 +3133,8 @@
          (cons "reverse" (expr-value-primop (primop-value-reverse)))
          (cons "index" (expr-value-primop (primop-value-index)))
          (cons "index2d" (expr-value-primop (primop-value-index2d)))
-         (cons "sum" (expr-value-primop (primop-value-sum))))))
+         (cons "sum" (expr-value-primop (primop-value-sum)))
+         (cons "reshape" (expr-value-primop (primop-value-reshape))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

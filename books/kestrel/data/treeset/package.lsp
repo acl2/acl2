@@ -21,6 +21,7 @@
               defxdoc+
               enable*
               lnfix
+              treeset
               )
             (set-difference-eq *std-pkg-symbols*
                                #!STD
