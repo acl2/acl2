@@ -127,6 +127,18 @@
   :induct t
   :enable (symbol-set-setp symbol-set-listp))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Union of all the sets in a list of sets of symbols.
+
+(define symbol-set-list-union ((sets symbol-set-listp))
+  :returns (union-set symbol-setp)
+  :parents nil
+  (cond ((endp sets) nil)
+        (t (set::union (symbol-sfix (car sets))
+                       (symbol-set-list-union (cdr sets)))))
+  :verify-guards :after-returns)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-implementation
@@ -902,7 +914,7 @@
           (ordered-rest
            (defind-order-cliques-loop
              still
-             (set::union (defind-preds-of-cliques cliques-to-add)
+             (set::union (symbol-set-list-union cliques-to-add)
                          (symbol-sfix available))
              irule-infos)))
        (append cliques-to-add ordered-rest))
@@ -958,16 +970,7 @@
           :hints (("Goal"
                    :induct t
                    :in-theory (acl2::enable* set::expensive-rules
-                                             set::cardinality)))))
-
-      (define defind-preds-of-cliques ((cliques symbol-set-listp))
-        :returns (preds symbol-setp)
-        :parents nil
-        (b* (((when (endp cliques)) nil)
-             (clique (symbol-sfix (car cliques)))
-             (preds (defind-preds-of-cliques (cdr cliques))))
-          (set::union clique preds))
-        :verify-guards :after-returns)))))
+                                             set::cardinality)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
