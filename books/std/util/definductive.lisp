@@ -15,6 +15,7 @@
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/fty/defomap" :dir :system)
+(include-book "kestrel/fty/set-list" :dir :system)
 (include-book "kestrel/fty/symbol-set" :dir :system)
 (include-book "kestrel/fty/symbol-set-list" :dir :system)
 (include-book "kestrel/fty/symbol-set-set" :dir :system)
@@ -126,18 +127,6 @@
            (symbol-set-listp x))
   :induct t
   :enable (symbol-set-setp symbol-set-listp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Union of all the sets in a list of sets of symbols.
-
-(define symbol-set-list-union ((sets symbol-set-listp))
-  :returns (union-set symbol-setp)
-  :parents nil
-  (cond ((endp sets) nil)
-        (t (set::union (symbol-sfix (car sets))
-                       (symbol-set-list-union (cdr sets)))))
-  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -900,7 +889,8 @@
   :prepwork
 
   ((local (in-theory (enable emptyp-of-symbol-set-set-fix
-                             symbol-set-listp-when-symbol-set-setp)))
+                             symbol-set-listp-when-symbol-set-setp
+                             set-listp-when-symbol-set-listp)))
 
    (define defind-order-cliques-loop ((cliques-to-do symbol-set-setp)
                                       (available symbol-setp)
@@ -914,7 +904,7 @@
           (ordered-rest
            (defind-order-cliques-loop
              still
-             (set::union (symbol-set-list-union cliques-to-add)
+             (set::union (set::set-list-union cliques-to-add)
                          (symbol-sfix available))
              irule-infos)))
        (append cliques-to-add ordered-rest))
