@@ -2207,59 +2207,59 @@
                   :dims nil))
        (int-binop-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list int-tv int-tv) int-tv)
+         :elem (nest-function-type-values (list int-tv int-tv) int-tv)
          :dims nil))
        (int-unop-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list int-tv) int-tv)
+         :elem (nest-function-type-values (list int-tv) int-tv)
          :dims nil))
        (int-relop-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list int-tv int-tv) bool-tv)
+         :elem (nest-function-type-values (list int-tv int-tv) bool-tv)
          :dims nil))
        (int-to-float-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list int-tv) float-tv)
+         :elem (nest-function-type-values (list int-tv) float-tv)
          :dims nil))
        (int-to-bool-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list int-tv) bool-tv)
+         :elem (nest-function-type-values (list int-tv) bool-tv)
          :dims nil))
        (float-binop-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list float-tv float-tv) float-tv)
+         :elem (nest-function-type-values (list float-tv float-tv) float-tv)
          :dims nil))
        (float-unop-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list float-tv) float-tv)
+         :elem (nest-function-type-values (list float-tv) float-tv)
          :dims nil))
        (float-relop-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list float-tv float-tv) bool-tv)
+         :elem (nest-function-type-values (list float-tv float-tv) bool-tv)
          :dims nil))
        (float-to-int-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list float-tv) int-tv)
+         :elem (nest-function-type-values (list float-tv) int-tv)
          :dims nil))
        (float-to-bool-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list float-tv) bool-tv)
+         :elem (nest-function-type-values (list float-tv) bool-tv)
          :dims nil))
        (bool-unop-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list bool-tv) bool-tv)
+         :elem (nest-function-type-values (list bool-tv) bool-tv)
          :dims nil))
        (bool-binop-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list bool-tv bool-tv) bool-tv)
+         :elem (nest-function-type-values (list bool-tv bool-tv) bool-tv)
          :dims nil))
        (bool-to-int-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list bool-tv) int-tv)
+         :elem (nest-function-type-values (list bool-tv) int-tv)
          :dims nil))
        (bool-to-float-tv
         (make-type-value-array
-         :elem (make-arrow-type-value (list bool-tv) float-tv)
+         :elem (nest-function-type-values (list bool-tv) float-tv)
          :dims nil)))
     (primop-value-case
      op
@@ -2290,7 +2290,7 @@
      :head-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :head-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :head-t-d-s (make-type-value-array
-                  :elem (make-arrow-type-value
+                  :elem (nest-function-type-values
                          (list (make-type-value-array
                                 :elem op.tval
                                 :dims (cons (1+ op.dval) op.sval)))
@@ -2302,7 +2302,7 @@
      :tail-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :tail-t-d-s (make-type-value-array
-                  :elem (make-arrow-type-value
+                  :elem (nest-function-type-values
                          (list (make-type-value-array
                                 :elem op.tval
                                 :dims (cons (1+ op.dval) op.sval)))
@@ -2314,7 +2314,7 @@
      :length-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :length-t-d-s (make-type-value-array
-                    :elem (make-arrow-type-value
+                    :elem (nest-function-type-values
                            (list (make-type-value-array
                                   :elem op.tval
                                   :dims (cons op.dval op.sval)))
@@ -2325,7 +2325,7 @@
      :append-t-m (prog2$ (impossible) (type-value-base (base-type-bool)))
      :append-t-m-n (prog2$ (impossible) (type-value-base (base-type-bool)))
      :append-t-m-n-s (make-type-value-array
-                      :elem (make-arrow-type-value
+                      :elem (nest-function-type-values
                              (list (make-type-value-array
                                     :elem op.tval
                                     :dims (cons op.mval op.sval))
@@ -2337,7 +2337,7 @@
                               :dims (cons (+ op.mval op.nval) op.sval)))
                       :dims nil)
      :append-t-m-n-s-x (make-type-value-array
-                        :elem (make-arrow-type-value
+                        :elem (nest-function-type-values
                                (list (make-type-value-array
                                       :elem op.tval
                                       :dims (cons op.nval op.sval)))
@@ -2349,7 +2349,7 @@
      :reverse-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :reverse-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :reverse-t-d-s (make-type-value-array
-                     :elem (make-arrow-type-value
+                     :elem (nest-function-type-values
                             (list (make-type-value-array
                                    :elem op.tval
                                    :dims (cons op.dval op.sval)))
@@ -2360,7 +2360,7 @@
      :index (prog2$ (impossible) (type-value-base (base-type-bool)))
      :index-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :index-t-m (make-type-value-array
-                 :elem (make-arrow-type-value
+                 :elem (nest-function-type-values
                         (list (make-type-value-array
                                :elem op.tval
                                :dims (list op.mval))
@@ -2370,7 +2370,7 @@
                          :dims nil))
                  :dims nil)
      :index-t-m-x (make-type-value-array
-                   :elem (make-arrow-type-value
+                   :elem (nest-function-type-values
                           (list int-tv)
                           (make-type-value-array
                            :elem op.tval
@@ -2380,7 +2380,7 @@
      :index2d-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :index2d-t-m (prog2$ (impossible) (type-value-base (base-type-bool)))
      :index2d-t-m-n (make-type-value-array
-                     :elem (make-arrow-type-value
+                     :elem (nest-function-type-values
                             (list (make-type-value-array
                                    :elem op.tval
                                    :dims (list op.mval op.nval))
@@ -2392,7 +2392,7 @@
                              :dims nil))
                      :dims nil)
      :index2d-t-m-n-x (make-type-value-array
-                       :elem (make-arrow-type-value
+                       :elem (nest-function-type-values
                               (list (make-type-value-array
                                      :elem (type-value-base (base-type-int))
                                      :dims (list 2)))
@@ -2402,7 +2402,7 @@
                        :dims nil)
      :sum (prog2$ (impossible) (type-value-base (base-type-bool)))
      :sum-s (make-type-value-array
-             :elem (make-arrow-type-value
+             :elem (nest-function-type-values
                     (list (make-type-value-array
                            :elem (type-value-base (base-type-int))
                            :dims op.sval))
@@ -2412,7 +2412,7 @@
      :reshape-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :reshape-t-s1 (prog2$ (impossible) (type-value-base (base-type-bool)))
      :reshape-t-s1-s2 (make-type-value-array
-                       :elem (make-arrow-type-value
+                       :elem (nest-function-type-values
                               (list (make-type-value-array
                                      :elem op.tval
                                      :dims op.s1val))
@@ -2433,7 +2433,7 @@
     (implies (primop-value-funp op)
              (equal (type-value-kind (type-value-array->elem type)) :fun))
     :hints (("Goal" :in-theory (enable primop-value-funp
-                                       make-arrow-type-value)))))
+                                       nest-function-type-values)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

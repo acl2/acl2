@@ -336,7 +336,7 @@
             (make-type-value-fun :in in-tval :out out-tval))
      :funn (b* (((ok in-tvals) (eval-type-list type.in denv))
                 ((ok out-tval) (eval-type type.out denv)))
-             (make-arrow-type-value in-tvals out-tval))
+             (nest-function-type-values in-tvals out-tval))
      :forall (make-type-value-forall
               :param type.param
               :body type.body
