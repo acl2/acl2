@@ -109797,6 +109797,12 @@ it."
         nil)
  })
 
+ <p>Moreover, our fix required modifying several functions related to I/O,
+ often to add an @('output-p') argument that is true when considering
+ output (which allows for a channel of type @(':character') with
+ &ldquo;filename&rdquo; @(':string')) but false when considering input.  Thanks
+ to Aakash Koneru for pointing us in the direction of these changes.</p>
+
  <p>Checks were improved to avoid raw Lisp errors in the following situations:</p>
 
  <ul>
