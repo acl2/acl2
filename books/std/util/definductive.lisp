@@ -108,6 +108,16 @@
                      (set::x u)
                      (set::y (set::difference u x)))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A set of sets of symbols is also a list of sets of symbols.
+
+(defruledl symbol-set-listp-when-symbol-set-setp
+  (implies (symbol-set-setp x)
+           (symbol-set-listp x))
+  :induct t
+  :enable (symbol-set-setp symbol-set-listp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-implementation
@@ -815,6 +825,143 @@
           (clique (defind-pred-clique (car preds-to-do) irule-infos)))
        (set::insert clique cliques))
      :verify-guards :after-returns)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-order-cliques ((cliques symbol-set-setp)
+                              (irule-infos defind-irule-info-listp))
+  :returns (ordered-cliques symbol-set-listp)
+  :short "Order a set of cliques according to
+          the dependencies among them."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A clique depends on another clique when
+     some predicate in the first clique
+     depends on some predicate in the second clique.
+     Two distinct cliques cannot depend on each other:
+     the dependencies would compose into mutual dependencies
+     between predicates in the two cliques,
+     which would thus be one clique;
+     so the dependency relation among the cliques is acyclic.
+     We return the list of the cliques in dependency order:
+     each clique only depends on itself and on
+     cliques that precede it in the list.")
+   (xdoc::p
+    "We compute the order iteratively, starting with the empty list:
+     each round goes through the cliques not yet in the list,
+     and finds the ones whose external dependencies,
+     i.e. the direct dependencies of the predicates in the clique
+     (see @(tsee defind-preds-direct-dependencies))
+     minus the predicates in the clique itself,
+     are all among the predicates of the cliques already in the list;
+     these cliques, if any, are added to the list,
+     in the order in which they appear in the set of cliques.
+     We stop when a round finds no cliques to add.
+     Termination is justified by the fact that
+     each round that finds a (non-empty) collection of cliques to add
+     strictly decreases the number of the cliques not yet in the list.")
+   (xdoc::p
+    "When this function is applied to
+     the cliques of the predicates being defined
+     (see @(tsee defind-cliques)),
+     the acyclicity of the dependencies among the cliques ensures that
+     each round finds at least one clique to add
+     (except the final round, with no cliques left,
+     which stops the computation):
+     the resulting list consists of exactly the input cliques.
+     However, this function is well-defined for any set of cliques:
+     if a round finds no cliques to add
+     while some cliques are not in the list yet,
+     those remaining cliques are appended at the end of the list."))
+  (defind-order-cliques-loop cliques nil irule-infos)
+
+  :prepwork
+
+  ((local (in-theory (enable emptyp-of-symbol-set-set-fix
+                             symbol-set-listp-when-symbol-set-setp)))
+
+   (define defind-order-cliques-loop ((cliques-to-do symbol-set-setp)
+                                      (available symbol-setp)
+                                      (irule-infos defind-irule-info-listp))
+     :returns (ordered-cliques symbol-set-listp)
+     :parents nil
+     (b* (((when (set::emptyp (symbol-set-set-fix cliques-to-do))) nil)
+          ((mv cliques-to-add still)
+           (defind-order-cliques-round cliques-to-do available irule-infos))
+          ((when (endp cliques-to-add)) cliques-to-do)
+          (ordered-rest
+           (defind-order-cliques-loop
+             still
+             (set::union (defind-preds-of-cliques cliques-to-add)
+                         (symbol-sfix available))
+             irule-infos)))
+       (append cliques-to-add ordered-rest))
+     :measure (set::cardinality (symbol-set-set-fix cliques-to-do))
+     ;; The measure decrease is ensured by
+     ;; CARDINALITY-DECREASE-OF-DEFIND-ORDER-CLIQUES-ROUND.STILL.
+     :verify-guards :after-returns
+
+     :prepwork
+
+     ((define defind-order-cliques-round ((cliques-to-do symbol-set-setp)
+                                          (available symbol-setp)
+                                          (irule-infos defind-irule-info-listp))
+        :returns (mv (cliques-to-add symbol-set-listp)
+                     (still symbol-set-setp))
+        :parents nil
+        (b* (((when (set::emptyp (symbol-set-set-fix cliques-to-do)))
+              (mv nil nil))
+             (clique (set::head cliques-to-do))
+             ((mv cliques-to-add still)
+              (defind-order-cliques-round (set::tail cliques-to-do)
+                                          available
+                                          irule-infos)))
+          (if (set::subset
+               (set::difference
+                (defind-preds-direct-dependencies clique irule-infos)
+                clique)
+               (symbol-sfix available))
+              (mv (cons clique cliques-to-add) still)
+            (mv cliques-to-add (set::insert clique still))))
+        :verify-guards :after-returns
+
+        ///
+
+        (defret true-listp-of-defind-order-cliques-round.cliques-to-add
+          (true-listp cliques-to-add)
+          :rule-classes :type-prescription
+          :hints (("Goal" :induct t)))
+
+        (defret cardinality-upper-bound-of-defind-order-cliques-round.still
+          (implies (symbol-set-setp cliques-to-do)
+                   (<= (set::cardinality still)
+                       (set::cardinality cliques-to-do)))
+          :rule-classes :linear
+          :hints (("Goal"
+                   :induct t
+                   :in-theory (acl2::enable* set::expensive-rules
+                                             set::cardinality))))
+
+        (defret cardinality-decrease-of-defind-order-cliques-round.still
+          (implies (and (symbol-set-setp cliques-to-do)
+                        (consp cliques-to-add))
+                   (< (set::cardinality still)
+                      (set::cardinality cliques-to-do)))
+          :rule-classes :linear
+          :hints (("Goal"
+                   :induct t
+                   :in-theory (acl2::enable* set::expensive-rules
+                                             set::cardinality)))))
+
+      (define defind-preds-of-cliques ((cliques symbol-set-listp))
+        :returns (preds symbol-setp)
+        :parents nil
+        (b* (((when (endp cliques)) nil)
+             (clique (symbol-sfix (car cliques)))
+             (preds (defind-preds-of-cliques (cdr cliques))))
+          (set::union clique preds))
+        :verify-guards :after-returns)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
