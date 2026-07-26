@@ -22,4 +22,10 @@
   :elt-type symbol-set
   :true-listp t
   :elementp-of-nil t
-  :pred symbol-set-listp)
+  :pred symbol-set-listp
+
+  ///
+
+  (defruled true-listp-when-symbol-set-listp
+    (implies (symbol-set-listp x)
+             (true-listp x))))
