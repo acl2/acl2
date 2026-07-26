@@ -233,12 +233,40 @@
    fix-already-definedp)
   :tag :omap)
 
+(def-primitive-aggregate flextreeset
+  ;; A single Treeset type (the acl2::treeset analogue of flexset).
+  (name               ;; name of this set type, e.g., myset
+   pred               ;; predicate function name, e.g., myset-p
+   fix                ;; fix function name, e.g., myset-fix
+   equiv              ;; equiv function name, e.g., myset-equiv
+   count              ;; count function name, e.g., myset-count
+   elt-type           ;; element predicate name, e.g., myp
+   elt-fix            ;; element fixing function, e.g., my-fix
+   elt-equiv          ;; element equiv function, e.g., my-equiv
+   measure            ;; termination measure
+   xvar               ;; special x variable name, e.g., mypkg::x
+   kwd-alist          ;; alist of options, see *flextreeset-keywords*
+   recp               ;; is .elt-type part of the mutual recursion?
+   already-definedp
+   fix-already-definedp)
+  :tag :treeset)
+
+(defun flextreeset->tree-all-internal (x)
+  ;; The name of a treeset member's structural fold -- the second of the two
+  ;; defines the member contributes to the predicate clique (see
+  ;; kestrel/fty/fty-treeset.lisp). Derived from the member name, like the
+  ;; other generated internal names.
+  (intern-in-package-of-symbol
+   (concatenate 'string
+                "TREE-ALL-" (symbol-name (flextreeset->name x)) "-INTERNAL")
+   (flextreeset->name x)))
+
 (def-primitive-aggregate flextypes
   ;; A top-level entry in the flextypes table.
   ;; May bundle up a group of mutually recursive types.
   ;; Alternately, may contain a singleton type (e.g., from defprod, deflist, etc.)
   (name               ;; wrapper name, often shared by a member type
-   types              ;; member types -- list of flexsum, flexlist, flexalists, flextranssums, flexomap or flexset
+   types              ;; member types -- list of flexsum, flexlist, flexalists, flextranssums, flexomap, flexset or flextreeset
                       ;;  (no flexprods here, they'll be inside flexsums)
    kwd-alist          ;; alist of options, see *flextypes-keywords*
    no-count           ;; boolean -- skip the count function?
@@ -360,6 +388,7 @@
        (transsumbody (replace-*-in-symbols-with-str body "TRANSSUM"))
        (setbody      (replace-*-in-symbols-with-str body "SET"))
        (omapbody     (replace-*-in-symbols-with-str body "OMAP"))
+       (treesetbody  (replace-*-in-symbols-with-str body "TREESET"))
        (cases
         `(case (tag ,var)
            (:sum ,(if add-binds `(b* (((flexsum ,var) ,var)) ,sumbody) sumbody))
@@ -368,6 +397,7 @@
            (:transsum ,(if add-binds `(b* (((flextranssum ,var) ,var)) ,transsumbody) transsumbody))
            (:set ,(if add-binds `(b* (((flexset ,var) ,var)) ,setbody) setbody))
            (:omap ,(if add-binds `(b* (((flexomap ,var) ,var)) ,omapbody) omapbody))
+           (:treeset ,(if add-binds `(b* (((flextreeset ,var) ,var)) ,treesetbody) treesetbody))
            (otherwise ,default))))
     (if (consp binding)
         `(let ((,var ,(cadr binding))) ,cases)
@@ -406,12 +436,45 @@
     (cons (with-flextype-bindings (x (car types)) x.equiv)
           (flextypelist-equivs (cdr types)))))
 
+;; The clique predicates a member contributes, as a list (a treeset member
+;; contributes two: its structural fold and the public predicate).
+
+(defun flexsum-predicates (x)
+  (declare (xargs :mode :program))
+  (list (flexsum->pred x)))
+
+(defun flexlist-predicates (x)
+  (declare (xargs :mode :program))
+  (list (flexlist->pred x)))
+
+(defun flexalist-predicates (x)
+  (declare (xargs :mode :program))
+  (list (flexalist->pred x)))
+
+(defun flextranssum-predicates (x)
+  (declare (xargs :mode :program))
+  (list (flextranssum->pred x)))
+
+(defun flexset-predicates (x)
+  (declare (xargs :mode :program))
+  (list (flexset->pred x)))
+
+(defun flexomap-predicates (x)
+  (declare (xargs :mode :program))
+  (list (flexomap->pred x)))
+
+(defun flextreeset-predicates (x)
+  (declare (xargs :mode :program))
+  (list (flextreeset->tree-all-internal x)
+        (flextreeset->pred x)))
+
 (defun flextypelist-predicates (types)
   (declare (xargs :mode :program))
   (if (atom types)
       nil
-    (cons (with-flextype-bindings (x (car types)) x.pred)
-          (flextypelist-predicates (cdr types)))))
+    (append (with-flextype-bindings (x (car types))
+              (flex*-predicates x))
+            (flextypelist-predicates (cdr types)))))
 
 (defun flextypes-find-count-for-pred (pred types)
   (declare (xargs :mode :program))

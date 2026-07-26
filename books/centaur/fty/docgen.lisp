@@ -610,6 +610,26 @@ binder.</p>")
             :no-override t))
         state)))
 
+(defun flextreeset->defxdoc (x parents kwd-alist state)
+  ;; Returns (mv events state).  Treeset-free (like flexset->defxdoc).
+  (declare (ignorable state))
+  (b* (((flextreeset x) x)
+       (parents (getarg :parents parents kwd-alist))
+       (short   (or (getarg :short nil kwd-alist)
+                    (cat "A @(see acl2::treeset) of @(see? "
+                         (xdoc::full-escape-symbol x.elt-type)
+                         ") objects.")))
+       (long    (or (getarg :long nil kwd-alist)
+                    (cat "<p>This is an ordinary @(see fty::deftreeset), containing @(see? "
+                         (xdoc::full-escape-symbol x.elt-type)
+                         ") elements.</p>"))))
+    (mv `((defxdoc ,x.name
+            :parents ,parents
+            :short ,short
+            :long ,long
+            :no-override t))
+        state)))
+
 (defun flexomap->defxdoc (x parents kwd-alist state)
   ;; Returns (mv events state)
   (declare (ignorable state))
