@@ -106873,6 +106873,13 @@ Bug Fixes
     (equal (car (open-output-channel :string :character *default-state*))
            nil)
 
+  Moreover, our fix required modifying several functions related to
+  I/O, often to add an [30m[47moutput-p[0m[0m argument that is true when
+  considering output (which allows for a channel of type [30m[47m:character[0m[0m
+  with ``filename'' [30m[47m:string[0m[0m) but false when considering input.
+  Thanks to Aakash Koneru for pointing us in the direction of these
+  changes.
+
   Checks were improved to avoid raw Lisp errors in the following
   situations:
 
