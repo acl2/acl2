@@ -1154,7 +1154,20 @@
              irule-infos)))
        (mv (cons levels leveled-cliques)
            (set::union clique-unleveled unleveled)))
-     :verify-guards :after-returns)))
+     :verify-guards :after-returns
+
+     ///
+
+     (defret true-listp-of-defind-leveled-cliques-loop.leveled-cliques
+       (true-listp leveled-cliques)
+       :rule-classes :type-prescription
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret true-listp-of-defind-leveled-cliques.leveled-cliques
+    (true-listp leveled-cliques)
+    :rule-classes :type-prescription))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1722,15 +1735,35 @@
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (mv erp
                (infos defind-irule-info-listp)
-               (levels symbol-set-listp))
+               (leveled-cliques symbol-set-list-listp))
   :short "Process the @(':irules') input."
   :long
   (xdoc::topstring
    (xdoc::p
     "Besides processing the individual rules,
-     we check that the rule names are all distinct,
-     and that every predicate is at some level
-     (see @(tsee defind-pred-levels)).
+     we check that the rule names are all distinct.
+     Then we organize the predicates into
+     cliques in dependency order, each organized into levels,
+     and we use the result to enforce the restrictions described next.")
+   (xdoc::p
+    "A single predicate is allowed to be non-recursive;
+     it just yields a non-recursive proof validity function.
+     But multiple predicates must be mutually recursive,
+     i.e. they must form a single clique of mutual dependency:
+     we check this in two steps,
+     for more precise error messages,
+     first checking that every predicate is recursive
+     (see @(tsee defind-nonrecursive-preds)),
+     then checking that there is just one clique,
+     which thus must consist of all the predicates.
+     Predicates that are not mutually recursive
+     can be defined by separate uses of the macro,
+     in dependency order.
+     Since currently only one predicate is supported,
+     the mutual recursion checks are never triggered;
+     they are in preparation for lifting that restriction.")
+   (xdoc::p
+    "We also check that every predicate is at some level in its clique.
      A predicate at no level would have no proof trees:
      the generated fixtype of its proofs would be empty,
      but fixtypes, like all ACL2 types, must be non-empty;
@@ -1743,26 +1776,8 @@
      with multiple predicates, the levels will do more work,
      when the restriction to a single predicate is lifted.")
    (xdoc::p
-    "We return the levels along with the rule information,
-     for use in event generation.")
-   (xdoc::p
-    "A single predicate is allowed to be non-recursive;
-     it just yields a non-recursive proof validity function.
-     But multiple predicates must be mutually recursive,
-     i.e. they must form a single clique of mutual dependency:
-     we check this in two steps,
-     for more precise error messages,
-     first checking that every predicate is recursive
-     (see @(tsee defind-nonrecursive-preds)),
-     then checking that they form just one clique
-     (see @(tsee defind-cliques)),
-     which, being the only one, must consist of all the predicates.
-     Predicates that are not mutually recursive
-     can be defined by separate uses of the macro,
-     in dependency order.
-     Since currently only one predicate is supported,
-     the mutual recursion checks are never triggered;
-     they are in preparation for lifting that restriction."))
+    "We return the leveled cliques along with the rule information,
+     for use in event generation."))
   (b* (((reterr) nil nil)
        ((unless irules-suppliedp)
         (reterr (msg "The :IRULES input must be supplied.")))
@@ -1780,6 +1795,8 @@
                       but there are duplicates among ~&0."
                      irule-names)))
        (pred-names (defind-pred-info-list->name pred-infos))
+       ((mv leveled-cliques unleveled)
+        (defind-leveled-cliques pred-names infos))
        (multiplep (consp (cdr pred-names)))
        (nonrec-preds (and multiplep
                           (defind-nonrecursive-preds pred-names infos)))
@@ -1795,11 +1812,8 @@
                       A non-recursive predicate ~
                       can be defined by a separate use of DEFINDUCTIVE."
                      nonrec-preds)))
-       (cliques (and multiplep
-                     (defind-cliques pred-names infos)))
        ((when (and multiplep
-                   (not (equal cliques
-                               (set::insert (set::mergesort pred-names) nil)))))
+                   (consp (cdr leveled-cliques))))
         (reterr (msg "The predicates being defined must be ~
                       all mutually recursive, ~
                       i.e. they must form ~
@@ -1809,9 +1823,7 @@
                       Predicates in different cliques can be defined ~
                       by separate uses of DEFINDUCTIVE, ~
                       in dependency order."
-                     cliques)))
-       ((mv levels unleveled)
-        (defind-pred-levels (set::mergesort pred-names) nil infos))
+                     (defind-cliques pred-names infos))))
        ((unless (set::emptyp unleveled))
         (reterr (msg "Every predicate being defined ~
                       must be at some level: ~
@@ -1830,7 +1842,7 @@
                       the generated fixtype of its proofs would be empty, ~
                       but fixtypes must be non-empty."
                      unleveled))))
-    (retok infos levels))
+    (retok infos leveled-cliques))
 
   :prepwork
   ((define defind-process-irules-loop ((irules true-listp)
@@ -1989,7 +2001,7 @@
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (mv erp
                (irule-infos defind-irule-info-listp)
-               (levels symbol-set-listp)
+               (leveled-cliques symbol-set-list-listp)
                (parents symbol-listp)
                short
                long
@@ -2004,7 +2016,7 @@
     "See @(tsee defind-process-inputs-1) for
      a description of the three phases of input processing."))
   (b* (((reterr) nil nil nil nil nil nil)
-       ((erp irule-infos levels)
+       ((erp irule-infos leveled-cliques)
         (defind-process-irules irules irules-suppliedp
           pred-infos translations))
        ((erp parents short long xdocp)
@@ -2012,7 +2024,7 @@
           parents parents-suppliedp
           short short-suppliedp
           long long-suppliedp)))
-    (retok irule-infos levels parents short long xdocp))
+    (retok irule-infos leveled-cliques parents short long xdocp))
 
   ///
 
@@ -4197,7 +4209,7 @@
         (defind-process-inputs-1 name preds preds-suppliedp irules wrld))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp))
        (translations (defind-process-inputs-2 terms state))
-       ((mv erp irule-infos ?levels parents short long xdocp)
+       ((mv erp irule-infos ?leveled-cliques parents short long xdocp)
         (defind-process-inputs-3
           irules irules-suppliedp
           parents parents-suppliedp
