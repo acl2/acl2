@@ -418,3 +418,16 @@
     heapp-when-not-tree-empty-p
     heap<-of-tree->head-and-tree->head-of-tree->left
     heap<-of-tree->head-and-tree->head-of-tree->right))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The head of a heap dominates the entire heap.
+(defruled heap<-all-l-becomes-heap<-of-tree->head
+  (implies (heapp tree)
+           (equal (heap<-all-l tree x)
+                  (or (tree-empty-p tree)
+                      (heap< (tree-element->key (tree->head tree)) x))))
+  :induct t
+  :enable (heap<-all-l
+           heapp-extra-rules
+           heap<-rules))
