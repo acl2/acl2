@@ -29318,11 +29318,12 @@ Subtopics
   essence, want to build extensions of ACL2.  The typical intended
   use is to create [books] that extend the functionality of ACL2 in
   ways not allowed without a so-called ``active trust tag''.  A trust
-  tag thus represents a contract: The writer of such a book is
-  guaranteeing that the book extends ACL2 in a ``correct'' way as
-  defined by the writer of the book.  The writer of the book will
-  often have a small section of the book in the scope of an active
-  trust tag that can be inspected by potential users of that book:
+  tag (or ``ttag'') thus represents a contract: The writer of such a
+  book is guaranteeing that the book extends ACL2 in a ``correct''
+  way as defined by the writer of the book.  The writer of the book
+  will often have a small section of the book in the scope of an
+  active trust tag that can be inspected by potential users of that
+  book:
 
     <initial part of book, which does not use trust tags>
     (defttag :some-ttag) ; install :some-ttag as an active trust tag
@@ -29344,7 +29345,7 @@ Subtopics
     ACL2 Error in TOP-LEVEL:  The SYS-CALL function cannot be called unless
     a trust tag is in effect.  See :DOC defttag.
 
-    ACL2 !>(defttag t) ; Install :T as an active trust tag.
+    ACL2 !>(defttag t) ; Install :T as the active trust tag.
 
     TTAG NOTE: Adding ttag :T from the top level loop.
      T
@@ -29402,16 +29403,18 @@ Subtopics
   ``ttag'', pronounced ``tee tag'').  An active ttag is a [keyword]
   symbol that is associated with potentially unsafe evaluation.  For
   example, calls of [30m[47m[sys-call][0m[0m are illegal unless there is an active
-  trust tag.  An active trust tag can be installed using a [30m[47mdefttag[0m[0m
-  event.  If one introduces an active ttag and then writes
-  definitions that contain calls of [30m[47m[sys-call][0m[0m, presumably in a
-  defensibly ``safe'' way, then responsibility for those calls is
-  attributed to that ttag.  This attribution (or blame!) is at the
-  level of [books]; a book's [certificate] contains a list of ttags
-  that are active in that book, or in a book that is included
-  (possibly [local]ly), or in a book included in a book that is
-  included (either inclusion being potentially [local]), and so on.
-  We explain all this in more detail below.
+  trust tag.  The event [30m[47m(defttag SYM)[0m[0m where [30m[47mSYM[0m[0m is not [30m[47mnil[0m[0m installs,
+  as the unique active trust tag, the keyword whose [30m[47m[symbol-name][0m[0m is
+  that of [30m[47mSYM[0m[0m; this keyword could reasonably be denoted as [30m[47m:SYM[0m[0m.  If
+  one introduces an active ttag and then writes definitions that
+  contain calls of [30m[47m[sys-call][0m[0m, presumably in a defensibly ``safe''
+  way, then responsibility for those calls is attributed to that
+  ttag.  This attribution (or blame!) is at the level of [books]; a
+  book's [certificate] contains a list of ttags that are active in
+  that book, or in a book that is included (possibly [local]ly), or
+  in a book included in a book that is included (either inclusion
+  being potentially [local]), and so on.  We explain all this in more
+  detail below.
 
   [30m[47m(Defttag :tag-name)[0m[0m is essentially equivalent to
 
@@ -106872,6 +106875,13 @@ Bug Fixes
 
     (equal (car (open-output-channel :string :character *default-state*))
            nil)
+
+  Moreover, our fix required modifying several functions related to
+  I/O, often to add an [30m[47moutput-p[0m[0m argument that is true when
+  considering output (which allows for a channel of type [30m[47m:character[0m[0m
+  with ``filename'' [30m[47m:string[0m[0m) but false when considering input.
+  Thanks to Aakash Koneru for pointing us in the direction of these
+  changes.
 
   Checks were improved to avoid raw Lisp errors in the following
   situations:
