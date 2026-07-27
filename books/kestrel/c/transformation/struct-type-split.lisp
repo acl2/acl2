@@ -4935,10 +4935,6 @@
           filepath? tag? typedef-name? code.trans-units))
        (primary-uid (c$::type-struct->uid primary-type))
        (primary-tag? (c$::type-struct->tag? primary-type))
-       ((when (and (not unsafe)
-                   (not primary-tag?)))
-        (retmsg$ "Safety checks are not supported for an untagged struct type. ~
-                  Use :UNSAFE T to disable the safety checks."))
        (info (c$::trans-ensemble->info code.trans-units))
        ;; type-compatible-p accesses the completions with hons-get,
        ;; so they must be a fast alist.
