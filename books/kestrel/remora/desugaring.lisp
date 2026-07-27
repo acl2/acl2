@@ -169,6 +169,17 @@
      so we use an arbitrary parameter
      if the list of parameters is empty.")
    (xdoc::p
+    "An n-ary boxing atom is turned into a nest of unary boxing atoms.
+     Since the result must be an atom,
+     the outermost boxing atom is built here,
+     over the first ispace,
+     with the remaining ispaces nested inside it;
+     only the outermost boxing atom has the type
+     (see @(tsee nest-box-exprs)).
+     An n-ary boxing atom always has at least one ispace,
+     but this is not captured in the abstract syntax,
+     so we use an arbitrary ispace if the list of ispaces is empty.")
+   (xdoc::p
     "All function bindings are turned into value bindings,
      with an appropriate nest of lambda abstractions.
      If a function binding has no parameters,
@@ -289,6 +300,16 @@
                      (make-atom-ilambda
                       :param param
                       :body (nest-ilambda-exprs (cdr atom.params) body))))
+   (atom :boxn (b* ((ispaces (ispace-list-desugar atom.ispaces))
+                    (array (expr-desugar atom.array))
+                    (type (type-desugar atom.type))
+                    (ispace (if (consp ispaces) ; always true
+                                (car ispaces)
+                              (ispace-dim (dim-const 0)))))
+                 (make-atom-box
+                  :ispace ispace
+                  :array (nest-box-exprs (cdr ispaces) array)
+                  :type? type)))
    (bind :fun (b* ((params (var+type?-list-desugar bind.params))
                    (type? (type-option-desugar bind.type?))
                    (expr (expr-desugar bind.expr))

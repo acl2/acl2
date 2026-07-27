@@ -666,6 +666,30 @@
                :type? nil)))
      :verify-guards :after-returns)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-box-exprs ((ispaces ispace-listp) (body exprp))
+  :returns (expr exprp)
+  :short "Nest zero or more unary boxing atoms without types,
+          from zero or more ispaces and one final body expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each boxing atom is wrapped into a zero-rank array expression.
+     The boxing atoms have no types:
+     this function builds the inner boxes of
+     the nest that an n-ary boxing atom desugars to,
+     whose types can only be computed during type checking
+     (see @(tsee atom))."))
+  (cond ((endp ispaces) (expr-fix body))
+        (t (make-expr-array
+            :dims nil
+            :atoms (list (make-atom-box
+                          :ispace (car ispaces)
+                          :array (nest-box-exprs (cdr ispaces) body)
+                          :type? nil)))))
+  :verify-guards :after-returns)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define forall-curried-body ((params type-var-listp) (body typep))
