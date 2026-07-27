@@ -1394,7 +1394,7 @@
                     (pdoc-prefix-form
                      "box"
                      (pdoc-concat
-                      (pdoc-paren (ispace-list-to-pdoc (list a.ispace)))
+                      (pdoc-paren (ispace-to-pdoc a.ispace))
                       (pdoc-concat
                        (pdoc-line)
                        (pdoc-concat

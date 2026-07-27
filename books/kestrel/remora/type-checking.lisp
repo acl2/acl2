@@ -1702,7 +1702,7 @@
        and its type is the unary product type over that variable.")
      (xdoc::p
       "For a unary boxing atom,
-       the ispace must be valid (see @(tsee check-ispace-list)),
+       the ispace must be valid (see @(tsee check-ispace)),
        and the type, which is optional in the abstract syntax,
        must be present, valid (see @(tsee check-type)), and a sum type;
        an unannotated unary boxing atom
