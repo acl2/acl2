@@ -57,8 +57,9 @@
 
 (defun fns-with-abs-ev-between-or-local (names min max wrld acc)
 
-; Return a list of all symbols in names whose absolute-event-number property
-; has value greater than min and at most max.
+; Return a list of all symbols in names that either have a local event or have
+; an absolute-event-number property with value greater than min and at most
+; max.
 
   (cond
    ((endp names) acc)
@@ -76,8 +77,8 @@
 (defun instantiable-ancestors-with-guards/measures (fns wrld ans seen)
 
 ; See ACL2 source function instantiable-ancestors, from which this is derived.
-; However, in this case we also include function symbols from guards in the
-; result.
+; However, in this case we also include function symbols from guards and
+; measures in the result.
 
   (cond
    ((null fns) (mv ans seen))
@@ -114,10 +115,10 @@
 (defun get-event+ (name fal wrld)
 
 ; This variant of get-event (defined in the ACL2 sources) can return (mv n ev)
-; where ev is the event and n is its absolute-event-number.  However, if n is
-; already a key of fal then it returns (mv nil nil); and if the
-; absolute-event-number does not exist, that is an error indicated by returning
-; (mv :failed nil).
+; where ev is the event and n is its absolute-event-number.  However, if the
+; absolute-event-number is nil then an error is indicated by returning (mv
+; :failed nil); and if otherwise n is already a key of fal then we return (mv
+; nil nil).
 
   (let ((index (getpropc name 'absolute-event-number nil wrld)))
     (cond ((null index)
@@ -483,7 +484,7 @@
             (mv-let (fns seen)
               (supporters-of-1 ev min max macro-aliases wrld state-vars seen)
               (supporters-of-rec (append fns (cdr lst))
-                                 (hons-acons n ev fal) 
+                                 (hons-acons n ev fal)
                                  min max macro-aliases ctx wrld state-vars
                                  seen)))))))))))
 
@@ -641,7 +642,7 @@
 (defun supporter-fns-in-range-or-local (alist min max wrld acc)
 
 ; We restrict (strip-cars alist) to function symbols whose absolute event
-; number is in the interval (min,max].
+; number is in the interval (min,max] or whose definition is local.
 
   (cond
    ((endp alist) acc)
@@ -739,21 +740,21 @@
                           (all-fnnames1 nil (cddr trip) table-guard-fns)))
      (t (table-info-after-k names (cdr wrld) k evs table-guard-fns)))))
 
-(defun supporters-in-theory-event (fns ens wrld min disables)
-  (cond ((endp fns)
+(defun supporters-in-theory-event (names ens wrld min disables)
+  (cond ((endp names)
          (and disables
               `(in-theory (disable ,@disables))))
         (t (supporters-in-theory-event
-            (cdr fns) ens wrld min
+            (cdr names) ens wrld min
             (if (and min
-                     (<= (getpropc (car fns) 'absolute-event-number nil wrld)
+                     (<= (getpropc (car names) 'absolute-event-number nil wrld)
                          min))
 
 ; We don't mess with the enabled status of functions that were brought in
 ; before the call of with-supporters due to being local.
 
                 disables
-              (append (disabledp-fn (car fns) ens wrld)
+              (append (disabledp-fn (car names) ens wrld)
                       disables))))))
 
 (defmacro wsa-er (str &rest args)
@@ -904,7 +905,7 @@
                               (fns (cdr extras/fns))
                               (in-theory-event
                                (supporters-in-theory-event
-                                fns (ens state) wrld min nil))
+                                (union-eq fns ',names) (ens state) wrld min nil))
                               (ev
                                (list*
                                 'progn
