@@ -184,12 +184,21 @@
 (defines types-may-refer-to-struct-spec-p
   :short "Check if types may refer to the struct type being split,
           directly or indirectly."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This involves looking up struct types in the type completions,
+     in order to check the members found there.
+     Termination requires a more elaborate argument
+     than we are willing to flesh out at this time,
+     and so we cop out with an artificial recursion limit."))
 
   ;;;;;;;;;;
 
   (define type-may-refer-to-struct-spec-p ((type typep)
                                            (spec sts-struct-specp)
-                                           (completions type-completions-p))
+                                           (completions type-completions-p)
+                                           (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if a type may refer to the struct type being split,
@@ -213,72 +222,79 @@
        among other possibilities.
        But unknown arithmetic and unknowno built-in types fail the check,
        because they cannot be or refer to the struct type."))
-    (type-case
-     type
-     :void nil
-     :char nil
-     :schar nil
-     :uchar nil
-     :sshort nil
-     :ushort nil
-     :sint nil
-     :uint nil
-     :slong nil
-     :ulong nil
-     :sllong nil
-     :ullong nil
-     :float nil
-     :double nil
-     :ldouble nil
-     :floatc nil
-     :doublec nil
-     :ldoublec nil
-     :bool nil
-     :struct (or (struct-type-is-struct-spec-p type.uid
-                                               type.tunit?
-                                               type.tag/members
-                                               spec)
-                 (type-struni-tag/members-may-refer-to-struct-spec-p
-                  type.tag/members spec completions))
-     :union (type-struni-tag/members-may-refer-to-struct-spec-p
-             type.tag/members spec completions)
-     :enum nil
-     :array (type-may-refer-to-struct-spec-p type.of spec completions)
-     :pointer (type-may-refer-to-struct-spec-p type.to spec completions)
-     :function (or (type-may-refer-to-struct-spec-p type.ret spec completions)
-                   (type-params-may-refer-to-struct-spec-p
-                    type.params spec completions))
-     :unknown t
-     :unknown-builtin nil
-     :unknown-scalar t
-     :unknown-arithmetic nil)
-    :measure (type-count type))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-case
+       type
+       :void nil
+       :char nil
+       :schar nil
+       :uchar nil
+       :sshort nil
+       :ushort nil
+       :sint nil
+       :uint nil
+       :slong nil
+       :ulong nil
+       :sllong nil
+       :ullong nil
+       :float nil
+       :double nil
+       :ldouble nil
+       :floatc nil
+       :doublec nil
+       :ldoublec nil
+       :bool nil
+       :struct (or (struct-type-is-struct-spec-p type.uid
+                                                 type.tunit?
+                                                 type.tag/members
+                                                 spec)
+                   (type-struni-tag/members-may-refer-to-struct-spec-p
+                    type.tag/members spec completions (1- limit)))
+       :union (type-struni-tag/members-may-refer-to-struct-spec-p
+               type.tag/members spec completions (1- limit))
+       :enum nil
+       :array (type-may-refer-to-struct-spec-p
+               type.of spec completions (1- limit))
+       :pointer (type-may-refer-to-struct-spec-p
+                 type.to spec completions (1- limit))
+       :function (or (type-may-refer-to-struct-spec-p
+                      type.ret spec completions (1- limit))
+                     (type-params-may-refer-to-struct-spec-p
+                      type.params spec completions (1- limit)))
+       :unknown t
+       :unknown-builtin nil
+       :unknown-scalar t
+       :unknown-arithmetic nil))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;
 
   (define type-list-may-refer-to-struct-spec-p
     ((types type-listp)
      (spec sts-struct-specp)
-     (completions type-completions-p))
+     (completions type-completions-p)
+     (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if (any element of) a list of types
             may refer to the struct type being split, directly or indirectly."
-    (and (not (endp types))
-         (or (type-may-refer-to-struct-spec-p (car types)
-                                              spec
-                                              completions)
-             (type-list-may-refer-to-struct-spec-p (cdr types)
-                                                   spec
-                                                   completions)))
-    :measure (type-list-count types))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (and (not (endp types))
+           (or (type-may-refer-to-struct-spec-p
+                (car types) spec completions (1- limit))
+               (type-list-may-refer-to-struct-spec-p
+                (cdr types) spec completions (1- limit)))))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;
 
   (define type-struni-tag/members-may-refer-to-struct-spec-p
     ((tystr-tag/mems type-struni-tag/members-p)
      (spec sts-struct-specp)
-     (completions type-completions-p))
+     (completions type-completions-p)
+     (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if the portion of struct/union types
@@ -294,70 +310,78 @@
        but we plan to refine that.")
      (xdoc::p
       "If instead we have members, we recursively check them."))
-    (type-struni-tag/members-case
-     tystr-tag/mems
-     :tagged t ; TODO: refine
-     :untagged (type-struni-member-list-may-refer-to-struct-spec-p
-                tystr-tag/mems.members spec completions))
-    :measure (type-struni-tag/members-count tystr-tag/mems))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-struni-tag/members-case
+       tystr-tag/mems
+       :tagged t ; TODO: refine
+       :untagged (type-struni-member-list-may-refer-to-struct-spec-p
+                  tystr-tag/mems.members spec completions (1- limit))))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;
 
   (define type-struni-member-may-refer-to-struct-spec-p
     ((mem type-struni-member-p)
      (spec sts-struct-specp)
-     (completions type-completions-p))
+     (completions type-completions-p)
+     (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if a struct or union member
             may refer to the struct type being split, directly or indirectly."
-    (type-may-refer-to-struct-spec-p (type-struni-member->type mem)
-                                     spec
-                                     completions)
-    :measure (type-struni-member-count mem))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-may-refer-to-struct-spec-p
+       (type-struni-member->type mem) spec completions (1- limit)))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;
 
   (define type-struni-member-list-may-refer-to-struct-spec-p
     ((mems type-struni-member-listp)
      (spec sts-struct-specp)
-     (completions type-completions-p))
+     (completions type-completions-p)
+     (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if (any element of) a list of struct or union members
             may refer to the struct type being split, directly or indirectly."
-    (and (not (endp mems))
-         (or (type-struni-member-may-refer-to-struct-spec-p (car mems)
-                                                            spec
-                                                            completions)
-             (type-struni-member-list-may-refer-to-struct-spec-p (cdr mems)
-                                                                 spec
-                                                                 completions)))
-    :measure (type-struni-member-list-count mems))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (and (not (endp mems))
+           (or (type-struni-member-may-refer-to-struct-spec-p
+                (car mems) spec completions (1- limit))
+               (type-struni-member-list-may-refer-to-struct-spec-p
+                (cdr mems) spec completions (1- limit)))))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;
 
   (define type-params-may-refer-to-struct-spec-p
     ((params type-params-p)
      (spec sts-struct-specp)
-     (completions type-completions-p))
+     (completions type-completions-p)
+     (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if a portion of a function type
             pertaining to the function parameters
             may refer to the struct type being split, directly or indirectly."
-    (type-params-case
-     params
-     :prototype (type-list-may-refer-to-struct-spec-p params.params
-                                                      spec
-                                                      completions)
-     :old-style (type-list-may-refer-to-struct-spec-p params.params
-                                                      spec
-                                                      completions)
-     :unspecified nil)
-    :measure (type-params-count params))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-params-case
+       params
+       :prototype (type-list-may-refer-to-struct-spec-p
+                   params.params spec completions (1- limit))
+       :old-style (type-list-may-refer-to-struct-spec-p
+                   params.params spec completions (1- limit))
+       :unspecified nil))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;
+
+  :prepwork ((local (in-theory (enable nfix))))
 
   ///
 
@@ -775,10 +799,12 @@
                 (dst-type (type-vinfo->type (tyname->info tyname))))
              (and (not (type-may-refer-to-struct-spec-p src-type
                                                         spec
-                                                        completions))
+                                                        completions
+                                                        1000000))
                   (not (type-may-refer-to-struct-spec-p dst-type
                                                         spec
-                                                        completions)))))
+                                                        completions
+                                                        1000000)))))
       (sts-reject (expr-cast tyname arg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
