@@ -1,6 +1,6 @@
 ; Proofs about subst-var-alt
 ;
-; Copyright (C) 2023-2025 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -49,6 +49,8 @@
 ;; TODO: Clean up the proofs in this file, and separate them out.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local (make-flag subst-var-alt))
 
 ;; subst-var-alt preserves closedness of lambdas.
 (defthm-flag-subst-var-alt

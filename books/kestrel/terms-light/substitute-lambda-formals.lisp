@@ -20,6 +20,8 @@
 (include-book "non-trivial-formals")
 (include-book "trivial-formals")
 (include-book "sublis-var-simple")
+(include-book "std/util/bstar" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "helpers"))
 (local (include-book "empty-eval-helpers"))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))

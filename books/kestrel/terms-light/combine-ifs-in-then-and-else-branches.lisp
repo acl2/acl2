@@ -12,10 +12,10 @@
 
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "std/util/bstar" :dir :system)
-(include-book "tools/flag" :dir :system)
 (include-book "negate-term")
 ;(include-book "count-ifs-in-term")
 ;(include-book "count-ifs-in-then-and-else-branches")
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 
@@ -147,7 +147,7 @@
        (cons (combine-ifs-in-then-and-else-branches (first terms) (+ -1 count))
              (combine-ifs-in-then-and-else-branches-list (rest terms) (+ -1 count)))))))
 
-(make-flag combine-ifs-in-then-and-else-branches)
+(local (make-flag combine-ifs-in-then-and-else-branches))
 
 (defthm-flag-combine-ifs-in-then-and-else-branches
   (defthm len-of-combine-ifs-in-then-and-else-branches-list
