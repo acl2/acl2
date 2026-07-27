@@ -26,7 +26,7 @@
                                   '(block
                                     type
                                     typep))
-               c$::*abstract-syntax-symbols*
+               c$::*exported-symbols*
                '(bool
                  constant-symbolp
                  constant-value
