@@ -654,3 +654,96 @@
  (reserrp
   (eval-primop-fun-chain (make-primop-value-sum-s :sval (list 3))
                          (list *vec3* *vec3*))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation reshape:
+; instantiation stage transitions and application of the final stage.
+
+; Type application: reshape applied to one atom type value.
+
+(acl2::assert-equal
+ (eval-primop-tfun (primop-value-reshape) *tv-int*)
+ (expr-value-primop (primop-value-reshape-t *tv-int*)))
+
+; Ispace applications: reshape-t applied to a shape,
+; then reshape-t-s1 applied to another shape.
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-reshape-t *tv-int*)
+                   (ispace-value-shape (list 2 3)))
+ (expr-value-primop (make-primop-value-reshape-t-s1 :tval *tv-int*
+                                                    :s1val (list 2 3))))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-reshape-t-s1 :tval *tv-int*
+                                                   :s1val (list 2 3))
+                   (ispace-value-shape (list 6)))
+ (expr-value-primop (make-primop-value-reshape-t-s1-s2 :tval *tv-int*
+                                                       :s1val (list 2 3)
+                                                       :s2val (list 6))))
+
+; A dimension where a shape is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-reshape-t *tv-int*)
+                            (ispace-value-dim 3))))
+
+; Application of the fully instantiated operation.
+
+; Flattening a matrix into a vector.
+(acl2::assert-equal
+ (prim-reshape *tv-int* (list 2 3) (list 6) *mat23*)
+ (expr-value-vector
+  (list (iv 1) (iv 2) (iv 3) (iv 4) (iv 5) (iv 6))))
+
+; Reshaping a matrix into its transpose's shape
+; (note: NOT a transpose; atoms stay in row-major order).
+(acl2::assert-equal
+ (prim-reshape *tv-int* (list 2 3) (list 3 2) *mat23*)
+ (expr-value-vector
+  (list (expr-value-vector (list (iv 1) (iv 2)))
+        (expr-value-vector (list (iv 3) (iv 4)))
+        (expr-value-vector (list (iv 5) (iv 6))))))
+
+; Reshaping a vector to itself.
+(acl2::assert-equal
+ (prim-reshape *tv-int* (list 3) (list 3) *vec3*) *vec3*)
+
+; Reshaping a one-element vector into a scalar and back.
+(acl2::assert-equal (prim-reshape *tv-int* (list 1) nil *vec1*) (iv 1))
+(acl2::assert-equal
+ (prim-reshape *tv-int* nil (list 1) (iv 1)) *vec1*)
+
+; Reshaping an empty vector into another empty shape.
+(acl2::assert-equal
+ (prim-reshape *tv-int* (list 0) (list 0 2)
+               (make-expr-value-vector-empty :dims nil :elem *tv-int*))
+ (make-expr-value-vector-empty :dims (list 2) :elem *tv-int*))
+
+; Shapes with different products.
+(acl2::assert-event
+ (reserrp (prim-reshape *tv-int* (list 2 3) (list 5) *mat23*)))
+(acl2::assert-event
+ (reserrp (prim-reshape *tv-int* (list 3) (list 0) *vec3*)))
+
+; Cell dimensions not matching the first shape.
+(acl2::assert-event
+ (reserrp (prim-reshape *tv-int* (list 6) (list 2 3) *mat23*)))
+
+; Via eval-primop-fun.
+
+(acl2::assert-equal
+ (eval-primop-fun (make-primop-value-reshape-t-s1-s2 :tval *tv-int*
+                                                     :s1val (list 2 3)
+                                                     :s2val (list 6))
+                  *mat23*)
+ (expr-value-vector
+  (list (iv 1) (iv 2) (iv 3) (iv 4) (iv 5) (iv 6))))
+
+; Wrong number of argument cells.
+(acl2::assert-event
+ (reserrp
+  (eval-primop-fun-chain (make-primop-value-reshape-t-s1-s2 :tval *tv-int*
+                                                            :s1val (list 2 3)
+                                                            :s2val (list 6))
+                         (list *mat23* *mat23*))))

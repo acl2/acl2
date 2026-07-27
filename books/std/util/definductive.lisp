@@ -15,7 +15,10 @@
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/fty/defomap" :dir :system)
+(include-book "kestrel/fty/set-list" :dir :system)
 (include-book "kestrel/fty/symbol-set" :dir :system)
+(include-book "kestrel/fty/symbol-set-list" :dir :system)
+(include-book "kestrel/fty/symbol-set-list-list" :dir :system)
 (include-book "kestrel/fty/symbol-set-set" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/legal-variable-listp" :dir :system)
@@ -32,6 +35,7 @@
 
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/utilities/msgp" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/system/all-vars" :dir :system))
 (local (include-book "std/system/pseudo-event-form-listp" :dir :system))
 (local (include-book "std/alists/pairlis" :dir :system))
@@ -44,15 +48,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Library extension.
+; Library extensions.
 
-; GAP-CARDINALITY-DECREASES is a generic theorem about osets,
-; not specific to DEFINDUCTIVE;
-; at some point it could be moved to a more central library.
-; It says that, if X is within a universe U,
-; and adding X to D actually adds something (i.e. their union is not already
-; a subset of D), then the "gap" U minus D strictly shrinks in cardinality.
-; It is used to justify the termination of DEFIND-PRED-DEPENDENCIES below.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Variant of CONSP-UNDER-IFF-WHEN-TRUE-LISTP
+; in [books]/std/lists/true-listp.lisp.
+
+(defruled consp-under-iff-when-true-listp-no-backchain-limit
+  (implies (true-listp x)
+           (iff (consp x) x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; If X is within a universe U,
+; and adding X to D actually adds something
+; (i.e. their union is not already a subset of D),
+; then the "gap" U minus D strictly shrinks in cardinality.
 ; The strictness witness is the head of (difference (union d x) d),
 ; which is in X (hence in U) but not in D.
 
@@ -77,6 +89,45 @@
                      (set::a (set::head (set::difference (set::union d x) d)))
                      (set::x (set::difference u d))
                      (set::y (set::difference u (set::union d x))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Removing from a set U a non-empty subset X of it
+; strictly shrinks the cardinality.
+; The strictness witness is the head of X,
+; which is in U but not in (DIFFERENCE U X).
+
+(defruledl difference-cardinality-decreases
+  (implies (and (set::subset x u)
+                (not (set::emptyp x)))
+           (< (set::cardinality (set::difference u x))
+              (set::cardinality u)))
+  :hints
+  (("Goal"
+    :in-theory (acl2::enable* set::expensive-rules)
+    :use ((:instance set::proper-subset-cardinality
+                     (set::x (set::difference u x))
+                     (set::y u))
+          (:instance set::in-head
+                     (set::x x))
+          (:instance set::subset-in
+                     (set::a (set::head x))
+                     (set::x x)
+                     (set::y u))
+          (:instance set::subset-in
+                     (set::a (set::head x))
+                     (set::x u)
+                     (set::y (set::difference u x)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A set of sets of symbols is also a list of sets of symbols.
+
+(defruledl symbol-set-listp-when-symbol-set-setp
+  (implies (symbol-set-setp x)
+           (symbol-set-listp x))
+  :induct t
+  :enable (symbol-set-setp symbol-set-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -382,16 +433,6 @@
   (not (defind-premise-info-list-case-other
          (defind-irule-info->premises info))))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(define defind-irule-info-list-some-nonrecursivep ((infos
-                                                    defind-irule-info-listp))
-  :returns (yes/no booleanp)
-  :short "Check if at least a rule is not recursive."
-  (and (not (endp infos))
-       (or (not (defind-irule-info-recursivep (car infos)))
-           (defind-irule-info-list-some-nonrecursivep (cdr infos)))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defind-lookup-pred ((pred-name symbolp) (infos defind-pred-info-listp))
@@ -628,7 +669,7 @@
      ;; survive the degenerate case where DEPS is the empty set.
      :hints
      (("Goal"
-       :in-theory (e/d (symbol-sfix o-p o-finp o<
+       :in-theory (e/d (symbol-sfix
                         gap-cardinality-decreases
                         defind-direct-dependencies-subset-preds-in-premises)
                        (set::expand-cardinality-of-difference
@@ -697,34 +738,40 @@
 (define defind-pred-clique ((pred-name symbolp)
                             (irule-infos defind-irule-info-listp))
   :returns (clique symbol-setp)
-  :short "Mutually recursive clique of a predicate."
+  :short "Clique of a predicate."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the set of the predicates @('p[i]') such that
+    "This is the set consisting of the predicate @('pred-name') itself,
+     plus the predicates @('p[i]') such that
      the predicate @('pred-name') depends on @('p[i]')
      and @('p[i]') depends on @('pred-name'),
      directly or indirectly
      (see @(tsee defind-pred-dependencies)).
-     We calculate it by going through the dependencies of the predicate
-     and retaining the ones whose dependencies include the predicate.")
+     We calculate it by going through the dependencies of the predicate,
+     retaining the ones whose dependencies include the predicate,
+     and adding the predicate itself;
+     so the clique is never empty.")
    (xdoc::p
     "If the predicate is recursive,
-     the clique includes the predicate itself,
+     it is among its own dependencies,
      because mutual dependency with itself is just recursion;
-     so the clique is not empty.
+     so it would be in the clique
+     even without explicitly adding it.
      If instead the predicate is not recursive,
-     the clique is empty:
-     mutual dependency between the predicate and any @('p[i]')
-     would compose into a dependency of the predicate on itself.
-     In graph terminology, the non-empty cliques are
+     it has no mutual dependency with any other predicate,
+     because that would compose into
+     a dependency of the predicate on itself;
+     so the clique is the singleton of the predicate.
+     In graph terminology, the cliques are
      the strongly connected components of the dependency graph,
-     except that a non-recursive predicate
+     where a non-recursive predicate
      (a vertex without a cycle through it)
-     does not form a component by itself, and belongs to no clique."))
-  (defind-pred-clique-loop
-    (defind-pred-dependencies pred-name irule-infos)
-    pred-name irule-infos)
+     forms a trivial component by itself."))
+  (set::insert (symbol-lfix pred-name)
+               (defind-pred-clique-loop
+                 (defind-pred-dependencies pred-name irule-infos)
+                 pred-name irule-infos))
 
   :prepwork
   ((define defind-pred-clique-loop ((deps symbol-setp)
@@ -746,11 +793,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define defind-mutually-recursive-cliques ((pred-names symbol-listp)
-                                           (irule-infos
-                                            defind-irule-info-listp))
+(define defind-cliques ((pred-names symbol-listp)
+                        (irule-infos defind-irule-info-listp))
   :returns (cliques symbol-set-setp)
-  :short "Set of the mutually recursive cliques formed by
+  :short "Set of the cliques formed by
           the predicates being defined, according to the rules."
   :long
   (xdoc::topstring
@@ -758,17 +804,15 @@
     "The rules induce a dependency relation
      among the predicates being defined
      (see @(tsee defind-preds-direct-dependencies)),
-     which partitions the recursive predicates
-     (see @(tsee defind-pred-recursivep))
-     into maximal cliques of mutual dependency
-     (see @(tsee defind-pred-clique));
-     the non-recursive predicates (if any) belong to no clique.
+     which partitions the predicates into cliques
+     (see @(tsee defind-pred-clique)),
+     where in particular each non-recursive predicate
+     forms a singleton clique by itself.
      This function returns the set of the cliques,
      which is thus a set of non-empty sets of predicate names.")
    (xdoc::p
     "We go through the predicates,
-     and we insert the clique of each predicate into the result,
-     skipping over the empty cliques of the non-recursive predicates.
+     and we insert the clique of each predicate into the result.
      The predicates of a clique all contribute the same clique,
      which appears just once in the result, which is a set.")
    (xdoc::p
@@ -780,20 +824,336 @@
      to a single predicate,
      and possibly for relaxing, in the future,
      the requirement that all the predicates are mutually recursive."))
-  (defind-mutually-recursive-cliques-loop pred-names irule-infos)
+  (defind-cliques-loop pred-names irule-infos)
 
   :prepwork
-  ((define defind-mutually-recursive-cliques-loop
-     ((preds-to-do symbol-listp)
-      (irule-infos defind-irule-info-listp))
+  ((define defind-cliques-loop ((preds-to-do symbol-listp)
+                                (irule-infos defind-irule-info-listp))
      :returns (cliques symbol-set-setp)
      :parents nil
      (b* (((when (endp preds-to-do)) nil)
-          (cliques (defind-mutually-recursive-cliques-loop
-                     (cdr preds-to-do) irule-infos))
-          (clique (defind-pred-clique (car preds-to-do) irule-infos))
-          ((when (set::emptyp clique)) cliques))
+          (cliques (defind-cliques-loop (cdr preds-to-do) irule-infos))
+          (clique (defind-pred-clique (car preds-to-do) irule-infos)))
        (set::insert clique cliques))
+     :verify-guards :after-returns)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-order-cliques ((cliques symbol-set-setp)
+                              (irule-infos defind-irule-info-listp))
+  :returns (ordered-cliques symbol-set-listp)
+  :short "Order a set of cliques according to
+          the dependencies among them."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A clique depends on another clique when
+     some predicate in the first clique
+     depends on some predicate in the second clique.
+     Two distinct cliques cannot depend on each other:
+     the dependencies would compose into mutual dependencies
+     between predicates in the two cliques,
+     which would thus be one clique;
+     so the dependency relation among the cliques is acyclic.
+     We return the list of the cliques in dependency order:
+     each clique only depends on itself and on
+     cliques that precede it in the list.")
+   (xdoc::p
+    "We compute the order iteratively, starting with the empty list:
+     each round goes through the cliques not yet in the list,
+     and finds the ones whose external dependencies,
+     i.e. the direct dependencies of the predicates in the clique
+     (see @(tsee defind-preds-direct-dependencies))
+     minus the predicates in the clique itself,
+     are all among the predicates of the cliques already in the list;
+     these cliques, if any, are added to the list,
+     in the order in which they appear in the set of cliques.
+     We stop when a round finds no cliques to add.
+     Termination is justified by the fact that
+     each round that finds a (non-empty) collection of cliques to add
+     strictly decreases the number of the cliques not yet in the list.")
+   (xdoc::p
+    "When this function is applied to
+     the cliques of the predicates being defined
+     (see @(tsee defind-cliques)),
+     the acyclicity of the dependencies among the cliques ensures that
+     each round finds at least one clique to add
+     (except the final round, with no cliques left,
+     which stops the computation):
+     the resulting list consists of exactly the input cliques.
+     However, this function is well-defined for any set of cliques:
+     if a round finds no cliques to add
+     while some cliques are not in the list yet,
+     those remaining cliques are appended at the end of the list."))
+  (defind-order-cliques-loop cliques nil irule-infos)
+
+  :prepwork
+
+  ((local (in-theory (enable emptyp-of-symbol-set-set-fix
+                             symbol-set-listp-when-symbol-set-setp
+                             set-listp-when-symbol-set-listp)))
+
+   (define defind-order-cliques-loop ((cliques-to-do symbol-set-setp)
+                                      (available symbol-setp)
+                                      (irule-infos defind-irule-info-listp))
+     :returns (ordered-cliques symbol-set-listp)
+     :parents nil
+     (b* (((when (set::emptyp (symbol-set-set-fix cliques-to-do))) nil)
+          ((mv cliques-to-add still)
+           (defind-order-cliques-round cliques-to-do available irule-infos))
+          ((when (endp cliques-to-add)) cliques-to-do)
+          (ordered-rest
+           (defind-order-cliques-loop
+             still
+             (set::union (set::set-list-union cliques-to-add)
+                         (symbol-sfix available))
+             irule-infos)))
+       (append cliques-to-add ordered-rest))
+     :measure (set::cardinality (symbol-set-set-fix cliques-to-do))
+     :verify-guards :after-returns
+     :guard-hints
+     (("Goal"
+       :in-theory (enable true-listp-when-symbol-set-listp
+                          consp-under-iff-when-true-listp-no-backchain-limit)))
+
+     :prepwork
+
+     ((define defind-order-cliques-round ((cliques-to-do symbol-set-setp)
+                                          (available symbol-setp)
+                                          (irule-infos defind-irule-info-listp))
+        :returns (mv (cliques-to-add symbol-set-listp)
+                     (still symbol-set-setp))
+        :parents nil
+        (b* (((when (set::emptyp (symbol-set-set-fix cliques-to-do)))
+              (mv nil nil))
+             (clique (set::head cliques-to-do))
+             ((mv cliques-to-add still)
+              (defind-order-cliques-round (set::tail cliques-to-do)
+                                          available
+                                          irule-infos)))
+          (if (set::subset
+               (set::difference
+                (defind-preds-direct-dependencies clique irule-infos)
+                clique)
+               (symbol-sfix available))
+              (mv (cons clique cliques-to-add) still)
+            (mv cliques-to-add (set::insert clique still))))
+        :verify-guards :after-returns
+
+        ///
+
+        (defret cardinality-upper-bound-of-defind-order-cliques-round.still
+          (implies (symbol-set-setp cliques-to-do)
+                   (<= (set::cardinality still)
+                       (set::cardinality cliques-to-do)))
+          :rule-classes :linear
+          :hints (("Goal"
+                   :induct t
+                   :in-theory (acl2::enable* set::expensive-rules
+                                             set::cardinality))))
+
+        (defret cardinality-decrease-of-defind-order-cliques-round.still
+          (implies (and (symbol-set-setp cliques-to-do)
+                        (consp cliques-to-add))
+                   (< (set::cardinality still)
+                      (set::cardinality cliques-to-do)))
+          :rule-classes :linear
+          :hints (("Goal"
+                   :induct t
+                   :in-theory (acl2::enable* set::expensive-rules
+                                             set::cardinality)))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-rule-deriving-pred ((pred-name symbolp)
+                                   (preds symbol-setp)
+                                   (irule-infos defind-irule-info-listp))
+  :returns (rule? symbolp)
+  :short "Find the first rule, if any, that
+          has a given predicate as its conclusion
+          and whose premises only contain predicates in a given set."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We go through the rules in order,
+     and we return the name of the first rule that
+     has the predicate @('pred-name') in its conclusion
+     and whose premise predicates (see @(tsee defind-preds-in-premises))
+     are all in the @('preds') set;
+     we return @('nil') if there is no such rule.
+     Such a rule can derive the predicate,
+     given that the predicates in the set can be derived."))
+  (b* (((when (endp irule-infos)) nil)
+       ((defind-irule-info info) (car irule-infos))
+       ((when (and (equal (defind-conclusion-info->name info.conclusion)
+                          (symbol-lfix pred-name))
+                   (set::subset (defind-preds-in-premises info.premises)
+                                (symbol-sfix preds))))
+        info.name))
+    (defind-rule-deriving-pred pred-name preds (cdr irule-infos))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-pred-levels ((preds symbol-setp)
+                            (preds-in-previous-cliques symbol-setp)
+                            (irule-infos defind-irule-info-listp))
+  :returns (mv (levels symbol-set-listp)
+               (unleveled symbol-setp))
+  :short "Organize a set of predicates into levels."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The levels of the predicates in @('preds') are relative to
+     the predicates in @('preds-in-previous-cliques'),
+     which are taken to be derivable:
+     when @('preds') is a clique,
+     @('preds-in-previous-cliques') consists of
+     the predicates of the preceding cliques in dependency order
+     (see @(tsee defind-leveled-cliques)).")
+   (xdoc::p
+    "A predicate is at level 0 if
+     some rule can derive it from
+     the predicates in @('preds-in-previous-cliques')
+     (see @(tsee defind-rule-deriving-pred)),
+     i.e. some rule has the predicate as its conclusion
+     and all its premises that are predicates being defined
+     contain predicates in @('preds-in-previous-cliques').
+     A predicate is at level @('n+1') if
+     it is not at any of the levels 0 to @('n'),
+     and some rule can derive it from
+     predicates at levels 0 to @('n')
+     or in @('preds-in-previous-cliques').
+     Not every predicate is necessarily at some level,
+     e.g. if the predicate appears in the conclusion of only one rule,
+     and that rule has the same predicate in a premise.")
+   (xdoc::p
+    "We compute the levels iteratively, starting from no levels:
+     each round goes through the predicates not yet at any level,
+     and finds the ones that some rule can derive
+     from the predicates at the levels found so far
+     or in @('preds-in-previous-cliques');
+     these predicates, if any, form the next level.
+     We stop when a round finds no new level.
+     Termination is justified by the fact that
+     each round that finds a (non-empty) new level
+     strictly shrinks the set of the predicates not yet at any level.")
+   (xdoc::p
+    "We return the list of the levels in order:
+     the element at position @('n') of the list is
+     the set of the predicates at level @('n');
+     each level is a non-empty set.
+     We also return the set of the predicates at no level,
+     which is empty exactly when all the predicates are at some level."))
+  (defind-pred-levels-loop preds preds-in-previous-cliques irule-infos)
+
+  :prepwork
+
+  ((local (in-theory (enable emptyp-of-symbol-sfix)))
+
+   (define defind-pred-levels-loop ((unleveled symbol-setp)
+                                    (leveled symbol-setp)
+                                    (irule-infos defind-irule-info-listp))
+     :returns (mv (levels symbol-set-listp)
+                  (still-unleveled symbol-setp))
+     :parents nil
+     (b* (((when (set::emptyp (symbol-sfix unleveled))) (mv nil nil))
+          (new-leveled (defind-pred-levels-round unleveled leveled irule-infos))
+          ((when (set::emptyp new-leveled)) (mv nil unleveled))
+          ((mv levels still-unleveled)
+           (defind-pred-levels-loop (set::difference unleveled new-leveled)
+             (set::union new-leveled (symbol-sfix leveled))
+             irule-infos)))
+       (mv (cons new-leveled levels) still-unleveled))
+     :measure (set::cardinality (symbol-sfix unleveled))
+     ;; DIFFERENCE-CARDINALITY-DECREASES rewrites the measure decrease;
+     ;; its subset hypothesis is relieved by
+     ;; SUBSET-OF-DEFIND-PRED-LEVELS-ROUND.
+     ;; EXPAND-CARDINALITY-OF-DIFFERENCE is disabled so that
+     ;; the (cardinality (difference u x)) pattern
+     ;; that the former matches is not rewritten away.
+     :hints (("Goal" :in-theory (e/d (difference-cardinality-decreases)
+                                     (set::expand-cardinality-of-difference))))
+     :verify-guards :after-returns
+
+     :prepwork
+     ((define defind-pred-levels-round ((preds-to-do symbol-setp)
+                                        (leveled symbol-setp)
+                                        (irule-infos defind-irule-info-listp))
+        :returns (new-leveled symbol-setp)
+        :parents nil
+        (b* (((when (set::emptyp (symbol-sfix preds-to-do))) nil)
+             (pred (set::head preds-to-do))
+             (new-leveled (defind-pred-levels-round
+                            (set::tail preds-to-do)
+                            leveled
+                            irule-infos)))
+          (if (defind-rule-deriving-pred pred leveled irule-infos)
+              (set::insert pred new-leveled)
+            new-leveled))
+        :verify-guards :after-returns
+
+        ///
+
+        (defret subset-of-defind-pred-levels-round
+          (implies (symbol-setp preds-to-do)
+                   (set::subset new-leveled preds-to-do))
+          :hints (("Goal"
+                   :induct t
+                   :in-theory (acl2::enable* set::expensive-rules)))))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-leveled-cliques ((pred-names symbol-listp)
+                                (irule-infos defind-irule-info-listp))
+  :returns (mv (leveled-cliques symbol-set-list-listp)
+               (unleveled symbol-setp))
+  :short "Organize the predicates being defined into
+          cliques in dependency order,
+          each clique organized into levels."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We calculate the cliques formed by the predicates,
+     we put them in dependency order,
+     and we organize each clique into levels.
+     The premise predicates of the rules that derive the predicates of a clique
+     are all in the clique itself or in preceding cliques;
+     so the levels of each clique are calculated
+     by taking the predicates in the preceding cliques as derivable.")
+   (xdoc::p
+    "We return the list of the cliques in dependency order,
+     each organized into levels:
+     the element at position @('n') of the outer list consists of
+     the levels of the @('n')-th clique in dependency order;
+     see @(tsee defind-pred-levels) for
+     the meaning of each inner list of levels.
+     We also return the set of the predicates at no level,
+     unioned over all the cliques,
+     which is empty exactly when
+     every predicate is at some level in its clique."))
+  (b* ((cliques (defind-cliques pred-names irule-infos))
+       (ordered-cliques (defind-order-cliques cliques irule-infos)))
+    (defind-leveled-cliques-loop ordered-cliques nil irule-infos))
+
+  :prepwork
+  ((define defind-leveled-cliques-loop ((cliques-to-do symbol-set-listp)
+                                        (preds-in-previous-cliques symbol-setp)
+                                        (irule-infos defind-irule-info-listp))
+     :returns (mv (leveled-cliques symbol-set-list-listp)
+                  (unleveled symbol-setp))
+     :parents nil
+     (b* (((when (endp cliques-to-do)) (mv nil nil))
+          (clique (car cliques-to-do))
+          ((mv levels clique-unleveled)
+           (defind-pred-levels clique preds-in-previous-cliques irule-infos))
+          ((mv leveled-cliques unleveled)
+           (defind-leveled-cliques-loop
+             (cdr cliques-to-do)
+             (set::union (symbol-sfix clique)
+                         (symbol-sfix preds-in-previous-cliques))
+             irule-infos)))
+       (mv (cons levels leveled-cliques)
+           (set::union clique-unleveled unleveled)))
      :verify-guards :after-returns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1360,16 +1720,18 @@
                                (pred-infos defind-pred-info-listp)
                                (translations defind-translation-omapp))
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-  :returns (mv erp (infos defind-irule-info-listp))
+  :returns (mv erp
+               (infos defind-irule-info-listp)
+               (leveled-cliques symbol-set-list-listp))
   :short "Process the @(':irules') input."
   :long
   (xdoc::topstring
    (xdoc::p
     "Besides processing the individual rules,
-     we check that the rule names are all distinct,
-     and that at least one rule is non-recursive
-     (which provides a base case for the inductive definition:
-     without it, the smallest predicate satisfying the rules is empty).")
+     we check that the rule names are all distinct.
+     Then we organize the predicates into
+     cliques in dependency order, each organized into levels,
+     and we use the result to enforce the restrictions described next.")
    (xdoc::p
     "A single predicate is allowed to be non-recursive;
      it just yields a non-recursive proof validity function.
@@ -1379,16 +1741,31 @@
      for more precise error messages,
      first checking that every predicate is recursive
      (see @(tsee defind-nonrecursive-preds)),
-     then checking that they form just one clique
-     (see @(tsee defind-mutually-recursive-cliques)),
-     which, being the only one, must consist of all the predicates.
+     then checking that there is just one clique,
+     which thus must consist of all the predicates.
      Predicates that are not mutually recursive
      can be defined by separate uses of the macro,
      in dependency order.
      Since currently only one predicate is supported,
      the mutual recursion checks are never triggered;
-     they are in preparation for lifting that restriction."))
-  (b* (((reterr) nil)
+     they are in preparation for lifting that restriction.")
+   (xdoc::p
+    "We also check that every predicate is at some level in its clique.
+     A predicate at no level would have no proof trees:
+     the generated fixtype of its proofs would be empty,
+     but fixtypes, like all ACL2 types, must be non-empty;
+     concretely, FTY would reject the generated fixtype,
+     for lack of a base case.
+     For a single predicate (the only case currently supported),
+     being at some level amounts to being at level 0,
+     i.e. to the existence of a non-recursive rule,
+     which provides a base case for the inductive definition;
+     with multiple predicates, the levels will do more work,
+     when the restriction to a single predicate is lifted.")
+   (xdoc::p
+    "We return the leveled cliques along with the rule information,
+     for use in event generation."))
+  (b* (((reterr) nil nil)
        ((unless irules-suppliedp)
         (reterr (msg "The :IRULES input must be supplied.")))
        ((unless (and (true-listp irules)
@@ -1405,6 +1782,8 @@
                       but there are duplicates among ~&0."
                      irule-names)))
        (pred-names (defind-pred-info-list->name pred-infos))
+       ((mv leveled-cliques unleveled)
+        (defind-leveled-cliques pred-names infos))
        (multiplep (consp (cdr pred-names)))
        (nonrec-preds (and multiplep
                           (defind-nonrecursive-preds pred-names infos)))
@@ -1420,11 +1799,8 @@
                       A non-recursive predicate ~
                       can be defined by a separate use of DEFINDUCTIVE."
                      nonrec-preds)))
-       (cliques (and multiplep
-                     (defind-mutually-recursive-cliques pred-names infos)))
        ((when (and multiplep
-                   (not (equal cliques
-                               (set::insert (set::mergesort pred-names) nil)))))
+                   (consp (cdr leveled-cliques))))
         (reterr (msg "The predicates being defined must be ~
                       all mutually recursive, ~
                       i.e. they must form ~
@@ -1434,15 +1810,30 @@
                       Predicates in different cliques can be defined ~
                       by separate uses of DEFINDUCTIVE, ~
                       in dependency order."
-                     cliques)))
-       ((unless (defind-irule-info-list-some-nonrecursivep infos))
-        (reterr (msg "The :IRULES input must include ~
-                      at least one non-recursive rule, ~
-                      i.e. a rule without the predicate in its premises. ~
-                      With the supplied rules, ~
-                      the predicate would be defined to be empty, ~
-                      for lack of a base case."))))
-    (retok infos))
+                     (defind-cliques pred-names infos))))
+       ((unless (set::emptyp unleveled))
+        (reterr (msg "Every predicate being defined ~
+                      must be at some level: ~
+                      a predicate is at level 0 if ~
+                      some rule in the :IRULES input ~
+                      has the predicate as its conclusion ~
+                      and no premises that are ~
+                      calls of the predicates being defined; ~
+                      a predicate is at a higher level if ~
+                      some rule has the predicate as its conclusion ~
+                      and all its premises that are ~
+                      calls of the predicates being defined ~
+                      call predicates at lower levels. ~
+                      This does not hold for ~&0. ~
+                      For a predicate at no level, ~
+                      the generated fixtype of its proofs would be empty, ~
+                      but fixtypes must be non-empty."
+                     unleveled))))
+    (retok infos leveled-cliques))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable consp-under-iff-when-true-listp-no-backchain-limit
+                       true-listp-when-symbol-set-list-listp)))
 
   :prepwork
   ((define defind-process-irules-loop ((irules true-listp)
@@ -1601,6 +1992,7 @@
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (mv erp
                (irule-infos defind-irule-info-listp)
+               (leveled-cliques symbol-set-list-listp)
                (parents symbol-listp)
                short
                long
@@ -1614,8 +2006,8 @@
    (xdoc::p
     "See @(tsee defind-process-inputs-1) for
      a description of the three phases of input processing."))
-  (b* (((reterr) nil nil nil nil nil)
-       ((erp irule-infos)
+  (b* (((reterr) nil nil nil nil nil nil)
+       ((erp irule-infos leveled-cliques)
         (defind-process-irules irules irules-suppliedp
           pred-infos translations))
        ((erp parents short long xdocp)
@@ -1623,7 +2015,7 @@
           parents parents-suppliedp
           short short-suppliedp
           long long-suppliedp)))
-    (retok irule-infos parents short long xdocp))
+    (retok irule-infos leveled-cliques parents short long xdocp))
 
   ///
 
@@ -3808,7 +4200,7 @@
         (defind-process-inputs-1 name preds preds-suppliedp irules wrld))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp))
        (translations (defind-process-inputs-2 terms state))
-       ((mv erp irule-infos parents short long xdocp)
+       ((mv erp irule-infos ?leveled-cliques parents short long xdocp)
         (defind-process-inputs-3
           irules irules-suppliedp
           parents parents-suppliedp

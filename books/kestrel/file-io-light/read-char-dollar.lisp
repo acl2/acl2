@@ -76,7 +76,8 @@
                        ;; (cddr (assoc-equal channel (open-input-channels state)))
                        )))
   :hints (("Goal" :use (:instance character-listp-of-cddr-of-assoc-equal-when-open-channel-listp
-                                  (channels (open-input-channels state)))
+                                  (channels (open-input-channels state))
+                                  (output-p nil))
            :in-theory (e/d (read-char$ channel-contents open-input-channel-p1 open-input-channel-p)
                            (character-listp-of-cddr-of-assoc-equal-when-open-channel-listp)))))
 
@@ -86,7 +87,8 @@
            (iff (characterp (mv-nth 0 (read-char$ channel state)))
                 (mv-nth 0 (read-char$ channel state))))
   :hints (("Goal" :use (:instance character-listp-of-cddr-of-assoc-equal-when-open-channel-listp
-                                  (channels (open-input-channels state)))
+                                  (channels (open-input-channels state))
+                                  (output-p nil))
            :in-theory (e/d (read-char$ open-input-channel-p1 open-input-channel-p)
                            (character-listp-of-cddr-of-assoc-equal-when-open-channel-listp)))))
 

@@ -82,7 +82,7 @@
        Consistently with the curried view of term applications,
        a function type with two or more inputs
        evaluates to a nesting of one-input function type values
-       (see @(tsee make-arrow-type-value));
+       (see @(tsee nest-function-type-values));
        its inputs and its final output can be recovered via
        @(tsee arrow-type-value-inputs)
        and @(tsee arrow-type-value-output)."))
@@ -228,10 +228,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define make-arrow-type-value ((in type-value-listp) (out type-valuep))
+(define nest-function-type-values ((in type-value-listp) (out type-valuep))
   :returns (tval type-valuep)
-  :short "Build a function type value from
-          a list of input type values and an output type value."
+  :short "Nest zero or more one-input function type values,
+          from zero or more input type values
+          and one final output type value."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -243,11 +244,11 @@
      is a one-input function type value directly.
      A function with no inputs is just the output;
      this does not arise for the primitive operations,
-     which are the main use of this constructor."))
+     which are the main use of this function."))
   (if (endp in)
       (type-value-fix out)
     (make-type-value-fun :in (car in)
-                         :out (make-arrow-type-value (cdr in) out)))
+                         :out (nest-function-type-values (cdr in) out)))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -264,7 +265,7 @@
      For the primitive operations,
      whose final output is never a function type value,
      this returns exactly the inputs
-     that @(tsee make-arrow-type-value) was given."))
+     that @(tsee nest-function-type-values) was given."))
   (if (type-value-case tval :fun)
       (cons (type-value-fun->in tval)
             (arrow-type-value-inputs (type-value-fun->out tval)))

@@ -25992,11 +25992,12 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
   :long "<p><b>Introduction</b>.  This event is intended for advanced users
  who, in essence, want to build extensions of ACL2.  The typical intended use
  is to create @(see books) that extend the functionality of ACL2 in ways not
- allowed without a so-called ``active trust tag''.  A trust tag thus represents
- a contract: The writer of such a book is guaranteeing that the book extends
- ACL2 in a ``correct'' way as defined by the writer of the book.  The writer of
- the book will often have a small section of the book in the scope of an active
- trust tag that can be inspected by potential users of that book:</p>
+ allowed without a so-called &ldquo;active trust tag&rdquo;.  A trust tag (or
+ &ldquo;ttag&rdquo;) thus represents a contract: The writer of such a book is
+ guaranteeing that the book extends ACL2 in a &ldquo;correct&rdquo; way as
+ defined by the writer of the book.  The writer of the book will often have a
+ small section of the book in the scope of an active trust tag that can be
+ inspected by potential users of that book:</p>
 
  @({
   <initial part of book, which does not use trust tags>
@@ -26020,7 +26021,7 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
   ACL2 Error in TOP-LEVEL:  The SYS-CALL function cannot be called unless
   a trust tag is in effect.  See :DOC defttag.
 
-  ACL2 !>(defttag t) ; Install :T as an active trust tag.
+  ACL2 !>(defttag t) ; Install :T as the active trust tag.
 
   TTAG NOTE: Adding ttag :T from the top level loop.
    T
@@ -26086,16 +26087,18 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
  <p>This event introduces or removes a so-called active trust tag (or ``ttag'',
  pronounced ``tee tag'').  An active ttag is a @(see keyword) symbol that is
  associated with potentially unsafe evaluation.  For example, calls of @(tsee
- sys-call) are illegal unless there is an active trust tag.  An active trust
- tag can be installed using a @('defttag') event.  If one introduces an active
- ttag and then writes definitions that contain calls of @(tsee sys-call),
- presumably in a defensibly ``safe'' way, then responsibility for those calls
- is attributed to that ttag.  This attribution (or blame!) is at the level of
- @(see books); a book's @(see certificate) contains a list of ttags that are
- active in that book, or in a book that is included (possibly @(see local)ly),
- or in a book included in a book that is included (either inclusion being
- potentially @(see local)), and so on.  We explain all this in more detail
- below.</p>
+ sys-call) are illegal unless there is an active trust tag.  The event
+ @('(defttag SYM)') where @('SYM') is not @('nil') installs, as the unique
+ active trust tag, the keyword whose @(tsee symbol-name) is that of @('SYM');
+ this keyword could reasonably be denoted as @(':SYM').  If one introduces an
+ active ttag and then writes definitions that contain calls of @(tsee
+ sys-call), presumably in a defensibly ``safe'' way, then responsibility for
+ those calls is attributed to that ttag.  This attribution (or blame!) is at
+ the level of @(see books); a book's @(see certificate) contains a list of
+ ttags that are active in that book, or in a book that is included (possibly
+ @(see local)ly), or in a book included in a book that is included (either
+ inclusion being potentially @(see local)), and so on.  We explain all this in
+ more detail below.</p>
 
  <p>@('(Defttag :tag-name)') is essentially equivalent to</p>
 
@@ -109796,6 +109799,12 @@ it."
  (equal (car (open-output-channel :string :character *default-state*))
         nil)
  })
+
+ <p>Moreover, our fix required modifying several functions related to I/O,
+ often to add an @('output-p') argument that is true when considering
+ output (which allows for a channel of type @(':character') with
+ &ldquo;filename&rdquo; @(':string')) but false when considering input.  Thanks
+ to Aakash Koneru for pointing us in the direction of these changes.</p>
 
  <p>Checks were improved to avoid raw Lisp errors in the following situations:</p>
 
