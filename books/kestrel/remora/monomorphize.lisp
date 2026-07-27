@@ -885,7 +885,7 @@
                   (mv err fn-info-map (atom-ilambdan x.params new-body)))
       :box     (b* (((mv err fn-info-map new-array)
                      (mono-expr x.array defs fn-info-map dim-var-map type-map)))
-                 (mv err fn-info-map (atom-box x.ispace new-array x.type)))
+                 (mv err fn-info-map (atom-box x.ispace new-array x.type?)))
       :boxn    (b* (((mv err fn-info-map new-array)
                      (mono-expr x.array defs fn-info-map dim-var-map type-map)))
                  (mv err fn-info-map (atom-boxn x.ispaces new-array x.type)))))

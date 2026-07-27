@@ -1026,7 +1026,7 @@
              (mv used (atom-box (ispace-rename-ispace-vars
                                  x.ispace r-.dim r-.shape)
                                 new-array
-                                (type-rename-all-vars x.type r))))
+                                (type-option-rename-all-vars x.type? r))))
       :boxn (b* (((var-renamings r-) r)
                  ((mv used new-array) (uniq-expr x.array used r)))
               (mv used (atom-boxn (ispace-list-rename-ispace-vars
