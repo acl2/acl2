@@ -29,7 +29,6 @@
 ;; TODO: Thread through and return errors, instead of throwing hard errors
 ;; TODO: Consider Unicode
 ;; TODO: Consider character escapes
-;; TODO: Prove that the parser always returns an xml-item-listp.
 ;; TODO: Remove/replace all #xD characters at the very start
 
 ;; See also books/xdoc/parse-xml.lisp (not sure how that compares to this)
@@ -905,3 +904,7 @@
                              (drop-whitespace-strings-from-parsed-xml-items parsed-items)
                            parsed-items)))
         (mv nil parsed-items state)))))
+
+(defthm xml-item-listp-of-mv-nth-1-of-parse-xml-file
+  (xml-item-listp (mv-nth 1 (parse-xml-file input-xml-file drop-whitespace-stringsp state)))
+  :hints (("Goal" :in-theory (enable parse-xml-file))))
