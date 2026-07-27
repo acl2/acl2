@@ -3203,7 +3203,7 @@
                          `(:parents (,(symbol-lfix name))
                            :short ,(str::cat
                                     "Fixtypes of proofs for predicates "
-                                    (defind-preds-doc-string
+                                    (defind-gen-proof-fixtypes-loop-loop
                                       (defind-pred-info-list->name
                                         clique-pred-infos))
                                     ".")))
@@ -3216,7 +3216,7 @@
 
      :prepwork
 
-     ((define defind-preds-doc-string ((pred-names symbol-listp))
+     ((define defind-gen-proof-fixtypes-loop-loop ((pred-names symbol-listp))
         :returns (doc-string stringp)
         :parents nil
         (b* (((when (endp pred-names)) "")
@@ -3228,7 +3228,7 @@
              ((when (endp (cdr pred-names))) first-string))
           (str::cat first-string
                     ", "
-                    (defind-preds-doc-string (cdr pred-names)))))))))
+                    (defind-gen-proof-fixtypes-loop-loop (cdr pred-names)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
