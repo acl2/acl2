@@ -1,6 +1,6 @@
 ; Rules about close-input-channel
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -30,3 +30,8 @@
            (equal (state-p (close-input-channel channel state))
                   (open-input-channel-any-p channel state)))
   :hints (("Goal" :in-theory (enable state-p open-input-channel-any-p))))
+
+(defthm w-of-close-input-channel
+  (equal (w (close-input-channel channel state))
+         (w state))
+    :hints (("Goal" :in-theory (enable close-input-channel w))))
