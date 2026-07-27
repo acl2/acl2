@@ -33,7 +33,8 @@
                       (<= end (len lst)))))
   :hints (("Goal" :in-theory (enable subseq-list))))
 
+;; Non-standard var name "X" here is to match STD
 (defthm len-of-subseq-list
-  (equal (len (subseq-list lst start end))
+  (equal (len (subseq-list x start end))
          (nfix (- end start)))
   :hints (("Goal" :in-theory (enable subseq-list))))
