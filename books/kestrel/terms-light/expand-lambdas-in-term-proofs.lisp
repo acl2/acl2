@@ -17,6 +17,7 @@
 (include-book "make-lambda-term-simple")
 (include-book "no-nils-in-termp")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "sublis-var-simple-proofs"))
 (local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
 (local (include-book "kestrel/alists-light/alists-equiv-on" :dir :system))
@@ -52,6 +53,8 @@
          (expand-lambdas-in-terms (cdr terms)))
   :hints (("Goal" :induct (len terms)
            :in-theory (enable (:i len) expand-lambdas-in-terms))))
+
+(local (make-flag expand-lambdas-in-term))
 
 ;; Expanding lambdas creates a lambda-free term.
 (defthm-flag-expand-lambdas-in-term

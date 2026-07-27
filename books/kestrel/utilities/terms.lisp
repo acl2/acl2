@@ -495,6 +495,8 @@
   (implies (not (member-equal fn (fns-in-terms (strip-cdrs alist))))
            (not (member-equal fn (fns-in-term (cdr (assoc-equal form alist)))))))
 
+(local (make-flag sublis-var-simple))
+
 (defthm-flag-sublis-var-simple
   (defthm not-member-equal-of-fns-in-term-of-sublis-var-simple
     (implies (and (not (member-equal fn (fns-in-term term)))
@@ -513,6 +515,8 @@
            :in-theory (enable fns-in-term
                               sublis-var-simple
                               sublis-var-simple-lst))))
+
+(local (make-flag expand-lambdas-in-term))
 
 (defthm-flag-expand-lambdas-in-term
   (defthm not-member-equal-of-fns-in-term-of-expand-lambdas-in-term

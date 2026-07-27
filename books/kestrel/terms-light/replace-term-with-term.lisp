@@ -1,6 +1,6 @@
 ; A utility to replace subterms a given term
 ;
-; Copyright (C) 2014-2022 Kestrel Institute
+; Copyright (C) 2014-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 (include-book "non-trivial-formals")
 (include-book "free-vars-in-term")
 (include-book "make-lambda-application-simple")
+(local (include-book "tools/flag" :dir :system))
 
 ;; TODO: Consider making a version specialized to replacing a variable and
 ;; about which we can make stronger claims.
@@ -63,7 +64,7 @@
          (len terms))
   :hints (("Goal" :in-theory (enable replace-term-with-term-lst))))
 
-(make-flag replace-term-with-term)
+(local (make-flag replace-term-with-term))
 
 (defthm-flag-replace-term-with-term
   (defthm pseudo-termp-of-replace-term-with-term
