@@ -140,7 +140,7 @@
 
    (xdoc::p
     "Fixed a bug in @(see with-supporters) that was preventing @(see disable)s for
-     names of theorems (as opposed to functions.")
+     names of theorems (as opposed to functions).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
