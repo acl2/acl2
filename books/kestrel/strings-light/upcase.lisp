@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+(local (include-book "kestrel/lists-light/revappend" :dir :system))
+
 ;; Note that the function STRING-UPCASE is built-in but requires all chars to
 ;; be "standard characters".  The utilities in this book are more general.
 
@@ -23,6 +25,8 @@
   (if (standard-char-p char)
       (char-upcase char)
     char))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Converts the CHARS from lower to upper case, leaving non-lower-case-letters
 ;; unchanged.
@@ -40,6 +44,13 @@
            (character-listp (chars-upcase-gen chars acc)))
   :hints (("Goal" :in-theory (enable chars-upcase-gen))))
 
+(defthm len-of-chars-upcase-gen
+  (equal (len (chars-upcase-gen chars acc))
+         (+ (len chars) (len acc)))
+  :hints (("Goal" :in-theory (enable chars-upcase-gen))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Converts the characters in STR from lower to upper case, leaving
 ;; non-lower-case-letters unchanged.
 (defund string-upcase-gen (str)
@@ -48,3 +59,9 @@
 
 (defthm stringp-of-string-upcase-gen
   (stringp (string-upcase-gen str)))
+
+(defthm length-of-string-upcase-gen
+  (implies (stringp str)
+           (equal (length (string-upcase-gen str))
+                  (length str)))
+    :hints (("Goal" :in-theory (enable string-upcase-gen length))))
