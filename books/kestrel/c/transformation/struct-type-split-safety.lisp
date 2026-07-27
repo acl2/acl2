@@ -308,16 +308,29 @@
     (xdoc::topstring
      (xdoc::p
       "If we just have a tag,
-       we should look it up in the validation information,
-       so we can recursively check the struct type found there.
-       For now we just conservatively return @('t'),
-       but we plan to refine that.")
+       we look it up in the validation information,
+       so we can recursively check the struct type found there.")
      (xdoc::p
       "If instead we have members, we recursively check them."))
     (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
       (type-struni-tag/members-case
        tystr-tag/mems
-       :tagged t ; TODO: refine
+       :tagged (b* (((mv info &)
+                     (c$::valid-lookup-tag tystr-tag/mems.tag vtable))
+                    ((unless info)
+                     (raise "Internal error: ~
+                             no information for ~x0 in ~x1."
+                            tystr-tag/mems.tag vtable))
+                    (uid (c$::valid-tag-info->uid info))
+                    (members?
+                     (hons-get uid (c$::type-completions-fix completions)))
+                    ((unless members?)
+                     (raise "Internal error: ~
+                             no members for ~x0 in ~x0."
+                            uid completions))
+                    (members (cdr members?)))
+                 (type-struni-member-list-may-refer-to-struct-spec-p
+                  members spec vtable completions (1- limit)))
        :untagged (type-struni-member-list-may-refer-to-struct-spec-p
                   tystr-tag/mems.members spec vtable completions (1- limit))))
     :no-function nil
