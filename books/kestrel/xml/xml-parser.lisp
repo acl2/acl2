@@ -14,6 +14,7 @@
 (include-book "xml")
 (include-book "kestrel/typed-lists-light/map-code-char" :dir :system)
 (include-book "std/util/bstar" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
@@ -30,6 +31,8 @@
 ;; TODO: Consider Unicode
 ;; TODO: Consider character escapes
 ;; TODO: Remove/replace all #xD characters at the very start
+
+;; TODO: Consider making many of the theorems in the book local
 
 ;; See also books/xdoc/parse-xml.lisp (not sure how that compares to this)
 
@@ -816,12 +819,12 @@
                        ((when erp) (mv erp nil nil)))
                     (mv nil (cons item items) chars)))))))))))
 
-(include-book "tools/flag" :dir :system)
-(make-flag parse-xml-element
-           :hints (("Goal" ; :induct t
-                    :in-theory (enable maybe-skip-xml-comment skip-xml-comment)
-                    ;; :expand (PARSE-XML-ELEMENT CHARS) ;todo: illegal hint!
-                    )))
+(local
+  (make-flag parse-xml-element
+             :hints (("Goal" ; :induct t
+                      :in-theory (enable maybe-skip-xml-comment skip-xml-comment)
+                      ;; :expand (PARSE-XML-ELEMENT CHARS) ;todo: illegal hint!
+                      ))))
 
 (in-theory (disable xml-elementp-rewrite)) ; todo
 
