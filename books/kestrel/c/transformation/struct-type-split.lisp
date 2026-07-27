@@ -4853,7 +4853,7 @@
              ((unless current-tag?) nil)
              ((when erp) nil)
              (spec (make-sts-struct-spec :uid uid)))
-          (trans-unit-sts-safep tunit spec)))
+          (trans-unit-sts-safep tunit spec completions)))
        ((unless safep)
         (reterr (sts-error-in-translation-unit
                   (msg$ "Safety check failed.")
