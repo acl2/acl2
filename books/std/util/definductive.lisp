@@ -1156,6 +1156,80 @@
            (set::union clique-unleveled unleveled)))
      :verify-guards :after-returns)))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-pred-level ((pred-name symbolp)
+                           (levels symbol-set-listp))
+  :returns (level natp)
+  :short "Level of a predicate, among a list of levels."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('levels') input consists of the levels of a clique:
+     the element at position @('n') of the list is
+     the set of the predicates at level @('n').
+     We return the position of the set that contains the predicate.")
+   (xdoc::p
+    "This function is called on
+     a predicate of the clique whose levels are passed as input,
+     so the predicate is always found in some set;
+     if it is not (which should never happen),
+     we raise an internal error."))
+  (b* (((when (endp levels))
+        (raise "Internal error: predicate ~x0 has no level."
+               (symbol-lfix pred-name))
+        0)
+       ((when (set::in (symbol-lfix pred-name)
+                       (symbol-sfix (car levels))))
+        0))
+    (1+ (defind-pred-level pred-name (cdr levels))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-pred-override-rule ((pred-name symbolp)
+                                   (level natp)
+                                   (levels symbol-set-listp)
+                                   (preds-in-previous-cliques symbol-setp)
+                                   (irule-infos defind-irule-info-listp))
+  :returns (rule symbolp)
+  :short "Rule that provides the base case override
+          for the proof fixtype of a predicate."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The proof fixtype generated for a predicate
+     at level 1 or more in its clique
+     needs a base case override:
+     the designated summand must correspond to a rule that
+     derives the predicate from predicates
+     at strictly lower levels in the clique,
+     or in previous cliques.
+     This function finds the first such rule
+     by passing to @(tsee defind-rule-deriving-pred)
+     the union of the levels strictly below @('level'),
+     which is the level of the predicate in question,
+     and of the predicates in the previous cliques.")
+   (xdoc::p
+    "Since the predicate is at level @('level'),
+     the rule always exists:
+     the predicate was put at that level
+     exactly because of such a rule
+     (see @(tsee defind-pred-levels)).
+     If the rule is not found (which should never happen),
+     we raise an internal error."))
+  (b* ((levels (symbol-set-list-fix levels))
+       (derivable-preds
+        (set::union (set::set-list-union (take (nfix level) levels))
+                    (symbol-sfix preds-in-previous-cliques)))
+       (rule (defind-rule-deriving-pred pred-name derivable-preds irule-infos))
+       ((unless rule)
+        (raise "Internal error: no override rule for predicate ~x0."
+               (symbol-lfix pred-name))))
+    rule)
+  :no-function nil
+  :guard-hints (("Goal" :in-theory (enable set-listp-when-symbol-set-listp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod defind-translation
