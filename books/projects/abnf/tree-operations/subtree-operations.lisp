@@ -172,8 +172,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define tree-at-path ((path tree-pathp) (tree abnf::treep))
-  :guard (check-tree-path path tree)
-  :returns (sub abnf::treep)
+(define tree-path-validp ((path tree-pathp) (tree treep))
+  :returns (yes/no booleanp)
+  :short "Check if a path is valid in a tree, returning a boolean."
+  (and (check-tree-path path tree) t))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define tree-at-path ((path tree-pathp) (tree treep))
+  :guard (tree-path-validp path tree)
+  :returns (sub treep)
   :short "Subtree of a tree at a valid path."
-  (tree-fix (check-tree-path path tree)))
+  (tree-fix (check-tree-path path tree))
+  :guard-hints (("Goal" :in-theory (enable tree-path-validp))))
