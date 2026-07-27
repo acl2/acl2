@@ -3201,14 +3201,34 @@
                `(fty::deftypes ,deftypes-name
                   ,@(and xdocp
                          `(:parents (,(symbol-lfix name))
-                           :short "Fixtypes of proofs for
-                                   the mutually recursive predicates."))
+                           :short ,(str::cat
+                                    "Fixtypes of proofs for predicates "
+                                    (defind-preds-doc-string
+                                      (defind-pred-info-list->name
+                                        clique-pred-infos))
+                                    ".")))
                   ,@deftagsums
                   :prepwork ((set-induction-depth-limit 1)))))))
        (cons event events))
      :no-function nil
      :guard-hints
-     (("Goal" :in-theory (enable set-listp-when-symbol-set-listp))))))
+     (("Goal" :in-theory (enable set-listp-when-symbol-set-listp)))
+
+     :prepwork
+
+     ((define defind-preds-doc-string ((pred-names symbol-listp))
+        :returns (doc-string stringp)
+        :parents nil
+        (b* (((when (endp pred-names)) "")
+             (first-string
+              (str::cat "@('"
+                        (str::downcase-string
+                         (symbol-name (symbol-lfix (car pred-names))))
+                        "')"))
+             ((when (endp (cdr pred-names))) first-string))
+          (str::cat first-string
+                    ", "
+                    (defind-preds-doc-string (cdr pred-names)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
