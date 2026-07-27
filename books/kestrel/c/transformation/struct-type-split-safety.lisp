@@ -1180,9 +1180,6 @@
     "We reject the @('__stdcall') and @('__declspec') declaration specifiers,
      out of caution.")
    (xdoc::p
-    "We reject initializers with optional designations for now,
-     because they may affect the struct type being split.")
-   (xdoc::p
     "Declarators (@(tsee declor) ASTs) are checked indirectly,
      via the types of the ASTs where declarators may appear:
      function definitions,
@@ -1271,7 +1268,6 @@
    (type-spec :auto-type (sts-reject (type-spec-fix type-spec)))
    (decl-spec :stdcall (sts-reject (decl-spec-fix decl-spec)))
    (decl-spec :declspec (sts-reject (decl-spec-fix decl-spec)))
-   (desiniter (sts-reject (desiniter-fix desiniter)))
    (param-declor :nonabstract (and (declor-sts-safep param-declor.declor
                                                      spec
                                                      vtable
