@@ -10,7 +10,10 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/fty/set-list" :dir :system)
 (include-book "kestrel/fty/symbol-set" :dir :system)
+
+(local (include-book "std/lists/top" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -20,4 +23,22 @@
   :elt-type symbol-set
   :true-listp t
   :elementp-of-nil t
-  :pred symbol-set-listp)
+  :pred symbol-set-listp
+
+  ///
+
+  (defruled true-listp-when-symbol-set-listp
+    (implies (symbol-set-listp x)
+             (true-listp x)))
+
+  (defruled set-listp-when-symbol-set-listp
+    (implies (symbol-set-listp x)
+             (set::set-listp x))
+    :induct t
+    :enable (symbol-set-listp set::set-listp))
+
+  (defrule symbol-setp-of-set-list-union
+    (implies (symbol-set-listp x)
+             (symbol-setp (set::set-list-union x)))
+    :induct t
+    :enable set::set-list-union))
