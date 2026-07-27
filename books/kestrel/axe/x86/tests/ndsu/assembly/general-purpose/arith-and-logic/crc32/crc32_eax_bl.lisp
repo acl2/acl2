@@ -19,7 +19,7 @@
 
 (include-book "kestrel/axe/x86/unroller" :dir :system)
 (include-book "kestrel/x86/register-readers-and-writers32" :dir :system)
-(include-book "kestrel/x86/register-readers-and-writers8" :dir :system)
+(include-book "kestrel/x86/register-readers-and-writers-8-16" :dir :system)
 (include-book "crc32-manual-spec")
 
 ;; Rewrite eax/bl to bvchop-of-rax/rbx so proofs reduce to the existing rax/rbx form.
