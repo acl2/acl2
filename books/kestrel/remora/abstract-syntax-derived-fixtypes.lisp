@@ -558,6 +558,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod ispace+expr
+  :short "Fixtype of pairs consisting of an ispace and an expression."
+  ((ispace ispace)
+   (expr expr))
+  :pred ispace+expr-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult ispace+expr-result
+  :short "Fixtype of
+          (i) pairs consisting of an ispace and an expression
+          and (ii) errors."
+  :ok ispace+expr
+  :pred ispace+expr-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod typevar+type
   :short "Fixtype of pairs consisting of
           a type variable and a type."

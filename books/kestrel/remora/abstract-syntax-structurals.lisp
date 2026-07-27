@@ -819,3 +819,25 @@
           ((endp (cddr params))
            (expr-atom (atom-ilambda (cadr params) body)))
           (t (expr-atom (atom-ilambdan (cdr params) body))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule atom-count-when-box-gap
+  :short "The count of a unary boxing atom exceeds
+          the count of its array expression by more than one."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The automatically generated linear rules only provide
+     an excess of one.
+     The larger gap serves to justify measures of the form
+     @('(+ 1 (expr-count ...))') over the array expression,
+     as used by recursive functions that,
+     given the array expression of a boxing atom,
+     may both recursively descend into it
+     and pass it whole to a mutually recursive companion."))
+  (implies (atom-case atom :box)
+           (< (+ 1 (expr-count (atom-box->array atom)))
+              (atom-count atom)))
+  :rule-classes :linear
+  :expand ((atom-count atom)))
