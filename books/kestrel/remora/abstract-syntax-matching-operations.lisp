@@ -210,8 +210,11 @@
      Unlike @(tsee type-match-product), which peels off one variable
      (consistently with the curried view of ispace applications),
      this operation returns all the parameter variables at once,
-     because the box and unbox constructs that eliminate sum types
-     bind all their witnesses together for now;
+     because the n-ary box and unbox constructs
+     bind all their witnesses together;
+     callers that treat sum types in curried fashion,
+     like the checking of unary boxing atoms,
+     peel off the first of the returned variables;
      a unary sum type yields a single-element list."))
   (type-case
    type
@@ -220,3 +223,40 @@
    :sigman (make-ispacevarlist+type :vars (type-sigman->params type)
                                     :type (type-sigman->body type))
    :otherwise (reserr nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-match-unannotated-box ((expr exprp))
+  :returns (ispace+expr ispace+expr-resultp)
+  :short "Check if an expression is a zero-rank array
+          of a single unannotated unary boxing atom,
+          returning the atom's ispace and array expression if successful."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This matches the inner boxes of
+     the nest that an n-ary boxing atom desugars to
+     (see @(tsee atom)):
+     each is a unary boxing atom without the type,
+     wrapped into a zero-rank array expression."))
+  (b* (((unless (expr-case expr :array)) (reserr nil))
+       ((expr-array expr) expr)
+       ((unless (endp expr.dims)) (reserr nil))
+       ((unless (and (consp expr.atoms)
+                     (endp (cdr expr.atoms))))
+        (reserr nil))
+       (atom (car expr.atoms))
+       ((unless (atom-case atom :box)) (reserr nil))
+       ((atom-box atom) atom))
+    (type-option-case
+     atom.type?
+     :some (reserr nil)
+     :none (make-ispace+expr :ispace atom.ispace :expr atom.array)))
+
+  ///
+
+  (defret expr-count-of-expr-match-unannotated-box
+    (implies (not (reserrp ispace+expr))
+             (< (expr-count (ispace+expr->expr ispace+expr))
+                (expr-count expr)))
+    :rule-classes :linear))
