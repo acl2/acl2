@@ -11,7 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-trees")
-(include-book "abstract-syntax-well-formed")
+(include-book "abstract-syntax-well-formedness")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 (include-book "kestrel/fty/defresult" :dir :system)

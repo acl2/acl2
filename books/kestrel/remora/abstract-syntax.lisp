@@ -17,7 +17,7 @@
 (include-book "abstract-syntax-matching-operations")
 (include-book "abstract-syntax-variable-operations")
 (include-book "abstract-syntax-core")
-(include-book "abstract-syntax-well-formed")
+(include-book "abstract-syntax-well-formedness")
 (include-book "character-literal-codes")
 (include-book "desugaring")
 (include-book "frame-flattening")
