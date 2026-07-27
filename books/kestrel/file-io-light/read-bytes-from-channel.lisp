@@ -1,6 +1,6 @@
 ; A lightweight function to read a channel's contents into a list of bytes
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -54,7 +54,6 @@
            (true-listp (mv-nth 0 (read-bytes-from-channel channel acc state))))
   :hints (("Goal" :in-theory (enable read-bytes-from-channel))))
 
-;; todo: also add a rule about byte-listp
 (defthm unsigned-byte-listp-of-mv-nth-0-of-read-bytes-from-channel
   (implies (unsigned-byte-listp 8 acc)
            (unsigned-byte-listp 8 (mv-nth 0 (read-bytes-from-channel channel acc state))))
