@@ -187,7 +187,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This involves looking up struct types in the type completions,
+    "This involves looking up struct types
+     in the type completions via the validation tables,
      in order to check the members found there.
      Termination requires a more elaborate argument
      than we are willing to flesh out at this time,
@@ -197,6 +198,7 @@
 
   (define type-may-refer-to-struct-spec-p ((type typep)
                                            (spec sts-struct-specp)
+                                           (vtable valid-tablep)
                                            (completions type-completions-p)
                                            (limit natp))
     :returns (yes/no booleanp)
@@ -249,18 +251,18 @@
                                                  type.tag/members
                                                  spec)
                    (type-struni-tag/members-may-refer-to-struct-spec-p
-                    type.tag/members spec completions (1- limit)))
+                    type.tag/members spec vtable completions (1- limit)))
        :union (type-struni-tag/members-may-refer-to-struct-spec-p
-               type.tag/members spec completions (1- limit))
+               type.tag/members spec vtable completions (1- limit))
        :enum nil
        :array (type-may-refer-to-struct-spec-p
-               type.of spec completions (1- limit))
+               type.of spec vtable completions (1- limit))
        :pointer (type-may-refer-to-struct-spec-p
-                 type.to spec completions (1- limit))
+                 type.to spec vtable completions (1- limit))
        :function (or (type-may-refer-to-struct-spec-p
-                      type.ret spec completions (1- limit))
+                      type.ret spec vtable completions (1- limit))
                      (type-params-may-refer-to-struct-spec-p
-                      type.params spec completions (1- limit)))
+                      type.params spec vtable completions (1- limit)))
        :unknown t
        :unknown-builtin nil
        :unknown-scalar t
@@ -273,6 +275,7 @@
   (define type-list-may-refer-to-struct-spec-p
     ((types type-listp)
      (spec sts-struct-specp)
+     (vtable valid-tablep)
      (completions type-completions-p)
      (limit natp))
     :returns (yes/no booleanp)
@@ -282,9 +285,9 @@
     (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
       (and (not (endp types))
            (or (type-may-refer-to-struct-spec-p
-                (car types) spec completions (1- limit))
+                (car types) spec vtable completions (1- limit))
                (type-list-may-refer-to-struct-spec-p
-                (cdr types) spec completions (1- limit)))))
+                (cdr types) spec vtable completions (1- limit)))))
     :no-function nil
     :measure (nfix limit))
 
@@ -293,6 +296,7 @@
   (define type-struni-tag/members-may-refer-to-struct-spec-p
     ((tystr-tag/mems type-struni-tag/members-p)
      (spec sts-struct-specp)
+     (vtable valid-tablep)
      (completions type-completions-p)
      (limit natp))
     :returns (yes/no booleanp)
@@ -315,7 +319,7 @@
        tystr-tag/mems
        :tagged t ; TODO: refine
        :untagged (type-struni-member-list-may-refer-to-struct-spec-p
-                  tystr-tag/mems.members spec completions (1- limit))))
+                  tystr-tag/mems.members spec vtable completions (1- limit))))
     :no-function nil
     :measure (nfix limit))
 
@@ -324,6 +328,7 @@
   (define type-struni-member-may-refer-to-struct-spec-p
     ((mem type-struni-member-p)
      (spec sts-struct-specp)
+     (vtable valid-tablep)
      (completions type-completions-p)
      (limit natp))
     :returns (yes/no booleanp)
@@ -332,7 +337,7 @@
             may refer to the struct type being split, directly or indirectly."
     (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
       (type-may-refer-to-struct-spec-p
-       (type-struni-member->type mem) spec completions (1- limit)))
+       (type-struni-member->type mem) spec vtable completions (1- limit)))
     :no-function nil
     :measure (nfix limit))
 
@@ -341,6 +346,7 @@
   (define type-struni-member-list-may-refer-to-struct-spec-p
     ((mems type-struni-member-listp)
      (spec sts-struct-specp)
+     (vtable valid-tablep)
      (completions type-completions-p)
      (limit natp))
     :returns (yes/no booleanp)
@@ -350,9 +356,9 @@
     (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
       (and (not (endp mems))
            (or (type-struni-member-may-refer-to-struct-spec-p
-                (car mems) spec completions (1- limit))
+                (car mems) spec vtable completions (1- limit))
                (type-struni-member-list-may-refer-to-struct-spec-p
-                (cdr mems) spec completions (1- limit)))))
+                (cdr mems) spec vtable completions (1- limit)))))
     :no-function nil
     :measure (nfix limit))
 
@@ -361,6 +367,7 @@
   (define type-params-may-refer-to-struct-spec-p
     ((params type-params-p)
      (spec sts-struct-specp)
+     (vtable valid-tablep)
      (completions type-completions-p)
      (limit natp))
     :returns (yes/no booleanp)
@@ -372,9 +379,9 @@
       (type-params-case
        params
        :prototype (type-list-may-refer-to-struct-spec-p
-                   params.params spec completions (1- limit))
+                   params.params spec vtable completions (1- limit))
        :old-style (type-list-may-refer-to-struct-spec-p
-                   params.params spec completions (1- limit))
+                   params.params spec vtable completions (1- limit))
        :unspecified nil))
     :no-function nil
     :measure (nfix limit))
@@ -784,6 +791,7 @@
 (define expr-cast-sts-safep ((tyname tynamep)
                              (arg exprp)
                              (spec sts-struct-specp)
+                             (vtable valid-tablep)
                              (completions type-completions-p))
   :returns (yes/no booleanp)
   :short "Check if a cast expression is safe for the STS transformation."
@@ -799,10 +807,12 @@
                 (dst-type (type-vinfo->type (tyname->info tyname))))
              (and (not (type-may-refer-to-struct-spec-p src-type
                                                         spec
+                                                        vtable
                                                         completions
                                                         1000000))
                   (not (type-may-refer-to-struct-spec-p dst-type
                                                         spec
+                                                        vtable
                                                         completions
                                                         1000000)))))
       (sts-reject (expr-cast tyname arg))))
@@ -1208,29 +1218,40 @@
   :default t
   :combine and
   :extra-args ((spec sts-struct-specp)
+               (vtable valid-tablep)
                (completions type-completions-p))
   :override
   ((expr :gensel (sts-reject (expr-fix expr)))
-   (expr :complit (and (tyname-sts-safep expr.type spec completions)
-                       (desiniter-list-sts-safep expr.elems spec completions)
+   (expr :complit (and (tyname-sts-safep expr.type spec vtable completions)
+                       (desiniter-list-sts-safep expr.elems
+                                                 spec
+                                                 vtable
+                                                 completions)
                        (tyname-info-sts-safep expr.type spec)))
-   (expr :unary (and (expr-sts-safep expr.arg spec completions)
+   (expr :unary (and (expr-sts-safep expr.arg spec vtable completions)
                      (expr-unary-sts-safep expr.op expr.arg expr.info spec)))
-   (expr :sizeof (and (tyname-sts-safep expr.type spec completions)
+   (expr :sizeof (and (tyname-sts-safep expr.type spec vtable completions)
                       (expr-sizeof-sts-safep expr.type spec)))
-   (expr :alignof (and (tyname-sts-safep expr.type spec completions)
+   (expr :alignof (and (tyname-sts-safep expr.type spec vtable completions)
                        (expr-alignof-sts-safep expr.type expr.uscores spec)))
-   (expr :cast (and (tyname-sts-safep expr.type spec completions)
-                    (expr-sts-safep expr.arg spec completions)
-                    (expr-cast-sts-safep expr.type expr.arg spec completions)))
-   (expr :binary (and (expr-sts-safep expr.arg1 spec completions)
-                      (expr-sts-safep expr.arg2 spec completions)
+   (expr :cast (and (tyname-sts-safep expr.type spec vtable completions)
+                    (expr-sts-safep expr.arg spec vtable completions)
+                    (expr-cast-sts-safep expr.type
+                                         expr.arg
+                                         spec
+                                         vtable
+                                         completions)))
+   (expr :binary (and (expr-sts-safep expr.arg1 spec vtable completions)
+                      (expr-sts-safep expr.arg2 spec vtable completions)
                       (expr-binary-sts-safep
                        expr.op expr.arg1 expr.arg2 expr.info spec)))
    (expr :tycompat (sts-reject (expr-fix expr)))
    (expr :offsetof (sts-reject (expr-fix expr)))
    (expr :va-arg (sts-reject (expr-fix expr)))
-   (type-spec :atomic (and (tyname-sts-safep type-spec.type spec completions)
+   (type-spec :atomic (and (tyname-sts-safep type-spec.type
+                                             spec
+                                             vtable
+                                             completions)
                            (type-spec-atomic-sts-safep type-spec.type spec)))
    (type-spec :typeof-expr (sts-reject (type-spec-fix type-spec)))
    (type-spec :typeof-type (sts-reject (type-spec-fix type-spec)))
@@ -1240,6 +1261,7 @@
    (desiniter (sts-reject (desiniter-fix desiniter)))
    (param-declor :nonabstract (and (declor-sts-safep param-declor.declor
                                                      spec
+                                                     vtable
                                                      completions)
                                    (param-declor-nonabstract-sts-safep
                                     param-declor.declor
@@ -1247,44 +1269,65 @@
                                     spec)))
    (param-declor :abstract (and (absdeclor-sts-safep param-declor.declor
                                                      spec
+                                                     vtable
                                                      completions)
                                 (param-declor-abstract-sts-safep
                                  param-declor.declor
                                  param-declor.info
                                  spec)))
    (tyname (b* (((tyname tyname)))
-             (and (spec/qual-list-sts-safep tyname.specquals spec completions)
-                  (absdeclor-option-sts-safep tyname.declor? spec completions)
+             (and (spec/qual-list-sts-safep tyname.specquals
+                                            spec
+                                            vtable
+                                            completions)
+                  (absdeclor-option-sts-safep tyname.declor?
+                                              spec
+                                              vtable
+                                              completions)
                   (tyname-info-sts-safep tyname spec))))
    (struct-declor (b* (((struct-declor struct-declor)))
                     (and (declor-option-sts-safep struct-declor.declor?
                                                   spec
+                                                  vtable
                                                   completions)
                          (const-expr-option-sts-safep struct-declor.expr?
                                                       spec
+                                                      vtable
                                                       completions)
                          (struct-declor-info-sts-safep struct-declor spec))))
    (attrib t)
    (init-declor (b* (((init-declor init-declor)))
                   (and (declor-sts-safep init-declor.declor
                                          spec
+                                         vtable
                                          completions)
                        (attrib-spec-list-sts-safep init-declor.attribs
                                                    spec
+                                                   vtable
                                                    completions)
                        (initer-option-sts-safep init-declor.initer?
                                                 spec
+                                                vtable
                                                 completions)
                        (init-declor-info-sts-safep init-declor spec))))
    (asm-output t)
    (asm-input t)
    (asm-stmt (sts-reject (asm-stmt-fix asm-stmt)))
    (fundef (b* (((fundef fundef)))
-             (and (decl-spec-list-sts-safep fundef.specs spec completions)
-                  (declor-sts-safep fundef.declor spec completions)
-                  (attrib-spec-list-sts-safep fundef.attribs spec completions)
-                  (declon-list-sts-safep fundef.declons spec completions)
-                  (comp-stmt-sts-safep fundef.body spec completions)
+             (and (decl-spec-list-sts-safep fundef.specs
+                                            spec
+                                            vtable
+                                            completions)
+                  (declor-sts-safep fundef.declor
+                                    spec
+                                    vtable
+                                    completions)
+                  (attrib-spec-list-sts-safep fundef.attribs
+                                              spec
+                                              vtable
+                                              completions)
+                  (declon-list-sts-safep fundef.declons spec vtable completions)
+                  (comp-stmt-sts-safep fundef.body spec vtable completions)
                   (fundef-info-sts-safep fundef spec))))
    (trans-item :include (sts-reject (trans-item-fix trans-item)))
    (trans-item :define (sts-reject (trans-item-fix trans-item)))
