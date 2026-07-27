@@ -1154,20 +1154,7 @@
              irule-infos)))
        (mv (cons levels leveled-cliques)
            (set::union clique-unleveled unleveled)))
-     :verify-guards :after-returns
-
-     ///
-
-     (defret true-listp-of-defind-leveled-cliques-loop.leveled-cliques
-       (true-listp leveled-cliques)
-       :rule-classes :type-prescription
-       :hints (("Goal" :induct t)))))
-
-  ///
-
-  (defret true-listp-of-defind-leveled-cliques.leveled-cliques
-    (true-listp leveled-cliques)
-    :rule-classes :type-prescription))
+     :verify-guards :after-returns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1843,6 +1830,10 @@
                       but fixtypes must be non-empty."
                      unleveled))))
     (retok infos leveled-cliques))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable consp-under-iff-when-true-listp-no-backchain-limit
+                       true-listp-when-symbol-set-list-listp)))
 
   :prepwork
   ((define defind-process-irules-loop ((irules true-listp)
