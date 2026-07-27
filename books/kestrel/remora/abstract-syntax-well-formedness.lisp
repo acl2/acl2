@@ -20,7 +20,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ abstract-syntax-well-formed
+(defxdoc+ abstract-syntax-well-formedness
   :parents (abstract-syntax)
   :short "Well-formedness predicate over ASTs (parser-image flavor)."
   :long

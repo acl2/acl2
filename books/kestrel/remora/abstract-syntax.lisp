@@ -11,13 +11,13 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-trees")
+(include-book "abstract-syntax-well-formedness")
 (include-book "abstract-syntax-constructors")
 (include-book "abstract-syntax-derived-fixtypes")
 (include-book "abstract-syntax-structurals")
 (include-book "abstract-syntax-matching-operations")
 (include-book "abstract-syntax-variable-operations")
 (include-book "abstract-syntax-core")
-(include-book "abstract-syntax-well-formedness")
 (include-book "character-literal-codes")
 (include-book "desugaring")
 (include-book "frame-flattening")
@@ -40,13 +40,13 @@
      or we might define alternative abstract syntax for those,
      with suitable mappings."))
   :order-subtopics (abstract-syntax-trees
+                    abstract-syntax-well-formedness
                     abstract-syntax-constructors
                     abstract-syntax-derived-fixtypes
                     abstract-syntax-structurals
                     abstract-syntax-matching-operations
                     abstract-syntax-variable-operations
                     abstract-syntax-core
-                    abstract-syntax-well-formed
                     character-literal-codes
                     desugaring
                     frame-flattening))
