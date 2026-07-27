@@ -24,6 +24,7 @@
 (include-book "kestrel/utilities/legal-variable-listp" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/basic/symbol-lfix" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/omaps/core" :dir :system)
 (include-book "std/system/check-user-term" :dir :system)
 (include-book "std/system/fresh-namep" :dir :system)
@@ -2994,6 +2995,8 @@
 
 (define defind-gen-proof-deftagsum ((pred-name symbolp)
                                     (infos defind-irule-info-listp)
+                                    (levels symbol-set-listp)
+                                    (preds-in-previous-cliques symbol-setp)
                                     (name symbolp)
                                     (xdocp booleanp))
   :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
@@ -3002,8 +3005,33 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The predicate is specified by its name, passed as input."))
-  (b* ((summands (defind-gen-proof-summands pred-name infos name)))
+    "The predicate is specified by its name, passed as input.
+     The @('levels') input consists of
+     the levels of the clique of the predicate;
+     the @('preds-in-previous-cliques') input consists of
+     the predicates in the preceding cliques.")
+   (xdoc::p
+    "If some predicate of the clique is at level 1 or more,
+     every proof fixtype of the clique needs a measure,
+     which lexicographically combines
+     the size of the value with the level of the predicate;
+     furthermore, the proof fixtypes of
+     the predicates at level 1 or more
+     need a base case override,
+     which references the summand of a rule that
+     derives the predicate from predicates
+     at lower levels or in previous cliques.
+     Currently, since a single predicate at level 0 is supported,
+     no measure or base case override is actually generated;
+     this code is in preparation for
+     lifting the restriction to a single predicate."))
+  (b* ((summands (defind-gen-proof-summands pred-name infos name))
+       (measurep (consp (cdr (symbol-set-list-fix levels))))
+       (level (defind-pred-level pred-name levels))
+       (override-rule (and (< 0 level)
+                           (defind-pred-override-rule
+                             pred-name level levels
+                             preds-in-previous-cliques infos))))
     `(fty::deftagsum ,(defind-proof-type-name pred-name name)
        ,@(and xdocp
               `(:parents (,(symbol-lfix name))
@@ -3012,6 +3040,10 @@
                          (str::downcase-string (symbol-name pred-name))
                          "').")))
        ,@summands
+       ,@(and override-rule
+              `(:base-case-override ,(defind-irule-tag override-rule)))
+       ,@(and measurep
+              `(:measure (two-nats-measure (acl2-count x) ,level)))
        :pred ,(defind-proof-recog-name pred-name name)
        :prepwork ((set-induction-depth-limit 1)))))
 
@@ -3019,6 +3051,8 @@
 
 (define defind-gen-proof-deftagsums ((pred-infos defind-pred-info-listp)
                                      (irule-infos defind-irule-info-listp)
+                                     (levels symbol-set-listp)
+                                     (preds-in-previous-cliques symbol-setp)
                                      (name symbolp)
                                      (xdocp booleanp))
   :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
@@ -3027,9 +3061,11 @@
   :short "Generate the @('p[i]-proof') fixtypes."
   (b* (((when (endp pred-infos)) nil)
        (pred-name (defind-pred-info->name (car pred-infos)))
-       (event (defind-gen-proof-deftagsum pred-name irule-infos name xdocp))
+       (event (defind-gen-proof-deftagsum pred-name irule-infos
+                levels preds-in-previous-cliques name xdocp))
        (events (defind-gen-proof-deftagsums
-                 (cdr pred-infos) irule-infos name xdocp)))
+                 (cdr pred-infos) irule-infos
+                 levels preds-in-previous-cliques name xdocp)))
     (cons event events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4190,6 +4226,7 @@
 (define defind-gen-events ((name symbolp)
                            (pred-infos defind-pred-info-listp)
                            (irule-infos defind-irule-info-listp)
+                           (leveled-cliques symbol-set-list-listp)
                            (parents symbol-listp)
                            short
                            long
@@ -4201,13 +4238,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The events are wrapped into an @(tsee encapsulate)."))
+    "The events are wrapped into an @(tsee encapsulate).")
+   (xdoc::p
+    "Currently the predicates always form a single clique
+     (with a single predicate),
+     whose levels are used to generate the fixtypes of proofs."))
   (b* ((name-doc-event
         (defind-gen-name-defxdoc+ name parents short long xdocp))
        (assert-type-events
         (defind-gen-assertion-defprods pred-infos name xdocp))
+       (levels (car leveled-cliques))
        (proof-type-events
-        (defind-gen-proof-deftagsums pred-infos irule-infos name xdocp))
+        (defind-gen-proof-deftagsums pred-infos irule-infos
+          levels nil name xdocp))
        (proof-concl-events
         (defind-gen-proof-concl-fns pred-infos irule-infos name xdocp))
        (irule-valid-events
@@ -4274,7 +4317,7 @@
         (defind-process-inputs-1 name preds preds-suppliedp irules wrld))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp))
        (translations (defind-process-inputs-2 terms state))
-       ((mv erp irule-infos ?leveled-cliques parents short long xdocp)
+       ((mv erp irule-infos leveled-cliques parents short long xdocp)
         (defind-process-inputs-3
           irules irules-suppliedp
           parents parents-suppliedp
@@ -4283,7 +4326,8 @@
           pred-infos translations))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp))
        (event (defind-gen-events
-                name pred-infos irule-infos parents short long xdocp)))
+                name pred-infos irule-infos leveled-cliques
+                parents short long xdocp)))
     (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
