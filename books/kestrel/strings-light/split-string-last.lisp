@@ -1,7 +1,7 @@
 ; A utility to split a string at the last occurrence of a given char
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 
 (include-book "split-chars")
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
+(local (include-book "kestrel/lists-light/revappend" :dir :system))
 
 (local (in-theory (e/d (true-listp-when-character-listp2)
                        (mv-nth))))
@@ -54,3 +55,21 @@
 (defthm stringp-of-mv-nth-2-of-split-string-last
   (stringp (mv-nth 2 (split-string-last str char)))
   :hints (("Goal" :in-theory (enable split-string-last))))
+
+(defthm <-of-length-of-mv-nth-1-of-split-string-last
+  (implies (mv-nth 0 (split-string-last str char))
+           (< (length (mv-nth 1 (split-string-last str char)))
+              (length str)))
+  :hints (("Goal" :use (:instance <-of-len-of-mv-nth-2-of-split-chars
+                                  (chars (revappend (coerce str 'list) nil)))
+           :in-theory (e/d (split-string-last)
+                           (<-of-len-of-mv-nth-2-of-split-chars)))))
+
+(defthm <-of-length-of-mv-nth-2-of-split-string-last
+  (implies (mv-nth 0 (split-string-last str char))
+           (< (length (mv-nth 2 (split-string-last str char)))
+              (length str)))
+  :hints (("Goal" :use (:instance <-of-len-of-mv-nth-1-of-split-chars
+                                  (chars (revappend (coerce str 'list) nil)))
+           :in-theory (e/d (split-string-last)
+                           (<-of-len-of-mv-nth-1-of-split-chars)))))
