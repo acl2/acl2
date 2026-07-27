@@ -452,6 +452,39 @@
         (defind-pred-info-fix info)))
     (defind-lookup-pred pred-name (cdr infos))))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-lookup-pred-set ((preds symbol-setp)
+                                (infos defind-pred-info-listp))
+  :returns (selected-infos defind-pred-info-listp)
+  :short "Look up the information about the predicates in a given set."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee defind-lookup-pred) to a set of predicates:
+     we return the information for the predicates in the set,
+     in the same order in which the information appears
+     in the input list."))
+  (b* (((when (endp infos)) nil)
+       (info (defind-pred-info-fix (car infos)))
+       (infos (defind-lookup-pred-set preds (cdr infos))))
+    (if (set::in (defind-pred-info->name info) (symbol-sfix preds))
+        (cons info infos)
+      infos))
+
+  ///
+
+  (defret subsetp-equal-of-names-of-defind-lookup-pred-set
+    (subsetp-equal (defind-pred-info-list->name selected-infos)
+                   (defind-pred-info-list->name infos))
+    :hints (("Goal" :induct t)))
+
+  (defret no-duplicatesp-equal-of-names-of-defind-lookup-pred-set
+    (implies (no-duplicatesp-equal (defind-pred-info-list->name infos))
+             (no-duplicatesp-equal
+              (defind-pred-info-list->name selected-infos)))
+    :hints (("Goal" :induct t))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defind-term-info-free-vars ((info defind-term-infop))
@@ -2149,6 +2182,20 @@
   :short "Name of a @('p[i]-proof') fixtype."
   (packn-pos (list (symbol-lfix pred-name) '-proof) (symbol-lfix name)))
 
+;;;;;;;;;;
+
+(define defind-proof-type-clique-name ((pred-name symbolp) (name symbolp))
+  :returns (deftypes-name symbolp)
+  :short "Name of a @('p[i]-proof') fixtype clique."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used for the mutually recursive fixtypes of proofs
+     of a clique of two or more predicates;
+     the name is derived from the first predicate of the clique."))
+  (packn-pos (list (symbol-lfix pred-name) '-proof-clique)
+             (symbol-lfix name)))
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (define defind-assert-recog-name ((pred-name symbolp) (name symbolp))
@@ -2997,6 +3044,7 @@
                                     (infos defind-irule-info-listp)
                                     (levels symbol-set-listp)
                                     (preds-in-previous-cliques symbol-setp)
+                                    (prepworkp booleanp)
                                     (name symbolp)
                                     (xdocp booleanp))
   :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
@@ -3024,7 +3072,14 @@
      Currently, since a single predicate at level 0 is supported,
      no measure or base case override is actually generated;
      this code is in preparation for
-     lifting the restriction to a single predicate."))
+     lifting the restriction to a single predicate.")
+   (xdoc::p
+    "The @('prepworkp') input determines whether the fixtype includes
+     a @(':prepwork') that limits the induction depth:
+     this is done when the fixtype is standalone;
+     when the fixtype is inside
+     a clique of mutually recursive fixtypes,
+     the limit is in the enclosing @(tsee fty::deftypes) instead."))
   (b* ((summands (defind-gen-proof-summands pred-name infos name))
        (measurep (consp (cdr (symbol-set-list-fix levels))))
        (level (defind-pred-level pred-name levels))
@@ -3045,7 +3100,8 @@
        ,@(and measurep
               `(:measure (two-nats-measure (acl2-count x) ,level)))
        :pred ,(defind-proof-recog-name pred-name name)
-       :prepwork ((set-induction-depth-limit 1)))))
+       ,@(and prepworkp
+              '(:prepwork ((set-induction-depth-limit 1)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3053,6 +3109,7 @@
                                      (irule-infos defind-irule-info-listp)
                                      (levels symbol-set-listp)
                                      (preds-in-previous-cliques symbol-setp)
+                                     (prepworkp booleanp)
                                      (name symbolp)
                                      (xdocp booleanp))
   :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
@@ -3062,11 +3119,96 @@
   (b* (((when (endp pred-infos)) nil)
        (pred-name (defind-pred-info->name (car pred-infos)))
        (event (defind-gen-proof-deftagsum pred-name irule-infos
-                levels preds-in-previous-cliques name xdocp))
+                levels preds-in-previous-cliques prepworkp name xdocp))
        (events (defind-gen-proof-deftagsums
                  (cdr pred-infos) irule-infos
-                 levels preds-in-previous-cliques name xdocp)))
+                 levels preds-in-previous-cliques prepworkp name xdocp)))
     (cons event events)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof-fixtypes ((pred-infos defind-pred-info-listp)
+                                   (irule-infos defind-irule-info-listp)
+                                   (leveled-cliques symbol-set-list-listp)
+                                   (name symbolp)
+                                   (xdocp booleanp))
+  :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+              (no-duplicatesp-equal (defind-irule-info-list->name irule-infos)))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate the fixtypes of proofs, for all the cliques."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We generate one event per clique, in dependency order.
+     For a clique of a single predicate,
+     the event is the fixtype of proofs of the predicate.
+     For a clique of multiple predicates,
+     the event is a @(tsee fty::deftypes)
+     with the mutually recursive fixtypes of proofs
+     of the predicates of the clique;
+     the @(tsee fty::deftypes) is named after
+     the first predicate of the clique,
+     and it includes the induction depth limit
+     that is otherwise in the standalone fixtypes.")
+   (xdoc::p
+    "Currently a single clique of a single predicate is supported;
+     this code is more general, in preparation for lifting that restriction."))
+  (defind-gen-proof-fixtypes-loop
+    leveled-cliques nil pred-infos irule-infos name xdocp)
+
+  :prepwork
+
+  ((define defind-gen-proof-fixtypes-loop
+     ((leveled-cliques symbol-set-list-listp)
+      (preds-in-previous-cliques symbol-setp)
+      (pred-infos defind-pred-info-listp)
+      (irule-infos defind-irule-info-listp)
+      (name symbolp)
+      (xdocp booleanp))
+     :guard (and (no-duplicatesp-equal
+                  (defind-pred-info-list->name pred-infos))
+                 (no-duplicatesp-equal
+                  (defind-irule-info-list->name irule-infos)))
+     :returns (events pseudo-event-form-listp)
+     :parents nil
+     (b* (((when (endp leveled-cliques)) nil)
+          (levels (symbol-set-list-fix (car leveled-cliques)))
+          (clique-preds (set::set-list-union levels))
+          (clique-pred-infos (defind-lookup-pred-set clique-preds pred-infos))
+          (events (defind-gen-proof-fixtypes-loop
+                    (cdr leveled-cliques)
+                    (set::union clique-preds
+                                (symbol-sfix preds-in-previous-cliques))
+                    pred-infos irule-infos name xdocp))
+          ((unless (consp clique-pred-infos))
+           (raise "Internal error: no predicates in clique with levels ~x0."
+                  levels)
+           events)
+          (event
+           (if (endp (cdr clique-pred-infos))
+               (defind-gen-proof-deftagsum
+                 (defind-pred-info->name (car clique-pred-infos))
+                 irule-infos levels preds-in-previous-cliques
+                 t name xdocp)
+             (b* ((deftagsums (defind-gen-proof-deftagsums
+                                clique-pred-infos irule-infos
+                                levels preds-in-previous-cliques
+                                nil name xdocp))
+                  (deftypes-name
+                    (defind-proof-type-clique-name
+                      (defind-pred-info->name (car clique-pred-infos))
+                      name)))
+               `(fty::deftypes ,deftypes-name
+                  ,@(and xdocp
+                         `(:parents (,(symbol-lfix name))
+                           :short "Fixtypes of proofs for
+                                   the mutually recursive predicates."))
+                  ,@deftagsums
+                  :prepwork ((set-induction-depth-limit 1)))))))
+       (cons event events))
+     :no-function nil
+     :guard-hints
+     (("Goal" :in-theory (enable set-listp-when-symbol-set-listp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4238,19 +4380,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The events are wrapped into an @(tsee encapsulate).")
-   (xdoc::p
-    "Currently the predicates always form a single clique
-     (with a single predicate),
-     whose levels are used to generate the fixtypes of proofs."))
+    "The events are wrapped into an @(tsee encapsulate)."))
   (b* ((name-doc-event
         (defind-gen-name-defxdoc+ name parents short long xdocp))
        (assert-type-events
         (defind-gen-assertion-defprods pred-infos name xdocp))
-       (levels (car leveled-cliques))
        (proof-type-events
-        (defind-gen-proof-deftagsums pred-infos irule-infos
-          levels nil name xdocp))
+        (defind-gen-proof-fixtypes pred-infos irule-infos
+          leveled-cliques name xdocp))
        (proof-concl-events
         (defind-gen-proof-concl-fns pred-infos irule-infos name xdocp))
        (irule-valid-events
