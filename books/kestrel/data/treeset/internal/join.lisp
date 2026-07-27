@@ -128,6 +128,18 @@
       (equal (tree-join left right) nil))
   :rule-classes :type-prescription)
 
+(defruled tree->head-of-tree-join
+  (implies (not (and (tree-empty-p left)
+                     (tree-empty-p right)))
+           (equal (tree->head (tree-join left right))
+                  (cond ((tree-empty-p left) (tree->head right))
+                        ((tree-empty-p right) (tree->head left))
+                        ((heap< (tree-element->val (tree->head left))
+                                (tree-element->val (tree->head right)))
+                         (tree->head right))
+                        (t (tree->head left)))))
+  :expand ((tree-join left right)))
+
 (defrule tree-in-of-tree-join
   (equal (tree-in x (tree-join left right))
          (or (tree-in x left)
@@ -250,6 +262,19 @@
       (equal (tree-join-at split left right) nil))
   :rule-classes :type-prescription
   :enable tree-join-at)
+
+(defruled tree->head-of-tree-join-at
+  (implies (not (and (tree-empty-p left)
+                     (tree-empty-p right)))
+           (equal (tree->head (tree-join-at split left right))
+                  (cond ((tree-empty-p left) (tree->head right))
+                        ((tree-empty-p right) (tree->head left))
+                        ((heap< (tree-element->val (tree->head left))
+                                (tree-element->val (tree->head right)))
+                         (tree->head right))
+                        (t (tree->head left)))))
+  :enable (tree-join-at
+           tree->head-of-tree-join))
 
 (defrule tree-in-of-tree-join-at
   (equal (tree-in x (tree-join-at split left right))
