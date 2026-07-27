@@ -983,10 +983,17 @@
       "The @(':box') summand is the main, core form of boxing,
        which is unary, i.e. it has exactly one ispace.
        The n-ary @(':boxn') summand is sugar for a nesting of the unary form;
-       it always contains two or ispaces
+       it always contains two or more ispaces
        (because there must have at least one ispace,
        and if there is just one we use the unary form),
-       but this fixtype does not capture this requirement.")
+       but this fixtype does not capture this requirement.
+       The type of a unary box is optional:
+       it is always present in the concrete syntax,
+       but it is absent in the inner boxes of
+       the nest that an n-ary box desugars to,
+       because those types can only be computed during type checking;
+       this matches [impl].
+       The type of an n-ary box is instead always present.")
      (xdoc::p
       "[impl] has only unary ASTs for abstractions and boxing."))
     (:base ((lit base-lit)))
@@ -1006,7 +1013,7 @@
                 (body expr)))
     (:box ((ispace ispace)
            (array expr)
-           (type type)))
+           (type? type-option)))
     (:boxn ((ispaces ispace-list) ; two or more
             (array expr)
             (type type)))

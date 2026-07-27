@@ -1702,7 +1702,15 @@
      (xdoc::p
       "For a boxing atom,
        the ispaces must be valid (see @(tsee check-ispace-list)),
-       and the type that is part of its syntax must be a sum type.
+       and the type, which is optional in the abstract syntax,
+       must be present and must be a sum type.
+       An unannotated unary box,
+       which is intended for the inner boxes of
+       the nest that an n-ary box desugars to (see @(tsee atom)),
+       is rejected for now;
+       accepting it requires threading the peeled sum type down the nest,
+       which is part of planned changes to
+       the treatment of boxing in the static semantics.
        The type must be valid (see @(tsee check-type)).
        We check that the ispaces in the boxing atom have the same sorts
        as the bound variables of the sum type,
@@ -1778,9 +1786,12 @@
      :box
      (b* (((unless (check-ispace-list (list atom.ispace) senv)) (reserr nil))
           (ispaces (senv-expand-ispace-list (list atom.ispace) senv))
-          ((unless (type-atomp atom.type)) (reserr nil))
-          ((unless (check-type atom.type senv)) (reserr nil))
-          ((ok box-type) (senv-expand-type atom.type senv))
+          ((ok type) (type-option-case atom.type?
+                                       :some atom.type?.val
+                                       :none (reserr nil)))
+          ((unless (type-atomp type)) (reserr nil))
+          ((unless (check-type type senv)) (reserr nil))
+          ((ok box-type) (senv-expand-type type senv))
           ((ok vars+type) (type-match-sum box-type))
           (vars (ispacevarlist+type->vars vars+type))
           (body-type (ispacevarlist+type->type vars+type))
@@ -1796,7 +1807,7 @@
         :type box-type
         :atom (make-atom-box :ispace atom.ispace
                              :array ae.expr
-                             :type atom.type)))
+                             :type? atom.type?)))
      :boxn
      (b* (((unless (check-ispace-list atom.ispaces senv)) (reserr nil))
           (ispaces (senv-expand-ispace-list atom.ispaces senv))

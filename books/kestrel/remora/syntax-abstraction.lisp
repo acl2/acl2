@@ -2267,7 +2267,7 @@
          ((okf ty) (abs-type te-tree)))
       (if (and (consp ispaces)
                (endp (cdr ispaces)))
-          (make-atom-box :ispace (car ispaces) :array array :type ty)
+          (make-atom-box :ispace (car ispaces) :array array :type? ty)
         (make-atom-boxn :ispaces ispaces :array array :type ty)))
     :measure (abnf::tree-count tree))
 

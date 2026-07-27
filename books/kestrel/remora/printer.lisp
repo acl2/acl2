@@ -1384,17 +1384,23 @@
                    "i-fn"
                    (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc a.params))
                                 (pdoc-concat (pdoc-line) body))))
-      :box (b* (((ok array) (expr-to-pdoc a.array)))
-             (pdoc-prefix-form
-              "box"
-              (pdoc-concat
-               (pdoc-paren (ispace-list-to-pdoc (list a.ispace)))
-               (pdoc-concat
-                (pdoc-line)
-                (pdoc-concat
-                 array
-                 (pdoc-concat (pdoc-line)
-                              (type-to-pdoc a.type)))))))
+      ;; The box-expr grammar rule requires the type,
+      ;; so we fail when the optional type is absent:
+      ;; there is no concrete syntax that renders it.
+      :box (type-option-case
+            a.type?
+            :none (reserr (list :box-without-type (atom-fix a)))
+            :some (b* (((ok array) (expr-to-pdoc a.array)))
+                    (pdoc-prefix-form
+                     "box"
+                     (pdoc-concat
+                      (pdoc-paren (ispace-list-to-pdoc (list a.ispace)))
+                      (pdoc-concat
+                       (pdoc-line)
+                       (pdoc-concat
+                        array
+                        (pdoc-concat (pdoc-line)
+                                     (type-to-pdoc a.type?.val))))))))
       :boxn (b* (((ok array) (expr-to-pdoc a.array)))
               (pdoc-prefix-form
                "box"
