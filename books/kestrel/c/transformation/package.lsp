@@ -17,7 +17,7 @@
 (include-book "oslib/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
 
-(include-book "../syntax/abstract-syntax-symbols")
+(include-book "../syntax/exported-symbols")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
