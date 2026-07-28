@@ -94,7 +94,10 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds)
+          exprs/atoms/binds
+          decl
+          decl-list
+          file)
   :result booleanp
   :default t
   :combine and
