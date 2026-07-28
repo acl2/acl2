@@ -788,6 +788,8 @@
     type-params-case
     type-params-count
 
+    type-completions-p
+
     ident-type-map
     ident-type-mapp
     ident-type-map-fix
