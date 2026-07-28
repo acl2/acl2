@@ -524,17 +524,10 @@ int main(void) {
   (c$::input-files :files '("typedef-anon.c")
                    :const *old*)
 
-  (must-fail
-    (struct-type-split *old*
-                       *new*
-                       :typedef-name "point_t"
-                       :right-members ("z")))
-
   (struct-type-split *old*
                      *new*
                      :typedef-name "point_t"
-                     :right-members ("z")
-                     :safety-checks nil)
+                     :right-members ("z"))
 
   (c$::output-files :const *new*
                     :base-dir "new")

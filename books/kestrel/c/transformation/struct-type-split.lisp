@@ -4829,8 +4829,6 @@
        (uid (if current-type?
                 (c$::type-struct->uid current-type?)
               (c$::irr-uid)))
-       (current-tag? (and current-type?
-                          (c$::type-struct->tag? current-type?)))
        ((when (or (not current-type?)
                   (not (c$::type-compatible-p
                          primary-type
@@ -4851,7 +4849,6 @@
         (reterr (sts-error-in-translation-unit msg? st)))
        (safep
         (b* (((unless safety-checks) t)
-             ((unless current-tag?) nil)
              ((when erp) nil)
              (spec (make-sts-struct-spec :uid uid)))
           (trans-unit-sts-safep tunit spec tunit-vtable completions)))
