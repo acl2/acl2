@@ -651,14 +651,6 @@ int main(void) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The core transformation supports arrays, but the current safety checks reject
-;; them, so the array tests below use :safety-checks nil.  With safety checks
-;; enabled, the split struct type may not appear in array types, function types,
-;; the members of a union type, or its own members (i.e. it may not be
-;; self-referential).  A directly splittable member of another struct type is,
-;; however, supported: it is split in place (see the success tests further
-;; below).
-
 (acl2::must-succeed*
   ;; Casting a pointer to the split struct type to void * exposes its
   ;; representation, so the safety check rejects the transformation.
