@@ -185,3 +185,35 @@
   :short "Subtree of a tree at a valid path."
   (tree-fix (check-tree-path path tree))
   :guard-hints (("Goal" :in-theory (enable tree-path-validp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tree-path-fringe-start ((path tree-pathp) (tree treep))
+  :guard (tree-path-validp path tree)
+  :returns (start natp :rule-classes (:rewrite :type-prescription))
+  :short "Place, in the fringe of a tree,
+          where the subtree at a path starts."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the length of the part of the tree's fringe
+     that precedes the fringe of the subtree occurrence
+     identified by the (valid) path.
+     At each step of the path,
+     we add the lengths of the fringes of the branches
+     that precede the selected one.")
+   (xdoc::p
+    "Together with the length of the fringe of the subtree at the path,
+     this determines where the subtree occurrence sits in the tree's fringe."))
+  (b* (((when (endp path)) 0)
+       ((tree-path-step step) (car path))
+       (subtreess (tree-nonleaf->branches tree))
+       (subtrees (nth step.conc subtreess))
+       (subtree (nth step.rep subtrees)))
+    (+ (len (tree-list-list->string (take step.conc subtreess)))
+       (len (tree-list->string (take step.rep subtrees)))
+       (tree-path-fringe-start (cdr path) subtree)))
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable tree-path-validp
+                                           check-tree-path
+                                           true-listp-when-tree-listp))))
