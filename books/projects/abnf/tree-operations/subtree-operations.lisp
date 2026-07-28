@@ -148,8 +148,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "That is, check if the paths stays within the tree,
-     reaching a subtree of the treee,
+    "That is, check if the path stays within the tree,
+     reaching a subtree of the tree,
      which we return.
      Otherwise we return @('nil').")
    (xdoc::p
