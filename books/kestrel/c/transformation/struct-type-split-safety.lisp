@@ -1024,30 +1024,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define struct-declor-info-sts-safep ((sdeclor struct-declorp)
-                                      (spec sts-struct-specp)
-                                      (vtable valid-tablep)
-                                      (completions type-completions-p))
-  :returns (yes/no booleanp)
-  :short "Check if a structure declarator
-          is safe for the STS transformation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Since this is a member of a structure,
-     we are not at the top level,
-     so we call @(tsee type-sts-safep) with @('nested') set to @('t'),
-     instead of @(tsee top-type-sts-safep)."))
-  (b* ((info (struct-declor->info sdeclor)))
-    (and (or (type-vinfop info)
-             (raise "Internal error: malformed ~x0." info))
-         (or (type-sts-safep
-              (type-vinfo->type info) t spec vtable completions 1000000)
-             (sts-reject (struct-declor-fix sdeclor)))))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define init-declor-info-sts-safep ((ideclor init-declorp)
                                     (spec sts-struct-specp)
                                     (vtable valid-tablep)
@@ -1400,19 +1376,6 @@
                                               vtable
                                               completions)
                   (tyname-info-sts-safep tyname spec vtable completions))))
-   (struct-declor (b* (((struct-declor struct-declor)))
-                    (and (declor-option-sts-safep struct-declor.declor?
-                                                  spec
-                                                  vtable
-                                                  completions)
-                         (const-expr-option-sts-safep struct-declor.expr?
-                                                      spec
-                                                      vtable
-                                                      completions)
-                         (struct-declor-info-sts-safep struct-declor
-                                                       spec
-                                                       vtable
-                                                       completions))))
    (attrib t)
    (init-declor (b* (((init-declor init-declor)))
                   (and (declor-sts-safep init-declor.declor
