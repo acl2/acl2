@@ -300,6 +300,31 @@
   :type pfilep
   :body (pfile nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap filepath-pfile-map
+  :short "Fixtype of maps from file paths to preprocessing files."
+  :key-type filepath
+  :val-type pfile
+  :pred filepath-pfile-mapp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod pensemble
+  :short "Fixtype of preprocessing ensembles."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This notion has no explicit counterpart in [C17] and [C23],
+     but it captures the idea of a collection of preprocessing files,
+     each identified by its distinct name (file path).
+     This is analogous, and named similarly to, "
+    (xdoc::seetopic "trans-ensemble"
+                    "translation unit ensembles")
+    "."))
+  ((pfiles filepath-pfile-map))
+  :pred pensemblep)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define concatenate-cond-bodies ((parts ppart-listp)
