@@ -472,8 +472,8 @@
   (xdoc::topstring
    (xdoc::p
     "We check that the struct type being split
-     is not nested in array or union types.
-     Nesting under other struct types is fine,
+     is not nested in union types.
+     Nesting under other struct and array types is fine,
      i.e. properly handled by the STS transformation."))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -506,8 +506,9 @@
        because we support nesting under structs but not under unions.")
      (xdoc::p
       "For array types, we check the element type,
-       setting the @('nested') flag to @('t')
-       since we do not support nesting under arrays.")
+       leaving the @('nested') flag as is,
+       since we support nesting under arrays
+       (but the flag may be @('t') due to the array being under a union).")
      (xdoc::p
       "For pointer types, we leave the @('nested') flag as is;
        although the struct type being split cannot be nested as such in them,
@@ -554,7 +555,7 @@
                (type-struni-tag/members-sts-safep type.tag/members nil spec))
      :union (type-struni-tag/members-sts-safep type.tag/members t spec)
      :enum t
-     :array (type-sts-safep type.of t spec)
+     :array (type-sts-safep type.of nested spec)
      :pointer (type-sts-safep type.to nested spec)
      :function (and (type-sts-safep type.ret t spec)
                     (type-params-sts-safep type.params nested spec))
