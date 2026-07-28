@@ -480,7 +480,9 @@
 
   (define type-sts-safep ((type typep)
                           (nested booleanp)
-                          (spec sts-struct-specp))
+                          (spec sts-struct-specp)
+                          (vtable valid-tablep)
+                          (completions type-completions-p))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a type is safe for the STS transformation."
@@ -552,13 +554,16 @@
                                                     type.tag/members
                                                     spec))
                  (sts-reject `(:nested ,(type-fix type)))
-               (type-struni-tag/members-sts-safep type.tag/members nil spec))
-     :union (type-struni-tag/members-sts-safep type.tag/members t spec)
+               (type-struni-tag/members-sts-safep
+                type.tag/members nil spec vtable completions))
+     :union (type-struni-tag/members-sts-safep
+             type.tag/members t spec vtable completions)
      :enum t
-     :array (type-sts-safep type.of nested spec)
-     :pointer (type-sts-safep type.to nested spec)
-     :function (and (type-sts-safep type.ret t spec)
-                    (type-params-sts-safep type.params nested spec))
+     :array (type-sts-safep type.of nested spec vtable completions)
+     :pointer (type-sts-safep type.to nested spec vtable completions)
+     :function (and (type-sts-safep type.ret t spec vtable completions)
+                    (type-params-sts-safep
+                     type.params nested spec vtable completions))
      :unknown (sts-reject (type-fix type))
      :unknown-builtin t
      :unknown-scalar (sts-reject (type-fix type))
@@ -569,7 +574,9 @@
 
   (define type-list-sts-safep ((types type-listp)
                                (nested booleanp)
-                               (spec sts-struct-specp))
+                               (spec sts-struct-specp)
+                               (vtable valid-tablep)
+                               (completions type-completions-p))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a list of types are safe for the STS transformation."
@@ -578,16 +585,18 @@
      (xdoc::p
       "We check every type in turn."))
     (or (endp types)
-        (and (type-sts-safep (car types) nested spec)
-             (type-list-sts-safep (cdr types) nested spec)))
+        (and (type-sts-safep (car types) nested spec vtable completions)
+             (type-list-sts-safep (cdr types) nested spec vtable completions)))
     :measure (type-list-count types))
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (define type-struni-tag/members-sts-safep ((tystr-tag/mems
-                                              type-struni-tag/members-p)
-                                             (nested booleanp)
-                                             (spec sts-struct-specp))
+  (define type-struni-tag/members-sts-safep
+    ((tystr-tag/mems type-struni-tag/members-p)
+     (nested booleanp)
+     (spec sts-struct-specp)
+     (vtable valid-tablep)
+     (completions type-completions-p))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that the portion of a struct/union type
@@ -602,29 +611,33 @@
        Otherwise, we descend into the members."))
     (type-struni-tag/members-case
      tystr-tag/mems
-     :tagged t
-     :untagged (type-struni-member-list-sts-safep tystr-tag/mems.members
-                                                  nested
-                                                  spec))
+     :tagged t ; TODO: refine
+     :untagged (type-struni-member-list-sts-safep
+                tystr-tag/mems.members nested spec vtable completions))
     :measure (type-struni-tag/members-count tystr-tag/mems))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define type-struni-member-sts-safep ((mem type-struni-member-p)
                                         (nested booleanp)
-                                        (spec sts-struct-specp))
+                                        (spec sts-struct-specp)
+                                        (vtable valid-tablep)
+                                        (completions type-completions-p))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a struct/union member
             is safe for the STS transformation."
-    (type-sts-safep (type-struni-member->type mem) nested spec)
+    (type-sts-safep
+     (type-struni-member->type mem) nested spec vtable completions)
     :measure (type-struni-member-count mem))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define type-struni-member-list-sts-safep ((mems type-struni-member-listp)
                                              (nested booleanp)
-                                             (spec sts-struct-specp))
+                                             (spec sts-struct-specp)
+                                             (vtable valid-tablep)
+                                             (completions type-completions-p))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a list of struct/union members
@@ -634,15 +647,19 @@
      (xdoc::p
       "We check every member in turn."))
     (or (endp mems)
-        (and (type-struni-member-sts-safep (car mems) nested spec)
-             (type-struni-member-list-sts-safep (cdr mems) nested spec)))
+        (and (type-struni-member-sts-safep
+              (car mems) nested spec vtable completions)
+             (type-struni-member-list-sts-safep
+              (cdr mems) nested spec vtable completions)))
     :measure (type-struni-member-list-count mems))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define type-params-sts-safep ((params type-params-p)
                                  (nested booleanp)
-                                 (spec sts-struct-specp))
+                                 (spec sts-struct-specp)
+                                 (vtable valid-tablep)
+                                 (completions type-completions-p))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that the portion of a function type
@@ -654,8 +671,10 @@
       "We check all the types."))
     (type-params-case
      params
-     :prototype (type-list-sts-safep params.params nested spec)
-     :old-style (type-list-sts-safep params.params nested spec)
+     :prototype (type-list-sts-safep
+                 params.params nested spec vtable completions)
+     :old-style (type-list-sts-safep
+                 params.params nested spec vtable completions)
      :unspecified t)
     :measure (type-params-count params))
 
@@ -667,14 +686,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define top-type-sts-safep ((type typep) (spec sts-struct-specp))
+(define top-type-sts-safep ((type typep)
+                            (spec sts-struct-specp)
+                            (vtable valid-tablep)
+                            (completions type-completions-p))
   :returns (yes/no booleanp)
   :short "Check that a top-level type is safe for the STS transformation."
   :long
   (xdoc::topstring
    (xdoc::p
     "We set the nested flag to @('nil'), since we are at the top level."))
-  (or (type-sts-safep type nil spec)
+  (or (type-sts-safep type nil spec vtable completions)
       (sts-reject (type-fix type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -896,13 +918,16 @@
 
 (define param-declor-nonabstract-sts-safep ((declor declorp)
                                             info
-                                            (spec sts-struct-specp))
+                                            (spec sts-struct-specp)
+                                            (vtable valid-tablep)
+                                            (completions type-completions-p))
   :returns (yes/no booleanp)
   :short "Check if a non-abstract parameter declarator
           is safe for the STS transformation."
   (and (or (type+uid-vinfop info)
            (raise "Internal error: malformed ~x0." info))
-       (or (top-type-sts-safep (type+uid-vinfo->type info) spec)
+       (or (top-type-sts-safep
+            (type+uid-vinfo->type info) spec vtable completions)
            (sts-reject (param-declor-nonabstract declor info))))
   :no-function nil)
 
@@ -910,34 +935,41 @@
 
 (define param-declor-abstract-sts-safep ((declor absdeclorp)
                                          info
-                                         (spec sts-struct-specp))
+                                         (spec sts-struct-specp)
+                                         (vtable valid-tablep)
+                                         (completions type-completions-p))
   :returns (yes/no booleanp)
   :short "Check if an abstract parameter declarator
           is safe for the STS transformation."
   (and (or (type-vinfop info)
            (raise "Internal error: malformed ~x0." info))
-       (or (top-type-sts-safep (type-vinfo->type info) spec)
+       (or (top-type-sts-safep (type-vinfo->type info) spec vtable completions)
            (sts-reject (param-declor-abstract declor info))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tyname-info-sts-safep ((tyname tynamep)
-                               (spec sts-struct-specp))
+                               (spec sts-struct-specp)
+                               (vtable valid-tablep)
+                               (completions type-completions-p))
   :returns (yes/no booleanp)
   :short "Check if a type name
           is safe for the STS transformation."
   (b* ((info (tyname->info tyname)))
     (and (or (type-vinfop info)
              (raise "Internal error: malformed ~x0." info))
-         (or (top-type-sts-safep (type-vinfo->type info) spec)
+         (or (top-type-sts-safep
+              (type-vinfo->type info) spec vtable completions)
              (sts-reject (tyname-fix tyname)))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define struct-declor-info-sts-safep ((sdeclor struct-declorp)
-                                      (spec sts-struct-specp))
+                                      (spec sts-struct-specp)
+                                      (vtable valid-tablep)
+                                      (completions type-completions-p))
   :returns (yes/no booleanp)
   :short "Check if a structure declarator
           is safe for the STS transformation."
@@ -951,14 +983,16 @@
   (b* ((info (struct-declor->info sdeclor)))
     (and (or (type-vinfop info)
              (raise "Internal error: malformed ~x0." info))
-         (or (type-sts-safep (type-vinfo->type info) t spec)
+         (or (type-sts-safep (type-vinfo->type info) t spec vtable completions)
              (sts-reject (struct-declor-fix sdeclor)))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define init-declor-info-sts-safep ((ideclor init-declorp)
-                                    (spec sts-struct-specp))
+                                    (spec sts-struct-specp)
+                                    (vtable valid-tablep)
+                                    (completions type-completions-p))
   :returns (yes/no booleanp)
   :short "Check if the type in
           the validation annotation of an initializer declarator
@@ -966,13 +1000,17 @@
   (b* ((info (init-declor->info ideclor)))
     (and (or (init-declor-vinfop info)
              (raise "Internal error: malformed ~x0." info))
-         (or (top-type-sts-safep (init-declor-vinfo->type info) spec)
+         (or (top-type-sts-safep
+              (init-declor-vinfo->type info) spec vtable completions)
              (sts-reject (init-declor-fix ideclor)))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fundef-info-sts-safep ((fundef fundefp) (spec sts-struct-specp))
+(define fundef-info-sts-safep ((fundef fundefp)
+                               (spec sts-struct-specp)
+                               (vtable valid-tablep)
+                               (completions type-completions-p))
   :returns (yes/no booleanp)
   :short "Check if the type in
           the validation annotation of a function definition
@@ -980,7 +1018,8 @@
   (b* ((info (fundef->info fundef)))
     (and (or (type+uid-vinfop info)
              (raise "Internal error: malformed ~x0." info))
-         (or (top-type-sts-safep (type+uid-vinfo->type info) spec)
+         (or (top-type-sts-safep
+              (type+uid-vinfo->type info) spec vtable completions)
              (sts-reject (fundef-fix fundef)))))
   :no-function nil)
 
@@ -1238,7 +1277,10 @@
                                                  spec
                                                  vtable
                                                  completions)
-                       (tyname-info-sts-safep expr.type spec)))
+                       (tyname-info-sts-safep expr.type
+                                              spec
+                                              vtable
+                                              completions)))
    (expr :unary (and (expr-sts-safep expr.arg spec vtable completions)
                      (expr-unary-sts-safep expr.op expr.arg expr.info spec)))
    (expr :sizeof (and (tyname-sts-safep expr.type spec vtable completions)
@@ -1276,7 +1318,9 @@
                                    (param-declor-nonabstract-sts-safep
                                     param-declor.declor
                                     param-declor.info
-                                    spec)))
+                                    spec
+                                    vtable
+                                    completions)))
    (param-declor :abstract (and (absdeclor-sts-safep param-declor.declor
                                                      spec
                                                      vtable
@@ -1284,7 +1328,9 @@
                                 (param-declor-abstract-sts-safep
                                  param-declor.declor
                                  param-declor.info
-                                 spec)))
+                                 spec
+                                 vtable
+                                 completions)))
    (tyname (b* (((tyname tyname)))
              (and (spec/qual-list-sts-safep tyname.specquals
                                             spec
@@ -1294,7 +1340,7 @@
                                               spec
                                               vtable
                                               completions)
-                  (tyname-info-sts-safep tyname spec))))
+                  (tyname-info-sts-safep tyname spec vtable completions))))
    (struct-declor (b* (((struct-declor struct-declor)))
                     (and (declor-option-sts-safep struct-declor.declor?
                                                   spec
@@ -1304,7 +1350,10 @@
                                                       spec
                                                       vtable
                                                       completions)
-                         (struct-declor-info-sts-safep struct-declor spec))))
+                         (struct-declor-info-sts-safep struct-declor
+                                                       spec
+                                                       vtable
+                                                       completions))))
    (attrib t)
    (init-declor (b* (((init-declor init-declor)))
                   (and (declor-sts-safep init-declor.declor
@@ -1319,7 +1368,10 @@
                                                 spec
                                                 vtable
                                                 completions)
-                       (init-declor-info-sts-safep init-declor spec))))
+                       (init-declor-info-sts-safep init-declor
+                                                   spec
+                                                   vtable
+                                                   completions))))
    (asm-output t)
    (asm-input t)
    (asm-stmt (sts-reject (asm-stmt-fix asm-stmt)))
@@ -1338,7 +1390,7 @@
                                               completions)
                   (declon-list-sts-safep fundef.declons spec vtable completions)
                   (comp-stmt-sts-safep fundef.body spec vtable completions)
-                  (fundef-info-sts-safep fundef spec))))
+                  (fundef-info-sts-safep fundef spec vtable completions))))
    (trans-item :include (sts-reject (trans-item-fix trans-item)))
    (trans-item :define (sts-reject (trans-item-fix trans-item)))
    (trans-item :undef (sts-reject (trans-item-fix trans-item)))
