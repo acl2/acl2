@@ -422,23 +422,20 @@
 
   (defruled uinteger-format->max-of-short-format-16tcnt
     (equal (uinteger-format->max
-            (uinteger+sinteger-format->unsigned
-             (integer-format->pair
-              (short-format-16tcnt))))
+            (integer-format->unsigned
+             (short-format-16tcnt)))
            65535))
 
   (defruled sinteger-format->max-of-short-format-16tcnt
     (equal (sinteger-format->max
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (short-format-16tcnt))))
+            (integer-format->signed
+             (short-format-16tcnt)))
            32767))
 
   (defruled sinteger-format->min-of-short-format-16tcnt
     (equal (sinteger-format->min
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (short-format-16tcnt))))
+            (integer-format->signed
+             (short-format-16tcnt)))
            -32768)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -476,23 +473,20 @@
 
   (defruled uinteger-format->max-of-int-format-16tcnt
     (equal (uinteger-format->max
-            (uinteger+sinteger-format->unsigned
-             (integer-format->pair
-              (int-format-16tcnt))))
+            (integer-format->unsigned
+             (int-format-16tcnt)))
            65535))
 
   (defruled sinteger-format->max-of-int-format-16tcnt
     (equal (sinteger-format->max
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (int-format-16tcnt))))
+            (integer-format->signed
+             (int-format-16tcnt)))
            32767))
 
   (defruled sinteger-format->min-of-int-format-16tcnt
     (equal (sinteger-format->min
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (int-format-16tcnt))))
+            (integer-format->signed
+             (int-format-16tcnt)))
            -32768)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -530,23 +524,20 @@
 
   (defruled uinteger-format->max-of-long-format-32tcnt
     (equal (uinteger-format->max
-            (uinteger+sinteger-format->unsigned
-             (integer-format->pair
-              (long-format-32tcnt))))
+            (integer-format->unsigned
+             (long-format-32tcnt)))
            4294967295))
 
   (defruled sinteger-format->max-of-long-format-32tcnt
     (equal (sinteger-format->max
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (long-format-32tcnt))))
+            (integer-format->signed
+             (long-format-32tcnt)))
            2147483647))
 
   (defruled sinteger-format->min-of-long-format-32tcnt
     (equal (sinteger-format->min
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (long-format-32tcnt))))
+            (integer-format->signed
+             (long-format-32tcnt)))
            -2147483648)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -584,23 +575,20 @@
 
   (defruled uinteger-format->max-of-llong-format-64tcnt
     (equal (uinteger-format->max
-            (uinteger+sinteger-format->unsigned
-             (integer-format->pair
-              (llong-format-64tcnt))))
+            (integer-format->unsigned
+             (llong-format-64tcnt)))
            18446744073709551615))
 
   (defruled sinteger-format->max-of-llong-format-64tcnt
     (equal (sinteger-format->max
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (llong-format-64tcnt))))
+            (integer-format->signed
+             (llong-format-64tcnt)))
            9223372036854775807))
 
   (defruled sinteger-format->min-of-llong-format-64tcnt
     (equal (sinteger-format->min
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (llong-format-64tcnt))))
+            (integer-format->signed
+             (llong-format-64tcnt)))
            -9223372036854775808)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
