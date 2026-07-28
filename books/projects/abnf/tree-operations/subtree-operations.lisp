@@ -33,7 +33,7 @@
 
   (define trees-in-tree ((tree treep))
     :returns (treeset tree-setp)
-    :parents (semantics trees-in-trees)
+    :parents (subtree-operations trees-in-trees)
     :short "Set of all the trees in a tree."
     :long
     (xdoc::topstring
@@ -56,7 +56,7 @@
 
   (define trees-in-tree-list ((trees tree-listp))
     :returns (treeset tree-setp)
-    :parents (semantics trees-in-trees)
+    :parents (subtree-operations trees-in-trees)
     :short "Set of all the trees in a list of trees."
     :long
     (xdoc::topstring
@@ -69,7 +69,7 @@
 
   (define trees-in-tree-list-list ((treess tree-list-listp))
     :returns (treeset tree-setp)
-    :parents (semantics trees-in-trees)
+    :parents (subtree-operations trees-in-trees)
     :short "Set of all the trees in a list of lists of trees."
     :long
     (xdoc::topstring
