@@ -534,7 +534,7 @@ int main(void) {
                      *new*
                      :typedef-name "point_t"
                      :right-members ("z")
-                     :unsafe t)
+                     :safety-checks nil)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -658,13 +658,13 @@ int main(void) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The core transformation supports arrays, but the current safety checks
-;; reject them, so the array tests below use :unsafe t.  With safety checks
-;; enabled, the split struct type may not appear in array types, function
-;; types, the members of a union type, or its own members
-;; (i.e. it may not be self-referential).
-;; A directly splittable member of another struct type is, however,
-;; supported: it is split in place (see the success tests further below).
+;; The core transformation supports arrays, but the current safety checks reject
+;; them, so the array tests below use :safety-checks nil.  With safety checks
+;; enabled, the split struct type may not appear in array types, function types,
+;; the members of a union type, or its own members (i.e. it may not be
+;; self-referential).  A directly splittable member of another struct type is,
+;; however, supported: it is split in place (see the success tests further
+;; below).
 
 (acl2::must-succeed*
   ;; Casting a pointer to the split struct type to void * exposes its
@@ -691,7 +691,7 @@ int main(void) {
                      :struct-tag "point"
                      :right-members ("z")
                      :new-tag "point_right"
-                     :unsafe t)
+                     :safety-checks nil)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -733,7 +733,7 @@ int main(void) {
                      :struct-tag "point"
                      :right-members ("z")
                      :new-tag "point_right"
-                     :unsafe t)
+                     :safety-checks nil)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -796,7 +796,7 @@ int main(void) {
                      :struct-tag "point"
                      :right-members ("z")
                      :new-tag "point_right"
-                     :unsafe t)
+                     :safety-checks nil)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -891,7 +891,7 @@ int main(void) {
                      :struct-tag "point"
                      :right-members ("z")
                      :new-tag "point_right"
-                     :unsafe t)
+                     :safety-checks nil)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -929,7 +929,7 @@ int main(void) {
                      :struct-tag "point"
                      :right-members ("z")
                      :new-tag "point_right"
-                     :unsafe t)
+                     :safety-checks nil)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -967,7 +967,7 @@ int main(void) {
                      :struct-tag "point"
                      :right-members ("z")
                      :new-tag "point_right"
-                     :unsafe t)
+                     :safety-checks nil)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1042,7 +1042,7 @@ int main(void) {
                        :struct-tag "point"
                        :right-members ("z")
                        :new-tag "point_right"
-                       :unsafe t))
+                       :safety-checks nil))
 
   :with-output-off nil)
 
@@ -1072,7 +1072,7 @@ int main(void) {
                      :struct-tag "point"
                      :right-members ("z")
                      :new-tag "point_right"
-                     :unsafe t)
+                     :safety-checks nil)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1112,7 +1112,7 @@ int main(void) {
                      :struct-tag "point"
                      :right-members ("z")
                      :new-tag "point_right"
-                     :unsafe t)
+                     :safety-checks nil)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1162,7 +1162,7 @@ int main(void) {
                      :struct-tag "point"
                      :right-members ("z")
                      :new-tag "point_right"
-                     :unsafe t)
+                     :safety-checks nil)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1211,7 +1211,7 @@ int main(void) {
                      :struct-tag "point"
                      :right-members ("z")
                      :new-tag "point_right"
-                     :unsafe t)
+                     :safety-checks nil)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1283,7 +1283,7 @@ int main(void) {
                      :struct-tag "point"
                      :right-members ("z")
                      :new-tag "point_right"
-                     :unsafe t)
+                     :safety-checks nil)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1323,7 +1323,7 @@ int main(void) {
                      :struct-tag "point"
                      :right-members ("z")
                      :new-tag "point_right"
-                     :unsafe t)
+                     :safety-checks nil)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1367,7 +1367,7 @@ int main(void) {
                      :struct-tag "point"
                      :right-members ("z")
                      :new-tag "point_right"
-                     :unsafe t)
+                     :safety-checks nil)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1423,7 +1423,7 @@ int main(void) {
                      :struct-tag "point"
                      :right-members ("z")
                      :new-tag "point_right"
-                     :unsafe t)
+                     :safety-checks nil)
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1535,7 +1535,7 @@ int main(void) {
                      :struct-tag "point"
                      :right-members ("z")
                      :new-tag "point_right"
-                     :unsafe t)
+                     :safety-checks nil)
 
   (c$::output-files :const *new*
                     :base-dir "new")

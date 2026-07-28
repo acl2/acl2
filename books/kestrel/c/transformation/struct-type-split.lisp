@@ -4772,7 +4772,7 @@
    (primary-type c$::typep)
    (completions c$::type-completions-p)
    (ienv c$::ienvp)
-   (unsafe booleanp)
+   (safety-checks booleanp)
    (tunits filepath-trans-unit-mapp)
    (st sts-split-statep))
   :guard (and (c$::filepath-trans-unit-map-annop tunits)
@@ -4842,7 +4842,7 @@
         (b* (((erp rest st)
               (sts-split-trans-units
                 tag? typedef-name? primary-type completions ienv
-                unsafe (omap::tail tunits) st)))
+                safety-checks (omap::tail tunits) st)))
           (retok (omap::update filepath (c$::trans-unit-fix tunit) rest)
                  st)))
        (st (change-sts-split-state st :filepath filepath))
@@ -4850,7 +4850,7 @@
        ((when msg?)
         (reterr (sts-error-in-translation-unit msg? st)))
        (safep
-        (b* (((when unsafe) t)
+        (b* (((unless safety-checks) t)
              ((unless current-tag?) nil)
              ((when erp) nil)
              (spec (make-sts-struct-spec :uid uid)))
@@ -4867,7 +4867,7 @@
        ((erp rest st)
         (sts-split-trans-units
           tag? typedef-name? primary-type completions ienv
-          unsafe (omap::tail tunits) st)))
+          safety-checks (omap::tail tunits) st)))
     (retok (omap::update filepath tunit rest) st))
   :verify-guards :after-returns
   :guard-hints
@@ -4883,7 +4883,7 @@
    (typedef-name? ident-optionp)
    (filepath? c$::filepath-optionp)
    (right-name? ident-optionp)
-   (unsafe booleanp)
+   (safety-checks booleanp)
    (code code-ensemblep))
   :guard (code-ensemble-annop code)
   :returns (mv (er? maybe-msgp)
@@ -4962,7 +4962,7 @@
              :completions completions))
        ((erp map st)
         (sts-split-trans-units
-          tag? typedef-name? primary-type completions code.ienv unsafe map st))
+          tag? typedef-name? primary-type completions code.ienv safety-checks map st))
        (- (fast-alist-free completions))
        (warnings (sts-split-state->warnings st))
        (new-trans-units (c$::change-trans-ensemble code.trans-units
@@ -5002,7 +5002,7 @@
                                   typedef-name?
                                   filepath
                                   new-tag
-                                  unsafe
+                                  safety-checks
                                   print-warnings
                                   (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
@@ -5012,7 +5012,7 @@
                (typedef-name? ident-optionp)
                (filepath? c$::filepath-optionp)
                (new-tag? ident-optionp)
-               (unsafe$ booleanp)
+               (safety-checks$ booleanp)
                (print-warnings$ booleanp)
                (const-new$ symbolp))
   :short "Process the inputs."
@@ -5052,14 +5052,14 @@
                     (stringp new-tag)))
         (retmsg$ "~x0 must be nil or a string." new-tag))
        (new-tag? (and new-tag (c$::ident new-tag)))
-       ((unless (booleanp unsafe))
-        (retmsg$ "~x0 must be a boolean." unsafe))
+       ((unless (booleanp safety-checks))
+        (retmsg$ "~x0 must be a boolean." safety-checks))
        ((unless (booleanp print-warnings))
         (retmsg$ "~x0 must be a boolean." print-warnings))
        ((unless (symbolp const-new))
         (retmsg$ "~x0 must be a symbol." const-new)))
     (retok code right-members tag? typedef-name? filepath? new-tag?
-           unsafe print-warnings const-new))
+           safety-checks print-warnings const-new))
   ///
 
   (defret code-ensemble-annop-of-sts-split-process-inputs.code
@@ -5104,7 +5104,7 @@
    (typedef-name? ident-optionp)
    (filepath? c$::filepath-optionp)
    (new-tag? ident-optionp)
-   (unsafe booleanp)
+   (safety-checks booleanp)
    (print-warnings booleanp)
    (const-new symbolp))
   :guard (code-ensemble-annop code)
@@ -5114,7 +5114,7 @@
   (b* (((reterr) '(_))
        ((erp code warnings)
         (sts-split-code-ensemble
-          right-members tag? typedef-name? filepath? new-tag? unsafe code))
+          right-members tag? typedef-name? filepath? new-tag? safety-checks code))
        (- (and print-warnings
                (sts-print-warnings warnings)))
        (defconst-event
@@ -5131,7 +5131,7 @@
                               typedef-name
                               filepath
                               new-tag
-                              unsafe
+                              safety-checks
                               print-warnings
                               (ctx ctxp)
                               state)
@@ -5140,7 +5140,7 @@
                state)
   :short "Event expansion of @(tsee struct-type-split)."
   (b* (((mv erp code right-members tag? typedef-name? filepath? new-tag?
-            unsafe print-warnings const-new)
+            safety-checks print-warnings const-new)
         (sts-split-process-inputs const-old
                                   const-new
                                   right-members
@@ -5148,7 +5148,7 @@
                                   typedef-name
                                   filepath
                                   new-tag
-                                  unsafe
+                                  safety-checks
                                   print-warnings
                                   (w state)))
        ((when erp)
@@ -5160,7 +5160,7 @@
                                   typedef-name?
                                   filepath?
                                   new-tag?
-                                  unsafe
+                                  safety-checks
                                   print-warnings
                                   const-new))
        ((when erp)
@@ -5180,7 +5180,7 @@
      typedef-name
      filepath
      new-tag
-     unsafe
+     (safety-checks 't)
      (print-warnings 't))
     `(make-event (struct-type-split-fn ',const-old
                                        ',const-new
@@ -5189,7 +5189,7 @@
                                        ',typedef-name
                                        ',filepath
                                        ',new-tag
-                                       ',unsafe
+                                       ',safety-checks
                                        ',print-warnings
                                        'struct-type-split
                                        state))))
