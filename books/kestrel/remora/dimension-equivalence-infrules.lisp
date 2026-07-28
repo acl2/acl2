@@ -24,13 +24,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is work in progress towards
-     a higher-level definition of dimension equivalence
-     than the executable definition in @(see ispace-equivalence).
-     This higher-level definition is an inductive one, via inference rules.
-     This is part of our plan to add
-     higher-level inductive definitions, via inference rules,
-     of the static and dynamic semantics of Remora."))
+    "We formalize the equivalence of dimensions via inference rules.
+     Although [thesis], [arxiv], and [esop] do not explicate these rules,
+     there existence is arguably implied;
+     those publications make use of judgements
+     asserting the equivalence of ispaces (called `indices' there),
+     and describe the equations according to which
+     dimensions are considered equivalent.
+     Unlike [impl], those publications only have addition,
+     but our rules also include multiplication and subtraction."))
   :order-subtopics t
   :default-parent t)
 
