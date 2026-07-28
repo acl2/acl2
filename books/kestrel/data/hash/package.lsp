@@ -13,5 +13,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "HASH"
-  (union-eq '(defxdoc+)
+  (union-eq '(defxdoc+
+              lnfix)
             *std-pkg-symbols*))
