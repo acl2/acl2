@@ -778,8 +778,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :safety-checks nil)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -947,8 +946,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :safety-checks nil)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1051,8 +1049,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :safety-checks nil)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1091,8 +1088,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :safety-checks nil)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1141,8 +1137,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :safety-checks nil)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1190,8 +1185,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :safety-checks nil)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1262,8 +1256,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :safety-checks nil)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1302,8 +1295,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :safety-checks nil)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1346,8 +1338,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :safety-checks nil)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1402,8 +1393,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :safety-checks nil)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1514,8 +1504,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :safety-checks nil)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
