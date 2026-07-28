@@ -545,5 +545,8 @@
     uint-dec-const ; exposes uint-from-integer
     uint-hex-const ; exposes uint-from-integer
     uint-oct-const ; exposes uint-from-integer
-    uint-max)
+    uint-max
+    ;;(:e uint-from-integer) ; not sure if we want these
+    ;;(:e integer-from-uint)
+    )
   :redundant-okp t)
