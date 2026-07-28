@@ -47,8 +47,8 @@
       and certain lists two or more elements.
       For instance, the fact that
       @(':bracket') expression lists
-      (grammar: @('\"[\" ws exp *( ws exp ) ws \"]\"')
-      contain at least one expression)."))
+      (grammar: @('\"[\" ws exp *( ws exp ) ws \"]\"'))
+      contain at least one expression."))
    (xdoc::p
     "All these well-formedness constraints on ASTs
      are established by the syntax abstraction mapping,
