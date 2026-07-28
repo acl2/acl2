@@ -12,6 +12,8 @@
 
 (include-book "kestrel/fty/symbol-set-list" :dir :system)
 
+(local (include-book "std/lists/top" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist symbol-set-list-list

@@ -184,10 +184,23 @@
 (defines types-may-refer-to-struct-spec-p
   :short "Check if types may refer to the struct type being split,
           directly or indirectly."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This involves looking up struct types
+     in the type completions via the validation tables,
+     in order to check the members found there.
+     Termination requires a more elaborate argument
+     than we are willing to flesh out at this time,
+     and so we cop out with an artificial recursion limit."))
 
   ;;;;;;;;;;
 
-  (define type-may-refer-to-struct-spec-p ((type typep) (spec sts-struct-specp))
+  (define type-may-refer-to-struct-spec-p ((type typep)
+                                           (spec sts-struct-specp)
+                                           (vtable valid-tablep)
+                                           (completions type-completions-p)
+                                           (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if a type may refer to the struct type being split,
@@ -211,63 +224,81 @@
        among other possibilities.
        But unknown arithmetic and unknowno built-in types fail the check,
        because they cannot be or refer to the struct type."))
-    (type-case
-     type
-     :void nil
-     :char nil
-     :schar nil
-     :uchar nil
-     :sshort nil
-     :ushort nil
-     :sint nil
-     :uint nil
-     :slong nil
-     :ulong nil
-     :sllong nil
-     :ullong nil
-     :float nil
-     :double nil
-     :ldouble nil
-     :floatc nil
-     :doublec nil
-     :ldoublec nil
-     :bool nil
-     :struct (or (struct-type-is-struct-spec-p type.uid
-                                               type.tunit?
-                                               type.tag/members
-                                               spec)
-                 (type-struni-tag/members-may-refer-to-struct-spec-p
-                  type.tag/members spec))
-     :union (type-struni-tag/members-may-refer-to-struct-spec-p
-             type.tag/members spec)
-     :enum nil
-     :array (type-may-refer-to-struct-spec-p type.of spec)
-     :pointer (type-may-refer-to-struct-spec-p type.to spec)
-     :function (or (type-may-refer-to-struct-spec-p type.ret spec)
-                   (type-params-may-refer-to-struct-spec-p type.params spec))
-     :unknown t
-     :unknown-builtin nil
-     :unknown-scalar t
-     :unknown-arithmetic nil)
-    :measure (type-count type))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-case
+       type
+       :void nil
+       :char nil
+       :schar nil
+       :uchar nil
+       :sshort nil
+       :ushort nil
+       :sint nil
+       :uint nil
+       :slong nil
+       :ulong nil
+       :sllong nil
+       :ullong nil
+       :float nil
+       :double nil
+       :ldouble nil
+       :floatc nil
+       :doublec nil
+       :ldoublec nil
+       :bool nil
+       :struct (or (struct-type-is-struct-spec-p type.uid
+                                                 type.tunit?
+                                                 type.tag/members
+                                                 spec)
+                   (type-struni-tag/members-may-refer-to-struct-spec-p
+                    type.tag/members spec vtable completions (1- limit)))
+       :union (type-struni-tag/members-may-refer-to-struct-spec-p
+               type.tag/members spec vtable completions (1- limit))
+       :enum nil
+       :array (type-may-refer-to-struct-spec-p
+               type.of spec vtable completions (1- limit))
+       :pointer (type-may-refer-to-struct-spec-p
+                 type.to spec vtable completions (1- limit))
+       :function (or (type-may-refer-to-struct-spec-p
+                      type.ret spec vtable completions (1- limit))
+                     (type-params-may-refer-to-struct-spec-p
+                      type.params spec vtable completions (1- limit)))
+       :unknown t
+       :unknown-builtin nil
+       :unknown-scalar t
+       :unknown-arithmetic nil))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;
 
-  (define type-list-may-refer-to-struct-spec-p ((types type-listp)
-                                                (spec sts-struct-specp))
+  (define type-list-may-refer-to-struct-spec-p
+    ((types type-listp)
+     (spec sts-struct-specp)
+     (vtable valid-tablep)
+     (completions type-completions-p)
+     (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if (any element of) a list of types
             may refer to the struct type being split, directly or indirectly."
-    (and (not (endp types))
-         (or (type-may-refer-to-struct-spec-p (car types) spec)
-             (type-list-may-refer-to-struct-spec-p (cdr types) spec)))
-    :measure (type-list-count types))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (and (not (endp types))
+           (or (type-may-refer-to-struct-spec-p
+                (car types) spec vtable completions (1- limit))
+               (type-list-may-refer-to-struct-spec-p
+                (cdr types) spec vtable completions (1- limit)))))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;
 
   (define type-struni-tag/members-may-refer-to-struct-spec-p
-    ((tystr-tag/mems type-struni-tag/members-p) (spec sts-struct-specp))
+    ((tystr-tag/mems type-struni-tag/members-p)
+     (spec sts-struct-specp)
+     (vtable valid-tablep)
+     (completions type-completions-p)
+     (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if the portion of struct/union types
@@ -277,61 +308,100 @@
     (xdoc::topstring
      (xdoc::p
       "If we just have a tag,
-       we should look it up in the validation information,
-       so we can recursively check the struct type found there.
-       For now we just conservatively return @('t'),
-       but we plan to refine that.")
+       we look it up in the validation information,
+       so we can recursively check the struct type found there.")
      (xdoc::p
       "If instead we have members, we recursively check them."))
-    (type-struni-tag/members-case
-     tystr-tag/mems
-     :tagged t ; TODO: refine
-     :untagged (type-struni-member-list-may-refer-to-struct-spec-p
-                tystr-tag/mems.members spec))
-    :measure (type-struni-tag/members-count tystr-tag/mems))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-struni-tag/members-case
+       tystr-tag/mems
+       :tagged (b* (((mv info &)
+                     (c$::valid-lookup-tag tystr-tag/mems.tag vtable))
+                    ((unless info)
+                     (raise "Internal error: ~
+                             no information for ~x0 in ~x1."
+                            tystr-tag/mems.tag vtable))
+                    (uid (c$::valid-tag-info->uid info))
+                    (members?
+                     (hons-get uid (c$::type-completions-fix completions)))
+                    ((unless members?)
+                     (raise "Internal error: ~
+                             no members for ~x0 in ~x0."
+                            uid completions))
+                    (members (cdr members?)))
+                 (type-struni-member-list-may-refer-to-struct-spec-p
+                  members spec vtable completions (1- limit)))
+       :untagged (type-struni-member-list-may-refer-to-struct-spec-p
+                  tystr-tag/mems.members spec vtable completions (1- limit))))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;
 
   (define type-struni-member-may-refer-to-struct-spec-p
-    ((mem type-struni-member-p) (spec sts-struct-specp))
+    ((mem type-struni-member-p)
+     (spec sts-struct-specp)
+     (vtable valid-tablep)
+     (completions type-completions-p)
+     (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if a struct or union member
             may refer to the struct type being split, directly or indirectly."
-    (type-may-refer-to-struct-spec-p (type-struni-member->type mem) spec)
-    :measure (type-struni-member-count mem))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-may-refer-to-struct-spec-p
+       (type-struni-member->type mem) spec vtable completions (1- limit)))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;
 
   (define type-struni-member-list-may-refer-to-struct-spec-p
-    ((mems type-struni-member-listp) (spec sts-struct-specp))
+    ((mems type-struni-member-listp)
+     (spec sts-struct-specp)
+     (vtable valid-tablep)
+     (completions type-completions-p)
+     (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if (any element of) a list of struct or union members
             may refer to the struct type being split, directly or indirectly."
-    (and (not (endp mems))
-         (or (type-struni-member-may-refer-to-struct-spec-p (car mems) spec)
-             (type-struni-member-list-may-refer-to-struct-spec-p (cdr mems)
-                                                                 spec)))
-    :measure (type-struni-member-list-count mems))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (and (not (endp mems))
+           (or (type-struni-member-may-refer-to-struct-spec-p
+                (car mems) spec vtable completions (1- limit))
+               (type-struni-member-list-may-refer-to-struct-spec-p
+                (cdr mems) spec vtable completions (1- limit)))))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;
 
-  (define type-params-may-refer-to-struct-spec-p ((params type-params-p)
-                                                  (spec sts-struct-specp))
+  (define type-params-may-refer-to-struct-spec-p
+    ((params type-params-p)
+     (spec sts-struct-specp)
+     (vtable valid-tablep)
+     (completions type-completions-p)
+     (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
     :short "Check if a portion of a function type
             pertaining to the function parameters
             may refer to the struct type being split, directly or indirectly."
-    (type-params-case
-     params
-     :prototype (type-list-may-refer-to-struct-spec-p params.params spec)
-     :old-style (type-list-may-refer-to-struct-spec-p params.params spec)
-     :unspecified nil)
-    :measure (type-params-count params))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-params-case
+       params
+       :prototype (type-list-may-refer-to-struct-spec-p
+                   params.params spec vtable completions (1- limit))
+       :old-style (type-list-may-refer-to-struct-spec-p
+                   params.params spec vtable completions (1- limit))
+       :unspecified nil))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;
+
+  :prepwork ((local (in-theory (enable nfix))))
 
   ///
 
@@ -733,7 +803,9 @@
 
 (define expr-cast-sts-safep ((tyname tynamep)
                              (arg exprp)
-                             (spec sts-struct-specp))
+                             (spec sts-struct-specp)
+                             (vtable valid-tablep)
+                             (completions type-completions-p))
   :returns (yes/no booleanp)
   :short "Check if a cast expression is safe for the STS transformation."
   :long
@@ -746,8 +818,16 @@
            (expr-unamb/anno-p arg)
            (b* ((src-type (expr-type arg))
                 (dst-type (type-vinfo->type (tyname->info tyname))))
-             (and (not (type-may-refer-to-struct-spec-p src-type spec))
-                  (not (type-may-refer-to-struct-spec-p dst-type spec)))))
+             (and (not (type-may-refer-to-struct-spec-p src-type
+                                                        spec
+                                                        vtable
+                                                        completions
+                                                        1000000))
+                  (not (type-may-refer-to-struct-spec-p dst-type
+                                                        spec
+                                                        vtable
+                                                        completions
+                                                        1000000)))))
       (sts-reject (expr-cast tyname arg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1100,9 +1180,6 @@
     "We reject the @('__stdcall') and @('__declspec') declaration specifiers,
      out of caution.")
    (xdoc::p
-    "We reject initializers with optional designations for now,
-     because they may affect the struct type being split.")
-   (xdoc::p
     "Declarators (@(tsee declor) ASTs) are checked indirectly,
      via the types of the ASTs where declarators may appear:
      function definitions,
@@ -1150,69 +1227,116 @@
   :result booleanp
   :default t
   :combine and
-  :extra-args ((spec sts-struct-specp))
+  :extra-args ((spec sts-struct-specp)
+               (vtable valid-tablep)
+               (completions type-completions-p))
   :override
   ((expr :gensel (sts-reject (expr-fix expr)))
-   (expr :complit (and (tyname-sts-safep expr.type spec)
-                       (desiniter-list-sts-safep expr.elems spec)
+   (expr :complit (and (tyname-sts-safep expr.type spec vtable completions)
+                       (desiniter-list-sts-safep expr.elems
+                                                 spec
+                                                 vtable
+                                                 completions)
                        (tyname-info-sts-safep expr.type spec)))
-   (expr :unary (and (expr-sts-safep expr.arg spec)
+   (expr :unary (and (expr-sts-safep expr.arg spec vtable completions)
                      (expr-unary-sts-safep expr.op expr.arg expr.info spec)))
-   (expr :sizeof (and (tyname-sts-safep expr.type spec)
+   (expr :sizeof (and (tyname-sts-safep expr.type spec vtable completions)
                       (expr-sizeof-sts-safep expr.type spec)))
-   (expr :alignof (and (tyname-sts-safep expr.type spec)
+   (expr :alignof (and (tyname-sts-safep expr.type spec vtable completions)
                        (expr-alignof-sts-safep expr.type expr.uscores spec)))
-   (expr :cast (and (tyname-sts-safep expr.type spec)
-                    (expr-sts-safep expr.arg spec)
-                    (expr-cast-sts-safep expr.type expr.arg spec)))
-   (expr :binary (and (expr-sts-safep expr.arg1 spec)
-                      (expr-sts-safep expr.arg2 spec)
+   (expr :cast (and (tyname-sts-safep expr.type spec vtable completions)
+                    (expr-sts-safep expr.arg spec vtable completions)
+                    (expr-cast-sts-safep expr.type
+                                         expr.arg
+                                         spec
+                                         vtable
+                                         completions)))
+   (expr :binary (and (expr-sts-safep expr.arg1 spec vtable completions)
+                      (expr-sts-safep expr.arg2 spec vtable completions)
                       (expr-binary-sts-safep
                        expr.op expr.arg1 expr.arg2 expr.info spec)))
    (expr :tycompat (sts-reject (expr-fix expr)))
    (expr :offsetof (sts-reject (expr-fix expr)))
    (expr :va-arg (sts-reject (expr-fix expr)))
-   (type-spec :atomic (and (tyname-sts-safep type-spec.type spec)
+   (type-spec :atomic (and (tyname-sts-safep type-spec.type
+                                             spec
+                                             vtable
+                                             completions)
                            (type-spec-atomic-sts-safep type-spec.type spec)))
    (type-spec :typeof-expr (sts-reject (type-spec-fix type-spec)))
    (type-spec :typeof-type (sts-reject (type-spec-fix type-spec)))
    (type-spec :auto-type (sts-reject (type-spec-fix type-spec)))
    (decl-spec :stdcall (sts-reject (decl-spec-fix decl-spec)))
    (decl-spec :declspec (sts-reject (decl-spec-fix decl-spec)))
-   (desiniter (sts-reject (desiniter-fix desiniter)))
-   (param-declor :nonabstract (and (declor-sts-safep param-declor.declor spec)
+   (param-declor :nonabstract (and (declor-sts-safep param-declor.declor
+                                                     spec
+                                                     vtable
+                                                     completions)
                                    (param-declor-nonabstract-sts-safep
                                     param-declor.declor
                                     param-declor.info
                                     spec)))
-   (param-declor :abstract (and (absdeclor-sts-safep param-declor.declor spec)
+   (param-declor :abstract (and (absdeclor-sts-safep param-declor.declor
+                                                     spec
+                                                     vtable
+                                                     completions)
                                 (param-declor-abstract-sts-safep
                                  param-declor.declor
                                  param-declor.info
                                  spec)))
    (tyname (b* (((tyname tyname)))
-             (and (spec/qual-list-sts-safep tyname.specquals spec)
-                  (absdeclor-option-sts-safep tyname.declor? spec)
+             (and (spec/qual-list-sts-safep tyname.specquals
+                                            spec
+                                            vtable
+                                            completions)
+                  (absdeclor-option-sts-safep tyname.declor?
+                                              spec
+                                              vtable
+                                              completions)
                   (tyname-info-sts-safep tyname spec))))
    (struct-declor (b* (((struct-declor struct-declor)))
-                    (and (declor-option-sts-safep struct-declor.declor? spec)
-                         (const-expr-option-sts-safep struct-declor.expr? spec)
+                    (and (declor-option-sts-safep struct-declor.declor?
+                                                  spec
+                                                  vtable
+                                                  completions)
+                         (const-expr-option-sts-safep struct-declor.expr?
+                                                      spec
+                                                      vtable
+                                                      completions)
                          (struct-declor-info-sts-safep struct-declor spec))))
    (attrib t)
    (init-declor (b* (((init-declor init-declor)))
-                  (and (declor-sts-safep init-declor.declor spec)
-                       (attrib-spec-list-sts-safep init-declor.attribs spec)
-                       (initer-option-sts-safep init-declor.initer? spec)
+                  (and (declor-sts-safep init-declor.declor
+                                         spec
+                                         vtable
+                                         completions)
+                       (attrib-spec-list-sts-safep init-declor.attribs
+                                                   spec
+                                                   vtable
+                                                   completions)
+                       (initer-option-sts-safep init-declor.initer?
+                                                spec
+                                                vtable
+                                                completions)
                        (init-declor-info-sts-safep init-declor spec))))
    (asm-output t)
    (asm-input t)
    (asm-stmt (sts-reject (asm-stmt-fix asm-stmt)))
    (fundef (b* (((fundef fundef)))
-             (and (decl-spec-list-sts-safep fundef.specs spec)
-                  (declor-sts-safep fundef.declor spec)
-                  (attrib-spec-list-sts-safep fundef.attribs spec)
-                  (declon-list-sts-safep fundef.declons spec)
-                  (comp-stmt-sts-safep fundef.body spec)
+             (and (decl-spec-list-sts-safep fundef.specs
+                                            spec
+                                            vtable
+                                            completions)
+                  (declor-sts-safep fundef.declor
+                                    spec
+                                    vtable
+                                    completions)
+                  (attrib-spec-list-sts-safep fundef.attribs
+                                              spec
+                                              vtable
+                                              completions)
+                  (declon-list-sts-safep fundef.declons spec vtable completions)
+                  (comp-stmt-sts-safep fundef.body spec vtable completions)
                   (fundef-info-sts-safep fundef spec))))
    (trans-item :include (sts-reject (trans-item-fix trans-item)))
    (trans-item :define (sts-reject (trans-item-fix trans-item)))

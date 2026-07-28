@@ -4819,12 +4819,13 @@
         (retok nil (sts-split-state-fix st)))
        (filepath (c$::filepath-fix (omap::head-key tunits)))
        (tunit (omap::head-val tunits))
+       (tunit-vtable
+        (c$::trans-unit-vinfo->table-end (c$::trans-unit->info tunit)))
        ((erp current-type?)
-        (sts-find-struct-type-in-valid-table
-          tag?
-          typedef-name?
-          filepath
-          (c$::trans-unit-vinfo->table-end (c$::trans-unit->info tunit))))
+        (sts-find-struct-type-in-valid-table tag?
+                                             typedef-name?
+                                             filepath
+                                             tunit-vtable))
        (uid (if current-type?
                 (c$::type-struct->uid current-type?)
               (c$::irr-uid)))
@@ -4853,7 +4854,7 @@
              ((unless current-tag?) nil)
              ((when erp) nil)
              (spec (make-sts-struct-spec :uid uid)))
-          (trans-unit-sts-safep tunit spec)))
+          (trans-unit-sts-safep tunit spec tunit-vtable completions)))
        ((unless safep)
         (reterr (sts-error-in-translation-unit
                   (msg$ "Safety check failed.")
@@ -4934,10 +4935,6 @@
           filepath? tag? typedef-name? code.trans-units))
        (primary-uid (c$::type-struct->uid primary-type))
        (primary-tag? (c$::type-struct->tag? primary-type))
-       ((when (and (not unsafe)
-                   (not primary-tag?)))
-        (retmsg$ "Safety checks are not supported for an untagged struct type. ~
-                  Use :UNSAFE T to disable the safety checks."))
        (info (c$::trans-ensemble->info code.trans-units))
        ;; type-compatible-p accesses the completions with hons-get,
        ;; so they must be a fast alist.

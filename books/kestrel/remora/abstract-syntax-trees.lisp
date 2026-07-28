@@ -460,8 +460,8 @@
        by using singleton lists in @(':funn')
        for the case of a parenthesized type,
        using instead @(':fun') for an unparenthesized one.
-       In @(':funn'), the list of input types is never empty,
-       but this requirement is not captured in this AST fixtype.")
+       The n-ary @(':funn') is also allowed to have no input types;
+       see grammar.")
      (xdoc::p
       "The @(':forall'), @(':pi'), and @(':sigma') summands are
        the main, core form of universal, product, and sum type,
@@ -489,7 +489,7 @@
                (ispaces ispace-list)))
     (:fun ((in type)
            (out type)))
-    (:funn ((in type-list) ; one or more
+    (:funn ((in type-list)
             (out type)))
     (:forall ((param type-var)
               (body type)))
