@@ -472,9 +472,16 @@
   (xdoc::topstring
    (xdoc::p
     "We check that the struct type being split
-     is not nested in union types.
-     Nesting under other struct and array types is fine,
-     i.e. properly handled by the STS transformation."))
+     is not nested under in union types.
+     Nesting under other struct and under array types is fine,
+     i.e. properly handled by the STS transformation.")
+   (xdoc::p
+    "This code involves looking up struct types
+     in the type completions via the validation tables,
+     in order to check the members found there.
+     Termination requires a more elaborate argument
+     than we are willing to flesh out at this time,
+     and so we cop out with an artificial recursion limit."))
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -482,7 +489,8 @@
                           (nested booleanp)
                           (spec sts-struct-specp)
                           (vtable valid-tablep)
-                          (completions type-completions-p))
+                          (completions type-completions-p)
+                          (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a type is safe for the STS transformation."
@@ -527,48 +535,53 @@
        (e.g. structs that contain the struct being split).
        But an unknown arithmetic type is safe,
        because it can never be or contain the struct being split."))
-    (type-case
-     type
-     :void t
-     :char t
-     :schar t
-     :uchar t
-     :sshort t
-     :ushort t
-     :sint t
-     :uint t
-     :slong t
-     :ulong t
-     :sllong t
-     :ullong t
-     :float t
-     :double t
-     :ldouble t
-     :floatc t
-     :doublec t
-     :ldoublec t
-     :bool t
-     :struct (if (and nested
-                      (struct-type-is-struct-spec-p type.uid
-                                                    type.tunit?
-                                                    type.tag/members
-                                                    spec))
-                 (sts-reject `(:nested ,(type-fix type)))
-               (type-struni-tag/members-sts-safep
-                type.tag/members nil spec vtable completions))
-     :union (type-struni-tag/members-sts-safep
-             type.tag/members t spec vtable completions)
-     :enum t
-     :array (type-sts-safep type.of nested spec vtable completions)
-     :pointer (type-sts-safep type.to nested spec vtable completions)
-     :function (and (type-sts-safep type.ret t spec vtable completions)
-                    (type-params-sts-safep
-                     type.params nested spec vtable completions))
-     :unknown (sts-reject (type-fix type))
-     :unknown-builtin t
-     :unknown-scalar (sts-reject (type-fix type))
-     :unknown-arithmetic t)
-    :measure (type-count type))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-case
+       type
+       :void t
+       :char t
+       :schar t
+       :uchar t
+       :sshort t
+       :ushort t
+       :sint t
+       :uint t
+       :slong t
+       :ulong t
+       :sllong t
+       :ullong t
+       :float t
+       :double t
+       :ldouble t
+       :floatc t
+       :doublec t
+       :ldoublec t
+       :bool t
+       :struct (if (and nested
+                        (struct-type-is-struct-spec-p type.uid
+                                                      type.tunit?
+                                                      type.tag/members
+                                                      spec))
+                   (sts-reject `(:nested ,(type-fix type)))
+                 (type-struni-tag/members-sts-safep
+                  type.tag/members nil spec vtable completions (1- limit)))
+       :union (type-struni-tag/members-sts-safep
+               type.tag/members t spec vtable completions (1- limit))
+       :enum t
+       :array (type-sts-safep
+               type.of nested spec vtable completions (1- limit))
+       :pointer (type-sts-safep
+                 type.to nested spec vtable completions (1- limit))
+       :function (and (type-sts-safep
+                       type.ret t spec vtable completions (1- limit))
+                      (type-params-sts-safep
+                       type.params nested spec vtable completions (1- limit)))
+       :unknown (sts-reject (type-fix type))
+       :unknown-builtin t
+       :unknown-scalar (sts-reject (type-fix type))
+       :unknown-arithmetic t))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -576,7 +589,8 @@
                                (nested booleanp)
                                (spec sts-struct-specp)
                                (vtable valid-tablep)
-                               (completions type-completions-p))
+                               (completions type-completions-p)
+                               (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a list of types are safe for the STS transformation."
@@ -584,10 +598,14 @@
     (xdoc::topstring
      (xdoc::p
       "We check every type in turn."))
-    (or (endp types)
-        (and (type-sts-safep (car types) nested spec vtable completions)
-             (type-list-sts-safep (cdr types) nested spec vtable completions)))
-    :measure (type-list-count types))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (or (endp types)
+          (and (type-sts-safep
+                (car types) nested spec vtable completions (1- limit))
+               (type-list-sts-safep
+                (cdr types) nested spec vtable completions (1- limit)))))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -596,7 +614,8 @@
      (nested booleanp)
      (spec sts-struct-specp)
      (vtable valid-tablep)
-     (completions type-completions-p))
+     (completions type-completions-p)
+     (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that the portion of a struct/union type
@@ -609,12 +628,18 @@
        checks on the definition of the type referred to by the tag
        are performed elsewhere.
        Otherwise, we descend into the members."))
-    (type-struni-tag/members-case
-     tystr-tag/mems
-     :tagged t ; TODO: refine
-     :untagged (type-struni-member-list-sts-safep
-                tystr-tag/mems.members nested spec vtable completions))
-    :measure (type-struni-tag/members-count tystr-tag/mems))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-struni-tag/members-case
+       tystr-tag/mems
+       :tagged t ; TODO: refine
+       :untagged (type-struni-member-list-sts-safep tystr-tag/mems.members
+                                                    nested
+                                                    spec
+                                                    vtable
+                                                    completions
+                                                    (1- limit))))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -622,14 +647,21 @@
                                         (nested booleanp)
                                         (spec sts-struct-specp)
                                         (vtable valid-tablep)
-                                        (completions type-completions-p))
+                                        (completions type-completions-p)
+                                        (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a struct/union member
             is safe for the STS transformation."
-    (type-sts-safep
-     (type-struni-member->type mem) nested spec vtable completions)
-    :measure (type-struni-member-count mem))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-sts-safep (type-struni-member->type mem)
+                      nested
+                      spec
+                      vtable
+                      completions
+                      (1- limit)))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -637,7 +669,8 @@
                                              (nested booleanp)
                                              (spec sts-struct-specp)
                                              (vtable valid-tablep)
-                                             (completions type-completions-p))
+                                             (completions type-completions-p)
+                                             (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a list of struct/union members
@@ -646,12 +679,14 @@
     (xdoc::topstring
      (xdoc::p
       "We check every member in turn."))
-    (or (endp mems)
-        (and (type-struni-member-sts-safep
-              (car mems) nested spec vtable completions)
-             (type-struni-member-list-sts-safep
-              (cdr mems) nested spec vtable completions)))
-    :measure (type-struni-member-list-count mems))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (or (endp mems)
+          (and (type-struni-member-sts-safep
+                (car mems) nested spec vtable completions (1- limit))
+               (type-struni-member-list-sts-safep
+                (cdr mems) nested spec vtable completions (1- limit)))))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -659,7 +694,8 @@
                                  (nested booleanp)
                                  (spec sts-struct-specp)
                                  (vtable valid-tablep)
-                                 (completions type-completions-p))
+                                 (completions type-completions-p)
+                                 (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that the portion of a function type
@@ -669,16 +705,20 @@
     (xdoc::topstring
      (xdoc::p
       "We check all the types."))
-    (type-params-case
-     params
-     :prototype (type-list-sts-safep
-                 params.params nested spec vtable completions)
-     :old-style (type-list-sts-safep
-                 params.params nested spec vtable completions)
-     :unspecified t)
-    :measure (type-params-count params))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-params-case
+       params
+       :prototype (type-list-sts-safep
+                   params.params nested spec vtable completions (1- limit))
+       :old-style (type-list-sts-safep
+                   params.params nested spec vtable completions (1- limit))
+       :unspecified t))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork ((local (in-theory (enable nfix))))
 
   ///
 
@@ -696,7 +736,7 @@
   (xdoc::topstring
    (xdoc::p
     "We set the nested flag to @('nil'), since we are at the top level."))
-  (or (type-sts-safep type nil spec vtable completions)
+  (or (type-sts-safep type nil spec vtable completions 1000000)
       (sts-reject (type-fix type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -983,7 +1023,8 @@
   (b* ((info (struct-declor->info sdeclor)))
     (and (or (type-vinfop info)
              (raise "Internal error: malformed ~x0." info))
-         (or (type-sts-safep (type-vinfo->type info) t spec vtable completions)
+         (or (type-sts-safep
+              (type-vinfo->type info) t spec vtable completions 1000000)
              (sts-reject (struct-declor-fix sdeclor)))))
   :no-function nil)
 
