@@ -15,7 +15,8 @@
 (include-book "identifier-syntax")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
-(include-book "kestrel/utilities/ordinals" :dir :system)
+
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (acl2::controlled-configuration)
 
