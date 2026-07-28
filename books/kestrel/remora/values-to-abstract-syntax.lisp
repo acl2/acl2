@@ -584,7 +584,7 @@
                  (make-atom-box
                   :ispace (ispace-value-to-ispace val.ispace)
                   :array array
-                  :type (type-value-to-type val.type)))))
+                  :type? (type-value-to-type val.type)))))
      :vector (b* (((mv err exprs) (expr-value-list-to-exprs val.elems)))
                (mv err (expr-bracket exprs)))
      :vector-empty (mv nil

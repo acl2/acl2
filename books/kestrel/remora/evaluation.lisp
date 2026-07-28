@@ -1287,7 +1287,11 @@
                                          (type-denv->ienv
                                           (expr-denv->tenv denv))))
                  ((ok arrayval) (eval-expr atom.array denv (1- limit)))
-                 ((ok tval) (eval-type atom.type (expr-denv->tenv denv))))
+                 ((ok tval) (type-option-case
+                             atom.type?
+                             :some (eval-type atom.type?.val
+                                              (expr-denv->tenv denv))
+                             :none (reserr nil))))
               (make-expr-value-box :ispace ival :array arrayval :type tval))
        :boxn (b* (((ok ivals) (eval-ispace-list atom.ispaces
                                                 (type-denv->ienv
