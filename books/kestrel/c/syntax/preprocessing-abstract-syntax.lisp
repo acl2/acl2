@@ -18,7 +18,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ preprocessor-files
+(defxdoc+ preprocessing-abstract-syntax
   :parents (preprocessor)
   :short "An abstract syntax for preprocessor files."
   :long
@@ -195,7 +195,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum ppart
-    :parents (preprocessor-files pparts/conds)
+    :parents (preprocessing-abstract-syntax pparts/conds)
     :short "Fixtype of preprocessor group parts."
     :long
     (xdoc::topstring
@@ -218,7 +218,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist ppart-list
-    :parents (preprocessor-files pparts/conds)
+    :parents (preprocessing-abstract-syntax pparts/conds)
     :short "Fixtype of lists of preprocessor group parts."
     :elt-type ppart
     :true-listp t
@@ -237,7 +237,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod pelif
-    :parents (preprocessor-files pparts/conds)
+    :parents (preprocessing-abstract-syntax pparts/conds)
     :short "Fixtype of preprocessor `elif' groups."
     :long
     (xdoc::topstring
@@ -252,7 +252,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist pelif-list
-    :parents (preprocessor-files pparts/conds)
+    :parents (preprocessing-abstract-syntax pparts/conds)
     :short "Fixtype of lists of preprocessor `elif' groups."
     :elt-type pelif
     :true-listp t
@@ -263,7 +263,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod pelse
-    :parents (preprocessor-files pparts/conds)
+    :parents (preprocessing-abstract-syntax pparts/conds)
     :short "Fixtype of `else' groups."
     :long
     (xdoc::topstring
@@ -278,7 +278,7 @@
 
   (fty::defoption pelse-option
     pelse
-    :parents (preprocessor-files pparts/conds)
+    :parents (preprocessing-abstract-syntax pparts/conds)
     :short "Fixtype of optional `else' groups."
     :pred pelse-optionp
     :measure (two-nats-measure (acl2-count x) 2)))
