@@ -692,6 +692,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define fun-curried-out ((in type-listp) (out typep))
+  :guard (consp in)
+  :returns (new-out typep)
+  :short "Peel the first input type from an n-ary function type
+          and return the remaining function type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An n-ary function type with one or more input types
+     is sugar for a nested sequence of unary function types.
+     This function treats an n-ary function type
+     with at least one input type as that sequence,
+     and it returns the output of the outermost unary function type.
+     This is the output type of the whole function type
+     when there is just one input type,
+     otherwise it is another function type,
+     without the first input type.
+     This is analogous to @(tsee forall-curried-body),
+     with input types in place of bound variables."))
+  (b* ((in (type-list-fix in))
+       (out (type-fix out)))
+    (cond ((endp (cdr in)) out)
+          (t (make-type-funn :in (cdr in) :out out)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define forall-curried-body ((params type-var-listp) (body typep))
   :guard (consp params)
   :returns (new-body typep)
