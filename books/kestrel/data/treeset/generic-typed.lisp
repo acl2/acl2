@@ -35,13 +35,13 @@
 (local (include-book "internal/tree"))
 (local (include-book "internal/in"))
 (local (include-book "set"))
+(local (include-book "iter"))
 (local (include-book "in"))
 (local (include-book "min-max"))
 (local (include-book "cardinality"))
 (local (include-book "subset"))
 (local (include-book "insert"))
 (local (include-book "delete"))
-(local (include-book "iter"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -270,28 +270,36 @@
            (set-all-genericp (delete x set)))
   :enable set-all-genericp-pick-a-point-polar)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The same check, run with an @(see iterator) instead of by repeatedly taking
+;; the minimum. The guard rules out a rewound iterator, which has no element to
+;; read; @(tsee iter) never produces one and @(tsee next) never reaches one, so
+;; a forward walk stays within it.
 
 (define iter-all-genericp ((iter iterp))
-  (or (donep iter)
+  :guard (not (before-firstp iter))
+  (or (after-lastp iter)
       (and (genericp (value iter))
            (iter-all-genericp (next iter))))
-  :measure (iter-measure iter))
+  :measure (nexts iter))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled iter-all-genericp-becomes-set-all-genericp
-  (equal (iter-all-genericp iter)
-         (set-all-genericp (from-iter iter)))
-  :induct t
-  :enable (iter-all-genericp
-           set-all-genericp
-           value))
+(in-theory (disable (:t iter-all-genericp)))
 
-(defrule iter-all-genericp-of-iter
-  (equal (iter-all-genericp (iter set))
-         (set-all-genericp set))
-  :enable iter-all-genericp-becomes-set-all-genericp)
+(defrule iter-all-genericp-when-iter-equiv-congruence
+  (implies (iter-equiv iter0 iter1)
+           (equal (iter-all-genericp iter0)
+                  (iter-all-genericp iter1)))
+  :rule-classes :congruence
+  :expand ((iter-all-genericp iter0)
+           (iter-all-genericp iter1)))
+
+(defrule iter-all-genericp-when-after-lastp
+  (implies (after-lastp iter)
+           (iter-all-genericp iter))
+  :enable iter-all-genericp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

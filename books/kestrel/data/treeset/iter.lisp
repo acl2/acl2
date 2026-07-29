@@ -1,4 +1,4 @@
-; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,127 +10,97 @@
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+(include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "internal/iter-defs")
 (include-book "set-defs")
 (include-book "min-max-defs")
-(include-book "cardinality-defs")
-(include-book "delete-defs")
+(include-book "internal/iter")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "internal/tree"))
-(local (include-book "internal/iter"))
 (local (include-book "set"))
 (local (include-book "min-max"))
-(local (include-book "cardinality"))
-(local (include-book "in"))
-(local (include-book "delete"))
+(local (include-book "internal/min-max"))
+(local (include-book "internal/tree"))
+(local (include-book "internal/bst"))
+(local (include-book "internal/heap"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc iterator
   :parents (treeset)
-  :short "Iterators over @(see treeset)s."
+  :short "A position within a @(see treeset)."
   :long
   (xdoc::topstring
-    (xdoc::p
-      "We cannot iterate directly over a @(see treeset) without exposing its
-       underlying tree structure. To provide a convenient interface to iterate
-       over @(see treeset)s abstractly, we provide @(see iterator) objects.
-       @(see Iterator)s are created with @(tsee iter). Then one can iterate
-       tail recursively, calling @(tsee value) to get the current element, and
-       @(tsee next) to advance the iterator, unless it is @(tsee donep).
-       Such a recursive function obviously terminates under
-       @(tsee iter-measure).")
-    (xdoc::p
-      "An @(see iterator) walks over a @(see treeset) <i>in order</i>. That is,
-       the @(tsee value) of an @(see iterator) is the @(tsee min) of the
-       corresponding @(see treeset) (which can be constructed with
-       @(tsee from-iter)), and the @(see treeset) of an @(see iterator) after
-       calling @(tsee next) is the result of deleting the @(tsee min).")
-    (xdoc::p
-      "The process of creating and advancing all the way through an iterator
-       takes @($O(n)$) time, although an individual operation may take
-       @($O(\\log(n))$) time.")))
+   (xdoc::p
+     "Walking a @(see treeset) with @(tsee min) and @(tsee tail) is
+      inefficient. An iterator walks it in order instead, one element at a
+      time, at an amortized cost of @($O(1)$) per step.")
+   (xdoc::p
+     "An iterator sits at one of @($n+2$) positions: at one of the @($n$)
+      elements, before the first, or after the last. @(tsee iter) starts at the
+      first element, @(tsee next) advances, and @(tsee prev) retreats; each
+      saturates at the end it runs into. @(tsee after-lastp) and @(tsee
+      before-firstp) recognize the two ends, where there is no element to
+      read.")
+   (xdoc::p
+     "An iterator carries the whole set, not just what is left of it. So
+      @(tsee from-iter) recovers that set at no cost from any position, and a
+      walk can go either way without having to rebuild anything.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define iterp ((x))
-  :returns (yes/no booleanp :rule-classes (:rewrite :type-prescription))
+(define iterp (x)
+  :returns (yes/no booleanp)
   :parents (iterator)
   :short "Recognizer for @(see iterator)s."
   :long
   (xdoc::topstring
    (xdoc::p
-     "This function is intended for logical use. It should probably not be
-      called in programs due to its time complexity (something like
-      @($O(n\\log^2(n))$))."))
+     "An iterator is a position within a tree which is a @(see treeset). Time
+      complexity: @($O(n)$), since it checks the @(see treeset) invariants."))
   (and (tree-iter-p x)
-       (all-well-formed-p x)
-       (pairwise-tree-subset-p-of-left x)))
+       (setp (tree-iter-plug x))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t iterp)))
+(add-to-ruleset break-abstraction '(iterp))
 
-(defruled iterp-compound-recognizer
-  (if (iterp x)
-      (true-listp x)
-    (not (equal x nil)))
-  :rule-classes :compound-recognizer
-  :enable iterp)
-
-(add-to-ruleset break-abstraction '(iterp-compound-recognizer))
-
-(defruled tree-iter-p-when-iterp-forward-chaining
+(defrule tree-iter-p-when-iterp-forward-chaining
   (implies (iterp iter)
            (tree-iter-p iter))
   :rule-classes :forward-chaining
   :enable iterp)
 
-(add-to-ruleset break-abstraction
-                '(tree-iter-p-when-iterp-forward-chaining))
-
-(defruled all-well-formed-p-when-iterp-forward-chaining
+(defrule setp-of-tree-iter-plug-when-iterp-forward-chaining
   (implies (iterp iter)
-           (all-well-formed-p iter))
+           (setp (tree-iter-plug iter)))
   :rule-classes :forward-chaining
   :enable iterp)
-
-(add-to-ruleset break-abstraction
-                '(all-well-formed-p-when-iterp-forward-chaining))
-
-(defruled pairwise-tree-subset-p-of-left-when-iterp-forward-chaining
-  (implies (iterp iter)
-           (pairwise-tree-subset-p-of-left iter))
-  :rule-classes :forward-chaining
-  :enable iterp)
-
-(add-to-ruleset break-abstraction
-                '(pairwise-tree-subset-p-of-left-when-iterp-forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define iter ((set setp))
   :returns (iter iterp
-                 :hints (("Goal" :in-theory (enable* iterp
-                                                     break-abstraction))))
+                 :hints (("Goal" :in-theory (enable* iterp break-abstraction))))
   :parents (iterator)
-  :short "Construct an iterator from a @(see treeset)."
+  :short "Construct an @(see iterator) over a @(see treeset)."
   :long
   (xdoc::topstring
    (xdoc::p
-     "Time complexity: @($O(\\log(n))$)."))
-  (tree-left-spine (fix set))
+     "The iterator starts at the first element, or past the end when the
+      @(see treeset) is empty.")
+   (xdoc::p
+     "Time complexity: @($O(\\log(n))$), to descend to the first element."))
+  (tree-iter-next (tree-iter-before-first (fix set)))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:e iter) (:t iter)))
+(in-theory (disable (:t iter)))
 
 (defrule iter-when-equiv-congruence
   (implies (equiv set0 set1)
@@ -145,14 +115,37 @@
   :returns (iter$ iterp)
   :parents (iterator)
   :short "Fixer for @(see iterator)s."
-  (mbe :logic (if (iterp iter)
-                  iter
-                (iter (empty)))
-       :exec iter))
+  (mbe :logic (if (iterp iter) iter (iter (empty)))
+       :exec iter)
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:e iter-fix) (:t iter-fix)))
+(in-theory (disable (:t iter-fix)))
+
+(defrule tree-iter-p-of-iter-fix
+  (tree-iter-p (iter-fix iter))
+  :enable iterp
+  :use iterp-of-iter-fix
+  :disable iterp-of-iter-fix)
+
+(defrule tree-iter-fix-of-iter-fix
+  (equal (tree-iter-fix (iter-fix iter))
+         (iter-fix iter)))
+
+(defrule iter-fix-of-tree-iter-next-of-iter-fix
+  (equal (iter-fix (tree-iter-next (iter-fix iter)))
+         (tree-iter-next (iter-fix iter)))
+  :enable (iterp iter-fix)
+  :use (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
+                  (iter (iter-fix iter))))
+
+(defrule iter-fix-of-tree-iter-prev-of-iter-fix
+  (equal (iter-fix (tree-iter-prev (iter-fix iter)))
+         (tree-iter-prev (iter-fix iter)))
+  :enable (iterp iter-fix)
+  :use (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
+                  (iter (iter-fix iter))))
 
 (defrule iter-fix-when-iterp
   (implies (iterp iter)
@@ -173,165 +166,136 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by iter-fix-when-not-iterp)
 
-(defruled tree-iter-p-of-iter-fix
-  (tree-iter-p (iter-fix iter))
-  :enable (iter-fix
-           empty
-           iter
-           break-abstraction))
-
-(add-to-ruleset break-abstraction '(tree-iter-p-of-iter-fix))
-
-(defruled all-well-formed-p-of-iter-fix
-  (all-well-formed-p (iter-fix iter))
-  :enable (iter-fix
-           empty
-           iter
-           break-abstraction))
-
-(add-to-ruleset break-abstraction '(all-well-formed-p-of-iter-fix))
-
-(defruled pairwise-tree-subset-p-of-left-of-iter-fix
-  (pairwise-tree-subset-p-of-left (iter-fix iter))
-  :enable (iter-fix
-           empty
-           iter
-           break-abstraction))
-
-(add-to-ruleset break-abstraction
-                '(pairwise-tree-subset-p-of-left-of-iter-fix))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define iter-equiv
   ((x iterp)
    (y iterp))
-  :returns (yes/no booleanp :rule-classes (:rewrite :type-prescription))
+  :returns (yes/no booleanp)
   :parents (iterator)
   :short "Equivalence up to @(tsee iter-fix)."
   (equal (iter-fix x)
          (iter-fix y))
   :inline t
-
   ///
+  (defequiv iter-equiv
+    :hints (("Goal" :in-theory (enable iter-equiv))))
 
-  (defequiv iter-equiv))
+  (defrule iter-fix-under-iter-equiv
+    (iter-equiv (iter-fix iter)
+                iter)
+    :enable iter-equiv)
 
-;;;;;;;;;;;;;;;;;;;;
+  (defrule iter-fix-when-iter-equiv-congruence
+    (implies (iter-equiv iter0 iter1)
+             (equal (iter-fix iter0)
+                    (iter-fix iter1)))
+    :rule-classes :congruence
+    :enable iter-equiv))
 
-(in-theory (disable (:t iter-equiv)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule iter-fix-when-iter-equiv-congruence
-  (implies (iter-equiv iter0 iter1)
-           (equal (iter-fix iter0)
-                  (iter-fix iter1)))
-  :rule-classes :congruence
-  :enable iter-equiv)
+;; The three positions. The two ends hold no value; @(tsee has-valuep) is
+;; where there is one to read. Neither end is privileged: a walk in either
+;; direction stops at the one it is heading towards.
 
-(defrule iter-fix-under-iter-equiv
-  (iter-equiv (iter-fix iter)
-              iter)
-  :enable iter-equiv)
+(define after-lastp ((iter iterp))
+  :returns (yes/no booleanp)
+  :parents (iterator)
+  :short "Check whether an @(see iterator) is after the last element."
+  (tree-iter-after-last-p (iter-fix iter))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define iter-empty ()
-  :returns (empty iterp)
+(define before-firstp ((iter iterp))
+  :returns (yes/no booleanp)
   :parents (iterator)
-  :short "Construct an empty @(see iterator)."
+  :short "Check whether an @(see iterator) is before the first element."
   :long
   (xdoc::topstring
    (xdoc::p
-     "We leave this definition enabled, reasoning directly about
-      @('(iter (empty))'). It is provided as an efficient alternative to this
-      logical form."))
-  (mbe :logic (iter (empty))
-       :exec nil)
-  :enabled t
-  :inline t
-  :guard-hints (("Goal" :in-theory (enable iter empty))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:e iter-empty) (:t iter-empty)))
+     "Only @(tsee prev) can reach this position; @(tsee iter) never starts
+      there."))
+  (tree-iter-before-first-p (iter-fix iter))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define donep ((iter iterp))
-  :returns (yes/no booleanp :rule-classes (:rewrite :type-prescription))
+(define has-valuep ((iter iterp))
+  :returns (yes/no booleanp)
   :parents (iterator)
-  :short "Check whether an @(see iterator) is done."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-     "An iterator is done if the corresponding @(see treeset) is
-      @(see empty)."))
-  (mbe :logic (equal (iter-fix iter) (iter (empty)))
-       :exec (endp iter))
-  :inline t
-  :guard-hints (("Goal" :in-theory (enable* iter
-                                            empty
-                                            break-abstraction))))
+  :short "Check whether an @(see iterator) has a value to read."
+  (tree-iter-has-value-p (iter-fix iter))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t donep)))
+(in-theory (disable (:t after-lastp) (:t before-firstp) (:t has-valuep)))
 
-(defrule donep-when-iter-equiv-congruence
+(defrule after-lastp-when-iter-equiv-congruence
   (implies (iter-equiv iter0 iter1)
-           (equal (donep iter0)
-                  (donep iter1)))
+           (equal (after-lastp iter0)
+                  (after-lastp iter1)))
   :rule-classes :congruence
-  :enable donep)
+  :enable after-lastp)
 
-(defrule donep-of-iter
-  (equal (donep (iter set))
-         (emptyp set))
-  :use (:instance equal-of-tree-left-spine-and-tree-left-spine-nil
-                  (tree set))
-  :enable (donep
-           iter
-           emptyp
-           empty
-           fix
-           iterp
-           break-abstraction)
-  :disable equal-of-tree-left-spine-and-tree-left-spine-nil)
+(defrule before-firstp-when-iter-equiv-congruence
+  (implies (iter-equiv iter0 iter1)
+           (equal (before-firstp iter0)
+                  (before-firstp iter1)))
+  :rule-classes :congruence
+  :enable before-firstp)
 
-(defrule iter-under-iter-equiv-whe-donep
-  (implies (donep iter)
-           (iter-equiv iter
-                       (iter (empty))))
-  :rule-classes nil
-  :enable donep)
+(defrule has-valuep-when-iter-equiv-congruence
+  (implies (iter-equiv iter0 iter1)
+           (equal (has-valuep iter0)
+                  (has-valuep iter1)))
+  :rule-classes :congruence
+  :enable has-valuep)
 
-(defrule iter-under-iter-equiv-whe-donep-forward-chaining
-  (implies (donep iter)
-           (iter-equiv iter
-                       (iter (empty))))
-  :rule-classes :forward-chaining
-  :by iter-under-iter-equiv-whe-donep)
+;; Exactly one of the three holds.
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defrule has-valuep-when-neither-end
+  (implies (and (not (after-lastp iter))
+                (not (before-firstp iter)))
+           (has-valuep iter))
+  :enable (after-lastp
+           before-firstp
+           has-valuep))
+
+(defrule not-after-lastp-when-has-valuep
+  (implies (has-valuep iter)
+           (not (after-lastp iter)))
+  :enable (after-lastp
+           has-valuep))
+
+(defrule not-before-firstp-when-has-valuep
+  (implies (has-valuep iter)
+           (not (before-firstp iter)))
+  :enable (before-firstp
+           has-valuep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define from-iter ((iter iterp))
   :returns (set setp
-                :hints (("Goal" :in-theory (enable* setp
-                                                    break-abstraction))))
+                :hints (("Goal"
+                         :use
+                         (:instance
+                          setp-of-tree-iter-plug-when-iterp-forward-chaining
+                          (iter (iter-fix iter))))))
   :parents (iterator)
-  :short "Construct a @(see treeset) from an @(see iterator)."
+  :short "The @(see treeset) an @(see iterator) walks."
   :long
   (xdoc::topstring
    (xdoc::p
-     "Iterators are mainly characterized by the @(see treeset)s they map to
-      under this function.")
-   (xdoc::p
-     "The time complexity is @($O(n)$). This is not optimal &mdash; it could be
-      done in @($O(\\log(n))$) time. (See @(tsee tree-iter-to-tree) for
-      implementation details.)"))
-  (tree-iter-to-tree (iter-fix iter))
-  :inline t
-  :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
+     "This is the whole set, not the part an iterator has yet to reach. An
+      iterator carries that set, so this costs @($O(1)$) and gives the same
+      answer from every position; see @(tsee nexts) and @(tsee prevs) for how
+      far it has left to go in each direction."))
+  (tree-iter-plug (iter-fix iter))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -344,52 +308,46 @@
   :rule-classes :congruence
   :enable from-iter)
 
-(defrule emptyp-of-from-iter
-  (equal (emptyp (from-iter iter))
-         (donep iter))
-  :enable (from-iter
-           emptyp
-           iter-fix
-           donep
-           empty
-           iter
-           setp
-           break-abstraction))
+(defruledl tree-iter-plug-of-iter
+  (equal (tree-iter-plug (iter set))
+         (fix set))
+  :hints (("Goal" :in-theory (enable* iter break-abstraction))))
 
 (defrule from-iter-of-iter
   (equal (from-iter (iter set))
          (fix set))
+  :enable (from-iter
+           tree-iter-plug-of-iter))
+
+;; A fresh iterator is at the end exactly when there is nothing to walk.
+
+(defruledl tree-iter-after-last-p-of-iter
+  (equal (tree-iter-after-last-p (iter set))
+         (tree-empty-p (fix set)))
   :enable (iter
-           from-iter
-           iter-fix
-           fix
-           setp
-           empty
-           iterp))
+           tree-iter-next
+           tree-iter-has-value-p))
+
+(defrule after-lastp-of-iter
+  (equal (after-lastp (iter set))
+         (emptyp set))
+  :enable (after-lastp
+           emptyp
+           tree-iter-after-last-p-of-iter))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define value ((iter iterp))
-  :guard (not (donep iter))
+  :guard (has-valuep iter)
   :parents (iterator)
-  :short "Get the current element from an @(see iterator)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-     "This is the @(tsee min) of @('(from-iter iter)'). When the iterator is
-      @(tsee donep), the logical result is @('nil'). The time complexity is
-      @($O(1)$)."))
-  (mbe :logic (min (from-iter iter))
-       :exec (tree-iter-value iter))
-  :guard-hints (("Goal" :in-theory (enable* iter
-                                            empty
-                                            from-iter
-                                            min
-                                            setp
-                                            tree-iter-value-becomes-tree-min
-                                            break-abstraction))))
+  :short "The value an @(see iterator) is at."
+  (tree-iter-value (iter-fix iter))
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable has-valuep))))
 
 ;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t value)))
 
 (defrule value-when-iter-equiv-congruence
   (implies (iter-equiv iter0 iter1)
@@ -398,31 +356,71 @@
   :rule-classes :congruence
   :enable value)
 
+;; What a walk yields first: the minimum. This is what ties the values an
+;; iterator produces to the set it walks; everything else here is structural.
+
+(defruledl tree-iter-value-of-iter
+  (implies (not (tree-empty-p (fix set)))
+           (equal (tree-iter-value (iter set))
+                  (tree-leftmost (fix set))))
+  :enable (iter
+           tree-iter-next
+           tree-iter-value
+           tree-iter-has-value-p))
+
 (defrule value-of-iter
-  (equal (value (iter set))
-         (min set))
-  :enable value)
+  (implies (not (emptyp set))
+           (equal (value (iter set))
+                  (min set)))
+  :hints (("Goal"
+           :in-theory (enable* value min emptyp setp
+                               tree-iter-value-of-iter
+                               break-abstraction)
+           :use ((:instance tree-leftmost-when-bstp (tree (fix set)))
+                 (:instance setp-of-fix (set set))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define next ((iter iterp))
-  :guard (not (donep iter))
   :returns (iter$ iterp
-                  :hints (("Goal" :in-theory (enable* iterp
-                                                      break-abstraction))))
+                  :hints (("Goal"
+                           :in-theory (enable iterp)
+                           :use
+                           (:instance
+                            setp-of-tree-iter-plug-when-iterp-forward-chaining
+                            (iter (iter-fix iter))))))
   :parents (iterator)
-  :short "Advance the @(see iterator)."
+  :short "Advance an @(see iterator)."
   :long
   (xdoc::topstring
    (xdoc::p
-     "The time complexity of advancing through the entire iterator is
-      @($O(n)$). Thus, the amortized cost of @(tsee next) is @($O(1)$),
-      although the worst case for a single call is @($O(\\log(n))$)."))
+     "Past the last element this stays put. Time complexity: @($O(\\log(n))$)
+      in the worst case, @($O(1)$) amortized over a walk."))
   (tree-iter-next (iter-fix iter))
-  :inline t
-  :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prev ((iter iterp))
+  :returns (iter$ iterp
+                  :hints (("Goal"
+                           :in-theory (enable iterp)
+                           :use
+                           (:instance
+                            setp-of-tree-iter-plug-when-iterp-forward-chaining
+                            (iter (iter-fix iter))))))
+  :parents (iterator)
+  :short "Retreat an @(see iterator)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "The mirror of @(tsee next). Before the first element this stays put."))
+  (tree-iter-prev (iter-fix iter))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t next) (:t prev)))
 
 (defrule next-when-iter-equiv-congruence
   (implies (iter-equiv iter0 iter1)
@@ -431,112 +429,158 @@
   :rule-classes :congruence
   :enable next)
 
-(defruled next-when-donep
-  (implies (donep iter)
-           (equal (next iter)
-                  (iter (empty))))
-  :enable (next
-           donep
-           empty
-           iter))
+(defrule prev-when-iter-equiv-congruence
+  (implies (iter-equiv iter0 iter1)
+           (equal (prev iter0)
+                  (prev iter1)))
+  :rule-classes :congruence
+  :enable prev)
 
-(defrule next-when-donep-cheap
-  (implies (donep iter)
-           (equal (next iter)
-                  (iter (empty))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by next-when-donep)
+;; Moving never changes the set being walked.
 
-(defrule next-of-iter-empty
-  (equal (next (iter (empty)))
-         (iter (empty)))
-  :enable next-when-donep)
+(defruledl tree-iter-plug-of-next
+  (equal (tree-iter-plug (next iter))
+         (tree-iter-plug (iter-fix iter)))
+  :enable next)
+
+(defruledl tree-iter-plug-of-prev
+  (equal (tree-iter-plug (prev iter))
+         (tree-iter-plug (iter-fix iter)))
+  :enable prev)
 
 (defrule from-iter-of-next
   (equal (from-iter (next iter))
-         (delete (min (from-iter iter))
-                 (from-iter iter)))
+         (from-iter iter))
   :enable (from-iter
-           next
-           min
-           delete
-           iterp
-           iter
-           setp
-           tree-iter-value-becomes-tree-min
-           break-abstraction))
+           tree-iter-plug-of-next))
 
-;; TODO: prove it first about tree-iter-next
-;; - Also, we'll want variations for equal of iter-fix, and iter-equiv
-;; (defrule equal-of-next-arg1-and-arg1
-;;   (equal (equal (next iter) iter)
-;;          (equal iter (iter (empty))))
-;;   :enable ())
+(defrule from-iter-of-prev
+  (equal (from-iter (prev iter))
+         (from-iter iter))
+  :enable (from-iter
+           tree-iter-plug-of-prev))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Each move is the identity exactly at the end it saturates against.
 
-(define iter-measure ((iter iterp))
-  :returns (measure natp :rule-classes (:rewrite :type-prescription))
-  :parents (iterator)
-  :short "A suitable measure for @(see iterator)s."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-     "This measure decreases on @(tsee next), if the @(see iterator) is not
-      @(tsee donep)."))
-  (cardinality (from-iter iter)))
+(defrule next-identity-iff-after-lastp
+  (equal (equal (next iter) (iter-fix iter))
+         (after-lastp iter))
+  :enable (next
+           after-lastp)
+  :use (:instance tree-iter-next-identity-iff-tree-iter-after-last-p
+                  (iter (iter-fix iter))))
 
-;;;;;;;;;;;;;;;;;;;;
+(defrule not-before-firstp-of-next
+  (not (before-firstp (next iter)))
+  :enable (before-firstp
+           next))
 
-(in-theory (disable (:t iter-measure)))
+(defrule not-after-lastp-of-prev
+  (not (after-lastp (prev iter)))
+  :enable (after-lastp
+           prev))
 
-(defrule iter-when-iter-equiv-congruence
-  (implies (iter-equiv iter0 iter1)
-           (equal (iter-measure iter0)
-                  (iter-measure iter1)))
-  :rule-classes :congruence
-  :enable iter-measure)
+(defrule prev-identity-iff-before-firstp
+  (equal (equal (prev iter) (iter-fix iter))
+         (before-firstp iter))
+  :enable (prev
+           before-firstp)
+  :use (:instance tree-iter-prev-identity-iff-tree-iter-before-first-p
+                  (iter (iter-fix iter))))
 
-(defrule iter-measure-when-donep
-  (implies (donep iter)
-           (equal (iter-measure iter)
-                  0))
-  :enable iter-measure)
+;; The two are inverse everywhere they have somewhere to go.
 
-(defruled iter-measure-of-next
-  (equal (iter-measure (next iter))
-         (if (donep iter)
-             0
-           (- (iter-measure iter) 1)))
-  :enable iter-measure)
+(defrule prev-of-next
+  (implies (not (after-lastp iter))
+           (equal (prev (next iter))
+                  (iter-fix iter)))
+  :enable (next
+           prev
+           after-lastp))
 
-(defrule iter-measure-of-next-when-not-donep-cheap
-  (implies (not (donep iter))
-           (equal (iter-measure (next iter))
-                  (- (iter-measure iter) 1)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :use iter-measure-of-next)
-
-(defrule iter-measure-of-next-linear
-  (<= (iter-measure (next iter))
-      (iter-measure iter))
-  :rule-classes :linear
-  :enable iter-measure-of-next)
-
-(defrule iter-measure-of-next-linear-when-not-donep
-  (implies (not (donep iter))
-           (< (iter-measure (next iter))
-              (iter-measure iter)))
-  :rule-classes :linear
-  :enable iter-measure-of-next)
-
-;; TODO: is iter-measure useful? Or should we just use the definition directly?
-(defrule iter-measure-linear
-  (equal (iter-measure iter)
-         (cardinality (from-iter iter)))
-  :rule-classes :linear
-  :enable iter-measure)
+(defrule next-of-prev
+  (implies (not (before-firstp iter))
+           (equal (next (prev iter))
+                  (iter-fix iter)))
+  :enable (next
+           prev
+           before-firstp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: typed/equal-variants ?
+;; The measures. Each counts the moves left in one direction, so each is a
+;; suitable measure for a walk that way.
+
+(define nexts ((iter iterp))
+  :returns (measure natp :rule-classes (:rewrite :type-prescription))
+  :parents (iterator)
+  :short "The number of @(tsee next) moves an @(see iterator) has left."
+  (tree-iter-nexts (iter-fix iter))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prevs ((iter iterp))
+  :returns (measure natp :rule-classes (:rewrite :type-prescription))
+  :parents (iterator)
+  :short "The number of @(tsee prev) moves an @(see iterator) has left."
+  (tree-iter-prevs (iter-fix iter))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t nexts) (:t prevs)))
+
+(defrule nexts-when-iter-equiv-congruence
+  (implies (iter-equiv iter0 iter1)
+           (equal (nexts iter0)
+                  (nexts iter1)))
+  :rule-classes :congruence
+  :enable nexts)
+
+(defrule prevs-when-iter-equiv-congruence
+  (implies (iter-equiv iter0 iter1)
+           (equal (prevs iter0)
+                  (prevs iter1)))
+  :rule-classes :congruence
+  :enable prevs)
+
+(defrule nexts-equal-0
+  (equal (equal (nexts iter) 0)
+         (after-lastp iter))
+  :enable (nexts
+           after-lastp))
+
+(defrule prevs-equal-0
+  (equal (equal (prevs iter) 0)
+         (before-firstp iter))
+  :enable (prevs
+           before-firstp))
+
+(defrule nexts-of-next
+  (implies (not (after-lastp iter))
+           (equal (nexts (next iter))
+                  (- (nexts iter) 1)))
+  :enable (nexts
+           next
+           after-lastp))
+
+(defrule prevs-of-prev
+  (implies (not (before-firstp iter))
+           (equal (prevs (prev iter))
+                  (- (prevs iter) 1)))
+  :enable (prevs
+           prev
+           before-firstp))
+
+(defrule nexts-linear
+  (implies (not (after-lastp iter))
+           (< (nexts (next iter))
+              (nexts iter)))
+  :rule-classes :linear)
+
+(defrule prevs-linear
+  (implies (not (before-firstp iter))
+           (< (prevs (prev iter))
+              (prevs iter)))
+  :rule-classes :linear)
