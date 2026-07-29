@@ -733,12 +733,12 @@
      This is the body of the whole universal type
      when there is just one parameter,
      otherwise it is another universal type, without the first parameter."))
-  (b* ((params (type-var-list-fix params))
-       (body (type-fix body)))
-    (cond ((endp (cdr params)) body)
-          ((endp (cddr params))
-           (make-type-forall :param (cadr params) :body body))
-          (t (make-type-foralln :params (cdr params) :body body)))))
+  (cond ((endp (cdr params)) (type-fix body))
+        ((endp (cddr params))
+         (make-type-forall :param (cadr params) :body body))
+        (t (make-type-foralln :params (cdr params) :body body)))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-type-var-list-fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -751,12 +751,12 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to @(tsee forall-curried-body)."))
-  (b* ((params (ispace-var-list-fix params))
-       (body (type-fix body)))
-    (cond ((endp (cdr params)) body)
-          ((endp (cddr params))
-           (make-type-pi :param (cadr params) :body body))
-          (t (make-type-pin :params (cdr params) :body body)))))
+  (cond ((endp (cdr params)) (type-fix body))
+        ((endp (cddr params))
+         (make-type-pi :param (cadr params) :body body))
+        (t (make-type-pin :params (cdr params) :body body)))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-ispace-var-list-fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -769,12 +769,12 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to @(tsee pi-curried-body)."))
-  (b* ((params (ispace-var-list-fix params))
-       (body (type-fix body)))
-    (cond ((endp (cdr params)) body)
-          ((endp (cddr params))
-           (make-type-sigma :param (cadr params) :body body))
-          (t (make-type-sigman :params (cdr params) :body body)))))
+  (cond ((endp (cdr params)) (type-fix body))
+        ((endp (cddr params))
+         (make-type-sigma :param (cadr params) :body body))
+        (t (make-type-sigman :params (cdr params) :body body)))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-ispace-var-list-fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -797,17 +797,16 @@
      if there is just one parameter,
      the annotation pertains to the returned body,
      and it is up to the caller to use it as appropriate."))
-  (b* ((params (var+type?-list-fix params))
-       (body (expr-fix body))
-       (type? (type-option-fix type?)))
-    (cond ((endp (cdr params)) body)
-          ((endp (cddr params))
-           (expr-atom (make-atom-lambda :param (cadr params)
-                                        :body body
-                                        :type? type?)))
-          (t (expr-atom (make-atom-lambdan :params (cdr params)
-                                           :body body
-                                           :type? type?))))))
+  (cond ((endp (cdr params)) (expr-fix body))
+        ((endp (cddr params))
+         (expr-atom (make-atom-lambda :param (cadr params)
+                                      :body body
+                                      :type? type?)))
+        (t (expr-atom (make-atom-lambdan :params (cdr params)
+                                         :body body
+                                         :type? type?))))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-var+type?-list-fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -820,12 +819,12 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to @(tsee forall-curried-body)."))
-  (b* ((params (type-var-list-fix params))
-       (body (expr-fix body)))
-    (cond ((endp (cdr params)) body)
-          ((endp (cddr params))
-           (expr-atom (atom-tlambda (cadr params) body)))
-          (t (expr-atom (atom-tlambdan (cdr params) body))))))
+  (cond ((endp (cdr params)) (expr-fix body))
+        ((endp (cddr params))
+         (expr-atom (atom-tlambda (cadr params) body)))
+        (t (expr-atom (atom-tlambdan (cdr params) body))))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-type-var-list-fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -838,12 +837,12 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to @(tsee forall-curried-body)."))
-  (b* ((params (ispace-var-list-fix params))
-       (body (expr-fix body)))
-    (cond ((endp (cdr params)) body)
-          ((endp (cddr params))
-           (expr-atom (atom-ilambda (cadr params) body)))
-          (t (expr-atom (atom-ilambdan (cdr params) body))))))
+  (cond ((endp (cdr params)) (expr-fix body))
+        ((endp (cddr params))
+         (expr-atom (atom-ilambda (cadr params) body)))
+        (t (expr-atom (atom-ilambdan (cdr params) body))))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-ispace-var-list-fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
