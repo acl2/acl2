@@ -852,6 +852,23 @@
            next
            value
            has-valuep))
+
+;; The mirror, stated the way the sequence law is: a step back does not have a
+;; @(tsee delete) form as cheap as the one above, because dropping the last
+;; element of an ordered list is not a @(tsee cdr). Read right to left this
+;; says the same thing -- what lies behind loses exactly the value stepped
+;; back onto.
+
+(defrule before-becomes-insert-of-before-of-prev
+  (implies (has-valuep (prev iter))
+           (equal (before iter)
+                  (insert (value (prev iter)) (before (prev iter)))))
+  :enable (extensionality
+           in-of-before-becomes-member-equal
+           tree-iter-before-of-tree-iter-prev
+           prev
+           value
+           has-valuep))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The measures. Each counts the moves left in one direction, so each is a
