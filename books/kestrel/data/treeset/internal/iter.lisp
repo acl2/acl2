@@ -956,6 +956,24 @@
            tree-iter-has-value-p
            tree-in-order-becomes-value-and-after-of-tree-zip-first))
 
+;; The mirror, which cannot be stated the same way: a step back drops the LAST
+;; value from what lies behind, and there is no @(tsee cdr) for that. So it is
+;; stated in the reconstructive direction instead, and needs the step to land
+;; on a value -- unlike the rule above, which holds at both ends because
+;; @(tsee cdr) of @('nil') is @('nil').
+
+(defrule tree-iter-before-of-tree-iter-prev
+  (implies (tree-iter-has-value-p (tree-iter-prev iter))
+           (equal (tree-iter-before iter)
+                  (append (tree-iter-before (tree-iter-prev iter))
+                          (list (tree-iter-value (tree-iter-prev iter))))))
+  :enable (tree-iter-before
+           tree-iter-prev
+           tree-iter-value
+           tree-iter-has-value-p
+           tree-in-order-becomes-before-and-value-of-tree-zip-last
+           tree-zip-before-of-tree-zip-prev))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; How many moves remain in each direction: how many times @(tsee
