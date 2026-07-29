@@ -3679,6 +3679,10 @@
        ///
        (fty::deffixequiv-mutual ,defines-name))) ; TODO: quoted theory
 
+  :guard-hints
+  (("Goal"
+    :in-theory (enable true-listp-when-pseudo-event-form-listp-rewrite)))
+
   :prepwork
 
   ((define defind-gen-proof-valid-fn-clique-loop
@@ -3701,14 +3705,7 @@
            (defind-gen-proof-valid-fn-clique-loop
              (cdr pred-infos) irule-infos name xdocp)))
        (mv (cons event events)
-           (cons expand expands)))
-
-     ///
-
-     (defret true-listp-of-defind-gen-proof-valid-fn-clique-loop.events
-       (true-listp events)
-       :rule-classes :type-prescription
-       :hints (("Goal" :induct t))))))
+           (cons expand expands))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
