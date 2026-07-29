@@ -513,7 +513,14 @@
     :elt-type type
     :true-listp t
     :elementp-of-nil nil
-    :pred type-listp))
+    :pred type-listp
+
+    ///
+
+    (defruled cdr-of-type-list-fix
+      (equal (cdr (type-list-fix types))
+             (type-list-fix (cdr types)))
+      :enable type-list-fix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
