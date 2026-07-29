@@ -3658,13 +3658,12 @@
      are proved by flag induction.
      The fixing equivalence of the functions
      is proved at the end, all together."))
-  (b* ((members (defind-gen-proof-valid-fn-clique-members
-                  clique-pred-infos irule-infos name xdocp))
+  (b* (((mv members expands)
+        (defind-gen-proof-valid-fn-clique-loop
+          clique-pred-infos irule-infos name xdocp))
        (defines-name (defind-proof-valid-fn-clique-name
                        (defind-pred-info->name (car clique-pred-infos))
-                       name))
-       (expands (defind-gen-proof-valid-fn-clique-expands
-                  clique-pred-infos name)))
+                       name)))
     `(defines ,defines-name
        ,@(and xdocp
               `(:parents (,(symbol-lfix name))
@@ -3682,36 +3681,34 @@
 
   :prepwork
 
-  ((define defind-gen-proof-valid-fn-clique-members
+  ((define defind-gen-proof-valid-fn-clique-loop
      ((pred-infos defind-pred-info-listp)
       (irule-infos defind-irule-info-listp)
       (name symbolp)
       (xdocp booleanp))
      :guard (no-duplicatesp-equal (defind-irule-info-list->name irule-infos))
-     :returns (events pseudo-event-form-listp)
+     :returns (mv (events pseudo-event-form-listp)
+                  (expands true-listp))
      :parents nil
-     (b* (((when (endp pred-infos)) nil)
+     (b* (((when (endp pred-infos)) (mv nil nil))
+          (pred-name (defind-pred-info->name (car pred-infos)))
           (event (defind-gen-proof-valid-fn
-                   (defind-pred-info->name (car pred-infos))
-                   irule-infos nil name xdocp))
-          (events (defind-gen-proof-valid-fn-clique-members
-                    (cdr pred-infos) irule-infos name xdocp)))
-       (cons event events)))
-
-   (define defind-gen-proof-valid-fn-clique-expands
-     ((pred-infos defind-pred-info-listp)
-      (name symbolp))
-     :returns (expands true-listp)
-     :parents nil
-     (b* (((when (endp pred-infos)) nil)
-          (count-fn (defind-proof-count-fn-name
-                      (defind-pred-info->name (car pred-infos))
-                      name))
+                   pred-name irule-infos nil name xdocp))
+          (count-fn (defind-proof-count-fn-name pred-name name))
           (fn-formal (defind-proof-var-name name))
           (expand `(,count-fn ,fn-formal))
-          (expands (defind-gen-proof-valid-fn-clique-expands
-                     (cdr pred-infos) name)))
-       (cons expand expands)))))
+          ((mv events expands)
+           (defind-gen-proof-valid-fn-clique-loop
+             (cdr pred-infos) irule-infos name xdocp)))
+       (mv (cons event events)
+           (cons expand expands)))
+
+     ///
+
+     (defret true-listp-of-defind-gen-proof-valid-fn-clique-loop.events
+       (true-listp events)
+       :rule-classes :type-prescription
+       :hints (("Goal" :induct t))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
