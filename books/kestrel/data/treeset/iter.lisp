@@ -86,12 +86,18 @@
 ;; Every iterator is a cons, whichever of the three it is. Note that it is not
 ;; a @(tsee true-listp): the two ends carry the tree in their @(tsee cdr), not
 ;; a list.
+;;
+;; Left disabled and registered as abstraction-breaking: that an iterator is a
+;; cons at all is a fact about the representation, which a caller should not
+;; come to depend on.
 
-(defrule iterp-compound-recognizer
+(defruled iterp-compound-recognizer
   (implies (iterp x)
            (consp x))
   :rule-classes :compound-recognizer
   :enable iterp)
+
+(add-to-ruleset break-abstraction '(iterp-compound-recognizer))
 
 (defrule tree-iter-p-when-iterp-forward-chaining
   (implies (iterp iter)
@@ -99,11 +105,18 @@
   :rule-classes :forward-chaining
   :enable iterp)
 
-(defrule setp-of-tree-iter-plug-when-iterp-forward-chaining
+;; Left disabled and registered: this fires from a purely public hypothesis and
+;; concludes something about the representation, so enabled it would introduce
+;; internal terms into a caller's proof unbidden.
+
+(defruled setp-of-tree-iter-plug-when-iterp-forward-chaining
   (implies (iterp iter)
            (setp (tree-iter-plug iter)))
   :rule-classes :forward-chaining
   :enable iterp)
+
+(add-to-ruleset break-abstraction
+                '(setp-of-tree-iter-plug-when-iterp-forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -696,6 +709,10 @@
   :enable (after
            set::in-to-member
            bstp-of-tree-iter-plug-of-iter-fix))
+
+(add-to-ruleset break-abstraction
+                '(in-of-before-becomes-member-equal
+                  in-of-after-becomes-member-equal))
 
 ;; The whole sequence is the two sides with the value between them, so an
 ;; element of the tree is on one side, on the other, or is the value itself.
