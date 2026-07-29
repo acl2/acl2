@@ -474,8 +474,10 @@
        by using singleton lists in @(':funn')
        for the case of a parenthesized type,
        using instead @(':fun') for an unparenthesized one.
-       The n-ary @(':funn') is also allowed to have no input types;
-       see grammar.")
+       The Remora concrete syntax allows a nullary function type,
+       and treats it the same as the output type;
+       we represent this as an n-ary @(':funn') in our ASTs,
+       with an empty list of input types.")
      (xdoc::p
       "The @(':forall'), @(':pi'), and @(':sigma') summands are
        the main, core form of universal, product, and sum type,
