@@ -16,6 +16,7 @@
 (include-book "set-defs")
 (include-book "min-max-defs")
 (include-book "in-defs")
+(include-book "insert-defs")
 (include-book "internal/iter")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -29,6 +30,8 @@
 (local (include-book "internal/tree"))
 (local (include-book "internal/bst"))
 (local (include-book "internal/heap"))
+(local (include-book "insert"))
+(local (include-book "kestrel/data/utilities/oset" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -459,6 +462,63 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; The set on each side of an iterator. Both exclude the value it is at, so the
+;; two are disjoint and, with that value, account for the whole set; at an end,
+;; where there is no value, they account for it between them.
+;;
+;; The sequences these are built from are already ordered, so an oset is
+;; exactly what they are; @(tsee from-oset) only changes the representation.
+
+(define before ((iter iterp))
+  :returns (set setp)
+  :parents (iterator)
+  :short "The @(see treeset) of elements before an @(see iterator)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "The elements a forward walk has already passed. This excludes the value
+      the iterator is at: that one has not been passed yet."))
+  (from-oset (tree-iter-before (iter-fix iter)))
+  :guard-hints (("Goal" :in-theory (enable* iterp setp break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t before)))
+
+(defrule before-when-iter-equiv-congruence
+  (implies (iter-equiv iter0 iter1)
+           (equal (before iter0)
+                  (before iter1)))
+  :rule-classes :congruence
+  :enable before)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define after ((iter iterp))
+  :returns (set setp)
+  :parents (iterator)
+  :short "The @(see treeset) of elements after an @(see iterator)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "The elements a forward walk has yet to reach. This excludes the value the
+      iterator is at, so it is what remains strictly after the current step."))
+  (from-oset (tree-iter-after (iter-fix iter)))
+  :guard-hints (("Goal" :in-theory (enable* iterp setp break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t after)))
+
+(defrule after-when-iter-equiv-congruence
+  (implies (iter-equiv iter0 iter1)
+           (equal (after iter0)
+                  (after iter1)))
+  :rule-classes :congruence
+  :enable after)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define value ((iter iterp))
   :guard (has-valuep iter)
   :parents (iterator)
@@ -544,6 +604,35 @@
   :disable (tree-iter-plug
             tree-iter-plug-when-tree-iter-has-value-p
             tree-iter-value))
+
+;;;;;;;;;;;;;;;;;;;;
+
+;; The tree an iterator is a position in is a search tree. This is what makes
+;; the two sequences ordered, and so makes them osets.
+
+(defruledl bstp-of-tree-iter-plug-of-iter-fix
+  (bstp (tree-iter-plug (iter-fix iter)))
+  :enable setp
+  :use (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
+                  (iter (iter-fix iter))))
+
+;; Membership on each side, as membership in the sequence it is built from.
+;; Left disabled: these cross from sets back to the underlying lists, which is
+;; only what a proof about the order of a walk wants.
+
+(defruled in-of-before-becomes-member-equal
+  (iff (in x (before iter))
+       (member-equal x (tree-iter-before (iter-fix iter))))
+  :enable (before
+           set::in-to-member
+           bstp-of-tree-iter-plug-of-iter-fix))
+
+(defruled in-of-after-becomes-member-equal
+  (iff (in x (after iter))
+       (member-equal x (tree-iter-after (iter-fix iter))))
+  :enable (after
+           set::in-to-member
+           bstp-of-tree-iter-plug-of-iter-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

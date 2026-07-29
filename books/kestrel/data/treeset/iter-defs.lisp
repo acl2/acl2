@@ -10,6 +10,7 @@
 
 (include-book "internal/iter")
 (include-book "set-defs")
+(include-book "insert-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "iter"))
@@ -26,6 +27,8 @@
           before-firstp
           has-valuep
           from-iter
+          before
+          after
           value
           next
           prev
