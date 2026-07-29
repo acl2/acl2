@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function open-output-channel
 ;
-; Copyright (C) 2017-2023 Kestrel Institute
+; Copyright (C) 2017-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -34,7 +34,8 @@
    (implies (and (not (writable-file-listp1 file))
                  (writeable-files-p writeable-files))
             (not (member-equal file writeable-files)))
-   :hints (("Goal" :in-theory (enable writeable-files-p))))
+   :hints (("Goal" :induct t
+            :in-theory (enable writeable-files-p))))
 
 (local (in-theory (enable not-member-equal-when-not-writable-file-listp1)))
 

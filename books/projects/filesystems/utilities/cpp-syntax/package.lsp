@@ -15,7 +15,7 @@
 (include-book "std/portcullis" :dir :system)
 
 ; Import the C$ abstract syntax symbols constant.
-(include-book "kestrel/c/syntax/abstract-syntax-symbols" :dir :system)
+(include-book "kestrel/c/syntax/exported-symbols" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -28,7 +28,7 @@
                         typep))
    ;; All C$ abstract syntax symbols (identifiers, expressions, statements,
    ;; declarations, translation units, etc.).
-   c$::*abstract-syntax-symbols*
+   c$::*exported-symbols*
    ;; C$ parser state stobj and key accessors.
    ;; By importing C$::PARSTATE we can use 'parstate' as the stobj name in CPP.
    '(c$::parstate

@@ -56,7 +56,7 @@
       because they are expressible as array types.")
     (xdoc::li
      "N-ary function types,
-      because they are expressible as nests of one or more unary function types
+      because they are expressible as nests of zero or more unary function types
       (one when the AST corresponds to a type @('(-> (T) R)'),
       i.e. with a parenthesized single input type).")
     (xdoc::li

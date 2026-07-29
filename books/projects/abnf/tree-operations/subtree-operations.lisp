@@ -12,6 +12,8 @@
 
 (include-book "../notation/semantics")
 
+(include-book "std/util/defprojection" :dir :system)
+
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 
@@ -33,7 +35,7 @@
 
   (define trees-in-tree ((tree treep))
     :returns (treeset tree-setp)
-    :parents (semantics trees-in-trees)
+    :parents (subtree-operations trees-in-trees)
     :short "Set of all the trees in a tree."
     :long
     (xdoc::topstring
@@ -56,7 +58,7 @@
 
   (define trees-in-tree-list ((trees tree-listp))
     :returns (treeset tree-setp)
-    :parents (semantics trees-in-trees)
+    :parents (subtree-operations trees-in-trees)
     :short "Set of all the trees in a list of trees."
     :long
     (xdoc::topstring
@@ -69,7 +71,7 @@
 
   (define trees-in-tree-list-list ((treess tree-list-listp))
     :returns (treeset tree-setp)
-    :parents (semantics trees-in-trees)
+    :parents (subtree-operations trees-in-trees)
     :short "Set of all the trees in a list of lists of trees."
     :long
     (xdoc::topstring
@@ -148,8 +150,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "That is, check if the paths stays within the tree,
-     reaching a subtree of the treee,
+    "That is, check if the path stays within the tree,
+     reaching a subtree of the tree,
      which we return.
      Otherwise we return @('nil').")
    (xdoc::p
@@ -172,8 +174,113 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define tree-at-path ((path tree-pathp) (tree abnf::treep))
-  :guard (check-tree-path path tree)
-  :returns (sub abnf::treep)
+(define tree-path-validp ((path tree-pathp) (tree treep))
+  :returns (yes/no booleanp)
+  :short "Check if a path is valid in a tree, returning a boolean."
+  (and (check-tree-path path tree) t)
+
+  ///
+
+  (defrule tree-path-validp-of-nil
+    (tree-path-validp nil tree)
+    :expand ((check-tree-path nil tree))))
+
+;;;;;;;;;;
+
+(std::deflist tree-path-list-validp (x tree)
+  :guard (and (tree-path-listp x)
+              (treep tree))
+  :short "Lift @(tsee tree-path-validp) to lists."
+  (tree-path-validp x tree)
+  :elementp-of-nil t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define tree-at-path ((path tree-pathp) (tree treep))
+  :guard (tree-path-validp path tree)
+  :returns (sub treep)
   :short "Subtree of a tree at a valid path."
-  (tree-fix (check-tree-path path tree)))
+  (tree-fix (check-tree-path path tree))
+  :guard-hints (("Goal" :in-theory (enable tree-path-validp))))
+
+;;;;;;;;;;
+
+(std::defprojection tree-list-at-path-list ((x tree-path-listp)
+                                            (tree treep))
+  :guard (tree-path-list-validp x tree)
+  :returns (subs tree-listp)
+  :short "Lift @(tsee tree-at-path) to lists."
+  (tree-at-path x tree))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tree-path-fringe-start ((path tree-pathp) (tree treep))
+  :guard (tree-path-validp path tree)
+  :returns (start natp :rule-classes (:rewrite :type-prescription))
+  :short "Place, in the fringe of a tree,
+          where the subtree at a path starts."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the length of the part of the tree's fringe
+     that precedes the fringe of the subtree occurrence
+     identified by the (valid) path.
+     At each step of the path,
+     we add the lengths of the fringes of the branches
+     that precede the selected one.")
+   (xdoc::p
+    "Together with the length of the fringe of the subtree at the path,
+     this determines where the subtree occurrence sits in the tree's fringe."))
+  (b* (((when (endp path)) 0)
+       ((tree-path-step step) (car path))
+       (subtreess (tree-nonleaf->branches tree))
+       (subtrees (nth step.conc subtreess))
+       (subtree (nth step.rep subtrees)))
+    (+ (len (tree-list-list->string (take step.conc subtreess)))
+       (len (tree-list->string (take step.rep subtrees)))
+       (tree-path-fringe-start (cdr path) subtree)))
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable tree-path-validp
+                                           check-tree-path
+                                           true-listp-when-tree-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tree-paths-adjacentp ((path1 tree-pathp)
+                              (path2 tree-pathp)
+                              (tree treep))
+  :guard (and (tree-path-validp path1 tree)
+              (tree-path-validp path2 tree))
+  :returns (yes/no booleanp)
+  :short "Check if the subtrees at two valid paths in a tree are adjacent."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case when
+     the starting fringe position of the second subtree
+     is exactly at the end of the fringe of the first subtree,
+     which is calculated as the sum of
+     the starting fringe position of the first subtree
+     and the length of the fringe of the first subtree.")
+   (xdoc::p
+    "Note that if the first subtree has an empty fringe
+     then it is adjacent to itself."))
+  (equal (tree-path-fringe-start path2 tree)
+         (+ (tree-path-fringe-start path1 tree)
+            (len (tree->string (tree-at-path path1 tree))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define tree-path-list-adjacentp ((paths tree-path-listp) (tree treep))
+  :guard (tree-path-list-validp paths tree)
+  :returns (yes/no booleanp)
+  :short "Check if the subtrees at a list of valid paths in a tree
+          are adjacent in the order in which they appear in the list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, we check if the subtrees occur one after the other."))
+  (or (endp paths)
+      (endp (cdr paths))
+      (and (tree-paths-adjacentp (car paths) (cadr paths) tree)
+           (tree-path-list-adjacentp (cdr paths) tree))))

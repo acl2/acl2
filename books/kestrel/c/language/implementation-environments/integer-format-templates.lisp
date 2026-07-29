@@ -867,21 +867,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod uinteger+sinteger-format
-  :short "Fixtype of pairs consisting of
-          a format of unsigned integer objects
-          and a format of signed integer objects."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This just puts together an unsigned format with a signed format.
-     It is a preliminary definition used for @(tsee integer-format)."))
-  ((unsigned uinteger-format)
-   (signed sinteger-format))
-  :pred uinteger+sinteger-formatp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod integer-format
   :short "Fixtype of formats of (signed and unsigned) integer objects."
   :long
@@ -898,44 +883,29 @@
      or for @('signed int') and @('unsigned int'),
      etc.
      This consists of an unsigned and a signed integer format,
-     constrained to be well-formed relative to each other.")
-   (xdoc::p
-    "The reason for introducing and using
-     the ``intermediate'' fixtype @(tsee uinteger+sinteger-format),
-     as opposed to directly define this @('integer-format') fixtype
-     to consists of the two components of that intermediate type
-     is the following.
-     We want this @('integer-format') fixtype to require (in @(':require'))
-     the consistency between the unsigned and signed integer formats
-     (i.e. @(tsee uinteger-sinteger-bit-roles-wfp)).
-     But if we have two separate components,
-     we need separate fixers (in @(':reqfix') for the two components,
-     which we plan to define later as they may take a bit of work.
-     Once we have the proofs,
-     we will eliminate the intermediate fixtype @(tsee uinteger+sinteger-format)
-     and have two components and two fixers in this fixtype here."))
-  ((pair uinteger+sinteger-format
-         :reqfix (if (uinteger-sinteger-bit-roles-wfp
-                      (uinteger-format->bits
-                       (uinteger+sinteger-format->unsigned pair))
-                      (sinteger-format->bits
-                       (uinteger+sinteger-format->signed pair)))
-                     pair
-                   (make-uinteger+sinteger-format
-                    :unsigned (make-uinteger-format
-                               :bits (list (uinteger-bit-role-value 0)
-                                           (uinteger-bit-role-value 1))
-                               :traps nil)
-                    :signed (make-sinteger-format
-                             :bits (list (sinteger-bit-role-value 0)
-                                         (sinteger-bit-role-sign))
-                             :signed (signed-format-twos-complement)
-                             :traps nil)))))
+     constrained to be well-formed relative to each other."))
+  ((unsigned uinteger-format
+             :reqfix (if (uinteger-sinteger-bit-roles-wfp
+                          (uinteger-format->bits unsigned)
+                          (sinteger-format->bits signed))
+                         unsigned
+                       (make-uinteger-format
+                        :bits (list (uinteger-bit-role-value 0)
+                                    (uinteger-bit-role-value 1))
+                        :traps nil)))
+   (signed sinteger-format
+           :reqfix (if (uinteger-sinteger-bit-roles-wfp
+                        (uinteger-format->bits unsigned)
+                        (sinteger-format->bits signed))
+                       signed
+                     (make-sinteger-format
+                      :bits (list (sinteger-bit-role-value 0)
+                                  (sinteger-bit-role-sign))
+                      :signed (signed-format-twos-complement)
+                      :traps nil))))
   :require (uinteger-sinteger-bit-roles-wfp
-            (uinteger-format->bits
-             (uinteger+sinteger-format->unsigned pair))
-            (sinteger-format->bits
-             (uinteger+sinteger-format->signed pair)))
+            (uinteger-format->bits unsigned)
+            (sinteger-format->bits signed))
   :pred integer-formatp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -950,24 +920,18 @@
     "This is the total number of bits of the unsigned or signed format:
      the two have the same number of bits,
      because of @(tsee uinteger-sinteger-bit-roles-wfp)."))
-  (len (uinteger-format->bits
-        (uinteger+sinteger-format->unsigned
-         (integer-format->pair format))))
+  (len (uinteger-format->bits (integer-format->unsigned format)))
 
   ///
 
   (defruled integer-format->bit-size-alt-def
     (equal (integer-format->bit-size format)
-           (len (sinteger-format->bits
-                 (uinteger+sinteger-format->signed
-                  (integer-format->pair format)))))
+           (len (sinteger-format->bits (integer-format->signed format))))
     :use (:instance same-len-when-uinteger-sinteger-bit-roles-wfp
                     (sroles (sinteger-format->bits
-                             (uinteger+sinteger-format->signed
-                              (integer-format->pair format))))
+                             (integer-format->signed format)))
                     (uroles (uinteger-format->bits
-                             (uinteger+sinteger-format->unsigned
-                              (integer-format->pair format))))))
+                             (integer-format->unsigned format)))))
 
   (defret integer-format->bit-size-type-prescription
     (and (posp size)
@@ -983,9 +947,7 @@
   :returns (max posp :rule-classes (:rewrite :type-prescription))
   :short "The ACL2 integer value of
           the maximum unsigned value representable in an integer format."
-  (uinteger-format->max
-   (uinteger+sinteger-format->unsigned
-    (integer-format->pair format)))
+  (uinteger-format->max (integer-format->unsigned format))
 
   ///
 
@@ -1001,9 +963,7 @@
   :returns (max posp :rule-classes (:rewrite :type-prescription))
   :short "The ACL2 integer value of
           the maximum signed value representable in an integer format."
-  (sinteger-format->max
-   (uinteger+sinteger-format->signed
-    (integer-format->pair format)))
+  (sinteger-format->max (integer-format->signed format))
 
   ///
 
@@ -1019,9 +979,7 @@
   :returns (min integerp)
   :short "The ACL2 integer value of
           the minimum signed value representable in an integer format."
-  (sinteger-format->min
-   (uinteger+sinteger-format->signed
-    (integer-format->pair format)))
+  (sinteger-format->min (integer-format->signed format))
 
   ///
 
@@ -1048,9 +1006,8 @@
           no padding bits,
           and no trap representations."
   (make-integer-format
-   :pair (make-uinteger+sinteger-format
-          :unsigned (uinteger-format-inc-npnt size)
-          :signed (sinteger-format-inc-sign-tcnpnt (1- (pos-fix size)))))
+   :unsigned (uinteger-format-inc-npnt size)
+   :signed (sinteger-format-inc-sign-tcnpnt (1- (pos-fix size))))
   :verify-guards nil ; done below
 
   ///

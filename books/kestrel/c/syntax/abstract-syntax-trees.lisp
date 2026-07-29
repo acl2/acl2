@@ -3825,7 +3825,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap filepath-trans-unit-map
-  :short "Fixtype of omaps from file paths to translation units."
+  :short "Fixtype of maps from file paths to translation units."
   :key-type filepath
   :val-type trans-unit
   :pred filepath-trans-unit-mapp
