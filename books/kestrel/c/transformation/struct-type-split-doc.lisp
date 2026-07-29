@@ -56,7 +56,7 @@
       "                   :typedef-name   ... ; required if :struct-tag is omitted"
       "                   :filepath       ... ; optional"
       "                   :new-tag        ... ; optional"
-      "                   :unsafe         ... ; default nil"
+      "                   :safety-checks  ... ; default t"
       "                   :print-warnings ... ; default t"
      "  )"
      ))
@@ -135,13 +135,11 @@
        the new right struct type is also untagged,
        and this argument is ignored."))
     (xdoc::desc
-     "@(':unsafe') &mdash; default @('nil')"
+     "@(':safety-checks') &mdash; default @('t')"
      (xdoc::p
       "By default, the transformation checks certain safety conditions
        to ensure the resulting code is correct.
-       These checks can optionally be disabled.
-       An untagged target struct type can currently be split only when
-       the safety checks are disabled."))
+       These checks can optionally be disabled."))
     (xdoc::desc
      "@(':print-warnings') &mdash; default @('t')"
      (xdoc::p

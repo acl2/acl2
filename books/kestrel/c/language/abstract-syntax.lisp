@@ -1094,10 +1094,11 @@
    (xdoc::p
     "Technically, the (implicit) presence of the @('#include') directive
      in the source file when the header file is present
-     makes the translation unit for the source file
-     actually a preprocessing translation unit [C17:5.1.1.1/1],
-     but we take the term `translation unit', in this context,
-     to also encompass preprocessing translation units."))
+     means that the translation unit for the source file
+     is not actually a translation unit;
+     but we take the term `translation unit' slightly more broadly here.
+     Eventually, we will generalize all of this,
+     and conform to the terminology in the C standard."))
   ((path-wo-ext string)
    (dot-h trans-unit-option)
    (dot-c trans-unit))

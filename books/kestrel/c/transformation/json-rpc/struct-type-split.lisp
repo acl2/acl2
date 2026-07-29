@@ -101,9 +101,9 @@
      (xdoc::p
       "A string denoting the tag of the new right struct type."))
     (xdoc::desc
-     "@('\"unsafe\"') &mdash; optional, default @('false')"
+     "@('\"safety-checks\"') &mdash; optional, default @('true')"
      (xdoc::p
-      "A boolean that, when @('true'), disables the transformation's safety
+      "A boolean that, when @('false'), disables the transformation's safety
        checks."))
     (xdoc::desc
      "@('\"preprocess\"') &mdash; optional, default @('\"auto\"')"
@@ -139,7 +139,7 @@
     "             \"struct-tag\": \"point\","
     "             \"right-members\": [\"z\"],"
     "             \"new-tag\": \"point_right\","
-    "             \"unsafe\": true,"
+    "             \"safety-checks\": false,"
     "             \"preprocess\": false},"
     " \"id\": 1}"))
   :order-subtopics t
@@ -404,7 +404,7 @@
                  "At least one right member must be specified.")))
        ((erp filepath-present filepath) (param->string "filepath" obj nil))
        ((erp new-tag-present new-tag) (param->string "new-tag" obj nil))
-       ((erp unsafe) (param->boolean "unsafe" obj nil))
+       ((erp safety-checks) (param->boolean "safety-checks" obj t))
        ;; Read the input files into a code ensemble:
        ((mv erp code state)
         (c$::input-files-prog-fn t files old-dir preprocess preprocess-args
@@ -425,7 +425,7 @@
        (new-tag? (and new-tag-present (c$::ident new-tag)))
        ((mv er? code$ warnings)
         (sts-split-code-ensemble
-         right-member-idents tag? typedef-name? filepath? new-tag? unsafe code))
+         right-member-idents tag? typedef-name? filepath? new-tag? safety-checks code))
        ((when er?)
         (reterr (jsonrpc::make-internal-error
                  (concatenate 'string
