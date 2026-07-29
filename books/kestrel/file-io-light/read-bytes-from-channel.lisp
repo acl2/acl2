@@ -68,4 +68,5 @@
 (defthm open-input-channel-p1-of-mv-nth-1-of-read-bytes-from-channel
   (implies (open-input-channel-p1 channel typ state)
            (open-input-channel-p1 channel typ (mv-nth 1 (read-bytes-from-channel channel2 acc state))))
-  :hints (("Goal" :in-theory (enable read-bytes-from-channel))))
+  :hints (("Goal" :induct t
+:in-theory (enable read-bytes-from-channel))))

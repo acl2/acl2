@@ -82,10 +82,10 @@
       and @(tsee remora-keyword-p) when walking a CST to enforce
       [SC2].")
     (xdoc::li
-     "The AST-level well-formedness predicates @('xxx-wf-ast-p') consult
+     "The AST-level well-formedness predicates @('xxx-wfp') consult
       @(tsee valid-identifier-string-p) on the identifiers stored inside
-      AST nodes.  For example, @(tsee bind-wf-ast-p) and
-      @(tsee expr-wf-ast-p).")))
+      AST nodes.  For example, @(tsee bind-wfp) and
+      @(tsee expr-wfp).")))
   :order-subtopics t
   :default-parent t)
 
