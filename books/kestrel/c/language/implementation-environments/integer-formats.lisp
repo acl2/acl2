@@ -422,23 +422,20 @@
 
   (defruled uinteger-format->max-of-short-format-16tcnt
     (equal (uinteger-format->max
-            (uinteger+sinteger-format->unsigned
-             (integer-format->pair
-              (short-format-16tcnt))))
+            (integer-format->unsigned
+             (short-format-16tcnt)))
            65535))
 
   (defruled sinteger-format->max-of-short-format-16tcnt
     (equal (sinteger-format->max
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (short-format-16tcnt))))
+            (integer-format->signed
+             (short-format-16tcnt)))
            32767))
 
   (defruled sinteger-format->min-of-short-format-16tcnt
     (equal (sinteger-format->min
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (short-format-16tcnt))))
+            (integer-format->signed
+             (short-format-16tcnt)))
            -32768)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -476,23 +473,20 @@
 
   (defruled uinteger-format->max-of-int-format-16tcnt
     (equal (uinteger-format->max
-            (uinteger+sinteger-format->unsigned
-             (integer-format->pair
-              (int-format-16tcnt))))
+            (integer-format->unsigned
+             (int-format-16tcnt)))
            65535))
 
   (defruled sinteger-format->max-of-int-format-16tcnt
     (equal (sinteger-format->max
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (int-format-16tcnt))))
+            (integer-format->signed
+             (int-format-16tcnt)))
            32767))
 
   (defruled sinteger-format->min-of-int-format-16tcnt
     (equal (sinteger-format->min
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (int-format-16tcnt))))
+            (integer-format->signed
+             (int-format-16tcnt)))
            -32768)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -530,23 +524,20 @@
 
   (defruled uinteger-format->max-of-long-format-32tcnt
     (equal (uinteger-format->max
-            (uinteger+sinteger-format->unsigned
-             (integer-format->pair
-              (long-format-32tcnt))))
+            (integer-format->unsigned
+             (long-format-32tcnt)))
            4294967295))
 
   (defruled sinteger-format->max-of-long-format-32tcnt
     (equal (sinteger-format->max
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (long-format-32tcnt))))
+            (integer-format->signed
+             (long-format-32tcnt)))
            2147483647))
 
   (defruled sinteger-format->min-of-long-format-32tcnt
     (equal (sinteger-format->min
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (long-format-32tcnt))))
+            (integer-format->signed
+             (long-format-32tcnt)))
            -2147483648)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -584,131 +575,18 @@
 
   (defruled uinteger-format->max-of-llong-format-64tcnt
     (equal (uinteger-format->max
-            (uinteger+sinteger-format->unsigned
-             (integer-format->pair
-              (llong-format-64tcnt))))
+            (integer-format->unsigned
+             (llong-format-64tcnt)))
            18446744073709551615))
 
   (defruled sinteger-format->max-of-llong-format-64tcnt
     (equal (sinteger-format->max
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (llong-format-64tcnt))))
+            (integer-format->signed
+             (llong-format-64tcnt)))
            9223372036854775807))
 
   (defruled sinteger-format->min-of-llong-format-64tcnt
     (equal (sinteger-format->min
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (llong-format-64tcnt))))
+            (integer-format->signed
+             (llong-format-64tcnt)))
            -9223372036854775808)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod char+short+int+long+llong+bool-format
-  :short "Fixtype of formats of
-          (unsigned, signed, and plain) @('char') objects,
-          (unsigned and signed) @('short') objects,
-          (unsigned and signed) @('int') objects,
-          (unsigned and signed) @('long') objects,
-          (unsigned and signed) @('long long') objects, and
-          @('_Bool') objects."
-  ((uchar uchar-format)
-   (schar schar-format)
-   (char char-format)
-   (short integer-format)
-   (int integer-format)
-   (long integer-format)
-   (llong integer-format)
-   (bool bool-format))
-  :pred char+short+int+long+llong+bool-formatp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define char+short+int+long+llong+bool-format-wfp
-  ((format char+short+int+long+llong+bool-formatp))
-  :returns (yes/no booleanp)
-  :short "Check if the formats of
-          @('char'),
-          @('short'),
-          @('int'),
-          @('long'),
-          @('long long'),
-          and @('_Bool')
-          objects
-          are well-formed."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The formats for @('char') objects already include
-     their own well-formedness in their definition.
-     We impose well-formedness on the other formats."))
-  (b* (((char+short+int+long+llong+bool-format format) format))
-    (and (integer-format-short-wfp format.short format.uchar format.schar)
-         (integer-format-int-wfp format.int format.uchar format.short)
-         (integer-format-long-wfp format.long format.uchar format.int)
-         (integer-format-llong-wfp format.llong format.uchar format.long)
-         (bool-format-wfp format.bool format.uchar)))
-
-  ///
-
-  (defrule char+short+int+long+llong+bool-format-wf-short-bit-size-lower-bound
-    (implies (char+short+int+long+llong+bool-format-wfp format)
-             (>= (integer-format->bit-size
-                  (char+short+int+long+llong+bool-format->short format))
-                 16))
-    :rule-classes :linear)
-
-  (defrule char+short+int+long+llong+bool-format-wf-int-bit-size-lower-bound
-    (implies (char+short+int+long+llong+bool-format-wfp format)
-             (>= (integer-format->bit-size
-                  (char+short+int+long+llong+bool-format->int format))
-                 16))
-    :rule-classes :linear)
-
-  (defrule char+short+int+long+llong+bool-format-wf-long-bit-size-lower-bound
-    (implies (char+short+int+long+llong+bool-format-wfp format)
-             (>= (integer-format->bit-size
-                  (char+short+int+long+llong+bool-format->long format))
-                 32))
-    :rule-classes :linear)
-
-  (defrule char+short+int+long+llong+bool-format-wf-llong-bit-size-lower-bound
-    (implies (char+short+int+long+llong+bool-format-wfp format)
-             (>= (integer-format->bit-size
-                  (char+short+int+long+llong+bool-format->llong format))
-                 64))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define char8+short16+int16+long32+llong64+bool0-tcnt ()
-  :short "The
-          @('char'),
-          @('short'),
-          @('int'),
-          @('long'),
-          @('long long'), and
-          @('_Bool')
-          integer formats defined by
-          the minimal number of bits with increasing values,
-          two's complement,
-          no trap representations,
-          unsigned plain @('char')s,
-          and one-byte @('_Bool') objects
-          with value in the least significant bit."
-  (make-char+short+int+long+llong+bool-format
-   :uchar (uchar-format-8)
-   :schar (schar-format-8tcnt)
-   :char (char-format-8u)
-   :short (short-format-16tcnt)
-   :int (int-format-16tcnt)
-   :long (long-format-32tcnt)
-   :llong (llong-format-64tcnt)
-   :bool (bool-format-lsb))
-
-  ///
-
-  (defruled wfp-of-char8+short16+int16+long32+llong64+bool0-tcnt
-    (char+short+int+long+llong+bool-format-wfp
-     (char8+short16+int16+long32+llong64+bool0-tcnt))))

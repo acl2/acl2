@@ -692,6 +692,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define fun-curried-out ((in type-listp) (out typep))
+  :guard (consp in)
+  :returns (new-out typep)
+  :short "Peel the first input type from an n-ary function type
+          and return the remaining function type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An n-ary function type with one or more input types
+     is sugar for a nested sequence of unary function types.
+     This function treats an n-ary function type
+     with at least one input type as that sequence,
+     and it returns the output of the outermost unary function type.
+     This is the output type of the whole function type
+     when there is just one input type,
+     otherwise it is another function type,
+     without the first input type.
+     This is analogous to @(tsee forall-curried-body),
+     with input types in place of bound variables."))
+  (cond ((endp (cdr in)) (type-fix out))
+        (t (make-type-funn :in (cdr in) :out out)))
+  :hooks ((:fix :hints (("Goal" :in-theory (enable cdr-of-type-list-fix)))))
+
+  ///
+
+  (defrule type-count-of-fun-curried-out
+    (implies (and (type-case type :funn)
+                  (consp (type-funn->in type)))
+             (< (type-count (fun-curried-out (type-funn->in type)
+                                             (type-funn->out type)))
+                (type-count type)))
+    :rule-classes :linear
+    :enable fun-curried-out
+    :expand ((type-count type)
+             (type-list-count (type-funn->in type))
+             (type-count (type-funn (cdr (type-funn->in type))
+                                    (type-funn->out type))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define forall-curried-body ((params type-var-listp) (body typep))
   :guard (consp params)
   :returns (new-body typep)
@@ -708,12 +748,27 @@
      This is the body of the whole universal type
      when there is just one parameter,
      otherwise it is another universal type, without the first parameter."))
-  (b* ((params (type-var-list-fix params))
-       (body (type-fix body)))
-    (cond ((endp (cdr params)) body)
-          ((endp (cddr params))
-           (make-type-forall :param (cadr params) :body body))
-          (t (make-type-foralln :params (cdr params) :body body)))))
+  (cond ((endp (cdr params)) (type-fix body))
+        ((endp (cddr params))
+         (make-type-forall :param (cadr params) :body body))
+        (t (make-type-foralln :params (cdr params) :body body)))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-type-var-list-fix)))))
+
+  ///
+
+  (defrule type-count-of-forall-curried-body
+    (implies (type-case type :foralln)
+             (<= (type-count (forall-curried-body (type-foralln->params type)
+                                                  (type-foralln->body type)))
+                 (type-count type)))
+    :rule-classes :linear
+    :enable forall-curried-body
+    :expand ((type-count type)
+             (type-count (type-forall (cadr (type-foralln->params type))
+                                      (type-foralln->body type)))
+             (type-count (type-foralln (cdr (type-foralln->params type))
+                                       (type-foralln->body type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -726,12 +781,27 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to @(tsee forall-curried-body)."))
-  (b* ((params (ispace-var-list-fix params))
-       (body (type-fix body)))
-    (cond ((endp (cdr params)) body)
-          ((endp (cddr params))
-           (make-type-pi :param (cadr params) :body body))
-          (t (make-type-pin :params (cdr params) :body body)))))
+  (cond ((endp (cdr params)) (type-fix body))
+        ((endp (cddr params))
+         (make-type-pi :param (cadr params) :body body))
+        (t (make-type-pin :params (cdr params) :body body)))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-ispace-var-list-fix)))))
+
+  ///
+
+  (defrule type-count-of-pi-curried-body
+    (implies (type-case type :pin)
+             (<= (type-count (pi-curried-body (type-pin->params type)
+                                              (type-pin->body type)))
+                 (type-count type)))
+    :rule-classes :linear
+    :enable pi-curried-body
+    :expand ((type-count type)
+             (type-count (type-pi (cadr (type-pin->params type))
+                                  (type-pin->body type)))
+             (type-count (type-pin (cdr (type-pin->params type))
+                                   (type-pin->body type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -744,12 +814,27 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to @(tsee pi-curried-body)."))
-  (b* ((params (ispace-var-list-fix params))
-       (body (type-fix body)))
-    (cond ((endp (cdr params)) body)
-          ((endp (cddr params))
-           (make-type-sigma :param (cadr params) :body body))
-          (t (make-type-sigman :params (cdr params) :body body)))))
+  (cond ((endp (cdr params)) (type-fix body))
+        ((endp (cddr params))
+         (make-type-sigma :param (cadr params) :body body))
+        (t (make-type-sigman :params (cdr params) :body body)))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-ispace-var-list-fix)))))
+
+  ///
+
+  (defrule type-count-of-sigma-curried-body
+    (implies (type-case type :sigman)
+             (<= (type-count (sigma-curried-body (type-sigman->params type)
+                                                 (type-sigman->body type)))
+                 (type-count type)))
+    :rule-classes :linear
+    :enable sigma-curried-body
+    :expand ((type-count type)
+             (type-count (type-sigma (cadr (type-sigman->params type))
+                                     (type-sigman->body type)))
+             (type-count (type-sigman (cdr (type-sigman->params type))
+                                      (type-sigman->body type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -772,17 +857,16 @@
      if there is just one parameter,
      the annotation pertains to the returned body,
      and it is up to the caller to use it as appropriate."))
-  (b* ((params (var+type?-list-fix params))
-       (body (expr-fix body))
-       (type? (type-option-fix type?)))
-    (cond ((endp (cdr params)) body)
-          ((endp (cddr params))
-           (expr-atom (make-atom-lambda :param (cadr params)
-                                        :body body
-                                        :type? type?)))
-          (t (expr-atom (make-atom-lambdan :params (cdr params)
-                                           :body body
-                                           :type? type?))))))
+  (cond ((endp (cdr params)) (expr-fix body))
+        ((endp (cddr params))
+         (expr-atom (make-atom-lambda :param (cadr params)
+                                      :body body
+                                      :type? type?)))
+        (t (expr-atom (make-atom-lambdan :params (cdr params)
+                                         :body body
+                                         :type? type?))))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-var+type?-list-fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -795,12 +879,12 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to @(tsee forall-curried-body)."))
-  (b* ((params (type-var-list-fix params))
-       (body (expr-fix body)))
-    (cond ((endp (cdr params)) body)
-          ((endp (cddr params))
-           (expr-atom (atom-tlambda (cadr params) body)))
-          (t (expr-atom (atom-tlambdan (cdr params) body))))))
+  (cond ((endp (cdr params)) (expr-fix body))
+        ((endp (cddr params))
+         (expr-atom (atom-tlambda (cadr params) body)))
+        (t (expr-atom (atom-tlambdan (cdr params) body))))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-type-var-list-fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -813,12 +897,12 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to @(tsee forall-curried-body)."))
-  (b* ((params (ispace-var-list-fix params))
-       (body (expr-fix body)))
-    (cond ((endp (cdr params)) body)
-          ((endp (cddr params))
-           (expr-atom (atom-ilambda (cadr params) body)))
-          (t (expr-atom (atom-ilambdan (cdr params) body))))))
+  (cond ((endp (cdr params)) (expr-fix body))
+        ((endp (cddr params))
+         (expr-atom (atom-ilambda (cadr params) body)))
+        (t (expr-atom (atom-ilambdan (cdr params) body))))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-ispace-var-list-fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
