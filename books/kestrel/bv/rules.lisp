@@ -6060,3 +6060,27 @@
                                      slice-of-bvplus-cases-helper
                                      bvchop-when-i-is-not-an-integer
                                      slice-when-val-is-not-an-integer))))
+
+;expensive?
+(defthmd bvplus-tighten-when-no-overflow
+  (implies (and (bvlt bigsize (bvplus bigsize k y) (expt 2 smallsize))
+                (< smallsize bigsize)
+                (natp smallsize)
+                (natp bigsize))
+           (equal (bvplus bigsize k y)
+                  (bvplus smallsize k y)))
+  :hints (("Goal" :in-theory (e/d (bvlt) (bvlt-tighten-when-getbit-0)))))
+
+;disable?
+(defthmd bvplus-commutative-2-sizes-differ
+  (implies (and (syntaxp (quotep k)) ;gen?
+                (bvlt bigsize (bvplus bigsize k y) (expt 2 smallsize)) ;can this loop or be expensive?
+                (< smallsize bigsize)
+                (natp smallsize)
+                (natp bigsize))
+           (equal (bvplus bigsize x (bvplus smallsize k y))
+                  (bvplus bigsize k (bvplus bigsize x y))))
+  :hints (("Goal" :use (:instance bvplus-commutative-2 (size bigsize) (z y) (y k))
+           :in-theory (e/d (bvplus-tighten-when-no-overflow)
+                           (bvplus-commutative-2
+                            equal-of-bvplus-and-bvplus-cancel-arg3-and-arg3)))))
