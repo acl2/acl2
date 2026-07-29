@@ -122,10 +122,7 @@
           :reqfix (if (ienv-requirep uchar schar short int long llong bool)
                       schar
                     (schar-format-8tcnt)))
-   (char char-format
-         :reqfix (if (ienv-requirep uchar schar short int long llong bool)
-                     char
-                   (char-format-8u)))
+   (char char-format)
    (short integer-format
           :reqfix (if (ienv-requirep uchar schar short int long llong bool)
                       short
