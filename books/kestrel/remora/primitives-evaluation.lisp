@@ -2033,22 +2033,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled nat-list-product-of-pair
-  (implies (and (natp x)
-                (natp y)
-                (equal p (list x y)))
-           (equal (nat-list-product p)
-                  (* x y)))
-  :enable (nfix fix nat-list-product))
-
-(defruled member-equal-0-of-pair
-  (implies (and (natp x)
-                (natp y)
-                (equal p (list x y))
-                (not (equal 0 x))
-                (not (equal 0 y)))
-           (not (member-equal 0 p))))
-
 (define prim-transpose2d ((tval type-valuep)
                           (m natp)
                           (n natp)
@@ -2096,19 +2080,32 @@
        (atoms1 (append-all (transpose-list-list (list-split atoms n)))))
     (expr-value-with-nonempty-dims dims atoms1))
   :guard-hints
-  (("Goal" :in-theory (enable nat-list-product-of-pair
-                              member-equal-0-of-pair
-                              nfix
+  (("Goal" :in-theory (enable nfix
                               fix
                               len-of-car-of-list-split
                               expr-value-atoms
                               list-split-of-repeat
                               transpose-list-list-of-repeat-of-repeat
                               append-all-of-repeat-of-repeat
-                              len-of-append-all
+                              len-of-append-all-when-all-of-len-p
                               all-of-len-p-of-transpose-list-list
                               len-of-car-of-transpose-list-list
                               consp-of-car-list-split)))
+  :prepwork
+  ((defrule nat-list-product-of-pair
+     (implies (and (natp x)
+                   (natp y)
+                   (equal p (list x y)))
+              (equal (nat-list-product p)
+                     (* x y)))
+     :enable (nfix fix nat-list-product))
+   (defrule member-equal-0-of-pair
+     (implies (and (natp x)
+                   (natp y)
+                   (equal p (list x y))
+                   (not (equal 0 x))
+                   (not (equal 0 y)))
+              (not (member-equal 0 p)))))
   
   ///
 
@@ -2118,12 +2115,10 @@
     :hyp (and (natp m)
               (natp n)
               (expr-value-wfp val1))
-    :hints (("Goal" :in-theory (enable nat-list-product-of-pair
-                                       member-equal-0-of-pair
-                                       nfix
+    :hints (("Goal" :in-theory (enable nfix
                                        fix
                                        len-of-car-of-list-split
-                                       len-of-append-all
+                                       len-of-append-all-when-all-of-len-p
                                        all-of-len-p-of-transpose-list-list
                                        len-of-car-of-transpose-list-list
                                        consp-of-car-list-split
