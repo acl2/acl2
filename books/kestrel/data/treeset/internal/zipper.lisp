@@ -2205,6 +2205,20 @@
   :use tree-zip-after-when-tree-zip-at-last-p
   :disable tree-zip-after-when-tree-zip-at-last-p)
 
+;; The two ends as tests on the sequences alone. Left disabled, since either
+;; direction on its own is the cheaper rule; this form is for proofs which know
+;; two zippers have the same sequence and need them to be at an end together.
+
+(defruled tree-zip-at-first-p-becomes-not-consp-of-tree-zip-before
+  (equal (tree-zip-at-first-p zip)
+         (not (consp (tree-zip-before zip))))
+  :cases ((consp (tree-zip-before zip))))
+
+(defruled tree-zip-at-last-p-becomes-not-consp-of-tree-zip-after
+  (equal (tree-zip-at-last-p zip)
+         (not (consp (tree-zip-after zip))))
+  :cases ((consp (tree-zip-after zip))))
+
 ;; The mirror of the ordering law, read backwards.
 
 (defrule tree-zip-before-of-tree-zip-prev

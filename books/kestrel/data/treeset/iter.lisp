@@ -71,6 +71,16 @@
 
 (add-to-ruleset break-abstraction '(iterp))
 
+;; Every iterator is a cons, whichever of the three it is. Note that it is not
+;; a @(tsee true-listp): the two ends carry the tree in their @(tsee cdr), not
+;; a list.
+
+(defrule iterp-compound-recognizer
+  (implies (iterp x)
+           (consp x))
+  :rule-classes :compound-recognizer
+  :enable iterp)
+
 (defrule tree-iter-p-when-iterp-forward-chaining
   (implies (iterp iter)
            (tree-iter-p iter))
