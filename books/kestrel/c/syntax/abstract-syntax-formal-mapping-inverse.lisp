@@ -606,7 +606,7 @@
        (tyspecs (ildm-tyspecseq pdeclon.tyspec))
        (declspecs (decl-spec-typespec-list tyspecs)))
     (make-param-declon :specs declspecs
-                       :declor (param-declor-none)
+                       :declor (param-declor-none nil)
                        :attribs nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

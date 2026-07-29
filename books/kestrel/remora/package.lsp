@@ -22,6 +22,7 @@
                                        check-type
                                        function
                                        functionp
+                                       import
                                        prog
                                        sort
                                        termp
@@ -35,7 +36,10 @@
                     booleanp-when-result-not-error
                     change-string-string-map-quadruple
                     chars=>nats
+                    cons-listp
+                    definductive
                     defmacro+
+                    defund-sk
                     defxdoc+
                     enable*
                     explode
@@ -45,6 +49,7 @@
                     integer-list-resultp
                     lifix
                     lnfix
+                    lposfix
                     make-string-string-map-pair
                     make-string-string-map-quadruple
                     nat

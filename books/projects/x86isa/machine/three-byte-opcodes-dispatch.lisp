@@ -41,6 +41,7 @@
 ;; (include-book "instructions/top" :ttags (:syscall-exec))
 ;; Other instruction books may be needed here eventually:
 (include-book "instructions/arith-and-logic")
+(include-book "instructions/bit")
 (include-book "instructions/move")
 (include-book "decoding-and-spec-utils")
 (include-book "prefix-modrm-sib-decoding")

@@ -2513,6 +2513,7 @@
             ;; acl2::bvplus-commutative-axe ;is this based on nodenum or term weight?
 
             x86isa::select-operand-size$inline ;shilpi leaves this enabled (could restrict to ground terms)
+            x86isa::select-stack-address-size$inline
             x86isa::select-segment-register$inline
             x86isa::x86-operand-from-modr/m-and-sib-bytes
             ;; x86isa::write-user-rflags-rewrite ;x86isa::write-user-rflags$inline ;shilpi leaves this enabled

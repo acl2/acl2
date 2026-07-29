@@ -13,8 +13,8 @@
 
 ;; The file includes rules about TRIM applied to BV functions.  These rules
 ;; finish the trimming after other rules (from trim-intro-rules.lisp or
-;; ../axe/trim-intro-rules-axe.lisp) introduce trim.  See also
-;; trim-elim-rules-non-bv.lisp, which covers trim applied to non-BV functions.
+;; ../axe/trim-intro-rules-axe.lisp) introduce TRIM.  See also
+;; trim-elim-rules-non-bv.lisp, which covers TRIM applied to non-BV functions.
 
 (include-book "trim")
 (include-book "bvsx")

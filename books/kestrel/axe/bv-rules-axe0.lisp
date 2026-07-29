@@ -23,6 +23,7 @@
 (include-book "kestrel/bv/bvand" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)
 (include-book "kestrel/bv/sbvlt-def" :dir :system)
+(include-book "kestrel/bv/sbvdiv-def" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/bv/leftrotate32" :dir :system)
 (include-book "kestrel/bv/rightrotate32" :dir :system)
@@ -175,3 +176,11 @@
 ;; Only needed for Axe (ACL2 knows this by type reasoning).
 (defthmd natp-of-bool-to-bit
    (natp (bool-to-bit x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd natp-of-sbvdiv
+  (natp (sbvdiv size x y)))
+
+(defthmd integerp-of-sbvdiv
+  (integerp (sbvdiv size x y)))

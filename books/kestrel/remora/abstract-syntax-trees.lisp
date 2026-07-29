@@ -39,25 +39,34 @@
      [thesis] (Figure 4.1),
      [arxiv] (Figure 1),
      [esop] (Figure 6),
-     and [impl].
+     and primarily [impl].
      These ASTs are consistent with the "
     (xdoc::seetopic "grammar" "ABNF grammar of Remora")
-    ", which is derived from [impl].
-     We use the term `ispace' to refer to what [thesis] calls `index';
-     [impl] currently uses the term `extent', but it will use `ispace' soon.
+    ", which is derived from [impl];
+     the relation between these ASTs and the grammar
+     is formalized in @(see syntax-abstraction).")
+   (xdoc::p
+    "We use the term `ispace' to refer to what [thesis] calls `index';
+     [impl] also uses `ispace'.
      The rationale for `ispace' is that it denotes an index space,
      i.e. a space where indices range;
      one index over a dimension, zero or more indices over a shape.")
    (xdoc::p
     "These ASTs preserve much of the concrete syntax information,
      so they include both core and non-core constructs.
-     We have defines a characterization of core ASTs
+     We have defined a characterization of core ASTs
      and a desugaring transformation from all ASTs to core ASTs.
-     The ASTs in [impl] are slightly more abstracted than ours.")
+     The ASTs in [impl] are more abstracted than ours;
+     they contain less sugar.")
    (xdoc::p
     "Our ASTs contain some information absent from the concrete syntax,
      such as certain type annotations.
-     These are meant to be calculated by type checking/inference.")
+     These are calculated by type checking/inference.")
+   (xdoc::p
+    "Our ASTs are, in certain parts, more general than the concrete syntax,
+     e.g. they allow certain required type information to be omitted.
+     The concrete syntax of Remora may evolve in that direction,
+     particularly when Remora has type inference.")
    (xdoc::p
     "As a general remark that applies to multiple fixtypes defined here,
      we use ACL2 strings for variable names.
@@ -67,21 +76,28 @@
     "Note that the strings representing identifiers
      that derive from potentially-non-ASCII Remora surface syntax
      are stored in our ASTs as ACL2 strings whose bytes are
-     the @('UTF-8') encoding of the original Unicode code-point sequence.
+     the UTF-8 encoding of the original Unicode code-point sequence.
      Since ACL2 char codes are 0-255,
      a non-ASCII code point such as U+03B1 cannot occupy a single character;
-     the @('UTF-8') convention encodes it as two bytes (@('0xCE 0xB1'))
+     the UTF-8 convention encodes it as two bytes (@('0xCE 0xB1'))
      within the string.
      ASCII identifiers are unaffected
-     (each ASCII code point is a single @('UTF-8') byte).
+     (each ASCII code point is a single UTF-8 byte).
      The encoding is performed by syntax abstraction by @('abs-nats-to-string'),
-     and is symmetric to the @('UTF-8') decoding
-     performed by @('parse-program-from-bytes').
+     and is symmetric to the UTF-8 decoding
+     performed by the parsing entry points (see @(see parser-interface)).
      Consumers that need code points back
-     can decode the string with @('acl2::utf8=>ustring').
-     String equality on names is bytewise,
+     can decode the string with @(tsee acl2::utf8=>ustring).
+     String equality on names is byte-wise,
      which agrees with code-point-sequence equality,
-     given the assumption that the strings are well-formed @('UTF-8')."))
+     given the assumption that the strings are well-formed UTF-8.")
+   (xdoc::p
+    "The fixtypes for our ASTs do not enforce certain restrictions,
+     such as the non-emptiness of certain lists.
+     The FTY @(':require') feature does not seem to work for that,
+     when there are mutually recursive types.
+     We can enforce these restrictions via separate predicates,
+     but we state them in the documentation of the AST fixtypes."))
   :order-subtopics t
   :default-parent t)
 
@@ -119,7 +135,11 @@
        constants (natural numbers),
        additions of zero or more dimensions,
        multiplications of zero or more dimensions,
-       and subtractions of zero or more dimensions."))
+       and subtractions of zero or more dimensions.")
+     (xdoc::p
+      "[impl] uses integers for constant dimensions,
+       but they must never be negative,
+       and so we use a tighter type here."))
     (:var ((name string)))
     (:const ((val nat)))
     (:add ((dims dim-list)))
@@ -167,7 +187,7 @@
    (xdoc::p
     "Shapes and ispaces are mutually recursive
      because splices, which are shapes, contain ispaces.
-     This is consistent with a recent change to [impl]."))
+     This is consistent with [impl]."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -196,9 +216,7 @@
      (xdoc::p
       "The @(':splice') summand represents the square bracket notation.
        As in [impl] and the ABNF grammar, it contains ispaces,
-       which is why shapes and ispaces are mutually recursive.
-       This makes it apparent that
-       concatenation and splicing are equivalent constructs."))
+       which is why shapes and ispaces are mutually recursive."))
     (:var ((name string)))
     (:dims ((dims dim-list)))
     (:append ((shapes shape-list)))
@@ -427,24 +445,64 @@
        and an ispace indicating how the elements are arranged,
        bracket types which are similar to array types
        but they have zero or more ispaces to be spliced,
-       function types (with zero or more input types and an output type),
-       universal types (quantified over kinded variables),
+       function types (with input and output types),
+       universal types (quantified over type variables),
        product types (quantified over ispace parameters),
-       and sum types (quantified over ispace parameters)."))
+       and sum types (quantified over ispace parameters).")
+     (xdoc::p
+      "The @(':fun') summand is the main, core form of function types,
+       which is unary, i.e. it has exactly one input type.
+       The n-ary @(':funn') summand is sugar for
+       a nesting of the unary form.
+       The Remora concrete syntax allows a unary function type
+       to have the input type either parenthesized or not;
+       we preserve this information in our ASTs
+       by using singleton lists in @(':funn')
+       for the case of a parenthesized type,
+       using instead @(':fun') for an unparenthesized one.
+       The n-ary @(':funn') is also allowed to have no input types;
+       see grammar.")
+     (xdoc::p
+      "The @(':forall'), @(':pi'), and @(':sigma') summands are
+       the main, core form of universal, product, and sum type,
+       which are unary, i.e. they have exactly one parameter.
+       The n-ary @('foralln'), @(':pin'), and @(':sigman') summands
+       are sugar for a nesting of the unary forms;
+       they always contain two or more parameters
+       (because there must have at least one parameter,
+       and if there is just one we use the unary forms),
+       but this fixtype does not capture this requirement.
+       Note the slight difference with function types,
+       where singleton lists are allowed as explained above.")
+     (xdoc::p
+      "[impl] has two slightly different AST variants for types,
+       one produced by the parser and one resulting from elaboration.
+       The former has unary function types
+       but n-ary universal, product, and sum types;
+       the latter has unary universal, product, and sum types.
+       The latter also separates, syntactically, atom from array types."))
     (:var ((var type-var)))
     (:base ((type base-type)))
     (:array ((elem type)
              (ispace ispace)))
     (:bracket ((elem type)
                (ispaces ispace-list)))
-    (:fun ((in type-list)
+    (:fun ((in type)
            (out type)))
-    (:forall ((params type-var-list)
+    (:funn ((in type-list)
+            (out type)))
+    (:forall ((param type-var)
               (body type)))
-    (:pi ((params ispace-var-list)
+    (:foralln ((params type-var-list) ; two or more
+               (body type)))
+    (:pi ((param ispace-var)
           (body type)))
-    (:sigma ((params ispace-var-list)
+    (:pin ((params ispace-var-list) ; two or more
+           (body type)))
+    (:sigma ((param ispace-var)
              (body type)))
+    (:sigman ((params ispace-var-list) ; two or more
+              (body type)))
     :pred typep)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -480,13 +538,11 @@
   (xdoc::topstring
    (xdoc::p
     "This corresponds to @('pat') in the ABNF grammar,
-     with the relaxation that we allow a type to be missing.
-     In fact, Remora concrete syntax may evolve in that direction,
-     with type inference inferring the missing types.")
+     with the relaxation that we allow a type to be missing.")
    (xdoc::p
     "These are pairs consisting of a variable name and an associated type.
-     The type is an array one because variables are expressions, not atoms.
-     These variables are separate from ispace and type variables."))
+     These variables are separate from ispace and type variables;
+     they are expression variables, i.e. they stand for expressions."))
   ((var string)
    (type? type-option))
   :pred var+type?-p)
@@ -783,68 +839,102 @@
       "There are
        named variables,
        atoms (auto-lifted to expressions),
-       non-empty arrays with at least one atom,
+       non-empty arrays with dimensions and one or more atoms,
        empty arrays with the type of the elements,
-       non-empty frames with at least one expression,
+       non-empty frames with dimensions and one or more expressions,
        empty frames with the type of the cells,
        string literals,
-       applications of expressions to expressions
-       (called `term applications' in the Remora publications),
-       applications of expressions to types,
-       applications of expressions to ispaces,
+       applications of expressions to expressions (unary or n-ary),
+       applications of expressions to types (unary or n-ary),
+       applications of expressions to ispaces (unary or n-ary),
        combined applications of expressions to types/ispaces/expressions,
-       unboxing expressions,
+       unboxing expressions (unary or n-ary),
        bracketed expressions,
-       and @('let') expressions.
-       An unboxing expression
-       binds zero or more variables to ispaces,
-       binds a variable to the boxed expression,
-       and returns the body expression;
-       it is optionally annotated by its type
-       (the type of the whole unboxing expression).")
+       and @('let') expressions.")
      (xdoc::p
-      "The non-emptiness of the atom list in @(':array')
-       and of the expression list in @(':frame')
-       is not captured in this fixtype.
-       The FTY @(':require') feature does not seem to work here,
-       perhaps because of the interaction with the mutually recursive fixtypes.
-       We can enforce this non-emptiness in the static semantics.
-       [thesis] enforces non-emptiness with the patterns
-       @($\\mathfrak{a}\\ \\mathfrak{a}\\ldots$) and @($e\\ e\\ldots$),
-       while [arxiv] paper does not.")
+      "This fixtype does not capture the non-emptiness of
+       the lists of atoms and expressions of
+       non-empty arrays and frames.
+       The naming of the summands is not completely symmetric,
+       because the unqualified @(':array') and @(':frame') mean non-empty,
+       while empty summands are @(':array-empty') and @(':frame-empty').
+       We might actually consider unifying them,
+       if we extend the non-empty ones with optional element types.")
      (xdoc::p
-      "The optional type of the body of an unbox expression
-       (i.e. the result type of the unboxing)
-       is calculated and stored by the type checker.
-       It is absent after parsing."))
+      "The @(':app'), @(':tapp'), and @(':iapp') summands
+       are the main, core form of expression/type/ispace application,
+       which is unary, i.e. it has one argument,
+       consistently with the unary function, universal, and product types
+       (see @(tsee type)).
+       The n-ary @(':appn'), @(':tappn'), and @(':iappn') summands
+       are sugar for a nesting of the unary forms;
+       they always contain two or more arguments
+       (because there must be at least one argument,
+       and if there is just one we use the unary forms),
+       but this fixtype does not capture this requirement.")
+     (xdoc::p
+      "The @(':capp') summand is sugar,
+       but it allows zero arguments (expressions, types, or ispaces),
+       unlike the other applications.")
+     (xdoc::p
+      "The @(':unbox') summand is the main, core form of unboxing,
+       which is unary, i.e. it has one ispace parameter,
+       consistently with other constructs.
+       The n-ary @(':unboxn') is sugar for a nesting of the unary form;
+       it always has two or more ispace variables,
+       because there must be at least one,
+       but a single one is represented as the unary @(':unbox'),
+       but this fixtype does not capture that constraint.
+       Both forms of unboxing are optionally annotated by
+       the type of the whole unboxing expression;
+       this type is absent after parsing, calculated by the type checker.")
+     (xdoc::p
+      "A bracketed expression must have at least one sub-expression,
+       but this is not enforced in this fixtype.")
+     (xdoc::p
+      "A @('let') expressions must have at least one bind,
+       but this is not enforced in this fixtype.")
+     (xdoc::p
+      "[impl] has only unary ASTs for applications and unboxing."))
     (:var ((name string)))
     (:atom ((atom atom)))
     (:array ((dims nat-list)
-             (atoms atom-list)))
+             (atoms atom-list))) ; one or more
     (:array-empty ((dims nat-list)
                    (type type)))
     (:frame ((dims nat-list)
-             (exprs expr-list)))
+             (exprs expr-list))) ; one or more
     (:frame-empty ((dims nat-list)
                    (type type)))
     (:string ((chars char-lit-list)))
     (:app ((fun expr)
-           (args expr-list)))
+           (arg expr)))
+    (:appn ((fun expr)
+            (args expr-list))) ; two or more
     (:tapp ((fun expr)
-            (args type-list)))
+            (arg type)))
+    (:tappn ((fun expr)
+             (args type-list))) ; two or more
     (:iapp ((fun expr)
-            (args ispace-list)))
+            (arg ispace)))
+    (:iappn ((fun expr)
+             (args ispace-list))) ; two or more
     (:capp ((fun expr)
             (targs type-list-option)
             (iargs ispace-list-option)
             (args expr-list)))
-    (:unbox ((ispaces ispace-var-list)
+    (:unbox ((ispace ispace-var)
              (var string)
              (target expr)
              (body expr)
              (type? type-option)))
-    (:bracket ((exprs expr-list)))
-    (:let ((binds bind-list)
+    (:unboxn ((ispaces ispace-var-list) ; two or more
+              (var string)
+              (target expr)
+              (body expr)
+              (type? type-option)))
+    (:bracket ((exprs expr-list))) ; one or more
+    (:let ((binds bind-list) ; one or more
            (body expr)))
     :pred exprp)
 
@@ -874,26 +964,59 @@
        with an optional type of the body (not of the abstraction),
        lambda abstractions of expressions over type variables,
        lambda abstractions of expressions over ispace variables,
-       and boxed arrays with given ispaces and type.
-       Since the type in a boxing construct must be a sum type,
-       we could enforce this syntactically,
-       but we follow [arxiv], [thesis], and [impl],
-       which all use a generic type.")
+       and boxed arrays with given ispaces and type.")
+     (xdoc::p
+      "The @(':lambda'), @(':tlambda'), and @(':ilambda') summands are
+       the main, core form of expression, type, and ispace lambda abstraction,
+       which is unary, i.e. it has exactly one parameter.
+       The n-ary @(':lambdan'), @(':tlambdan'), and @(':ilambdan') summands
+       are sugar for a nesting of the unary forms;
+       they always contains two or more parameters
+       (because there must have at least one parameter,
+       and if there is just one we use the unary forms),
+       but this fixtype does not capture this requirement.")
      (xdoc::p
       "The optional type of the body of a lambda abstraction
        is calculated and stored by the type checker.
-       It is absent after parsing."))
+       It is absent after parsing.")
+     (xdoc::p
+      "The @(':box') summand is the main, core form of boxing,
+       which is unary, i.e. it has exactly one ispace.
+       The n-ary @(':boxn') summand is sugar for a nesting of the unary form;
+       it always contains two or more ispaces
+       (because there must have at least one ispace,
+       and if there is just one we use the unary form),
+       but this fixtype does not capture this requirement.
+       The type of a unary box is optional:
+       it is always present in the concrete syntax,
+       but it is absent in the inner boxes of
+       the nest that an n-ary box desugars to,
+       because those types can only be computed during type checking;
+       this matches [impl].
+       The type of an n-ary box is instead always present.")
+     (xdoc::p
+      "[impl] has only unary ASTs for abstractions and boxing."))
     (:base ((lit base-lit)))
-    (:lambda ((params var+type?-list)
+    (:lambda ((param var+type?)
               (body expr)
               (type? type-option)))
-    (:tlambda ((params type-var-list)
+    (:lambdan ((params var+type?-list) ; two or more
+               (body expr)
+               (type? type-option)))
+    (:tlambda ((param type-var)
                (body expr)))
-    (:ilambda ((params ispace-var-list)
+    (:tlambdan ((params type-var-list) ; two or more
+                (body expr)))
+    (:ilambda ((param ispace-var)
                (body expr)))
-    (:box ((ispaces ispace-list)
+    (:ilambdan ((params ispace-var-list) ; two or more
+                (body expr)))
+    (:box ((ispace ispace)
            (array expr)
-           (type type)))
+           (type? type-option)))
+    (:boxn ((ispaces ispace-list) ; two or more
+            (array expr)
+            (type type)))
     :pred atomp)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -921,7 +1044,7 @@
        ispace bindings,
        type bindings,
        value bindings,
-       function bindings,
+       expression function bindings,
        type function bindings,
        ispace function bindings, and
        combined function bindings."))
@@ -998,13 +1121,84 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod prog
-  :short "Fixtype of programs."
+(fty::defprod import
+  :short "Fixtype of imports."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to @('program') in the ABNF grammar.")
+    "This corresponds to @('import') in the ABNF grammar.")
    (xdoc::p
-    "Currently a program is just a (top-level) expression."))
-  ((expr expr))
-  :pred progp)
+    "An import names another Remora source file
+     whose declarations are in scope in the importing file.
+     The path is a string literal,
+     represented as a list of character literals
+     like the @(':string') summand of @(tsee expr)."))
+  ((path char-lit-list))
+  :pred importp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist import-list
+  :short "Fixtype of lists of imports."
+  :elt-type import
+  :true-listp t
+  :elementp-of-nil nil
+  :pred import-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum decl
+  :short "Fixtype of declarations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('decl') in the ABNF grammar.")
+   (xdoc::p
+    "A declaration is either
+     a definition, wrapping any of the binding forms
+     used in @('let') expressions,
+     or an entry point, whose signature has the same form
+     as that of a function binding
+     (the @(':fun') summand of @(tsee bind)):
+     a name, value parameters, an optional return type,
+     and a body expression."))
+  (:def ((bind bind)))
+  (:entry ((var string)
+           (params var+type?-list)
+           (type? type-option)
+           (expr expr)))
+  :pred declp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist decl-list
+  :short "Fixtype of lists of declarations."
+  :elt-type decl
+  :true-listp t
+  :elementp-of-nil nil
+  :pred decl-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod file
+  :short "Fixtype of source files and import-expanded programs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('file') in the ABNF grammar.")
+   (xdoc::p
+    "A source file is a sequence of imports
+     followed by a sequence of declarations.")
+   (xdoc::p
+    "This fixtype also represents import-expanded programs:
+     resolving the imports of a file
+     replaces them with the declarations of the imported files,
+     yielding a value of this fixtype with an empty list of imports.
+     In [impl], these are two different ASTs:
+     parsing yields a list of imports paired with a program
+     (a pair with no named type),
+     and import resolution yields a program
+     (@('Prog'), a list of declarations)."))
+  ((imports import-list)
+   (decls decl-list))
+  :pred filep)

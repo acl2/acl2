@@ -2720,16 +2720,16 @@
   (xdoc::topstring
    (xdoc::p
     "This is a very simplified model of C preprocessing [C17:6.10].
-     If there is no header, this is essentially a no-op:
+     If there is no header file, this is essentially a no-op:
      we return the translation unit for the source file.
-     If there is a header, as explained in @(tsee trans-ensemble),
+     If there is a header file, as explained in @(tsee trans-ensemble),
      it is implicitly included in the source file
      (without an explicit representation of the @('#include') directive):
-     we concatenate the external declarations from the header
+     we concatenate the external declarations from the header file
      and the external declarations from the source file,
      and wrap the concatenation into a translation unit.
      This amounts to replacing the (implicit) @('#include')
-     with the included header,
+     with the included header file,
      which is assumed to be at the beginning of the source file.
      The path without extension component of the translation ensemble
      is currently ignored, because the @('#include') is implicit."))

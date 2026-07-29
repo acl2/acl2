@@ -8,11 +8,12 @@
 (include-book "projects/linear/field" :dir :system)
 (include-book "projects/numbers/fermat" :dir :system)
 (local (include-book "support/extensions"))
+(local (include-book "support/embeddings"))
 
 ;; A field may be represented in ACL2 as a set of 7 functions that satisfy the usual field axioms: a predicate
 ;; that recognizes field elements, 2 binary operations, 2 nullary identity elements, and 2 unary inverse
 ;; operators.  An example of a field is the generic field specified by the encapsulation in the file
-;; "../linear/field.lisp".
+;; "../linear/field".
 
 ;; We would like to be able to say "Let f be a field" in the ACL2 logic.  That is, we would like to define an
 ;; ACL2 predicate fieldp that recognizes fields, but in general, fields are not ACL2 objects.  We can, however,
@@ -68,7 +69,7 @@
 
 (defund brecip (x f)
   (cond ((zerop f) (/ x))
-	;the following is inspired by Fermat's Theorem (see "../numbers/fermat.lisp"):
+	;the following is inspired by Fermat's Theorem (see "../numbers/fermat"):
         ((primep f) (mod (expt x (- f 2)) f))
 	(t (f/ x))))
 
@@ -111,7 +112,7 @@
 ;;   (f/ x)      (frecip x f)
 
 ;; The above definitions are mutually recursive with functions pertaining to the ring of polynomials over
-;; f, which correspond to the functions constrained by the encapsulation of "../linear/ring.lisp", as
+;; f, which correspond to the functions constrained by the encapsulation of "../linear/ring", as
 ;; follows:
 
 ;;   (rp x)      (polyp x f)
@@ -222,7 +223,7 @@
 ;; f is replaced by (cdr f).  This observation is critical for the admissibility of the clique.
 
 ;; In our treatment of the greatest common divisor, in order to avoid name conflicts (with functions
-;; pertaining to the gcd of integers, defined in "../numbers/euclid.lisp"), we use the names pgcd, r$, and s$
+;; pertaining to the gcd of integers, defined in "../numbers/euclid"), we use the names pgcd, r$, and s$
 ;; for the functions described earlier. The recursive Euclidean algorithm produces a polynomial of maximal 
 ;; degree that divides both of two given polynomials.  It is convenient to define the greatest common divisor 
 ;; to be monic.  Thus, we first define polynomials (pgcd-aux p q f), (r$-aux p q f), and (s$-aux p q f), 
@@ -557,7 +558,7 @@
 
 ;;     (defthm padd-closed-*
 ;;       (implies (and (fieldp f) (field-axioms-p f) (polyp x f) (polyp y f))
-;;                (polyp (padd x y f))))
+;;                (polyp (padd x y f) f)))
 
 ;;     along with additional properties that are required for the proofs of Step 4, e.g.,
 
@@ -576,7 +577,7 @@
 ;;     (defthmd fadd-closed-**
 ;;       (implies (and (fieldp f) (consp f) (field-axioms-p (cdr f))
 ;;                     (feltp x f) (feltp y f))
-;;                (feltp (fadd x y f))))
+;;                (feltp (fadd x y f) f)))
 
 ;;     as well as the 2 axioms pertaining to the reciprocal, e.g.,
 
@@ -969,13 +970,13 @@
 ;;----------------------------------------------------------------------------------------------------------
 
 ;; We shall prove that the field axioms hold for each base field f.  If f is F0, the required theorems are the 
-;; encapsulated theorems in ../linear/field.lisp"; if f is Q, they are built-in properties of rational 
-;; arithmetic; and if f is Fp, they all reduce to trivial properties of the function mod, with the exception
+;; encapsulated theorems in ../linear/field"; if f is Q, they are built-in properties of rational arithmetic; 
+;; and if f is Fp, they all reduce to trivial properties of the function mod, with the exception
 ;; of the following property of the reciprocal:
 
 ;;   (fmul x (recip x f) f) = (fone f).
 
-;; But by Fermat's Theorem (see "../numbers/fermat.lisp"),
+;; But by Fermat's Theorem (see "../numbers/fermat"),
 
 ;;   (fmul x (recip x f) f) = (mod (* x (mod (expt 2 (- p 2)) p)) p)
 ;;                          = (mod (expt x (1- p)) p)
@@ -3447,3 +3448,323 @@
 	          (>= (degree q) 1)
 	          (irreduciblep q f)
 		  (pdivides q p f)))))
+
+
+;;----------------------------------------------------------------------------------------------------------
+;;                                          Field Homomorphisms
+;;----------------------------------------------------------------------------------------------------------
+
+;; The following encapsulation axiomatizes the notion of a field homomorphism:
+
+(encapsulate (((fld1) => *) ((fld2) => *) ((hom *) => *))
+  (local (defun fld1 () 0))
+  (local (defun fld2 () 0))
+  (local (defun hom (x) x))
+  (defthm fieldp-fld1-fld2
+    (and (fieldp (fld1)) (fieldp (fld2))))
+  (defthm hom-fld1-fld2
+    (implies (feltp x (fld1)) (feltp (hom x) (fld2))))
+  (defthm hom-id
+    (and (equal (hom (fzero (fld1))) (fzero (fld2)))
+	 (equal (hom (fone (fld1))) (fone (fld2)))))
+  (defthm hom-fadd
+    (implies (and (feltp x (fld1)) (feltp y (fld1)))
+             (equal (hom (fadd x y (fld1))) (fadd (hom x) (hom y) (fld2)))))
+  (defthm hom-fmul
+    (implies (and (feltp x (fld1)) (feltp y (fld1)))
+             (equal (hom (fmul x y (fld1))) (fmul (hom x) (hom y) (fld2))))))
+
+;; The derived properties of the constrained function hom may be attributed to any function that satisfies 
+;; the above axioms by functional instantiation.  We begin with some trivial consequences of the axioms:
+
+(defthmd hom-fneg
+  (implies (feltp x (fld1))
+           (equal (hom (fneg x (fld1)))
+	          (fneg (hom x) (fld2)))))
+
+(defthmd hom-frecip
+  (implies (and (feltp x (fld1)) (not (equal x (fzero (fld1)))))
+           (equal (hom (frecip x (fld1)))
+	          (frecip (hom x) (fld2)))))
+
+(defthm hom-fzero
+  (implies (and (feltp x (fld1)) (equal (hom x) (fzero (fld2))))
+           (equal x (fzero (fld1))))
+  :rule-classes ())
+
+(defthm hom-1-1
+  (implies (and (feltp x (fld1)) (feltp y (fld1)) (equal (hom x) (hom y)))
+           (equal x y))
+  :rule-classes ())
+
+(defthm hom-fone
+  (implies (and (feltp x (fld1)) (equal (hom x) (fone (fld2))))
+           (equal x (fone (fld1))))
+  :rule-classes ())
+
+;; A field homomorphism induces a homomorphism of polynomial rings:
+
+(defun phom (p)
+  (if (consp p)
+      (cons (hom (car p)) (phom (cdr p)))
+    ()))
+
+(defthmd feltsp-phom
+  (implies (feltsp p (fld1))
+           (feltsp (phom p) (fld2))))
+
+(defthmd polyp-phom
+  (implies (polyp p (fld1))
+           (polyp (phom p) (fld2))))
+
+(defthmd monicp-phom
+  (implies (and (polyp p (fld1)) (monicp p (fld1)))
+           (monicp (phom p) (fld2))))
+
+(defthmd phom-id
+  (and (equal (phom (pzero (fld1))) (pzero (fld2)))
+       (equal (phom (pone (fld1))) (pone (fld2)))))
+
+(defthmd phom-pzero
+  (implies (and (polyp p (fld1))
+                (not (equal p (pzero (fld1)))))
+	   (not (equal (phom p) (pzero (fld2))))))
+
+(defthm len-phom
+  (equal (len (phom p))
+         (len p)))
+
+(defthmd phom-faddl
+  (implies (and (feltsp p (fld1)) (feltsp q (fld1)))
+           (equal (phom (faddl p q (fld1)))
+	          (faddl (phom p) (phom q) (fld2)))))
+
+(defthmd phom-pstrip
+  (implies (feltsp p (fld1))
+           (equal (phom (pstrip p (fld1)))
+	          (pstrip (phom p) (fld2)))))
+
+(defthmd phom-padd
+  (implies (and (polyp p (fld1)) (polyp q (fld1)))
+           (equal (phom (padd p q (fld1)))
+	          (padd (phom p) (phom q) (fld2)))))
+
+(defthmd phom-cmul
+  (implies (and (feltsp q (fld1)) (feltp c (fld1)) (not (equal c (fzero (fld1)))))
+           (equal (phom (cmul c q (fld1)))
+	          (cmul (hom c) (phom q) (fld2)))))
+
+(defthmd phom-append
+  (implies (and (feltsp p (fld1)) (feltsp q (fld1)))
+           (equal (phom (append p q))
+	          (append (phom p) (phom q)))))
+
+(defthm phom-fzero-list
+  (implies (natp k)
+           (equal (phom (fzero-list k (fld1)))
+	          (fzero-list k (fld2)))))
+
+(defthmd phom-pshift
+  (implies (and (polyp p (fld1)) (natp k))
+           (equal (phom (pshift p k (fld1)))
+	          (pshift (phom p) k (fld2)))))
+
+(defthmd phom-pmul
+  (implies (and (polyp p (fld1)) (polyp q (fld1)))
+           (equal (phom (pmul p q (fld1)))
+	          (pmul (phom p) (phom q) (fld2)))))
+	  
+(defthmd phom-pquot-prem
+  (implies (and (polyp x (fld1)) (polyp y (fld1)) (not (equal y (pzero (fld1)))))
+           (and (polyp (phom (pquot x y (fld1))) (fld2))
+	        (polyp (phom (prem x y (fld1))) (fld2))
+                (equal (phom  (pquot x y (fld1)))
+		       (pquot (phom x) (phom y) (fld2)))
+                (equal (phom  (prem x y (fld1)))
+		       (prem (phom x) (phom y) (fld2))))))
+
+(defthmd pdivides-phom
+  (implies (and (polyp x (fld1)) (polyp y (fld1)) (not (equal y (pzero (fld1)))))
+           (iff (pdivides (phom y) (phom x) (fld2))
+	        (pdivides y x (fld1)))))
+		
+
+;;----------------------------------------------------------------------------------------------------------
+;;                             The Embedding of a Field in an Extension Field
+;;----------------------------------------------------------------------------------------------------------
+
+;; Definition of a field extension:
+
+(defun extends (e f)
+  (or (equal e f)
+      (and (consp e)
+           (extends (cdr e) f))))
+
+(defun extensionp (e f)
+  (and (fieldp f) (fieldp e) (extends e f)))
+
+(defthmd extends-trans
+  (implies (and (extends e d) (extends d f))
+           (extends e f)))
+
+(defthmd len-extends
+  (implies (extends e f)
+           (<= (len f) (len e))))
+
+;; Let e be an extension of f.  We may think of f as a subfield of e, but this is not strictly true -- the 
+;; elements of f are not elements of e.  However, there is a natural embedding of f in e:
+
+(defun fliftn (x n)
+  (if (zp n)
+      x
+    (list (fliftn x (1- n)))))
+
+(defund flift (x f e)
+  (fliftn x (- (len e) (len f))))
+
+;; flift satisfies the axioms of a field homomorphism:
+
+(defthm feltp-flift
+  (implies (and (extensionp e f)
+                (feltp x f))
+	   (feltp (flift x f e) e)))
+
+(defthm flift-id
+  (implies (extensionp e f)
+           (and (equal (flift (fzero f) f e) (fzero e))
+	        (equal (flift (fone f) f e) (fone e)))))
+
+(defthm flift-fadd
+  (implies (and (extensionp e f)
+                (feltp x f) (feltp y f))
+           (equal (flift (fadd x y f) f e)
+	          (fadd (flift x f e) (flift y f e) e))))
+
+(defthm flift-fmul
+  (implies (and (extensionp e f)
+                (feltp x f) (feltp y f))
+           (equal (flift (fmul x y f) f e)
+	          (fmul (flift x f e) (flift y f e) e))))
+
+;; Some trivial consequences of the axioms:
+
+(defthmd flift-fneg
+  (implies (and (extensionp e f)
+                (feltp x f))
+           (equal (flift (fneg x f) f e)
+	          (fneg (flift x f e) e))))
+
+(defthmd flift-frecip
+  (implies (and (extensionp e f)
+                (feltp x f) (not (equal x (fzero f))))
+           (equal (flift (frecip x f) f e)
+	          (frecip (flift x f e) e))))
+
+(defthm flift-fzero
+  (implies (and (extensionp e f)
+                (feltp x f) (equal (flift x f e) (fzero e)))
+           (equal x (fzero f)))
+  :rule-classes ())
+
+(defthmd flift-1-1
+  (implies (and (extensionp e f)
+                (feltp x f) (feltp y f) (not (equal x y)))
+	   (not (equal (flift x f e) (flift y f e)))))
+
+(defthm flift-fone
+  (implies (and (extensionp e f)
+                (feltp x f) (equal (flift x f e) (fone e)))
+           (equal x (fone f)))
+  :rule-classes ())
+
+;; Additional properties:
+
+(defthm flift-noop
+  (equal (flift x f f) x))
+
+(local-defthmd fliftn-plus
+  (implies (and (natp n) (natp m))
+           (equal (fliftn (fliftn x n) m)
+	          (fliftn x (+ n m)))))
+
+(defthm flift-comp
+  (implies (and (extensionp e d) (extensionp d f))
+           (equal (flift (flift x f d) d e)
+	          (flift x f e))))
+
+;; flift induces a homomorphism of polynomial rings:
+
+(defun plift (p f e)
+  (if (consp p)
+      (cons (flift (car p) f e) (plift (cdr p) f e))
+    ()))
+
+(defthmd feltsp-plift
+  (implies (and (extensionp e f) (feltsp p f))
+           (feltsp (plift p f e) e)))
+
+(defthm len-plift
+  (equal (len (plift p f e))
+         (len p)))
+
+(defthmd polyp-plift
+  (implies (and (extensionp e f) (polyp p f))
+	   (polyp (plift p f e) e)))
+
+(defthm monicp-plift
+  (implies (and (extensionp e f) (polyp p f) (monicp p f))
+           (monicp (plift p f e) e)))
+
+(defthmd pstrip-plift
+  (implies (and (extensionp e f) (feltsp p f))
+           (equal (pstrip (plift p f e) e)
+	          (plift (pstrip p f) f e))))
+
+(defthmd plift-id
+  (implies (extensionp e f)
+           (and (equal (plift (pzero f) f e) (pzero e))
+	        (equal (plift (pone f) f e) (pone e)))))
+
+(defthmd plift-pzero
+  (implies (and (extensionp e f)
+                (polyp p f) (not (equal p (pzero f))))
+           (not (equal (plift p f e) (pzero e)))))
+		  
+(defthmd plift-padd
+  (implies (and (extensionp e f)
+                (polyp p f) (polyp q f))
+           (equal (plift (padd p q f) f e)
+	          (padd (plift p f e) (plift q f e) e))))
+		  
+(defthmd plift-cmul
+  (implies (and (extensionp e f) (feltsp p f)
+                (feltp c f) (not (equal c (fzero f))))
+           (equal (plift (cmul c p f) f e)
+	          (cmul (flift c f e) (plift p f e) e))))
+
+(defthmd plift-pmul
+  (implies (and (extensionp e f)
+                (polyp p f) (polyp q f))
+	   (equal (plift (pmul p q f) f e)
+	          (pmul (plift p f e) (plift q f e) e))))
+
+(defthmd pdivides-plift
+  (implies (and (extensionp e f)
+                (polyp x f) (polyp y f) (not (equal y (pzero f))))
+	   (iff (pdivides (plift y f e) (plift x f e) e)
+	        (pdivides y x f))))
+
+(defthm plift-noop
+  (implies (polyp p f)
+           (equal (plift p f f) p)))
+
+(defthm plift-comp
+  (implies (and (extensionp e d) (extensionp d f))
+           (equal (plift (plift x f d) d e)
+	          (plift x f e))))
+
+(defthmd plift-pshift
+  (implies (and (extensionp e f)
+                (polyp p f) (natp k))
+	   (equal (plift (pshift p k f) f e)
+	          (pshift (plift p f e) k e))))

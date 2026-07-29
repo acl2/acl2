@@ -50,10 +50,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled pos-gte-twice-divisor
+  :short "If a positive integer divides a larger natural number,
+          the latter is at least twice the former."
   (implies (and (natp x)
                 (posp y)
                 (integerp (/ x y))
                 (< y x))
            (<= (* 2 y) x))
   :use (:instance pos-gte-pos-divisor (x (- x y)))
+  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled integerp-of-div-of-diff
+  :short "If a number divided by another number is an integer,
+          so is the difference of the two numbers divided by the second one."
+  (implies (integerp (/ x c))
+           (integerp (/ (- x c) c)))
   :prep-books ((include-book "arithmetic-5/top" :dir :system)))

@@ -25992,11 +25992,12 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
   :long "<p><b>Introduction</b>.  This event is intended for advanced users
  who, in essence, want to build extensions of ACL2.  The typical intended use
  is to create @(see books) that extend the functionality of ACL2 in ways not
- allowed without a so-called ``active trust tag''.  A trust tag thus represents
- a contract: The writer of such a book is guaranteeing that the book extends
- ACL2 in a ``correct'' way as defined by the writer of the book.  The writer of
- the book will often have a small section of the book in the scope of an active
- trust tag that can be inspected by potential users of that book:</p>
+ allowed without a so-called &ldquo;active trust tag&rdquo;.  A trust tag (or
+ &ldquo;ttag&rdquo;) thus represents a contract: The writer of such a book is
+ guaranteeing that the book extends ACL2 in a &ldquo;correct&rdquo; way as
+ defined by the writer of the book.  The writer of the book will often have a
+ small section of the book in the scope of an active trust tag that can be
+ inspected by potential users of that book:</p>
 
  @({
   <initial part of book, which does not use trust tags>
@@ -26020,7 +26021,7 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
   ACL2 Error in TOP-LEVEL:  The SYS-CALL function cannot be called unless
   a trust tag is in effect.  See :DOC defttag.
 
-  ACL2 !>(defttag t) ; Install :T as an active trust tag.
+  ACL2 !>(defttag t) ; Install :T as the active trust tag.
 
   TTAG NOTE: Adding ttag :T from the top level loop.
    T
@@ -26086,16 +26087,18 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
  <p>This event introduces or removes a so-called active trust tag (or ``ttag'',
  pronounced ``tee tag'').  An active ttag is a @(see keyword) symbol that is
  associated with potentially unsafe evaluation.  For example, calls of @(tsee
- sys-call) are illegal unless there is an active trust tag.  An active trust
- tag can be installed using a @('defttag') event.  If one introduces an active
- ttag and then writes definitions that contain calls of @(tsee sys-call),
- presumably in a defensibly ``safe'' way, then responsibility for those calls
- is attributed to that ttag.  This attribution (or blame!) is at the level of
- @(see books); a book's @(see certificate) contains a list of ttags that are
- active in that book, or in a book that is included (possibly @(see local)ly),
- or in a book included in a book that is included (either inclusion being
- potentially @(see local)), and so on.  We explain all this in more detail
- below.</p>
+ sys-call) are illegal unless there is an active trust tag.  The event
+ @('(defttag SYM)') where @('SYM') is not @('nil') installs, as the unique
+ active trust tag, the keyword whose @(tsee symbol-name) is that of @('SYM');
+ this keyword could reasonably be denoted as @(':SYM').  If one introduces an
+ active ttag and then writes definitions that contain calls of @(tsee
+ sys-call), presumably in a defensibly ``safe'' way, then responsibility for
+ those calls is attributed to that ttag.  This attribution (or blame!) is at
+ the level of @(see books); a book's @(see certificate) contains a list of
+ ttags that are active in that book, or in a book that is included (possibly
+ @(see local)ly), or in a book included in a book that is included (either
+ inclusion being potentially @(see local)), and so on.  We explain all this in
+ more detail below.</p>
 
  <p>@('(Defttag :tag-name)') is essentially equivalent to</p>
 
@@ -47490,9 +47493,7 @@ current fast alists."
 
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -47584,9 +47585,7 @@ current fast alists."
   1
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -47693,9 +47692,7 @@ current fast alists."
 
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -47903,9 +47900,7 @@ current fast alists."
 
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -47993,9 +47988,7 @@ current fast alists."
   1
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -48087,9 +48080,7 @@ current fast alists."
   1
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -109703,6 +109694,18 @@ it."
 ; When *debug-on* is t, the debug info now goes to (standard-co state) instead
 ; of Lisp standard output.
 
+; The files Makefile and books/Makefile serve only one purpose: to cause an
+; error when using a make utility other than GNU make (which invokes
+; GNUmakefile).  Both Makefile and books/Makefile have been simplified.  Thanks
+; to Grant Jurgensen and Eric Smith for the suggestion.
+
+; Removed duplicate occurrence of defstobj-field-fns-raw-defs in
+; *initial-program-fns-with-raw-code*.  Thanks to Eric Smith for pointing this
+; out.
+
+; Removed duplicate commands (defpointer double-float df) in
+; books/system/doc/acl2-doc.lisp.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -109762,6 +109765,13 @@ it."
  symbol.  Thanks to Jerome Dubois and Eric Smith for a Zulip discussion leading
  to this change.</p>
 
+ <p>The message printed by @(':set-guard-checking :none') was somewhat
+ misleading but has been fixed.  Thanks to Eric Smith for noticing this
+ problem.</p>
+
+ <p>The macro @('union-theories') now takes any number of arguments.  See @(see
+ union-theories).  Thanks to Eric Smith for suggesting this enhancement.</p>
+
  <h3>New Features</h3>
 
  <p>For @(tsee defstobj) fields of hash-table type, a new &ldquo;keys&rdquo;
@@ -109778,6 +109788,23 @@ it."
  on every host Lisp except GCL.  Thanks to Eric McCarthy for <a
  href='https://acl2.zulip.kestrel.institute/#narrow/channel/19-general/topic/Non-ASCII.20characters.20in.20ACL2.20source.20files/near/40162'>pointing
  out this bug as well as code relevant to a fix</a>.</p>
+
+ <p>Fixed a soundness bug in the macro @('channel-to-string'), which is used in
+ functions like @(tsee fms-to-string) (see @(see printing-to-strings)).  Thanks
+ to Grant Jurgensen for reporting this bug and providing a helpful analysis of
+ it.  The fix is to the constant @('*default-state*').  In particular, the
+ following is no longer provable by ACL2.</p>
+
+ @({
+ (equal (car (open-output-channel :string :character *default-state*))
+        nil)
+ })
+
+ <p>Moreover, our fix required modifying several functions related to I/O,
+ often to add an @('output-p') argument that is true when considering
+ output (which allows for a channel of type @(':character') with
+ &ldquo;filename&rdquo; @(':string')) but false when considering input.  Thanks
+ to Aakash Koneru for pointing us in the direction of these changes.</p>
 
  <p>Checks were improved to avoid raw Lisp errors in the following situations:</p>
 
@@ -109821,6 +109848,10 @@ it."
  note item.  The key idea is to avoid saving code for @(see local) definitions
  but to save code for most @(see redundant) definitions.</p>
 
+ <p>The constant @('*default-state*') was defined incorrectly.  Thanks to
+ Aakash Koneru and Grant Jurgensen for pointing this out and providing a
+ fix.</p>
+
  <h3>Changes at the System Level</h3>
 
  <p>The built-in @(see events) @('Integer-1') and @('cons-equal') are now
@@ -109842,6 +109873,38 @@ it."
  <p>(GCL only) Added code for proper handling of floating-point exceptions on
  arm and riscv64 platforms.  Thanks to Camm Maguire for major help with
  this.</p>
+
+ <p>It is now possible to make it impossible (we believe) to interact directly
+ with raw Lisp, at least for ACL2 built on CCL and SBCL.</p>
+
+ <ul>
+
+ <li>A new argument, @('never!'), is available for @(tsee set-debugger-enable).
+ When @('(set-debugger-enable :never!)') is evaluated, the effect is the same
+ as evaluating @('(set-debugger-enable :never)') &mdash; in particular, @(tsee
+ break$) does not enter the Lisp debugger &mdash; except that in addition, you
+ cannot exit the ACL2 loop.  This effectively disables @(':q') as a means for
+ going into raw Lisp (and also @('(value :q)'), etc.; see @(see q).</li>
+
+ <li>Formerly, interrupts in SBCL could, on rare occasions, cause the Lisp
+ debugger to be entered.  That has (we believe) been fixed for SBCL, and it was
+ already handled for CCL.</li>
+
+ <li>So to avoid the possibility of interaction with raw Lisp for ACL2 built on
+ CCL or SBCL, you can do the following, provided trust tags are avoided (see
+ @(see defttag)).
+
+ @({
+ ; Disable entering the debugger and disable existing the ACL2 loop:
+ (set-debugger-enable :never!)
+ (push-untouchable set-debugger-enable-fn t)
+ (push-untouchable debugger-enable nil)
+
+ ; Disable entering raw-mode:
+ (push-untouchable set-raw-mode-on t)
+ })</li>
+
+ </ul>
 
  <h3>EMACS Support</h3>
 
@@ -134208,7 +134271,7 @@ work on <tt>(q x)</tt>.</p>
 
  <p>To understand how safe-mode works we refer to the notion of
  ``executable-counterpart''; see @(see evaluation) for relevant background.
- ACL2 arranges for that for the executable-counterpart of any program mode
+ ACL2 arranges that for the executable-counterpart of any program mode
  function, @('F'), then for every called subroutine @('G') of @('F') that is in
  program mode, the executable-counterpart of @('G') is called rather than the
  raw Lisp function for @('G').  This may result in an attempt to evaluate a
@@ -136363,6 +136426,7 @@ work on <tt>(q x)</tt>.</p>
   (set-debugger-enable :bt-break) ; as above, but print a backtrace first
   (set-debugger-enable :bt)       ; print a backtrace but do not enter debugger
   (set-debugger-enable :never)    ; disable all breaks into the debugger
+  (set-debugger-enable :never!)   ; disable entering raw Lisp entirely
   (set-debugger-enable nil)       ; disable debugger except when calling break$
  })
 
@@ -136454,11 +136518,16 @@ work on <tt>(q x)</tt>.</p>
 
  @({
   (set-debugger-enable :never)
- })
+  (set-debugger-enable :never!)
+})
 
- <p>The discussion above also applies to interrupts (from @('Control-C')) in
- some, but not all, host Common Lisps &mdash; perhaps all except for non-ANSI
- GCL, where interrupts will likely always put you into the debugger.</p>
+ <p>Furthermore, when the argument is @(':never!') then exits from the ACL2
+ top-level-loop are disabled as well.  We believe that, at least for ACL2 built
+ on CCL or SBCL, this prevents all direct interaction with raw Lisp unless
+ @(tsee set-raw-mode) is invoked, which requires a trust tag.</p>
+
+ <p>The discussion above applies to interrupts (from @('Control-C')) as
+ well.</p>
 
  <p>It remains to discuss options @(':break'), @(':bt'), @(':break-bt'), and
  @(':bt-break').  Option @(':break') is synonymous with option @('t'), while
@@ -137534,9 +137603,7 @@ work on <tt>(q x)</tt>.</p>
   [1] ACL2(1): [RAW LISP] :pop
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(foo 3)
   NIL
@@ -158629,12 +158696,12 @@ introduction-to-the-tau-system) for more information about Tau.</dd>
                   (theory 'arith-patch))
 
   General Form:
-  (union-theories th1 th2)
+  (union-theories th1 th2 ... thn)
  })
 
- <p>where @('th1') and @('th2') are theories (see @(see theories)).  To each of
- the arguments there corresponds a runic theory.  This function returns the
- union of those two runic @(see theories), represented as a list and ordered
+ <p>where each @('thi') is a theory (see @(see theories)).  To each of the
+ arguments there corresponds a runic theory.  This function returns the union
+ of those runic @(see theories), represented as a list and ordered
  chronologically.</p>
 
  <p>This ``function'' is actually a macro that expands to a term mentioning the
@@ -174809,7 +174876,7 @@ expand function call at the current subterm, without simplifying"
 (defpointer disjoin system-utilities)
 (defpointer disjoin2 system-utilities)
 (defpointer do-not-induct hints t)
-(defpointer double-float df)
+; (defpointer double-float df) ; included with other df-related defpointers below.
 (defpointer doublet-listp system-utilities)
 (defpointer dynamically-monitor-rewrites dmr)
 (defpointer dumb-negate-lit system-utilities)

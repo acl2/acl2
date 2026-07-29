@@ -1795,6 +1795,7 @@
                     set-difference-theories
                     theory
                     union-theories
+                    union-theories-2
                     universal-theory))
        t))
 
@@ -2279,7 +2280,7 @@
       (augment-theory lst2 wrld)
       nil))))
 
-(defmacro union-theories (lst1 lst2)
+(defmacro union-theories-2 (lst1 lst2)
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
 
@@ -2313,6 +2314,13 @@
                lst2
                nil
                'world))))
+
+(defmacro union-theories (&rest rst)
+  (cond ((null rst) nil)
+        ((null (cdr rst))
+; We ensure a runic theory, which (car rst) might not be.
+         `(union-theories-2 nil ,(car rst)))
+        (t (xxxjoin 'union-theories-2 rst))))
 
 (defun set-difference-current-theory-fn (lst2 lst2-known-to-be-runic wrld)
 
@@ -33076,13 +33084,13 @@
             (,@(and extra-var (list extra-var)) state)
             ,form0
             (mv-let (erp result state)
-                    (get-output-stream-string$ ,channel-var state)
-                    (mv nil
-                        (and (not erp)
-                             ,(if extra-var
-                                  `(cons ,extra-var result)
-                                'result))
-                        state))))
+              (get-output-stream-string$ ,channel-var state)
+              (mv nil
+                  (and (not erp)
+                       ,(if extra-var
+                            `(cons ,extra-var result)
+                          'result))
+                  state))))
          (body1 ; bind fmt controls and clean up around body0
 
 ; Warning: Keep the two branches below in sync.
@@ -33138,16 +33146,22 @@
                             state)))))
          (body ; open a string output channel and then evaluate body1
           `(mv-let
-            (,channel-var state)
-            (open-output-channel :string :character state)
-            (cond (,channel-var ,body1)
-                  (t ,(cond
-                       (outside-loop-p
-                        "ERROR: Failed to open string output channel to ~
-                         report an error.")
-                       (t '(er soft 'channel-to-string
-                               "Implementation error: Unable to open a ~
-                                channel to a string."))))))))
+             (,channel-var state)
+             (open-output-channel :string :character state)
+             (cond (,channel-var ,body1)
+                   (t ,(cond
+                        (outside-loop-p
+                         '(value (error "ERROR: Failed to open string output ~
+                                         channel to report an error.")))
+                        (t
+
+; We avoid (er soft ...) because the *default-state* might not permit writing
+; an error, and anyhow we want a "real" error here that stops evaluation since
+; this case is highly unexpected.
+
+                         '(value (er hard? 'channel-to-string
+                                     "Implementation error: Unable to open a ~
+                                      channel to a string.")))))))))
     `(with-local-state
       (mv-let
        (erp result state)

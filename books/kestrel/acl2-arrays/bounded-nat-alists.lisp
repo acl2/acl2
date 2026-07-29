@@ -26,7 +26,7 @@
 (defund bounded-natp-alistp (l n)
   (declare (xargs :guard (rationalp n)))
   (if (atom l)
-      t ; todo: (null l)
+      (null l)
     (and (consp (car l))
          (let ((key (caar l)))
            (and (natp key)
@@ -93,10 +93,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; todo: rename to nat-alistp (check for clashes)
 (defund natp-alistp (l)
   (declare (xargs :guard t))
   (if (atom l)
-      t ; todo: (null l)
+      (null l)
     (and (consp (car l))
          (let ((key (caar l)))
            (and (natp key)
@@ -111,6 +112,12 @@
   (implies (bounded-natp-alistp alist free)
            (natp-alistp alist))
   :hints (("Goal" :in-theory (enable bounded-natp-alistp natp-alistp))))
+
+(defthmd NATP-ALISTP-redef-2
+  (equal (natp-alistp alist)
+         (and (alistp alist)
+              (nat-listp (strip-cars alist))))
+  :hints (("Goal" :in-theory (enable natp-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -30,11 +30,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "That transformation is work in progress,
-     as are the safety checks provided here.
-     The two will be connected once the safety checks are practical
-     (currently they are very preliminary and conservative).")
-   (xdoc::p
     "The STS (= Struct Type Split) transformation is safe,
      in the sense that it suitably preserves code functionality,
      only provided that the struct type is not used in certain ways.
@@ -44,7 +39,7 @@
      making it unsafe to split the struct type.")
    (xdoc::p
     "Here we provide checkers that
-     code uses (values of) the struct type being split
+     code uses the struct type being split
      only in safe ways with respect to the STS transformation.
      These checkers operate on ASTs annotated by validation.")
    (xdoc::p
@@ -56,22 +51,20 @@
    (xdoc::p
     "The STS transformation operates on a translation ensemble.
      The struct type to split is specified as
-     the tag (name) of a file-scope struct declaration
+     the tag (name) of a file-scope struct declaration,
+     or as the name of a file-scope @('typedef') struct declaration,
      in one of the translation units of the ensemble.
      But the transformation also splits
      all the compatible file-scope struct types in other translation units.
      More explicitly, each translation unit in the ensemble
      either has or does not have a file-scope struct type
-     with the tag specified to the STS transformation.
+     (declared just a struct type or as a @('typedef'), as above),
+     that is compatible with
+     the struct type specified to the STS transformation.
      The translation units that do not have it undergo no transformation.
-     For each translation unit that has it,
-     it either is compatible with the one to split or it is not;
-     in the latter case, the translation unit undergoes no transformation.
-     So only the translation units with
-     either exactly the struct type, or one compatible with it,
-     undergo transformation.
+     While each translation unit that has it undergoes the transformation.
      This is orchestrated by the STS transformation,
-     which will call these checking tools on
+     which calls these safety checks on
      each translation unit being transformed,
      to ensure that the transformation is applicable."))
   :order-subtopics t
@@ -99,7 +92,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod sts-struct-spec
-  :short "Fixtype of specifications of the struct type to split."
+  :short "Fixtype of specifications of the struct type being split."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -107,28 +100,18 @@
      the safety checks are applied to each translation unit
      that needs transformation.
      This translation unit contains, at the file scope,
-     either the exact struct type specified to the STS transformation
-     (as the tag name and optionally the translation unit file path,
-     where the latter defaults to the first translation unit),
+     either the exact struct type specified to the STS transformation,
      or one compatible with it.
-     Compatibility means that [C17:6.2.7/1]
-     the struct types have the same tag, members with compatible types, etc.
-     Since struct tags have no linkage [C17:6.2.2/6],
-     struct types with the same tag in different translation units
-     have different UIDs.")
+     The struct type may be declared directly, or via a @('typedef').
+     Either way, it is identified by a UID,
+     which the STS transformation passes to these safety checks.")
    (xdoc::p
     "Here we define a data structure that specifies
      the struct type being split in a given translation unit.
-     This will be created by the STS transformation for each translation unit.
-     Our checking tools take it and use it to check the translation unit.")
-   (xdoc::p
-    "This data structure consists of the UID, the tag, and the members.
-     Although this is more than needed to identify the struct type,
-     we use all this information to check that
-     there are no other similar struct declarations (e.g. in a block scope)."))
-  ((uid uid)
-   (tag ident)
-   (members type-struni-member-list))
+     The specification consists of a UID,
+     but we wrap it into a data structure for future extensibility.
+     This data structure is an input to the STS safety checks."))
+  ((uid uid))
   :pred sts-struct-specp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -146,13 +129,12 @@
      the fields of the @(':struct') summand of @(tsee type).
      The last input of this function specifies the struct type being split.
      We check whether the struct type consisting of the three fields
-     is a tagged one with the same tag and UID as the struct being split."))
-  (declare (ignore tunit?))
-  (b* (((sts-struct-spec spec)))
-    (and (type-struni-tag/members-case tag/members :tagged)
-         (b* ((tag (type-struni-tag/members-tagged->tag tag/members)))
-           (and (equal tag spec.tag)
-                (equal (uid-fix uid) spec.uid))))))
+     has the same UID as the struct type being split.
+     The other two inputs are unused,
+     but kept here for future extensibility."))
+  (declare (ignore tag/members tunit?))
+  (equal (sts-struct-spec->uid spec)
+         (uid-fix uid)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -178,6 +160,251 @@
   :short "Check if a type is a pointer to the struct type being split."
   (and (type-case type :pointer)
        (type-is-struct-spec-p (type-pointer->to type) spec)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-is-*pointer-to-struct-spec-p ((type typep) (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a type is
+          the struct type being split,
+          or a pointer to it,
+          or a pointer to a pointer to it,
+          etc."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('*') in the name of this function conveys the idea of `0 or more'."))
+  (or (type-is-struct-spec-p type spec)
+      (and (type-case type :pointer)
+           (type-is-*pointer-to-struct-spec-p (type-pointer->to type) spec)))
+  :measure (type-count type))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defines types-may-refer-to-struct-spec-p
+  :short "Check if types may refer to the struct type being split,
+          directly or indirectly."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This involves looking up struct types
+     in the type completions via the validation tables,
+     in order to check the members found there.
+     Termination requires a more elaborate argument
+     than we are willing to flesh out at this time,
+     and so we cop out with an artificial recursion limit."))
+
+  ;;;;;;;;;;
+
+  (define type-may-refer-to-struct-spec-p ((type typep)
+                                           (spec sts-struct-specp)
+                                           (vtable valid-tablep)
+                                           (completions type-completions-p)
+                                           (limit natp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
+    :short "Check if a type may refer to the struct type being split,
+            directly or indirectly."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Most types fail the check because
+       they are not, and do not contain, struct types.")
+     (xdoc::p
+      "The check passes if we encounter the struct type being split.
+       For other struct types, we recursively check them,
+       via a separate ACL2 function,
+       the same used for union types.")
+     (xdoc::p
+      "For array, pointer, and function types,
+       we recursively check their constituents.")
+     (xdoc::p
+      "Unknown and unknown scalar types pass the check,
+       because they could be pointers to the struct type being split,
+       among other possibilities.
+       But unknown arithmetic and unknowno built-in types fail the check,
+       because they cannot be or refer to the struct type."))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-case
+       type
+       :void nil
+       :char nil
+       :schar nil
+       :uchar nil
+       :sshort nil
+       :ushort nil
+       :sint nil
+       :uint nil
+       :slong nil
+       :ulong nil
+       :sllong nil
+       :ullong nil
+       :float nil
+       :double nil
+       :ldouble nil
+       :floatc nil
+       :doublec nil
+       :ldoublec nil
+       :bool nil
+       :struct (or (struct-type-is-struct-spec-p type.uid
+                                                 type.tunit?
+                                                 type.tag/members
+                                                 spec)
+                   (type-struni-tag/members-may-refer-to-struct-spec-p
+                    type.tag/members spec vtable completions (1- limit)))
+       :union (type-struni-tag/members-may-refer-to-struct-spec-p
+               type.tag/members spec vtable completions (1- limit))
+       :enum nil
+       :array (type-may-refer-to-struct-spec-p
+               type.of spec vtable completions (1- limit))
+       :pointer (type-may-refer-to-struct-spec-p
+                 type.to spec vtable completions (1- limit))
+       :function (or (type-may-refer-to-struct-spec-p
+                      type.ret spec vtable completions (1- limit))
+                     (type-params-may-refer-to-struct-spec-p
+                      type.params spec vtable completions (1- limit)))
+       :unknown t
+       :unknown-builtin nil
+       :unknown-scalar t
+       :unknown-arithmetic nil))
+    :no-function nil
+    :measure (nfix limit))
+
+  ;;;;;;;;;;
+
+  (define type-list-may-refer-to-struct-spec-p
+    ((types type-listp)
+     (spec sts-struct-specp)
+     (vtable valid-tablep)
+     (completions type-completions-p)
+     (limit natp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
+    :short "Check if (any element of) a list of types
+            may refer to the struct type being split, directly or indirectly."
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (and (not (endp types))
+           (or (type-may-refer-to-struct-spec-p
+                (car types) spec vtable completions (1- limit))
+               (type-list-may-refer-to-struct-spec-p
+                (cdr types) spec vtable completions (1- limit)))))
+    :no-function nil
+    :measure (nfix limit))
+
+  ;;;;;;;;;;
+
+  (define type-struni-tag/members-may-refer-to-struct-spec-p
+    ((tystr-tag/mems type-struni-tag/members-p)
+     (spec sts-struct-specp)
+     (vtable valid-tablep)
+     (completions type-completions-p)
+     (limit natp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
+    :short "Check if the portion of struct/union types
+            corresponding to the tag and members
+            may refer to the struct type being split, directly or indirectly."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If we have a tag, we look it up in the validation information,
+       so we can recursively check the struct type found there.")
+     (xdoc::p
+      "If instead we have members, we recursively check them."))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-struni-tag/members-case
+       tystr-tag/mems
+       :tagged (b* (((mv info &)
+                     (c$::valid-lookup-tag tystr-tag/mems.tag vtable))
+                    ((unless info)
+                     (raise "Internal error: ~
+                             no information for ~x0 in ~x1."
+                            tystr-tag/mems.tag vtable))
+                    (uid (c$::valid-tag-info->uid info))
+                    (members?
+                     (hons-get uid (c$::type-completions-fix completions)))
+                    ((unless members?)
+                     (raise "Internal error: ~
+                             no members for ~x0 in ~x0."
+                            uid completions))
+                    (members (cdr members?)))
+                 (type-struni-member-list-may-refer-to-struct-spec-p
+                  members spec vtable completions (1- limit)))
+       :untagged (type-struni-member-list-may-refer-to-struct-spec-p
+                  tystr-tag/mems.members spec vtable completions (1- limit))))
+    :no-function nil
+    :measure (nfix limit))
+
+  ;;;;;;;;;;
+
+  (define type-struni-member-may-refer-to-struct-spec-p
+    ((mem type-struni-member-p)
+     (spec sts-struct-specp)
+     (vtable valid-tablep)
+     (completions type-completions-p)
+     (limit natp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
+    :short "Check if a struct or union member
+            may refer to the struct type being split, directly or indirectly."
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-may-refer-to-struct-spec-p
+       (type-struni-member->type mem) spec vtable completions (1- limit)))
+    :no-function nil
+    :measure (nfix limit))
+
+  ;;;;;;;;;;
+
+  (define type-struni-member-list-may-refer-to-struct-spec-p
+    ((mems type-struni-member-listp)
+     (spec sts-struct-specp)
+     (vtable valid-tablep)
+     (completions type-completions-p)
+     (limit natp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
+    :short "Check if (any element of) a list of struct or union members
+            may refer to the struct type being split, directly or indirectly."
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (and (not (endp mems))
+           (or (type-struni-member-may-refer-to-struct-spec-p
+                (car mems) spec vtable completions (1- limit))
+               (type-struni-member-list-may-refer-to-struct-spec-p
+                (cdr mems) spec vtable completions (1- limit)))))
+    :no-function nil
+    :measure (nfix limit))
+
+  ;;;;;;;;;;
+
+  (define type-params-may-refer-to-struct-spec-p
+    ((params type-params-p)
+     (spec sts-struct-specp)
+     (vtable valid-tablep)
+     (completions type-completions-p)
+     (limit natp))
+    :returns (yes/no booleanp)
+    :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
+    :short "Check if a portion of a function type
+            pertaining to the function parameters
+            may refer to the struct type being split, directly or indirectly."
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-params-case
+       params
+       :prototype (type-list-may-refer-to-struct-spec-p
+                   params.params spec vtable completions (1- limit))
+       :old-style (type-list-may-refer-to-struct-spec-p
+                   params.params spec vtable completions (1- limit))
+       :unspecified nil))
+    :no-function nil
+    :measure (nfix limit))
+
+  ;;;;;;;;;;
+
+  :prepwork ((local (in-theory (enable nfix))))
+
+  ///
+
+  (fty::deffixequiv-mutual types-may-refer-to-struct-spec-p))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -209,8 +436,30 @@
      or when the type is unknown or an unknown scalar.
      The unknown arithmetic type cannot be a pointer.
      An unknown built-in type may be a pointer (to a built-in type),
-     but we assume that the struct type being splie is not a built-in one."))
+     but we assume that the struct type being split is not a built-in one."))
   (or (type-is-pointer-to-struct-spec-p type spec)
+      (type-case type :unknown)
+      (type-case type :unknown-scalar)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-may-be-*pointer-to-struct-spec-p ((type typep)
+                                               (spec sts-struct-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a type may be
+          the struct type being split,
+          or a pointer to it,
+          or a pointer to a pointer to it,
+          etc."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case when @(tsee type-is-*pointer-to-struct-spec-p) holds,
+     or when the type is unknown or an unknown scalar.
+     The unknown arithmetic type cannot be a struct or a pointer.
+     An unknown built-in type may be a struct or pointer to a struct,
+     but we assume that the struct type being split is not a built-in one."))
+  (or (type-is-*pointer-to-struct-spec-p type spec)
       (type-case type :unknown)
       (type-case type :unknown-scalar)))
 
@@ -222,13 +471,25 @@
   (xdoc::topstring
    (xdoc::p
     "We check that the struct type being split
-     is not nested in array, union, or (other) struct types."))
+     is not nested under in union types.
+     Nesting under other struct and under array types is fine,
+     i.e. properly handled by the STS transformation.")
+   (xdoc::p
+    "This code involves looking up struct types
+     in the type completions via the validation tables,
+     in order to check the members found there.
+     Termination requires a more elaborate argument
+     than we are willing to flesh out at this time,
+     and so we cop out with an artificial recursion limit."))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define type-sts-safep ((type typep)
                           (nested booleanp)
-                          (spec sts-struct-specp))
+                          (spec sts-struct-specp)
+                          (vtable valid-tablep)
+                          (completions type-completions-p)
+                          (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a type is safe for the STS transformation."
@@ -236,73 +497,99 @@
     (xdoc::topstring
      (xdoc::p
       "The @('nested') input indicates whether the @('type') input
-       is nested under some array or union or struct type.")
+       is nested under some type where
+       the struct type being split should not be nested
+       because the STS transformation does not support that nesting.")
      (xdoc::p
-      "Most types are safe because they do not contain other types.
-       When we reach a struct type, we compare it with the one being split:
-       if they are the same, and we are nested under some type,
-       the safety check fails, otherwise it succeeds.
-       We use separate functions to check the content of struct and union types.
-       For array types, we check the element type,
-       setting the @('nested') flag to @('t') since the element type is nested.
-       For pointer types, we leave the @('nested') flag as is;
+      "Most types are safe because they do not contain other types.")
+     (xdoc::p
+      "When we reach a struct type, we compare it with the one being split:
+       if they are the same, and the @('nested') flag is @('t'),
+       the safety check fails, otherwise it succeeds.")
+     (xdoc::p
+      "We use a separate function to check
+       the content of struct and union types.
+       The @('nested') flag passed to that function is
+       set to @('t') under a union,
+       and to @('nil') under a struct,
+       because we support nesting under structs but not under unions.")
+     (xdoc::p
+      "For array types, we check the element type,
+       leaving the @('nested') flag as is,
+       since we support nesting under arrays
+       (but the flag may be @('t') due to the array being under a union).")
+     (xdoc::p
+      "For pointer types, we leave the @('nested') flag as is;
        although the struct type being split cannot be nested as such in them,
-       we also disallow nesting of pointers to the struct type being split.
-       For function types,
+       we also disallow nesting of pointers to the struct type being split.")
+     (xdoc::p
+      "For function types,
        we disallow the struct anywhere in the return type,
        passing @('t') as the nested flag for the return type;
-       but we pass the nested flag as is for parameters.
-       We regard an unknown type as unsafe, because it could be anything.
+       but we pass the nested flag as is for parameters.")
+     (xdoc::p
+      "We regard an unknown type as unsafe, because it could be anything.
        The same goes for an unknown scalar type,
        because it could be a pointer to an unsafe type
        (e.g. structs that contain the struct being split).
-       An unknown arithmetic type is safe,
-       because it can never contain the struct being split."))
-    (type-case
-     type
-     :void t
-     :char t
-     :schar t
-     :uchar t
-     :sshort t
-     :ushort t
-     :sint t
-     :uint t
-     :slong t
-     :ulong t
-     :sllong t
-     :ullong t
-     :float t
-     :double t
-     :ldouble t
-     :floatc t
-     :doublec t
-     :ldoublec t
-     :bool t
-     :struct (if (and nested
-                      (struct-type-is-struct-spec-p type.uid
-                                                    type.tunit?
-                                                    type.tag/members
-                                                    spec))
-                 (sts-reject `(:nested ,(type-fix type)))
-               (type-struni-tag/members-sts-safep type.tag/members spec))
-     :union (type-struni-tag/members-sts-safep type.tag/members spec)
-     :enum t
-     :array (type-sts-safep type.of t spec)
-     :pointer (type-sts-safep type.to nested spec)
-     :function (and (type-sts-safep type.ret t spec)
-                    (type-params-sts-safep type.params nested spec))
-     :unknown (sts-reject (type-fix type))
-     :unknown-builtin t
-     :unknown-scalar (sts-reject (type-fix type))
-     :unknown-arithmetic t)
-    :measure (type-count type))
+       But an unknown arithmetic type is safe,
+       because it can never be or contain the struct being split."))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-case
+       type
+       :void t
+       :char t
+       :schar t
+       :uchar t
+       :sshort t
+       :ushort t
+       :sint t
+       :uint t
+       :slong t
+       :ulong t
+       :sllong t
+       :ullong t
+       :float t
+       :double t
+       :ldouble t
+       :floatc t
+       :doublec t
+       :ldoublec t
+       :bool t
+       :struct (if (and nested
+                        (struct-type-is-struct-spec-p type.uid
+                                                      type.tunit?
+                                                      type.tag/members
+                                                      spec))
+                   (sts-reject `(:nested ,(type-fix type)))
+                 (type-struni-tag/members-sts-safep
+                  type.tag/members nil spec vtable completions (1- limit)))
+       :union (type-struni-tag/members-sts-safep
+               type.tag/members t spec vtable completions (1- limit))
+       :enum t
+       :array (type-sts-safep
+               type.of nested spec vtable completions (1- limit))
+       :pointer (type-sts-safep
+                 type.to nested spec vtable completions (1- limit))
+       :function (and (type-sts-safep
+                       type.ret t spec vtable completions (1- limit))
+                      (type-params-sts-safep
+                       type.params nested spec vtable completions (1- limit)))
+       :unknown (sts-reject (type-fix type))
+       :unknown-builtin t
+       :unknown-scalar (sts-reject (type-fix type))
+       :unknown-arithmetic t))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define type-list-sts-safep ((types type-listp)
                                (nested booleanp)
-                               (spec sts-struct-specp))
+                               (spec sts-struct-specp)
+                               (vtable valid-tablep)
+                               (completions type-completions-p)
+                               (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a list of types are safe for the STS transformation."
@@ -310,16 +597,24 @@
     (xdoc::topstring
      (xdoc::p
       "We check every type in turn."))
-    (or (endp types)
-        (and (type-sts-safep (car types) nested spec)
-             (type-list-sts-safep (cdr types) nested spec)))
-    :measure (type-list-count types))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (or (endp types)
+          (and (type-sts-safep
+                (car types) nested spec vtable completions (1- limit))
+               (type-list-sts-safep
+                (cdr types) nested spec vtable completions (1- limit)))))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (define type-struni-tag/members-sts-safep ((tystr-tag/mems
-                                              type-struni-tag/members-p)
-                                             (spec sts-struct-specp))
+  (define type-struni-tag/members-sts-safep
+    ((tystr-tag/mems type-struni-tag/members-p)
+     (nested booleanp)
+     (spec sts-struct-specp)
+     (vtable valid-tablep)
+     (completions type-completions-p)
+     (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that the portion of a struct/union type
@@ -328,44 +623,72 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This function takes no nested flag because
-       structure or union members are always implicitly nested.
-       I.e. it is as if the flag were implicitly @('t').")
+      "If we have a tag, we look it up in the validation information,
+       so we can recursively check the struct type found there.")
      (xdoc::p
-      "A tag alone is safe, because it does not contain types;
-       checks on the definition of the type referred to by the tag
-       are performed elsewhere.
-       Otherwise, we descend into the members."))
-    (type-struni-tag/members-case
-     tystr-tag/mems
-     :tagged t
-     :untagged (type-struni-member-list-sts-safep tystr-tag/mems.members
-                                                  spec))
-    :measure (type-struni-tag/members-count tystr-tag/mems))
+      "If instead we have members, we recursively check them."))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-struni-tag/members-case
+       tystr-tag/mems
+       :tagged (b* (((mv info &)
+                     (c$::valid-lookup-tag tystr-tag/mems.tag vtable))
+                    ((unless info)
+                     (raise "Internal error: ~
+                             no information for ~x0 in ~x1."
+                            tystr-tag/mems.tag vtable))
+                    (uid (c$::valid-tag-info->uid info))
+                    (members?
+                     (hons-get uid (c$::type-completions-fix completions)))
+                    ((unless members?)
+                     (raise "Internal error: ~
+                             no members for ~x0 in ~x0."
+                            uid completions))
+                    (members (cdr members?)))
+                 (type-struni-member-list-sts-safep members
+                                                    nested
+                                                    spec
+                                                    vtable
+                                                    completions
+                                                    (1- limit)))
+       :untagged (type-struni-member-list-sts-safep tystr-tag/mems.members
+                                                    nested
+                                                    spec
+                                                    vtable
+                                                    completions
+                                                    (1- limit))))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define type-struni-member-sts-safep ((mem type-struni-member-p)
-                                        (spec sts-struct-specp))
+                                        (nested booleanp)
+                                        (spec sts-struct-specp)
+                                        (vtable valid-tablep)
+                                        (completions type-completions-p)
+                                        (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a struct/union member
             is safe for the STS transformation."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "This function takes no nested flag because
-       structure or union members are always implicitly nested.
-       I.e. it is as if the flag were implicitly @('t').
-       This is why we pass @('t') as the nested flag
-       to @(tsee type-sts-safep)."))
-    (type-sts-safep (type-struni-member->type mem) t spec)
-    :measure (type-struni-member-count mem))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-sts-safep (type-struni-member->type mem)
+                      nested
+                      spec
+                      vtable
+                      completions
+                      (1- limit)))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define type-struni-member-list-sts-safep ((mems type-struni-member-listp)
-                                             (spec sts-struct-specp))
+                                             (nested booleanp)
+                                             (spec sts-struct-specp)
+                                             (vtable valid-tablep)
+                                             (completions type-completions-p)
+                                             (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that a list of struct/union members
@@ -374,16 +697,23 @@
     (xdoc::topstring
      (xdoc::p
       "We check every member in turn."))
-    (or (endp mems)
-        (and (type-struni-member-sts-safep (car mems) spec)
-             (type-struni-member-list-sts-safep (cdr mems) spec)))
-    :measure (type-struni-member-list-count mems))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (or (endp mems)
+          (and (type-struni-member-sts-safep
+                (car mems) nested spec vtable completions (1- limit))
+               (type-struni-member-list-sts-safep
+                (cdr mems) nested spec vtable completions (1- limit)))))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define type-params-sts-safep ((params type-params-p)
                                  (nested booleanp)
-                                 (spec sts-struct-specp))
+                                 (spec sts-struct-specp)
+                                 (vtable valid-tablep)
+                                 (completions type-completions-p)
+                                 (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
     :short "Check that the portion of a function type
@@ -393,14 +723,20 @@
     (xdoc::topstring
      (xdoc::p
       "We check all the types."))
-    (type-params-case
-     params
-     :prototype (type-list-sts-safep params.params nested spec)
-     :old-style (type-list-sts-safep params.params nested spec)
-     :unspecified t)
-    :measure (type-params-count params))
+    (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
+      (type-params-case
+       params
+       :prototype (type-list-sts-safep
+                   params.params nested spec vtable completions (1- limit))
+       :old-style (type-list-sts-safep
+                   params.params nested spec vtable completions (1- limit))
+       :unspecified t))
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork ((local (in-theory (enable nfix))))
 
   ///
 
@@ -408,14 +744,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define top-type-sts-safep ((type typep) (spec sts-struct-specp))
+(define top-type-sts-safep ((type typep)
+                            (spec sts-struct-specp)
+                            (vtable valid-tablep)
+                            (completions type-completions-p))
   :returns (yes/no booleanp)
   :short "Check that a top-level type is safe for the STS transformation."
   :long
   (xdoc::topstring
    (xdoc::p
     "We set the nested flag to @('nil'), since we are at the top level."))
-  (or (type-sts-safep type nil spec)
+  (or (type-sts-safep type nil spec vtable completions 1000000)
       (sts-reject (type-fix type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -545,7 +884,9 @@
 
 (define expr-cast-sts-safep ((tyname tynamep)
                              (arg exprp)
-                             (spec sts-struct-specp))
+                             (spec sts-struct-specp)
+                             (vtable valid-tablep)
+                             (completions type-completions-p))
   :returns (yes/no booleanp)
   :short "Check if a cast expression is safe for the STS transformation."
   :long
@@ -553,15 +894,21 @@
    (xdoc::p
     "This is the case exactly when
      neither the source nor the destination type
-     is the struct being split or a pointer type to it."))
+     may refer to the struct type being split, directly or indirectly."))
   (or (and (tyname-unamb/anno-p tyname)
            (expr-unamb/anno-p arg)
            (b* ((src-type (expr-type arg))
                 (dst-type (type-vinfo->type (tyname->info tyname))))
-             (and (not (type-may-be-struct-spec-p src-type spec))
-                  (not (type-may-be-pointer-to-struct-spec-p src-type spec))
-                  (not (type-may-be-struct-spec-p dst-type spec))
-                  (not (type-may-be-pointer-to-struct-spec-p dst-type spec)))))
+             (and (not (type-may-refer-to-struct-spec-p src-type
+                                                        spec
+                                                        vtable
+                                                        completions
+                                                        1000000))
+                  (not (type-may-refer-to-struct-spec-p dst-type
+                                                        spec
+                                                        vtable
+                                                        completions
+                                                        1000000)))))
       (sts-reject (expr-cast tyname arg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -629,20 +976,58 @@
 
 (define param-declor-nonabstract-sts-safep ((declor declorp)
                                             info
-                                            (spec sts-struct-specp))
+                                            (spec sts-struct-specp)
+                                            (vtable valid-tablep)
+                                            (completions type-completions-p))
   :returns (yes/no booleanp)
   :short "Check if a non-abstract parameter declarator
           is safe for the STS transformation."
   (and (or (type+uid-vinfop info)
            (raise "Internal error: malformed ~x0." info))
-       (or (top-type-sts-safep (type+uid-vinfo->type info) spec)
+       (or (top-type-sts-safep
+            (type+uid-vinfo->type info) spec vtable completions)
            (sts-reject (param-declor-nonabstract declor info))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define param-declor-abstract-sts-safep ((declor absdeclorp)
+                                         info
+                                         (spec sts-struct-specp)
+                                         (vtable valid-tablep)
+                                         (completions type-completions-p))
+  :returns (yes/no booleanp)
+  :short "Check if an abstract parameter declarator
+          is safe for the STS transformation."
+  (and (or (type-vinfop info)
+           (raise "Internal error: malformed ~x0." info))
+       (or (top-type-sts-safep (type-vinfo->type info) spec vtable completions)
+           (sts-reject (param-declor-abstract declor info))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tyname-info-sts-safep ((tyname tynamep)
+                               (spec sts-struct-specp)
+                               (vtable valid-tablep)
+                               (completions type-completions-p))
+  :returns (yes/no booleanp)
+  :short "Check if a type name
+          is safe for the STS transformation."
+  (b* ((info (tyname->info tyname)))
+    (and (or (type-vinfop info)
+             (raise "Internal error: malformed ~x0." info))
+         (or (top-type-sts-safep
+              (type-vinfo->type info) spec vtable completions)
+             (sts-reject (tyname-fix tyname)))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define init-declor-info-sts-safep ((ideclor init-declorp)
-                                    (spec sts-struct-specp))
+                                    (spec sts-struct-specp)
+                                    (vtable valid-tablep)
+                                    (completions type-completions-p))
   :returns (yes/no booleanp)
   :short "Check if the type in
           the validation annotation of an initializer declarator
@@ -650,13 +1035,17 @@
   (b* ((info (init-declor->info ideclor)))
     (and (or (init-declor-vinfop info)
              (raise "Internal error: malformed ~x0." info))
-         (or (top-type-sts-safep (init-declor-vinfo->type info) spec)
+         (or (top-type-sts-safep
+              (init-declor-vinfo->type info) spec vtable completions)
              (sts-reject (init-declor-fix ideclor)))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fundef-info-sts-safep ((fundef fundefp) (spec sts-struct-specp))
+(define fundef-info-sts-safep ((fundef fundefp)
+                               (spec sts-struct-specp)
+                               (vtable valid-tablep)
+                               (completions type-completions-p))
   :returns (yes/no booleanp)
   :short "Check if the type in
           the validation annotation of a function definition
@@ -664,7 +1053,8 @@
   (b* ((info (fundef->info fundef)))
     (and (or (type+uid-vinfop info)
              (raise "Internal error: malformed ~x0." info))
-         (or (top-type-sts-safep (type+uid-vinfo->type info) spec)
+         (or (top-type-sts-safep
+              (type+uid-vinfo->type info) spec vtable completions)
              (sts-reject (fundef-fix fundef)))))
   :no-function nil)
 
@@ -688,7 +1078,7 @@
      (and its values, and pointers to its values)
      only in ways that are safe for the STS transformation.")
    (xdoc::p
-    "The predicates should start at the @(tsee exprs/decls/stmts) clique.
+    "The predicates start at the @(tsee exprs/decls/stmts) clique.
      It is not hard to see that
      all the ASTs in @(see c$::abstract-syntax-trees) before that clique
      do not contain anything directly related to structs.
@@ -702,21 +1092,6 @@
      all the ASTs that precede the @(tsee exprs/decls/stmts) clique
      should be deemed safe when taken in isolation,
      and thus we do not need to define any predicates on them.")
-   (xdoc::p
-    "However, above we said `should' because, for now,
-     we are including the @(tsee stor-spec) and @(tsee type-qual) fixtypes,
-     so that we can exclude
-     the @('_Atomic') type qualifier
-     and the @('auto') storage specifier.
-     In general, for now we want to reject code
-     where the struct type is qualified as being atomic,
-     because it is not clear how that interacts with
-     transformations such as splitting the struct;
-     so we just forbid that type qualifier.
-     The reason for excluding the @('auto') storage specifier
-     is that, in C23, it does type inference,
-     which might resolve to the struct type being split,
-     and so we exclude that for now.")
    (xdoc::p
     "The predicates end at the @(tsee trans-unit) type,
      because these checks operate on one translation unit at a time.")
@@ -758,12 +1133,12 @@
      See those functions for details,
      which we do not repeat here.
      Here we only discuss the rationale for the constructs
-     whose handling is handled directly in the @(tsee fty::deffold-reduce).")
+     handled directly in the @(tsee fty::deffold-reduce).")
    (xdoc::p
     "Identifiers, constants, and strings are safe leaves.
      Although an identifier may be a variable of struct type,
      this is safe in isolation;
-      unsafety can only come from a larger construct containing the variable.
+     unsafety can only come from a larger construct containing the variable.
      So we keep the default for these.")
    (xdoc::p
     "A parenthesized expression is safe iff its inner expression is,
@@ -786,18 +1161,16 @@
      involving the struct being split
      (unless one writes @('s[0]') instead of @('*s')).")
    (xdoc::p
-    "We reject function calls for now,
-     because we need to make sure that those are safe too,
-     and that may include some built-in functions
-     which need to be examined case by case.")
+    "Function calls are allowed
+     (so long as the arguments satisfy the safety checks),
+     but this relies on the assumption that
+     we are safety-checking all the called functions.
+     We plan to do this as a complementary safety check.")
    (xdoc::p
     "We allow member access, by value or by pointer.
      This is the normal safe way to access structs.
      Note that the nesting of the struct type being split
      in other structs or in unions is excluded via @(tsee type-sts-safep).")
-   (xdoc::p
-    "We reject compound literals out of initial caution.
-     We need to think through them.")
    (xdoc::p
     "Taking the address of a label (a GCC/Clang extension) is safe;
      it does not involve structs.")
@@ -859,23 +1232,28 @@
      This is because the type may denote the struct type being split,
      without that being immediately syntactically apparent.")
    (xdoc::p
-    "@('__auto_type') is excluded for the same reason as
-     the storage specifier @('auto') explained earlier.")
+    "@('__auto_type') is excluded because it does type inference,
+     and so we need to think of this more carefully.
+     In C23, the @('auto') storage class specifier also does type inference,
+     and so it should be treated the same way (excluded for now).
+     However, for now the STS transformation is expressly limited to C17
+     (the transformation checks that explicitly),
+     and so we can accept the @('auto') storage class specifier for now.")
    (xdoc::p
     "We allow all alignment specifiers,
      because they do not seem related to the struct type being split.")
    (xdoc::p
-    "Certain GCC/Clang attributes might need to be rejected,
-     but we need to examine them in more detail.")
+    "For now we accept all attributes without examining them,
+     because attributes may contain expressions
+     but those are not yet annotated by the validator,
+     and the STS transformation does not transform attributes.
+     All of this will need to be handled properly eventually.")
+   (xdoc::p
+    "For the same reason as attributes,
+     for now we accept all the assembler input and output operands.")
    (xdoc::p
     "We reject the @('__stdcall') and @('__declspec') declaration specifiers,
      out of caution.")
-   (xdoc::p
-    "We reject initializers with optional designations for now,
-     because they may affect the struct type being split.")
-   (xdoc::p
-    "Initializers with optional designations are only reachable
-     from list initializers, which are excluded (see above).")
    (xdoc::p
     "Declarators (@(tsee declor) ASTs) are checked indirectly,
      via the types of the ASTs where declarators may appear:
@@ -883,19 +1261,40 @@
      initializer declarators,
      and non-abstract parameter declarators.")
    (xdoc::p
-    "We exclude abstract declarators (@(tsee absdeclor) ASTs)
-     because in combination with type specifiers
-     they may give rise to arrays of the struct being split.
-     This is too coarse, and we will refine it.")
+    "Abstract declarators (@(tsee absdeclor) ASTs) are checked indirectly,
+     via the types of the ASTs where abstract declarators may appear:
+     abstract parameter declarators,
+     and type names.")
+   (xdoc::p
+    "Declarations are checked indirectly.
+     If a declaration has initializer declarators,
+     we check (the types of) all its initializer declarators.
+     If a declaration does not have initializer declarators,
+     it must be a structure or union or enumeration declaration
+     (see @(tsee c$::valid-declon));
+     these are checked by checking their structure declarators,
+     which are the only cases in which the struct type being split
+     might be nested inside other structure or union types.
+     Declarations may also be static assertion declarations,
+     which are checked independently.")
    (xdoc::p
     "We exclude assembly, because we do not know what it does exactly.")
    (xdoc::p
     "We reject translation items that are
      preprocessing constructs preserved by our preprocessor.
-     We do not have transformations working on those yet."))
-  :types (stor-spec
-          type-qual
-          exprs/decls/stmts
+     We do not have transformations working on those yet.")
+   (xdoc::p
+    "Like we exclude the @('_Atomic') type specifier
+     applied to the struct type being split,
+     we should also exclude the @('_Atomic') type qualifier
+     applied to the struct type being split.
+     Currently this is a bit cumbersome to check because
+     that type qualifier may not be immediately before the struct type.
+     We should extend our model of types with an atomic flag,
+     which is more generally useful,
+     and then we should be able to check atomic type
+     without looking directly at specifiers and qualifiers."))
+  :types (exprs/decls/stmts
           fundef
           ext-declon
           trans-items
@@ -903,56 +1302,117 @@
   :result booleanp
   :default t
   :combine and
-  :extra-args ((spec sts-struct-specp))
+  :extra-args ((spec sts-struct-specp)
+               (vtable valid-tablep)
+               (completions type-completions-p))
   :override
-  ((stor-spec :auto (sts-reject (stor-spec-fix stor-spec)))
-   (type-qual :atomic (sts-reject (type-qual-fix type-qual)))
-   (expr :gensel (sts-reject (expr-fix expr)))
-   (expr :funcall (sts-reject (expr-fix expr)))
-   (expr :complit (sts-reject (expr-fix expr)))
-   (expr :unary (and (expr-sts-safep expr.arg spec)
+  ((expr :gensel (sts-reject (expr-fix expr)))
+   (expr :complit (and (tyname-sts-safep expr.type spec vtable completions)
+                       (desiniter-list-sts-safep expr.elems
+                                                 spec
+                                                 vtable
+                                                 completions)
+                       (tyname-info-sts-safep expr.type
+                                              spec
+                                              vtable
+                                              completions)))
+   (expr :unary (and (expr-sts-safep expr.arg spec vtable completions)
                      (expr-unary-sts-safep expr.op expr.arg expr.info spec)))
-   (expr :sizeof (and (tyname-sts-safep expr.type spec)
+   (expr :sizeof (and (tyname-sts-safep expr.type spec vtable completions)
                       (expr-sizeof-sts-safep expr.type spec)))
-   (expr :alignof (and (tyname-sts-safep expr.type spec)
+   (expr :alignof (and (tyname-sts-safep expr.type spec vtable completions)
                        (expr-alignof-sts-safep expr.type expr.uscores spec)))
-   (expr :cast (and (tyname-sts-safep expr.type spec)
-                    (expr-sts-safep expr.arg spec)
-                    (expr-cast-sts-safep expr.type expr.arg spec)))
-   (expr :binary (and (expr-sts-safep expr.arg1 spec)
-                      (expr-sts-safep expr.arg2 spec)
+   (expr :cast (and (tyname-sts-safep expr.type spec vtable completions)
+                    (expr-sts-safep expr.arg spec vtable completions)
+                    (expr-cast-sts-safep expr.type
+                                         expr.arg
+                                         spec
+                                         vtable
+                                         completions)))
+   (expr :binary (and (expr-sts-safep expr.arg1 spec vtable completions)
+                      (expr-sts-safep expr.arg2 spec vtable completions)
                       (expr-binary-sts-safep
                        expr.op expr.arg1 expr.arg2 expr.info spec)))
    (expr :tycompat (sts-reject (expr-fix expr)))
    (expr :offsetof (sts-reject (expr-fix expr)))
    (expr :va-arg (sts-reject (expr-fix expr)))
-   (type-spec :atomic (and (tyname-sts-safep type-spec.type spec)
+   (type-spec :atomic (and (tyname-sts-safep type-spec.type
+                                             spec
+                                             vtable
+                                             completions)
                            (type-spec-atomic-sts-safep type-spec.type spec)))
    (type-spec :typeof-expr (sts-reject (type-spec-fix type-spec)))
    (type-spec :typeof-type (sts-reject (type-spec-fix type-spec)))
    (type-spec :auto-type (sts-reject (type-spec-fix type-spec)))
    (decl-spec :stdcall (sts-reject (decl-spec-fix decl-spec)))
    (decl-spec :declspec (sts-reject (decl-spec-fix decl-spec)))
-   (desiniter (sts-reject (desiniter-fix desiniter)))
-   (absdeclor (sts-reject (absdeclor-fix absdeclor)))
-   (param-declor :nonabstract (and (declor-sts-safep param-declor.declor spec)
+   (param-declor :nonabstract (and (declor-sts-safep param-declor.declor
+                                                     spec
+                                                     vtable
+                                                     completions)
                                    (param-declor-nonabstract-sts-safep
                                     param-declor.declor
                                     param-declor.info
-                                    spec)))
+                                    spec
+                                    vtable
+                                    completions)))
+   (param-declor :abstract (and (absdeclor-sts-safep param-declor.declor
+                                                     spec
+                                                     vtable
+                                                     completions)
+                                (param-declor-abstract-sts-safep
+                                 param-declor.declor
+                                 param-declor.info
+                                 spec
+                                 vtable
+                                 completions)))
+   (tyname (b* (((tyname tyname)))
+             (and (spec/qual-list-sts-safep tyname.specquals
+                                            spec
+                                            vtable
+                                            completions)
+                  (absdeclor-option-sts-safep tyname.declor?
+                                              spec
+                                              vtable
+                                              completions)
+                  (tyname-info-sts-safep tyname spec vtable completions))))
+   (attrib t)
    (init-declor (b* (((init-declor init-declor)))
-                  (and (declor-sts-safep init-declor.declor spec)
-                       (attrib-spec-list-sts-safep init-declor.attribs spec)
-                       (initer-option-sts-safep init-declor.initer? spec)
-                       (init-declor-info-sts-safep init-declor spec))))
+                  (and (declor-sts-safep init-declor.declor
+                                         spec
+                                         vtable
+                                         completions)
+                       (attrib-spec-list-sts-safep init-declor.attribs
+                                                   spec
+                                                   vtable
+                                                   completions)
+                       (initer-option-sts-safep init-declor.initer?
+                                                spec
+                                                vtable
+                                                completions)
+                       (init-declor-info-sts-safep init-declor
+                                                   spec
+                                                   vtable
+                                                   completions))))
+   (asm-output t)
+   (asm-input t)
    (asm-stmt (sts-reject (asm-stmt-fix asm-stmt)))
    (fundef (b* (((fundef fundef)))
-             (and (decl-spec-list-sts-safep fundef.specs spec)
-                  (declor-sts-safep fundef.declor spec)
-                  (attrib-spec-list-sts-safep fundef.attribs spec)
-                  (declon-list-sts-safep fundef.declons spec)
-                  (comp-stmt-sts-safep fundef.body spec)
-                  (fundef-info-sts-safep fundef spec))))
+             (and (decl-spec-list-sts-safep fundef.specs
+                                            spec
+                                            vtable
+                                            completions)
+                  (declor-sts-safep fundef.declor
+                                    spec
+                                    vtable
+                                    completions)
+                  (attrib-spec-list-sts-safep fundef.attribs
+                                              spec
+                                              vtable
+                                              completions)
+                  (declon-list-sts-safep fundef.declons spec vtable completions)
+                  (comp-stmt-sts-safep fundef.body spec vtable completions)
+                  (fundef-info-sts-safep fundef spec vtable completions))))
    (trans-item :include (sts-reject (trans-item-fix trans-item)))
    (trans-item :define (sts-reject (trans-item-fix trans-item)))
    (trans-item :undef (sts-reject (trans-item-fix trans-item)))

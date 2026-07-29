@@ -16,7 +16,11 @@
 
 (include-book "kestrel/fty/deffold-map" :dir :system)
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+
 (acl2::controlled-configuration)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local (in-theory (enable* ast-corep-rules)))
 
@@ -123,6 +127,12 @@
     "A bracket type is turned into an array type
      whose shape is the concatenation of the shapes.")
    (xdoc::p
+    "An n-ary function type is turned into
+     a nest of unary function types.")
+   (xdoc::p
+    "An n-ary universal, product, or sum type is turned into
+     a nest of unary universal, product, or sum types.")
+   (xdoc::p
     "An atom expression is turned into a 0-rank array expression.")
    (xdoc::p
     "A non-empty string is turned into an array expression
@@ -131,8 +141,16 @@
      The empty string is turned into an empty array expression
      with the type of integers.")
    (xdoc::p
-    "A combined application is turned into its constituent applications,
+    "An n-ary expression, type, or ispace application is turned into
+     a nest of unary expression, type, or ispace applications.")
+   (xdoc::p
+    "A combined application is turned into
+     nests of unary applications,
      also based on whether type and ispace arguments are present or not.")
+   (xdoc::p
+    "An n-ary unboxing expression is turned into
+     a nest of unary unboxing expressions,
+     all binding the same variable (see @(tsee nest-unbox-exprs)).")
    (xdoc::p
     "A bracket expression is turned into a frame expression
      with a single dimension that is the number of sub-expressions,
@@ -140,8 +158,36 @@
      Bracket expressions are never empty in concrete syntax;
      we should carry that invariant to the AST here.")
    (xdoc::p
+    "An n-ary expression, type, or ispace abstraction is turned into
+     a nest of unary expression, type, or ispace abstractions.
+     Since the result must be an atom,
+     the outermost abstraction is built here,
+     over the first parameter,
+     with the remaining parameters nested inside its body.
+     An n-ary abstraction always has at least one parameter,
+     but this is not captured in the abstract syntax,
+     so we use an arbitrary parameter
+     if the list of parameters is empty.")
+   (xdoc::p
+    "An n-ary boxing atom is turned into a nest of unary boxing atoms.
+     Since the result must be an atom,
+     the outermost boxing atom is built here,
+     over the first ispace,
+     with the remaining ispaces nested inside it;
+     only the outermost boxing atom has the type
+     (see @(tsee nest-box-exprs)).
+     An n-ary boxing atom always has at least one ispace,
+     but this is not captured in the abstract syntax,
+     so we use an arbitrary ispace if the list of ispaces is empty.")
+   (xdoc::p
     "All function bindings are turned into value bindings,
-     with an appropriate lambda abstraction.
+     with an appropriate nest of lambda abstractions.
+     If a function binding has no parameters,
+     there is no abstraction to build,
+     and the expression of the value binding is just the body;
+     this is consistent with
+     a function type with no inputs being just the output type,
+     and an application with no arguments being just the function.
      As explained in @(tsee ast-corep),
      in general it is not possible to desugar @('let'),
      but at least we can desugar its function bindings.
@@ -149,18 +195,16 @@
      then the value binding includes the optional type as well,
      obtained by combining the function binding's type
      with parts of the function binding:
-     for a term function binding, it is a function type;
+     for an expression function binding, it is a function type;
      for a type function binding, it is a universal type;
      for an ispace function binding, it is a product type.
      A combined function binding results in nested lambda abstractions."))
   :types (shapes/ispaces
-          ispace-list-option
           types
           type-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :override
   ((shape :dims (cond ((endp shape.dims) ; no dimensions
                        (shape-append nil))
@@ -180,6 +224,14 @@
                              (ispace-shape-list->shape
                               (ispace-list-desugar-in-splice
                                (ispace-list-desugar type.ispaces)))))))
+   (type :funn (nest-fun-types (type-list-desugar type.in)
+                               (type-desugar type.out)))
+   (type :foralln (nest-forall-types type.params
+                                     (type-desugar type.body)))
+   (type :pin (nest-pi-types type.params
+                             (type-desugar type.body)))
+   (type :sigman (nest-sigma-types type.params
+                                   (type-desugar type.body)))
    (expr :atom (make-expr-array :dims nil
                                 :atoms (list (atom-desugar expr.atom))))
    (expr :string (if (consp expr.chars)
@@ -188,31 +240,76 @@
                       :atoms (atom-base-list
                               (base-lit-int-list
                                (char-lit-list-desugar expr.chars))))
-                     (make-expr-array-empty :dims (list 0)
-                                            :type (type-base (base-type-int)))))
+                   (make-expr-array-empty :dims (list 0)
+                                          :type (type-base (base-type-int)))))
+   (expr :appn (nest-app-exprs (expr-desugar expr.fun)
+                               (expr-list-desugar expr.args)))
+   (expr :tappn (nest-tapp-exprs (expr-desugar expr.fun)
+                                 (type-list-desugar expr.args)))
+   (expr :iappn (nest-iapp-exprs (expr-desugar expr.fun)
+                                 (ispace-list-desugar expr.args)))
    (expr :capp (b* ((fun (expr-desugar expr.fun))
                     (fun-targs
                      (type-list-option-case
                       expr.targs
-                      :some (make-expr-tapp
-                             :fun fun
-                             :args (type-list-desugar expr.targs.val))
+                      :some (nest-tapp-exprs
+                             fun
+                             (type-list-desugar expr.targs.val))
                       :none fun))
                     (fun-targs-iargs
                      (ispace-list-option-case
                       expr.iargs
-                      :some (make-expr-iapp
-                             :fun fun-targs
-                             :args (ispace-list-desugar expr.iargs.val))
+                      :some (nest-iapp-exprs
+                             fun-targs
+                             (ispace-list-desugar expr.iargs.val))
                       :none fun-targs))
                     (fun-targs-iargs-args
-                     (make-expr-app
-                      :fun fun-targs-iargs
-                      :args (expr-list-desugar expr.args))))
+                     (nest-app-exprs
+                      fun-targs-iargs
+                      (expr-list-desugar expr.args))))
                  fun-targs-iargs-args))
+   (expr :unboxn (nest-unbox-exprs expr.ispaces
+                                   expr.var
+                                   (expr-desugar expr.target)
+                                   (expr-desugar expr.body)
+                                   (type-option-desugar expr.type?)))
    (expr :bracket (b* ((exprs (expr-list-desugar expr.exprs)))
                     (make-expr-frame :dims (list (len exprs))
                                      :exprs exprs)))
+   (atom :lambdan (b* ((params (var+type?-list-desugar atom.params))
+                       (body (expr-desugar atom.body))
+                       (type? (type-option-desugar atom.type?))
+                       (param (if (consp params) ; always true
+                                  (car params)
+                                (make-var+type? :var "" :type? nil))))
+                    (make-atom-lambda
+                     :param param
+                     :body (nest-lambda-exprs (cdr params) body type?)
+                     :type? (if (endp (cdr params)) type? nil))))
+   (atom :tlambdan (b* ((body (expr-desugar atom.body))
+                        (param (if (consp atom.params) ; always true
+                                   (car atom.params)
+                                 (type-var-atom ""))))
+                     (make-atom-tlambda
+                      :param param
+                      :body (nest-tlambda-exprs (cdr atom.params) body))))
+   (atom :ilambdan (b* ((body (expr-desugar atom.body))
+                        (param (if (consp atom.params) ; always true
+                                   (car atom.params)
+                                 (ispace-var-dim ""))))
+                     (make-atom-ilambda
+                      :param param
+                      :body (nest-ilambda-exprs (cdr atom.params) body))))
+   (atom :boxn (b* ((ispaces (ispace-list-desugar atom.ispaces))
+                    (array (expr-desugar atom.array))
+                    (type (type-desugar atom.type))
+                    (ispace (if (consp ispaces) ; always true
+                                (car ispaces)
+                              (ispace-dim (dim-const 0)))))
+                 (make-atom-box
+                  :ispace ispace
+                  :array (nest-box-exprs (cdr ispaces) array)
+                  :type? type)))
    (bind :fun (b* ((params (var+type?-list-desugar bind.params))
                    (type? (type-option-desugar bind.type?))
                    (expr (expr-desugar bind.expr))
@@ -222,14 +319,9 @@
                      :some (b* ((in (var+type?-list->type-list-or-err params)))
                              (if (reserrp in)
                                  nil
-                               (make-type-fun :in in :out type?.val)))
+                               (nest-fun-types in type?.val)))
                      :none nil))
-                   (lambda-expr
-                    (make-expr-array
-                     :dims nil
-                     :atoms (list (make-atom-lambda :params params
-                                                    :body expr
-                                                    :type? type?)))))
+                   (lambda-expr (nest-lambda-exprs params expr type?)))
                 (make-bind-val :var bind.var
                                :type? lambda-type?
                                :expr lambda-expr)))
@@ -238,14 +330,9 @@
                     (lambda-type?
                      (type-option-case
                       type?
-                      :some (make-type-forall :params bind.params
-                                              :body type?.val)
+                      :some (nest-forall-types bind.params type?.val)
                       :none nil))
-                    (lambda-expr
-                     (make-expr-array
-                      :dims nil
-                      :atoms (list (make-atom-tlambda :params bind.params
-                                                      :body expr)))))
+                    (lambda-expr (nest-tlambda-exprs bind.params expr)))
                  (make-bind-val :var bind.var
                                 :type? lambda-type?
                                 :expr lambda-expr)))
@@ -254,59 +341,42 @@
                     (lambda-type?
                      (type-option-case
                       type?
-                      :some (make-type-pi :params bind.params
-                                          :body type?.val)
+                      :some (nest-pi-types bind.params type?.val)
                       :none nil))
-                    (lambda-expr
-                     (make-expr-array
-                      :dims nil
-                      :atoms (list (make-atom-ilambda :params bind.params
-                                                      :body expr)))))
+                    (lambda-expr (nest-ilambda-exprs bind.params expr)))
                  (make-bind-val :var bind.var
                                 :type? lambda-type?
                                 :expr lambda-expr)))
    (bind :cfun (b* ((params (var+type?-list-desugar bind.params))
                     (type (type-desugar bind.type))
                     (expr (expr-desugar bind.expr))
-                    (lambda-expr
-                     (make-expr-array
-                      :dims nil
-                      :atoms (list (make-atom-lambda :params params
-                                                     :body expr
-                                                     :type? type))))
+                    (lambda-expr (nest-lambda-exprs params expr type))
                     (ilambda-lambda-expr
                      (ispace-var-list-option-case
                       bind.iparams?
-                      :some (make-expr-array
-                             :dims nil
-                             :atoms (list (make-atom-ilambda
-                                           :params bind.iparams?.val
-                                           :body lambda-expr)))
+                      :some (nest-ilambda-exprs bind.iparams?.val lambda-expr)
                       :none lambda-expr))
                     (tlambda-ilambda-lambda-expr
                      (type-var-list-option-case
                       bind.tparams?
-                      :some (make-expr-array
-                             :dims nil
-                             :atoms (list (make-atom-tlambda
-                                           :params bind.tparams?.val
-                                           :body ilambda-lambda-expr)))
+                      :some (nest-tlambda-exprs bind.tparams?.val
+                                                ilambda-lambda-expr)
                       :none ilambda-lambda-expr))
                     (in (var+type?-list->type-list-or-err params))
                     (lambda-type?
                      (if (reserrp in)
                          nil
-                       (b* ((lambda-type (make-type-fun :in in :out type))
+                       (b* ((lambda-type (nest-fun-types in type))
                             (ilambda-lambda-type
                              (ispace-var-list-option-case
                               bind.iparams?
-                              :some (make-type-pi :params bind.iparams?.val
-                                                  :body lambda-type)
+                              :some (nest-pi-types bind.iparams?.val
+                                                   lambda-type)
                               :none lambda-type)))
                          (type-var-list-option-case
                           bind.tparams?
-                          :some (make-type-forall :params bind.tparams?.val
-                                                  :body ilambda-lambda-type)
+                          :some (nest-forall-types bind.tparams?.val
+                                                   ilambda-lambda-type)
                           :none ilambda-lambda-type)))))
                  (make-bind-val :var bind.var
                                 :type? lambda-type?
@@ -362,11 +432,6 @@
               ispace-list-desugar
               shape-list-corep-of-shape-dims-list-of-list-to-singletons))))
 
-  (defret ispace-list-option-corep-of-ispace-list-option-desugar
-    (ispace-list-option-corep result)
-    :fn ispace-list-option-desugar
-    :hints (("Goal" :in-theory (enable ispace-list-option-desugar))))
-
   (defret-mutual types-corep-of-types-desugar
     (defret type-corep-of-type-desugar
       (type-corep result)
@@ -421,12 +486,7 @@
                           bind-desugar
                           bind-list-desugar
                           ast-desugar-rules
-                          type-list-corep-of-var+type?-list->type-list))))
-
-  (defret prog-corep-of-prog-desugar
-    (prog-corep result)
-    :fn prog-desugar
-    :hints (("Goal" :in-theory (enable prog-desugar)))))
+                          type-list-corep-of-var+type?-list->type-list)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -455,14 +515,7 @@
     (("Goal" :in-theory (enable shape-desugar
                                 shape-list-desugar
                                 ispace-desugar
-                                ispace-list-desugar
-                                shape-corep))))
-
-  (defret ispace-list-option-desugar-when-ispace-list-option-corep
-    (equal result (ispace-list-option-fix ispace-list-option))
-    :hyp (ispace-list-option-corep ispace-list-option)
-    :fn ispace-list-option-desugar
-    :hints (("Goal" :in-theory (enable ispace-list-option-desugar))))
+                                ispace-list-desugar))))
 
   (defret-mutual types-desugar-when-types-corep
     (defret type-desugar-when-type-corep
@@ -475,7 +528,7 @@
       :fn type-list-desugar)
     :mutual-recursion types-desugar
     :hints
-    (("Goal" :in-theory (enable type-desugar type-list-desugar type-corep))))
+    (("Goal" :in-theory (enable type-desugar type-list-desugar))))
 
   (defret type-option-desugar-when-type-option-corep
     (equal result (type-option-fix type-option))
@@ -529,14 +582,7 @@
                                         atom-list-desugar
                                         bind-desugar
                                         bind-list-desugar
-                                        expr-corep
-                                        ast-corep-rules))))
-
-  (defret prog-desugar-when-prog-corep
-    (equal result (prog-fix prog))
-    :hyp (prog-corep prog)
-    :fn prog-desugar
-    :hints (("Goal" :in-theory (enable prog-desugar)))))
+                                        ast-corep-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -563,10 +609,6 @@
   (defrule ispace-list-desugar-idempotent
     (equal (ispace-list-desugar (ispace-list-desugar ispaces))
            (ispace-list-desugar ispaces)))
-
-  (defrule ispace-list-option-desugar-idempotent
-    (equal (ispace-list-option-desugar (ispace-list-option-desugar ispaces?))
-           (ispace-list-option-desugar ispaces?)))
 
   (defrule type-desugar-idempotent
     (equal (type-desugar (type-desugar type))
@@ -602,8 +644,4 @@
 
   (defrule atom-list-desugar-idempotent
     (equal (atom-list-desugar (atom-list-desugar atoms))
-           (atom-list-desugar atoms)))
-
-  (defrule prog-desugar-idempotent
-    (equal (prog-desugar (prog-desugar prog))
-           (prog-desugar prog))))
+           (atom-list-desugar atoms))))

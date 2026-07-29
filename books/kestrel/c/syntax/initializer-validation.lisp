@@ -13,6 +13,7 @@
 
 (include-book "types")
 (include-book "abstract-syntax-operations")
+(include-book "validation-annotations")
 
 (include-book "kestrel/fty/nat-option" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
@@ -649,12 +650,19 @@
                         (index-cexpr
                           (make-const-expr
                             :expr (make-expr-const
-                                    :const (const-int index-iconst?))))
+                                    :const (const-int index-iconst?))
+                            :info
+                            (make-const-expr-vinfo
+                              :value (eval-iconst index-iconst? ienv))))
                         (range-cexpr?
                           (and range-iconst?
                                (make-const-expr
                                  :expr (make-expr-const
-                                         :const (const-int range-iconst?))))))
+                                         :const (const-int range-iconst?))
+                                 :info
+                                 (make-const-expr-vinfo
+                                   :value
+                                   (eval-iconst range-iconst? ienv))))))
                      (retok (make-designor-sub
                               :index index-cexpr
                               :range? range-cexpr?)))
@@ -720,8 +728,15 @@
   :parents (initer-subobjects-stack)
   :short "Create a designator list from a stack of initializer subobjects."
   :long
-  (xdoc::topstring-p
-   "A return value of @('nil') indicates a failure to convert.")
+  (xdoc::topstring
+   (xdoc::p
+    "The designation is relative to the object initialized
+     at the current brace level.
+     The subobjects stack of a brace-enclosed initializer
+     is rooted at that object (see @(tsee valid-initer)),
+     so converting the whole stack yields a relative designation.")
+   (xdoc::p
+    "A return value of @('nil') indicates a failure to convert."))
   (initer-subobjects-stack-case
     stack
     :unknown nil

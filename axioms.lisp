@@ -14400,7 +14400,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     chk-package-reincarnation-import-restrictions ; [-restrictions2 version]
     untrace$-fn1 ; eval
     bdd-top ; (GCL only) si::sgc-on
-    defstobj-field-fns-raw-defs ; call to memoize-flush
+    defstobj-field-fns-raw-defs ; call to memoize-flush; CCL bug #446
     times-mod-m31 ; gcl has raw code
     #+acl2-devel iprint-ar-aref1
     prove ; #+write-arithmetic-goals
@@ -14457,7 +14457,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     set-cbd-fn1
     read-hons-copy-lambda-object-culprit ; reads wormhole data from oracle
     #+acl2-devel ilks-plist-worldp
-    defstobj-field-fns-raw-defs ; CCL bug #446
     chk-certificate-file
     get-cert-obj-and-cert-filename
     include-book-raw-error
@@ -15424,30 +15423,33 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defconst *file-types* '(:character :byte :object))
 
-(defun channel-headerp (header)
+(defun channel-headerp (header output-p)
   (declare (xargs :guard t))
   (and (true-listp header)
        (equal (length header) 4)
        (eq (car header) :header)
        (member-eq (cadr header) *file-types*)
-       (stringp (caddr header))
+       (or (stringp (caddr header))
+           (and output-p
+                (eq (cadr header) :character)
+                (eq (caddr header) :string)))
        (integerp (cadddr header))))
 
-(defun open-channel1 (l)
+(defun open-channel1 (l output-p)
   (declare (xargs :guard t))
   (and (true-listp l)
        (consp l)
        (let ((header (car l)))
-         (and (channel-headerp header)
+         (and (channel-headerp header output-p)
               (typed-io-listp (cdr l) (cadr header))))))
 
 (defthm open-channel1-forward-to-true-listp-and-consp
-  (implies (open-channel1 x)
+  (implies (open-channel1 x output-p)
            (and (true-listp x)
                 (consp x)))
   :rule-classes :forward-chaining)
 
-(defun open-channel-listp (l)
+(defun open-channel-listp (l output-p)
 
 ; The following guard seems reasonable (and is certainly necessary, or at least
 ; some guard is) since open-channels-p will tell us that we're looking at an
@@ -15457,16 +15459,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (if (endp l)
       t
-    (and (open-channel1 (cdr (car l)))
-         (open-channel-listp (cdr l)))))
+    (and (open-channel1 (cdr (car l)) output-p)
+         (open-channel-listp (cdr l) output-p))))
 
-(defun open-channels-p (x)
+(defun open-channels-p (x output-p)
   (declare (xargs :guard t))
   (and (ordered-symbol-alistp x)
-       (open-channel-listp x)))
+       (open-channel-listp x output-p)))
 
 (defthm open-channels-p-forward
-  (implies (open-channels-p x)
+  (implies (open-channels-p x output-p)
            (and (ordered-symbol-alistp x)
                 (true-list-listp x)))
   :rule-classes :forward-chaining)
@@ -15526,7 +15528,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (let ((key (car x)))
          (and (true-listp key)
               (equal (length key) 4)
-              (stringp (car key))
+              (or (stringp (car key))
+                  (and (eq (cadr key) :character)
+                       (eq (car key) :string)))
               (integerp (caddr key))
               (integerp (cadddr key))
               (member (cadr key) *file-types*)
@@ -15598,7 +15602,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard t))
   (and (true-listp x)
        (equal (length x) 3)
-       (stringp (car x))
+       (or (stringp (car x))
+           (and (eq (cadr x) :character)
+                (eq (car x) :string)))
        (member (cadr x) *file-types*)
        (integerp (caddr x))))
 
@@ -15635,8 +15641,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (return-from state-p1 t)))
   (and (true-listp x)
        (equal (length x) 11)
-       (open-channels-p (open-input-channels x))
-       (open-channels-p (open-output-channels x))
+       (open-channels-p (open-input-channels x) nil)
+       (open-channels-p (open-output-channels x) t)
        (ordered-symbol-alistp (global-table x))
        (all-boundp *initial-global-table*
                    (global-table x))
@@ -15663,8 +15669,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (and
             (true-listp x)
             (equal (length x) 11)
-            (open-channels-p (nth 0 x))
-            (open-channels-p (nth 1 x))
+            (open-channels-p (nth 0 x) nil)
+            (open-channels-p (nth 1 x) t)
             (ordered-symbol-alistp (nth 2 x))
             (all-boundp *initial-global-table*
                         (nth 2 x))
@@ -15845,7 +15851,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defconst *default-state*
   (list nil nil
         *initial-global-table*
-        4000000 nil nil 1 nil nil nil nil nil))
+        nil nil 1 nil nil nil
+
+; The following field makes it possible for (open-output-channel :string
+; :character state) to return a non-nil channel when state is *default-state*,
+; as is expected by channel-to-string.
+
+        '((:string :character 2))
+        nil))
 
 (defun build-state1 (open-input-channels
    open-output-channels global-table
@@ -16465,6 +16478,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (state-global-let*-fn bindings body))
 
 ; With state-global-let* defined, we are now able to use LOCAL.
+
+(local ; This is just a simple check that need not be exported.
+ (defthm state-p1-default-state
+   (state-p1 *default-state*)))
 
 ; Bishop Brock has contributed the lemma justify-integer-floor-recursion that
 ; follows.  Although he has proved this lemma as part of a larger proof effort,
@@ -17379,7 +17396,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; As with rule consp-assoc-equal this rule is now potentially expensive because
 ; of equality variants.  We disable it later, below.
 
-  (implies (open-channels-p alist)
+  (implies (open-channels-p alist output-p)
            (true-listp (cadr (assoc-eq key alist))))
   :rule-classes ((:forward-chaining
                   :trigger-terms ((cadr (assoc-eq key alist))))))
@@ -19415,7 +19432,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; of safe-open.
 
   (declare (xargs :guard (and (or (stringp file-name)
-                                  (eq file-name :string))
+                                  (and (eq typ :character)
+                                       (eq file-name :string)))
                               (member-eq typ *file-types*)
                               (state-p1 state-state))))
   #-acl2-loop-only
@@ -19474,14 +19492,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                          #+(and acl2-par ccl) :sharing
                                          #+(and acl2-par ccl) :lock))))
                       (:byte
-                       (cond ((eq file-name :string)
-                              (make-string-output-stream
-                               :element-type '(unsigned-byte 8)))
-                             (t (safe-open os-file-name :direction :output
-                                           :if-exists :supersede
-                                           :element-type '(unsigned-byte 8)
-                                           #+(and acl2-par ccl) :sharing
-                                           #+(and acl2-par ccl) :lock))))
+                       (safe-open os-file-name :direction :output
+                                  :if-exists :supersede
+                                  :element-type '(unsigned-byte 8)
+                                  #+(and acl2-par ccl) :sharing
+                                  #+(and acl2-par ccl) :lock))
                       (otherwise
                        (interface-er "Illegal output-type ~x0." typ)))))
               (cond
@@ -19570,9 +19585,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (local
   (defthm open-channel-listp-add-pair
-    (implies (and (open-channel1 value)
-                  (open-channel-listp l))
-             (open-channel-listp (add-pair key value l)))
+    (implies (and (open-channel1 value output-p)
+                  (open-channel-listp l output-p))
+             (open-channel-listp (add-pair key value l) output-p))
     :hints (("Goal" :in-theory (e/d (add-pair) (open-channel1))))))
 
 (local
@@ -19582,7 +19597,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (local
   (defthm state-p1-mv-nth-1-open-output-channel
-    (implies (and (stringp file-name) ; could allow :string
+    (implies (and (or (stringp file-name)
+                      (and (eq file-name :string)
+                           (eq typ :character)))
                   (member-eq typ *file-types*)
                   (state-p1 state-state))
              (state-p1 (mv-nth 1 (open-output-channel file-name
@@ -19596,7 +19613,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                      ordered-symbol-alistp))))))
 
 (defun open-output-channel! (file-name typ state)
-  (declare (xargs :guard (and (stringp file-name)
+  (declare (xargs :guard (and (or (stringp file-name)
+                                  (and (eq file-name :string)
+                                       (eq typ :character)))
                               (member-eq typ *file-types*)
                               (state-p state))
                   :guard-hints (("Goal" :in-theory (disable
@@ -19914,35 +19933,56 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (local
   (defthm character-listp-cdr-when-open-channel1
-    (implies (and (open-channel1 chan)
+    (implies (and (open-channel1 chan output-p)
                   (equal (cadr (car chan)) ':character))
              (character-listp (cdr chan)))))
 
 (local
   (defthm len-cdr-car-when-open-channel1
-    (implies (open-channel1 chan)
-             (equal (len (cdr (car chan)))
-                    3))))
+      (and (implies (open-channel1 chan t)
+                    (equal (len (cdr (car chan)))
+                           3))
+           (implies (open-channel1 chan nil)
+                    (equal (len (cdr (car chan)))
+                           3)))))
 
 ; We use defthm just above and in-theory just below, since it's too early in
 ; the boot-strap to use defthmd.
 (local (in-theory (disable len-cdr-car-when-open-channel1)))
 
 (local
-  (defthm not-equal-string-nth-2-car-when-open-channel1
-    (implies (open-channel1 chan)
-             (not (equal (nth 2 (car chan)) :string)))))
+  (defthm open-channel1-cdr-assoc-equal-when-open-channels-p
+    (implies (and (open-channels-p channels output-p)
+                  (assoc-equal channel channels))
+             (open-channel1 (cdr (assoc-equal channel channels)) output-p))
+    :hints (("Goal" :in-theory (e/d (open-channels-p) (open-channel1))))))
+
+(local
+ (defthm string-implies-type-character-when-open-channel1-lemma
+     (implies (and (assoc-equal channel lst)
+                   (open-channel-listp lst output-p)
+                   (equal (nth 2
+                               (cadr (assoc-equal channel lst)))
+                          :string))
+              (equal (cadr (cadr (assoc-equal channel lst)))
+                     :character))))
+
+(local
+ (defthm string-implies-type-character-when-open-channel1
+     (implies (and (assoc-equal channel (nth 1 state))
+                   (open-channels-p (open-output-channels state) output-p)
+                   (equal (nth 2
+                               (cadr (assoc-equal channel (nth 1 state))))
+                          :string))
+              (equal (cadr (cadr (assoc-equal channel (nth 1 state))))
+                     :character))
+   :hints (("Goal" :in-theory (enable open-channels-p open-channel-listp)))))
 
 ; We use defthm just above and in-theory just below, since it's too early in
 ; the boot-strap to use defthmd.
-(local (in-theory (disable not-equal-string-nth-2-car-when-open-channel1)))
-
-(local
-  (defthm open-channel1-cdr-assoc-equal-when-open-channels-p
-    (implies (and (open-channels-p channels)
-                  (assoc-equal channel channels))
-             (open-channel1 (cdr (assoc-equal channel channels))))
-    :hints (("Goal" :in-theory (e/d (open-channels-p) (open-channel1))))))
+(local (in-theory (disable
+                   string-implies-type-character-when-open-channel1-lemma
+                   string-implies-type-character-when-open-channel1)))
 
 (defun get-output-stream-string$-fn (channel state-state)
   (declare (xargs
@@ -19950,9 +19990,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                          (symbolp channel)
                          (open-output-channel-any-p1 channel state-state))
              :guard-hints
-             (("Goal" :in-theory
+             (("Goal"
+               :restrict ((string-implies-type-character-when-open-channel1
+                           ((output-p t)))
+                          (string-implies-type-character-when-open-channel1
+                           ((output-p nil)))
+                          (character-listp-cdr-when-open-channel1
+                           ((output-p t)))
+                          (character-listp-cdr-when-open-channel1
+                           ((output-p nil))))
+               :in-theory
                (enable len-cdr-car-when-open-channel1
-                       not-equal-string-nth-2-car-when-open-channel1)))))
+                       string-implies-type-character-when-open-channel1)))))
   #-acl2-loop-only
   (when (live-state-p state-state)
     (let ((stream (get-output-stream-from-channel channel)))
@@ -20795,7 +20844,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (defthm state-p1-update-open-output-channels
     (implies (state-p1 state)
              (equal (state-p1 (update-open-output-channels x state))
-                    (open-channels-p x)))
+                    (open-channels-p x t)))
     :hints (("Goal" :in-theory (e/d (state-p1)
                                     (open-channels-p all-boundp))))))
 
@@ -20803,23 +20852,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (local
   (defthm open-channel1-of-cons
-    (equal (open-channel1 (cons header vals))
-           (and (channel-headerp header)
+    (equal (open-channel1 (cons header vals) output-p)
+           (and (channel-headerp header output-p)
                 (typed-io-listp vals (cadr header))))
     :hints (("Goal" :in-theory (enable channel-headerp)))))
 
 (local
   (defthm channel-headerp-cadr-assoc-equal-when-open-channels-p
-    (implies (and (open-channels-p channels)
+    (implies (and (open-channels-p channels output-p)
                   (assoc-equal channel channels))
-             (channel-headerp (cadr (assoc-equal channel channels))))
+             (channel-headerp (cadr (assoc-equal channel channels)) output-p))
     :hints (("Goal" :in-theory (e/d (open-channels-p) (open-channel1))))))
 
 (local
   (defthm open-channel-listp-nth-1
     (implies (state-p1 state)
-             (open-channel-listp (nth 1 state)))
-    :hints (("Goal" :in-theory (enable state-p1)))))
+             (open-channel-listp (nth 1 state) t))
+    :hints (("Goal" :in-theory (enable state-p1 open-channels-p)))))
 
 (local
   (defthm character-listp-expode-atom
@@ -20838,10 +20887,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   (open-output-channel-p1 channel
                                           :character state-state))
              (state-p1 (princ$ x channel state-state)))
-    :hints (("Goal" :in-theory (e/d (open-channels-p open-channel-listp)
-                                    (update-open-output-channels
-                                     string-downcase explode-atom
-                                     open-channel1))))))
+    :hints (("Goal"
+             :restrict ((character-listp-cdr-when-open-channel1
+                         ((output-p t))))
+             :in-theory (e/d (open-channels-p open-channel-listp)
+                             (update-open-output-channels
+                              string-downcase explode-atom
+                              open-channel1))))))
 
 (local
   (defthm open-output-channel-p1-princ$
@@ -28458,7 +28510,8 @@ Lisp definition."
 
 ; See break$.
 
-  (and (not (eq (debugger-enable *the-live-state*) :never))
+  (and (not (member-eq (debugger-enable *the-live-state*)
+                       '(:never :never!)))
        #+(and gcl (not cltl2))
        (break)
        #-(and gcl (not cltl2))
@@ -28641,7 +28694,7 @@ Lisp definition."
 
 (defun set-debugger-enable-fn (val state)
   (declare (xargs :guard (and (state-p state)
-                              (member-eq val '(t nil :never :break :bt
+                              (member-eq val '(t nil :never :never! :break :bt
                                                  :break-bt :bt-break)))
                   :guard-hints
                   (("Goal"

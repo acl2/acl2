@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function character-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -77,7 +77,7 @@
 
 (defthm character-listp-of-substitute-ac
   (implies (and (characterp new)
-                (characterp old)
+                ;; (characterp old)
                 (character-listp seq)
                 (character-listp acc))
            (character-listp (substitute-ac new old seq acc))))

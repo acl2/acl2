@@ -5227,7 +5227,7 @@
                                                     (bv-array-rules)
                                                     (jvm-rules-unfiled-misc)
                                                     (boolean-rules)
-                                                    '(IF-BECOMES-MYIF
+                                                    '(;IF-BECOMES-MYIF
                                                       MYIF-BECOMES-BOOLIF-AXE
                                                       UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-SMALLER
                                                       sbvlt-of-bvplus-of-minus-1-and-minus-1

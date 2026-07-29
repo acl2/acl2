@@ -52,6 +52,7 @@
 (include-book "pos-fix")
 (include-book "realfix")
 (include-book "rfix")
+(include-book "symbol-lfix")
 (include-book "symbol-name-lst")
 (include-book "symbol-package-name-lst")
 (include-book "symbol-package-name-non-cl")

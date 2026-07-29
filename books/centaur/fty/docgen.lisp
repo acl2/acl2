@@ -51,7 +51,9 @@
                     (cat "A list of @(see? " (xdoc::full-escape-symbol x.elt-type)
                          ") objects.")))
        (long    (or (getarg :long nil kwd-alist)
-                    (cat "<p>This is an ordinary @(see fty::deflist).</p>"))))
+                    (cat "<p>This is an ordinary @(see fty::deflist), containing @(see? "
+			 (xdoc::full-escape-symbol x.elt-type)
+			 ") elements.</p>"))))
     (mv `((defxdoc ,x.name
             :parents ,parents
             :short ,short
@@ -73,7 +75,7 @@
        (short   (or (getarg :short nil kwd-alist)
                     (cat "An alist mapping " key-link " to " val-link ".")))
        (long    (or (getarg :long nil kwd-alist)
-                    (cat "<p>This is an ordinary @(see fty::defalist).</p>"))))
+                    (cat "<p>This is an ordinary @(see fty::defalist), mapping " key-link " to " val-link ".</p>"))))
     (mv `((defxdoc ,x.name
             :parents ,parents
             :short ,short
@@ -598,7 +600,9 @@ binder.</p>")
                     (cat "A set of @(see? " (xdoc::full-escape-symbol x.elt-type)
                          ") objects.")))
        (long    (or (getarg :long nil kwd-alist)
-                    (cat "<p>This is an ordinary @(see fty::defset).</p>"))))
+                    (cat "<p>This is an ordinary @(see fty::defset), containing @(see? "
+			 (xdoc::full-escape-symbol x.elt-type)
+			 ") elements.</p>"))))
     (mv `((defxdoc ,x.name
             :parents ,parents
             :short ,short
@@ -620,7 +624,8 @@ binder.</p>")
        (short   (or (getarg :short nil kwd-alist)
                     (cat "An omap mapping " key-link " to " val-link ".")))
        (long    (or (getarg :long nil kwd-alist)
-                    (cat "<p>This is an ordinary @(see fty::defomap).</p>"))))
+                    (cat "<p>This is an ordinary @(see fty::defomap), mapping " key-link " to "
+			 val-link ".</p>"))))
     (mv `((defxdoc ,x.name
             :parents ,parents
             :short ,short

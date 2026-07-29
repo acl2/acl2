@@ -1,0 +1,133 @@
+; Remora Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "REMORA")
+
+(include-book "parser-interface")
+(include-book "type-checking")
+(include-book "evaluation")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Test that a standalone Remora expression
+; parses, type-checks, and evaluates without error.
+; The argument is a string of Remora source for a standalone expression.
+; The macro expands to an assert-event that runs the full pipeline
+; (parse-top-exp-from-string,
+; check-top-expr,
+; and eval-top-expr with an evaluation limit of one million)
+; and passes when the resulting value is not an error.
+; The value is printed to the comment window for manual inspection;
+; the expected value is not checked.
+
+(defmacro test-eval-top-expr (code)
+  `(assert-event
+    (b* ((code ,code)
+         (ast (parse-top-exp-from-string code))
+         (tast (check-top-expr ast))
+         (expr (type+expr->expr tast))
+         (val (eval-top-expr expr 1000000)))
+      (and (not (cw "~x0~%" val))
+           (not (reserrp val))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-eval-top-expr "3")
+
+(test-eval-top-expr
+ "(let ((val x 4)) x)")
+
+(test-eval-top-expr
+ "(let ((val x 10) (val y 20)) (+ x y))")
+
+(test-eval-top-expr
+ "
+(i-app (t-app (frame [0] (Forall (&t) (Pi ($d) (-> ((A &t $d)) Int)))) Int) 3)
+")
+
+(test-eval-top-expr
+ "
+(t-app (i-app (frame [0] (Pi ($d) (Forall (&t) (-> ((A &t $d)) Int)))) 3) Int)
+")
+
+(test-eval-top-expr
+ "
+((i-app (t-app (t-fn (&t) (i-fn ($d) (fn ((x (A &t $d))) x))) Int) 3) [1 2 3])
+")
+
+; Partial instantiation of a polymorphic primitive operation:
+; the value is an intermediate instantiation stage.
+(test-eval-top-expr
+ "(i-app (t-app length Int) 3)")
+
+; Completion of a partial instantiation, as a chain of unary applications.
+(test-eval-top-expr
+ "(i-app (i-app (t-app length Int) 3) (dims 4 5))")
+
+; Partial application of an ispace lambda abstraction:
+; the value is a closure over the remaining parameter.
+(test-eval-top-expr
+ "(i-app (i-fn ($d $e) (fn ((x (A Int (dims $d $e)))) x)) 3)")
+
+; Partial instantiation of an empty frame of a two-parameter product type:
+; the value is an empty vector over the peeled product type value.
+(test-eval-top-expr
+ "(i-app (frame [0] (Pi ($d $e) (-> ((A Int (dims $d $e))) Int))) 3)")
+
+; Completion of that instantiation, as a chain.
+(test-eval-top-expr
+ "(i-app (i-app (frame [0] (Pi ($d $e) (-> ((A Int (dims $d $e))) Int))) 3) 4)")
+
+; Full instantiation of a two-parameter type lambda abstraction,
+; as a chain of unary applications through unary closures.
+(test-eval-top-expr
+ "
+((i-app (t-app (t-fn (&t &u) (i-fn ($d) (fn ((x (A &t $d))) x))) Int Int) 3)
+ [1 2 3])
+")
+
+; Full instantiation of an empty frame of a two-parameter universal type:
+; the first unary application peels the universal type value,
+; the second one completes the instantiation.
+(test-eval-top-expr
+ "(t-app (frame [0] (Forall (&t &u) (Pi ($d) (-> ((A &t $d)) Int)))) Int Int)")
+
+; Partial application of a type lambda abstraction:
+; the value is a closure over the remaining parameter.
+(test-eval-top-expr
+ "(t-app (t-fn (&t &u) (i-fn ($d) (fn ((x (A &t $d))) x))) Int)")
+
+; Partial instantiation of an empty frame of a two-parameter universal type:
+; the value is an empty vector over
+; the universal type value binding the remaining parameter.
+(test-eval-top-expr
+ "(t-app (frame [0] (Forall (&t &u) (Pi ($d) (-> ((A &t $d)) Int)))) Int)")
+
+; Completion of that instantiation, as a chain.
+(test-eval-top-expr
+ "
+(t-app (t-app (frame [0] (Forall (&t &u) (Pi ($d) (-> ((A &t $d)) Int)))) Int)
+       Int)
+")
+
+; Application of a two-parameter term lambda abstraction,
+; as a chain of unary applications through a unary closure:
+; the first argument creates a closure binding the first parameter,
+; whose body is the inner one-parameter lambda abstraction,
+; and the second argument completes the application.
+(test-eval-top-expr
+ "((fn ((x Int) (y Int)) (+ x y)) 3 4)")
+
+; The same, with rank-polymorphic lifting over a non-scalar frame:
+; the first (lifted) application step produces
+; an array of unary closures (one per frame position),
+; to which the second argument array is applied element-wise.
+(test-eval-top-expr
+ "((fn ((x Int) (y Int)) (+ x y)) [1 2 3] [4 5 6])")

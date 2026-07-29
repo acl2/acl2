@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -134,23 +134,23 @@
     (xdoc::desc
      "@(':header') &mdash; default @('nil')"
      (xdoc::p
-      "Specifies whether a header (i.e. a @('.h') file)
+      "Specifies whether a @('.h') header file
        should be generated or not.")
      (xdoc::p
       "This must be one of the following:")
      (xdoc::ul
       (xdoc::li
-       "@('t'), to generate a header.")
+       "@('t'), to generate a header file.")
       (xdoc::li
-       "@('nil'), to not generate a header."))
+       "@('nil'), to not generate a header file."))
      (xdoc::p
-      "A source file (i.e. a @('.c') file) is always generated;
-       the @(':header') input only affects the generation of the header.")
+      "A @('.c') source file is always generated;
+       the @(':header') input only affects the generation of the header file.")
      (xdoc::p
       "If ATC is used to generate C code that is not standalone
        but is meant to be called by external C code,
        the @(':header') input should be @('t'),
-       so that the external C code can include the header.
+       so that the external C code can include the header file.
        If ATC is used to generate standalone C code,
        presumably including a function called @('main') with appropriate types,
        then the @(':header') input should be @('nil')."))
@@ -275,25 +275,25 @@
 
     (xdoc::p
      "Currently ATC supports the ACL2 representation of
-      a single source file (i.e. a file with extension @('.c')),
-      optionally accompanied by a header (i.e. a file with extension @('.h')),
+      a single @('.c') source file,
+      optionally accompanied by a @('.h') header file,
       based on the @(':header') input.
       If @(':header') is @('nil'),
-      the source file consists of
+      the @('.c') source file consists of
       one or more C function definitions,
       zero or more C external object declarations,
       and zero or more C structure type declarations.
       If @(':header') is @('t'),
-      the header consists of
+      the header file consists of
       one or more function declarations,
       zero or more C external object declarations without initializers,
       and zero or more C structure type declarations,
-      while the source file consists of
+      while the @('.c') source file consists of
       one or more function definitions
       and zero or more C external object declarations with initializers,
       corresponding to
       the function declarations and the external object declarations
-      in the header.")
+      in the header file.")
 
     (xdoc::p
      "Each C structure type declaration is represented by a @(tsee defstruct),
@@ -312,7 +312,8 @@
       represents the name of the C external object.")
 
     (xdoc::p
-     "Each C function definition (and declaration in the header, if present)
+     "Each C function definition
+      (and declaration in the header file, if present)
       is represented by an ACL2 function definition.
       These are the non-recursive target ACL2 functions @('ti') passed to ATC;
       the recursive target ACL2 functions @('ti') passed as inputs
@@ -1580,8 +1581,8 @@
     "Generated C Code"
 
     (xdoc::p
-     "ATC generates a single source file,
-      optionally accompanied by a header,
+     "ATC generates a single @('.c') source file,
+      optionally accompanied by a @('.h') header file,
       as explained in Section `Representation of C Code in ACL2'.")
 
     (xdoc::p
@@ -1602,8 +1603,9 @@
 
      (xdoc::p
       "As mention in the description of the @(':header') input above,
-       if a header is generated, external code should include the header,
-       and the generated source file should be compiled and linked
+       if a header file is generated,
+       external code should include the header file,
+       and the generated @('.c') source file should be compiled and linked
        with the external code to obtain a full application.
        To test the generated code,
        one can write a separate source file with a @('main') function,

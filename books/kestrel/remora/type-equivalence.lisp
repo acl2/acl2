@@ -196,6 +196,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define normalize-scalar-type ((type typep))
+  :returns (type1 typep)
+  :short "Normalize a scalar type to its element type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A scalar (i.e. 0-rank array) type is equivalent to its element atom type,
+     because our ASTs allow atom types where array types are expected.
+     This function turns such scalar types into their element types,
+     and leaves all other types unchanged,
+     providing a normalization to facilitate (the rest of) equivalence checking
+     in @(tsee types-equivp).")
+   (xdoc::p
+    "We transform types in the @(':array') and @(':bracket') summands,
+     provided that their ispaces are equivalent to the empty list of dimensions;
+     for bracket types, we form a concatenation prior to the comparison."))
+  (type-case
+   type
+   :array (if (ispace-equivp type.ispace
+                             (ispace-shape (shape-dims nil)))
+              type.elem
+            (type-fix type))
+   :bracket (if (ispace-equivp (ispace-shape
+                                (shape-append
+                                 (shape-list-from-ispace-list type.ispaces)))
+                               (ispace-shape (shape-dims nil)))
+                type.elem
+              (type-fix type))
+   :otherwise (type-fix type))
+
+  ///
+
+  (defret type-count-of-normalize-scalar-type
+    (<= (type-count type1)
+        (type-count type))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines types-equivp
   :short "Check if two types or lists of types are equivalent."
 
@@ -210,7 +249,16 @@
      (xdoc::p
       "The two types must be in the same fixtype summand
        (two variables, or two base types, etc.),
-       except that one may be an array type and the other a bracket type.")
+       except that one may be an array type and the other a bracket type,
+       and except that scalar (i.e. 0-rank) array types
+       are equivalent to their element atom types.")
+     (xdoc::p
+      "To handle the latter equivalence:
+       when the first type is @(':array') or @(':bracket'),
+       and has no dimensions (i.e. 0-rank),
+       we recursively check equivalence on its element type;
+       in all cases, we normalize the second type
+       with @(tsee normalize-scalar-type).")
      (xdoc::p
       "In the case of two variables or two base types, they must be identical.
        Note that the renaming to (the same) fresh variables happens
@@ -222,7 +270,14 @@
      (xdoc::p
       "In the case of two function types,
        we recursively check the equivalence
-       of the input and output types.")
+       of the input and output types.
+       A unary function type is never equivalent to an n-ary one,
+       not even to one with a single input type,
+       which may come from the concrete syntax
+       (see @(tsee type));
+       as remarked below for universal and product types,
+       relating the sugar and core forms is left for
+       a planned rework of type equivalence.")
      (xdoc::p
       "In the case of two universal types,
        we use @(tsee fresh-type-var-renaming) to check that
@@ -242,7 +297,15 @@
        which we then compare for equivalence.
        The fresh variables must not be in any of the two types:
        so we set the set of variables to avoid to
-       all the (free and bound) variables in the two types.")
+       all the (free and bound) variables in the two types.
+       Two unary universal types, and two unary product types,
+       are handled the same way,
+       on the singleton lists of their bound variables.
+       A unary (universal or product) type
+       is never equivalent to an n-ary one,
+       for now:
+       relating the sugar and core forms is left for
+       a planned rework of type equivalence.")
      (xdoc::p
       "Since we are renaming (ispace and type) variables to fresh ones,
        we do not call the predicates to check for variable capture.
@@ -251,98 +314,176 @@
        the renamings indeed cause no capture."))
     (type-case
      type1
-     :var (type-case
-           type2
-           :var (equal type1.var type2.var)
-           :otherwise nil)
-     :base (type-case
-            type2
-            :base (equal type1.type type2.type)
-            :otherwise nil)
-     :array (type-case
+     :var (b* ((type2 (normalize-scalar-type type2)))
+            (type-case
              type2
-             :array (and (type-equivp type1.elem type2.elem)
-                         (ispace-equivp type1.ispace type2.ispace))
-             :bracket (and (type-equivp type1.elem type2.elem)
-                           (ispace-equivp type1.ispace
-                                          (ispace-shape
-                                           (shape-append
-                                            (shape-list-from-ispace-list
-                                             type2.ispaces)))))
-             :otherwise nil)
-     :bracket (type-case
-               type2
-               :array (and (type-equivp type1.elem type2.elem)
-                           (ispace-equivp (ispace-shape
-                                           (shape-append
-                                            (shape-list-from-ispace-list
-                                             type1.ispaces)))
-                                          type2.ispace))
-               :bracket (and (type-equivp type1.elem type2.elem)
-                             (ispace-equivp
-                              (ispace-shape
-                               (shape-append
-                                (shape-list-from-ispace-list type1.ispaces)))
-                              (ispace-shape
-                               (shape-append
-                                (shape-list-from-ispace-list type2.ispaces)))))
-               :otherwise nil)
-     :fun (type-case
-           type2
-           :fun (and (type-list-equivp type1.in type2.in)
-                     (type-equivp type1.out type2.out))
-           :otherwise nil)
-     :forall (type-case
+             :var (equal type1.var type2.var)
+             :otherwise nil))
+     :base (b* ((type2 (normalize-scalar-type type2)))
+             (type-case
               type2
-              :forall (b* ((used (set::union (type-all-type-vars type1)
-                                             (type-all-type-vars type2)))
-                           (maps (fresh-type-var-renaming type1.params
-                                                          type2.params
-                                                          used))
+              :base (equal type1.type type2.type)
+              :otherwise nil))
+     :array (if (ispace-equivp type1.ispace
+                               (ispace-shape (shape-dims nil)))
+                (type-equivp type1.elem type2)
+              (b* ((type2 (normalize-scalar-type type2)))
+                (type-case
+                 type2
+                 :array (and (type-equivp type1.elem type2.elem)
+                             (ispace-equivp type1.ispace type2.ispace))
+                 :bracket (and (type-equivp type1.elem type2.elem)
+                               (ispace-equivp type1.ispace
+                                              (ispace-shape
+                                               (shape-append
+                                                (shape-list-from-ispace-list
+                                                 type2.ispaces)))))
+                 :otherwise nil)))
+     :bracket (if (ispace-equivp (ispace-shape
+                                  (shape-append
+                                   (shape-list-from-ispace-list type1.ispaces)))
+                                 (ispace-shape (shape-dims nil)))
+                  (type-equivp type1.elem type2)
+                (b* ((type2 (normalize-scalar-type type2)))
+                  (type-case
+                   type2
+                   :array (and (type-equivp type1.elem type2.elem)
+                               (ispace-equivp (ispace-shape
+                                               (shape-append
+                                                (shape-list-from-ispace-list
+                                                 type1.ispaces)))
+                                              type2.ispace))
+                   :bracket (and (type-equivp type1.elem type2.elem)
+                                 (ispace-equivp
+                                  (ispace-shape
+                                   (shape-append
+                                    (shape-list-from-ispace-list
+                                     type1.ispaces)))
+                                  (ispace-shape
+                                   (shape-append
+                                    (shape-list-from-ispace-list
+                                     type2.ispaces)))))
+                   :otherwise nil)))
+     :fun (b* ((type2 (normalize-scalar-type type2)))
+            (type-case
+             type2
+             :fun (and (type-equivp type1.in type2.in)
+                       (type-equivp type1.out type2.out))
+             :otherwise nil))
+     :funn (b* ((type2 (normalize-scalar-type type2)))
+             (type-case
+              type2
+              :funn (and (type-list-equivp type1.in type2.in)
+                         (type-equivp type1.out type2.out))
+              :otherwise nil))
+     :forall (b* ((type2 (normalize-scalar-type type2)))
+               (type-case
+                type2
+                :forall (b* ((used (set::union (type-all-type-vars type1)
+                                               (type-all-type-vars type2)))
+                             (maps (fresh-type-var-renaming (list type1.param)
+                                                            (list type2.param)
+                                                            used))
+                             ((when (reserrp maps)) nil)
+                             ((string-string-map-quadruple maps) maps)
+                             (body1 (type-rename-type-vars type1.body
+                                                           maps.1st
+                                                           maps.2nd))
+                             (body2 (type-rename-type-vars type2.body
+                                                           maps.3rd
+                                                           maps.4th)))
+                          (type-equivp body1 body2))
+                :otherwise nil))
+     :foralln (b* ((type2 (normalize-scalar-type type2)))
+                (type-case
+                 type2
+                 :foralln (b* ((used (set::union (type-all-type-vars type1)
+                                                 (type-all-type-vars type2)))
+                               (maps (fresh-type-var-renaming type1.params
+                                                              type2.params
+                                                              used))
+                               ((when (reserrp maps)) nil)
+                               ((string-string-map-quadruple maps) maps)
+                               (body1 (type-rename-type-vars type1.body
+                                                             maps.1st
+                                                             maps.2nd))
+                               (body2 (type-rename-type-vars type2.body
+                                                             maps.3rd
+                                                             maps.4th)))
+                            (type-equivp body1 body2))
+                 :otherwise nil))
+     :pi (b* ((type2 (normalize-scalar-type type2)))
+           (type-case
+            type2
+            :pi (b* ((used (set::union (type-all-ispace-vars type1)
+                                       (type-all-ispace-vars type2)))
+                     (maps (fresh-ispace-var-renaming (list type1.param)
+                                                      (list type2.param)
+                                                      used))
+                     ((when (reserrp maps)) nil)
+                     ((string-string-map-quadruple maps) maps)
+                     (body1 (type-rename-ispace-vars type1.body
+                                                     maps.1st
+                                                     maps.2nd))
+                     (body2 (type-rename-ispace-vars type2.body
+                                                     maps.3rd
+                                                     maps.4th)))
+                  (type-equivp body1 body2))
+            :otherwise nil))
+     :pin (b* ((type2 (normalize-scalar-type type2)))
+            (type-case
+             type2
+             :pin (b* ((used (set::union (type-all-ispace-vars type1)
+                                         (type-all-ispace-vars type2)))
+                       (maps (fresh-ispace-var-renaming type1.params
+                                                        type2.params
+                                                        used))
+                       ((when (reserrp maps)) nil)
+                       ((string-string-map-quadruple maps) maps)
+                       (body1 (type-rename-ispace-vars type1.body
+                                                       maps.1st
+                                                       maps.2nd))
+                       (body2 (type-rename-ispace-vars type2.body
+                                                       maps.3rd
+                                                       maps.4th)))
+                    (type-equivp body1 body2))
+             :otherwise nil))
+     :sigma (b* ((type2 (normalize-scalar-type type2)))
+              (type-case
+               type2
+               :sigma (b* ((used (set::union (type-all-ispace-vars type1)
+                                             (type-all-ispace-vars type2)))
+                           (maps (fresh-ispace-var-renaming (list type1.param)
+                                                            (list type2.param)
+                                                            used))
                            ((when (reserrp maps)) nil)
                            ((string-string-map-quadruple maps) maps)
-                           (body1 (type-rename-type-vars type1.body
-                                                         maps.1st
-                                                         maps.2nd))
-                           (body2 (type-rename-type-vars type2.body
-                                                         maps.3rd
-                                                         maps.4th)))
+                           (body1 (type-rename-ispace-vars type1.body
+                                                           maps.1st
+                                                           maps.2nd))
+                           (body2 (type-rename-ispace-vars type2.body
+                                                           maps.3rd
+                                                           maps.4th)))
                         (type-equivp body1 body2))
-              :otherwise nil)
-     :pi (type-case
-          type2
-          :pi (b* ((used (set::union (type-all-ispace-vars type1)
-                                     (type-all-ispace-vars type2)))
-                   (maps (fresh-ispace-var-renaming type1.params
-                                                    type2.params
-                                                    used))
-                   ((when (reserrp maps)) nil)
-                   ((string-string-map-quadruple maps) maps)
-                   (body1 (type-rename-ispace-vars type1.body
-                                                   maps.1st
-                                                   maps.2nd))
-                   (body2 (type-rename-ispace-vars type2.body
-                                                   maps.3rd
-                                                   maps.4th)))
-                (type-equivp body1 body2))
-          :otherwise nil)
-     :sigma (type-case
-             type2
-             :sigma (b* ((used (set::union (type-all-ispace-vars type1)
-                                           (type-all-ispace-vars type2)))
-                         (maps (fresh-ispace-var-renaming type1.params
-                                                          type2.params
-                                                          used))
-                         ((when (reserrp maps)) nil)
-                         ((string-string-map-quadruple maps) maps)
-                         (body1 (type-rename-ispace-vars type1.body
-                                                         maps.1st
-                                                         maps.2nd))
-                         (body2 (type-rename-ispace-vars type2.body
-                                                         maps.3rd
-                                                         maps.4th)))
-                      (type-equivp body1 body2))
-             :otherwise nil))
+               :otherwise nil))
+     :sigman (b* ((type2 (normalize-scalar-type type2)))
+               (type-case
+                type2
+                :sigman (b* ((used (set::union (type-all-ispace-vars type1)
+                                               (type-all-ispace-vars type2)))
+                             (maps (fresh-ispace-var-renaming type1.params
+                                                              type2.params
+                                                              used))
+                             ((when (reserrp maps)) nil)
+                             ((string-string-map-quadruple maps) maps)
+                             (body1 (type-rename-ispace-vars type1.body
+                                                             maps.1st
+                                                             maps.2nd))
+                             (body2 (type-rename-ispace-vars type2.body
+                                                             maps.3rd
+                                                             maps.4th)))
+                          (type-equivp body1 body2))
+                :otherwise nil)))
     :measure (+ (type-count type1) (type-count type2)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

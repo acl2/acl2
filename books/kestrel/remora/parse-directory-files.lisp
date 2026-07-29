@@ -66,8 +66,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Walks the list of file names, calling @(tsee parse-from-file) on each
-     (under @('directory')), and tallies passes and failures.  Prints a
+    "Walks the list of file names, calling @(tsee parse-from-file) on
+     each (under @('directory')), and tallies passes and failures.  Prints a
      @('PASS')/@('FAIL') marker per file via @(tsee cw).
      Each failure entry in the returned @('errors') list is a cons pair
      @('(filename . reserr)')."))
@@ -165,7 +165,7 @@
                (errs true-listp)
                state)
   :hooks nil
-  :guard-hints (("Goal" :in-theory (enable progp-when-result-not-error)))
+  :guard-hints (("Goal" :in-theory (enable filep-when-result-not-error)))
   :short "Tail-recursive driver for @(tsee parse-print-parse-directory-files)."
   :long
   (xdoc::topstring
@@ -190,9 +190,9 @@
            (+ 1 (lnfix n-fail))
            (cons (list file :stage :parse1 :info ast1) errors)
            state)))
-       ;; Stage 2: print the AST.  print-prog is total, but we still
+       ;; Stage 2: print the AST.  print-file is total, but we still
        ;; check stringp defensively in case the result type changes.
-       (printed (print-prog ast1))
+       (printed (print-file ast1))
        ((unless (stringp printed))
         (b* ((- (cw "FAIL[print]: ~s0~%" file)))
           (parse-print-parse-each-remora-file
@@ -247,7 +247,7 @@
    (xdoc::p
     "Lists regular files in @('directory') (via @(tsee oslib::ls-files)),
      keeps those ending in @('.remora'), and runs the four-stage
-     round-trip on each: parse-from-file &rarr; print-prog &rarr;
+     round-trip on each: parse-from-file &rarr; print-file &rarr;
      parse-from-string &rarr; @(tsee equal).  Prints @('PASS') or
      @('FAIL[<stage>]') per file plus a summary line.")
    (xdoc::p

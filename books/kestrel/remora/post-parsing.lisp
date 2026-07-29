@@ -33,7 +33,7 @@
     "The ABNF grammar defines the concrete syntax of Remora,
      but certain extra-grammatical constraints cannot be expressed in ABNF.
      This file implements those constraints as post-parse checks
-     on the CST produced by @(tsee parse-program).
+     on the CST produced by @(tsee parse-file) or @(tsee parse-top-exp).
      Currently the only such check is [SC2] (keyword exclusion).")
    (xdoc::p
     "User-facing entry points that bundle this check into a complete

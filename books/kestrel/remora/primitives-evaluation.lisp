@@ -11,11 +11,17 @@
 
 (in-package "REMORA")
 
-(include-book "values")
+(include-book "expression-values-and-environments")
+(include-book "integer-lists")
+
+(include-book "kestrel/fty/integer-result" :dir :system)
+(include-book "kestrel/fty/integer-list-result" :dir :system)
 (include-book "kestrel/fty/boolean-result" :dir :system)
 
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/abs" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
 (acl2::controlled-configuration)
@@ -24,7 +30,10 @@
 
 (local (in-theory (enable int-valuep-when-result-not-error
                           float-valuep-when-result-not-error
-                          booleanp-when-result-not-error)))
+                          booleanp-when-result-not-error
+                          acl2::integerp-when-result-not-error
+                          acl2::integer-listp-when-result-not-error
+                          expr-valuep-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -58,8 +67,8 @@
    (xdoc::ul
     (xdoc::li "@(tsee prim-int-add), @(tsee prim-int-sub),
                @(tsee prim-int-mul), @(tsee prim-int-div),
-               @(tsee prim-int-mod), @(tsee prim-int-max),
-               @(tsee prim-int-min).")
+               @(tsee prim-int-expt), @(tsee prim-int-mod),
+               @(tsee prim-int-max), @(tsee prim-int-min).")
     (xdoc::li "@(tsee prim-int-bit-and), @(tsee prim-int-bit-or),
                @(tsee prim-int-bit-xor), @(tsee prim-int-bit-not),
                @(tsee prim-int-shl), @(tsee prim-int-shr),
@@ -85,6 +94,12 @@
                @(tsee prim-float-leq), @(tsee prim-float-geq).")
     (xdoc::li "@(tsee prim-float-truncate), @(tsee prim-float-round),
                @(tsee prim-float-ceiling), @(tsee prim-float-floor)."))
+   (xdoc::p
+    "The polymorphic primitives currently implemented are
+     @(tsee prim-head), @(tsee prim-tail), @(tsee prim-length),
+     @(tsee prim-append), @(tsee prim-reverse),
+     @(tsee prim-index), @(tsee prim-index2d), @(tsee prim-sum),
+     and @(tsee prim-reshape).")
    (xdoc::p
     "For integers, we currently model Remora integer values as unbounded
      mathematical integers, matching ACL2's own integer type.
@@ -131,6 +146,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-expr-value-list-int ((vals expr-value-listp))
+  :returns (ivals integer-list-resultp)
+  :short "Check if an expression value is an integer list value, returning it if so"
+  (b* (((when (endp vals)) nil)
+       ((ok (int-value ival)) (check-expr-value-int (car vals)))
+       ((ok rest) (check-expr-value-list-int (cdr vals))))
+    (cons ival.int rest)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-expr-value-float ((val expr-valuep))
   :returns (fval float-value-resultp)
   :short "Check if an expression value is a float value, returning it if so."
@@ -159,7 +184,15 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (+ i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-add
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-sub ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -167,7 +200,15 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (- i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-sub
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-mul ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -175,31 +216,86 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (* i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-mul
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-div ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer division."
-  :long "<p>Integer division uses ACL2's @(tsee floor), which rounds towards
-  minus infinity. This is consistent with [impl], which uses Haskell's
-  @('div')</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Integer division uses ACL2's @(tsee floor),
+     which rounds towards minus infinity.
+     This is consistent with [impl],
+     which uses Haskell's @('div')."))
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (= i2.int 0)) (reserr nil)) ;; ERROR: division by zero
        (ival (int-value (floor i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-div
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define prim-int-expt ((val1 expr-valuep) (val2 expr-valuep))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of integer exponentiation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A negative exponent is an error.
+     This is consistent with [impl],
+     which uses Haskell's @('^')."))
+  (b* (((ok (int-value i1)) (check-expr-value-int val1))
+       ((ok (int-value i2)) (check-expr-value-int val2))
+       ((when (< i2.int 0)) (reserr nil)) ;; ERROR: negative exponent
+       (ival (int-value (expt i1.int i2.int))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-expt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-mod ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer modulo."
-  :long "<p>Integer modulo uses ACL2's @(tsee mod), whose result takes the sign
-  of the divisor. This is consistent with [impl], which uses Haskell's
-  @('mod')</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Integer modulo uses ACL2's @(tsee mod),
+     whose result takes the sign of the divisor.
+     This is consistent with [impl],
+     which uses Haskell's @('mod')."))
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (= i2.int 0)) (reserr nil)) ;; ERROR: modulo zero
        (ival (int-value (mod i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-mod
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-max ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -207,7 +303,15 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (max i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-max
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-min ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -215,7 +319,15 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (min i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-min
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-bit-and ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -223,7 +335,15 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (logand i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-bit-and
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-bit-or ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -231,7 +351,15 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (logior i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-bit-or
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-bit-xor ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -239,22 +367,45 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (ival (int-value (logxor i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-bit-xor
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-shl ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer left shift."
-  :long "<p>Left shift uses ACL2's @(tsee ash) with a non-negative shift
-  amount, erroring on a negative shift amount. Because integers are modeled as
-  unbounded (see @(see primitives-evaluation)), the shift never overflows: no
-  high-order bits are lost. This differs from [impl], which uses Haskell's
-  fixed-width @('shiftL'), where bits shifted past the word width are
-  discarded.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Left shift uses ACL2's @(tsee ash)
+     with a non-negative shift amount,
+     erroring on a negative shift amount.
+     Because integers are modeled as unbounded
+     (see @(see primitives-evaluation)),
+     the shift never overflows:
+     no high-order bits are lost.
+     This differs from [impl],
+     which uses Haskell's fixed-width @('shiftL'),
+     where bits shifted past the word width are discarded."))
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (< i2.int 0)) (reserr nil)) ;; ERROR: shift by negative bits
        (ival (int-value (ash i1.int i2.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-shl
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-shr ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -263,7 +414,13 @@
        ((ok (int-value i2)) (check-expr-value-int val2))
        ((when (< i2.int 0)) (reserr nil)) ;; ERROR: shift by negative bits
        (ival (int-value (ash i1.int (- i2.int)))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-shr
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -272,23 +429,45 @@
   :short "Evaluation of integer bitwise negation."
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        (ival (int-value (lognot i1.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-bit-not
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-popc ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer pop count."
-  :long "<p>Pop count (the number of set bits) uses ACL2's @(tsee logcount).
-  Only non-negative inputs are accepted; a negative input is an error. On a
-  negative integer, [impl]'s Haskell @('popCount') counts the set bits of the
-  fixed-width two's-complement representation (a finite, width-dependent count),
-  whereas @(tsee logcount) counts the bits of the unbounded magnitude. Because
-  integers are modeled as unbounded (see @(see primitives-evaluation)), there is
-  no fixed width to match, so the behavior on negative inputs would differ from
-  [impl]; we therefore restrict to non-negative inputs for now.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Pop count (the number of set bits) uses ACL2's @(tsee logcount).
+     Only non-negative inputs are accepted;
+     a negative input is an error.
+     On a negative integer,
+     [impl]'s Haskell @('popCount') counts the set bits
+     of the fixed-width two's-complement representation
+     (a finite, width-dependent count),
+     whereas @(tsee logcount) counts the bits of the unbounded magnitude.
+     Because integers are modeled as unbounded
+     (see @(see primitives-evaluation)),
+     there is no fixed width to match,
+     so the behavior on negative inputs would differ from [impl];
+     we therefore restrict to non-negative inputs for now."))
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((when (< i1.int 0)) (reserr nil)) ;; ERROR: negative input
        (ival (int-value (logcount i1.int))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-popc
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -298,7 +477,15 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (= i1.int i2.int)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-eq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-neq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -306,7 +493,15 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (not (= i1.int i2.int))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-neq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-lt ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -314,7 +509,15 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (< i1.int i2.int)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-lt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-gt ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -322,7 +525,15 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (> i1.int i2.int)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-gt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-leq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -330,7 +541,15 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (<= i1.int i2.int)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-leq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-geq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -338,7 +557,13 @@
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        ((ok (int-value i2)) (check-expr-value-int val2))
        (bval (>= i1.int i2.int)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-geq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -347,30 +572,51 @@
   :short "Evaluation of integer conversion to float."
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        (fval (float-value-ratio i1.int)))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-to-float
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-int-to-bool ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of integer conversion to boolean."
   (b* (((ok (int-value i1)) (check-expr-value-int val1))
        (bval (not (= i1.int 0))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-int-to-bool
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-add ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float addition."
-  :long "<p>Finite values are added as exact rationals
-  (see @(see primitives-evaluation) for the float model).
-  The special cases follow [impl]:</p>
-  <ul>
-   <li>NaN + anything = NaN.</li>
-   <li>(+inf) + (-inf) = NaN.</li>
-   <li>(+inf) + @('x') = +inf, where @('x') is a finite rational.</li>
-   <li>(-inf) + @('x') = -inf, where @('x') is a finite rational.</li>
-   <li>(-0) + (-0) = -0; every other sum that is zero is +0.</li>
-  </ul>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Finite values are added as exact rationals
+     (see @(see primitives-evaluation) for the float model).
+     The special cases follow [impl]:")
+   (xdoc::ul
+    (xdoc::li
+     "NaN + anything = NaN.")
+    (xdoc::li
+     "(+inf) + (-inf) = NaN.")
+    (xdoc::li
+     "(+inf) + @('x') = +inf, where @('x') is a finite rational.")
+    (xdoc::li
+     "(-inf) + @('x') = -inf, where @('x') is a finite rational.")
+    (xdoc::li
+     "(-0) + (-0) = -0; every other sum that is zero is +0.")))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (nan1 (float-value-case f1 :nan))
@@ -401,23 +647,38 @@
                           0
                         (float-value-ratio->ratio f2))))
                (float-value-ratio (+ r1 r2)))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-add
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-sub ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float subtraction."
-  :long "<p>Finite values are subtracted as exact rationals
-  (see @(see primitives-evaluation) for the float model).
-  The special cases follow [impl]:</p>
-  <ul>
-   <li>NaN - anything = NaN; anything - NaN = NaN.</li>
-   <li>(+inf) - (+inf) = NaN; (-inf) - (-inf) = NaN.</li>
-   <li>(+inf) - @('x') = +inf; @('x') - (-inf) = +inf, where @('x') is a finite
-  rational.</li>
-   <li>(-inf) - @('x') = -inf; @('x') - (+inf) = -inf, where @('x') is a finite
-  rational.</li>
-   <li>(-0) - (+0) = -0; every other difference that is zero is +0.</li>
-  </ul>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Finite values are subtracted as exact rationals
+     (see @(see primitives-evaluation) for the float model).
+     The special cases follow [impl]:")
+   (xdoc::ul
+    (xdoc::li
+     "NaN - anything = NaN; anything - NaN = NaN.")
+    (xdoc::li
+     "(+inf) - (+inf) = NaN; (-inf) - (-inf) = NaN.")
+    (xdoc::li
+     "(+inf) - @('x') = +inf; @('x') - (-inf) = +inf,
+      where @('x') is a finite rational.")
+    (xdoc::li
+     "(-inf) - @('x') = -inf; @('x') - (+inf) = -inf,
+      where @('x') is a finite rational.")
+    (xdoc::li
+     "(-0) - (+0) = -0; every other difference that is zero is +0.")))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (nan1 (float-value-case f1 :nan))
@@ -451,24 +712,40 @@
                           0
                         (float-value-ratio->ratio f2))))
                (float-value-ratio (- r1 r2)))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-sub
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-mul ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float multiplication."
-  :long "<p>Finite values are multiplied as exact rationals
-  (see @(see primitives-evaluation) for the float model).
-  The sign of an infinite or zero result is the exclusive-or of the operand
-  signs (negative zero counts as negative).
-  The special cases follow [impl]:</p>
-  <ul>
-   <li>NaN * anything = NaN.</li>
-   <li>0 * inf = NaN.</li>
-   <li>If either operand is infinite, the result is an infinity
-       with the exclusive-or sign.</li>
-   <li>Otherwise the result is the rational product; a zero product is -0 when
-       the operand signs differ and +0 when they agree.</li>
-  </ul>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Finite values are multiplied as exact rationals
+     (see @(see primitives-evaluation) for the float model).
+     The sign of an infinite or zero result is
+     the exclusive-or of the operand signs
+     (negative zero counts as negative).
+     The special cases follow [impl]:")
+   (xdoc::ul
+    (xdoc::li
+     "NaN * anything = NaN.")
+    (xdoc::li
+     "0 * inf = NaN.")
+    (xdoc::li
+     "If either operand is infinite,
+      the result is an infinity with the exclusive-or sign.")
+    (xdoc::li
+     "Otherwise the result is the rational product;
+      a zero product is -0 when the operand signs differ
+      and +0 when they agree.")))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (nan1 (float-value-case f1 :nan))
@@ -517,26 +794,44 @@
                (if (and (= res 0) neg-res)
                    (float-value-neg0)
                  (float-value-ratio res)))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-mul
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-div ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float division."
-  :long "<p>Finite values are divided as exact rationals
-  (see @(see primitives-evaluation) for the float model).
-  Unlike integer division, division by zero is not an error: it follows
-  [impl]. The sign of an infinite or zero result is the exclusive-or of the
-  operand signs (negative zero counts as negative).
-  The special cases follow [impl]:</p>
-  <ul>
-   <li>NaN / anything = NaN; anything / NaN = NaN.</li>
-   <li>0 / 0 = NaN; inf / inf = NaN.</li>
-   <li>@('x') / 0 = inf; inf / @('x') = inf, where @('x') is a finite
-  rational.</li>
-   <li>@('x') / inf = 0, where @('x') is a finite rational.</li>
-   <li>Otherwise the rational quotient; a zero quotient is -0 when the operand
-       signs differ and +0 when they agree.</li>
-  </ul>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Finite values are divided as exact rationals
+     (see @(see primitives-evaluation) for the float model).
+     Unlike integer division, division by zero is not an error:
+     it follows [impl].
+     The sign of an infinite or zero result is
+     the exclusive-or of the operand signs
+     (negative zero counts as negative).
+     The special cases follow [impl]:")
+   (xdoc::ul
+    (xdoc::li
+     "NaN / anything = NaN; anything / NaN = NaN.")
+    (xdoc::li
+     "0 / 0 = NaN; inf / inf = NaN.")
+    (xdoc::li
+     "@('x') / 0 = inf; inf / @('x') = inf,
+      where @('x') is a finite rational.")
+    (xdoc::li
+     "@('x') / inf = 0, where @('x') is a finite rational.")
+    (xdoc::li
+     "Otherwise the rational quotient;
+      a zero quotient is -0 when the operand signs differ
+      and +0 when they agree.")))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (nan1 (float-value-case f1 :nan))
@@ -582,30 +877,54 @@
                (if (and (= res 0) neg-res)
                    (float-value-neg0)
                  (float-value-ratio res)))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-div
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-expt ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float exponentiation."
-  :long "<p>Exponentiation @('base ** exponent'). The base may be any float
-  value and the exponent may be any float value except a non-integer rational:
-  ACL2's @(tsee expt) supports only integer exponents and returns an exact
-  rational, and a non-integer rational exponent would generally yield an
-  irrational result that the rational model (see @(see primitives-evaluation))
-  cannot represent, so that single case errors.</p>
-  <p>Every other case, including the special values, follows [impl]'s Haskell
-  @('**')):</p>
-  <ul>
-   <li>x ** 0 = 1 for any x, including NaN and the infinities (a zero exponent
-       being the integer 0 or negative zero).</li>
-   <li>1 ** y = 1 for any y; (-1) ** inf = 1.</li>
-   <li>NaN in the base or exponent otherwise yields NaN.</li>
-   <li>x ** (+inf) is +inf when the base magnitude exceeds 1 and +0 when it is
-       below 1; x ** (-inf) is the reverse.</li>
-   <li>For a nonzero integer exponent, signed zeros and infinities follow the
-       parity rules (e.g. (-0) ** 3 = -0, (-inf) ** (-3) = -0), and a finite
-       nonzero rational base is raised exactly with @(tsee expt).</li>
-  </ul>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Exponentiation @('base ** exponent').
+     The base may be any float value
+     and the exponent may be any float value
+     except a non-integer rational:
+     ACL2's @(tsee expt) supports only integer exponents
+     and returns an exact rational,
+     and a non-integer rational exponent
+     would generally yield an irrational result
+     that the rational model (see @(see primitives-evaluation))
+     cannot represent,
+     so that single case errors.")
+   (xdoc::p
+    "Every other case, including the special values,
+     follows [impl]'s Haskell @('**'):")
+   (xdoc::ul
+    (xdoc::li
+     "x ** 0 = 1 for any x, including NaN and the infinities
+      (a zero exponent being the integer 0 or negative zero).")
+    (xdoc::li
+     "1 ** y = 1 for any y; (-1) ** inf = 1.")
+    (xdoc::li
+     "NaN in the base or exponent otherwise yields NaN.")
+    (xdoc::li
+     "x ** (+inf) is +inf when the base magnitude exceeds 1
+      and +0 when it is below 1;
+      x ** (-inf) is the reverse.")
+    (xdoc::li
+     "For a nonzero integer exponent,
+      signed zeros and infinities follow the parity rules
+      (e.g. (-0) ** 3 = -0, (-inf) ** (-3) = -0),
+      and a finite nonzero rational base
+      is raised exactly with @(tsee expt).")))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        ((when (and (float-value-case f2 :ratio)
@@ -667,17 +986,30 @@
                  (t (float-value-ratio 0))))
           ;; 7e. standard case.
           (t (float-value-ratio (expt r1 r2))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-expt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-max ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float maximum."
-  :long "<p>Follows [impl]'s Haskell @('max'):
-  @('max x y = if x <= y then y else x'), where @('<=') is the IEEE comparison
-  in which any comparison with NaN is false. The result is therefore
-  order-dependent on NaN: @('max NaN y') is NaN but @('max x NaN') is x. Since
-  negative and positive zero compare equal, a tie returns the second
-  operand.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Follows [impl]'s Haskell @('max'):
+     @('max x y = if x <= y then y else x'),
+     where @('<=') is the IEEE comparison
+     in which any comparison with NaN is false.
+     The result is therefore order-dependent on NaN:
+     @('max NaN y') is NaN but @('max x NaN') is x.
+     Since negative and positive zero compare equal,
+     a tie returns the second operand."))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (fval
@@ -697,17 +1029,30 @@
                         (float-value-ratio->ratio f2)))
                   (res (<= r1 r2)))
                (if res f2 f1))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-max
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-min ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float minimum."
-  :long "<p>Follows [impl]'s Haskell @('min'):
-  @('min x y = if x <= y then x else y'), where @('<=') is the IEEE comparison
-  in which any comparison with NaN is false. The result is therefore
-  order-dependent on NaN: @('min NaN y') is y but @('min x NaN') is NaN. Since
-  negative and positive zero compare equal, a tie returns the first
-  operand.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Follows [impl]'s Haskell @('min'):
+     @('min x y = if x <= y then x else y'),
+     where @('<=') is the IEEE comparison
+     in which any comparison with NaN is false.
+     The result is therefore order-dependent on NaN:
+     @('min NaN y') is y but @('min x NaN') is NaN.
+     Since negative and positive zero compare equal,
+     a tie returns the first operand."))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (fval
@@ -727,36 +1072,66 @@
                         (float-value-ratio->ratio f2)))
                   (res (<= r1 r2)))
                (if res f1 f2))))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-min
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-sqrt ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float square root."
-  :long "<p>Square root is currently a stub that always errors.</p>
-  <p>The difficulty is that our float model represents finite values as exact
-  rationals (see @(see primitives-evaluation)), but the square root of a
-  rational is in general irrational. So the exact result is not representable as a
-  @(tsee float-value).</p>
-  <p>[impl] computes square roots with Haskell's @('sqrt'), which maps onto the
-  IEEE-754 hardware/library square root: it returns the correctly-rounded
-  single-precision float nearest the true result. That is possible only because
-  Haskell's @('Float') is finite-precision floating point, which accepts
-  rounding; the irrational answer is approximated by the nearest representable
-  float. Our exact-rational model has no notion of a nearest representable value
-  to round to, so we cannot reproduce this without first committing to a
-  concrete float format and rounding rule, a decision Remora has not yet made.
-  We therefore defer the implementation and error for now.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Square root is currently a stub that always errors.")
+   (xdoc::p
+    "The difficulty is that our float model
+     represents finite values as exact rationals
+     (see @(see primitives-evaluation)),
+     but the square root of a rational is in general irrational.
+     So the exact result is not representable as a @(tsee float-value).")
+   (xdoc::p
+    "[impl] computes square roots with Haskell's @('sqrt'),
+     which maps onto the IEEE-754 hardware/library square root:
+     it returns the correctly-rounded single-precision float
+     nearest the true result.
+     That is possible only because
+     Haskell's @('Float') is finite-precision floating point,
+     which accepts rounding;
+     the irrational answer is approximated
+     by the nearest representable float.
+     Our exact-rational model has
+     no notion of a nearest representable value to round to,
+     so we cannot reproduce this without first committing to
+     a concrete float format and rounding rule,
+     a decision Remora has not yet made.
+     We therefore defer the implementation and error for now."))
   (b* (((ok &) (check-expr-value-float val1)))
-    (reserr nil)))
+    (reserr nil))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-sqrt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-eq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float equality."
-  :long "<p>Follows [impl]'s IEEE-754 equality, which is not reflexive: NaN is
-  equal to nothing, including itself, so @('NaN == NaN') is false. Negative zero
-  and positive zero compare equal.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Follows [impl]'s IEEE-754 equality, which is not reflexive:
+     NaN is equal to nothing, including itself,
+     so @('NaN == NaN') is false.
+     Negative zero and positive zero compare equal."))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (bval
@@ -771,14 +1146,26 @@
                           (= f1.ratio 0))
                      (and (float-value-case f2 :ratio)
                           (= f1.ratio (float-value-ratio->ratio f2)))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-eq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-neq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
-  :short "Evaluation of float equality."
-  :long "<p>Follows [impl]'s IEEE-754 equality, which is not reflexive: NaN is
-  equal to nothing, including itself, so @('NaN != NaN') is true. Negative zero
-  and positive zero compare equal.</p>"
+  :short "Evaluation of float inequality."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Follows [impl]'s IEEE-754 equality, which is not reflexive:
+     NaN is equal to nothing, including itself,
+     so @('NaN != NaN') is true.
+     Negative zero and positive zero compare equal."))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (bval
@@ -793,62 +1180,101 @@
                                (= f1.ratio 0))
                           (and (float-value-case f2 :ratio)
                                (= f1.ratio (float-value-ratio->ratio f2))))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-neq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-lt ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float less-than comparison."
-  :long "<p>Follows [impl]'s IEEE-754 less-than comparison: NaN is unordered, so
-  any comparison involving NaN is false. Negative zero and positive zero compare
-  equal, so @('-0 < +0') is false.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Follows [impl]'s IEEE-754 less-than comparison:
+     NaN is unordered,
+     so any comparison involving NaN is false.
+     Negative zero and positive zero compare equal,
+     so @('-0 < +0') is false."))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (bval
         (float-value-case f1
           :nan    nil
           :posinf nil
-          :neginf (not (or (float-value-case f2 :neginf) 
+          :neginf (not (or (float-value-case f2 :neginf)
                            (float-value-case f2 :nan)))
           :neg0 (or (float-value-case f2 :posinf)
-                    (and (float-value-case f2 :ratio) 
+                    (and (float-value-case f2 :ratio)
                          (< 0 (float-value-ratio->ratio f2))))
           :ratio (or (float-value-case f2 :posinf)
-                     (and (float-value-case f2 :neg0) 
+                     (and (float-value-case f2 :neg0)
                           (< f1.ratio 0))
-                     (and (float-value-case f2 :ratio) 
+                     (and (float-value-case f2 :ratio)
                           (< f1.ratio (float-value-ratio->ratio f2)))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-lt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-gt ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float greater-than comparison."
-  :long "<p>Follows [impl]'s IEEE-754 greater-than comparison: NaN is unordered,
-  so any comparison involving NaN is false. Negative zero and positive zero
-  compare equal, so @('+0 > -0') is false.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Follows [impl]'s IEEE-754 greater-than comparison:
+     NaN is unordered,
+     so any comparison involving NaN is false.
+     Negative zero and positive zero compare equal,
+     so @('+0 > -0') is false."))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (bval
         (float-value-case f1
           :nan    nil
-          :posinf (not (or (float-value-case f2 :posinf) (float-value-case f2 :nan)))
+          :posinf (not (or (float-value-case f2 :posinf)
+                           (float-value-case f2 :nan)))
           :neginf nil
           :neg0 (or (float-value-case f2 :neginf)
-                    (and (float-value-case f2 :ratio) 
+                    (and (float-value-case f2 :ratio)
                          (> 0 (float-value-ratio->ratio f2))))
           :ratio (or (float-value-case f2 :neginf)
-                     (and (float-value-case f2 :neg0) 
+                     (and (float-value-case f2 :neg0)
                           (> f1.ratio 0))
-                     (and (float-value-case f2 :ratio) 
+                     (and (float-value-case f2 :ratio)
                           (> f1.ratio (float-value-ratio->ratio f2)))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-gt
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-leq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float less-than-or-equal-to comparison."
-  :long "<p>Follows [impl]'s IEEE-754 less-than-or-equal comparison: NaN is
-  unordered, so any comparison involving NaN is false. Negative zero and
-  positive zero compare equal, so @('-0 <= +0') and @('+0 <= -0') are both
-  true.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Follows [impl]'s IEEE-754 less-than-or-equal comparison:
+     NaN is unordered,
+     so any comparison involving NaN is false.
+     Negative zero and positive zero compare equal,
+     so @('-0 <= +0') and @('+0 <= -0') are both true."))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (bval
@@ -858,22 +1284,34 @@
           :neginf (not (float-value-case f2 :nan))
           :neg0 (or (float-value-case f2 :posinf)
                     (float-value-case f2 :neg0)
-                    (and (float-value-case f2 :ratio) 
+                    (and (float-value-case f2 :ratio)
                          (<= 0 (float-value-ratio->ratio f2))))
           :ratio (or (float-value-case f2 :posinf)
-                     (and (float-value-case f2 :neg0) 
+                     (and (float-value-case f2 :neg0)
                           (<= f1.ratio 0))
-                     (and (float-value-case f2 :ratio) 
+                     (and (float-value-case f2 :ratio)
                           (<= f1.ratio (float-value-ratio->ratio f2)))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-leq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-geq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float greater-than-or-equal-to comparison."
-  :long "<p>Follows [impl]'s IEEE-754 greater-than-or-equal comparison: NaN is
-  unordered, so any comparison involving NaN is false. Negative zero and
-  positive zero compare equal, so @('-0 >= +0') and @('+0 >= -0') are both
-  true.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Follows [impl]'s IEEE-754 greater-than-or-equal comparison:
+     NaN is unordered,
+     so any comparison involving NaN is false.
+     Negative zero and positive zero compare equal,
+     so @('-0 >= +0') and @('+0 >= -0') are both true."))
   (b* (((ok f1) (check-expr-value-float val1))
        ((ok f2) (check-expr-value-float val2))
        (bval
@@ -883,76 +1321,129 @@
           :neginf (float-value-case f2 :neginf)
           :neg0 (or (float-value-case f2 :neginf)
                     (float-value-case f2 :neg0)
-                    (and (float-value-case f2 :ratio) 
+                    (and (float-value-case f2 :ratio)
                          (>= 0 (float-value-ratio->ratio f2))))
           :ratio (or (float-value-case f2 :neginf)
-                     (and (float-value-case f2 :neg0) 
+                     (and (float-value-case f2 :neg0)
                           (>= f1.ratio 0))
-                     (and (float-value-case f2 :ratio) 
+                     (and (float-value-case f2 :ratio)
                           (>= f1.ratio (float-value-ratio->ratio f2)))))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-geq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-truncate ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float truncation to integer."
-  :long "<p>Float-to-integer truncation uses ACL2's @(tsee truncate), which
-  rounds towards zero. This is consistent with [impl], which uses Haskell's
-  @('truncate')</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Float-to-integer truncation uses ACL2's @(tsee truncate),
+     which rounds towards zero.
+     This is consistent with [impl],
+     which uses Haskell's @('truncate')."))
   (b* (((ok fval) (check-expr-value-float val1)))
     (float-value-case fval
-      :ratio  (expr-value-base (base-value-int 
+      :ratio  (expr-value-base (base-value-int
                                 (int-value (truncate fval.ratio 1))))
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
       :neginf (reserr nil)
-      :nan    (reserr nil))))
+      :nan    (reserr nil)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-truncate
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-round ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float rounding to integer."
-  :long "<p>Float-to-integer rounding uses ACL2's @(tsee round), which rounds
-  to the nearest integer, with ties going to the even integer. This is
-  consistent with [impl], which uses Haskell's @('round')</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Float-to-integer rounding uses ACL2's @(tsee round),
+     which rounds to the nearest integer,
+     with ties going to the even integer.
+     This is consistent with [impl],
+     which uses Haskell's @('round')."))
   (b* (((ok fval) (check-expr-value-float val1)))
     (float-value-case fval
-      :ratio  (expr-value-base (base-value-int 
+      :ratio  (expr-value-base (base-value-int
                                 (int-value (round fval.ratio 1))))
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
       :neginf (reserr nil)
-      :nan    (reserr nil))))
+      :nan    (reserr nil)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-round
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-ceiling ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float ceiling to integer."
-  :long "<p>Float-to-integer ceiling uses ACL2's @(tsee ceiling), which rounds
-  towards positive infinity. This is consistent with [impl], which uses
-  Haskell's @('ceiling')</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Float-to-integer ceiling uses ACL2's @(tsee ceiling),
+     which rounds towards positive infinity.
+     This is consistent with [impl],
+     which uses Haskell's @('ceiling')."))
   (b* (((ok fval) (check-expr-value-float val1)))
     (float-value-case fval
-      :ratio  (expr-value-base (base-value-int 
+      :ratio  (expr-value-base (base-value-int
                                 (int-value (ceiling fval.ratio 1))))
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
       :neginf (reserr nil)
-      :nan    (reserr nil))))
+      :nan    (reserr nil)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-ceiling
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-float-floor ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of float floor to integer."
-  :long "<p>Float-to-integer floor uses ACL2's @(tsee floor), which rounds
-  towards minus infinity. This is consistent with [impl], which uses Haskell's
-  @('floor')</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Float-to-integer floor uses ACL2's @(tsee floor),
+     which rounds towards minus infinity.
+     This is consistent with [impl],
+     which uses Haskell's @('floor')."))
   (b* (((ok fval) (check-expr-value-float val1)))
     (float-value-case fval
-      :ratio  (expr-value-base (base-value-int 
+      :ratio  (expr-value-base (base-value-int
                                 (int-value (floor fval.ratio 1))))
       :neg0   (expr-value-base (base-value-int (int-value 0)))
       :posinf (reserr nil)
       :neginf (reserr nil)
-      :nan    (reserr nil))))
+      :nan    (reserr nil)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-float-floor
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -961,7 +1452,15 @@
   :short "Evaluation of boolean negation."
   (b* (((ok b1) (check-expr-value-bool val1))
        (bval (not b1)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-not
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-bool-and ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -969,7 +1468,15 @@
   (b* (((ok b1) (check-expr-value-bool val1))
        ((ok b2) (check-expr-value-bool val2))
        (bval (and b1 b2)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-and
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-bool-or ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -977,7 +1484,15 @@
   (b* (((ok b1) (check-expr-value-bool val1))
        ((ok b2) (check-expr-value-bool val2))
        (bval (or b1 b2)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-or
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-bool-eq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -985,7 +1500,15 @@
   (b* (((ok b1) (check-expr-value-bool val1))
        ((ok b2) (check-expr-value-bool val2))
        (bval (iff b1 b2)))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-eq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-bool-neq ((val1 expr-valuep) (val2 expr-valuep))
   :returns (val expr-value-resultp)
@@ -993,7 +1516,13 @@
   (b* (((ok b1) (check-expr-value-bool val1))
        ((ok b2) (check-expr-value-bool val2))
        (bval (not (iff b1 b2))))
-    (expr-value-base (base-value-bool bval))))
+    (expr-value-base (base-value-bool bval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-neq
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1002,142 +1531,978 @@
   :short "Evaluation of boolean conversion to integer."
   (b* (((ok b1) (check-expr-value-bool val1))
        (ival (int-value (if b1 1 0))))
-    (expr-value-base (base-value-int ival))))
+    (expr-value-base (base-value-int ival)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-to-int
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define prim-bool-to-float ((val1 expr-valuep))
   :returns (val expr-value-resultp)
   :short "Evaluation of boolean conversion to float."
   (b* (((ok b1) (check-expr-value-bool val1))
        (fval (float-value-ratio (if b1 1 0))))
-    (expr-value-base (base-value-float fval))))
+    (expr-value-base (base-value-float fval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-bool-to-float
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-primop ((op primop-valuep) (args expr-value-listp))
+(define prim-head ((tval type-valuep)
+                   (d natp)
+                   (s nat-listp)
+                   (val1 expr-valuep))
+  :guard (expr-value-wfp val1)
+  :returns (val expr-value-resultp)
+  :short "Evaluation of array head."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('head') operation
+     (see the @(':head-t-d-s') summand of @(tsee primop-value)):
+     @('tval'), @('d'), and @('s') are the instantiation values,
+     and @('val1') is the argument cell.
+     According to the instantiated type of the operation,
+     the argument cell is an array
+     whose dimensions are the dimension @('d+1') followed by the shape @('s'),
+     and the result is the first element, which is of shape @('s').
+     The guard requires the argument cell to be well-formed;
+     we defensively check that it has the expected dimensions.")
+   (xdoc::p
+    "The type value @('tval') is currently unused,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cell
+     when those checks are extended to types."))
+  (declare (ignore tval))
+  (b* ((d (lnfix d))
+       (s (nat-list-fix s))
+       ((unless (equal (dims-of-expr-value val1) (cons (1+ d) s)))
+        (reserr nil))
+       ((unless (expr-value-case val1 :vector))
+        (reserr nil))
+       (elems (expr-value-vector->elems val1))
+       ((unless (consp elems)) (reserr nil)))
+    (car elems))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-head
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (expr-value-wfp val1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-tail ((tval type-valuep)
+                   (d natp)
+                   (s nat-listp)
+                   (val1 expr-valuep))
+  :guard (expr-value-wfp val1)
+  :returns (val expr-value-resultp)
+  :short "Evaluation of array tail."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('tail') operation
+     (see the @(':tail-t-d-s') summand of @(tsee primop-value)):
+     @('tval'), @('d'), and @('s') are the instantiation values,
+     and @('val1') is the argument cell.
+     According to the instantiated type of the operation,
+     the argument cell is an array
+     whose dimensions are the dimension @('d+1') followed by the shape @('s'),
+     and the result is the array after removing the first element,
+     whose dimensions are
+     the dimension @('d') followed by the shape @('s').
+     The guard requires the argument cell to be well-formed;
+     we defensively check that it has the expected dimensions.")
+   (xdoc::p
+    "The type value @('tval') is currently only used
+     for when the output is an empty array
+     and not for checking well-formedness,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cell
+     when those checks are extended to types."))
+  (b* ((d (lnfix d))
+       (s (nat-list-fix s))
+       ((unless (equal (dims-of-expr-value val1) (cons (1+ d) s)))
+        (reserr nil))
+       ((unless (expr-value-case val1 :vector))
+        (reserr nil))
+       (elems (expr-value-vector->elems val1))
+       ((unless (consp elems)) (reserr nil))
+       (tail (cdr elems)))
+    (if (consp tail)
+        (expr-value-vector tail)
+      (expr-value-vector-empty s tval)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-tail
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (expr-value-wfp val1)
+    :hints (("Goal" :in-theory (e/d (dims-of-expr-value-list-of-cdr)
+                                    (cdr-of-dims-of-expr-value-list))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-length ((tval type-valuep)
+                     (d natp)
+                     (s nat-listp)
+                     (val1 expr-valuep))
+  :guard (expr-value-wfp val1)
+  :returns (val expr-value-resultp)
+  :short "Evaluation of array length."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('length') operation
+     (see the @(':length-t-d-s') summand of @(tsee primop-value)):
+     @('tval'), @('d'), and @('s') are the instantiation values,
+     and @('val1') is the argument cell.
+     According to the instantiated type of the operation,
+     the argument cell is an array
+     whose dimensions are the dimension @('d') followed by the shape @('s'),
+     and the result is @('d'), as a scalar integer value.
+     The guard requires the argument cell to be well-formed;
+     we defensively check that it has the expected dimensions.")
+   (xdoc::p
+    "The type value @('tval') is currently unused,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cell
+     when those checks are extended to types."))
+  (declare (ignore tval))
+  (b* ((d (lnfix d))
+       (s (nat-list-fix s))
+       ((unless (equal (dims-of-expr-value val1) (cons d s)))
+        (reserr nil)))
+    (expr-value-base (base-value-int (int-value d))))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-length
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-append ((tval type-valuep)
+                     (m natp)
+                     (n natp)
+                     (s nat-listp)
+                     (val1 expr-valuep)
+                     (val2 expr-valuep))
+  :guard (and (expr-value-wfp val1) (expr-value-wfp val2))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of array append."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('append') operation
+     (see the @(':append-t-m-n-s') summand of @(tsee primop-value)):
+     @('tval'), @('m'), @('n'), and @('s') are the instantiation values,
+     and @('val1') and @('val2') are the argument cells.
+     According to the instantiated type of the operation,
+     the argument cells are arrays
+     whose dimensions are the dimensions @('m') and @('n') respectively,
+     each followed by the shape @('s'),
+     and the result is the concatenation of the two arrays,
+     whose dimensions are the dimension @('m+n') followed by the shape @('s').
+     The guard requires the argument cells to be well-formed;
+     we defensively check that they have the expected dimensions.")
+   (xdoc::p
+    "Since @('m') and @('n') may be 0,
+     the argument cells may be empty arrays,
+     which are not @(':vector') values and contribute no elements.
+     The type value @('tval') is currently only used
+     for when the output is an empty array
+     and not for checking well-formedness,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cells
+     when those checks are extended to types."))
+  (b* ((m (lnfix m)) (n (lnfix n)) (s (nat-list-fix s))
+       ((unless (equal (dims-of-expr-value val1) (cons m s))) (reserr nil))
+       ((unless (equal (dims-of-expr-value val2) (cons n s))) (reserr nil))
+       (elems1 (expr-value-vector-elements val1))
+       (elems2 (expr-value-vector-elements val2))
+       (elems (append elems1 elems2)))
+    (if (consp elems)
+        (expr-value-vector elems)
+      (expr-value-vector-empty s tval)))
+  :guard-hints
+  (("Goal" :in-theory (enable expr-value-vectorp-to-consp-of-dims)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-append
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (and (expr-value-wfp val1)
+              (expr-value-wfp val2))
+    :hints (("Goal"
+             :in-theory
+             (e/d (dims-of-expr-value-vector-elements-to-repeat
+                   expr-value-vectorp-to-consp-of-dims
+                   car-of-repeat
+                   car/cdr-when-equal-cons)
+                  (car-of-dims-of-expr-value-list))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-reverse ((tval type-valuep)
+                      (d natp)
+                      (s nat-listp)
+                      (val1 expr-valuep))
+  :guard (expr-value-wfp val1)
+  :returns (val expr-value-resultp)
+  :short "Evaluation of array reverse."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('reverse') operation
+     (see the @(':reverse-t-d-s') summand of @(tsee primop-value)):
+     @('tval'), @('d'), and @('s') are the instantiation values,
+     and @('val1') is the argument cell.
+     According to the instantiated type of the operation,
+     the argument cell is an array
+     whose dimensions are the dimension @('d') followed by the shape @('s'),
+     and the result is the array with its elements in reverse order,
+     with the same dimensions.
+     The guard requires the argument cell to be well-formed;
+     we defensively check that it has the expected dimensions.")
+   (xdoc::p
+    "We reverse the order of the elements of the cell,
+     i.e. we reverse the array along its leading axis,
+     as prescribed by the type of the operation.
+     This is consistent with the interpreter in [impl].")
+   (xdoc::p
+    "Since @('d') may be 0, the argument cell may be an empty array,
+     which is not a @(':vector') value and has no elements.
+     The type value @('tval') is currently only used
+     for when the output is an empty array
+     and not for checking well-formedness,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cell
+     when those checks are extended to types."))
+  (b* ((d (lnfix d)) (s (nat-list-fix s))
+       ((unless (equal (dims-of-expr-value val1) (cons d s))) (reserr nil))
+       (elems (expr-value-vector-elements val1))
+       (relems (rev elems)))
+    (if (consp relems)
+        (expr-value-vector relems)
+      (expr-value-vector-empty s tval)))
+  :guard-hints
+  (("Goal" :in-theory (enable expr-value-vectorp-to-consp-of-dims)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-reverse
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (expr-value-wfp val1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-index ((tval type-valuep)
+                    (m natp)
+                    (val1 expr-valuep)
+                    (val2 expr-valuep))
+  :guard (and (expr-value-wfp val1) (expr-value-wfp val2))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of vector indexing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('index') operation
+     (see the @(':index-t-m') summand of @(tsee primop-value)):
+     @('tval') and @('m') are the instantiation values,
+     and @('val1') and @('val2') are the argument cells.
+     According to the instantiated type of the operation,
+     the first argument cell is a vector of @('m') scalars,
+     the second argument cell is a scalar integer @('i'),
+     and the result is the @('i')-th element (zero-based) of the vector.
+     The guard requires the argument cells to be well-formed;
+     we defensively check that they have the expected dimensions,
+     and that the index is within bounds
+     (the interpreter in [impl] crashes on out-of-bounds indices,
+     while we return an error).")
+   (xdoc::p
+    "The type value @('tval') is currently unused,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cells
+     when those checks are extended to types."))
+  (declare (ignore tval))
+  (b* ((m (lnfix m))
+       ((unless (equal (dims-of-expr-value val1) (list m))) (reserr nil))
+       ((ok (int-value ival)) (check-expr-value-int val2))
+       (i ival.int)
+       ((unless (and (<= 0 i) (< i m))) (reserr nil))
+       (elems (expr-value-vector-elements val1))
+       ((unless (< i (len elems))) (reserr nil)))
+    (expr-value-fix (nth i elems)))
+  :guard-hints
+  (("Goal" :in-theory (enable expr-value-vectorp-to-consp-of-dims nfix)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-index
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (expr-value-wfp val1)
+    :hints
+    (("Goal"
+      :in-theory (enable expr-value-wfp-of-nth-when-expr-value-list-wfp nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-index2d ((tval type-valuep)
+                      (m natp)
+                      (n natp)
+                      (val1 expr-valuep)
+                      (val2 expr-valuep))
+  :guard (and (expr-value-wfp val1) (expr-value-wfp val2))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of matrix indexing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('index2d') operation
+     (see the @(':index2d-t-m-n') summand of @(tsee primop-value)):
+     @('tval'), @('m'), and @('n') are the instantiation values,
+     and @('val1') and @('val2') are the argument cells.
+     According to the instantiated type of the operation,
+     the first argument cell is an @('m') by @('n') matrix of scalars,
+     the second argument cell is a vector of two integers @('i') and @('j'),
+     and the result is the scalar at (zero-based) row @('i') and column @('j')
+     of the matrix.
+     The guard requires the argument cells to be well-formed;
+     we defensively check that they have the expected dimensions,
+     and that the indices are within bounds
+     (the interpreter in [impl] crashes on out-of-bounds indices,
+     while we return an error).")
+   (xdoc::p
+    "The type value @('tval') is currently unused,
+     because our well-formedness checks on expression values
+     currently concern dimensions but not types;
+     it will be used to further check the argument cells
+     when those checks are extended to types."))
+  (declare (ignore tval))
+  (b* ((m (lnfix m))
+       (n (lnfix n))
+       ((unless (equal (dims-of-expr-value val1) (list m n))) (reserr nil))
+       ((unless (equal (dims-of-expr-value val2) (list 2))) (reserr nil))
+       (idxs (expr-value-vector-elements val2))
+       ((unless (equal (len idxs) 2)) (reserr nil))
+       ((ok (int-value ival)) (check-expr-value-int (expr-value-fix (nth 0 idxs))))
+       ((ok (int-value jval)) (check-expr-value-int (expr-value-fix (nth 1 idxs))))
+       (i ival.int)
+       (j jval.int)
+       ((unless (and (<= 0 i) (< i m))) (reserr nil))
+       ((unless (and (<= 0 j) (< j n))) (reserr nil))
+       (rows (expr-value-vector-elements val1))
+       ((unless (< i (len rows))) (reserr nil))
+       (row (expr-value-fix (nth i rows)))
+       ((unless (expr-value-vectorp row)) (reserr nil))
+       (elems (expr-value-vector-elements row))
+       ((unless (< j (len elems))) (reserr nil)))
+    (expr-value-fix (nth j elems)))
+  :guard-hints
+  (("Goal" :in-theory (enable expr-value-vectorp-to-consp-of-dims nfix)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-index2d
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (expr-value-wfp val1)
+    :hints
+    (("Goal"
+      :in-theory (enable expr-value-wfp-of-nth-when-expr-value-list-wfp nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-sum ((s nat-listp) (val1 expr-valuep))
+  :guard (expr-value-wfp val1)
+  :returns (val expr-value-resultp)
+  :short "Evaluation of array summation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('sum') operation
+     (see the @(':sum-s') summand of @(tsee primop-value)):
+     @('s') is the instantiation value,
+     and @('val1') is the argument cell.
+     According to the instantiated type of the operation,
+     the argument cell is an array of integers
+     whose dimensions are the shape @('s'),
+     and the result is the sum of all of its integers,
+     as a scalar integer value.
+     The guard requires the argument cell to be well-formed;
+     we defensively check that it has the expected dimensions
+     (which the interpreter in [impl] does not use),
+     and that all the atoms of the argument cell are integers.")
+   (xdoc::p
+    "We collect the atom values of the argument cell via @(tsee expr-value-atoms),
+     turn them into integers via @(tsee check-expr-value-list-int),
+     and add them via @(tsee integer-list-sum)."))
+  (b* ((s (nat-list-fix s))
+       ((unless (equal (dims-of-expr-value val1) s)) (reserr nil))
+       ((ok ints) (check-expr-value-list-int (expr-value-atoms val1))))
+    (expr-value-base (base-value-int (int-value (integer-list-sum ints)))))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-sum
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-reshape ((tval type-valuep)
+                      (s1 nat-listp)
+                      (s2 nat-listp)
+                      (val1 expr-valuep))
+  :guard (expr-value-wfp val1)
+  :returns (val expr-value-resultp)
+  :short "Evaluation of array reshaping."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('reshape') operation
+     (see the @(':reshape-t-s1-s2') summand of @(tsee primop-value)):
+     @('tval'), @('s1'), and @('s2') are the instantiation values,
+     and @('val1') is the argument cell.
+     According to the instantiated type of the operation,
+     the argument cell is an array with dimensions @('s1'),
+     and the result is an array with dimensions @('s2')
+     containing the same atom values in the same (row-major) order.
+     The two shapes must have the same product,
+     i.e. the same total number of atom values;
+     the interpreter in [impl] checks this
+     when the operation is applied to the second shape,
+     while we defensively check it here,
+     along with the dimensions of the argument cell.")
+   (xdoc::p
+    "If the new shape has a zero dimension, the result is empty:
+     we build it via @(tsee expr-value-with-empty-dim),
+     which requires an atom type value.
+     Otherwise, we collect the atom values of the argument cell
+     via @(tsee expr-value-atoms),
+     and we arrange them according to the new shape
+     via @(tsee expr-value-with-nonempty-dims).")
+   (xdoc::p
+    "Note that the interpreter in [impl] crashes
+     when the argument cell is a scalar,
+     because, unlike the other array operations,
+     it does not normalize non-array values to zero-rank arrays:
+     we treat the scalar case uniformly,
+     consistently with the other operations in [impl] and here."))
+  (b* ((s1 (nat-list-fix s1))
+       (s2 (nat-list-fix s2))
+       ((unless (equal (dims-of-expr-value val1) s1)) (reserr nil))
+       ((unless (equal (nat-list-product s1) (nat-list-product s2)))
+        (reserr nil))
+       ((when (member-equal 0 s2))
+        (b* (((when (type-value-case tval :array)) (reserr nil)))
+          (expr-value-with-empty-dim s2 tval)))
+       (atoms (expr-value-atoms val1)))
+    (expr-value-with-nonempty-dims s2 atoms))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-reshape
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (and (nat-listp s2)
+              (expr-value-wfp val1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-primop-fun ((op primop-valuep) (arg expr-valuep))
+  :guard (and (primop-value-funp op)
+              (primop-value-wfp op)
+              (expr-value-wfp arg))
   :returns (val expr-value-resultp)
   :short "Evaluate the application of a primitive operation
-          to its argument cells."
+          to one argument cell."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the dynamic counterpart, for primitive operations,
      of evaluating the body of a lambda abstraction:
-     it will be called by @(tsee eval-app-cell)
-     on a scalar primitive operation and its scalar argument cells,
-     after the rank-polymorphic lifting.")
+     it is called by @(tsee eval-app-cell)
+     on a scalar primitive operation and a scalar argument cell,
+     after the rank-polymorphic lifting.
+     Consistently with the curried view of term applications,
+     the operation is applied to exactly one argument cell:
+     the application of a binary operation to its two arguments
+     goes through two applications of this function.")
    (xdoc::p
-    "We dispatch on the operation,
-     check that it is applied to the right number of argument cells,
-     and call the @('prim-...') function
-     that defines the operation's semantics.
-     Anything else is an error.")
+    "The guard requires the value to be applicable to expression values
+     (see @(tsee primop-value-funp))
+     and the argument cell to be well-formed.
+     If the operation, at its current stage,
+     expects another argument value after this one
+     (i.e. it is the initial stage of a binary operation),
+     the application yields the next stage of the operation,
+     namely the @('-x') summand that stores the argument value;
+     this is a scalar primitive operation value,
+     applicable to the remaining argument value.
+     Otherwise, the argument cell is the last one,
+     and we call the @('prim-...') function
+     that defines the operation's semantics,
+     on the stored argument value (if any) and the argument cell.")
    (xdoc::p
-    "The result is well-formed when it is not an error,
-     because each @('prim-...') function returns
-     a scalar base value on success."))
-  (b* ((args (expr-value-list-fix args))
-       ((unless (equal (len args) (primop-arity op))) (reserr nil)))
+    "The guard additionally requires
+     the primitive operation value to be well-formed:
+     this ensures that the expression values stored in the stages, if any,
+     are well-formed,
+     as required (via guards and theorem hypotheses)
+     by the @('prim-...') functions
+     that are called on the stored values.")
+   (xdoc::p
+    "The result is well-formed when it is not an error:
+     the next-stage results are scalar primitive operation values
+     that store well-formed values,
+     and the @('prim-...') functions return well-formed values on success."))
+  (b* ((arg (expr-value-fix arg)))
     (primop-value-case
      op
-     :int-add (prim-int-add (first args) (second args))
-     :int-sub (prim-int-sub (first args) (second args))
-     :int-mul (prim-int-mul (first args) (second args))
-     :int-div (prim-int-div (first args) (second args))
-     :int-mod (prim-int-mod (first args) (second args))
-     :int-max (prim-int-max (first args) (second args))
-     :int-min (prim-int-min (first args) (second args))
-     :int-bit-and (prim-int-bit-and (first args) (second args))
-     :int-bit-or (prim-int-bit-or (first args) (second args))
-     :int-bit-xor (prim-int-bit-xor (first args) (second args))
-     :int-shl (prim-int-shl (first args) (second args))
-     :int-shr (prim-int-shr (first args) (second args))
-     :int-bit-not (prim-int-bit-not (first args))
-     :int-popc (prim-int-popc (first args))
-     :int-eq (prim-int-eq (first args) (second args))
-     :int-neq (prim-int-neq (first args) (second args))
-     :int-lt (prim-int-lt (first args) (second args))
-     :int-gt (prim-int-gt (first args) (second args))
-     :int-leq (prim-int-leq (first args) (second args))
-     :int-geq (prim-int-geq (first args) (second args))
-     :int-to-float (prim-int-to-float (first args))
-     :int-to-bool (prim-int-to-bool (first args))
-     :float-add (prim-float-add (first args) (second args))
-     :float-sub (prim-float-sub (first args) (second args))
-     :float-mul (prim-float-mul (first args) (second args))
-     :float-div (prim-float-div (first args) (second args))
-     :float-expt (prim-float-expt (first args) (second args))
-     :float-max (prim-float-max (first args) (second args))
-     :float-min (prim-float-min (first args) (second args))
-     :float-sqrt (prim-float-sqrt (first args))
-     :float-eq (prim-float-eq (first args) (second args))
-     :float-neq (prim-float-neq (first args) (second args))
-     :float-lt (prim-float-lt (first args) (second args))
-     :float-gt (prim-float-gt (first args) (second args))
-     :float-leq (prim-float-leq (first args) (second args))
-     :float-geq (prim-float-geq (first args) (second args))
-     :float-truncate (prim-float-truncate (first args))
-     :float-round (prim-float-round (first args))
-     :float-ceiling (prim-float-ceiling (first args))
-     :float-floor (prim-float-floor (first args))
-     :bool-not (prim-bool-not (first args))
-     :bool-and (prim-bool-and (first args) (second args))
-     :bool-or (prim-bool-or (first args) (second args))
-     :bool-eq (prim-bool-eq (first args) (second args))
-     :bool-neq (prim-bool-neq (first args) (second args))
-     :bool-to-int (prim-bool-to-int (first args))
-     :bool-to-float (prim-bool-to-float (first args))))
-  :guard-hints (("Goal" :in-theory (enable primop-arity primop-type)))
+     :int-unary (int-unary-primop-case
+                 op.op
+                 :bit-not (prim-int-bit-not arg)
+                 :popc (prim-int-popc arg))
+     :int-binary (expr-value-primop
+                  (make-primop-value-int-binary-x :op op.op :xval arg))
+     :int-binary-x (int-binary-primop-case
+                    op.op
+                    :add (prim-int-add op.xval arg)
+                    :sub (prim-int-sub op.xval arg)
+                    :mul (prim-int-mul op.xval arg)
+                    :div (prim-int-div op.xval arg)
+                    :expt (prim-int-expt op.xval arg)
+                    :mod (prim-int-mod op.xval arg)
+                    :max (prim-int-max op.xval arg)
+                    :min (prim-int-min op.xval arg)
+                    :bit-and (prim-int-bit-and op.xval arg)
+                    :bit-or (prim-int-bit-or op.xval arg)
+                    :bit-xor (prim-int-bit-xor op.xval arg)
+                    :shl (prim-int-shl op.xval arg)
+                    :shr (prim-int-shr op.xval arg))
+     :int-rel (expr-value-primop
+               (make-primop-value-int-rel-x :op op.op :xval arg))
+     :int-rel-x (int-rel-primop-case
+                 op.op
+                 :eq (prim-int-eq op.xval arg)
+                 :neq (prim-int-neq op.xval arg)
+                 :lt (prim-int-lt op.xval arg)
+                 :gt (prim-int-gt op.xval arg)
+                 :leq (prim-int-leq op.xval arg)
+                 :geq (prim-int-geq op.xval arg))
+     :int-to-float (prim-int-to-float arg)
+     :int-to-bool (prim-int-to-bool arg)
+     :float-unary (float-unary-primop-case
+                   op.op
+                   :sqrt (prim-float-sqrt arg))
+     :float-binary (expr-value-primop
+                    (make-primop-value-float-binary-x :op op.op :xval arg))
+     :float-binary-x (float-binary-primop-case
+                      op.op
+                      :add (prim-float-add op.xval arg)
+                      :sub (prim-float-sub op.xval arg)
+                      :mul (prim-float-mul op.xval arg)
+                      :div (prim-float-div op.xval arg)
+                      :expt (prim-float-expt op.xval arg)
+                      :max (prim-float-max op.xval arg)
+                      :min (prim-float-min op.xval arg))
+     :float-rel (expr-value-primop
+                 (make-primop-value-float-rel-x :op op.op :xval arg))
+     :float-rel-x (float-rel-primop-case
+                   op.op
+                   :eq (prim-float-eq op.xval arg)
+                   :neq (prim-float-neq op.xval arg)
+                   :lt (prim-float-lt op.xval arg)
+                   :gt (prim-float-gt op.xval arg)
+                   :leq (prim-float-leq op.xval arg)
+                   :geq (prim-float-geq op.xval arg))
+     :float-truncate (prim-float-truncate arg)
+     :float-round (prim-float-round arg)
+     :float-ceiling (prim-float-ceiling arg)
+     :float-floor (prim-float-floor arg)
+     :bool-unary (bool-unary-primop-case
+                  op.op
+                  :not (prim-bool-not arg))
+     :bool-binary (expr-value-primop
+                   (make-primop-value-bool-binary-x :op op.op :xval arg))
+     :bool-binary-x (bool-binary-primop-case
+                     op.op
+                     :and (prim-bool-and op.xval arg)
+                     :or (prim-bool-or op.xval arg))
+     :bool-rel (expr-value-primop
+                (make-primop-value-bool-rel-x :op op.op :xval arg))
+     :bool-rel-x (bool-rel-primop-case
+                  op.op
+                  :eq (prim-bool-eq op.xval arg)
+                  :neq (prim-bool-neq op.xval arg))
+     :bool-to-int (prim-bool-to-int arg)
+     :bool-to-float (prim-bool-to-float arg)
+     :head (prog2$ (impossible) (reserr nil))
+     :head-t (prog2$ (impossible) (reserr nil))
+     :head-t-d (prog2$ (impossible) (reserr nil))
+     :head-t-d-s (prim-head op.tval op.dval op.sval arg)
+     :tail (prog2$ (impossible) (reserr nil))
+     :tail-t (prog2$ (impossible) (reserr nil))
+     :tail-t-d (prog2$ (impossible) (reserr nil))
+     :tail-t-d-s (prim-tail op.tval op.dval op.sval arg)
+     :length (prog2$ (impossible) (reserr nil))
+     :length-t (prog2$ (impossible) (reserr nil))
+     :length-t-d (prog2$ (impossible) (reserr nil))
+     :length-t-d-s (prim-length op.tval op.dval op.sval arg)
+     :append (prog2$ (impossible) (reserr nil))
+     :append-t (prog2$ (impossible) (reserr nil))
+     :append-t-m (prog2$ (impossible) (reserr nil))
+     :append-t-m-n (prog2$ (impossible) (reserr nil))
+     :append-t-m-n-s (expr-value-primop
+                      (make-primop-value-append-t-m-n-s-x :tval op.tval
+                                                          :mval op.mval
+                                                          :nval op.nval
+                                                          :sval op.sval
+                                                          :xval arg))
+     :append-t-m-n-s-x (prim-append op.tval op.mval op.nval op.sval
+                                    op.xval arg)
+     :reverse (prog2$ (impossible) (reserr nil))
+     :reverse-t (prog2$ (impossible) (reserr nil))
+     :reverse-t-d (prog2$ (impossible) (reserr nil))
+     :reverse-t-d-s (prim-reverse op.tval op.dval op.sval arg)
+     :index (prog2$ (impossible) (reserr nil))
+     :index-t (prog2$ (impossible) (reserr nil))
+     :index-t-m (expr-value-primop
+                 (make-primop-value-index-t-m-x :tval op.tval
+                                                :mval op.mval
+                                                :xval arg))
+     :index-t-m-x (prim-index op.tval op.mval op.xval arg)
+     :index2d (prog2$ (impossible) (reserr nil))
+     :index2d-t (prog2$ (impossible) (reserr nil))
+     :index2d-t-m (prog2$ (impossible) (reserr nil))
+     :index2d-t-m-n (expr-value-primop
+                     (make-primop-value-index2d-t-m-n-x :tval op.tval
+                                                        :mval op.mval
+                                                        :nval op.nval
+                                                        :xval arg))
+     :index2d-t-m-n-x (prim-index2d op.tval op.mval op.nval op.xval arg)
+     :sum (prog2$ (impossible) (reserr nil))
+     :sum-s (prim-sum op.sval arg)
+     :reshape (prog2$ (impossible) (reserr nil))
+     :reshape-t (prog2$ (impossible) (reserr nil))
+     :reshape-t-s1 (prog2$ (impossible) (reserr nil))
+     :reshape-t-s1-s2 (prim-reshape op.tval op.s1val op.s2val arg)))
+  :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///
 
-  (defret expr-value-wfp-of-eval-primop
+  (defret expr-value-wfp-of-eval-primop-fun
     (implies (not (reserrp val))
              (expr-value-wfp val))
-    :hints (("Goal" :in-theory (enable eval-primop
-                                       prim-int-add
-                                       prim-int-sub
-                                       prim-int-mul
-                                       prim-int-div
-                                       prim-int-mod
-                                       prim-int-max
-                                       prim-int-min
-                                       prim-int-bit-and
-                                       prim-int-bit-or
-                                       prim-int-bit-xor
-                                       prim-int-shl
-                                       prim-int-shr
-                                       prim-int-bit-not
-                                       prim-int-popc
-                                       prim-int-eq
-                                       prim-int-neq
-                                       prim-int-lt
-                                       prim-int-gt
-                                       prim-int-leq
-                                       prim-int-geq
-                                       prim-int-to-float
-                                       prim-int-to-bool
-                                       prim-float-add
-                                       prim-float-sub
-                                       prim-float-mul
-                                       prim-float-div
-                                       prim-float-expt
-                                       prim-float-max
-                                       prim-float-min
-                                       prim-float-sqrt
-                                       prim-float-eq
-                                       prim-float-neq
-                                       prim-float-lt
-                                       prim-float-gt
-                                       prim-float-leq
-                                       prim-float-geq
-                                       prim-float-truncate
-                                       prim-float-round
-                                       prim-float-ceiling
-                                       prim-float-floor
-                                       prim-bool-not
-                                       prim-bool-and
-                                       prim-bool-or
-                                       prim-bool-eq
-                                       prim-bool-neq
-                                       prim-bool-to-int
-                                       prim-bool-to-float)))))
+    :hyp (and (primop-value-wfp op)
+              (expr-value-wfp arg))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-primop-fun-chain ((op primop-valuep) (args expr-value-listp))
+  :guard (and (primop-value-funp op)
+              (primop-value-wfp op)
+              (expr-value-list-wfp args))
+  :returns (val expr-value-resultp)
+  :short "Evaluate the application of a primitive operation
+          to a list of argument cells, one after the other."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This chains applications of @(tsee eval-primop-fun):
+     the operation is applied to the first argument cell;
+     if there are more argument cells,
+     the result must be another applicable primitive operation value
+     (i.e. an @('-x') stage of a binary operation),
+     which is applied to the remaining argument cells.
+     Applying the operation to no argument cells returns it unchanged.")
+   (xdoc::p
+    "This function is transitional:
+     term applications are now evaluated
+     one argument at a time, in curried style,
+     with @(tsee eval-app-cell) calling @(tsee eval-primop-fun) directly,
+     so this function is no longer used there;
+     it is only used in some tests,
+     and it will be removed when those are reworked."))
+  (b* (((when (endp args)) (expr-value-primop (primop-value-fix op)))
+       ((ok val) (eval-primop-fun op (car args)))
+       ((when (endp (cdr args))) val)
+       ((unless (and (expr-value-case val :primop)
+                     (primop-value-funp (expr-value-primop->val val))))
+        (reserr nil)))
+    (eval-primop-fun-chain (expr-value-primop->val val) (cdr args)))
+  :measure (len args)
+
+  ///
+
+  (defret expr-value-wfp-of-eval-primop-fun-chain
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (and (primop-value-wfp op)
+              (expr-value-list-wfp args))
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-primop-tfun ((op primop-valuep) (tval type-valuep))
+  :guard (primop-value-tfunp op)
+  :returns (val expr-value-resultp)
+  :short "Evaluate the application of a primitive operation value
+          to a type value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the dynamic counterpart, for primitive operations,
+     of applying a type lambda abstraction to a type value:
+     it is called by @(tsee eval-tapp)
+     on a scalar primitive operation value
+     and the type argument value.")
+   (xdoc::p
+    "The guard requires the value to be applicable to type values
+     (see @(tsee primop-value-tfunp)).
+     We check that the type value matches, in kind,
+     the type parameter of the operation,
+     i.e. the one in the operation's type in @(tsee primop-types);
+     then we construct the next instantiation stage of the operation,
+     which stores the type value received.
+     Anything else is an error."))
+  (primop-value-case
+   op
+   :head (b* (((unless (type-values-match-type-vars-p
+                        (list tval)
+                        (list (type-var-atom "t"))))
+               (reserr nil)))
+           (expr-value-primop (primop-value-head-t tval)))
+   :tail (b* (((unless (type-values-match-type-vars-p
+                        (list tval)
+                        (list (type-var-atom "t"))))
+               (reserr nil)))
+           (expr-value-primop (primop-value-tail-t tval)))
+   :length (b* (((unless (type-values-match-type-vars-p
+                          (list tval)
+                          (list (type-var-atom "t"))))
+                 (reserr nil)))
+             (expr-value-primop (primop-value-length-t tval)))
+   :append (b* (((unless (type-values-match-type-vars-p
+                          (list tval)
+                          (list (type-var-atom "t"))))
+                 (reserr nil)))
+             (expr-value-primop (primop-value-append-t tval)))
+   :reverse (b* (((unless (type-values-match-type-vars-p
+                           (list tval)
+                           (list (type-var-atom "t"))))
+                  (reserr nil)))
+              (expr-value-primop (primop-value-reverse-t tval)))
+   :index (b* (((unless (type-values-match-type-vars-p
+                           (list tval)
+                           (list (type-var-atom "t"))))
+                  (reserr nil)))
+            (expr-value-primop (primop-value-index-t tval)))
+   :index2d (b* (((unless (type-values-match-type-vars-p
+                           (list tval)
+                           (list (type-var-atom "t"))))
+                  (reserr nil)))
+              (expr-value-primop (primop-value-index2d-t tval)))
+   :reshape (b* (((unless (type-values-match-type-vars-p
+                           (list tval)
+                           (list (type-var-atom "t"))))
+                  (reserr nil)))
+              (expr-value-primop (primop-value-reshape-t tval)))
+   :otherwise (prog2$ (impossible) (reserr nil)))
+  :guard-hints (("Goal" :in-theory (enable primop-value-tfunp
+                                           type-values-match-type-vars-p)))
+
+  ///
+
+  (defret expr-value-wfp-of-eval-primop-tfun
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hints (("Goal" :in-theory (enable expr-value-wfp
+                                       check-dims-of-expr-value
+                                       check-dims-of-primop-value)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-primop-ifun ((op primop-valuep) (ival ispace-valuep))
+  :guard (primop-value-ifunp op)
+  :returns (val expr-value-resultp)
+  :short "Evaluate the application of a primitive operation value
+          to an ispace value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the dynamic counterpart, for primitive operations,
+     of applying an ispace lambda abstraction to an ispace value:
+     it is called by @(tsee eval-iapp)
+     on a scalar primitive operation value
+     and the ispace argument value.")
+   (xdoc::p
+    "The guard requires the value to be applicable to ispace values
+     (see @(tsee primop-value-ifunp)).
+     Each stage applicable to ispace values expects
+     an ispace value of a specific sort,
+     namely the sort of the next ispace parameter
+     in the operation's type in @(tsee primop-types):
+     a dimension for the stages that store just a type value
+     (except @(':reshape-t'), which expects the first of two shapes),
+     a shape for the stages that also store a dimension or a shape;
+     the uninstantiated stage of @('sum'), which has no type parameter,
+     stores nothing and expects a shape directly.
+     We check that the ispace value has the expected sort;
+     then we construct the next instantiation stage of the operation,
+     which stores the ispace values received
+     (a dimension and a shape
+     for @('head'), @('tail'), @('length'), and @('reverse');
+     two dimensions and a shape for @('append');
+     a dimension for @('index');
+     two dimensions for @('index2d');
+     a shape for @('sum');
+     two shapes for @('reshape')),
+     along with the previously received type values (if any).
+     Anything else is an error."))
+  (primop-value-case
+   op
+   :head-t (ispace-value-case
+            ival
+            :dim (expr-value-primop
+                  (make-primop-value-head-t-d :tval op.tval
+                                              :dval ival.val))
+            :shape (reserr nil))
+   :head-t-d (ispace-value-case
+              ival
+              :dim (reserr nil)
+              :shape (expr-value-primop
+                      (make-primop-value-head-t-d-s :tval op.tval
+                                                    :dval op.dval
+                                                    :sval ival.val)))
+   :tail-t (ispace-value-case
+            ival
+            :dim (expr-value-primop
+                  (make-primop-value-tail-t-d :tval op.tval
+                                              :dval ival.val))
+            :shape (reserr nil))
+   :tail-t-d (ispace-value-case
+              ival
+              :dim (reserr nil)
+              :shape (expr-value-primop
+                      (make-primop-value-tail-t-d-s :tval op.tval
+                                                    :dval op.dval
+                                                    :sval ival.val)))
+   :length-t (ispace-value-case
+              ival
+              :dim (expr-value-primop
+                    (make-primop-value-length-t-d :tval op.tval
+                                                  :dval ival.val))
+              :shape (reserr nil))
+   :length-t-d (ispace-value-case
+                ival
+                :dim (reserr nil)
+                :shape (expr-value-primop
+                        (make-primop-value-length-t-d-s :tval op.tval
+                                                        :dval op.dval
+                                                        :sval ival.val)))
+   :append-t (ispace-value-case
+              ival
+              :dim (expr-value-primop
+                    (make-primop-value-append-t-m :tval op.tval
+                                                  :mval ival.val))
+              :shape (reserr nil))
+   :append-t-m (ispace-value-case
+                ival
+                :dim (expr-value-primop
+                      (make-primop-value-append-t-m-n :tval op.tval
+                                                      :mval op.mval
+                                                      :nval ival.val))
+                :shape (reserr nil))
+   :append-t-m-n (ispace-value-case
+                  ival
+                  :dim (reserr nil)
+                  :shape (expr-value-primop
+                          (make-primop-value-append-t-m-n-s :tval op.tval
+                                                            :mval op.mval
+                                                            :nval op.nval
+                                                            :sval ival.val)))
+   :reverse-t (ispace-value-case
+               ival
+               :dim (expr-value-primop
+                     (make-primop-value-reverse-t-d :tval op.tval
+                                                    :dval ival.val))
+               :shape (reserr nil))
+   :reverse-t-d (ispace-value-case
+                 ival
+                 :dim (reserr nil)
+                 :shape (expr-value-primop
+                         (make-primop-value-reverse-t-d-s :tval op.tval
+                                                          :dval op.dval
+                                                          :sval ival.val)))
+   :index-t (ispace-value-case
+             ival
+             :dim (expr-value-primop
+                   (make-primop-value-index-t-m :tval op.tval
+                                                :mval ival.val))
+             :shape (reserr nil))
+   :index2d-t (ispace-value-case
+               ival
+               :dim (expr-value-primop
+                     (make-primop-value-index2d-t-m :tval op.tval
+                                                    :mval ival.val))
+               :shape (reserr nil))
+   :index2d-t-m (ispace-value-case
+                 ival
+                 :dim (expr-value-primop
+                       (make-primop-value-index2d-t-m-n :tval op.tval
+                                                        :mval op.mval
+                                                        :nval ival.val))
+                 :shape (reserr nil))
+   :sum (ispace-value-case
+         ival
+         :dim (reserr nil)
+         :shape (expr-value-primop
+                 (make-primop-value-sum-s :sval ival.val)))
+   :reshape-t (ispace-value-case
+               ival
+               :dim (reserr nil)
+               :shape (expr-value-primop
+                       (make-primop-value-reshape-t-s1 :tval op.tval
+                                                       :s1val ival.val)))
+   :reshape-t-s1 (ispace-value-case
+                  ival
+                  :dim (reserr nil)
+                  :shape (expr-value-primop
+                          (make-primop-value-reshape-t-s1-s2 :tval op.tval
+                                                             :s1val op.s1val
+                                                             :s2val ival.val)))
+   :otherwise (prog2$ (impossible) (reserr nil)))
+  :guard-hints (("Goal" :in-theory (enable primop-value-ifunp)))
+
+  ///
+
+  (defret expr-value-wfp-of-eval-primop-ifun
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hints (("Goal" :in-theory (enable expr-value-wfp
+                                       check-dims-of-expr-value
+                                       check-dims-of-primop-value)))))

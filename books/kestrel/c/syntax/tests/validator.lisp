@@ -1765,6 +1765,37 @@ static struct myStruct my = { 1, 1, 1, 1, 1 };
                (equal (desiniter-vinfo->designors (desiniter->info (fifth desiniters)))
                       (list (designor-dot (ident "f")))))))
 
+;; Designations recorded for positional initializers are relative to the
+;; object initialized at the current brace level, not to the outermost object.
+;; Here the inner brace's initializers are recorded as (.x) and (.z),
+;; relative to the inner point object, rather than (.inner .x) and (.inner .z).
+(test-valid
+  "struct point { int x; int z; };
+struct outer { struct point inner; int w; };
+static struct outer o = { { 1, 2 }, 9 };
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (items (trans-unit->items tunit))
+             (o-declon (ext-declon-declon->declon
+                         (trans-item-declon->declon (third items))))
+             (o-init-declor (car (declon-declon->declors o-declon)))
+             (initer (init-declor->initer? o-init-declor))
+             (desiniters (initer-list->elems initer))
+             (inner-initer (desiniter->initer (first desiniters)))
+             (inner-desiniters (initer-list->elems inner-initer)))
+          (and (equal (desiniter-vinfo->designors
+                        (desiniter->info (first desiniters)))
+                      (list (designor-dot (ident "inner"))))
+               (equal (desiniter-vinfo->designors
+                        (desiniter->info (second desiniters)))
+                      (list (designor-dot (ident "w"))))
+               (equal (desiniter-vinfo->designors
+                        (desiniter->info (first inner-desiniters)))
+                      (list (designor-dot (ident "x"))))
+               (equal (desiniter-vinfo->designors
+                        (desiniter->info (second inner-desiniters)))
+                      (list (designor-dot (ident "z")))))))
+
 ;; Valid null pointer constants
 (test-valid
   "int * a = 0;

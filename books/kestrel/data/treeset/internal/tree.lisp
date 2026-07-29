@@ -162,6 +162,14 @@
   :enable (tree-element->val
            tree-element-equiv))
 
+(defrule acl2-count-of-tree-element->val-linear
+  (<= (acl2-count (tree-element->val elem))
+      (acl2-count elem))
+  :rule-classes :linear
+  :enable (tree-element->val
+           tree-element-fix
+           irr-tree-element))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-element->hash ((elem tree-element-p))

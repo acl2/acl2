@@ -117,8 +117,8 @@
      we provide an "
     (xdoc::seetopic "external-preprocessing"
                     "ACL2 tool to invoke an external C preprocessor")
-    ". The tool can be run on headers and source files,
-     to obtain preprocessed source files,
+    ". The tool can be run on files,
+     to obtain preprocessed files,
      which can be then parsed by our parser.")
    (xdoc::p
     "Additionally, we provide our own @(see preprocessor),

@@ -98,11 +98,13 @@
      :member (c$::expr-member
                (expr-subst-free (c$::expr-member->arg expr)
                                 subst bound-vars)
-               (c$::expr-member->name expr))
+               (c$::expr-member->name expr)
+               (c$::expr-member->info expr))
      :memberp (c$::expr-memberp
                 (expr-subst-free (c$::expr-memberp->arg expr)
                                  subst bound-vars)
-                (c$::expr-memberp->name expr))
+                (c$::expr-memberp->name expr)
+                (c$::expr-memberp->info expr))
      :complit
      (c$::expr-complit
        (tyname-subst-free (c$::expr-complit->type expr)
@@ -909,10 +911,11 @@
                                           :info param-declor.info)
            (ident-set-fix bound-vars)))
      :abstract
-     (mv (param-declor-abstract
-           (absdeclor-subst-free
-             (c$::param-declor-abstract->declor param-declor)
-             subst bound-vars))
+     (mv (make-param-declor-abstract
+          :declor (absdeclor-subst-free
+                   (c$::param-declor-abstract->declor param-declor)
+                   subst bound-vars)
+          :info param-declor.info)
          (ident-set-fix bound-vars))
      :none (mv (param-declor-fix param-declor) (ident-set-fix bound-vars))
      :ambig

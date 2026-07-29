@@ -7020,7 +7020,7 @@
              ((erp attrspecs last-span parstate) ; declspecs attrspecs
               (parse-*-attribute-specifier parstate)))
           (retok (make-param-declon :specs declspecs
-                                    :declor (param-declor-none)
+                                    :declor (param-declor-none nil)
                                     :attribs attrspecs)
                  (if attrspecs
                      (span-join span last-span)
@@ -7065,7 +7065,9 @@
            :absdeclor
            (retok (make-param-declon
                    :specs declspecs
-                   :declor (param-declor-abstract declor/absdeclor.absdeclor)
+                   :declor (make-param-declor-abstract
+                            :declor declor/absdeclor.absdeclor
+                            :info nil)
                    :attribs attrspecs)
                   (if attrspecs
                       (span-join span attrs-span)

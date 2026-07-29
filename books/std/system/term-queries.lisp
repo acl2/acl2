@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -34,6 +34,7 @@
 (include-book "check-unary-lambda-call")
 (include-book "check-user-lambda")
 (include-book "check-user-term")
+(include-book "check-user-term-dollar")
 (include-book "dumb-occur-var-open")
 (include-book "guard-verified-exec-fnsp")
 (include-book "guard-verified-fnsp")
