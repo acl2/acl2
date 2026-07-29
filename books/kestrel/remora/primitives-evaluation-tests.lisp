@@ -27,6 +27,24 @@
 (defconst *int-max* 9223372036854775807)  ; Haskell 64-bit Int maxBound, 2^63 - 1
 (defconst *int-min* -9223372036854775808) ; Haskell 64-bit Int minBound, -2^63
 
+; Curried application of a primitive operation value
+; to one or more argument cells:
+; (eval-primop-fun* op a1 a2 ... an) expands to
+; a nest of eval-primop-fun calls,
+; where the primitive operation value resulting from each application
+; is extracted from the expression value that wraps it.
+
+(defun eval-primop-fun*-fn (op args)
+  (declare (xargs :guard (and (true-listp args) (consp args))))
+  (if (endp (cdr args))
+      `(eval-primop-fun ,op ,(car args))
+    (eval-primop-fun*-fn
+     `(expr-value-primop->val (eval-primop-fun ,op ,(car args)))
+     (cdr args))))
+
+(defmacro eval-primop-fun* (op arg &rest args)
+  (eval-primop-fun*-fn op (cons arg args)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::assert-equal (prim-int-add (iv 2) (iv 3)) (iv 5))
@@ -420,21 +438,21 @@
  (iv 5))
 
 (acl2::assert-equal
- (eval-primop-fun-chain (primop-value-int-binary (int-binary-primop-add))
-                        (list (iv 2) (iv 3)))
+ (eval-primop-fun* (primop-value-int-binary (int-binary-primop-add))
+                   (iv 2) (iv 3))
  (iv 5))
 
 (acl2::assert-equal
- (eval-primop-fun-chain (primop-value-int-rel (int-rel-primop-lt))
-                        (list (iv 2) (iv 3)))
+ (eval-primop-fun* (primop-value-int-rel (int-rel-primop-lt))
+                   (iv 2) (iv 3))
  (bv t))
 
 (acl2::assert-equal
- (eval-primop-fun-chain (primop-value-float-binary (float-binary-primop-add))
-                        (list (fv 1/2) (fv 1/4)))
+ (eval-primop-fun* (primop-value-float-binary (float-binary-primop-add))
+                   (fv 1/2) (fv 1/4))
  (fv 3/4))
 
 (acl2::assert-equal
- (eval-primop-fun-chain (primop-value-bool-binary (bool-binary-primop-and))
-                        (list (bv t) (bv nil)))
+ (eval-primop-fun* (primop-value-bool-binary (bool-binary-primop-and))
+                   (bv t) (bv nil))
  (bv nil))

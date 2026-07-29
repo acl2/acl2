@@ -55,12 +55,10 @@
 (defsection fun-value-param-dims-rules
   :short "Rules about the dimensions of functions."
 
-  (defruled fun-value-param-dims-of-int-add
+  (defruled fun-value-param-dims-of-int-binary
     (implies (and (expr-value-case funval :primop)
                   (equal opval (expr-value-primop->val funval))
-                  (primop-value-case opval :int-binary)
-                  (equal op (primop-value-int-binary->op opval))
-                  (int-binary-primop-case op :add))
+                  (primop-value-case opval :int-binary))
              (equal (fun-value-param-dims funval)
                     (list nil nil)))
     :enable (fun-value-param-dims
@@ -221,7 +219,7 @@
                      (base-value-int
                       (int-value (+ (int-value->int intval1)
                                     (int-value->int intval2)))))))
-    :enable (fun-value-param-dims-of-int-add
+    :enable (fun-value-param-dims-of-int-binary
              fun-value-param-dims-of-int-binary-x
              len
              dims-of-expr-value-list
