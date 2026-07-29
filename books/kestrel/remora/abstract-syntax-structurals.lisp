@@ -711,10 +711,9 @@
      without the first input type.
      This is analogous to @(tsee forall-curried-body),
      with input types in place of bound variables."))
-  (b* ((in (type-list-fix in))
-       (out (type-fix out)))
-    (cond ((endp (cdr in)) out)
-          (t (make-type-funn :in (cdr in) :out out)))))
+  (cond ((endp (cdr in)) (type-fix out))
+        (t (make-type-funn :in (cdr in) :out out)))
+  :hooks ((:fix :hints (("Goal" :in-theory (enable cdr-of-type-list-fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
