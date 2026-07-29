@@ -18,7 +18,8 @@
 
 (std::defredundant
   :names (iterp
-          iter
+          iter-min
+          iter-max
           iter-fix
           iter-equiv
           after-lastp

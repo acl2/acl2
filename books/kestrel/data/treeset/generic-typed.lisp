@@ -277,7 +277,7 @@
 
 ;; The same check, run with an @(see iterator) instead of by repeatedly taking
 ;; the minimum. The guard rules out a rewound iterator, which has no element to
-;; read; @(tsee iter) never produces one and @(tsee next) never reaches one, so
+;; read; @(tsee iter-min) never produces one and @(tsee next) never reaches one, so
 ;; a forward walk stays within it.
 
 (define iter-all-genericp ((iter iterp))
@@ -328,7 +328,7 @@
 ;; The converse holds only of a walk that starts at the beginning. An iterator
 ;; part way along has already passed some elements and will never read them, so
 ;; it can succeed over a set that is not all generic. The correspondence is
-;; therefore stated at @(tsee iter), where nothing has been passed yet.
+;; therefore stated at @(tsee iter-min), where nothing has been passed yet.
 ;;
 ;; The proof names the values a walk still has to read. A step drops the head of
 ;; that list, so an induction on the walk meets each value in turn; and at a
@@ -378,10 +378,10 @@
 
 ;; A fresh iterator has read nothing, so everything is still ahead of it.
 
-(defruledl tree-iter-after-of-iter
-  (equal (tree-iter-after (iter set))
+(defruledl tree-iter-after-of-iter-min
+  (equal (tree-iter-after (iter-min set))
          (cdr (tree-in-order (fix set))))
-  :enable (iter
+  :enable (iter-min
            tree-iter-after-of-tree-iter-before-first))
 
 ;; The first value of a walk is the head of the in-order sequence. Stated over
@@ -399,7 +399,7 @@
 
 ;; The same two facts at the set level. They are packaged separately so that
 ;; the proof below can leave @(tsee emptyp) folded, which is what lets @(tsee
-;; value-of-iter) fire.
+;; value-of-iter-min) fire.
 
 (defruledl cons-of-min-and-cdr-of-tree-in-order-of-fix
   (implies (not (emptyp set))
@@ -419,12 +419,12 @@
   :enable (emptyp
            tree-in-order-when-tree-empty-p))
 
-(defruledl iter-remaining-of-iter
-  (equal (iter-remaining (iter set))
+(defruledl iter-remaining-of-iter-min
+  (equal (iter-remaining (iter-min set))
          (tree-in-order (fix set)))
   :enable (iter-remaining
-           tree-iter-after-of-iter
-           value-of-iter
+           tree-iter-after-of-iter-min
+           value-of-iter-min
            empty
            tree-empty-p
            cons-of-min-and-cdr-of-tree-in-order-of-fix
@@ -433,13 +433,13 @@
 ;; So a walk that starts at the beginning reads every element, and the two
 ;; checks agree.
 
-(defruled set-all-genericp-when-iter-all-genericp-of-iter
-  (implies (iter-all-genericp (iter set))
+(defruled set-all-genericp-when-iter-all-genericp-of-iter-min
+  (implies (iter-all-genericp (iter-min set))
            (set-all-genericp set))
   :enable (set-all-genericp-pick-a-point
            in
            genericp-when-member-equal-of-iter-remaining
-           iter-remaining-of-iter))
+           iter-remaining-of-iter-min))
 
 ;; The stub in the body means the recursion is not visibly boolean, so this has
 ;; to be said rather than read off the type prescription.
@@ -450,12 +450,12 @@
   :induct (iter-all-genericp iter)
   :enable iter-all-genericp)
 
-(defrule iter-all-genericp-of-iter
-  (equal (iter-all-genericp (iter set))
+(defrule iter-all-genericp-of-iter-min
+  (equal (iter-all-genericp (iter-min set))
          (set-all-genericp set))
-  :enable set-all-genericp-when-iter-all-genericp-of-iter
+  :enable set-all-genericp-when-iter-all-genericp-of-iter-min
   :use (:instance iter-all-genericp-when-set-all-genericp
-                  (iter (iter set))))
+                  (iter (iter-min set))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

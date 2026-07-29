@@ -33,6 +33,7 @@
 (local (include-book "min-max"))
 (local (include-book "in"))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/data/utilities/oset" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1119,6 +1120,21 @@
   :use ((:instance tree-in-order-becomes-value-and-after-of-tree-zip-first)
         (:instance car-of-tree-in-order))
   :disable car-of-tree-in-order)
+
+(defruledl car-of-last-of-append-of-singleton
+  (equal (car (last (append x (list y))))
+         y)
+  :induct t
+  :enable append)
+
+(defrule tree-zip-value-of-tree-zip-last
+  (implies (not (tree-empty-p tree))
+           (equal (tree-zip-value (tree-zip-last tree))
+                  (tree-rightmost tree)))
+  :enable car-of-last-of-append-of-singleton
+  :use ((:instance tree-in-order-becomes-before-and-value-of-tree-zip-last)
+        (:instance car-of-last-of-tree-in-order))
+  :disable car-of-last-of-tree-in-order)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
