@@ -385,6 +385,21 @@
            tree-zip-p
            treep))
 
+;; The same disjointness with no equality to match on, which is what a proof
+;; needs when it has just built an end and is asking whether it is at a value.
+
+(defrule not-tree-zip-p-of-tree-iter-before-first
+  (not (tree-zip-p (tree-iter-before-first tree)))
+  :enable (tree-iter-before-first
+           tree-zip-p
+           treep))
+
+(defrule not-tree-zip-p-of-tree-iter-after-last
+  (not (tree-zip-p (tree-iter-after-last tree)))
+  :enable (tree-iter-after-last
+           tree-zip-p
+           treep))
+
 ;; And conversely, in the direction which lets a proof conclude that an iterator
 ;; landing on a zipper was not at an end to begin with.
 
@@ -875,6 +890,19 @@
   :enable (tree-iter-before
            tree-iter-after))
 
+;; At either end the whole sequence lies on one side: a rewound iterator has
+;; all of it ahead, and an exhausted one has all of it behind.
+
+(defrule tree-iter-after-of-tree-iter-before-first
+  (equal (tree-iter-after (tree-iter-before-first tree))
+         (tree-in-order tree))
+  :enable tree-iter-after)
+
+(defrule tree-iter-before-of-tree-iter-after-last
+  (equal (tree-iter-before (tree-iter-after-last tree))
+         (tree-in-order tree))
+  :enable tree-iter-before)
+
 ;; At the first element nothing lies behind, so the whole sequence is that
 ;; element followed by what lies ahead of it.
 
@@ -1125,3 +1153,27 @@
            tree-iter-after
            tree-iter-has-value-p
            tree-in-order-becomes-value-and-after-of-tree-zip-first))
+
+;; A step lands on a value exactly when there was something ahead to land on.
+;; This is what makes @(tsee tree-iter-after-of-tree-iter-next) usable: that
+;; rule shortens the list ahead unconditionally, and this one says when the
+;; list was nonempty to begin with.
+
+(defrule tree-iter-has-value-p-of-tree-iter-next
+  (equal (tree-iter-has-value-p (tree-iter-next iter))
+         (consp (tree-iter-after iter)))
+  :enable (tree-iter-after
+           tree-iter-next
+           tree-iter-has-value-p))
+
+;; The only positions with no value are the two ends, and nothing lies ahead of
+;; the right one. So anywhere but the left end, something ahead means a value
+;; here. Left disabled: the conclusion is a type-like predicate that would
+;; otherwise be tried against every position.
+
+(defruled tree-iter-has-value-p-when-consp-of-tree-iter-after
+  (implies (and (not (tree-iter-before-first-p iter))
+                (consp (tree-iter-after iter)))
+           (tree-iter-has-value-p iter))
+  :enable (tree-iter-after
+           tree-iter-has-value-p))

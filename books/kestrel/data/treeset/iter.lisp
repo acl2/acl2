@@ -340,6 +340,29 @@
            emptyp
            tree-iter-after-last-p-of-iter))
 
+;; A fresh iterator is never rewound: it is built by stepping forward from the
+;; rewound position, and a step never lands there.
+
+(defruledl tree-iter-before-first-p-of-iter
+  (not (tree-iter-before-first-p (iter set)))
+  :enable iter)
+
+(defrule not-before-firstp-of-iter
+  (not (before-firstp (iter set)))
+  :enable (before-firstp
+           tree-iter-before-first-p-of-iter))
+
+;; So a fresh iterator is at a value exactly when there is one to be at.
+
+(defrule has-valuep-of-iter
+  (equal (has-valuep (iter set))
+         (not (emptyp set)))
+  :enable ((:t has-valuep))
+  :use ((:instance has-valuep-when-neither-end (iter (iter set)))
+        (:instance not-after-lastp-when-has-valuep (iter (iter set))))
+  :disable (has-valuep-when-neither-end
+            not-after-lastp-when-has-valuep))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define value ((iter iterp))
