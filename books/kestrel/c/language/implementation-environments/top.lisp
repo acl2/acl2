@@ -70,6 +70,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ienv-requirep ((uchar uchar-formatp)
+                       (schar schar-formatp)
+                       (short integer-formatp)
+                       (int integer-formatp)
+                       (long integer-formatp)
+                       (llong integer-formatp)
+                       (bool bool-formatp))
+  :returns (yes/no booleanp)
+  :short "Requirements for @(tsee ienv)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This captures requirements involving
+     multiple components of @(tsee ienv),
+     used in the @(':require') of that fixtype definition."))
+  (and (integer-format-short-wfp short uchar schar)
+       (integer-format-int-wfp int uchar short)
+       (integer-format-long-wfp long uchar int)
+       (integer-format-llong-wfp llong uchar long)
+       (bool-format-wfp bool uchar)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod ienv
   :short "Fixtype of implementation environments."
   :long
@@ -83,24 +106,47 @@
      "The formats of the three character types.")
     (xdoc::li
      "The formats of the standard signed integer types
-      and their unsigned counterparts."))
+      and their unsigned counterparts.")
+    (xdoc::li
+     "The format of the boolean type
+      (which is a standard unsigned integer type,
+      but has no signed counterpart)."))
    (xdoc::p
-    "We plan to add more information.")
-   (xdoc::p
-    "The reason for using
-     the ``intermediate'' fixtype @(tsee char+short+int+long+llong+bool-format)
-     is the same as explained in @(tsee integer-format)
-     about the ``intermediate'' fixtype used there.
-     We may eliminate this at some point."))
+    "We plan to add more information."))
   ((dialect dialectp)
-   (char+short+int+long+llong+bool-format
-    char+short+int+long+llong+bool-format
-    :reqfix (if (char+short+int+long+llong+bool-format-wfp
-                 char+short+int+long+llong+bool-format)
-                char+short+int+long+llong+bool-format
-              (char8+short16+int16+long32+llong64+bool0-tcnt))))
-  :require (char+short+int+long+llong+bool-format-wfp
-            char+short+int+long+llong+bool-format)
+   (uchar uchar-format
+          :reqfix (if (ienv-requirep uchar schar short int long llong bool)
+                      uchar
+                    (uchar-format-8)))
+   (schar schar-format
+          :reqfix (if (ienv-requirep uchar schar short int long llong bool)
+                      schar
+                    (schar-format-8tcnt)))
+   (char char-format
+         :reqfix (if (ienv-requirep uchar schar short int long llong bool)
+                     char
+                   (char-format-8u)))
+   (short integer-format
+          :reqfix (if (ienv-requirep uchar schar short int long llong bool)
+                      short
+                    (short-format-16tcnt)))
+   (int integer-format
+        :reqfix (if (ienv-requirep uchar schar short int long llong bool)
+                    int
+                  (int-format-16tcnt)))
+   (long integer-format
+         :reqfix (if (ienv-requirep uchar schar short int long llong bool)
+                     long
+                   (long-format-32tcnt)))
+   (llong integer-format
+          :reqfix (if (ienv-requirep uchar schar short int long llong bool)
+                      llong
+                    (llong-format-64tcnt)))
+   (bool bool-format
+         :reqfix (if (ienv-requirep uchar schar short int long llong bool)
+                     bool
+                   (bool-format-lsb))))
+  :require (ienv-requirep uchar schar short int long llong bool)
   :pred ienvp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -113,9 +159,7 @@
    (xdoc::p
     "This is the size, in bits, of
      (possibly @('unsigned') or @('signed')) @('char') objects."))
-  (uchar-format->size
-   (char+short+int+long+llong+bool-format->uchar
-    (ienv->char+short+int+long+llong+bool-format ienv)))
+  (uchar-format->size (ienv->uchar ienv))
 
   ///
 
@@ -137,9 +181,7 @@
   (xdoc::topstring
    (xdoc::p
     "See @(tsee uchar-format->max)."))
-  (uchar-format->max
-   (char+short+int+long+llong+bool-format->uchar
-    (ienv->char+short+int+long+llong+bool-format ienv)))
+  (uchar-format->max (ienv->uchar ienv))
 
   ///
 
@@ -161,11 +203,7 @@
   (xdoc::topstring
    (xdoc::p
     "See @(tsee schar-format->max)."))
-  (schar-format->max
-   (char+short+int+long+llong+bool-format->schar
-    (ienv->char+short+int+long+llong+bool-format ienv))
-   (char+short+int+long+llong+bool-format->uchar
-    (ienv->char+short+int+long+llong+bool-format ienv)))
+  (schar-format->max (ienv->schar ienv) (ienv->uchar ienv))
 
   ///
 
@@ -187,11 +225,7 @@
   (xdoc::topstring
    (xdoc::p
     "See @(tsee schar-format->min)."))
-  (schar-format->min
-   (char+short+int+long+llong+bool-format->schar
-    (ienv->char+short+int+long+llong+bool-format ienv))
-   (char+short+int+long+llong+bool-format->uchar
-    (ienv->char+short+int+long+llong+bool-format ienv)))
+  (schar-format->min (ienv->schar ienv) (ienv->uchar ienv))
 
   ///
 
@@ -213,13 +247,7 @@
   (xdoc::topstring
    (xdoc::p
     "See @(tsee char-format->max)."))
-  (char-format->max
-   (char+short+int+long+llong+bool-format->char
-    (ienv->char+short+int+long+llong+bool-format ienv))
-   (char+short+int+long+llong+bool-format->uchar
-    (ienv->char+short+int+long+llong+bool-format ienv))
-   (char+short+int+long+llong+bool-format->schar
-    (ienv->char+short+int+long+llong+bool-format ienv)))
+  (char-format->max (ienv->char ienv) (ienv->uchar ienv) (ienv->schar ienv))
 
   ///
 
@@ -241,13 +269,7 @@
   (xdoc::topstring
    (xdoc::p
     "See @(tsee char-format->min)."))
-  (char-format->min
-   (char+short+int+long+llong+bool-format->char
-    (ienv->char+short+int+long+llong+bool-format ienv))
-   (char+short+int+long+llong+bool-format->uchar
-    (ienv->char+short+int+long+llong+bool-format ienv))
-   (char+short+int+long+llong+bool-format->schar
-    (ienv->char+short+int+long+llong+bool-format ienv)))
+  (char-format->min (ienv->char ienv) (ienv->uchar ienv) (ienv->schar ienv))
 
   ///
 
@@ -265,9 +287,7 @@
 (define ienv->short-bit-size ((ienv ienvp))
   :returns (size posp)
   :short "Number of bits of unsigned and signed @('short') objects."
-  (integer-format->bit-size
-   (char+short+int+long+llong+bool-format->short
-    (ienv->char+short+int+long+llong+bool-format ienv)))
+  (integer-format->bit-size (ienv->short ienv))
 
   ///
 
@@ -278,7 +298,11 @@
 
   (defret ienv->short-bit-size-lower-bound
     (>= size 16)
-    :rule-classes :linear))
+    :rule-classes :linear
+    :hints (("Goal"
+             :use (:instance ienv-requirements (x ienv))
+             :in-theory (e/d (ienv-requirep)
+                             (ienv-requirements))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -287,7 +311,7 @@
   (size posp
         :hints (("Goal"
                  :in-theory (e/d (posp
-                                  char+short+int+long+llong+bool-format-wfp
+                                  ienv-requirep
                                   integer-format-short-wfp
                                   ienv->char-size
                                   ienv->short-bit-size)
@@ -310,9 +334,7 @@
 (define ienv->int-bit-size ((ienv ienvp))
   :returns (size posp)
   :short "Number of bits of unsigned and signed @('int') objects."
-  (integer-format->bit-size
-   (char+short+int+long+llong+bool-format->int
-    (ienv->char+short+int+long+llong+bool-format ienv)))
+  (integer-format->bit-size (ienv->int ienv))
 
   ///
 
@@ -323,7 +345,11 @@
 
   (defret ienv->int-bit-size-lower-bound
     (>= size 16)
-    :rule-classes :linear))
+    :rule-classes :linear
+    :hints (("Goal"
+             :use (:instance ienv-requirements (x ienv))
+             :in-theory (e/d (ienv-requirep)
+                             (ienv-requirements))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -332,7 +358,7 @@
   (size posp
         :hints (("Goal"
                  :in-theory (e/d (posp
-                                  char+short+int+long+llong+bool-format-wfp
+                                  ienv-requirep
                                   integer-format-int-wfp
                                   ienv->char-size
                                   ienv->int-bit-size)
@@ -355,9 +381,7 @@
 (define ienv->long-bit-size ((ienv ienvp))
   :returns (size posp)
   :short "Number of bits of unsigned and signed @('long') objects."
-  (integer-format->bit-size
-   (char+short+int+long+llong+bool-format->long
-    (ienv->char+short+int+long+llong+bool-format ienv)))
+  (integer-format->bit-size (ienv->long ienv))
 
   ///
 
@@ -368,7 +392,11 @@
 
   (defret ienv->long-bit-size-lower-bound
     (>= size 32)
-    :rule-classes :linear))
+    :rule-classes :linear
+    :hints (("Goal"
+             :use (:instance ienv-requirements (x ienv))
+             :in-theory (e/d (ienv-requirep)
+                             (ienv-requirements))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -377,7 +405,7 @@
   (size posp
         :hints (("Goal"
                  :in-theory (e/d (posp
-                                  char+short+int+long+llong+bool-format-wfp
+                                  ienv-requirep
                                   integer-format-long-wfp
                                   ienv->char-size
                                   ienv->long-bit-size)
@@ -400,9 +428,7 @@
 (define ienv->llong-bit-size ((ienv ienvp))
   :returns (size posp)
   :short "Number of bits of unsigned and signed @('long long') objects."
-  (integer-format->bit-size
-   (char+short+int+long+llong+bool-format->llong
-    (ienv->char+short+int+long+llong+bool-format ienv)))
+  (integer-format->bit-size (ienv->llong ienv))
 
   ///
 
@@ -413,7 +439,11 @@
 
   (defret ienv->llong-bit-size-lower-bound
     (>= size 64)
-    :rule-classes :linear))
+    :rule-classes :linear
+    :hints (("Goal"
+             :use (:instance ienv-requirements (x ienv))
+             :in-theory (e/d (ienv-requirep)
+                             (ienv-requirements))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -422,7 +452,7 @@
   (size posp
         :hints (("Goal"
                  :in-theory (e/d (posp
-                                  char+short+int+long+llong+bool-format-wfp
+                                  ienv-requirep
                                   integer-format-llong-wfp
                                   ienv->char-size
                                   ienv->llong-bit-size)
@@ -445,129 +475,99 @@
 (define ienv->bool-bit-size ((ienv ienvp))
   :returns (size posp)
   :short "Number of bits of @('_Bool') objects."
-  (* (bool-format->byte-size
-      (char+short+int+long+llong+bool-format->bool
-       (ienv->char+short+int+long+llong+bool-format ienv)))
-     (uchar-format->size
-      (char+short+int+long+llong+bool-format->uchar
-       (ienv->char+short+int+long+llong+bool-format ienv)))))
+  (* (bool-format->byte-size (ienv->bool ienv))
+     (uchar-format->size (ienv->uchar ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->bool-byte-size ((ienv ienvp))
   :returns (size posp)
   :short "Number of bytes of @('_Bool') objects."
-  (bool-format->byte-size
-   (char+short+int+long+llong+bool-format->bool
-    (ienv->char+short+int+long+llong+bool-format ienv))))
+  (bool-format->byte-size (ienv->bool ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->ushort-max ((ienv ienvp))
   :returns (max posp)
   :short "The ACL2 integer value of @('USHRT_MAX') [C17:5.2.4.2.1]."
-  (integer-format->unsigned-max
-   (char+short+int+long+llong+bool-format->short
-    (ienv->char+short+int+long+llong+bool-format ienv))))
+  (integer-format->unsigned-max (ienv->short ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->sshort-max ((ienv ienvp))
   :returns (max posp)
   :short "The ACL2 integer value of @('SHRT_MAX') [C17:5.2.4.2.1]."
-  (integer-format->signed-max
-   (char+short+int+long+llong+bool-format->short
-    (ienv->char+short+int+long+llong+bool-format ienv))))
+  (integer-format->signed-max (ienv->short ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->sshort-min ((ienv ienvp))
   :returns (min integerp)
   :short "The ACL2 integer value of @('SHRT_MIN') [C17:5.2.4.2.1]."
-  (integer-format->signed-min
-   (char+short+int+long+llong+bool-format->short
-    (ienv->char+short+int+long+llong+bool-format ienv))))
+  (integer-format->signed-min (ienv->short ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->uint-max ((ienv ienvp))
   :returns (max posp)
   :short "The ACL2 integer value of @('UINT_MAX') [C17:5.2.4.2.1]."
-  (integer-format->unsigned-max
-   (char+short+int+long+llong+bool-format->int
-    (ienv->char+short+int+long+llong+bool-format ienv))))
+  (integer-format->unsigned-max (ienv->int ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->sint-max ((ienv ienvp))
   :returns (max posp)
   :short "The ACL2 integer value of @('INT_MAX') [C17:5.2.4.2.1]."
-  (integer-format->signed-max
-   (char+short+int+long+llong+bool-format->int
-    (ienv->char+short+int+long+llong+bool-format ienv))))
+  (integer-format->signed-max (ienv->int ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->sint-min ((ienv ienvp))
   :returns (min integerp)
   :short "The ACL2 integer value of @('INT_MIN') [C17:5.2.4.2.1]."
-  (integer-format->signed-min
-   (char+short+int+long+llong+bool-format->int
-    (ienv->char+short+int+long+llong+bool-format ienv))))
+  (integer-format->signed-min (ienv->int ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->ulong-max ((ienv ienvp))
   :returns (max posp)
   :short "The ACL2 integer value of @('ULONG_MAX') [C17:5.2.4.2.1]."
-  (integer-format->unsigned-max
-   (char+short+int+long+llong+bool-format->long
-    (ienv->char+short+int+long+llong+bool-format ienv))))
+  (integer-format->unsigned-max (ienv->long ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->slong-max ((ienv ienvp))
   :returns (max posp)
   :short "The ACL2 integer value of @('LONG_MAX') [C17:5.2.4.2.1]."
-  (integer-format->signed-max
-   (char+short+int+long+llong+bool-format->long
-    (ienv->char+short+int+long+llong+bool-format ienv))))
+  (integer-format->signed-max (ienv->long ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->slong-min ((ienv ienvp))
   :returns (min integerp)
   :short "The ACL2 integer value of @('LONG_MIN') [C17:5.2.4.2.1]."
-  (integer-format->signed-min
-   (char+short+int+long+llong+bool-format->long
-    (ienv->char+short+int+long+llong+bool-format ienv))))
+  (integer-format->signed-min (ienv->long ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->ullong-max ((ienv ienvp))
   :returns (max posp)
   :short "The ACL2 integer value of @('ULLONG_MAX') [C17:5.2.4.2.1]."
-  (integer-format->unsigned-max
-   (char+short+int+long+llong+bool-format->llong
-    (ienv->char+short+int+long+llong+bool-format ienv))))
+  (integer-format->unsigned-max (ienv->llong ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->sllong-max ((ienv ienvp))
   :returns (max posp)
   :short "The ACL2 integer value of @('LLONG_MAX') [C17:5.2.4.2.1]."
-  (integer-format->signed-max
-   (char+short+int+long+llong+bool-format->llong
-    (ienv->char+short+int+long+llong+bool-format ienv))))
+  (integer-format->signed-max (ienv->llong ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->sllong-min ((ienv ienvp))
   :returns (min integerp)
   :short "The ACL2 integer value of @('LLONG_MIN') [C17:5.2.4.2.1]."
-  (integer-format->signed-min
-   (char+short+int+long+llong+bool-format->llong
-    (ienv->char+short+int+long+llong+bool-format ienv))))
+  (integer-format->signed-min (ienv->llong ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
