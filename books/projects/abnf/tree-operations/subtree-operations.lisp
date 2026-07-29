@@ -217,3 +217,28 @@
   :guard-hints (("Goal" :in-theory (enable tree-path-validp
                                            check-tree-path
                                            true-listp-when-tree-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tree-paths-adjacentp ((path1 tree-pathp)
+                              (path2 tree-pathp)
+                              (tree treep))
+  :guard (and (tree-path-validp path1 tree)
+              (tree-path-validp path2 tree))
+  :returns (yes/no booleanp)
+  :short "Check if the subtrees at two valid paths in a tree are adjacent."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case when
+     the starting fringe position of the second subtree
+     is exactly at the end of the fringe of the first subtree,
+     which is calculated as the sum of
+     the starting fringe position of the first subtree
+     and the length of the fringe of the first subtree.")
+   (xdoc::p
+    "Note that if the first subtree has an empty fringe
+     then it is adjacent to itself."))
+  (equal (tree-path-fringe-start path2 tree)
+         (+ (tree-path-fringe-start path1 tree)
+            (len (tree->string (tree-at-path path1 tree))))))
