@@ -522,6 +522,64 @@
   :rule-classes :congruence
   :enable after)
 
+;;;;;;;;;;;;;;;;;;;;
+
+;; Each side is empty at its own end, and at the constructor which starts a
+;; walk in that direction. Together with the step laws these say what a walk
+;; begins and ends with: nothing behind it, and finally nothing ahead.
+
+(defrule before-when-before-firstp
+  (implies (before-firstp iter)
+           (equal (before iter)
+                  (empty)))
+  :enable (before
+           before-firstp
+           tree-iter-before
+           (:e empty)))
+
+(defrule after-when-after-lastp
+  (implies (after-lastp iter)
+           (equal (after iter)
+                  (empty)))
+  :enable (after
+           after-lastp
+           tree-iter-after
+           (:e empty)))
+
+;; At the constructors the same holds with no hypothesis, including over the
+;; empty @(see treeset), where the iterator lands on the far end and the side
+;; in question is empty for the other reason.
+
+(defruledl tree-iter-before-of-iter-min
+  (equal (tree-iter-before (iter-min set))
+         nil)
+  :enable (iter-min
+           tree-iter-before
+           tree-iter-next
+           tree-iter-has-value-p))
+
+(defrule before-of-iter-min
+  (equal (before (iter-min set))
+         (empty))
+  :enable (before
+           tree-iter-before-of-iter-min
+           (:e empty)))
+
+(defruledl tree-iter-after-of-iter-max
+  (equal (tree-iter-after (iter-max set))
+         nil)
+  :enable (iter-max
+           tree-iter-after
+           tree-iter-prev
+           tree-iter-has-value-p))
+
+(defrule after-of-iter-max
+  (equal (after (iter-max set))
+         (empty))
+  :enable (after
+           tree-iter-after-of-iter-max
+           (:e empty)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define value ((iter iterp))
