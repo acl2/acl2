@@ -30,8 +30,10 @@
 (local (include-book "internal/tree"))
 (local (include-book "internal/bst"))
 (local (include-book "internal/heap"))
+(local (include-book "internal/in-order"))
 (local (include-book "insert"))
 (local (include-book "kestrel/data/utilities/oset" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -633,6 +635,49 @@
   :enable (after
            set::in-to-member
            bstp-of-tree-iter-plug-of-iter-fix))
+
+;; The whole sequence is the two sides with the value between them, so an
+;; element of the tree is on one side, on the other, or is the value itself.
+;; Stated over @(tsee tree-iter-plug), where every function is still folded.
+
+(defruledl tree-in-of-tree-iter-plug-split
+  (implies (tree-iter-has-value-p iter)
+           (iff (tree-in x (tree-iter-plug iter))
+                (or (member-equal x (tree-iter-before iter))
+                    (equal x (tree-iter-value iter))
+                    (member-equal x (tree-iter-after iter)))))
+  :use ((:instance member-equal-of-tree-in-order-under-iff
+                   (tree (tree-iter-plug iter)))
+        (:instance append-of-tree-iter-before-and-tree-iter-after-when-has-value))
+  :disable (member-equal-of-tree-in-order-under-iff
+            append-of-tree-iter-before-and-tree-iter-after-when-has-value
+            tree-in-order-of-tree-zip-plug))
+
+;; The same split at the public layer: the two sides and the value account for
+;; the set, and since the sides exclude the value they do so without overlap.
+;;
+;; Both rules which rewrite @(tsee tree-iter-plug) to a zipper's plug are held
+;; off, so that the term still matches the lemma above.
+
+(defrule in-of-from-iter-when-has-valuep
+  (implies (has-valuep iter)
+           (iff (in x (from-iter iter))
+                (or (in x (before iter))
+                    (equal x (value iter))
+                    (in x (after iter)))))
+  :enable (in-of-before-becomes-member-equal
+           in-of-after-becomes-member-equal
+           tree-in-of-tree-iter-plug-split
+           fix-when-setp
+           from-iter
+           value
+           has-valuep
+           in)
+  :use (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
+                  (iter (iter-fix iter)))
+  :disable (tree-iter-plug
+            tree-iter-plug-when-tree-zip-p
+            tree-iter-plug-when-tree-iter-has-value-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
