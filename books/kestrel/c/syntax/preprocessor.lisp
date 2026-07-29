@@ -12,7 +12,7 @@
 
 (include-book "preprocessor-options")
 (include-book "preprocessor-lexemes")
-(include-book "preprocessor-files")
+(include-book "preprocessing-abstract-syntax")
 (include-book "macro-tables")
 (include-book "preprocessor-states")
 (include-book "preprocessor-messages")
@@ -174,7 +174,7 @@
      At some point we should integrate the preprocessor with the parser."))
   :order-subtopics (preprocessor-options
                     preprocessor-lexemes
-                    preprocessor-files
+                    preprocessing-abstract-syntax
                     macro-tables
                     preprocessor-states
                     preprocessor-messages
