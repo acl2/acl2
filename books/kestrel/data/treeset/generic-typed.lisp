@@ -296,6 +296,27 @@
   :expand ((iter-all-genericp iter0)
            (iter-all-genericp iter1)))
 
+;; If every element of the set is generic then so is every value a walk
+;; produces, since each value it reads is an element. This is the direction a
+;; caller needs in order to conclude that a walk succeeds.
+
+(defruledl genericp-of-value-when-set-all-genericp
+  (implies (and (set-all-genericp (from-iter iter))
+                (has-valuep iter))
+           (genericp (value iter)))
+  :enable set-all-genericp-pick-a-point
+  :use (:instance set-all-genericp-sk-necc
+                  (elem (value iter))
+                  (set (from-iter iter))))
+
+(defruled iter-all-genericp-when-set-all-genericp
+  (implies (and (set-all-genericp (from-iter iter))
+                (not (before-firstp iter)))
+           (iter-all-genericp iter))
+  :induct (iter-all-genericp iter)
+  :enable (iter-all-genericp
+           genericp-of-value-when-set-all-genericp))
+
 (defrule iter-all-genericp-when-after-lastp
   (implies (after-lastp iter)
            (iter-all-genericp iter))

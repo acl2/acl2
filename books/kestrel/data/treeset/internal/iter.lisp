@@ -15,6 +15,7 @@
 
 (include-book "tree-defs")
 (include-book "zipper")
+(include-book "in-defs")
 (include-book "min-max-defs")
 (include-book "kestrel/data/utilities/oset-defs" :dir :system)
 
@@ -30,6 +31,8 @@
 (local (include-book "tree"))
 (local (include-book "in-order"))
 (local (include-book "min-max"))
+(local (include-book "in"))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/data/utilities/oset" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1088,3 +1091,37 @@
   :use ((:instance tree-in-order-becomes-value-and-after-of-tree-zip-first)
         (:instance car-of-tree-in-order))
   :disable car-of-tree-in-order)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The value an iterator is at belongs to the tree it walks. This is what ties
+;; the values a traversal produces to the contents of the tree, rather than
+;; merely to its shape.
+
+(defrule tree-in-of-tree-iter-value
+  (implies (tree-iter-has-value-p iter)
+           (tree-in (tree-iter-value iter)
+                    (tree-iter-plug iter)))
+  :enable (tree-iter-value
+           tree-iter-plug
+           tree-iter-has-value-p
+           tree-in-order-of-tree-zip-plug-split-at-cursor)
+  :use (:instance member-equal-of-tree-in-order-under-iff
+                  (x (tree-zip-value (tree-iter->zip iter)))
+                  (tree (tree-zip-plug (tree-iter->zip iter))))
+  :disable (member-equal-of-tree-in-order-under-iff
+            tree-in-order-of-tree-zip-plug))
+
+;; The value a step lands on is the one that was at the head of what lay ahead.
+;; With @(tsee tree-iter-after-of-tree-iter-next), which drops that same head,
+;; this says a walk reads exactly the values to its right, in order.
+
+(defrule tree-iter-value-of-tree-iter-next
+  (implies (not (tree-iter-after-last-p (tree-iter-next iter)))
+           (equal (tree-iter-value (tree-iter-next iter))
+                  (car (tree-iter-after iter))))
+  :enable (tree-iter-value
+           tree-iter-next
+           tree-iter-after
+           tree-iter-has-value-p
+           tree-in-order-becomes-value-and-after-of-tree-zip-first))

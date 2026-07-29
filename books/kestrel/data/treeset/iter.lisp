@@ -15,6 +15,7 @@
 
 (include-book "set-defs")
 (include-book "min-max-defs")
+(include-book "in-defs")
 (include-book "internal/iter")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -23,6 +24,8 @@
 (local (include-book "set"))
 (local (include-book "min-max"))
 (local (include-book "internal/min-max"))
+(local (include-book "in"))
+(local (include-book "internal/in"))
 (local (include-book "internal/tree"))
 (local (include-book "internal/bst"))
 (local (include-book "internal/heap"))
@@ -137,8 +140,10 @@
   (equal (iter-fix (tree-iter-next (iter-fix iter)))
          (tree-iter-next (iter-fix iter)))
   :enable (iterp iter-fix)
-  :use (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
-                  (iter (iter-fix iter))))
+  :use ((:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
+                   (iter (iter-fix iter)))
+        (:instance tree-in-of-tree-iter-value (iter (iter-fix iter))))
+  :disable tree-iter-plug-when-tree-iter-has-value-p)
 
 (defrule iter-fix-of-tree-iter-prev-of-iter-fix
   (equal (iter-fix (tree-iter-prev (iter-fix iter)))
@@ -378,6 +383,28 @@
                                break-abstraction)
            :use ((:instance tree-leftmost-when-bstp (tree (fix set)))
                  (:instance setp-of-fix (set set))))))
+
+;; The value an @(see iterator) is at is an element of the @(see treeset) it
+;; walks. With @(tsee value-of-iter) this is what connects a walk to the
+;; contents of the set rather than just to its shape.
+;;
+;; Both internal functions are held folded here: the public definitions unfold
+;; to exactly the internal terms the lemma below is stated about, and letting
+;; those rewrite any further would lose the match.
+
+(defrule in-of-value
+  (implies (has-valuep iter)
+           (in (value iter) (from-iter iter)))
+  :enable (value
+           from-iter
+           has-valuep
+           in)
+  :use ((:instance tree-in-of-tree-iter-value (iter (iter-fix iter)))
+        (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
+                   (iter (iter-fix iter))))
+  :disable (tree-iter-plug
+            tree-iter-plug-when-tree-iter-has-value-p
+            tree-iter-value))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
