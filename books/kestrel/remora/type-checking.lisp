@@ -43,6 +43,7 @@
           typelist+type-p-when-result-not-error
           ispacevar+type-p-when-result-not-error
           ispacevarlist+type-p-when-result-not-error
+          ispace+expr-p-when-result-not-error
           typevar+type-p-when-result-not-error
           typevarlist+type-p-when-result-not-error
           stringdimmap+stringshapemap-p-when-result-not-error
@@ -276,8 +277,10 @@
      :bracket (and (check-type type.elem senv)
                    (type-atomp type.elem)
                    (check-ispace-list type.ispaces senv))
-     :fun (and (check-type-list type.in senv)
+     :fun (and (check-type type.in senv)
                (check-type type.out senv))
+     :funn (and (check-type-list type.in senv)
+                (check-type type.out senv))
      :forall (check-type type.body (senv-add-type-var type.param senv))
      :foralln (check-type type.body (senv-add-type-vars type.params senv))
      :pi (check-type type.body (senv-add-ispace-var type.param senv))
@@ -1698,21 +1701,32 @@
        (there is just one bound variable),
        and its type is the unary product type over that variable.")
      (xdoc::p
-      "For a boxing atom,
-       the ispaces must be valid (see @(tsee check-ispace-list)),
-       and the type that is part of its syntax must be a sum type.
-       The type must be valid (see @(tsee check-type)).
-       We check that the ispaces in the boxing atom have the same sorts
-       as the bound variables of the sum type,
-       obtaining a dimension substitution and a shape substitution.
-       In the body type of the sum type,
-       we apply those substitutions;
-       the resulting type must be equivalent to
-       the type of the body expression of the box.
-       The type of the boxing atom is the sum type.
-       The substitution avoids variable capture
+      "For a unary boxing atom,
+       the ispace must be valid (see @(tsee check-ispace)),
+       and the type, which is optional in the abstract syntax,
+       must be present, valid (see @(tsee check-type)), and a sum type;
+       an unannotated unary boxing atom
+       (an inner box of the nest that an n-ary boxing atom desugars to)
+       is only accepted within an annotated one,
+       via @(tsee check-box-inner).
+       We peel off the first parameter of the sum type,
+       we check that the ispace has the same sort,
+       obtaining a dimension or shape substitution,
+       and we apply the substitution to the rest of the sum type;
+       the substitution avoids variable capture
        by automatically alpha-renaming bound variables as needed
-       (see @(tsee type-subst-ispace-vars-alpha))."))
+       (see @(tsee type-subst-ispace-vars-alpha)).
+       The array expression is checked against the resulting type
+       by @(tsee check-box-inner),
+       which also handles the inner boxes of
+       desugared n-ary boxing atoms.
+       The type of the boxing atom is the sum type.
+       This treatment corresponds to @('checkAtom') in [impl].")
+     (xdoc::p
+      "For an n-ary boxing atom, the treatment is analogous,
+       but all the parameters of the sum type are matched
+       against the ispaces of the boxing atom at once,
+       and the array expression is checked directly."))
     (atom-case
      atom
      :base
@@ -1726,7 +1740,7 @@
           ((ok senv) (senv-add-var+type (var+type?->var atom.param) type senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
-        :type (make-type-fun :in (list type) :out be.type)
+        :type (make-type-fun :in type :out be.type)
         :atom (make-atom-lambda :param atom.param
                                 :body be.expr
                                 :type? be.type)))
@@ -1739,7 +1753,9 @@
           ((ok senv) (senv-add-vars+types atom.params senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
-        :type (make-type-fun :in types :out be.type)
+        :type (if (and (consp types) (endp (cdr types)))
+                  (make-type-fun :in (car types) :out be.type)
+                (make-type-funn :in types :out be.type))
         :atom (make-atom-lambdan :params atom.params
                                  :body be.expr
                                  :type? be.type)))
@@ -1772,27 +1788,33 @@
         :type (make-type-pin :params atom.params :body be.type)
         :atom (make-atom-ilambdan :params atom.params :body be.expr)))
      :box
-     (b* (((unless (check-ispace-list (list atom.ispace) senv)) (reserr nil))
-          (ispaces (senv-expand-ispace-list (list atom.ispace) senv))
-          ((unless (type-atomp atom.type)) (reserr nil))
-          ((unless (check-type atom.type senv)) (reserr nil))
-          ((ok box-type) (senv-expand-type atom.type senv))
+     (b* (((unless (check-ispace atom.ispace senv)) (reserr nil))
+          (ispace (senv-expand-ispace atom.ispace senv))
+          ((ok type) (type-option-case atom.type?
+                                       :some atom.type?.val
+                                       :none (reserr nil)))
+          ((unless (type-atomp type)) (reserr nil))
+          ((unless (check-type type senv)) (reserr nil))
+          ((ok box-type) (senv-expand-type type senv))
           ((ok vars+type) (type-match-sum box-type))
           (vars (ispacevarlist+type->vars vars+type))
           (body-type (ispacevarlist+type->type vars+type))
+          ((unless (consp vars)) (reserr nil))
           ((ok (stringdimmap+stringshapemap maps))
-           (check-ispace-params-and-args vars ispaces))
-          (body-type-subst
-           (type-subst-ispace-vars-alpha body-type
+           (check-ispace-params-and-args (list (car vars)) (list ispace)))
+          (rest-type (sigma-curried-body vars body-type))
+          (rest-type-subst
+           (type-subst-ispace-vars-alpha rest-type
                                          maps.dim-map
                                          maps.shape-map))
-          ((ok (type+expr ae)) (check-expr atom.array senv))
-          ((unless (type-equivp ae.type body-type-subst)) (reserr nil)))
+          ((ok (type+expr ae)) (check-box-inner rest-type-subst
+                                                atom.array
+                                                senv)))
        (make-type+atom
         :type box-type
         :atom (make-atom-box :ispace atom.ispace
                              :array ae.expr
-                             :type atom.type)))
+                             :type? atom.type?)))
      :boxn
      (b* (((unless (check-ispace-list atom.ispaces senv)) (reserr nil))
           (ispaces (senv-expand-ispace-list atom.ispaces senv))
@@ -1816,6 +1838,65 @@
                               :array ae.expr
                               :type atom.type))))
     :measure (atom-count atom))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-box-inner ((type typep) (body exprp) (senv senvp))
+    :returns (type+expr type+expr-resultp)
+    :parents (type-checking check-exprs/atoms/binds)
+    :short "Check the array expression of a unary boxing atom
+            against the expected type."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The expected type is the body of
+       the sum type of the enclosing boxing atom,
+       with the first parameter of the sum type
+       replaced with the ispace of the boxing atom.")
+     (xdoc::p
+      "If the expression is an inner box of
+       the nest that an n-ary boxing atom desugars to,
+       i.e. a zero-rank array of a single unannotated unary boxing atom
+       (see @(tsee expr-match-unannotated-box)),
+       the expected type must be a sum type:
+       we peel off its first parameter,
+       we check that the (valid) ispace of the boxing atom has the same sort,
+       and we recursively check the array expression of the boxing atom
+       against the rest of the sum type with the parameter substituted;
+       the boxing atom is annotated with the expected type,
+       which is also its type.
+       Otherwise, we check the expression normally,
+       and its type must be equivalent to the expected type."))
+    (b* ((ie (expr-match-unannotated-box body))
+         ((when (reserrp ie))
+          (b* (((ok (type+expr te)) (check-expr body senv))
+               ((unless (type-equivp te.type type)) (reserr nil)))
+            (make-type+expr :type te.type :expr te.expr)))
+         ((ispace+expr ie) ie)
+         ((ok vars+type) (type-match-sum type))
+         (vars (ispacevarlist+type->vars vars+type))
+         (body-type (ispacevarlist+type->type vars+type))
+         ((unless (consp vars)) (reserr nil))
+         ((unless (check-ispace ie.ispace senv)) (reserr nil))
+         (ispace (senv-expand-ispace ie.ispace senv))
+         ((ok (stringdimmap+stringshapemap maps))
+          (check-ispace-params-and-args (list (car vars)) (list ispace)))
+         (rest-type (sigma-curried-body vars body-type))
+         (rest-type-subst
+          (type-subst-ispace-vars-alpha rest-type
+                                        maps.dim-map
+                                        maps.shape-map))
+         ((ok (type+expr inner)) (check-box-inner rest-type-subst
+                                                  ie.expr
+                                                  senv)))
+      (make-type+expr
+       :type (type-fix type)
+       :expr (make-expr-array
+              :dims nil
+              :atoms (list (make-atom-box :ispace ie.ispace
+                                          :array inner.expr
+                                          :type? (type-fix type))))))
+    :measure (+ 1 (expr-count body)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1960,13 +2041,14 @@
           ((ok senv-body) (senv-add-vars+types bind.params senv))
           ((ok (type+expr ee)) (check-expr bind.expr senv-body))
           ((unless (check-bind-type-annotation bind.type? ee.type senv))
-           (reserr nil)))
+           (reserr nil))
+          (fun-type (if (and (consp types) (endp (cdr types)))
+                        (make-type-fun :in (car types) :out ee.type)
+                      (make-type-funn :in types :out ee.type))))
        (make-senv+bind
         :senv (senv-add-var+type bind.var
                                  (make-type-array
-                                  :elem (make-type-fun
-                                         :in types
-                                         :out ee.type)
+                                  :elem fun-type
                                   :ispace (ispace-shape (shape-dims nil)))
                                  senv)
         :bind (make-bind-fun :var bind.var
@@ -2027,7 +2109,9 @@
           ((ok senv-body) (senv-add-vars+types bind.params senv-iparams))
           ((ok (type+expr ee)) (check-expr bind.expr senv-body))
           ((unless (type-equivp ee.type btype)) (reserr nil))
-          (fun-type (make-type-fun :in types :out btype))
+          (fun-type (if (and (consp types) (endp (cdr types)))
+                        (make-type-fun :in (car types) :out btype)
+                      (make-type-funn :in types :out btype)))
           (fun-type (ispace-var-list-option-case
                      bind.iparams?
                      :some (make-type-pin :params bind.iparams?.val

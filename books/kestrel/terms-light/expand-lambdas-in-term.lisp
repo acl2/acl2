@@ -16,6 +16,7 @@
 (include-book "sublis-var-simple")
 (include-book "lambda-free-termp")
 (include-book "lambdas-closed-in-termp")
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "sublis-var-simple-proofs"))
 (local (include-book "../alists-light/pairlis-dollar"))
 (local (include-book "../lists-light/subsetp-equal"))
@@ -53,7 +54,7 @@
      (cons (expand-lambdas-in-term (first terms))
            (expand-lambdas-in-terms (rest terms))))))
 
-(make-flag expand-lambdas-in-term)
+(local (make-flag expand-lambdas-in-term))
 
 ;TODO: Automate some of this?
 

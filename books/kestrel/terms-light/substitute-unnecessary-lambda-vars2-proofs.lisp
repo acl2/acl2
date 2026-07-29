@@ -1,6 +1,6 @@
 ; Proofs about substitute-unnecessary-lambda-vars-in-term2
 ;
-; Copyright (C) 2024-2025 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 (include-book "substitute-unnecessary-lambda-vars2")
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "no-nils-in-termp")
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -54,6 +55,8 @@
          (len terms))
   :hints (("Goal" :induct (len terms)
            :in-theory (enable (:i len)))))
+
+(local (make-flag substitute-unnecessary-lambda-vars-in-term2))
 
 (defthm-flag-substitute-unnecessary-lambda-vars-in-term2
   (defthm no-nils-in-termp-of-substitute-unnecessary-lambda-vars-in-term2
@@ -180,7 +183,7 @@
                      (induct-substitute-unnecessary-lambda-vars-in-terms2 (rest terms) print hands-off-fns alist)
                      terms))))
 
-(make-flag induct-substitute-unnecessary-lambda-vars-in-term2)
+(local (make-flag induct-substitute-unnecessary-lambda-vars-in-term2))
 
 ;; The induct function is equal to the original function!
 (defthm-flag-induct-substitute-unnecessary-lambda-vars-in-term2

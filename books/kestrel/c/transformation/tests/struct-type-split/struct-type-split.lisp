@@ -74,8 +74,7 @@ int main(void) {
   (struct-type-split *old*
                      *new*
                      :struct-tag "pair"
-                     :right-members ("snd")
-                     :unsafe t)
+                     :right-members ("snd"))
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -168,8 +167,7 @@ int main(void) {
   (struct-type-split *old*
                      *new*
                      :struct-tag "pair"
-                     :right-members ("snd")
-                     :unsafe t)
+                     :right-members ("snd"))
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -193,6 +191,42 @@ int main(void) {
 
   :with-output-off nil)
 
+(acl2::must-succeed*
+  ;; When every explicit initializer is routed to one side, initialize the
+  ;; other side with {0}; omitting its initializer would be wrong for an
+  ;; automatic object, while an empty initializer list is not valid C17.
+  (c$::input-files :files '("partial-init.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "pair"
+                     :right-members ("snd"))
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/partial-init.c"
+    :content "struct pair {
+  int fst;
+};
+
+struct pair_0 {
+  int snd;
+};
+
+int main(void) {
+  struct pair left = {.fst = 1};
+  struct pair_0 left_0 = {0};
+  struct pair right = {0};
+  struct pair_0 right_0 = {.snd = 2};
+  return left_0.snd + right.fst;
+}
+")
+
+  :with-output-off nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; An initializer list with mixed explicit and implicit designations.
@@ -207,8 +241,7 @@ int main(void) {
   (struct-type-split *old*
                      *new*
                      :struct-tag "triple"
-                     :right-members ("y")
-                     :unsafe t)
+                     :right-members ("y"))
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -491,17 +524,10 @@ int main(void) {
   (c$::input-files :files '("typedef-anon.c")
                    :const *old*)
 
-  (must-fail
-    (struct-type-split *old*
-                       *new*
-                       :typedef-name "point_t"
-                       :right-members ("z")))
-
   (struct-type-split *old*
                      *new*
                      :typedef-name "point_t"
-                     :right-members ("z")
-                     :unsafe t)
+                     :right-members ("z"))
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -625,12 +651,6 @@ int main(void) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Safety checks: the split struct type may not appear in
-;; array types, function types, the members of a union type,
-;; or its own members (i.e. it may not be self-referential).
-;; A directly splittable member of another struct type is, however,
-;; supported: it is split in place (see the success tests further below).
-
 (acl2::must-succeed*
   ;; Casting a pointer to the split struct type to void * exposes its
   ;; representation, so the safety check rejects the transformation.
@@ -646,15 +666,376 @@ int main(void) {
   :with-output-off nil)
 
 (acl2::must-succeed*
-  ;; An array of the split struct type.
+  ;; An array of the split struct type, including field routing and
+  ;; passing a pointer to an array element to a split function parameter.
   (c$::input-files :files '("array.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/array.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+static struct point arr[2];
+
+static struct point_right arr_0[2];
+
+static int get(struct point *p, struct point_right *p_0) {
+  return p->x + p_0->z;
+}
+
+int main(void) {
+  arr_0[1].z = arr[0].x;
+  return get(&arr[1], &arr_0[1]);
+}
+")
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; Multidimensional arrays, arrays of pointers, abstract array declarators,
+  ;; ordinary and [*] parameter arrays, and VLAs with pure bounds.
+  (c$::input-files :files '("array-declarators.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/array-declarators.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+static struct point matrix[2][3];
+
+static struct point_right matrix_0[2][3];
+
+static struct point *ptrs[2];
+
+static struct point_right *ptrs_0[2];
+
+static int first(struct point (*)[3], struct point_right (*)[3]);
+
+static int sum(int, struct point [*][3], struct point_right [*][3]);
+
+static int sum(int n, struct point a[n][3], struct point_right a_0[n][3]) {
+  return a[1][2].x + a_0[1][2].z;
+}
+
+static int first(struct point (*p)[3], struct point_right (*p_0)[3]) {
+  return (*p)[0].x + (*p_0)[0].z;
+}
+
+static int use_vla(int n) {
+  struct point vla[n][2];
+  struct point_right vla_0[n][2];
+  vla[0][1].x = 1;
+  vla_0[0][1].z = 2;
+  return vla[0][1].x + vla_0[0][1].z;
+}
+
+int main(void) {
+  ptrs[0] = &matrix[0][0];
+  ptrs_0[0] = &matrix_0[0][0];
+  return sum(2, matrix, matrix_0) + first(matrix, matrix_0) + ptrs[0]->x + use_vla(2);
+}
+")
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; Whole-array member initializers, multidimensional designators, an inferred
+  ;; extent whose maximum index routes right, and an array compound literal.
+  (c$::input-files :files '("array-initializers.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/array-initializers.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+struct holder {
+  struct point grid[2][3];
+  struct point_right grid_0[2][3];
+};
+
+static struct holder h = {.grid = {[0][1] = {.x = 1}, [1][2].x = 3}, .grid_0 = {[0][1] = {.z = 2}, [1][2].z = 4}};
+
+static struct point inferred[] = {[5] = {0}, [2].x = 5};
+
+static struct point_right inferred_0[] = {[5].z = 6};
+
+static int sum(struct point a[2], struct point_right a_0[2]) {
+  return a[0].x + a_0[1].z;
+}
+
+int main(void) {
+  return h.grid[0][1].x + h.grid_0[1][2].z + inferred[2].x + inferred_0[5].z + sum((struct point [2]) {[0] = {.x = 7}, [1] = {.x = 9}}, (struct point_right [2]) {[0] = {.z = 8}, [1] = {.z = 10}});
+}
+")
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; A split array bound is duplicated into the left and right declarations,
+  ;; so an effectful bound is rejected.
+  (c$::input-files :files '("array-vla-effectful.c")
                    :const *old*)
 
   (must-fail
     (struct-type-split *old*
                        *new*
                        :struct-tag "point"
-                       :right-members ("z")))
+                       :right-members ("z")
+                       :new-tag "point_right"))
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; A split array subscript duplicates the index expression,
+  ;; so an effectful index is rejected.
+  (c$::input-files :files '("array-index-effectful.c")
+                   :const *old*)
+
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")
+                       :new-tag "point_right"))
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; After the first positional array initializer, the validator records the
+  ;; remaining position as unknown because C types do not currently retain
+  ;; array lengths.  Without an effective array designator, the transformation
+  ;; cannot safely split the later initializer.
+  (c$::input-files :files '("array-init-positional.c")
+                   :const *old*)
+
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")
+                       :new-tag "point_right"))
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; Designated array initializers route through the array designator
+  ;; and then through the split struct member designator.
+  (c$::input-files :files '("array-init-designated.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/array-init-designated.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+static struct point arr[2] = {[0] = {.x = 1}, [1].x = 3};
+
+static struct point_right arr_0[2] = {[0] = {.z = 2}, [1].z = 4};
+
+int main(void) {
+  return arr[0].x + arr_0[1].z;
+}
+")
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; The largest explicitly initialized index determines the size of an array
+  ;; of unknown size (C17 6.7.9/22).  Preserve that index in both initializer
+  ;; partitions even when the initializers at that index all route left.
+  (c$::input-files :files '("array-init-inferred-designated.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/array-init-inferred-designated.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+static struct point arr[] = {[5].x = 1, };
+
+static struct point_right arr_0[] = {[5] = {0}, [2].z = 2, };
+
+int main(void) {
+  return arr[5].x + arr_0[2].z + arr_0[5].z;
+}
+")
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; An array member of splittable element type is split in place.
+  ;; Direct designators through the array route individual fields and split
+  ;; whole designated elements.
+  (c$::input-files :files '("array-member.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/array-member.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+};
+
+struct outer {
+  struct point arr[2];
+  struct point_right arr_0[2];
+  int w;
+};
+
+static struct outer o = {.arr[0].x = 1, .arr_0[0].z = 2, .arr[1] = {.x = 3}, .arr_0[1] = {.z = 4}, .w = 9};
+
+int main(void) {
+  return o.arr[0].x + o.arr_0[1].z;
+}
+")
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; Splitting a flexible array member would create two flexible array
+  ;; members, making the first one no longer the last member of the struct.
+  (c$::input-files :files '("array-member-flexible.c")
+                   :const *old*)
+
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")
+                       :new-tag "point_right"))
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; An anonymous struct may precede a direct flexible array member: its
+  ;; promoted named members count toward the flexible-array constraint.
+  ;; The direct flexible array member is still rejected.
+  (c$::input-files :files '("array-member-flexible-after-anon.c")
+                   :const *old*)
+
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")
+                       :new-tag "point_right"))
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; Standard C does not permit a struct containing a flexible array member
+  ;; to be embedded in another struct, even as its final anonymous member.
+  ;; If the validator or an extension admits this form, recursive processing
+  ;; of the anonymous struct must still reject the flexible array member.
+  (c$::input-files :files '("array-member-flexible-nested-anon.c")
+                   :const *old*)
+
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")
+                       :new-tag "point_right"))
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; The validator does not retain array sizes, so conservatively reject an
+  ;; array member whose size is hidden by a typedef: it may be flexible.
+  (c$::input-files :files '("array-member-sized-typedef.c")
+                   :const *old*)
+
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("z")
+                       :new-tag "point_right"))
 
   :with-output-off nil)
 
@@ -668,8 +1049,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :unsafe t)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -708,8 +1088,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :unsafe t)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -758,8 +1137,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :unsafe t)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -807,8 +1185,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :unsafe t)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -879,8 +1256,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :unsafe t)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -919,8 +1295,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :unsafe t)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -963,8 +1338,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :unsafe t)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1019,8 +1393,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :unsafe t)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")
@@ -1117,8 +1490,9 @@ int main(void) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The split struct type may occur as a member, possibly behind pointers,
-;; within a function parameter type.  The parameter type is left unchanged
+;; The split struct type may occur as a member, possibly within arrays or
+;; behind pointers, within a function parameter type.  The parameter type is
+;; left unchanged
 ;; (the occurrence is split in the member's struct type),
 ;; and the accesses in the function body are routed.
 
@@ -1130,8 +1504,7 @@ int main(void) {
                      *new*
                      :struct-tag "point"
                      :right-members ("z")
-                     :new-tag "point_right"
-                     :unsafe t)
+                     :new-tag "point_right")
 
   (c$::output-files :const *new*
                     :base-dir "new")

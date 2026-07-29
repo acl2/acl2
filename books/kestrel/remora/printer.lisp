@@ -11,7 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-trees")
-(include-book "abstract-syntax-well-formed")
+(include-book "abstract-syntax-well-formedness")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 (include-book "kestrel/fty/defresult" :dir :system)
@@ -876,9 +876,14 @@
                                            (ispace-list-to-pdoc ty.ispaces)))))
       :fun (pdoc-prefix-form
             "->"
-            (pdoc-concat (pdoc-paren (type-list-to-pdoc ty.in))
+            (pdoc-concat (type-to-pdoc ty.in)
                          (pdoc-concat (pdoc-line)
                                       (type-to-pdoc ty.out))))
+      :funn (pdoc-prefix-form
+             "->"
+             (pdoc-concat (pdoc-paren (type-list-to-pdoc ty.in))
+                          (pdoc-concat (pdoc-line)
+                                       (type-to-pdoc ty.out))))
       :forall (pdoc-prefix-form
                "Forall"
                (pdoc-concat (pdoc-paren (type-var-to-pdoc ty.param))
@@ -1379,17 +1384,23 @@
                    "i-fn"
                    (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc a.params))
                                 (pdoc-concat (pdoc-line) body))))
-      :box (b* (((ok array) (expr-to-pdoc a.array)))
-             (pdoc-prefix-form
-              "box"
-              (pdoc-concat
-               (pdoc-paren (ispace-list-to-pdoc (list a.ispace)))
-               (pdoc-concat
-                (pdoc-line)
-                (pdoc-concat
-                 array
-                 (pdoc-concat (pdoc-line)
-                              (type-to-pdoc a.type)))))))
+      ;; The box-expr grammar rule requires the type,
+      ;; so we fail when the optional type is absent:
+      ;; there is no concrete syntax that renders it.
+      :box (type-option-case
+            a.type?
+            :none (reserr (list :box-without-type (atom-fix a)))
+            :some (b* (((ok array) (expr-to-pdoc a.array)))
+                    (pdoc-prefix-form
+                     "box"
+                     (pdoc-concat
+                      (pdoc-paren (ispace-to-pdoc a.ispace))
+                      (pdoc-concat
+                       (pdoc-line)
+                       (pdoc-concat
+                        array
+                        (pdoc-concat (pdoc-line)
+                                     (type-to-pdoc a.type?.val))))))))
       :boxn (b* (((ok array) (expr-to-pdoc a.array)))
               (pdoc-prefix-form
                "box"

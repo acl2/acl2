@@ -69,6 +69,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled append-of-repeats-same
+  (equal (append (repeat m x) (repeat n x))
+         (repeat (+ (nfix m) (nfix n)) x))
+  :induct (repeat m x)
+  :enable (repeat nfix)
+  :expand ((repeat (+ m n) x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define append-all ((lists true-list-listp))
   :returns (list true-listp)
   :short "Append all the lists in a list, in that order."

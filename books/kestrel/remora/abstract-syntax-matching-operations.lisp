@@ -42,7 +42,7 @@
 
 (define type-match-array ((type typep))
   :returns (type+ispace type+ispace-resultp)
-  :short "Check if an array type is a non-variable array type or an atom type,
+  :short "Check if a type is a non-variable array type or an atom type,
           returning its elements' atom type and its ispace if successful."
   :long
   (xdoc::topstring
@@ -72,7 +72,7 @@
 
 (define type-list-match-array ((types type-listp))
   :returns (types+ispaces type+ispace-list-resultp)
-  :short "Check if all the array types in a list are @(':array') summands,
+  :short "Check if all the types in a list are @(':array') summands,
           returning the list of their elements' atom types and its ispaces
           if successful."
   (b* (((when (endp types)) nil)
@@ -92,42 +92,43 @@
 
 (define type-match-fun ((type typep))
   :returns (in+rest type+type-resultp)
-  :short "Check if an atom type is a function type,
+  :short "Check if a type is a function type,
           peeling off its first input type if successful."
   :long
   (xdoc::topstring
    (xdoc::p
+    "A unary function type is matched directly:
+     we return its input type and its output type.")
+   (xdoc::p
     "Consistently with the curried view of term applications
      (see @(tsee expr)),
-     a function type is treated as
+     an n-ary function type is treated as
      the nesting of one-input function types.
      Accordingly, this matching operation peels off one input type:
-     if the type is a function type with at least one input,
+     if the type is an n-ary function type with at least one input,
      we return the first input type,
      along with the output type of the function type
      if there are no other inputs,
      or otherwise the function type over the remaining inputs.
-     A function type with no inputs fails to match.")
-   (xdoc::p
-    "Unlike @(tsee type-match-forall) and @(tsee type-match-product),
-     there is no unary form of function type to match directly:
-     a function type always has an explicit list of input types,
-     which will be similarly given a unary form."))
-  (b* (((unless (type-case type :fun)) (reserr nil))
-       (ins (type-fun->in type))
-       (out (type-fun->out type))
+     An n-ary function type with no inputs fails to match."))
+  (b* (((when (type-case type :fun))
+        (make-type+type :type1 (type-fun->in type)
+                        :type2 (type-fun->out type)))
+       ((unless (type-case type :funn)) (reserr nil))
+       (ins (type-funn->in type))
+       (out (type-funn->out type))
        ((unless (consp ins)) (reserr nil)))
     (make-type+type
      :type1 (car ins)
      :type2 (if (consp (cdr ins))
-                (make-type-fun :in (cdr ins) :out out)
+                (make-type-funn :in (cdr ins) :out out)
               out))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-forall ((type typep))
   :returns (var+type typevar+type-resultp)
-  :short "Check if an atom type is a universal type,
+  :short "Check if a type is a universal type,
           peeling off its first type parameter variable if successful."
   :long
   (xdoc::topstring
@@ -163,7 +164,7 @@
 
 (define type-match-product ((type typep))
   :returns (var+type ispacevar+type-resultp)
-  :short "Check if an atom type is a product type,
+  :short "Check if a type is a product type,
           peeling off its first ispace parameter variable if successful."
   :long
   (xdoc::topstring
@@ -209,8 +210,11 @@
      Unlike @(tsee type-match-product), which peels off one variable
      (consistently with the curried view of ispace applications),
      this operation returns all the parameter variables at once,
-     because the box and unbox constructs that eliminate sum types
-     bind all their witnesses together for now;
+     because the n-ary box and unbox constructs
+     bind all their witnesses together;
+     callers that treat sum types in curried fashion,
+     like the checking of unary boxing atoms,
+     peel off the first of the returned variables;
      a unary sum type yields a single-element list."))
   (type-case
    type
@@ -219,3 +223,40 @@
    :sigman (make-ispacevarlist+type :vars (type-sigman->params type)
                                     :type (type-sigman->body type))
    :otherwise (reserr nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-match-unannotated-box ((expr exprp))
+  :returns (ispace+expr ispace+expr-resultp)
+  :short "Check if an expression is a zero-rank array
+          of a single unannotated unary boxing atom,
+          returning the atom's ispace and array expression if successful."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This matches the inner boxes of
+     the nest that an n-ary boxing atom desugars to
+     (see @(tsee atom)):
+     each is a unary boxing atom without the type,
+     wrapped into a zero-rank array expression."))
+  (b* (((unless (expr-case expr :array)) (reserr nil))
+       ((expr-array expr) expr)
+       ((unless (endp expr.dims)) (reserr nil))
+       ((unless (and (consp expr.atoms)
+                     (endp (cdr expr.atoms))))
+        (reserr nil))
+       (atom (car expr.atoms))
+       ((unless (atom-case atom :box)) (reserr nil))
+       ((atom-box atom) atom))
+    (type-option-case
+     atom.type?
+     :some (reserr nil)
+     :none (make-ispace+expr :ispace atom.ispace :expr atom.array)))
+
+  ///
+
+  (defret expr-count-of-expr-match-unannotated-box
+    (implies (not (reserrp ispace+expr))
+             (< (expr-count (ispace+expr->expr ispace+expr))
+                (expr-count expr)))
+    :rule-classes :linear))

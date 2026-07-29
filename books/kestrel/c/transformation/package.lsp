@@ -17,7 +17,7 @@
 (include-book "oslib/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
 
-(include-book "../syntax/abstract-syntax-symbols")
+(include-book "../syntax/exported-symbols")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,7 +26,7 @@
                                   '(block
                                     type
                                     typep))
-               c$::*abstract-syntax-symbols*
+               c$::*exported-symbols*
                '(bool
                  constant-symbolp
                  constant-value

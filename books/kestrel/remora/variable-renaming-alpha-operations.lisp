@@ -13,6 +13,7 @@
 (include-book "variable-renaming-operations")
 (include-book "fresh-variable-operations")
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration)

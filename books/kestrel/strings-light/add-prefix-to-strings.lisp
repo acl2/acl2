@@ -23,3 +23,8 @@
                 (string-listp strings))
            (string-listp (add-prefix-to-strings prefix strings)))
   :hints (("Goal" :in-theory (enable add-prefix-to-strings))))
+
+(defthm len-of-add-prefix-to-strings
+  (equal (len (add-prefix-to-strings prefix strings))
+         (len strings))
+  :hints (("Goal" :in-theory (enable add-prefix-to-strings))))

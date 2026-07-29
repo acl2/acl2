@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "tools/flag" :dir :system)
 (include-book "kestrel/utilities/symbol-term-alistp" :dir :system)
 (include-book "sublis-var-simple")
 (include-book "make-lambda-terms-simple")
@@ -19,6 +18,7 @@
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "no-nils-in-termp")
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
 (local (include-book "../lists-light/subsetp-equal"))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -27,7 +27,7 @@
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 
-(make-flag sublis-var-simple)
+(local (make-flag sublis-var-simple))
 
 (defthm-flag-sublis-var-simple
   (defthm sublis-var-simple-of-nil

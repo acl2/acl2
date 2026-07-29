@@ -1,7 +1,7 @@
 ; A tool to clean up trivial lambdas (all formals mapped to themselves)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -56,26 +56,15 @@
           (len terms))
    :hints (("Goal" :induct (len terms)))))
 
-(local
- (defthm-flag-drop-trivial-lambdas
-   (defthm pseudo-termp-of-drop-trivial-lambdas
-     (implies (pseudo-termp term)
-              (pseudo-termp (drop-trivial-lambdas term)))
-     :flag drop-trivial-lambdas)
-   (defthm pseudo-termp-of-drop-trivial-lambdas-lst
-     (implies (pseudo-term-listp terms)
-              (pseudo-term-listp (drop-trivial-lambdas-lst terms)))
-     :flag drop-trivial-lambdas-lst)
-   :hints (("Goal" :in-theory (enable pseudo-term-listp-when-symbol-listp)))))
-
-;; redundant and non-local
-(defthm pseudo-termp-of-drop-trivial-lambdas
-  (implies (pseudo-termp term)
-           (pseudo-termp (drop-trivial-lambdas term))))
-
-;; redundant and non-local
-(defthm pseudo-term-listp-of-drop-trivial-lambdas-lst
-  (implies (pseudo-term-listp terms)
-           (pseudo-term-listp (drop-trivial-lambdas-lst terms))))
+(defthm-flag-drop-trivial-lambdas
+  (defthm pseudo-termp-of-drop-trivial-lambdas
+    (implies (pseudo-termp term)
+             (pseudo-termp (drop-trivial-lambdas term)))
+    :flag drop-trivial-lambdas)
+  (defthm pseudo-termp-of-drop-trivial-lambdas-lst
+    (implies (pseudo-term-listp terms)
+             (pseudo-term-listp (drop-trivial-lambdas-lst terms)))
+    :flag drop-trivial-lambdas-lst)
+  :hints (("Goal" :in-theory (enable pseudo-term-listp-when-symbol-listp))))
 
 (verify-guards drop-trivial-lambdas :hints (("Goal" :expand ((pseudo-termp term)))))

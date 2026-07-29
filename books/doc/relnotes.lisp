@@ -136,6 +136,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Tools Library")
+
+   (xdoc::p
+    "Fixed a bug in @(see with-supporters) that was preventing @(see disable)s for
+     names of theorems (as opposed to functions).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "zfc" "Set Theory Library"))
 
    (xdoc::p

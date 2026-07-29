@@ -21,6 +21,7 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/abs" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
 (acl2::controlled-configuration)
@@ -97,7 +98,8 @@
     "The polymorphic primitives currently implemented are
      @(tsee prim-head), @(tsee prim-tail), @(tsee prim-length),
      @(tsee prim-append), @(tsee prim-reverse),
-     @(tsee prim-index), @(tsee prim-index2d), and @(tsee prim-sum).")
+     @(tsee prim-index), @(tsee prim-index2d), @(tsee prim-sum),
+     and @(tsee prim-reshape).")
    (xdoc::p
     "For integers, we currently model Remora integer values as unbounded
      mathematical integers, matching ACL2's own integer type.
@@ -1961,11 +1963,72 @@
        ((unless (equal (dims-of-expr-value val1) s)) (reserr nil))
        ((ok ints) (check-expr-value-list-int (expr-value-atoms val1))))
     (expr-value-base (base-value-int (int-value (integer-list-sum ints)))))
+
   ///
 
   (defret expr-value-wfp-of-prim-sum
     (implies (not (reserrp val))
              (expr-value-wfp val))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-reshape ((tval type-valuep)
+                      (s1 nat-listp)
+                      (s2 nat-listp)
+                      (val1 expr-valuep))
+  :guard (expr-value-wfp val1)
+  :returns (val expr-value-resultp)
+  :short "Evaluation of array reshaping."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('reshape') operation
+     (see the @(':reshape-t-s1-s2') summand of @(tsee primop-value)):
+     @('tval'), @('s1'), and @('s2') are the instantiation values,
+     and @('val1') is the argument cell.
+     According to the instantiated type of the operation,
+     the argument cell is an array with dimensions @('s1'),
+     and the result is an array with dimensions @('s2')
+     containing the same atom values in the same (row-major) order.
+     The two shapes must have the same product,
+     i.e. the same total number of atom values;
+     the interpreter in [impl] checks this
+     when the operation is applied to the second shape,
+     while we defensively check it here,
+     along with the dimensions of the argument cell.")
+   (xdoc::p
+    "If the new shape has a zero dimension, the result is empty:
+     we build it via @(tsee expr-value-with-empty-dim),
+     which requires an atom type value.
+     Otherwise, we collect the atom values of the argument cell
+     via @(tsee expr-value-atoms),
+     and we arrange them according to the new shape
+     via @(tsee expr-value-with-nonempty-dims).")
+   (xdoc::p
+    "Note that the interpreter in [impl] crashes
+     when the argument cell is a scalar,
+     because, unlike the other array operations,
+     it does not normalize non-array values to zero-rank arrays:
+     we treat the scalar case uniformly,
+     consistently with the other operations in [impl] and here."))
+  (b* ((s1 (nat-list-fix s1))
+       (s2 (nat-list-fix s2))
+       ((unless (equal (dims-of-expr-value val1) s1)) (reserr nil))
+       ((unless (equal (nat-list-product s1) (nat-list-product s2)))
+        (reserr nil))
+       ((when (member-equal 0 s2))
+        (b* (((when (type-value-case tval :array)) (reserr nil)))
+          (expr-value-with-empty-dim s2 tval)))
+       (atoms (expr-value-atoms val1)))
+    (expr-value-with-nonempty-dims s2 atoms))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-reshape
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (and (nat-listp s2)
+              (expr-value-wfp val1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2142,7 +2205,11 @@
                                                         :xval arg))
      :index2d-t-m-n-x (prim-index2d op.tval op.mval op.nval op.xval arg)
      :sum (prog2$ (impossible) (reserr nil))
-     :sum-s (prim-sum op.sval arg)))
+     :sum-s (prim-sum op.sval arg)
+     :reshape (prog2$ (impossible) (reserr nil))
+     :reshape-t (prog2$ (impossible) (reserr nil))
+     :reshape-t-s1 (prog2$ (impossible) (reserr nil))
+     :reshape-t-s1-s2 (prim-reshape op.tval op.s1val op.s2val arg)))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///
@@ -2152,51 +2219,6 @@
              (expr-value-wfp val))
     :hyp (and (primop-value-wfp op)
               (expr-value-wfp arg))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define eval-primop-fun-chain ((op primop-valuep) (args expr-value-listp))
-  :guard (and (primop-value-funp op)
-              (primop-value-wfp op)
-              (expr-value-list-wfp args))
-  :returns (val expr-value-resultp)
-  :short "Evaluate the application of a primitive operation
-          to a list of argument cells, one after the other."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This chains applications of @(tsee eval-primop-fun):
-     the operation is applied to the first argument cell;
-     if there are more argument cells,
-     the result must be another applicable primitive operation value
-     (i.e. an @('-x') stage of a binary operation),
-     which is applied to the remaining argument cells.
-     Applying the operation to no argument cells returns it unchanged.")
-   (xdoc::p
-    "This function is transitional:
-     term applications are now evaluated
-     one argument at a time, in curried style,
-     with @(tsee eval-app-cell) calling @(tsee eval-primop-fun) directly,
-     so this function is no longer used there;
-     it is only used in some tests,
-     and it will be removed when those are reworked."))
-  (b* (((when (endp args)) (expr-value-primop (primop-value-fix op)))
-       ((ok val) (eval-primop-fun op (car args)))
-       ((when (endp (cdr args))) val)
-       ((unless (and (expr-value-case val :primop)
-                     (primop-value-funp (expr-value-primop->val val))))
-        (reserr nil)))
-    (eval-primop-fun-chain (expr-value-primop->val val) (cdr args)))
-  :measure (len args)
-
-  ///
-
-  (defret expr-value-wfp-of-eval-primop-fun-chain
-    (implies (not (reserrp val))
-             (expr-value-wfp val))
-    :hyp (and (primop-value-wfp op)
-              (expr-value-list-wfp args))
-    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2258,7 +2280,12 @@
                            (list tval)
                            (list (type-var-atom "t"))))
                   (reserr nil)))
-            (expr-value-primop (primop-value-index2d-t tval)))
+              (expr-value-primop (primop-value-index2d-t tval)))
+   :reshape (b* (((unless (type-values-match-type-vars-p
+                           (list tval)
+                           (list (type-var-atom "t"))))
+                  (reserr nil)))
+              (expr-value-primop (primop-value-reshape-t tval)))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-tfunp
                                            type-values-match-type-vars-p)))
@@ -2294,8 +2321,9 @@
      an ispace value of a specific sort,
      namely the sort of the next ispace parameter
      in the operation's type in @(tsee primop-types):
-     a dimension for the stages that store just a type value,
-     a shape for the stages that also store a dimension;
+     a dimension for the stages that store just a type value
+     (except @(':reshape-t'), which expects the first of two shapes),
+     a shape for the stages that also store a dimension or a shape;
      the uninstantiated stage of @('sum'), which has no type parameter,
      stores nothing and expects a shape directly.
      We check that the ispace value has the expected sort;
@@ -2306,7 +2334,8 @@
      two dimensions and a shape for @('append');
      a dimension for @('index');
      two dimensions for @('index2d');
-     a shape for @('sum')),
+     a shape for @('sum');
+     two shapes for @('reshape')),
      along with the previously received type values (if any).
      Anything else is an error."))
   (primop-value-case
@@ -2408,6 +2437,19 @@
          :dim (reserr nil)
          :shape (expr-value-primop
                  (make-primop-value-sum-s :sval ival.val)))
+   :reshape-t (ispace-value-case
+               ival
+               :dim (reserr nil)
+               :shape (expr-value-primop
+                       (make-primop-value-reshape-t-s1 :tval op.tval
+                                                       :s1val ival.val)))
+   :reshape-t-s1 (ispace-value-case
+                  ival
+                  :dim (reserr nil)
+                  :shape (expr-value-primop
+                          (make-primop-value-reshape-t-s1-s2 :tval op.tval
+                                                             :s1val op.s1val
+                                                             :s2val ival.val)))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp)))
 

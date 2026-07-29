@@ -23,6 +23,7 @@
 
 (local (include-book "lists"))
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -330,9 +331,12 @@
                    (natss (ispace-value-list-to-dims ivals))
                    (nats (append-all natss)))
                 (make-type-value-array :elem elem-tval :dims nats))
-     :fun (b* (((ok in-tvals) (eval-type-list type.in denv))
+     :fun (b* (((ok in-tval) (eval-type type.in denv))
                ((ok out-tval) (eval-type type.out denv)))
-            (make-type-value-fun :in in-tvals :out out-tval))
+            (make-type-value-fun :in in-tval :out out-tval))
+     :funn (b* (((ok in-tvals) (eval-type-list type.in denv))
+                ((ok out-tval) (eval-type type.out denv)))
+             (nest-function-type-values in-tvals out-tval))
      :forall (make-type-value-forall
               :param type.param
               :body type.body
@@ -1283,7 +1287,11 @@
                                          (type-denv->ienv
                                           (expr-denv->tenv denv))))
                  ((ok arrayval) (eval-expr atom.array denv (1- limit)))
-                 ((ok tval) (eval-type atom.type (expr-denv->tenv denv))))
+                 ((ok tval) (type-option-case
+                             atom.type?
+                             :some (eval-type atom.type?.val
+                                              (expr-denv->tenv denv))
+                             :none (reserr nil))))
               (make-expr-value-box :ispace ival :array arrayval :type tval))
        :boxn (b* (((ok ivals) (eval-ispace-list atom.ispaces
                                                 (type-denv->ienv
@@ -1490,9 +1498,10 @@
                                               :body bind.expr
                                               :type? bind.type))))
                   ((ok in) (var+type?-list->type-list-or-err bind.params))
-                  (lambda-type (make-type-fun
-                                :in in
-                                :out bind.type))
+                  (lambda-type (if (and (consp in) (endp (cdr in)))
+                                   (make-type-fun :in (car in)
+                                                  :out bind.type)
+                                 (make-type-funn :in in :out bind.type)))
                   ((mv iexpr itype)
                    (ispace-var-list-option-case
                     bind.iparams?
