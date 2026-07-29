@@ -314,7 +314,14 @@
   :elt-type ispace-var
   :true-listp t
   :elementp-of-nil nil
-  :pred ispace-var-listp)
+  :pred ispace-var-listp
+
+  ///
+
+  (defruled cdr-of-ispace-var-list-fix
+    (equal (cdr (ispace-var-list-fix vars))
+           (ispace-var-list-fix (cdr vars)))
+    :enable ispace-var-list-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -381,7 +388,14 @@
   :elt-type type-var
   :true-listp t
   :elementp-of-nil nil
-  :pred type-var-listp)
+  :pred type-var-listp
+
+  ///
+
+  (defruled cdr-of-type-var-list-fix
+    (equal (cdr (type-var-list-fix vars))
+           (type-var-list-fix (cdr vars)))
+    :enable type-var-list-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -561,7 +575,14 @@
   :elt-type var+type?
   :true-listp t
   :elementp-of-nil nil
-  :pred var+type?-listp)
+  :pred var+type?-listp
+
+  ///
+
+  (defruled cdr-of-var+type?-list-fix
+    (equal (cdr (var+type?-list-fix vts))
+           (var+type?-list-fix (cdr vts)))
+    :enable var+type?-list-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
