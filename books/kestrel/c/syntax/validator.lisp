@@ -3799,7 +3799,8 @@
                          ((when info?)
                           (if (equal (valid-tag-info->kind info?)
                                      (tag-kind-union))
-                              (retok (type-spec-union new-spec)
+                              (retok (make-type-spec-union :spec new-spec
+                                                           :info nil)
                                      (make-type-union
                                       :uid (valid-tag-info->uid info?)
                                       :tunit? (vstate->filepath vstate)
@@ -3824,7 +3825,8 @@
                                                   :kind (tag-kind-union)
                                                   :uid uid)
                                                  vstate)))
-                      (retok (type-spec-union new-spec)
+                      (retok (make-type-spec-union :spec new-spec
+                                                   :info nil)
                              (make-type-union
                               :uid uid
                               :tunit? (vstate->filepath vstate)
@@ -3881,7 +3883,8 @@
                                           uid
                                           type-struni-members
                                           (vstate->completions vstate)))))
-                (retok (type-spec-union new-spec)
+                (retok (make-type-spec-union :spec new-spec
+                                             :info nil)
                        type
                        nil
                        types

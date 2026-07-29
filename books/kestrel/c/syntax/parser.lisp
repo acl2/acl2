@@ -5624,15 +5624,15 @@
                     (read-punctuator "}" parstate)))
                 (retok (if structp
                            (make-type-spec-struct
-                             :spec
-                             (make-struni-spec :attribs attrspecs
-                                               :name? ident
-                                               :members structdeclons)
-                             :info nil)
-                         (type-spec-union
-                          (make-struni-spec :attribs attrspecs
-                                            :name? ident
-                                            :members structdeclons)))
+                            :spec (make-struni-spec :attribs attrspecs
+                                                    :name? ident
+                                                    :members structdeclons)
+                            :info nil)
+                         (make-type-spec-union
+                          :spec (make-struni-spec :attribs attrspecs
+                                                  :name? ident
+                                                  :members structdeclons)
+                          :info nil))
                        (span-join struct/union-span last-span)
                        parstate))))
            ;; If token2 is not an open curly brace,
@@ -5643,15 +5643,15 @@
                   (if token2 (unread-token parstate) parstate)))
               (retok (if structp
                          (make-type-spec-struct
-                           :spec
-                           (make-struni-spec :attribs attrspecs
-                                             :name? ident
-                                             :members nil)
-                           :info nil)
-                       (type-spec-union
-                        (make-struni-spec :attribs attrspecs
-                                          :name? ident
-                                          :members nil)))
+                          :spec (make-struni-spec :attribs attrspecs
+                                                  :name? ident
+                                                  :members nil)
+                          :info nil)
+                       (make-type-spec-union
+                        :spec (make-struni-spec :attribs attrspecs
+                                                :name? ident
+                                                :members nil)
+                        :info nil))
                      (span-join struct/union-span span)
                      parstate))))))
        ;; If token is an open curly brace,
@@ -5706,15 +5706,16 @@
                 (read-punctuator "}" parstate)))
             (retok (if structp
                        (make-type-spec-struct
-                         :spec
-                         (make-struni-spec :attribs attrspecs
-                                           :name? nil
-                                           :members structdeclons)
-                         :info nil)
-                     (type-spec-union
-                      (make-struni-spec :attribs attrspecs
-                                        :name? nil
-                                        :members structdeclons)))
+                        :spec
+                        (make-struni-spec :attribs attrspecs
+                                          :name? nil
+                                          :members structdeclons)
+                        :info nil)
+                     (make-type-spec-union
+                      :spec (make-struni-spec :attribs attrspecs
+                                              :name? nil
+                                              :members structdeclons)
+                      :info nil))
                    (span-join struct/union-span last-span)
                    parstate))))
        ;; If token is neither an identifier nor an open curly brace,

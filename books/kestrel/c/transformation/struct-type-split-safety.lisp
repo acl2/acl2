@@ -1096,9 +1096,6 @@
     "The predicates end at the @(tsee trans-unit) type,
      because these checks operate on one translation unit at a time.")
    (xdoc::p
-    "Our initial definition of these safety predicates is very conservative.
-     We will relax it gradually.")
-   (xdoc::p
     "The default value of these predicates is @('t'),
      which means that, for example, an expression that is a constant
      is accepted, because it is a leaf in the types for these predicates.
@@ -1120,10 +1117,10 @@
      i.e. we let them be treated in the default way
      by @(tsee fty::deffold-reduce).")
    (xdoc::p
-    "Option and list AST types are safe iff their components are.
+    "ASTs of option and list fixtypes are safe iff their components are.
      This is the default generated definition of the predicates.")
    (xdoc::p
-    "AST types that merely wrap other AST types,
+    "AST values of fixtypes that merely wrap other AST fixtypes,
      like @(tsee const-expr) and @(tsee spec/qual),
      are allowed iff their wrapped ASTs are,
      which is the default definition.")
@@ -1293,7 +1290,20 @@
      We should extend our model of types with an atomic flag,
      which is more generally useful,
      and then we should be able to check atomic type
-     without looking directly at specifiers and qualifiers."))
+     without looking directly at specifiers and qualifiers.")
+   (xdoc::p
+    "Note that we check, via @(tsee top-type-sts-safep),
+     the safety of the type annotations in
+     type names,
+     parameter declarators,
+     initializer declarators,
+     and function definitions:
+     these are constructs that introduce names with associated types,
+     and we check the safety of those types.
+     We do not apply those checks to (the types of) structure declarators
+     because those may occur both in structure and in union types;
+     instead, we plan to add checks to
+     the type specifiers that those structure declarators are part of."))
   :types (exprs/decls/stmts
           fundef
           ext-declon
