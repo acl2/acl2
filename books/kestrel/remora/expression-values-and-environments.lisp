@@ -467,6 +467,13 @@
     (:reshape-t-s1-s2 ((tval type-value)
                        (s1val nat-list)
                        (s2val nat-list)))
+    (:transpose2d ())
+    (:transpose2d-t ((tval type-value)))
+    (:transpose2d-t-m ((tval type-value)
+                     (mval nat)))
+    (:transpose2d-t-m-n ((tval type-value)
+                       (mval nat)
+                       (nval nat)))
     :pred primop-valuep
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -563,7 +570,24 @@
     (implies (expr-value-list-listp x)
              (expr-value-list-listp (cdr-list x)))
     :induct t
-    :enable cdr-list))
+    :enable cdr-list)
+
+  (defrule expr-value-listp-of-append-all
+    (implies (expr-value-list-listp vals)
+             (expr-value-listp (append-all vals)))
+    :induct t
+    :enable append-all)
+
+  (defrule expr-value-list-listp-of-transpose-list-list
+    (implies (and (expr-value-list-listp vals)
+                  (all-of-len-p vals (len (car vals))))
+             (expr-value-list-listp (transpose-list-list vals)))
+    :induct t
+    :enable (transpose-list-list
+             all-of-len-p-of-cdr-list
+             len-of-car-cdr-list
+             cons-listp-when-all-of-len-p)
+    :prep-books ((include-book "kestrel/lists-light/len" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -869,7 +893,31 @@
     (implies (expr-value-list-wfp vals)
              (expr-value-list-list-wfp (list-split vals n)))
     :induct t
-    :enable list-split))
+    :enable list-split)
+
+  (defrule expr-value-list-wfp-of-car-list
+    (implies (expr-value-list-list-wfp vals)
+             (expr-value-list-wfp (car-list vals)))
+    :induct t
+    :enable car-list)
+
+  (defrule expr-value-list-list-wfp-of-cdr-list
+    (implies (expr-value-list-list-wfp vals)
+             (expr-value-list-list-wfp (cdr-list vals)))
+    :induct t
+    :enable cdr-list)
+
+  (defrule expr-value-list-wfp-of-append-all
+    (implies (expr-value-list-list-wfp vals)
+             (expr-value-list-wfp (append-all vals)))
+    :induct t
+    :enable append-all)
+  
+  (defrule expr-value-list-list-wfp-of-transpose-list-list
+    (implies (expr-value-list-list-wfp vals)
+             (expr-value-list-list-wfp (transpose-list-list vals)))
+    :induct t
+    :enable transpose-list-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1110,7 +1158,31 @@
            (list-split (dims-of-expr-value-list vals) n))
     :induct t
     :enable (list-split
-             dims-of-expr-value-list-list)))
+             dims-of-expr-value-list-list))
+
+  (defrule dims-of-expr-value-list-of-car-list
+    (equal (dims-of-expr-value-list (car-list valss))
+           (car-list (dims-of-expr-value-list-list valss)))
+    :induct t
+    :enable car-list)
+
+  (defrule dims-of-expr-value-list-list-of-cdr-list
+    (equal (dims-of-expr-value-list-list (cdr-list valss))
+           (cdr-list (dims-of-expr-value-list-list valss)))
+    :induct t
+    :enable cdr-list)
+  
+  (defrule dims-of-expr-value-list-of-append-all
+    (equal (dims-of-expr-value-list (append-all valss))
+           (append-all (dims-of-expr-value-list-list valss)))
+    :induct t
+    :enable append-all)
+
+  (defrule dims-of-expr-value-list-list-of-transpose-list-list
+    (equal (dims-of-expr-value-list-list (transpose-list-list valss))
+           (transpose-list-list (dims-of-expr-value-list-list valss)))
+    :induct t
+    :enable transpose-list-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1828,7 +1900,21 @@
     :hyp (expr-value-wfp val)
     :fn expr-value-atoms
     :hints (("Goal" :in-theory (enable expr-value-wfp
-                                       dims-of-expr-value)))))
+                                       dims-of-expr-value))))
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret consp-of-expr-value-atoms
+    (implies (expr-value-wfp val)
+             (equal (consp vals)
+                    (not (member-equal 0 (dims-of-expr-value val)))))
+    :fn expr-value-atoms
+    :hints (("Goal"
+             :use (len-of-expr-value-atoms-when-expr-value-wfp
+                   (:instance nat-list-product-0-iff-member-0
+                              (nats (dims-of-expr-value val))))
+             :in-theory (disable
+                         len-of-expr-value-atoms-when-expr-value-wfp
+                         nat-list-product-0-iff-member-0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1915,7 +2001,11 @@
                      :reshape nil
                      :reshape-t nil
                      :reshape-t-s1 nil
-                     :reshape-t-s1-s2 t))
+                     :reshape-t-s1-s2 t
+                     :transpose2d nil
+                     :transpose2d-t nil
+                     :transpose2d-t-m nil
+                     :transpose2d-t-m-n t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1992,7 +2082,11 @@
                      :reshape t
                      :reshape-t nil
                      :reshape-t-s1 nil
-                     :reshape-t-s1-s2 nil))
+                     :reshape-t-s1-s2 nil
+                     :transpose2d t
+                     :transpose2d-t nil
+                     :transpose2d-t-m nil
+                     :transpose2d-t-m-n nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2068,7 +2162,11 @@
                      :reshape nil
                      :reshape-t t
                      :reshape-t-s1 t
-                     :reshape-t-s1-s2 nil))
+                     :reshape-t-s1-s2 nil
+                     :transpose2d nil
+                     :transpose2d-t t
+                     :transpose2d-t-m t
+                     :transpose2d-t-m-n nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2153,6 +2251,10 @@
                      :reshape-t (primop-value-reshape)
                      :reshape-t-s1 (primop-value-reshape)
                      :reshape-t-s1-s2 (primop-value-reshape)
+                     :transpose2d (primop-value-transpose2d)
+                     :transpose2d-t (primop-value-transpose2d)
+                     :transpose2d-t-m (primop-value-transpose2d)
+                     :transpose2d-t-m-n (primop-value-transpose2d)
                      :otherwise (primop-value-fix op)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2419,7 +2521,19 @@
                               (make-type-value-array
                                :elem op.tval
                                :dims op.s2val))
-                       :dims nil)))
+                       :dims nil)
+     :transpose2d (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :transpose2d-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :transpose2d-t-m (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :transpose2d-t-m-n (make-type-value-array
+                         :elem (nest-function-type-values
+                                (list (make-type-value-array
+                                       :elem op.tval
+                                       :dims (list op.mval op.nval)))
+                                (make-type-value-array
+                                 :elem op.tval
+                                 :dims (list op.nval op.mval)))
+                         :dims nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///
@@ -3134,7 +3248,8 @@
          (cons "index" (expr-value-primop (primop-value-index)))
          (cons "index2d" (expr-value-primop (primop-value-index2d)))
          (cons "sum" (expr-value-primop (primop-value-sum)))
-         (cons "reshape" (expr-value-primop (primop-value-reshape))))))
+         (cons "reshape" (expr-value-primop (primop-value-reshape)))
+         (cons "transpose2d" (expr-value-primop (primop-value-transpose2d))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
