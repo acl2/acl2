@@ -17,6 +17,7 @@
 (include-book "min-max-defs")
 (include-book "in-defs")
 (include-book "insert-defs")
+(include-book "delete-defs")
 (include-book "internal/iter")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -34,6 +35,8 @@
 (local (include-book "insert"))
 (local (include-book "kestrel/data/utilities/oset" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "delete"))
+(local (include-book "extensionality"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -623,15 +626,15 @@
 ;; only what a proof about the order of a walk wants.
 
 (defruled in-of-before-becomes-member-equal
-  (iff (in x (before iter))
-       (member-equal x (tree-iter-before (iter-fix iter))))
+  (equal (in x (before iter))
+         (and (member-equal x (tree-iter-before (iter-fix iter))) t))
   :enable (before
            set::in-to-member
            bstp-of-tree-iter-plug-of-iter-fix))
 
 (defruled in-of-after-becomes-member-equal
-  (iff (in x (after iter))
-       (member-equal x (tree-iter-after (iter-fix iter))))
+  (equal (in x (after iter))
+         (and (member-equal x (tree-iter-after (iter-fix iter))) t))
   :enable (after
            set::in-to-member
            bstp-of-tree-iter-plug-of-iter-fix))
@@ -659,6 +662,22 @@
 ;; Both rules which rewrite @(tsee tree-iter-plug) to a zipper's plug are held
 ;; off, so that the term still matches the lemma above.
 
+;; Membership in the whole set, in the same folded form. Having this as its own
+;; rule is what lets the split below leave @(tsee in) alone, so that the two
+;; rules above are the only thing rewriting the sides.
+
+(defruledl in-of-from-iter-becomes-tree-in
+  (equal (in x (from-iter iter))
+         (and (tree-in x (tree-iter-plug (iter-fix iter))) t))
+  :enable (in
+           from-iter
+           fix-when-setp)
+  :use (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
+                  (iter (iter-fix iter)))
+  :disable (tree-iter-plug
+            tree-iter-plug-when-tree-zip-p
+            tree-iter-plug-when-tree-iter-has-value-p))
+
 (defrule in-of-from-iter-when-has-valuep
   (implies (has-valuep iter)
            (iff (in x (from-iter iter))
@@ -667,14 +686,10 @@
                     (in x (after iter)))))
   :enable (in-of-before-becomes-member-equal
            in-of-after-becomes-member-equal
+           in-of-from-iter-becomes-tree-in
            tree-in-of-tree-iter-plug-split
-           fix-when-setp
-           from-iter
            value
-           has-valuep
-           in)
-  :use (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
-                  (iter (iter-fix iter)))
+           has-valuep)
   :disable (tree-iter-plug
             tree-iter-plug-when-tree-zip-p
             tree-iter-plug-when-tree-iter-has-value-p))
@@ -806,6 +821,37 @@
            prev
            before-firstp))
 
+
+;;;;;;;;;;;;;;;;;;;;
+
+;; A step drops the element it moves onto from what lies ahead. This is the law
+;; a walk's proof runs on: it says each step makes progress, and says it as a
+;; @(tsee delete) rather than as a fact about the underlying sequence.
+;;
+;; An oset has no duplicates, so dropping the head of the sequence is deleting
+;; that one element from the set it denotes.
+
+(defruledl member-equal-of-cdr-when-osetp
+  (implies (set::setp l)
+           (iff (member-equal x (cdr l))
+                (and (not (equal x (car l)))
+                     (member-equal x l))))
+  :induct t
+  :enable (set::setp
+           set::not-member-when-smaller
+           data::<<-rules))
+
+(defrule after-of-next
+  (implies (has-valuep (next iter))
+           (equal (after (next iter))
+                  (delete (value (next iter)) (after iter))))
+  :enable (extensionality
+           in-of-after-becomes-member-equal
+           member-equal-of-cdr-when-osetp
+           bstp-of-tree-iter-plug-of-iter-fix
+           next
+           value
+           has-valuep))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The measures. Each counts the moves left in one direction, so each is a
