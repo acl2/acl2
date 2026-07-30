@@ -452,7 +452,7 @@
   
   (defruled all-of-len-p-of-cdr-list
     (implies (and (all-of-len-p lists len)
-                (equal (nfix n) (nfix (+ -1 len))))
+                  (equal (nfix n) (nfix (+ -1 len))))
            (all-of-len-p (cdr-list lists) n))
     :induct t
     :in-theory (enable all-of-len-p nfix))
@@ -466,6 +466,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define transpose-list-list ((lists true-list-listp))
+  :guard (all-of-len-p lists (len (car lists)))
   :returns (lists1 true-list-listp)
   :short "Transpose a list of lists."
   :long
@@ -483,6 +484,11 @@
                  (transpose-list-list (cdr-list lists)))))
   :measure (len (car lists))
   :hints (("Goal" :expand ((cdr-list lists))))
+  :guard-hints
+  (("Goal"
+    :use ((:instance all-of-len-p-of-cdr-list
+                     (len (len (car lists)))
+                     (n (len (cdr (car lists))))))))
 
   ///
 

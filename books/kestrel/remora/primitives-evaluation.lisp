@@ -2080,7 +2080,8 @@
        (atoms1 (append-all (transpose-list-list (list-split atoms n)))))
     (expr-value-with-nonempty-dims dims atoms1))
   :guard-hints
-  (("Goal" :in-theory (enable nfix
+  (("Goal" :in-theory (enable car/cdr-when-equal-cons
+                              nfix
                               fix
                               len-of-car-of-list-split
                               expr-value-atoms
@@ -2090,22 +2091,9 @@
                               len-of-append-all-when-all-of-len-p
                               all-of-len-p-of-transpose-list-list
                               len-of-car-of-transpose-list-list
-                              consp-of-car-list-split)))
-  :prepwork
-  ((defrule nat-list-product-of-pair
-     (implies (and (natp x)
-                   (natp y)
-                   (equal p (list x y)))
-              (equal (nat-list-product p)
-                     (* x y)))
-     :enable (nfix fix nat-list-product))
-   (defrule member-equal-0-of-pair
-     (implies (and (natp x)
-                   (natp y)
-                   (equal p (list x y))
-                   (not (equal 0 x))
-                   (not (equal 0 y)))
-              (not (member-equal 0 p)))))
+                              consp-of-car-list-split)
+           :expand ((nat-list-product (dims-of-expr-value val1))
+                    (member-equal 0 (dims-of-expr-value val1)))))
   
   ///
 
@@ -2115,7 +2103,8 @@
     :hyp (and (natp m)
               (natp n)
               (expr-value-wfp val1))
-    :hints (("Goal" :in-theory (enable nfix
+    :hints (("Goal" :in-theory (enable car/cdr-when-equal-cons
+                                       nfix
                                        fix
                                        len-of-car-of-list-split
                                        len-of-append-all-when-all-of-len-p
@@ -2124,7 +2113,9 @@
                                        consp-of-car-list-split
                                        list-split-of-repeat
                                        transpose-list-list-of-repeat-of-repeat
-                                       append-all-of-repeat-of-repeat)))))
+                                       append-all-of-repeat-of-repeat)
+                    :expand ((nat-list-product (dims-of-expr-value val1))
+                             (member-equal 0 (dims-of-expr-value val1)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

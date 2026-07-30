@@ -759,11 +759,12 @@
 ; one cell already yields a final result,
 ; not an operation applicable to another cell.
 (acl2::assert-event
- (reserrp
-  (eval-primop-fun-chain (make-primop-value-reshape-t-s1-s2 :tval *tv-int*
-                                                            :s1val (list 2 3)
-                                                            :s2val (list 6))
-                         (list *mat23* *mat23*))))
+ (not (expr-value-case
+       (eval-primop-fun (make-primop-value-reshape-t-s1-s2 :tval *tv-int*
+                                                           :s1val (list 2 3)
+                                                           :s2val (list 6))
+                        *mat23*)
+       :primop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -870,10 +871,13 @@
         (expr-value-vector (list (iv 2) (iv 5)))
         (expr-value-vector (list (iv 3) (iv 6))))))
 
-; Wrong number of argument cells.
+; Wrong number of argument cells:
+; one cell already yields a final result,
+; not an operation applicable to another cell.
 (acl2::assert-event
- (reserrp
-  (eval-primop-fun-chain (make-primop-value-transpose2d-t-m-n :tval *tv-int*
-                                                              :mval 2
-                                                              :nval 3)
-                         (list *mat23* *mat23*))))
+ (not (expr-value-case
+       (eval-primop-fun (make-primop-value-transpose2d-t-m-n :tval *tv-int*
+                                                             :mval 2
+                                                             :nval 3)
+                        *mat23*)
+       :primop)))
