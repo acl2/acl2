@@ -611,7 +611,7 @@ binder.</p>")
         state)))
 
 (defun flextreeset->defxdoc (x parents kwd-alist state)
-  ;; Returns (mv events state).  Treeset-free (like flexset->defxdoc).
+  ;; Returns (mv events state)
   (declare (ignorable state))
   (b* (((flextreeset x) x)
        (parents (getarg :parents parents kwd-alist))

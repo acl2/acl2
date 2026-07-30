@@ -30,14 +30,14 @@
   (assert! (function-symbolp 'nat-set-p (w state)))
   (assert! (function-symbolp 'nat-set-fix (w state)))
   (assert! (function-symbolp 'nat-set-equiv$inline (w state)))
-  (assert! (function-symbolp 'nat-set-count (w state)))
+  ;; No count unless :count is supplied (as with defset).
+  (assert! (not (function-symbolp 'nat-set-count (w state))))
   (assert! (let ((s (treeset::insert 1 (treeset::insert 2 (treeset::empty)))))
              (and (nat-set-p s)
                   (nat-set-p (treeset::empty))
                   (not (nat-set-p (treeset::insert 'a (treeset::empty))))
                   (not (nat-set-p 7))
-                  (equal (nat-set-fix s) s)
-                  (equal (nat-set-count s) 2)))))
+                  (equal (nat-set-fix s) s)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -103,7 +103,10 @@
     :count nat-set-size)
 
   (assert! (function-symbolp 'nat-set-size (w state)))
-  (assert! (not (function-symbolp 'nat-set-count (w state)))))
+  (assert! (not (function-symbolp 'nat-set-count (w state))))
+  (assert! (let ((s (treeset::insert 1 (treeset::insert 2 (treeset::empty)))))
+             (and (equal (nat-set-size s) 2)
+                  (equal (nat-set-size (treeset::empty)) 0)))))
 
 (must-succeed*
   (fty::deftreeset nat-set
