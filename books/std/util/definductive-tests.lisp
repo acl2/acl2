@@ -382,34 +382,156 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Multiple predicates must all be recursive.
+; Two cliques, each a single recursive predicate,
+; with the second one depending on the first one.
 
-(must-fail
- (definductive nonrecursive-multi
+(must-succeed*
+
+ (definductive two-rec-cliques
    :preds ((p x)
            (q x))
    :irules ((p0 ()
-                (p 0))
+                (p nil))
+            (pstep ((p x))
+                   (p (cons x x)))
             (q0 ((p x))
-                (q x)))))
+                (q x))
+            (qstep ((q x))
+                   (q (cons x x)))))
+
+ (must-be-redundant
+  (defthm q-q0
+    (implies (p x)
+             (q x))))
+
+ (must-be-redundant
+  (defthm p-alt-when-p
+    (implies (and (p-alt-p0-p)
+                  (p-alt-pstep-p)
+                  (q-alt-q0-p)
+                  (q-alt-qstep-p)
+                  (p x))
+             (p-alt x))))
+
+ (must-be-redundant
+  (defthm q-alt-when-q
+    (implies (and (p-alt-p0-p)
+                  (p-alt-pstep-p)
+                  (q-alt-q0-p)
+                  (q-alt-qstep-p)
+                  (q x))
+             (q-alt x))))
+
+ (defthm q-of-nil
+   (q nil)
+   :rule-classes nil
+   :hints (("Goal" :in-theory (enable p-p0 q-q0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Multiple predicates must form a single clique:
-; here P and Q are each recursive, but they are not mutually recursive.
+; Two cliques, the first one a non-recursive predicate;
+; since A is not recursive, the minimality theorem for it
+; is proved without induction,
+; while the one for B uses the one for A.
 
-(must-fail
- (definductive two-cliques
-   :preds ((p x)
-           (q x))
-   :irules ((p0 ()
-                (p 0))
-            (p1 ((p x))
-                (p (cons x x)))
-            (q0 ((p x))
-                (q x))
-            (q1 ((q x))
-                (q (cons x x))))))
+(must-succeed*
+
+ (definductive nonrec-then-rec
+   :preds ((a x)
+           (b x))
+   :irules ((a0 ()
+                (a 0))
+            (b0 ((a x))
+                (b x))
+            (bstep ((b x))
+                   (b (cons x x)))))
+
+ (must-be-redundant
+  (defthm a-alt-when-a
+    (implies (and (a-alt-a0-p)
+                  (b-alt-b0-p)
+                  (b-alt-bstep-p)
+                  (a x))
+             (a-alt x))))
+
+ (must-be-redundant
+  (defthm b-alt-when-b
+    (implies (and (a-alt-a0-p)
+                  (b-alt-b0-p)
+                  (b-alt-bstep-p)
+                  (b x))
+             (b-alt x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Two independent predicates, neither depending on the other.
+
+(must-succeed*
+
+ (definductive independent
+   :preds ((c x)
+           (d x))
+   :irules ((c0 ()
+                (c 0))
+            (d0 ()
+                (d 1))))
+
+ (must-be-redundant
+  (defthm c-c0
+    (c 0)))
+
+ (must-be-redundant
+  (defthm d-d0
+    (d 1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A clique of two mutually recursive predicates
+; that depends on an earlier clique of a single predicate.
+
+(must-succeed*
+
+ (definductive nat-evenodd
+   :preds ((nt x)
+           (evn x)
+           (odn x))
+   :irules ((nt0 ()
+                 (nt 0))
+            (ntstep ((nt x))
+                    (nt (1+ x)))
+            (evn0 ((nt x))
+                  (evn 0))
+            (evnstep ((natp x)
+                      (odn x))
+                     (evn (1+ x)))
+            (odnstep ((natp x)
+                      (evn x))
+                     (odn (1+ x)))))
+
+ (must-be-redundant
+  (defthm evn-evn0
+    (implies (nt x)
+             (evn 0))))
+
+ (must-be-redundant
+  (defthm evn-alt-when-evn
+    (implies (and (nt-alt-nt0-p)
+                  (nt-alt-ntstep-p)
+                  (evn-alt-evn0-p)
+                  (evn-alt-evnstep-p)
+                  (odn-alt-odnstep-p)
+                  (evn x))
+             (evn-alt x))))
+
+ (must-be-redundant
+  (defthm odn-alt-when-odn
+    (implies (and (nt-alt-nt0-p)
+                  (nt-alt-ntstep-p)
+                  (evn-alt-evn0-p)
+                  (evn-alt-evnstep-p)
+                  (odn-alt-odnstep-p)
+                  (odn x))
+             (odn-alt x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
