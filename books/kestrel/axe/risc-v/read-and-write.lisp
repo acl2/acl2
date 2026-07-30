@@ -42,6 +42,7 @@
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; reduce?
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 (local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 ;(local (include-book "kestrel/arithmetic-light/top" :dir :system))
@@ -110,7 +111,7 @@
 (defthm subregion32p-of-+-of--1-same
   (implies (posp n)
            (subregion32p (+ -1 n) 1 n 0))
-  :hints (("Goal" :in-theory (enable subregion32p in-region32p bvlt))))
+  :hints (("Goal" :in-theory (enable subregion32p in-region32p bvlt bvminus))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -787,7 +788,7 @@
                     (not (and ;(unsigned-byte-p 32 n2)
                            (equal (bvchop 32 x) (bvminus 32 n2 1))
                            (not (equal (bvchop 32 x) (+ -1 (expt 2 32))))))))
-    :hints (("Goal" :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases)
+    :hints (("Goal" :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases bvminus)
                                     (acl2::bvplus-of-+-arg3
                                      disjoint-regions32p-of-+-arg4
                                      in-region32p-of-+-arg3))))))
@@ -848,7 +849,7 @@
            :induct (read n1 ad1 stat)
            :in-theory (e/d ((:i read)
                             bvplus
-                            ;bvuminus
+                            acl2::bvminus-becomes-bvplus-of-bvuminus
                             bvuminus
                             ;acl2::bvchop-of-sum-cases
                             subregion32p
@@ -950,7 +951,7 @@
                             acl2::cdr-of-nthcdr
                             acl2::bvchop-plus-1-split
                             bv-list-read-chunk-little
-                            )
+                            acl2::bvminus-becomes-bvplus-of-bvuminus)
                            (;distributivity
                             acl2::+-of-minus-constant-version ; fixme disable
                             (:e expt)
@@ -1193,7 +1194,8 @@
                               acl2::bvlt-convert-arg3-to-bv
                               acl2::trim-of-+-becomes-bvplus
                               acl2::trim-of-unary---becomes-bvuminus
-                              acl2::bvplus-convert-arg3-to-bv))))
+                              acl2::bvplus-convert-arg3-to-bv
+                              acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
 (defthm write-of-write-byte-huge
   (implies (and (<= (expt 2 32) n) ; every address gets written!
@@ -1279,7 +1281,8 @@
                               acl2::trim-of-unary---becomes-bvuminus ; enable by default?
                               zp
                               write-of-1-becomes-write-byte
-                              bvlt-of-1-arg2))))
+                              bvlt-of-1-arg2
+                              acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
 (defthm write-of-write-diff-bv
   (implies (and (syntaxp (acl2::smaller-termp ad2 ad1))
@@ -1353,13 +1356,12 @@
                             bvplus acl2::bvchop-of-sum-cases
                             read32-mem-ubyte8-becomes-read-byte ; todo: loop
                             acl2::expt-becomes-expt-limited
-                            )
+                            acl2::bvminus-becomes-bvplus-of-bvuminus)
                            (acl2::bvplus-of-+-arg3
                             disjoint-regions32p-of-+-arg4
                             in-region32p-of-+-arg3
                             write32-mem-ubyte8-of-+-arg1 ; todo: loop
-                            (:e expt)
-                            )))))
+                            (:e expt))))))
 
 (defthm read-byte-of-write-both
   (implies (and (<= n (expt 2 32))
@@ -1485,7 +1487,8 @@
                             acl2::bvchop-of-sum-cases
                             bvlt
                             acl2::expt-becomes-expt-limited
-                            equal-of-read-and-read-when-bvchops-agree ifix)
+                            equal-of-read-and-read-when-bvchops-agree
+                            acl2::bvminus-becomes-bvplus-of-bvuminus ifix)
                            ((:e expt)
                             ;;ACL2::BVCAT-EQUAL-REWRITE
                             ACL2::BVCAT-EQUAL-REWRITE-ALT)))))

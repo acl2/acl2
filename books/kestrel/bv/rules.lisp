@@ -64,6 +64,7 @@
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
 (local (include-book "bvuminus"))
+(local (include-book "bvminus"))
 (local (include-book "bvand"))
 (local (include-book "bvor"))
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))

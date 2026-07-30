@@ -97,7 +97,8 @@
 (defthm bvuminus-of--
  (equal (bvuminus 32 (- k2))
         (bvchop 32 k2))
- :hints (("Goal" :in-theory (e/d (bvuminus bvminus) (ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
+ :hints (("Goal" :in-theory (e/d (bvuminus bvminus) (;ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                                     )))))
 
 ;;
 ;; A scheme for reducing case-splits introduced by conditional jump instructions
@@ -590,7 +591,7 @@
                             acl2::bvlt
                             ;;getbit
                             )
-                           (acl2::bvminus-becomes-bvplus-of-bvuminus
+                           (;acl2::bvminus-becomes-bvplus-of-bvuminus
                             acl2::signed-byte-p-forward ; for speed
                             acl2::unsigned-byte-p-of-bvchop-bigger
                             )))))
@@ -709,7 +710,7 @@
                                                    acl2::bvcat
                                                    logapp
                                                    logext)
-                           ( acl2::bvminus-becomes-bvplus-of-bvuminus
+                           (;acl2::bvminus-becomes-bvplus-of-bvuminus
                                                     acl2::sbvlt-rewrite
                                                     )))))
 
@@ -748,7 +749,7 @@
                                                    acl2::bvcat
                                                    logapp
                                                    logext)
-                           ( acl2::bvminus-becomes-bvplus-of-bvuminus
+                           (;acl2::bvminus-becomes-bvplus-of-bvuminus
                              acl2::sbvlt-rewrite
                              acl2::bvchop-identity ; for speed
                              )))))
@@ -779,7 +780,7 @@
       acl2::*-of---arg1-gen)
      (;;ACL2::REWRITE-<-WHEN-SIZES-DONT-MATCH2 ;looped
       ACL2::REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1 ;looped
-      ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+      ;ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
       acl2::sbvlt-rewrite)))))
 
 (defthm jnle-condition-rewrite-3-32
@@ -804,7 +805,7 @@
       acl2::logtail-becomes-slice-bind-free)
      (;;ACL2::REWRITE-<-WHEN-SIZES-DONT-MATCH2 ;looped
       ACL2::REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1 ;looped
-      ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+      ;ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
       ;ACL2::EQUAL-OF-BVCHOPS-WHEN-EQUAL-OF-GETBITS ;looped
       )))))
 
@@ -816,7 +817,8 @@
   (equal (jnz-condition (zf-spec (bvplus 32 x y)))
          (not (equal (bvuminus 32 x) (bvchop 32 y))))
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus bvplus acl2::bvchop-of-sum-cases)
-                                  (acl2::bvminus-becomes-bvplus-of-bvuminus)))))
+                                  (;acl2::bvminus-becomes-bvplus-of-bvuminus
+                                   )))))
 
 ;odd rule
 ;todo gen

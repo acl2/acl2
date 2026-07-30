@@ -942,12 +942,12 @@
                                             cmp-overflow
                                             cmp-carry
                                             cmp-zero
-                                              ;addwithcarry-overflow
-                                              ;addwithcarry
+                                              ;;addwithcarry-overflow
+                                              ;;addwithcarry
                                               uint acl2::bvuminus-becomes-bvplus-of-bvnot-and-1 acl2::getbit-convert-arg2-to-bv
                                               acl2::trim-of-+-becomes-bvplus
                                               acl2::bvplus-convert-arg3-to-bv
-                                              )
+                                              acl2::bvminus-becomes-bvplus-of-bvuminus)
                                            (acl2::signed-addition-underflowsp-correct ;  todo
                                             acl2::signed-addition-overflowsp-correct ; todo
                                             ;mv-nth-2-of-addwithcarry
@@ -990,7 +990,7 @@
                                             uint acl2::bvuminus-becomes-bvplus-of-bvnot-and-1 acl2::getbit-convert-arg2-to-bv
                                             acl2::trim-of-+-becomes-bvplus
                                             acl2::bvplus-convert-arg3-to-bv
-                                            )
+                                            acl2::bvminus-becomes-bvplus-of-bvuminus)
                                            (acl2::signed-addition-underflowsp-correct ;  todo
                                             acl2::signed-addition-overflowsp-correct ; todo
                                             ;;mv-nth-2-of-addwithcarry
@@ -1045,7 +1045,7 @@
                                             uint acl2::bvuminus-becomes-bvplus-of-bvnot-and-1 acl2::getbit-convert-arg2-to-bv
                                             acl2::trim-of-+-becomes-bvplus
                                             acl2::bvplus-convert-arg3-to-bv
-                                            )
+                                            acl2::bvminus-becomes-bvplus-of-bvuminus)
                                            (acl2::signed-addition-underflowsp-correct ;  todo
                                             acl2::signed-addition-overflowsp-correct ; todo
                                             ;;mv-nth-2-of-addwithcarry

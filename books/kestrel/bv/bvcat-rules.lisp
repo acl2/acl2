@@ -21,7 +21,7 @@
 (include-book "bitxor")
 (include-book "bvplus")
 (include-book "bvmult")
-(include-book "bvminus")
+(include-book "bvminus-def")
 (include-book "bvuminus-def")
 (include-book "bvif")
 (include-book "bvlt-def")

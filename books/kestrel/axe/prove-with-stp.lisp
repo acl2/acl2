@@ -52,6 +52,7 @@
 (local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/bv/getbit" :dir :system))
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
 (local (include-book "kestrel/bv/bvor" :dir :system))
 

@@ -15,6 +15,7 @@
 (include-book "kestrel/axe/known-booleans" :dir :system)
 (include-book "../priorities")
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 
 (add-known-boolean in-region32p)
 (add-known-boolean subregion32p)
@@ -79,7 +80,7 @@
                 (<= 256 len)
                 (natp len))
            (in-region32p x len 0))
-  :hints (("Goal" :in-theory (enable in-region32p bvlt))))
+  :hints (("Goal" :in-theory (enable in-region32p bvlt acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
 (defthm disjoint-regions32p-byte-special
   (implies (and (syntaxp (and (quotep ad)

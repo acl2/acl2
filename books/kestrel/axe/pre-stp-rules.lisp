@@ -21,6 +21,7 @@
 (include-book "kestrel/bv/bvashr" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/bv/bvuminus" :dir :system)
+(include-book "kestrel/bv/bvminus" :dir :system)
 (include-book "kestrel/bv/rotate" :dir :system)
 (include-book "kestrel/bv/bvnot" :dir :system)
 (include-book "kestrel/bv/bvand" :dir :system)
