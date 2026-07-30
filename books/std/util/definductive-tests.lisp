@@ -63,7 +63,8 @@
    :preds ((p a))
    :irules ((base ()
                   (p nil))
-            (step ((p x) (p y))
+            (step ((p x)
+                   (p y))
                   (p (cons x y)))))
 
  (must-be-redundant
@@ -128,7 +129,8 @@
    :preds ((bn x))
    :irules ((base ()
                   (bn 0))
-            (step ((bn x) (<= x 5))
+            (step ((bn x)
+                   (<= x 5))
                   (bn (1+ x)))))
 
  (must-be-redundant
@@ -340,6 +342,14 @@
                 (q x x))))
 
  (must-be-redundant
+  (defthm p-p0
+    (p 0)))
+
+ (must-be-redundant
+  (defthm q-q0
+    (q 0 0)))
+
+ (must-be-redundant
   (defthm p-pq
     (implies (q x x)
              (p x))))
@@ -400,9 +410,23 @@
                    (q (cons x x)))))
 
  (must-be-redundant
+  (defthm p-p0
+    (p nil)))
+
+ (must-be-redundant
+  (defthm p-pstep
+    (implies (p x)
+             (p (cons x x)))))
+
+ (must-be-redundant
   (defthm q-q0
     (implies (p x)
              (q x))))
+
+ (must-be-redundant
+  (defthm q-qstep
+    (implies (q x)
+             (q (cons x x)))))
 
  (must-be-redundant
   (defthm p-alt-when-p
@@ -445,6 +469,20 @@
                 (b x))
             (bstep ((b x))
                    (b (cons x x)))))
+
+ (must-be-redundant
+  (defthm a-a0
+    (a 0)))
+
+ (must-be-redundant
+  (defthm b-b0
+    (implies (a x)
+             (b x))))
+
+ (must-be-redundant
+  (defthm b-bstep
+    (implies (b x)
+             (b (cons x x)))))
 
  (must-be-redundant
   (defthm a-alt-when-a
@@ -509,9 +547,30 @@
                      (odn (1+ x)))))
 
  (must-be-redundant
+  (defthm nt-nt0
+    (nt 0)))
+
+ (must-be-redundant
+  (defthm nt-ntstep
+    (implies (nt x)
+             (nt (1+ x)))))
+
+ (must-be-redundant
   (defthm evn-evn0
     (implies (nt x)
              (evn 0))))
+
+ (must-be-redundant
+  (defthm evn-evnstep
+    (implies (and (odn x)
+                  (natp x))
+             (evn (1+ x)))))
+
+ (must-be-redundant
+  (defthm odn-odnstep
+    (implies (and (evn x)
+                  (natp x))
+             (odn (1+ x)))))
 
  (must-be-redundant
   (defthm evn-alt-when-evn
