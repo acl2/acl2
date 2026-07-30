@@ -20,12 +20,12 @@
                               (stringp string))))
   (if (string-starts-withp string prefix)
       (strnthcdr (length prefix) string)
-    ;; todo: change to return a string and improve (or drop) the rule below
-    (er hard? 'strip-prefix-from-string "String ~x0 does not start with ~x1." string prefix)))
+    (prog2$ (er hard? 'strip-prefix-from-string "String ~x0 does not start with ~x1." string prefix)
+            ;; just returns some string, to support the return type theorem:
+            "")))
 
 (defthm stringp-of-strip-prefix-from-string
-  (implies (and (string-starts-withp string prefix)
-                (stringp string))
+  (implies (stringp string)
            (stringp (strip-prefix-from-string prefix string)))
     :hints (("Goal" :in-theory (enable strip-prefix-from-string))))
 

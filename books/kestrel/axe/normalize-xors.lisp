@@ -115,7 +115,8 @@
   (equal (integer-listp x)
          (and (all-integerp x)
               (true-listp x)))
-  :hints (("Goal" :in-theory (enable integer-listp all-integerp))))
+  :hints (("Goal" :induct t
+           :in-theory (enable integer-listp all-integerp))))
 
 ;move
 (local
@@ -256,7 +257,8 @@
              (and (increasingp x)
                   (increasingp y)
                   (< (car (last x)) (car y))))))
-  :hints (("Goal" :in-theory (enable increasingp))))
+  :hints (("Goal" :induct t
+           :in-theory (enable increasingp))))
 
 (defthm increasingp-of-reverse-list
   (equal (increasingp (reverse-list x))
@@ -632,8 +634,9 @@
                    t))
             (all-<= (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))
                     bound))
-   :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux all-myquotep <=-of-nth-when-all-<= all-<=-when-<=-and-decreasingp)
-                                   (pseudo-dag-arrayp quotep))))))
+   :hints (("Goal" :induct t
+            :in-theory (e/d (bitxor-nest-leaves-aux all-myquotep <=-of-nth-when-all-<= all-<=-when-<=-and-decreasingp)
+                            (pseudo-dag-arrayp quotep))))))
 
 (defthm all-<=-of-+-of--1
   (implies (and (all-integerp acc)

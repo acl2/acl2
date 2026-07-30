@@ -384,6 +384,8 @@
     sint-dec-const ; exposes sint-from-integer
     sint-hex-const ; exposes sint-from-integer
     sint-oct-const ; exposes sint-from-integer
+    ;; (:e sint-from-integer) ; not sure if we want these
+    ;; (:e integer-from-sint)
     )
   :redundant-okp t)
 
