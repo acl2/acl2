@@ -20,6 +20,7 @@
 
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/abs" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -99,7 +100,7 @@
      @(tsee prim-head), @(tsee prim-tail), @(tsee prim-length),
      @(tsee prim-append), @(tsee prim-reverse),
      @(tsee prim-index), @(tsee prim-index2d), @(tsee prim-sum),
-     and @(tsee prim-reshape).")
+     @(tsee prim-reshape), and @(tsee prim-transpose2d).")
    (xdoc::p
     "For integers, we currently model Remora integer values as unbounded
      mathematical integers, matching ACL2's own integer type.
@@ -2021,7 +2022,7 @@
           (expr-value-with-empty-dim s2 tval)))
        (atoms (expr-value-atoms val1)))
     (expr-value-with-nonempty-dims s2 atoms))
-
+  
   ///
 
   (defret expr-value-wfp-of-prim-reshape
@@ -2029,6 +2030,94 @@
              (expr-value-wfp val))
     :hyp (and (nat-listp s2)
               (expr-value-wfp val1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-transpose2d ((tval type-valuep)
+                          (m natp)
+                          (n natp)
+                          (val1 expr-valuep))
+  :guard (expr-value-wfp val1)
+  :returns (val expr-value-resultp)
+  :short "Evaluation of matrix transposition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('transpose2d') operation
+     (see the @(':transpose2d-t-m-n') summand of @(tsee primop-value)):
+     @('tval'), @('m'), and @('n') are the instantiation values,
+     and @('val1') is the argument cell.
+     According to the instantiated type of the operation,
+     the argument cell is an @('m') by @('n') matrix of scalars,
+     and the result is the transposed @('n') by @('m') matrix.
+     The guard requires the argument cell to be well-formed;
+     we defensively check that it has the expected dimensions.")
+   (xdoc::p
+    "If the resulting dimensions include a zero, the result is empty:
+     we build it via @(tsee expr-value-with-empty-dim),
+     which requires an atom type value.
+     Otherwise, we collect the atom values of the argument cell
+     via @(tsee expr-value-atoms),
+     split them into the @('m') rows of the matrix
+     via @(tsee list-split),
+     transpose the rows into the @('n') columns
+     via @(tsee transpose-list-list),
+     concatenate the columns
+     via @(tsee append-all),
+     and arrange the result according to the transposed dimensions
+     via @(tsee expr-value-with-nonempty-dims).
+     This mirrors the interpreter in [impl],
+     which computes @('concat (transpose (split n elts))')."))
+  (b* ((m (lnfix m))
+       (n (lnfix n))
+       ((unless (equal (dims-of-expr-value val1) (list m n)))
+        (reserr nil))
+       (dims (list n m))
+       ((when (member-equal 0 dims))
+        (b* (((when (type-value-case tval :array)) (reserr nil)))
+          (expr-value-with-empty-dim dims tval)))
+       (atoms (expr-value-atoms val1))
+       (atoms1 (append-all (transpose-list-list (list-split atoms n)))))
+    (expr-value-with-nonempty-dims dims atoms1))
+  :guard-hints
+  (("Goal" :in-theory (enable car/cdr-when-equal-cons
+                              nat-list-product
+                              nfix
+                              fix
+                              len-of-car-of-list-split
+                              expr-value-atoms
+                              list-split-of-repeat
+                              transpose-list-list-of-repeat-of-repeat
+                              append-all-of-repeat-of-repeat
+                              len-of-append-all-when-all-of-len-p-of-len-car
+                              all-of-len-p-of-transpose-list-list
+                              len-of-car-of-transpose-list-list
+                              consp-of-car-list-split)
+           :expand ((nat-list-product (dims-of-expr-value val1))
+                    (member-equal 0 (dims-of-expr-value val1)))))
+  
+  ///
+
+  (defret expr-value-wfp-of-prim-transpose2d
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (and (natp m)
+              (natp n)
+              (expr-value-wfp val1))
+    :hints (("Goal" :in-theory (enable car/cdr-when-equal-cons
+                                       nat-list-product
+                                       nfix
+                                       fix
+                                       len-of-car-of-list-split
+                                       len-of-append-all-when-all-of-len-p-of-len-car
+                                       all-of-len-p-of-transpose-list-list
+                                       len-of-car-of-transpose-list-list
+                                       consp-of-car-list-split
+                                       list-split-of-repeat
+                                       transpose-list-list-of-repeat-of-repeat
+                                       append-all-of-repeat-of-repeat)
+                    :expand ((nat-list-product (dims-of-expr-value val1))
+                             (member-equal 0 (dims-of-expr-value val1)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2209,7 +2298,11 @@
      :reshape (prog2$ (impossible) (reserr nil))
      :reshape-t (prog2$ (impossible) (reserr nil))
      :reshape-t-s1 (prog2$ (impossible) (reserr nil))
-     :reshape-t-s1-s2 (prim-reshape op.tval op.s1val op.s2val arg)))
+     :reshape-t-s1-s2 (prim-reshape op.tval op.s1val op.s2val arg)
+     :transpose2d (prog2$ (impossible) (reserr nil))
+     :transpose2d-t (prog2$ (impossible) (reserr nil))
+     :transpose2d-t-m (prog2$ (impossible) (reserr nil))
+     :transpose2d-t-m-n (prim-transpose2d op.tval op.mval op.nval arg)))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///
@@ -2286,6 +2379,11 @@
                            (list (type-var-atom "t"))))
                   (reserr nil)))
               (expr-value-primop (primop-value-reshape-t tval)))
+   :transpose2d (b* (((unless (type-values-match-type-vars-p
+                           (list tval)
+                           (list (type-var-atom "t"))))
+                  (reserr nil)))
+              (expr-value-primop (primop-value-transpose2d-t tval)))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-tfunp
                                            type-values-match-type-vars-p)))
@@ -2335,7 +2433,8 @@
      a dimension for @('index');
      two dimensions for @('index2d');
      a shape for @('sum');
-     two shapes for @('reshape')),
+     two shapes for @('reshape');
+     two dimensions for @('transpose2d')),
      along with the previously received type values (if any).
      Anything else is an error."))
   (primop-value-case
@@ -2450,6 +2549,19 @@
                           (make-primop-value-reshape-t-s1-s2 :tval op.tval
                                                              :s1val op.s1val
                                                              :s2val ival.val)))
+   :transpose2d-t (ispace-value-case
+                   ival
+                   :dim (expr-value-primop
+                         (make-primop-value-transpose2d-t-m :tval op.tval
+                                                            :mval ival.val))
+                   :shape (reserr nil))
+   :transpose2d-t-m (ispace-value-case
+                     ival
+                     :dim (expr-value-primop
+                           (make-primop-value-transpose2d-t-m-n :tval op.tval
+                                                                :mval op.mval
+                                                                :nval ival.val))
+                     :shape (reserr nil)) 
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp)))
 
