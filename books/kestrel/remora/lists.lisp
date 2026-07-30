@@ -237,18 +237,18 @@
     :induct t
     :enable cons-listp)
 
-  (defruledl len-of-append-all-when-all-of-len-p-aux
+  (defruled len-of-append-all-when-all-of-len-p
     (implies (all-of-len-p lists n)
              (equal (len (append-all lists))
                     (* (len lists) (nfix n))))
     :induct t
     :enable (append-all nfix))
 
-  (defruled len-of-append-all-when-all-of-len-p
+  (defruled len-of-append-all-when-all-of-len-p-of-len-car
     (implies (all-of-len-p lists (len (car lists)))
              (equal (len (append-all lists))
                     (* (len lists) (len (car lists)))))
-    :use (:instance len-of-append-all-when-all-of-len-p-aux
+    :use (:instance len-of-append-all-when-all-of-len-p
                     (n (len (car lists))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

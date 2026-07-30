@@ -2081,6 +2081,7 @@
     (expr-value-with-nonempty-dims dims atoms1))
   :guard-hints
   (("Goal" :in-theory (enable car/cdr-when-equal-cons
+                              nat-list-product
                               nfix
                               fix
                               len-of-car-of-list-split
@@ -2088,7 +2089,7 @@
                               list-split-of-repeat
                               transpose-list-list-of-repeat-of-repeat
                               append-all-of-repeat-of-repeat
-                              len-of-append-all-when-all-of-len-p
+                              len-of-append-all-when-all-of-len-p-of-len-car
                               all-of-len-p-of-transpose-list-list
                               len-of-car-of-transpose-list-list
                               consp-of-car-list-split)
@@ -2104,10 +2105,11 @@
               (natp n)
               (expr-value-wfp val1))
     :hints (("Goal" :in-theory (enable car/cdr-when-equal-cons
+                                       nat-list-product
                                        nfix
                                        fix
                                        len-of-car-of-list-split
-                                       len-of-append-all-when-all-of-len-p
+                                       len-of-append-all-when-all-of-len-p-of-len-car
                                        all-of-len-p-of-transpose-list-list
                                        len-of-car-of-transpose-list-list
                                        consp-of-car-list-split
