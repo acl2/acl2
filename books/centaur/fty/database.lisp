@@ -237,6 +237,7 @@
   ;; A single Treeset type (the acl2::treeset analogue of flexset).
   (name               ;; name of this set type, e.g., myset
    pred               ;; predicate function name, e.g., myset-p
+   tree-all           ;; structural fold function name, e.g., tree-all-myset
    fix                ;; fix function name, e.g., myset-fix
    equiv              ;; equiv function name, e.g., myset-equiv
    count              ;; count function name, e.g., myset-count

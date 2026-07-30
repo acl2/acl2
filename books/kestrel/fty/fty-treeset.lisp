@@ -105,7 +105,7 @@
     "Unlike the other generators,
      a treeset member contributes <emph>two</emph>
      mutually recursive defines to a clique
-     (deftypes appends per-member define lists): @('tree-all-<name>-internal'),
+     (deftypes appends per-member define lists): @('tree-all-<name>'),
      a structural fold over the raw binary tree, and the public recognizer,
      which conjoins @('treeset::setp') with the fold's first level
      inlined at @('(treeset::fix x)').
@@ -127,17 +127,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define flextreeset->tree-all-internal (x)
-  :mode :program
-  (b* (((flextreeset x)))
-    (intern-in-package-of-symbol
-     (concatenate 'string "TREE-ALL-" (symbol-name x.name) "-INTERNAL")
-     x.name)))
-
 (define flextreeset-predicate-def (x)
   :mode :program
   (b* (((flextreeset x))
-       (tree-all (flextreeset->tree-all-internal x))
+       (tree-all x.tree-all)
        (tree-all-measure (if (and (consp x.measure)
                                   (eq (car x.measure)
                                       'acl2::two-nats-measure))
@@ -174,7 +167,7 @@
 (define flextreeset-post-pred-events (x)
   :mode :program
   (b* (((flextreeset x))
-       (tree-all (flextreeset->tree-all-internal x))
+       (tree-all x.tree-all)
        (pred-def (intern-in-package-of-symbol
                   (concatenate 'string (symbol-name x.pred) "-DEFINITION")
                   x.pred))
@@ -374,7 +367,7 @@
 (define flextreeset-suite-events (x)
   :mode :program
   (b* (((flextreeset x))
-       (tree-all (flextreeset->tree-all-internal x))
+       (tree-all x.tree-all)
        (pred-def (intern-in-package-of-symbol
                   (concatenate 'string (symbol-name x.pred) "-DEFINITION")
                   x.pred))
@@ -632,7 +625,7 @@
   (b* (((flextreeset x))
        ((unless x.count) nil)
        (eltcount (flextypes-find-count-for-pred x.elt-type types))
-       (tree-all (flextreeset->tree-all-internal x))
+       (tree-all x.tree-all)
        (emptyp-of-fix (acl2::packn-pos (list 'treeset::emptyp-of- x.fix) x.name))
        (pred-def (intern-in-package-of-symbol
                   (concatenate 'string (symbol-name x.pred) "-DEFINITION")
@@ -746,7 +739,7 @@
   (b* (((flextreeset x)))
     (list x.pred
           x.fix
-          (flextreeset->tree-all-internal x))))
+          x.tree-all)))
 
 (define flextreeset-collect-fix/pred-pairs (x)
   :mode :program
@@ -790,6 +783,7 @@
        ((mv elt-type elt-fix elt-equiv recp)
         (get-pred/fix/equiv (getarg :elt-type nil kwd-alist) our-fixtypes fixtypes))
        (pred  (getarg! :pred  (intern-in-package-of-symbol (cat (symbol-name name) "-P") name) kwd-alist))
+       (tree-all (intern-in-package-of-symbol (cat "TREE-ALL-" (symbol-name name)) name))
        (fix   (getarg! :fix   (intern-in-package-of-symbol (cat (symbol-name name) "-FIX") name) kwd-alist))
        (equiv (getarg! :equiv (intern-in-package-of-symbol (cat (symbol-name name) "-EQUIV") name) kwd-alist))
        (count (flextype-get-count-fn name kwd-alist))
@@ -803,6 +797,7 @@
         (check-flexset-fix-already-defined fix kwd-alist our-fixtypes 'deftreeset state))
        (x1 (make-flextreeset :name name
                              :pred pred
+                             :tree-all tree-all
                              :fix fix
                              :equiv equiv
                              :count count
