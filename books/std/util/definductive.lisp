@@ -2457,6 +2457,16 @@
 
 ;;;;;;;;;;
 
+(define defind-proof-valid-fn-clique-flag-name ((pred-name symbolp)
+                                                (name symbolp))
+  :returns (flag-fn-name symbolp)
+  :short "Name of the flag function of a @(tsee defines) of
+          @('p[i]-proof-validp') functions."
+  (packn-pos (list (defind-proof-valid-fn-clique-name pred-name name) '-flag)
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
 (define defind-proof-witness-fn-name ((pred-name symbolp) (name symbolp))
   :returns (fn-name symbolp)
   :short "Name of the witness function for a @('p[i]') predicate."
@@ -2609,6 +2619,16 @@
 
 ;;;;;;;;;;
 
+(define defind-proof-fix-id-thm-name ((pred-name symbolp) (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of the fixing identity theorem for a @('p[i]-proof') fixtype."
+  (packn-pos (list (defind-proof-fixer-name pred-name name)
+                   '-when-
+                   (defind-proof-recog-name pred-name name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
 (define defind-proof-constr-return-thm ((pred-name symbolp)
                                         (irule-name symbolp)
                                         (name symbolp))
@@ -2630,6 +2650,27 @@
   (packn-pos (list (defind-assert-recog-name pred-name name)
                    '-of-
                    (defind-proof-concl-acc-name pred-name irule-name name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-prem-acc-return-thm-name ((prem-pred-name symbolp)
+                                               (pred-name symbolp)
+                                               (irule-name symbolp)
+                                               (num posp)
+                                               (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of the return theorem of a premise accessor of
+          a @('p[i]-proof') fixtype."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('prem-pred-name') input is the name of
+     the predicate in the premise,
+     whose fixtype of proofs is the type of the accessed field."))
+  (packn-pos (list (defind-proof-recog-name prem-pred-name name)
+                   '-of-
+                   (defind-proof-prem-acc-name pred-name irule-name num name))
              (symbol-lfix name)))
 
 ;;;;;;;;;;
@@ -2664,6 +2705,18 @@
   (packn-pos (list (defind-proof-fixer-name pred-name name)
                    '-under-
                    (defind-proof-equiv-name pred-name name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-count-return-thm-name ((pred-name symbolp)
+                                            (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of the return theorem of
+          the count function of a @('p[i]-proof') fixtype."
+  (packn-pos (list 'return-type-of-
+                   (defind-proof-count-fn-name pred-name name)
+                   '.count)
              (symbol-lfix name)))
 
 ;;;;;;;;;;
@@ -3658,12 +3711,18 @@
      are proved by flag induction.
      The fixing equivalence of the functions
      is proved at the end, all together."))
-  (b* (((mv members expands)
+  (b* (((mv members expands term-thms fixequiv-thms)
         (defind-gen-proof-valid-fn-clique-loop
           clique-pred-infos irule-infos name xdocp))
-       (defines-name (defind-proof-valid-fn-clique-name
-                       (defind-pred-info->name (car clique-pred-infos))
-                       name)))
+       ((mv valid-tps prem-acc-thms)
+        (defind-gen-proof-valid-fn-clique-rules-loop
+          irule-infos
+          (defind-pred-info-list->name clique-pred-infos)
+          name))
+       (first-pred (defind-pred-info->name (car clique-pred-infos)))
+       (defines-name (defind-proof-valid-fn-clique-name first-pred name))
+       (flag-fn (defind-proof-valid-fn-clique-flag-name first-pred name))
+       (fn-formal (defind-proof-var-name name)))
     `(defines ,defines-name
        ,@(and xdocp
               `(:parents (,(symbol-lfix name))
@@ -3673,11 +3732,28 @@
                            (defind-pred-info-list->name clique-pred-infos))
                          ".")))
        ,@members
-       :hints (("Goal" :expand ,expands)) ; TODO: quoted theory
+       :hints (("Goal"
+                :expand ,expands
+                :in-theory '(eql
+                             not
+                             o-p
+                             o-finp
+                             o<
+                             (:e equal)
+                             (:e tau-system)
+                             ,@term-thms
+                             ,@valid-tps)))
        :verify-guards nil
        :flag-local nil
        ///
-       (fty::deffixequiv-mutual ,defines-name))) ; TODO: quoted theory
+       (fty::deffixequiv-mutual ,defines-name
+         :hints (("Goal"
+                  :induct (,flag-fn flag ,fn-formal)
+                  :in-theory '(,flag-fn
+                               not
+                               (:e equal)
+                               ,@fixequiv-thms
+                               ,@prem-acc-thms))))))
 
   :guard-hints
   (("Goal"
@@ -3692,20 +3768,86 @@
       (xdocp booleanp))
      :guard (no-duplicatesp-equal (defind-irule-info-list->name irule-infos))
      :returns (mv (events pseudo-event-form-listp)
-                  (expands true-listp))
+                  (expands true-listp)
+                  (term-thms true-listp)
+                  (fixequiv-thms true-listp))
      :parents nil
-     (b* (((when (endp pred-infos)) (mv nil nil))
+     (b* (((when (endp pred-infos)) (mv nil nil nil nil))
           (pred-name (defind-pred-info->name (car pred-infos)))
           (event (defind-gen-proof-valid-fn
                    pred-name irule-infos nil name xdocp))
           (count-fn (defind-proof-count-fn-name pred-name name))
           (fn-formal (defind-proof-var-name name))
           (expand `(,count-fn ,fn-formal))
-          ((mv events expands)
+          (term-thms1
+           (list (defind-proof-kind-poss-thm-name pred-name name)
+                 `(:t ,count-fn)
+                 (defind-proof-count-return-thm-name pred-name name)))
+          ((mv & & & prem-fixing-thms concl-fixing-thms)
+           (defind-gen-proof-valid-fn-cases pred-name irule-infos name))
+          (fixequiv-thms1
+           (append prem-fixing-thms
+                   concl-fixing-thms
+                   (list (defind-proof-valid-fn-name pred-name name)
+                         (defind-proof-kind-poss-thm-name pred-name name)
+                         (defind-proof-kind-fixing-thm-name pred-name name)
+                         (defind-proof-fix-id-thm-name pred-name name))))
+          ((mv events expands term-thms fixequiv-thms)
            (defind-gen-proof-valid-fn-clique-loop
              (cdr pred-infos) irule-infos name xdocp)))
        (mv (cons event events)
-           (cons expand expands))))))
+           (cons expand expands)
+           (append term-thms1 term-thms)
+           (append fixequiv-thms1 fixequiv-thms))))
+
+   (define defind-gen-proof-valid-fn-clique-rules-loop
+     ((irule-infos defind-irule-info-listp)
+      (clique-pred-names symbol-listp)
+      (name symbolp))
+     :returns (mv (valid-tps true-listp)
+                  (prem-acc-thms true-listp))
+     :parents nil
+     (b* (((when (endp irule-infos)) (mv nil nil))
+          ((mv valid-tps prem-acc-thms)
+           (defind-gen-proof-valid-fn-clique-rules-loop
+             (cdr irule-infos) clique-pred-names name))
+          ((defind-irule-info info) (car irule-infos))
+          ((defind-conclusion-info cinfo) info.conclusion)
+          ((unless (member-eq cinfo.name
+                              (symbol-list-fix clique-pred-names)))
+           (mv valid-tps prem-acc-thms))
+          (valid-tp `(:t ,(defind-irule-valid-fn-name cinfo.name
+                                                      info.name
+                                                      name)))
+          (prem-acc-thms1
+           (defind-gen-proof-valid-fn-clique-rules-loop-loop
+             info.premises cinfo.name info.name 1 name)))
+       (mv (cons valid-tp valid-tps)
+           (append prem-acc-thms1 prem-acc-thms)))
+
+     :prepwork
+
+     ((define defind-gen-proof-valid-fn-clique-rules-loop-loop
+        ((prem-infos defind-premise-info-listp)
+         (pred-name symbolp)
+         (irule-name symbolp)
+         (num posp)
+         (name symbolp))
+        :returns (thms true-listp)
+        :parents nil
+        (b* (((when (endp prem-infos)) nil)
+             (info (car prem-infos)))
+          (defind-premise-info-case
+            info
+            :pred
+            (cons (defind-proof-prem-acc-return-thm-name
+                    info.name pred-name irule-name num name)
+                  (defind-gen-proof-valid-fn-clique-rules-loop-loop
+                    (cdr prem-infos) pred-name irule-name
+                    (1+ (lposfix num)) name))
+            :other
+            (defind-gen-proof-valid-fn-clique-rules-loop-loop
+              (cdr prem-infos) pred-name irule-name num name))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
