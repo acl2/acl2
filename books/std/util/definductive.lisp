@@ -3418,6 +3418,13 @@
                                    (xdocp booleanp))
   :returns (event pseudo-event-formp)
   :short "Generate a @('p[l[k]]-rule[k]-validp') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theories for the fixing equivalence include
+     the assertion theorems for the predicates of
+     both the conclusion and the premises of the rule
+     (without duplicates)."))
   (b* (((defind-irule-info info))
        ((defind-conclusion-info info.conclusion))
        (fn-name (defind-irule-valid-fn-name info.conclusion.name info.name name))
@@ -3434,10 +3441,10 @@
        (vars (defind-irule-info-free-vars info))
        (body/matrix `(and ,@prem-conjuncts
                           ,concl-conjunct))
-       (fix-id-thm (defind-assert-fix-id-thm-name info.conclusion.name name))
-       (fix-return-thm
-        (defind-assert-fix-return-thm-name info.conclusion.name name))
-       (equal-thm (defind-equal-of-assert-thm-name info.conclusion.name name))
+       (assert-thms (defind-gen-irule-valid-fn-loop
+                      (set::insert info.conclusion.name
+                                   (defind-preds-in-premises info.premises))
+                      name))
        (xdoc?
         (and xdocp
              `(:parents (,(symbol-lfix name))
@@ -3453,9 +3460,7 @@
            ,body/matrix
            :verify-guards nil
            :hooks ((:fix :hints (("Goal" :in-theory '(,fn-name
-                                                      ,fix-id-thm
-                                                      ,fix-return-thm
-                                                      ,equal-thm))))))
+                                                      ,@assert-thms))))))
       `(define-sk ,fn-name (,concl-formal ,@prem-formals)
          :returns (yes/no booleanp
                           :hints (("Goal" :in-theory '(,fn-name
@@ -3464,11 +3469,25 @@
          (exists ,vars ,body/matrix)
          :verify-guards nil
          ///
-         (local (in-theory '(,fix-id-thm
-                             ,fix-return-thm
-                             ,equal-thm)))
+         (local (in-theory '(,@assert-thms)))
          (fty::deffixequiv-sk ,fn-name
-           :args (,concl-formal ,@prem-formals))))))
+           :args (,concl-formal ,@prem-formals)))))
+
+  :prepwork
+
+  ((local (in-theory (enable emptyp-of-symbol-sfix)))
+
+   (define defind-gen-irule-valid-fn-loop ((preds symbol-setp)
+                                           (name symbolp))
+     :returns (thms true-listp)
+     :parents nil
+     (b* (((when (set::emptyp (symbol-sfix preds))) nil)
+          (pred (set::head preds))
+          (thms (defind-gen-irule-valid-fn-loop (set::tail preds) name)))
+       (list* (defind-assert-fix-id-thm-name pred name)
+              (defind-assert-fix-return-thm-name pred name)
+              (defind-equal-of-assert-thm-name pred name)
+              thms)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
