@@ -251,16 +251,6 @@
    fix-already-definedp)
   :tag :treeset)
 
-(defun flextreeset->tree-all-internal (x)
-  ;; The name of a treeset member's structural fold -- the second of the two
-  ;; defines the member contributes to the predicate clique (see
-  ;; kestrel/fty/fty-treeset.lisp). Derived from the member name, like the
-  ;; other generated internal names.
-  (intern-in-package-of-symbol
-   (concatenate 'string
-                "TREE-ALL-" (symbol-name (flextreeset->name x)) "-INTERNAL")
-   (flextreeset->name x)))
-
 (def-primitive-aggregate flextypes
   ;; A top-level entry in the flextypes table.
   ;; May bundle up a group of mutually recursive types.
@@ -436,45 +426,12 @@
     (cons (with-flextype-bindings (x (car types)) x.equiv)
           (flextypelist-equivs (cdr types)))))
 
-;; The clique predicates a member contributes, as a list (a treeset member
-;; contributes two: its structural fold and the public predicate).
-
-(defun flexsum-predicates (x)
-  (declare (xargs :mode :program))
-  (list (flexsum->pred x)))
-
-(defun flexlist-predicates (x)
-  (declare (xargs :mode :program))
-  (list (flexlist->pred x)))
-
-(defun flexalist-predicates (x)
-  (declare (xargs :mode :program))
-  (list (flexalist->pred x)))
-
-(defun flextranssum-predicates (x)
-  (declare (xargs :mode :program))
-  (list (flextranssum->pred x)))
-
-(defun flexset-predicates (x)
-  (declare (xargs :mode :program))
-  (list (flexset->pred x)))
-
-(defun flexomap-predicates (x)
-  (declare (xargs :mode :program))
-  (list (flexomap->pred x)))
-
-(defun flextreeset-predicates (x)
-  (declare (xargs :mode :program))
-  (list (flextreeset->tree-all-internal x)
-        (flextreeset->pred x)))
-
 (defun flextypelist-predicates (types)
   (declare (xargs :mode :program))
   (if (atom types)
       nil
-    (append (with-flextype-bindings (x (car types))
-              (flex*-predicates x))
-            (flextypelist-predicates (cdr types)))))
+    (cons (with-flextype-bindings (x (car types)) x.pred)
+          (flextypelist-predicates (cdr types)))))
 
 (defun flextypes-find-count-for-pred (pred types)
   (declare (xargs :mode :program))

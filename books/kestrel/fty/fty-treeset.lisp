@@ -127,6 +127,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define flextreeset->tree-all-internal (x)
+  :mode :program
+  (b* (((flextreeset x)))
+    (intern-in-package-of-symbol
+     (concatenate 'string "TREE-ALL-" (symbol-name x.name) "-INTERNAL")
+     x.name)))
+
 (define flextreeset-predicate-def (x)
   :mode :program
   (b* (((flextreeset x))
@@ -224,7 +231,10 @@
                                               "-OF-TREE->RIGHT-WHEN-"
                                               (symbol-name x.pred))
                                  x.pred)))
-    `((defthmd ,pred-def
+    ;; The fold is internal, so deftypes' post-defines disable (which covers
+    ;; the registered predicates) does not know about it; disable it here.
+    `((local (in-theory (disable ,tree-all)))
+      (defthmd ,pred-def
         (equal (,x.pred ,x.xvar)
                (and (treeset::setp ,x.xvar)
                     (,tree-all (treeset::fix ,x.xvar))))
