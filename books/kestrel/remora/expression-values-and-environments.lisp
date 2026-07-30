@@ -470,7 +470,7 @@
     (:transpose2d ())
     (:transpose2d-t ((tval type-value)))
     (:transpose2d-t-m ((tval type-value)
-                     (mval nat)))
+                       (mval nat)))
     (:transpose2d-t-m-n ((tval type-value)
                        (mval nat)
                        (nval nat)))
