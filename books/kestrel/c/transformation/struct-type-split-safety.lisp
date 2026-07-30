@@ -974,6 +974,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-spec-struct-sts-safep ((struni struni-specp)
+                                    info
+                                    (spec sts-struct-specp)
+                                    (vtable valid-tablep)
+                                    (completions type-completions-p))
+  :returns (yes/no booleanp)
+  :short "Check if the type denoted by a struct type specifier
+          is safe for the STS transformation."
+  (and (or (type-spec-struct-vinfop info)
+           (raise "Internal error: malformed ~x0." info))
+       (or (top-type-sts-safep (type-spec-struct-vinfo->type info)
+                               spec vtable completions)
+           (sts-reject (type-spec-struct struni info))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-union-sts-safep ((struni struni-specp)
+                                   info
+                                   (spec sts-struct-specp)
+                                   (vtable valid-tablep)
+                                   (completions type-completions-p))
+  :returns (yes/no booleanp)
+  :short "Check if the type denoted by a union type specifier
+          is safe for the STS transformation."
+  (and (or (type-spec-union-vinfop info)
+           (raise "Internal error: malformed ~x0." info))
+       (or (top-type-sts-safep (type-spec-union-vinfo->type info)
+                               spec vtable completions)
+           (sts-reject (type-spec-union struni info))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define param-declor-nonabstract-sts-safep ((declor declorp)
                                             info
                                             (spec sts-struct-specp)
@@ -1302,8 +1336,7 @@
      and we check the safety of those types.
      We do not apply those checks to (the types of) structure declarators
      because those may occur both in structure and in union types;
-     instead, we plan to add checks to
-     the type specifiers that those structure declarators are part of."))
+     instead, we check the types denoted by struct and union type specifiers."))
   :types (exprs/decls/stmts
           fundef
           ext-declon
@@ -1351,6 +1384,24 @@
                                              vtable
                                              completions)
                            (type-spec-atomic-sts-safep type-spec.type spec)))
+   (type-spec :struct (and (struni-spec-sts-safep type-spec.spec
+                                                  spec
+                                                  vtable
+                                                  completions)
+                           (type-spec-struct-sts-safep type-spec.spec
+                                                       type-spec.info
+                                                       spec
+                                                       vtable
+                                                       completions)))
+   (type-spec :union (and (struni-spec-sts-safep type-spec.spec
+                                                 spec
+                                                 vtable
+                                                 completions)
+                          (type-spec-union-sts-safep type-spec.spec
+                                                     type-spec.info
+                                                     spec
+                                                     vtable
+                                                     completions)))
    (type-spec :typeof-expr (sts-reject (type-spec-fix type-spec)))
    (type-spec :typeof-type (sts-reject (type-spec-fix type-spec)))
    (type-spec :auto-type (sts-reject (type-spec-fix type-spec)))
