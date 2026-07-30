@@ -18,6 +18,16 @@
 (include-book "std/testing/must-fail" :dir :system)
 
 (include-book "centaur/fty/basetypes" :dir :system)
+(include-book "centaur/fty/deftypes" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The deftreeset generator ships with deftypes, but using it requires the
+;; treeset library, which is supplied by the deftreeset book included below.
+
+(must-fail
+  (fty::deftreeset nat-set
+    :elt-type nat))
 
 (include-book "deftreeset")
 
