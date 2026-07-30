@@ -251,3 +251,176 @@
                    (p (cons x x)))
             (step2 ((p x) (p y))
                    (p (cons x y))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Two mutually recursive predicates, on two levels:
+; EVEN is at level 0, because it has a rule with no premise predicates,
+; while ODD is at level 1, because it is only derivable from EVEN.
+
+(must-succeed*
+
+ (definductive evenodd
+   :preds ((even n)
+           (odd n))
+   :irules ((even-0 ()
+                    (even 0))
+            (even-step ((natp n)
+                        (odd n))
+                       (even (1+ n)))
+            (odd-step ((natp n)
+                       (even n))
+                      (odd (1+ n)))))
+
+ (must-be-redundant
+  (defthm even-even-0
+    (even 0)))
+
+ (must-be-redundant
+  (defthm even-even-step
+    (implies (and (odd n)
+                  (natp n))
+             (even (1+ n)))))
+
+ (must-be-redundant
+  (defthm odd-odd-step
+    (implies (and (even n)
+                  (natp n))
+             (odd (1+ n)))))
+
+ (must-be-redundant
+  (defthm even-alt-when-even
+    (implies (and (even-alt-even-0-p)
+                  (even-alt-even-step-p)
+                  (odd-alt-odd-step-p)
+                  (even n))
+             (even-alt n))))
+
+ (must-be-redundant
+  (defthm odd-alt-when-odd
+    (implies (and (even-alt-even-0-p)
+                  (even-alt-even-step-p)
+                  (odd-alt-odd-step-p)
+                  (odd n))
+             (odd-alt n))))
+
+ ; The predicates hold on some of the expected numbers.
+
+ (defthm even-4
+   (even 4)
+   :rule-classes nil
+   :hints (("Goal" :in-theory (enable even-even-0
+                                      even-even-step
+                                      odd-odd-step))))
+
+ (defthm odd-5
+   (odd 5)
+   :rule-classes nil
+   :hints (("Goal" :in-theory (enable even-even-0
+                                      even-even-step
+                                      odd-odd-step)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Two mutually recursive predicates, with different arities,
+; both at level 0, because each has a rule with no premise predicates.
+
+(must-succeed*
+
+ (definductive twolevel0
+   :preds ((p x)
+           (q x y))
+   :irules ((p0 ()
+                (p 0))
+            (q0 ()
+                (q 0 0))
+            (pq ((q x x))
+                (p x))
+            (qp ((p x))
+                (q x x))))
+
+ (must-be-redundant
+  (defthm p-pq
+    (implies (q x x)
+             (p x))))
+
+ (must-be-redundant
+  (defthm q-qp
+    (implies (p x)
+             (q x x))))
+
+ (must-be-redundant
+  (defthm p-alt-when-p
+    (implies (and (p-alt-p0-p)
+                  (q-alt-q0-p)
+                  (p-alt-pq-p)
+                  (q-alt-qp-p)
+                  (p x))
+             (p-alt x))))
+
+ (must-be-redundant
+  (defthm q-alt-when-q
+    (implies (and (p-alt-p0-p)
+                  (q-alt-q0-p)
+                  (p-alt-pq-p)
+                  (q-alt-qp-p)
+                  (q x y))
+             (q-alt x y)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Every predicate must be in the conclusion of some rule.
+
+(must-fail
+ (definductive ruleless-pred
+   :preds ((p x)
+           (q x))
+   :irules ((p0 ()
+                (p 0))
+            (p1 ((q x))
+                (p x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Multiple predicates must all be recursive.
+
+(must-fail
+ (definductive nonrecursive-multi
+   :preds ((p x)
+           (q x))
+   :irules ((p0 ()
+                (p 0))
+            (q0 ((p x))
+                (q x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Multiple predicates must form a single clique:
+; here P and Q are each recursive, but they are not mutually recursive.
+
+(must-fail
+ (definductive two-cliques
+   :preds ((p x)
+           (q x))
+   :irules ((p0 ()
+                (p 0))
+            (p1 ((p x))
+                (p (cons x x)))
+            (q0 ((p x))
+                (q x))
+            (q1 ((q x))
+                (q (cons x x))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Every predicate must be at some level:
+; here P and Q are mutually recursive, but neither has a base case.
+
+(must-fail
+ (definductive no-level-multi
+   :preds ((p x)
+           (q x))
+   :irules ((pq ((q x))
+                (p (cons x x)))
+            (qp ((p x))
+                (q (cons x x))))))

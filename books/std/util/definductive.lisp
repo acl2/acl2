@@ -759,8 +759,7 @@
    (xdoc::p
     "Note the difference with @(tsee defind-irule-info-recursivep),
      which checks whether a single rule is recursive.
-     When a single predicate is being defined
-     (the only case currently supported),
+     When a single predicate is being defined,
      the predicate is recursive if and only if some rule is recursive.
      With multiple predicates, the relation is less direct:
      a predicate is recursive if and only if
@@ -768,6 +767,30 @@
      each arc of which comes from a recursive rule."))
   (set::in (symbol-lfix pred-name)
            (defind-pred-dependencies pred-name irule-infos)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-preds-without-irules ((pred-names symbol-listp)
+                                     (irule-infos defind-irule-info-listp))
+  :returns (ruleless-preds symbol-listp)
+  :short "List of the predicates that are not
+          in the conclusion of any rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We go through the predicates being defined,
+     and we collect the ones for which there is no rule
+     (see @(tsee defind-irules-of-pred)),
+     in the same order, which is convenient for error messages.
+     Every predicate is in the conclusion of some rule exactly when
+     the result is empty."))
+  (b* (((when (endp pred-names)) nil)
+       (ruleless-preds
+        (defind-preds-without-irules (cdr pred-names) irule-infos))
+       (pred-name (car pred-names))
+       ((when (consp (defind-irules-of-pred pred-name irule-infos)))
+        ruleless-preds))
+    (cons (symbol-lfix pred-name) ruleless-preds)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -887,9 +910,7 @@
      to form exactly one clique, consisting of all of them
      (see @(tsee defind-process-irules)).
      But this function is more general than that check,
-     in preparation for lifting the current restriction
-     to a single predicate,
-     and possibly for relaxing, in the future,
+     in preparation for relaxing, in the future,
      the requirement that all the predicates are mutually recursive."))
   (defind-cliques-loop pred-names irule-infos)
 
@@ -1442,11 +1463,6 @@
         (reterr (msg "The :PREDS input must be a non-empty list, ~
                       but it is ~x0 instead."
                      preds)))
-       ((when (consp (cdr preds)))
-        (reterr (msg "The current implementation of DEFINDUCTIVE ~
-                      only supports a single predicate, ~
-                      but the :PREDS input has ~x0 elements."
-                     (len preds))))
        ((erp infos) (defind-process-preds-loop preds 1 wrld))
        (pred-names (defind-pred-info-list->name infos))
        ((unless (no-duplicatesp-eq pred-names))
@@ -1874,6 +1890,11 @@
      cliques in dependency order, each organized into levels,
      and we use the result to enforce the restrictions described next.")
    (xdoc::p
+    "We check that every predicate is in the conclusion of some rule.
+     A predicate without rules has no proof trees,
+     which is also captured by the check on levels described below,
+     but we check it first, for a more informative error message.")
+   (xdoc::p
     "A single predicate is allowed to be non-recursive;
      it just yields a non-recursive proof validity function.
      But multiple predicates must be mutually recursive,
@@ -1886,10 +1907,7 @@
      which thus must consist of all the predicates.
      Predicates that are not mutually recursive
      can be defined by separate uses of the macro,
-     in dependency order.
-     Since currently only one predicate is supported,
-     the mutual recursion checks are never triggered;
-     they are in preparation for lifting that restriction.")
+     in dependency order.")
    (xdoc::p
     "We also check that every predicate is at some level in its clique.
      A predicate at no level would have no proof trees:
@@ -1897,12 +1915,12 @@
      but fixtypes, like all ACL2 types, must be non-empty;
      concretely, FTY would reject the generated fixtype,
      for lack of a base case.
-     For a single predicate (the only case currently supported),
+     For a single predicate,
      being at some level amounts to being at level 0,
      i.e. to the existence of a non-recursive rule,
-     which provides a base case for the inductive definition;
-     with multiple predicates, the levels will do more work,
-     when the restriction to a single predicate is lifted.")
+     which provides a base case for the inductive definition.
+     For multiple predicates, it suffices that some of them are at level 0,
+     with the others reachable from those through the levels.")
    (xdoc::p
     "We return the leveled cliques along with the rule information,
      for use in event generation."))
@@ -1923,6 +1941,15 @@
                       but there are duplicates among ~&0."
                      irule-names)))
        (pred-names (defind-pred-info-list->name pred-infos))
+       (ruleless-preds (defind-preds-without-irules pred-names infos))
+       ((when (consp ruleless-preds))
+        (reterr (msg "Every predicate being defined must be ~
+                      in the conclusion of at least one rule ~
+                      in the :IRULES input. ~
+                      This does not hold for ~&0. ~
+                      A predicate without rules would have no proofs, ~
+                      and thus it would be empty."
+                     ruleless-preds)))
        ((mv leveled-cliques unleveled)
         (defind-leveled-cliques pred-names infos))
        (multiplep (consp (cdr pred-names)))
@@ -3228,10 +3255,8 @@
      which references the summand of a rule that
      derives the predicate from predicates
      at lower levels or in previous cliques.
-     Currently, since a single predicate at level 0 is supported,
-     no measure or base case override is actually generated;
-     this code is in preparation for
-     lifting the restriction to a single predicate.")
+     Neither is generated for a predicate that forms a singleton clique,
+     which is necessarily at level 0.")
    (xdoc::p
     "The @('prepworkp') input determines whether the fixtype includes
      a @(':prepwork') that limits the induction depth:
@@ -3324,10 +3349,7 @@
      the @(tsee fty::deftypes) is named after
      the first predicate of the clique,
      and it includes the induction depth limit
-     that is otherwise in the standalone fixtypes.")
-   (xdoc::p
-    "Currently a single clique of a single predicate is supported;
-     this code is more general, in preparation for lifting that restriction."))
+     that is otherwise in the standalone fixtypes."))
   (defind-gen-proof-fixtypes-loop
     leveled-cliques nil pred-infos irule-infos name xdocp)
 
@@ -4010,10 +4032,7 @@
      the resulting calls of proof validity functions
      of preceding cliques are not part of the mutual recursion,
      and those functions are defined by the time they are called,
-     since the cliques are in dependency order.")
-   (xdoc::p
-    "Currently a single clique of a single predicate is supported;
-     this code is more general, in preparation for lifting that restriction."))
+     since the cliques are in dependency order."))
   (defind-gen-proof-valid-fns-loop
     leveled-cliques pred-infos irule-infos name xdocp)
 

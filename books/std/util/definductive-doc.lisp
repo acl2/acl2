@@ -203,12 +203,11 @@
       "For each @('i'),
        the symbols @('x[i,1]'), ..., @('x[i,m[i]]') must be all distinct.")
      (xdoc::p
-      "Currently, this macro only supports one predicate,
-       i.e. @('n') must be 1.
-       We plan to extend the macro soon.")
+      "If there are two or more predicate, they must be mutually recursive;
+       see the @(':irules') input below.")
      (xdoc::p
-      "We also plan to add support for guards to the predicates,
-       and likely the ability for @('x[i,j]') to be "
+      "In the future we may add support for guards to the predicates,
+       and the ability for @('x[i,j]') to be "
       (xdoc::seetopic "std::extended-formals" "extended formals")
       " as in @(tsee define)."))
 
@@ -234,27 +233,44 @@
        All the rule names @('rule[1]'), ..., @('rule[r]') must be distinct;
        there must be at least one rule, i.e. @('r') must be positive.")
      (xdoc::p
+      "Each predicate @('p[i]') must be
+       in the conclusion of at least one rule.")
+     (xdoc::p
       "A predicate @('p[i]') is recursive when it depends on itself,
        directly or indirectly,
        where a predicate @('p[i]') depends on a predicate @('p[j]') when
        some rule has @('p[i]') in its conclusion and @('p[j]') in some premise.
-       For a single predicate (the only case currently supported),
+       For a single predicate,
        being recursive amounts to having at least one rule
        with a premise of the form (i) above.
-       A non-recursive predicate could be more simply defined
-       without using inference rules,
-       but we do not prevent such definitions.
+       A single predicate is allowed to be non-recursive:
+       it could be more simply defined without using inference rules,
+       but we do not prevent such definitions.")
+     (xdoc::p
+      "If there are two or more predicates,
+       they must be all mutually recursive,
+       i.e. each of them must depend on every other one,
+       directly or indirectly.
        Predicates that are not mutually recursive
-       should be defined by separate uses of this macro,
+       must be defined by separate uses of this macro,
        in dependency order.")
      (xdoc::p
-      "There must be at least one rule
+      "The predicates are organized into levels, as follows.
+       A predicate is at level 0 if some rule has it in its conclusion
+       and has no premises of the form (i) above.
+       A predicate is at level @('l+1') if some rule has it in its conclusion
+       and all its premises of the form (i)
+       are calls of predicates at level @('l') or lower.
+       Every predicate must be at some level.
+       A predicate at no level would have no proofs,
+       and thus it would be empty;
+       the generated fixtype of its proofs would be empty too,
+       which FTY does not allow, for lack of a base case.
+       For a single predicate, being at some level amounts to
+       being at level 0, i.e. to the existence of a rule
        whose premises all have the form (ii) above.
-       That is, there must be at least one base case
-       for the recursive definition,
-       otherwise the smallest predicate satisfying the rules is empty.
-       This condition will be generalized when
-       we remove the restriction to one predicate mentioned above."))
+       For multiple predicates, it suffices that some are at level 0,
+       with the others reachable from those through the levels."))
 
     (xdoc::desc
      (list
@@ -315,10 +331,12 @@
        for each premise of the form @('(p[j] ...)'),
        whose corresponding field has type @('p[j]-proof').")
      (xdoc::p
-      "These fixtypes are mutually recursive in general,
-       in which case they are put inside a @(tsee fty::deftypes);
-       currently, since only one predicate is supported,
-       a single @(tsee fty::deftagsum) is generated."))
+      "If there is just one predicate,
+       a single @(tsee fty::deftagsum) is generated.
+       If there are two or more predicates,
+       these fixtypes are mutually recursive,
+       and they are put inside a @(tsee fty::deftypes)
+       named @('p[1]-proof-clique')."))
 
     (xdoc::desc
      (list
@@ -364,6 +382,13 @@
        every node of the tree must be
        a valid instance of the corresponding inference rule,
        according to the @('p[l[k]]-rule[k]-validp') predicates.")
+     (xdoc::p
+      "If there is just one predicate,
+       a single function is generated.
+       If there are two or morepredicates,
+       these functions are mutually recursive,
+       and they are put inside a @(tsee defines)
+       named @('p[1]-proof-validp-clique').")
      (xdoc::p
       "These predicates are currently not guard-verified,
        because they call the non-guard-verified
@@ -479,7 +504,11 @@
        then the validity of each proof tree
        with conclusion @('(p[i] x[i,1] ... x[i,m[i]])')
        implies that @('(p[i]-alt x[i,1] ... x[i,m[i]])') holds.
-       That is, a proof for @('p[i]') is also a proof for @('p[i]-alt')."))
+       That is, a proof for @('p[i]') is also a proof for @('p[i]-alt').")
+     (xdoc::p
+      "If there are two or more predicates,
+       these theorems are proved together,
+       by induction on the @('p[i]-proof-validp') predicates."))
 
     (xdoc::desc
      (list
