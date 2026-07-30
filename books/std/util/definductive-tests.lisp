@@ -520,7 +520,21 @@
 
  (must-be-redundant
   (defthm d-d0
-    (d 1))))
+    (d 1)))
+
+ (must-be-redundant
+  (defthm c-alt-when-c
+    (implies (and (c-alt-c0-p)
+                  (d-alt-d0-p)
+                  (c x))
+             (c-alt x))))
+
+ (must-be-redundant
+  (defthm d-alt-when-d
+    (implies (and (c-alt-c0-p)
+                  (d-alt-d0-p)
+                  (d x))
+             (d-alt x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -571,6 +585,16 @@
     (implies (and (evn x)
                   (natp x))
              (odn (1+ x)))))
+
+ (must-be-redundant
+  (defthm nt-alt-when-nt
+    (implies (and (nt-alt-nt0-p)
+                  (nt-alt-ntstep-p)
+                  (evn-alt-evn0-p)
+                  (evn-alt-evnstep-p)
+                  (odn-alt-odnstep-p)
+                  (nt x))
+             (nt-alt x))))
 
  (must-be-redundant
   (defthm evn-alt-when-evn
