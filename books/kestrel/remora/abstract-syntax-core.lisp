@@ -56,7 +56,7 @@
       because they are expressible as array types.")
     (xdoc::li
      "N-ary function types,
-      because they are expressible as nests of one or more unary function types
+      because they are expressible as nests of zero or more unary function types
       (one when the AST corresponds to a type @('(-> (T) R)'),
       i.e. with a parenthesized single input type).")
     (xdoc::li
@@ -87,6 +87,10 @@
      "N-ary expression, type, and ispace abstractions,
       because they are expressible as nests of
       two or more unary expression, type, and ispace abstractions.")
+    (xdoc::li
+     "N-ary boxing atoms,
+      because they are expressible as nests of
+      two or more unary boxing atoms.")
     (xdoc::li
      "Function bindings,
       because they are expressible as value bindings
@@ -140,22 +144,6 @@
      towards requiring fewer type annotations,
      thus matching our current abstract syntax.")
    (xdoc::p
-    "We also do not exclude n-ary boxing atoms,
-     although they are expressible as nests of unary boxing atoms.
-     A boxing atom includes a type,
-     which for a unary boxing atom must be
-     a sum type with a single parameter.
-     Each inner boxing atom of a nest would thus need a new type,
-     obtained from the type of the n-ary boxing atom
-     by peeling off and substituting one parameter at a time.
-     But that type may be a type variable,
-     whose expansion requires a static environment;
-     and the substitution must avoid variable capture.
-     As with @('let'),
-     this goes beyond a purely syntactic transformation.
-     We plan to desugar n-ary boxing atoms in the future,
-     in concert with changes to other parts of the formalization.")
-   (xdoc::p
     "We desugar the four function bindings to value bindings.
      So the core has ispace, type, and value bindings.")
    (xdoc::p
@@ -196,6 +184,7 @@
    (atom :lambdan nil)
    (atom :tlambdan nil)
    (atom :ilambdan nil)
+   (atom :boxn nil)
    (bind :fun nil)
    (bind :tfun nil)
    (bind :ifun nil)
@@ -329,6 +318,11 @@
              (not (atom-corep atom)))
     :enable atom-corep)
 
+  (defruled not-atom-corep-when-boxn
+    (implies (equal (atom-kind atom) :boxn)
+             (not (atom-corep atom)))
+    :enable atom-corep)
+
   (defruled not-bind-corep-when-fun
     (implies (equal (bind-kind bind) :fun)
              (not (bind-corep bind)))
@@ -392,6 +386,7 @@
                     not-atom-corep-when-lambdan
                     not-atom-corep-when-tlambdan
                     not-atom-corep-when-ilambdan
+                    not-atom-corep-when-boxn
                     not-bind-corep-when-fun
                     not-bind-corep-when-tfun
                     not-bind-corep-when-ifun
@@ -529,4 +524,11 @@
        (equal (expr-corep (nest-unbox-exprs-loop ispaces var body))
               (expr-corep body))
        :induct t
-       :enable nest-unbox-exprs-loop))))
+       :enable nest-unbox-exprs-loop)))
+
+  (defrule expr-corep-of-nest-box-exprs
+    (equal (expr-corep (nest-box-exprs ispaces array))
+           (and (ispace-list-corep ispaces)
+                (expr-corep array)))
+    :induct t
+    :enable nest-box-exprs))

@@ -100,7 +100,7 @@
       :trigger-terms
       ((char-format->min char-format uchar-format schar-format))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define char-format-8u ()
   :returns (format char-formatp)

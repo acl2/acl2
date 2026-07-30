@@ -1,7 +1,7 @@
 ; A utility to filter lambda formals that are not bound to themselves.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -77,6 +77,11 @@
   (implies (no-duplicatesp-equal formals)
            (no-duplicatesp-equal (non-trivial-formals formals args)))
   :hints (("Goal" :in-theory (enable non-trivial-formals))))
+
+(defthm arglistp1-of-non-trivial-formals
+  (implies (arglistp1 formals)
+           (arglistp1 (non-trivial-formals formals args)))
+  :hints (("Goal" :in-theory (enable non-trivial-formals arglistp1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

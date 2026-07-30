@@ -1,6 +1,6 @@
 ; A tool to prove theorems about evaluators
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,6 +25,9 @@
      (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
      (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
      (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
+     (include-book "tools/flag" :dir :system) ; can this be made local?
+
+     (make-flag free-vars-in-term) ; also done elsewhere ; can this be made local?
 
      (encapsulate ()
 

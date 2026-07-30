@@ -1988,7 +1988,8 @@
     (:atomic ((type tyname)))
     (:struct ((spec struni-spec)
               (info any)))
-    (:union ((spec struni-spec)))
+    (:union ((spec struni-spec)
+             (info any)))
     (:enum ((spec enum-spec)))
     (:typedef ((name ident)
                (info any)))
@@ -3825,7 +3826,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap filepath-trans-unit-map
-  :short "Fixtype of omaps from file paths to translation units."
+  :short "Fixtype of maps from file paths to translation units."
   :key-type filepath
   :val-type trans-unit
   :pred filepath-trans-unit-mapp

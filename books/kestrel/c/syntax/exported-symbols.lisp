@@ -12,12 +12,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; List of symbols that provide an API to
-; the abstract syntax and related concepts,
+; List of symbols that provide an API to the C syntax for tools,
 ; importable in a package definition.
 ; The list does not contain all the symbols yet; it can be extended as needed.
 
-(defconst *abstract-syntax-symbols*
+(defconst *exported-symbols*
   '(
 
     ;; code representation:
@@ -788,6 +787,8 @@
     type-params-case
     type-params-count
 
+    type-completions-p
+
     ident-type-map
     ident-type-mapp
     ident-type-map-fix
@@ -806,6 +807,9 @@
 
     type-spec-struct-vinfop
     type-spec-struct-vinfo->type
+
+    type-spec-union-vinfop
+    type-spec-union-vinfo->type
 
     type-vinfop
     type-vinfo-fix

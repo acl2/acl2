@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function prin1-with-slashes1
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -39,3 +39,8 @@
   (implies (open-output-channel-p channel typ state)
            (open-output-channel-p channel typ (prin1-with-slashes1 l slash-char channel2 state)))
   :hints (("Goal" :in-theory (enable open-output-channel-p))))
+
+(defthm w-of-prin1-with-slashes1
+  (equal (w (prin1-with-slashes1 l slash-char channel state))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (prin1-with-slashes1) (w)))))

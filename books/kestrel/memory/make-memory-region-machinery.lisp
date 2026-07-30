@@ -22,17 +22,17 @@
 ;; conjunctions instead of disjunctions is important if we want to use the
 ;; opened up functions as assumptions.
 
-(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
+;(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 (include-book "kestrel/utilities/pack" :dir :system)
 
-;todo
-(local (in-theory (disable string-append-lst
-                           string-append
-                           character-listp
-                           string-listp
-                           )))
+;; (local (in-theory (disable string-append-lst
+;;                            string-append
+;;                            character-listp
+;;                            string-listp
+;;                            )))
 
 ;; todo: slow
+;; todo: This function is very slow to compile in SBCL.
 ;; todo: allow the package to be an option
 (defun make-memory-region-machinery-fn (num-address-bits pkg)
   (declare (xargs :guard (and (natp num-address-bits)

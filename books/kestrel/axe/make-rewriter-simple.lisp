@@ -2390,7 +2390,7 @@
                      (hit-countsp (mv-nth ,(if smtp 5 4) ,call-of-simplify-fun-call-and-add-to-dag)))
             :flag ,simplify-fun-call-and-add-to-dag-name)
 
-          :hints (("Goal" :do-not '(generalize eliminate-destructors)
+          :hints (("Goal"
                    :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
                                     len-of-cadar-when-axe-treep
                                     pseudo-termp-of-cadddr-when-axe-treep
@@ -2536,7 +2536,7 @@
                      (rule-limitsp (mv-nth ,(if smtp 7 6) ,call-of-simplify-fun-call-and-add-to-dag)))
             :flag ,simplify-fun-call-and-add-to-dag-name)
 
-          :hints (("Goal" :do-not '(generalize eliminate-destructors)
+          :hints (("Goal"
                    :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
                                     len-of-cadar-when-axe-treep
                                     pseudo-termp-of-cadddr-when-axe-treep
@@ -2667,7 +2667,7 @@
                      (triesp (mv-nth ,(if smtp 6 5) ,call-of-simplify-fun-call-and-add-to-dag)))
             :flag ,simplify-fun-call-and-add-to-dag-name)
 
-          :hints (("Goal" :do-not '(generalize eliminate-destructors)
+          :hints (("Goal"
                    :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
                                     len-of-cadar-when-axe-treep
                                     pseudo-termp-of-cadddr-when-axe-treep
@@ -3188,7 +3188,7 @@
                             ,@maybe-w-unchanged)))
             :flag ,simplify-fun-call-and-add-to-dag-name)
 
-          :hints (("Goal" :do-not '(generalize eliminate-destructors)
+          :hints (("Goal"
                    :in-theory ;; (e/d (;TAKE-WHEN-<=-OF-LEN
                    ;;       len-of-cadar-when-axe-treep
                    ;;       pseudo-termp-of-cadddr-when-axe-treep
@@ -4915,7 +4915,7 @@
                      (natp (get-dag-len (mv-nth 2 ,call-of-simplify-fun-call-and-add-to-dag))))
             :rule-classes (:rewrite :type-prescription) :flag ,simplify-fun-call-and-add-to-dag-name)
 
-          :hints (("Goal" :do-not '(generalize eliminate-destructors)
+          :hints (("Goal"
                    :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
                                     len-of-cadar-when-axe-treep
                                     pseudo-termp-of-cadddr-when-axe-treep
@@ -4969,7 +4969,7 @@
                             (axe-rule-hyp-listp hyps)))))
 
          (verify-guards ,simplify-fun-call-and-add-to-dag-name
-           :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :hints (("Goal"
                     :expand ((axe-bind-free-function-applicationp (nth 1 (car hyps)))
                              (axe-rule-hyp-listp hyps)
                              ;; (axe-treep tree)
@@ -5485,8 +5485,7 @@
                                                            consp-of-car-of-last-when-weak-dagp-aux
                                                            acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
                                                            consp-of-dargs-when-dag-exprp-iff)
-                                                          (natp dargp dargp-less-than-when-not-consp-cheap dargp-less-than-when-consp-cheap))
-                                          :do-not '(generalize eliminate-destructors)))))
+                                                          (natp dargp dargp-less-than-when-not-consp-cheap dargp-less-than-when-consp-cheap))))))
            (if (endp rev-dag)
                (mv (erp-nil) rewrite-stobj2 ,@maybe-state memoization (hit-counts-to-hits hit-counts) tries limits node-replacement-array renumbering-stobj)
              (b* ((entry (first rev-dag))
@@ -5635,7 +5634,8 @@
                                     (natp
                                      bounded-refined-assumption-alistp-monotone ; why?
                                      ))
-                    :do-not '(generalize eliminate-destructors))))
+                    ;
+                    )))
 
          ;; A simple consequence of the return type theorem
          (defthm ,(pack$ simplify-dag-nodes-name '-return-type-corollary0)
@@ -5878,7 +5878,7 @@
                                                 (dag-and-array-agreep dag 'dag-array dag-array dag-len))
                                          t))
                            ,@maybe-stobjs
-                           :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
+                           :guard-hints (("Goal"
                                           :in-theory (e/d (not-<-of-0-when-natp-disabled
                                                            acl2-numberp-when-natp
                                                            natp-of-+-of--1-when-natp-disabled
@@ -6019,7 +6019,7 @@
                                     (rule-limitsp new-limits)
                                     (hitsp hits)
                                     ,@maybe-w-unchanged))))
-           :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :hints (("Goal"
                     :in-theory (e/d (,simplify-dag-core-name
                                      natp-of-renumberingi
                                      integerp-of-renumberingi
@@ -6118,7 +6118,7 @@
                                        (symbol-listp no-warn-ground-functions)
                                        (symbol-listp fns-to-elide))
                            ,@maybe-stobjs
-                           :guard-hints (("Goal" ; :do-not '(generalize eliminate-destructors)
+                           :guard-hints (("Goal"
                                           :in-theory (e/d (len-when-pseudo-dagp
                                                            car-of-nth-when-pseudo-dagp
                                                            natp-of-+-of-1
@@ -6206,7 +6206,7 @@
                                     (rule-limitsp new-limits)
                                     (hitsp hits)
                                     ,@maybe-w-unchanged))))
-           :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :hints (("Goal"
                     :in-theory (e/d (,simplify-dag-name
                                      len-when-pseudo-dagp
                                      car-of-nth-when-pseudo-dagp
@@ -6244,7 +6244,7 @@
                                (and (pseudo-dagp dag-or-quotep)
                                     (<= (len dag-or-quotep) *max-1d-array-length*) ;; todo
                                     ))))
-           :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :hints (("Goal"
                     :in-theory (e/d (,simplify-dag-name
                                      len-when-pseudo-dagp
                                      car-of-nth-when-pseudo-dagp
@@ -6416,7 +6416,7 @@
                                     (rule-limitsp new-limits)
                                     (hitsp new-hits)
                                     ,@maybe-w-unchanged))))
-           :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :hints (("Goal" :induct t
                     :in-theory (e/d (,simplify-dag-with-rule-alists-name)
                                     (myquotep quotep)))))
 
@@ -6813,8 +6813,7 @@
                                     (hitsp hits)
                                     ,@maybe-w-unchanged))))
            :hints (("Goal" :use (:instance ,(pack$ simplify-term-name '-return-type))
-                    :do-not '(generalize eliminate-destructors)
-                    :do-not-induct t
+                    :do-not-induct t ; todo
                     :in-theory (e/d (,simplify-term-to-term-name) (,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name))))))
 
          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

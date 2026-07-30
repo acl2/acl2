@@ -15,6 +15,7 @@
 (include-book "all-lambdas-serialized-in-termp")
 (include-book "non-trivial-formals")
 (include-book "no-duplicate-lambda-formals-in-termp")
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "make-lambda-nest-proofs"))
 (local (include-book "sublis-var-simple-proofs")) ;drop
 (local (include-book "subst-var-alt-proofs"))
@@ -62,6 +63,8 @@
                 (pseudo-term-listp (strip-cdrs bindings)))
            (lambdas-closed-in-termsp (strip-cdrs (serialize-bindings bindings names-to-avoid))))
   :hints (("Goal" :in-theory (enable serialize-bindings))))
+
+(local (make-flag serialize-lambdas-in-term))
 
 ;; Serialize-lambdas-in-term doesn't create any unclosed lambdas.
 (defthm-flag-serialize-lambdas-in-term
@@ -187,12 +190,8 @@
             (no-duplicate-lambda-formals-in-termsp (strip-cdrs (non-trivial-bindings vars vals))))
    :hints (("Goal" :in-theory (enable non-trivial-bindings)))))
 
+;move up
 (local (include-book "kestrel/lists-light/remove1-equal" :dir :system))
-;move
-(defthm not-member-equal-of-remove1-equal-same
-  (implies (no-duplicatesp-equal l)
-           (not (member-equal x (remove1-equal x l))))
-  :hints (("Goal" :in-theory (enable remove1-equal))))
 
 (defthm no-duplicate-lambda-formals-in-termsp-of-remove1-equal
   (implies (no-duplicate-lambda-formals-in-termsp terms)

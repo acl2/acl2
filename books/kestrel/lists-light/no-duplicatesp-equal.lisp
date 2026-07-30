@@ -13,6 +13,10 @@
 
 ;See also the rule no-duplicatesp-equal-of-remove-duplicates-equal.
 
+;; TODO: Consider moving most of these rules to other books, like
+;; intersection-equal.lisp.  Rationale (arguable): Rules about some predicate
+;; applied to some function should go in the book about the function.
+
 (local (include-book "member-equal"))
 (local (include-book "intersection-equal"))
 
@@ -115,6 +119,7 @@
   :hints (("Goal" :in-theory (enable no-duplicatesp-equal))))
 
 ;; BTW, it's not enough for y to be duplicate-free.  Consider (intersection-equal '(1 1) '(1)) = '(1 1).
+;; Also in intersection-equal.lisp.
 (defthm no-duplicatesp-equal-of-intersection-equal
   (implies (no-duplicatesp-equal x)
            (no-duplicatesp-equal (intersection-equal x y)))

@@ -334,7 +334,7 @@
          (bv-list-read-chunk-little '8 '4 i array)))
 
 (local (include-book "kestrel/bv/rules" :dir :system))
-(local (include-book "kestrel/axe/rules3" :dir :system)) ; todo: reduce, for acl2::bvplus-commutative-2-sizes-differ
+(local (in-theory (enable acl2::bvplus-commutative-2-sizes-differ)))
 
 ;drop?
 ;todo: subgoal hints

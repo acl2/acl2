@@ -2220,51 +2220,6 @@
     :hyp (and (primop-value-wfp op)
               (expr-value-wfp arg))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define eval-primop-fun-chain ((op primop-valuep) (args expr-value-listp))
-  :guard (and (primop-value-funp op)
-              (primop-value-wfp op)
-              (expr-value-list-wfp args))
-  :returns (val expr-value-resultp)
-  :short "Evaluate the application of a primitive operation
-          to a list of argument cells, one after the other."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This chains applications of @(tsee eval-primop-fun):
-     the operation is applied to the first argument cell;
-     if there are more argument cells,
-     the result must be another applicable primitive operation value
-     (i.e. an @('-x') stage of a binary operation),
-     which is applied to the remaining argument cells.
-     Applying the operation to no argument cells returns it unchanged.")
-   (xdoc::p
-    "This function is transitional:
-     term applications are now evaluated
-     one argument at a time, in curried style,
-     with @(tsee eval-app-cell) calling @(tsee eval-primop-fun) directly,
-     so this function is no longer used there;
-     it is only used in some tests,
-     and it will be removed when those are reworked."))
-  (b* (((when (endp args)) (expr-value-primop (primop-value-fix op)))
-       ((ok val) (eval-primop-fun op (car args)))
-       ((when (endp (cdr args))) val)
-       ((unless (and (expr-value-case val :primop)
-                     (primop-value-funp (expr-value-primop->val val))))
-        (reserr nil)))
-    (eval-primop-fun-chain (expr-value-primop->val val) (cdr args)))
-  :measure (len args)
-
-  ///
-
-  (defret expr-value-wfp-of-eval-primop-fun-chain
-    (implies (not (reserrp val))
-             (expr-value-wfp val))
-    :hyp (and (primop-value-wfp op)
-              (expr-value-list-wfp args))
-    :hints (("Goal" :induct t))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-primop-tfun ((op primop-valuep) (tval type-valuep))
