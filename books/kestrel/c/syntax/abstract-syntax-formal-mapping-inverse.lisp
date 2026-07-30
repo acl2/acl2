@@ -263,15 +263,15 @@
               (list (type-spec-long)
                     (type-spec-double)))
    :struct (list (make-type-spec-struct
-                   :spec
-                   (make-struni-spec :attribs nil
-                                     :name? (ildm-ident tyspecs.tag)
-                                     :members nil)
+                   :spec (make-struni-spec :attribs nil
+                                           :name? (ildm-ident tyspecs.tag)
+                                           :members nil)
                    :info nil))
-   :union (list (type-spec-union
-                 (make-struni-spec :attribs nil
-                                   :name? (ildm-ident tyspecs.tag)
-                                   :members nil)))
+   :union (list (make-type-spec-union
+                 :spec (make-struni-spec :attribs nil
+                                         :name? (ildm-ident tyspecs.tag)
+                                         :members nil)
+                 :info nil))
    :enum (list (type-spec-enum
                 (make-enum-spec :name? (ildm-ident tyspecs.tag)
                                 :enumers nil
@@ -585,7 +585,8 @@
                        :attribs nil
                        :name? (ildm-ident declon.tag)
                        :members (ildm-struct-declon-list declon.members))))
-                  (type-spec-union strunispec))
+                  (make-type-spec-union :spec strunispec
+                                        :info nil))
          :enum (b* ((enumspec (make-enum-spec
                                :name? (ildm-ident declon.tag)
                                :enumers (ildm-enumer-list declon.enumerators)

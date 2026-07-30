@@ -1838,7 +1838,8 @@
                         dstate))
        :union (b* (((erp new-struni-spec dstate)
                     (dimb-struni-spec tyspec.spec dstate)))
-                (retok (type-spec-union new-struni-spec)
+                (retok (make-type-spec-union :spec new-struni-spec
+                                             :info nil)
                        dstate))
        :enum (b* (((erp new-enumspec dstate)
                    (dimb-enum-spec tyspec.spec dstate)))

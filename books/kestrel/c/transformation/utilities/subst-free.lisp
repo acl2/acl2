@@ -365,9 +365,11 @@
                        (c$::type-spec-struct->spec type-spec)
                        subst bound-vars)
                :info type-spec.info)
-     :union (type-spec-union (struni-spec-subst-free
-                               (c$::type-spec-union->spec type-spec)
-                               subst bound-vars))
+     :union (c$::make-type-spec-union
+             :spec (struni-spec-subst-free
+                    (c$::type-spec-union->spec type-spec)
+                    subst bound-vars)
+             :info type-spec.info)
      :enum
      (type-spec-enum
        (enum-spec-subst-free (c$::type-spec-enum->spec type-spec)

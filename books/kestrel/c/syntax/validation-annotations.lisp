@@ -152,9 +152,8 @@
    (xdoc::p
     "This is the type of the annotations that
      the validator adds to struct type specifiers,
-     i.e. the @(':struct') and @('struct-empty') cases of @(tsee type-spec).
-     The information for a struct type specifier consists of
-     the corresponding struct type."))
+     i.e. the @(':struct') and @(':struct-empty') cases of @(tsee type-spec).
+     The annotation is the corresponding struct type."))
   ((type type
          :reqfix
          (type-case
@@ -167,6 +166,30 @@
                                        :tag (irr-ident))))))
   :require (type-case type :struct)
   :pred type-spec-struct-vinfop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod type-spec-union-vinfo
+  :short "Fixtype of validation information for union type specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to union type specifiers,
+     i.e. the @(':union') summand of @(tsee type-spec).
+     The annotation is the corresponding union type."))
+  ((type type
+         :reqfix
+         (type-case
+          type
+          :union type
+          :otherwise (make-type-union
+                      :uid (irr-uid)
+                      :tunit? nil
+                      :tag/members (make-type-struni-tag/members-tagged
+                                    :tag (irr-ident))))))
+  :require (type-case type :union)
+  :pred type-spec-union-vinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -415,6 +438,8 @@
                       (const-expr-vinfop (const-expr->info const-expr))))
      (type-spec :struct (and (struni-spec-annop type-spec.spec)
                              (type-spec-struct-vinfop type-spec.info)))
+     (type-spec :union (and (struni-spec-annop type-spec.spec)
+                            (type-spec-union-vinfop type-spec.info)))
      (type-spec :typedef (type+uid-vinfop type-spec.info))
      (type-spec :struct-empty (and (attrib-spec-list-annop type-spec.attribs)
                                    (type-spec-struct-vinfop type-spec.info)))
@@ -586,6 +611,13 @@
            (and (struni-spec-annop spec)
                 (type-spec-struct-vinfop info)))
     :expand (type-spec-annop (type-spec-struct spec info))
+    :enable identity)
+
+  (defrule type-spec-annop-of-type-spec-union
+    (equal (type-spec-annop (type-spec-union spec info))
+           (and (struni-spec-annop spec)
+                (type-spec-union-vinfop info)))
+    :expand (type-spec-annop (type-spec-union spec info))
     :enable identity)
 
   (defrule type-spec-annop-of-type-spec-typedef
@@ -811,6 +843,18 @@
              (type-spec-struct-vinfop (type-spec-struct->info type-spec)))
     :enable type-spec-annop)
 
+  (defrule struni-spec-annop-of-type-spec-union->spec
+    (implies (and (type-spec-annop type-spec)
+                  (type-spec-case type-spec :union))
+             (struni-spec-annop (type-spec-union->spec type-spec)))
+    :enable type-spec-annop)
+
+  (defrule type-spec-union-vinfop-of-type-spec-union->info
+    (implies (and (type-spec-annop type-spec)
+                  (type-spec-case type-spec :union))
+             (type-spec-union-vinfop (type-spec-union->info type-spec)))
+    :enable type-spec-annop)
+
   (defrule type+uid-vinfop-of-type-spec-typedef->info
     (implies (and (type-spec-annop type-spec)
                   (type-spec-case type-spec :typedef))
@@ -1005,6 +1049,7 @@
      expr-annop-of-expr-binary
      const-expr-annop-of-const-expr
      type-spec-annop-of-type-spec-struct
+     type-spec-annop-of-type-spec-union
      type-spec-annop-of-type-spec-typedef
      type-spec-annop-of-type-spec-struct-empty
      desiniter-annop-of-desiniter
@@ -1041,6 +1086,8 @@
      const-expr-vinfop-of-const-expr->info
      struni-spec-annop-of-type-spec-struct->spec
      type-spec-struct-vinfop-of-type-spec-struct->info
+     struni-spec-annop-of-type-spec-union->spec
+     type-spec-union-vinfop-of-type-spec-union->info
      type+uid-vinfop-of-type-spec-typedef->info
      attrib-spec-list-annop-of-type-spec-struct-empty->attribs
      type-spec-struct-vinfop-of-type-spec-struct-empty->info
