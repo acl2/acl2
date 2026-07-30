@@ -2170,6 +2170,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-pred2-name ((pred-name symbolp) (name symbolp))
+  :returns (pred2-name symbolp)
+  :short "Name of a @('p[i]-2') predicate."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Besides each predicate @('p[i]'), we define a predicate @('p[i]-2'),
+     which denotes the same relation,
+     but whose proofs are represented differently:
+     a proof records the variables of the rule that builds it
+     instead of recording the conclusion.
+     The conclusion arguments are instead
+     passed to the proof validity predicate.
+     We generate the two representations side by side,
+     so that they can be compared;
+     we may eventually drop one in favor of the other.")
+   (xdoc::p
+    "All the events for the second representation
+     are named after @('p[i]-2'),
+     via the same naming functions used for @('p[i]');
+     so this is the only naming function specific to that representation."))
+  (packn-pos (list (symbol-lfix pred-name) '-2) (symbol-lfix name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-assert-type-name ((pred-name symbolp) (name symbolp))
   :returns (type-name symbolp)
   :short "Name of a @('p[i]-assertion') fixtype."
@@ -3215,6 +3240,247 @@
                   (deftypes-name
                     (defind-proof-type-clique-name
                       (defind-pred-info->name (car clique-pred-infos))
+                      name)))
+               `(fty::deftypes ,deftypes-name
+                  ,@(and xdocp
+                         `(:parents (,(symbol-lfix name))
+                           :short ,(str::cat
+                                    "Fixtypes of proofs for predicates "
+                                    (defind-preds-doc-string
+                                      (defind-pred-info-list->name
+                                        clique-pred-infos))
+                                    ".")))
+                  ,@deftagsums
+                  :prepwork ((set-induction-depth-limit 1)))))))
+       (cons event events))
+     :no-function nil
+     :guard-hints
+     (("Goal" :in-theory (enable set-listp-when-symbol-set-listp))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-var-fields ((vars symbol-listp))
+  :returns (fields true-list-listp)
+  :short "Generate the variable fields of
+          a summand of a @('p[i]-2-proof') fixtype."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The summand corresponds to an inference rule,
+     and it has one field for each variable of the rule:
+     the field is named after the variable, and has no type.
+     These fields, which the @('p[i]-proof') fixtypes do not have,
+     are what lets the conclusion be
+     an argument of the proof validity predicate,
+     instead of a field of the proof."))
+  (if (endp vars)
+      nil
+    (cons (list (symbol-lfix (car vars)))
+          (defind-gen-proof2-var-fields (cdr vars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-prem-fields ((infos defind-premise-info-listp)
+                                       (num posp)
+                                       (name symbolp))
+  :returns (fields true-list-listp)
+  :short "Generate the premise fields of
+          a summand of a @('p[i]-2-proof') fixtype."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-prem-fields),
+     but the fields have the @('p[j]-2-proof') fixtypes."))
+  (b* (((when (endp infos)) nil)
+       (info (car infos))
+       ((when (defind-premise-info-case info :other))
+        (defind-gen-proof2-prem-fields (cdr infos) (lposfix num) name))
+       (pred-name (defind-premise-info-pred->name info))
+       (field-name (defind-prem-field-name num name))
+       (field-type (defind-proof-type-name
+                    (defind-pred2-name pred-name name) name))
+       (field `(,field-name ,field-type))
+       (fields
+        (defind-gen-proof2-prem-fields (cdr infos) (1+ (lposfix num)) name)))
+    (cons field fields)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-summand ((info defind-irule-infop) (name symbolp))
+  :returns (summand true-listp)
+  :short "Generate a summand of a @('p[i]-2-proof') fixtype."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-proof-summand),
+     but with a field for each variable of the rule
+     instead of a field for the conclusion."))
+  (b* (((defind-irule-info info))
+       (tag (defind-irule-tag info.name))
+       (var-fields
+        (defind-gen-proof2-var-fields (defind-irule-info-free-vars info)))
+       (prem-fields (defind-gen-proof2-prem-fields info.premises 1 name)))
+    `(,tag (,@var-fields ,@prem-fields)))
+  :guard-hints (("Goal" :in-theory (enable symbol-listp-when-symbol-setp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-summands ((pred-name symbolp)
+                                    (infos defind-irule-info-listp)
+                                    (name symbolp))
+  :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
+  :returns (summands true-list-listp)
+  :short "Generate the summands of a @('p[i]-2-proof') fixtype."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-proof-summands).
+     The @('pred-name') input is @('p[i]'), not @('p[i]-2'),
+     because it is matched against the conclusions of the rules."))
+  (b* (((when (endp infos)) nil)
+       ((defind-irule-info info) (car infos))
+       ((defind-conclusion-info info.conclusion))
+       ((unless (equal info.conclusion.name (symbol-lfix pred-name)))
+        (defind-gen-proof2-summands pred-name (cdr infos) name))
+       (summand (defind-gen-proof2-summand info name))
+       (summands (defind-gen-proof2-summands pred-name (cdr infos) name)))
+    (cons summand summands)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-deftagsum ((pred-name symbolp)
+                                     (infos defind-irule-info-listp)
+                                     (levels symbol-set-listp)
+                                     (preds-in-previous-cliques symbol-setp)
+                                     (prepworkp booleanp)
+                                     (name symbolp)
+                                     (xdocp booleanp))
+  :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
+  :returns (deftagsum pseudo-event-formp)
+  :short "Generate a @('p[i]-2-proof') fixtype."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-proof-deftagsum);
+     see that function for the treatment of levels.")
+   (xdoc::p
+    "Here the @(':xvar') option is not just advisable but necessary:
+     since the fields are named after the variables of the rules,
+     the default @('x') would clash with a rule variable @('x'),
+     which FTY rejects with a hard error.
+     The same caveat as in @(tsee defind-gen-assertion-defprod) applies:
+     at some point we should pick an @(':xvar') name
+     that we establish to be distinct from the rule variables."))
+  (b* ((pred2-name (defind-pred2-name pred-name name))
+       (proof (defind-proof-var-name name))
+       (summands (defind-gen-proof2-summands pred-name infos name))
+       (measurep (consp (cdr (symbol-set-list-fix levels))))
+       (level (defind-pred-level pred-name levels))
+       (override-rule (and (< 0 level)
+                           (defind-pred-override-rule
+                             pred-name level levels
+                             preds-in-previous-cliques infos))))
+    `(fty::deftagsum ,(defind-proof-type-name pred2-name name)
+       ,@(and xdocp
+              `(:parents (,(symbol-lfix name))
+                :short ,(str::cat
+                         "Fixtype of proofs for predicate @('"
+                         (str::downcase-string (symbol-name pred2-name))
+                         "').")))
+       ,@summands
+       ,@(and override-rule
+              `(:base-case-override ,(defind-irule-tag override-rule)))
+       ,@(and measurep
+              `(:measure (two-nats-measure (acl2-count ,proof) ,level)))
+       :pred ,(defind-proof-recog-name pred2-name name)
+       :xvar ,proof
+       ,@(and prepworkp
+              '(:prepwork ((set-induction-depth-limit 1)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-deftagsums ((pred-infos defind-pred-info-listp)
+                                      (irule-infos defind-irule-info-listp)
+                                      (levels symbol-set-listp)
+                                      (preds-in-previous-cliques symbol-setp)
+                                      (prepworkp booleanp)
+                                      (name symbolp)
+                                      (xdocp booleanp))
+  :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+              (no-duplicatesp-equal (defind-irule-info-list->name irule-infos)))
+  :returns (deftagsums pseudo-event-form-listp)
+  :short "Generate the @('p[i]-2-proof') fixtypes."
+  (b* (((when (endp pred-infos)) nil)
+       (pred-name (defind-pred-info->name (car pred-infos)))
+       (event (defind-gen-proof2-deftagsum pred-name irule-infos
+                levels preds-in-previous-cliques prepworkp name xdocp))
+       (events (defind-gen-proof2-deftagsums
+                 (cdr pred-infos) irule-infos
+                 levels preds-in-previous-cliques prepworkp name xdocp)))
+    (cons event events)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-fixtypes ((pred-infos defind-pred-info-listp)
+                                    (irule-infos defind-irule-info-listp)
+                                    (leveled-cliques symbol-set-list-listp)
+                                    (name symbolp)
+                                    (xdocp booleanp))
+  :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+              (no-duplicatesp-equal (defind-irule-info-list->name irule-infos)))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate the fixtypes of proofs for the @('p[i]-2') predicates,
+          for all the cliques."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-proof-fixtypes)."))
+  (defind-gen-proof2-fixtypes-loop
+    leveled-cliques nil pred-infos irule-infos name xdocp)
+
+  :prepwork
+
+  ((define defind-gen-proof2-fixtypes-loop
+     ((leveled-cliques symbol-set-list-listp)
+      (preds-in-previous-cliques symbol-setp)
+      (pred-infos defind-pred-info-listp)
+      (irule-infos defind-irule-info-listp)
+      (name symbolp)
+      (xdocp booleanp))
+     :guard (and (no-duplicatesp-equal
+                  (defind-pred-info-list->name pred-infos))
+                 (no-duplicatesp-equal
+                  (defind-irule-info-list->name irule-infos)))
+     :returns (events pseudo-event-form-listp)
+     :parents nil
+     (b* (((when (endp leveled-cliques)) nil)
+          (levels (symbol-set-list-fix (car leveled-cliques)))
+          (clique-preds (set::set-list-union levels))
+          (clique-pred-infos (defind-lookup-pred-set clique-preds pred-infos))
+          (events (defind-gen-proof2-fixtypes-loop
+                    (cdr leveled-cliques)
+                    (set::union clique-preds
+                                (symbol-sfix preds-in-previous-cliques))
+                    pred-infos irule-infos name xdocp))
+          ((unless (consp clique-pred-infos))
+           (raise "Internal error: no predicates in clique with levels ~x0."
+                  levels)
+           events)
+          (event
+           (if (endp (cdr clique-pred-infos))
+               (defind-gen-proof2-deftagsum
+                 (defind-pred-info->name (car clique-pred-infos))
+                 irule-infos levels preds-in-previous-cliques
+                 t name xdocp)
+             (b* ((deftagsums (defind-gen-proof2-deftagsums
+                                clique-pred-infos irule-infos
+                                levels preds-in-previous-cliques
+                                nil name xdocp))
+                  (deftypes-name
+                    (defind-proof-type-clique-name
+                      (defind-pred2-name
+                        (defind-pred-info->name (car clique-pred-infos))
+                        name)
                       name)))
                `(fty::deftypes ,deftypes-name
                   ,@(and xdocp
@@ -4559,6 +4825,9 @@
        (proof-type-events
         (defind-gen-proof-fixtypes pred-infos irule-infos
           leveled-cliques name xdocp))
+       (proof2-type-events
+        (defind-gen-proof2-fixtypes pred-infos irule-infos
+          leveled-cliques name xdocp))
        (proof-concl-events
         (defind-gen-proof-concl-fns pred-infos irule-infos name xdocp))
        (irule-valid-events
@@ -4577,6 +4846,7 @@
        (all-events (append (list name-doc-event)
                            assert-type-events
                            proof-type-events
+                           proof2-type-events
                            proof-concl-events
                            irule-valid-events
                            proof-valid-events
