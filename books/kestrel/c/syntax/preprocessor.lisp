@@ -3903,9 +3903,10 @@
       These are the ASTs resulting from the preprocessing
       operated by the functions.")
     (xdoc::li
-     "All the functions take and return
-      the alist @('pfiles'), which contain (the results of)
-      the files preprocessed so far.
+     "All the functions take and return the alist @('pensemb'),
+      which contain (the results of) the files preprocessed so far;
+      its name means `preprocessing ensemble',
+      and soon we will use the fixtype @(tsee pensemble) for it.
       This starts empty and eventually (if there are no errors)
       contains all the preprocessed files,
       namely the files listed in the list @('files')
@@ -3953,7 +3954,7 @@
                       (file stringp)
                       (base-dir stringp)
                       (include-dirs string-listp)
-                      (pfiles string-pfile-alistp)
+                      (pensemb string-pfile-alistp)
                       (resolved-includes string-header-name-string-map-mapp)
                       (pending string-listp)
                       (macros macro-tablep)
@@ -3963,7 +3964,7 @@
                       (limit natp))
     :returns (mv erp
                  (pfile pfilep)
-                 (new-pfiles string-pfile-alistp)
+                 (new-pensemb string-pfile-alistp)
                  (new-resolved-includes string-header-name-string-map-mapp)
                  (new-macros macro-tablep)
                  state)
@@ -3995,7 +3996,7 @@
        and the implementation environment.
        The preprocessing of this file may involve
        the recursive preprocessing of more files,
-       and the consequent extension of the @('pfiles') alist.
+       and the consequent extension of the @('pensemb') alist.
        We ensure that the optional group read by @(tsee pproc-*-group-part)
        ends with the end of the file,
        because we are at the top level,
@@ -4006,7 +4007,7 @@
        the macro definitions and undefinitions contributed by the file;
        we also return an alist from
        the header names of the @('#include')s that were preserved in the file
-       to the corresponding file paths (keys in @('pfiles')."))
+       to the corresponding file paths (keys in @('pensemb')."))
     (b* (((reterr) (irr-pfile) nil nil (irr-macro-table) state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
@@ -4017,7 +4018,7 @@
          (pending (cons file pending))
          ((erp pfile
                groupend
-               pfiles
+               pensemb
                resolved-includes
                macros
                state)
@@ -4026,7 +4027,7 @@
             (mv-let (erp
                      pfile
                      groupend
-                     pfiles
+                     pensemb
                      resolved-includes
                      macros
                      ppstate
@@ -4045,14 +4046,14 @@
                      ((mv erp
                           pparts
                           groupend
-                          pfiles
+                          pensemb
                           resolved-includes
                           ppstate
                           state)
                       (pproc-*-group-part file
                                           base-dir
                                           include-dirs
-                                          pfiles
+                                          pensemb
                                           resolved-includes
                                           pending
                                           ppstate
@@ -4070,7 +4071,7 @@
                   (mv nil
                       (make-pfile :parts pparts)
                       groupend
-                      pfiles
+                      pensemb
                       resolved-includes
                       (ppstate->macros ppstate)
                       ppstate
@@ -4078,7 +4079,7 @@
               (mv erp
                   pfile
                   groupend
-                  pfiles
+                  pensemb
                   resolved-includes
                   macros
                   state))))
@@ -4091,7 +4092,7 @@
                         :elif "#elif"
                         :else "#else"
                         :endif "#endif")))))
-      (retok pfile pfiles resolved-includes macros state))
+      (retok pfile pensemb resolved-includes macros state))
     :no-function nil
     :measure (nfix limit))
 
@@ -4100,7 +4101,7 @@
   (define pproc-*-group-part ((file stringp)
                               (base-dir stringp)
                               (include-dirs string-listp)
-                              (pfiles string-pfile-alistp)
+                              (pensemb string-pfile-alistp)
                               (resolved-includes
                                string-header-name-string-map-mapp)
                               (pending string-listp)
@@ -4110,7 +4111,7 @@
     :returns (mv erp
                  (pparts ppart-listp)
                  (groupend groupendp)
-                 (new-pfiles string-pfile-alistp)
+                 (new-pensemb string-pfile-alistp)
                  (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
@@ -4132,23 +4133,23 @@
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil (irr-groupend) nil nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
-         ((erp pparts groupend? pfiles resolved-includes ppstate state)
+         ((erp pparts groupend? pensemb resolved-includes ppstate state)
           (pproc-?-group-part file
                               base-dir
                               include-dirs
-                              pfiles
+                              pensemb
                               resolved-includes
                               pending
                               ppstate
                               state
                               (1- limit)))
          ((when groupend?)
-          (retok pparts groupend? pfiles resolved-includes ppstate state))
-         ((erp more-pparts groupend pfiles resolved-includes ppstate state)
+          (retok pparts groupend? pensemb resolved-includes ppstate state))
+         ((erp more-pparts groupend pensemb resolved-includes ppstate state)
           (pproc-*-group-part file
                               base-dir
                               include-dirs
-                              pfiles
+                              pensemb
                               resolved-includes
                               pending
                               ppstate
@@ -4156,7 +4157,7 @@
                               (1- limit))))
       (retok (append pparts more-pparts)
              groupend
-             pfiles
+             pensemb
              resolved-includes
              ppstate
              state))
@@ -4167,7 +4168,7 @@
   (define pproc-?-group-part ((file stringp)
                               (base-dir stringp)
                               (include-dirs string-listp)
-                              (pfiles string-pfile-alistp)
+                              (pensemb string-pfile-alistp)
                               (resolved-includes
                                string-header-name-string-map-mapp)
                               (pending string-listp)
@@ -4177,7 +4178,7 @@
     :returns (mv erp
                  (pparts ppart-listp)
                  (groupend? groupend-optionp)
-                 (new-pfiles string-pfile-alistp)
+                 (new-pensemb string-pfile-alistp)
                  (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
@@ -4263,7 +4264,7 @@
                 (not nontoknls))
             (retok nil ; no group parts
                    (groupend-eof)
-                   (string-pfile-alist-fix pfiles)
+                   (string-pfile-alist-fix pensemb)
                    (string-header-name-string-map-map-fix resolved-includes)
                    ppstate
                    state)
@@ -4279,7 +4280,7 @@
             (if (ppstate->gcc/clang ppstate)
                 (retok nil ; no group parts
                        nil ; no group ending
-                       (string-pfile-alist-fix pfiles)
+                       (string-pfile-alist-fix pensemb)
                        (string-header-name-string-map-map-fix
                         resolved-includes)
                        ppstate
@@ -4290,7 +4291,7 @@
            ((plexeme-case toknl2 :newline) ; # EOL -- null directive
             (retok nil ; no group parts
                    nil ; no group ending
-                   (string-pfile-alist-fix pfiles)
+                   (string-pfile-alist-fix pensemb)
                    (string-header-name-string-map-map-fix resolved-includes)
                    ppstate
                    state))
@@ -4300,7 +4301,7 @@
                ((equal directive "elif") ; # elif
                 (retok nil ; no group parts
                        (groupend-elif)
-                       (string-pfile-alist-fix pfiles)
+                       (string-pfile-alist-fix pensemb)
                        (string-header-name-string-map-map-fix
                         resolved-includes)
                        ppstate
@@ -4308,7 +4309,7 @@
                ((equal directive "else") ; # else
                 (retok nil ; no group parts
                        (groupend-else)
-                       (string-pfile-alist-fix pfiles)
+                       (string-pfile-alist-fix pensemb)
                        (string-header-name-string-map-map-fix
                         resolved-includes)
                        ppstate
@@ -4316,17 +4317,17 @@
                ((equal directive "endif") ; # endif
                 (retok nil ; no group parts
                        (groupend-endif)
-                       (string-pfile-alist-fix pfiles)
+                       (string-pfile-alist-fix pensemb)
                        (string-header-name-string-map-map-fix
                         resolved-includes)
                        ppstate
                        state))
                ((equal directive "if") ; # if
-                (b* (((erp pparts pfiles resolved-includes ppstate state)
+                (b* (((erp pparts pensemb resolved-includes ppstate state)
                       (pproc-if file
                                 base-dir
                                 include-dirs
-                                pfiles
+                                pensemb
                                 resolved-includes
                                 pending
                                 ppstate
@@ -4334,17 +4335,17 @@
                                 (1- limit))))
                   (retok pparts
                          nil ; no group ending
-                         pfiles
+                         pensemb
                          resolved-includes
                          ppstate
                          state)))
                ((equal directive "ifdef") ; # ifdef
-                (b* (((erp pparts pfiles resolved-includes ppstate state)
+                (b* (((erp pparts pensemb resolved-includes ppstate state)
                       (pproc-ifdef/ifndef t
                                           file
                                           base-dir
                                           include-dirs
-                                          pfiles
+                                          pensemb
                                           resolved-includes
                                           pending
                                           ppstate
@@ -4352,17 +4353,17 @@
                                           (1- limit))))
                   (retok pparts
                          nil ; no group ending
-                         pfiles
+                         pensemb
                          resolved-includes
                          ppstate
                          state)))
                ((equal directive "ifndef") ; # ifndef
-                (b* (((erp pparts pfiles resolved-includes ppstate state)
+                (b* (((erp pparts pensemb resolved-includes ppstate state)
                       (pproc-ifdef/ifndef nil
                                           file
                                           base-dir
                                           include-dirs
-                                          pfiles
+                                          pensemb
                                           resolved-includes
                                           pending
                                           ppstate
@@ -4370,18 +4371,18 @@
                                           (1- limit))))
                   (retok pparts
                          nil ; no group ending
-                         pfiles
+                         pensemb
                          resolved-includes
                          ppstate
                          state)))
                ((equal directive "include") ; # include
-                (b* (((erp pparts pfiles resolved-includes ppstate state)
+                (b* (((erp pparts pensemb resolved-includes ppstate state)
                       (pproc-include nontoknls-before-hash
                                      nontoknls-after-hash
                                      file
                                      base-dir
                                      include-dirs
-                                     pfiles
+                                     pensemb
                                      resolved-includes
                                      pending
                                      ppstate
@@ -4389,7 +4390,7 @@
                                      (1- limit))))
                   (retok pparts
                          nil ; no group ending
-                         pfiles
+                         pensemb
                          resolved-includes
                          ppstate
                          state)))
@@ -4397,7 +4398,7 @@
                 (b* (((erp pparts ppstate) (pproc-define ppstate)))
                   (retok pparts
                          nil ; no group ending
-                         (string-pfile-alist-fix pfiles)
+                         (string-pfile-alist-fix pensemb)
                          (string-header-name-string-map-map-fix
                           resolved-includes)
                          ppstate
@@ -4406,7 +4407,7 @@
                 (b* (((erp pparts ppstate) (pproc-undef ppstate)))
                   (retok pparts
                          nil ; no group ending
-                         (string-pfile-alist-fix pfiles)
+                         (string-pfile-alist-fix pensemb)
                          (string-header-name-string-map-map-fix
                           resolved-includes)
                          ppstate
@@ -4415,7 +4416,7 @@
                 (b* (((erp ppstate) (pproc-line ppstate)))
                   (retok nil ; no group parts
                          nil ; no group ending
-                         (string-pfile-alist-fix pfiles)
+                         (string-pfile-alist-fix pensemb)
                          (string-header-name-string-map-map-fix
                           resolved-includes)
                          ppstate
@@ -4424,7 +4425,7 @@
                 (b* (((erp ppstate) (pproc-error ppstate)))
                   (retok nil ; no group parts
                          nil ; no group ending
-                         (string-pfile-alist-fix pfiles)
+                         (string-pfile-alist-fix pensemb)
                          (string-header-name-string-map-map-fix
                           resolved-includes)
                          ppstate
@@ -4433,7 +4434,7 @@
                 (b* (((erp ppstate) (pproc-warning ppstate)))
                   (retok nil ; no group parts
                          nil ; no group ending
-                         (string-pfile-alist-fix pfiles)
+                         (string-pfile-alist-fix pensemb)
                          (string-header-name-string-map-map-fix
                           resolved-includes)
                          ppstate
@@ -4478,7 +4479,7 @@
                         (plexemes-without-comments lexemes))))
           (retok (list (ppart-line lexemes))
                  nil ; no group ending
-                 (string-pfile-alist-fix pfiles)
+                 (string-pfile-alist-fix pensemb)
                  (string-header-name-string-map-map-fix resolved-includes)
                  ppstate
                  state)))))
@@ -4492,7 +4493,7 @@
                          (file stringp)
                          (base-dir stringp)
                          (include-dirs string-listp)
-                         (pfiles string-pfile-alistp)
+                         (pensemb string-pfile-alistp)
                          (resolved-includes
                           string-header-name-string-map-mapp)
                          (pending string-listp)
@@ -4501,7 +4502,7 @@
                          (limit natp))
     :returns (mv erp
                  (pparts ppart-listp)
-                 (new-pfiles string-pfile-alistp)
+                 (new-pensemb string-pfile-alistp)
                  (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
@@ -4564,7 +4565,7 @@
               (reterr-msg :where (span->start span2)
                           :expected "a new line"
                           :found (plexeme?-to-msg toknl2)))
-             ((erp pparts pfiles resolved-includes ppstate state)
+             ((erp pparts pensemb resolved-includes ppstate state)
               (pproc-header-name nontoknls-before-hash
                                  nontoknls-after-hash
                                  nontoknls-before-header
@@ -4574,14 +4575,14 @@
                                  file
                                  base-dir
                                  include-dirs
-                                 pfiles
+                                 pensemb
                                  resolved-includes
                                  pending
                                  ppstate
                                  state
                                  (1- limit))))
           (retok pparts
-                 (string-pfile-alist-fix pfiles)
+                 (string-pfile-alist-fix pensemb)
                  resolved-includes
                  ppstate
                  state)))
@@ -4598,7 +4599,7 @@
              (lexemes (rev rev-lexemes))
              ((erp header nontoknls-after-header newline?)
               (indirect-header-name lexemes ppstate))
-             ((erp pparts pfiles resolved-includes ppstate state)
+             ((erp pparts pensemb resolved-includes ppstate state)
               (pproc-header-name nontoknls-before-hash
                                  nontoknls-after-hash
                                  nontoknls-before-header
@@ -4608,13 +4609,13 @@
                                  file
                                  base-dir
                                  include-dirs
-                                 pfiles
+                                 pensemb
                                  resolved-includes
                                  pending
                                  ppstate
                                  state
                                  (1- limit))))
-          (retok pparts pfiles resolved-includes ppstate state)))))
+          (retok pparts pensemb resolved-includes ppstate state)))))
     :no-function nil
     :measure (nfix limit))
 
@@ -4629,7 +4630,7 @@
                              (file stringp)
                              (base-dir stringp)
                              (include-dirs string-listp)
-                             (pfiles string-pfile-alistp)
+                             (pensemb string-pfile-alistp)
                              (resolved-includes
                               string-header-name-string-map-mapp)
                              (pending string-listp)
@@ -4638,7 +4639,7 @@
                              (limit natp))
     :returns (mv erp
                  (pparts ppart-listp)
-                 (new-pfiles string-pfile-alistp)
+                 (new-pensemb string-pfile-alistp)
                  (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
@@ -4655,9 +4656,9 @@
        we re-preprocess the included file in a fresh context,
        unless we have already done that,
        in which case we use the previous result,
-       which is part of the @('pfiles') alist;
+       which is part of the @('pensemb') alist;
        if we need to re-process the file afresh,
-       we add it to the @('pfiles') alist.")
+       we add it to the @('pensemb') alist.")
      (xdoc::p
       "We use the approach detailed in @(see preservable-inclusions)
        to decide whether we can preserve the @('#include'):
@@ -4692,7 +4693,7 @@
          (ienv (ppstate->ienv ppstate))
          (options (ppstate->options ppstate))
          ((erp pfile
-               pfiles
+               pensemb
                resolved-includes
                macros
                state)
@@ -4700,7 +4701,7 @@
                       resolved-file
                       base-dir
                       include-dirs
-                      pfiles
+                      pensemb
                       resolved-includes
                       pending
                       (ppstate->macros ppstate)
@@ -4719,14 +4720,14 @@
                               (pfile->parts pfile)
                               (list (ppart-line closing-line))))
                   (pfile->parts pfile))))
-            (retok pparts pfiles resolved-includes ppstate state)))
-         ((mv erp standalone-pfile pfiles resolved-includes state)
+            (retok pparts pensemb resolved-includes ppstate state)))
+         ((mv erp standalone-pfile pensemb resolved-includes state)
           (b* (((reterr) (irr-pfile) nil nil state)
-               (name+pfile (assoc-equal resolved-file pfiles)))
+               (name+pfile (assoc-equal resolved-file pensemb)))
             (if name+pfile
-                (retok (cdr name+pfile) pfiles resolved-includes state)
+                (retok (cdr name+pfile) pensemb resolved-includes state)
               (b* (((erp pfile
-                         pfiles
+                         pensemb
                          resolved-includes
                          & ; macros
                          state)
@@ -4734,7 +4735,7 @@
                                 resolved-file
                                 base-dir
                                 include-dirs
-                                pfiles
+                                pensemb
                                 resolved-includes
                                 pending
                                 (macro-init (ienv->dialect ienv))
@@ -4742,8 +4743,8 @@
                                 ienv
                                 state
                                 (1- limit)))
-                   (pfiles (acons resolved-file pfile pfiles)))
-                (retok pfile pfiles resolved-includes state)))))
+                   (pensemb (acons resolved-file pfile pensemb)))
+                (retok pfile pensemb resolved-includes state)))))
          (preserve-include-p
           (and (not erp)
                (compare-pfiles pfile
@@ -4774,7 +4775,7 @@
                                                       resolved-file
                                                       resolved-includes)
                               resolved-includes)))
-      (retok pparts pfiles resolved-includes ppstate state))
+      (retok pparts pensemb resolved-includes ppstate state))
     :no-function nil
     :measure (nfix limit))
 
@@ -4783,7 +4784,7 @@
   (define pproc-if ((file stringp)
                     (base-dir stringp)
                     (include-dirs string-listp)
-                    (pfiles string-pfile-alistp)
+                    (pensemb string-pfile-alistp)
                     (resolved-includes string-header-name-string-map-mapp)
                     (pending string-listp)
                     (ppstate ppstatep)
@@ -4791,7 +4792,7 @@
                     (limit natp))
     :returns (mv erp
                  (pparts ppart-listp)
-                 (new-pfiles string-pfile-alistp)
+                 (new-pensemb string-pfile-alistp)
                  (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
@@ -4828,13 +4829,13 @@
          ((reterr) nil nil nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp pexpr condp ppstate) (pproc-const-expr ppstate))
-         ((erp pparts pelifs pelse? pfiles resolved-includes ppstate state)
+         ((erp pparts pelifs pelse? pensemb resolved-includes ppstate state)
           (pproc-if/ifdef/ifndef-rest condp
                                       nil ; donep
                                       file
                                       base-dir
                                       include-dirs
-                                      pfiles
+                                      pensemb
                                       resolved-includes
                                       pending
                                       ppstate
@@ -4848,7 +4849,7 @@
          (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                      (concatenate-cond-bodies pparts pelifs pelse?)
                    (list pcond))))
-      (retok pparts pfiles resolved-includes ppstate state))
+      (retok pparts pensemb resolved-includes ppstate state))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4857,7 +4858,7 @@
                               (file stringp)
                               (base-dir stringp)
                               (include-dirs string-listp)
-                              (pfiles string-pfile-alistp)
+                              (pensemb string-pfile-alistp)
                               (resolved-includes
                                string-header-name-string-map-mapp)
                               (pending string-listp)
@@ -4866,7 +4867,7 @@
                               (limit natp))
     :returns (mv erp
                  (pparts ppart-listp)
-                 (new-pfiles string-pfile-alistp)
+                 (new-pensemb string-pfile-alistp)
                  (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
@@ -4906,13 +4907,13 @@
          (condp (if ifdefp
                     (and info? t)
                   (not info?)))
-         ((erp pparts pelifs pelse? pfiles resolved-includes ppstate state)
+         ((erp pparts pelifs pelse? pensemb resolved-includes ppstate state)
           (pproc-if/ifdef/ifndef-rest condp
                                       nil ; donep
                                       file
                                       base-dir
                                       include-dirs
-                                      pfiles
+                                      pensemb
                                       resolved-includes
                                       pending
                                       ppstate
@@ -4928,7 +4929,7 @@
          (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                      (concatenate-cond-bodies pparts pelifs pelse?)
                    (list pcond))))
-      (retok pparts pfiles resolved-includes ppstate state))
+      (retok pparts pensemb resolved-includes ppstate state))
     :no-function nil
     :measure (nfix limit))
 
@@ -4939,7 +4940,7 @@
                                       (file stringp)
                                       (base-dir stringp)
                                       (include-dirs string-listp)
-                                      (pfiles string-pfile-alistp)
+                                      (pensemb string-pfile-alistp)
                                       (resolved-includes
                                        string-header-name-string-map-mapp)
                                       (pending string-listp)
@@ -4950,7 +4951,7 @@
                  (pparts ppart-listp)
                  (pelifs pelif-listp)
                  (pelse? pelse-optionp)
-                 (new-pfiles string-pfile-alistp)
+                 (new-pensemb string-pfile-alistp)
                  (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
@@ -5014,14 +5015,14 @@
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil nil nil nil nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
-         ((erp first-pparts groupend pfiles resolved-includes ppstate state)
+         ((erp first-pparts groupend pensemb resolved-includes ppstate state)
           (b* (((reterr) nil (irr-groupend) nil nil ppstate state))
             (if (and condp
                      (not donep))
                 (pproc-*-group-part file
                                     base-dir
                                     include-dirs
-                                    pfiles
+                                    pensemb
                                     resolved-includes
                                     pending
                                     ppstate
@@ -5031,7 +5032,7 @@
                     (pproc-*-group-part-skipped ppstate)))
                 (retok nil ; no group parts
                        groupend
-                       (string-pfile-alist-fix pfiles)
+                       (string-pfile-alist-fix pensemb)
                        (string-header-name-string-map-map-fix
                         resolved-includes)
                        ppstate
@@ -5047,7 +5048,7 @@
                   ((erp pparts
                         pelifs
                         pelse?
-                        pfiles
+                        pensemb
                         resolved-includes
                         ppstate
                         state)
@@ -5056,7 +5057,7 @@
                                                file
                                                base-dir
                                                include-dirs
-                                               pfiles
+                                               pensemb
                                                resolved-includes
                                                pending
                                                ppstate
@@ -5067,7 +5068,7 @@
                                         :parts pparts)
                             pelifs)
                       pelse?
-                      pfiles
+                      pensemb
                       resolved-includes
                       ppstate
                       state))
@@ -5077,13 +5078,13 @@
                    (reterr-msg :where (span->start span)
                                :expected "a new line"
                                :found (plexeme?-to-msg toknl)))
-                  ((erp pparts groupend pfiles resolved-includes ppstate state)
+                  ((erp pparts groupend pensemb resolved-includes ppstate state)
                    (b* (((reterr) nil (irr-groupend) nil nil ppstate state))
                      (if (not donep)
                          (pproc-*-group-part file
                                              base-dir
                                              include-dirs
-                                             pfiles
+                                             pensemb
                                              resolved-includes
                                              pending
                                              ppstate
@@ -5093,7 +5094,7 @@
                              (pproc-*-group-part-skipped ppstate)))
                          (retok nil
                                 groupend
-                                pfiles
+                                pensemb
                                 (string-header-name-string-map-map-fix
                                  resolved-includes)
                                 ppstate
@@ -5116,7 +5117,7 @@
                (retok first-pparts
                       nil ; pelifs
                       (pelse pparts)
-                      pfiles
+                      pensemb
                       resolved-includes
                       ppstate
                       state))
@@ -5131,7 +5132,7 @@
                 (retok first-pparts
                        nil ; pelifs
                        nil ; pelse?
-                       pfiles
+                       pensemb
                        resolved-includes
                        ppstate
                        state))))
@@ -5166,7 +5167,7 @@
                      state
                      (recursion-limit natp))
   :returns (mv erp
-               (pfiles string-pfile-alistp)
+               (pensemb string-pfile-alistp)
                (resolved-includes string-header-name-string-map-mapp)
                state)
   :short "Preprocess zero or more files."
@@ -5186,14 +5187,14 @@
     "The elements of @('files') are preprocessed in order.
      Each file is read from the file system,
      preprocessed via @(tsee pproc-file),
-     and added to the @('pfiles') alist.
+     and added to the @('pensemb') alist.
      It is possible for a file in @('files')
      to @('#include') another file in @('files'),
      which, as explained in @(see preservable-inclusions),
      causes the second file to be re-processed afresh
      to see whether the @('#include') can be preserved.
      If this happens before the loop below considers the second file,
-     the file will be already in the @('pfiles') alist,
+     the file will be already in the @('pensemb') alist,
      so it does not need to be added.
      Note that the resulting @(tsee pfile) cannot differ,
      because all the files in @('files'), in the loop below,
@@ -5208,7 +5209,7 @@
   (pproc-files-loop files
                     base-dir
                     include-dirs
-                    nil ; pfiles
+                    nil ; pensemb
                     nil ; resolved-includes
                     nil ; pending
                     options
@@ -5221,7 +5222,7 @@
   ((define pproc-files-loop ((files string-listp)
                              (base-dir stringp)
                              (include-dirs string-listp)
-                             (pfiles string-pfile-alistp)
+                             (pensemb string-pfile-alistp)
                              (resolved-includes
                               string-header-name-string-map-mapp)
                              (pending string-listp)
@@ -5230,13 +5231,13 @@
                              state
                              (recursion-limit natp))
      :returns (mv erp
-                  (new-pfiles string-pfile-alistp)
+                  (new-pensemb string-pfile-alistp)
                   (new-resolved-includes string-header-name-string-map-mapp)
                   state)
      :parents nil
      (b* (((reterr) nil nil state)
           ((when (endp files))
-           (retok (string-pfile-alist-fix pfiles)
+           (retok (string-pfile-alist-fix pensemb)
                   (string-header-name-string-map-map-fix resolved-includes)
                   state))
           (file (str-fix (car files)))
@@ -5246,7 +5247,7 @@
           ((when erp)
            (reterr (msg "Cannot read file ~x0." path-to-read)))
           ((erp pfile
-                pfiles
+                pensemb
                 resolved-includes
                 & ; macros
                 state)
@@ -5254,7 +5255,7 @@
                        (car files)
                        base-dir
                        include-dirs
-                       pfiles
+                       pensemb
                        resolved-includes
                        pending
                        (macro-init (ienv->dialect ienv))
@@ -5262,13 +5263,13 @@
                        ienv
                        state
                        recursion-limit))
-          (pfiles (if (assoc-equal file pfiles)
-                      pfiles
-                    (acons file pfile pfiles))))
+          (pensemb (if (assoc-equal file pensemb)
+                       pensemb
+                     (acons file pfile pensemb))))
        (pproc-files-loop (cdr files)
                          base-dir
                          include-dirs
-                         pfiles
+                         pensemb
                          resolved-includes
                          pending
                          options
@@ -5307,7 +5308,7 @@
      which should be normally sufficient.
      We convert the resulting alist into a file set."))
   (b* (((reterr) (irr-fileset) nil state)
-       ((erp pfiles resolved-includes state)
+       ((erp pensemb resolved-includes state)
         (pproc-files files
                      base-dir
                      include-dirs
@@ -5316,7 +5317,7 @@
                      state
                      1000000000)))
     (retok (fileset
-            (string-pfile-alist-to-filepath-filedata-map pfiles))
+            (string-pfile-alist-to-filepath-filedata-map pensemb))
            resolved-includes
            state))
   :hooks nil)
