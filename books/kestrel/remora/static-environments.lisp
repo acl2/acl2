@@ -124,7 +124,7 @@
      zero-rank array types of function types between base types.
      The @('head'), @('tail'), @('length'),
      @('append'), @('reverse'), @('index'), @('index2d'),
-     and @('reshape') operations
+     @('reshape'), and @('transpose2d') operations
      have polymorphic types:
      a universal type of a product type of a function type, as in [impl].
      The @('sum') operation is polymorphic only in the shape,
@@ -217,6 +217,12 @@
                       (tpi ("@s1" "@s2")
                            (t-> ((t[] "&t" "@s1"))
                                 (t[] "&t" "@s2"))))
+             (shp)))
+       (transpose2d-type
+        (t[] (tforall ("&t")
+                      (tpi ("$m" "$n")
+                           (t-> ((t[] "&t" (shape++ "$m" "$n")))
+                                (t[] "&t" (shape++ "$n" "$m")))))
              (shp))))
     (omap::from-alist
      (list (cons "+" int-binop-type)
@@ -276,7 +282,8 @@
            (cons "index" index-type)
            (cons "index2d" index2d-type)
            (cons "sum" sum-type)
-           (cons "reshape" reshape-type)))))
+           (cons "reshape" reshape-type)
+           (cons "transpose2d" transpose2d-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
