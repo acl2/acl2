@@ -190,80 +190,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist string-pfile-alist
-  :short "Fixtype of alists from strings to preprocessor files."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We use these alists to keep track of which files
-     have been already preprocessed.
-     The alist is initially empty,
-     and eventually contains an entry for each file
-     whose path is specified as input to the preprocessor,
-     ad well as zero or more additional entries for
-     other files references in preserved @('#include')s
-     (see @(see preservable-inclusions)).")
-   (xdoc::p
-    "These alists always have unique keys, i.e. there are no shadowed pairs;
-     this is not enforced in this fixtype.
-     The keys are file paths,
-     either absolute,
-     or relative to the base directory passed to the @(see preprocessor).
-     The alist has the same keys as the file set returned by our preprocessor;
-     see @(tsee string-pfile-alist-to-filepath-filedata-map)."))
-  :key-type string
-  :val-type pfile
-  :true-listp t
-  :keyp-of-nil nil
-  :valp-of-nil nil
-  :pred string-pfile-alistp
-  :prepwork ((set-induction-depth-limit 1))
-
-  ///
-
-  (defruled pfilep-of-cdr-of-assoc-equal-when-string-pfile-alistp
-    (implies (and (string-pfile-alistp alist)
-                  (assoc-equal key alist))
-             (pfilep (cdr (assoc-equal key alist))))
-    :induct t
-    :enable assoc-equal)
-
-  (defrule len-of-string-pfile-alist-fix-upper-bound
-    (<= (len (string-pfile-alist-fix alist))
-        (len alist))
-    :rule-classes :linear
-    :induct t
-    :enable (len string-pfile-alist-fix)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define string-pfile-alist-to-filepath-filedata-map
-  ((alist string-pfile-alistp))
-  :returns (map filepath-filedata-mapp)
-  :short "Turn (1) an alist from string to preprocessor files
+(define filepath-pfile-map-to-filepath-filedata-map ((map filepath-pfile-mapp))
+  :returns (map1 filepath-filedata-mapp)
+  :short "Turn (1) a map from file paths to preprocessor files
           into (2) a map from file paths to file data."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The strings are wrapped into file paths;
-     as mentioned in @(tsee string-pfile-alist),
-     the alist has unique keys, so the order of the alist is immaterial.
-     The lists of lexemes are printed to bytes,
-     obtaining the file datas.")
+    "The two maps have the same keys,
+     but each value is printed to bytes.")
    (xdoc::p
-    "This is called on the alist at the end of the preprocessing,
-     as explained in @(tsee string-pfile-alist)."))
-  (b* (((when (endp alist)) nil)
-       ((cons string pfile) (car (string-pfile-alist-fix alist)))
+    "This is called at the end of preprocessing,
+     to turn (the map in) the final preprocessing ensemble
+     into (the map in) a file set."))
+  (b* (((when (omap::emptyp (filepath-pfile-map-fix map))) nil)
+       ((mv filepath pfile) (omap::head map))
        (bytes (pprint-pfile pfile))
-       (filepath (filepath string))
        (filedata (filedata bytes))
-       (map (string-pfile-alist-to-filepath-filedata-map (cdr alist))))
-    (omap::update filepath filedata map))
-  :verify-guards :after-returns
-  :hooks nil)
+       (map1 (filepath-pfile-map-to-filepath-filedata-map (omap::tail map))))
+    (omap::update filepath filedata map1))
+  :verify-guards :after-returns)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define add-resolved-include
   ((from-file stringp)
@@ -304,11 +252,7 @@
                 from file ~x3."
                to-file (cdr hname+existing) hname from-file)))
     resolved-includes)
-  :no-function nil
-  :guard-hints
-  (("Goal"
-    :in-theory
-    (enable))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3903,10 +3847,8 @@
       These are the ASTs resulting from the preprocessing
       operated by the functions.")
     (xdoc::li
-     "All the functions take and return the alist @('pensemb'),
-      which contain (the results of) the files preprocessed so far;
-      its name means `preprocessing ensemble',
-      and soon we will use the fixtype @(tsee pensemble) for it.
+     "All the functions take and return a preprocessing ensemble,
+      which contain (the results of) the files preprocessed so far.
       This starts empty and eventually (if there are no errors)
       contains all the preprocessed files,
       namely the files listed in the list @('files')
@@ -3954,7 +3896,7 @@
                       (file stringp)
                       (base-dir stringp)
                       (include-dirs string-listp)
-                      (pensemb string-pfile-alistp)
+                      (pensemb pensemblep)
                       (resolved-includes string-header-name-string-map-mapp)
                       (pending string-listp)
                       (macros macro-tablep)
@@ -3964,7 +3906,7 @@
                       (limit natp))
     :returns (mv erp
                  (pfile pfilep)
-                 (new-pensemb string-pfile-alistp)
+                 (new-pensemb pensemblep)
                  (new-resolved-includes string-header-name-string-map-mapp)
                  (new-macros macro-tablep)
                  state)
@@ -3996,7 +3938,7 @@
        and the implementation environment.
        The preprocessing of this file may involve
        the recursive preprocessing of more files,
-       and the consequent extension of the @('pensemb') alist.
+       and the consequent extension of the preprocessing ensemble.
        We ensure that the optional group read by @(tsee pproc-*-group-part)
        ends with the end of the file,
        because we are at the top level,
@@ -4007,8 +3949,8 @@
        the macro definitions and undefinitions contributed by the file;
        we also return an alist from
        the header names of the @('#include')s that were preserved in the file
-       to the corresponding file paths (keys in @('pensemb')."))
-    (b* (((reterr) (irr-pfile) nil nil (irr-macro-table) state)
+       to the corresponding file paths (keys in the preprocessing ensemble)."))
+    (b* (((reterr) (irr-pfile) (irr-pensemble) nil (irr-macro-table) state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
          (pending (string-list-fix pending))
@@ -4101,7 +4043,7 @@
   (define pproc-*-group-part ((file stringp)
                               (base-dir stringp)
                               (include-dirs string-listp)
-                              (pensemb string-pfile-alistp)
+                              (pensemb pensemblep)
                               (resolved-includes
                                string-header-name-string-map-mapp)
                               (pending string-listp)
@@ -4111,7 +4053,7 @@
     :returns (mv erp
                  (pparts ppart-listp)
                  (groupend groupendp)
-                 (new-pensemb string-pfile-alistp)
+                 (new-pensemb pensemblep)
                  (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
@@ -4131,7 +4073,7 @@
       "If successful, we return a list of zero or more group part ASTs,
        for the zero or more group parts that we have preprocessed."))
     (b* ((ppstate (ppstate-fix ppstate))
-         ((reterr) nil (irr-groupend) nil nil ppstate state)
+         ((reterr) nil (irr-groupend) (irr-pensemble) nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp pparts groupend? pensemb resolved-includes ppstate state)
           (pproc-?-group-part file
@@ -4168,7 +4110,7 @@
   (define pproc-?-group-part ((file stringp)
                               (base-dir stringp)
                               (include-dirs string-listp)
-                              (pensemb string-pfile-alistp)
+                              (pensemb pensemblep)
                               (resolved-includes
                                string-header-name-string-map-mapp)
                               (pending string-listp)
@@ -4178,7 +4120,7 @@
     :returns (mv erp
                  (pparts ppart-listp)
                  (groupend? groupend-optionp)
-                 (new-pensemb string-pfile-alistp)
+                 (new-pensemb pensemblep)
                  (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
@@ -4255,7 +4197,7 @@
        Thus, we can accept all white space and comments in a directive,
        as @(tsee read-token/newline) does."))
     (b* ((ppstate (ppstate-fix ppstate))
-         ((reterr) nil nil nil nil ppstate state)
+         ((reterr) nil nil (irr-pensemble) nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp nontoknls toknl span ppstate) (read-token/newline ppstate)))
       (cond
@@ -4264,7 +4206,7 @@
                 (not nontoknls))
             (retok nil ; no group parts
                    (groupend-eof)
-                   (string-pfile-alist-fix pensemb)
+                   (pensemble-fix pensemb)
                    (string-header-name-string-map-map-fix resolved-includes)
                    ppstate
                    state)
@@ -4280,7 +4222,7 @@
             (if (ppstate->gcc/clang ppstate)
                 (retok nil ; no group parts
                        nil ; no group ending
-                       (string-pfile-alist-fix pensemb)
+                       (pensemble-fix pensemb)
                        (string-header-name-string-map-map-fix
                         resolved-includes)
                        ppstate
@@ -4291,7 +4233,7 @@
            ((plexeme-case toknl2 :newline) ; # EOL -- null directive
             (retok nil ; no group parts
                    nil ; no group ending
-                   (string-pfile-alist-fix pensemb)
+                   (pensemble-fix pensemb)
                    (string-header-name-string-map-map-fix resolved-includes)
                    ppstate
                    state))
@@ -4301,7 +4243,7 @@
                ((equal directive "elif") ; # elif
                 (retok nil ; no group parts
                        (groupend-elif)
-                       (string-pfile-alist-fix pensemb)
+                       (pensemble-fix pensemb)
                        (string-header-name-string-map-map-fix
                         resolved-includes)
                        ppstate
@@ -4309,7 +4251,7 @@
                ((equal directive "else") ; # else
                 (retok nil ; no group parts
                        (groupend-else)
-                       (string-pfile-alist-fix pensemb)
+                       (pensemble-fix pensemb)
                        (string-header-name-string-map-map-fix
                         resolved-includes)
                        ppstate
@@ -4317,7 +4259,7 @@
                ((equal directive "endif") ; # endif
                 (retok nil ; no group parts
                        (groupend-endif)
-                       (string-pfile-alist-fix pensemb)
+                       (pensemble-fix pensemb)
                        (string-header-name-string-map-map-fix
                         resolved-includes)
                        ppstate
@@ -4398,7 +4340,7 @@
                 (b* (((erp pparts ppstate) (pproc-define ppstate)))
                   (retok pparts
                          nil ; no group ending
-                         (string-pfile-alist-fix pensemb)
+                         (pensemble-fix pensemb)
                          (string-header-name-string-map-map-fix
                           resolved-includes)
                          ppstate
@@ -4407,7 +4349,7 @@
                 (b* (((erp pparts ppstate) (pproc-undef ppstate)))
                   (retok pparts
                          nil ; no group ending
-                         (string-pfile-alist-fix pensemb)
+                         (pensemble-fix pensemb)
                          (string-header-name-string-map-map-fix
                           resolved-includes)
                          ppstate
@@ -4416,7 +4358,7 @@
                 (b* (((erp ppstate) (pproc-line ppstate)))
                   (retok nil ; no group parts
                          nil ; no group ending
-                         (string-pfile-alist-fix pensemb)
+                         (pensemble-fix pensemb)
                          (string-header-name-string-map-map-fix
                           resolved-includes)
                          ppstate
@@ -4425,7 +4367,7 @@
                 (b* (((erp ppstate) (pproc-error ppstate)))
                   (retok nil ; no group parts
                          nil ; no group ending
-                         (string-pfile-alist-fix pensemb)
+                         (pensemble-fix pensemb)
                          (string-header-name-string-map-map-fix
                           resolved-includes)
                          ppstate
@@ -4434,7 +4376,7 @@
                 (b* (((erp ppstate) (pproc-warning ppstate)))
                   (retok nil ; no group parts
                          nil ; no group ending
-                         (string-pfile-alist-fix pensemb)
+                         (pensemble-fix pensemb)
                          (string-header-name-string-map-map-fix
                           resolved-includes)
                          ppstate
@@ -4479,7 +4421,7 @@
                         (plexemes-without-comments lexemes))))
           (retok (list (ppart-line lexemes))
                  nil ; no group ending
-                 (string-pfile-alist-fix pensemb)
+                 (pensemble-fix pensemb)
                  (string-header-name-string-map-map-fix resolved-includes)
                  ppstate
                  state)))))
@@ -4493,7 +4435,7 @@
                          (file stringp)
                          (base-dir stringp)
                          (include-dirs string-listp)
-                         (pensemb string-pfile-alistp)
+                         (pensemb pensemblep)
                          (resolved-includes
                           string-header-name-string-map-mapp)
                          (pending string-listp)
@@ -4502,7 +4444,7 @@
                          (limit natp))
     :returns (mv erp
                  (pparts ppart-listp)
-                 (new-pensemb string-pfile-alistp)
+                 (new-pensemb pensemblep)
                  (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
@@ -4545,7 +4487,7 @@
       "The list of group part ASTs returned by this
        is the one returnd by @(tsee pproc-header-name)."))
     (b* ((ppstate (ppstate-fix ppstate))
-         ((reterr) nil nil nil ppstate state)
+         ((reterr) nil (irr-pensemble) nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp nontoknls-before-header toknl span ppstate)
           (read-token/newline-after-include ppstate)))
@@ -4582,7 +4524,7 @@
                                  state
                                  (1- limit))))
           (retok pparts
-                 (string-pfile-alist-fix pensemb)
+                 (pensemble-fix pensemb)
                  resolved-includes
                  ppstate
                  state)))
@@ -4630,7 +4572,7 @@
                              (file stringp)
                              (base-dir stringp)
                              (include-dirs string-listp)
-                             (pensemb string-pfile-alistp)
+                             (pensemb pensemblep)
                              (resolved-includes
                               string-header-name-string-map-mapp)
                              (pending string-listp)
@@ -4639,7 +4581,7 @@
                              (limit natp))
     :returns (mv erp
                  (pparts ppart-listp)
-                 (new-pensemb string-pfile-alistp)
+                 (new-pensemb pensemblep)
                  (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
@@ -4656,9 +4598,9 @@
        we re-preprocess the included file in a fresh context,
        unless we have already done that,
        in which case we use the previous result,
-       which is part of the @('pensemb') alist;
+       which is part of the preprocessing ensemble;
        if we need to re-process the file afresh,
-       we add it to the @('pensemb') alist.")
+       we add it to the preprocessing ensemble.")
      (xdoc::p
       "We use the approach detailed in @(see preservable-inclusions)
        to decide whether we can preserve the @('#include'):
@@ -4686,7 +4628,7 @@
        optionally surrounded by two line comments
        that mark and delimit the expansion."))
     (b* ((ppstate (ppstate-fix ppstate))
-         ((reterr) nil nil nil ppstate state)
+         ((reterr) nil (irr-pensemble) nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp resolved-file bytes state)
           (resolve-included-file file header base-dir include-dirs state))
@@ -4722,10 +4664,11 @@
                   (pfile->parts pfile))))
             (retok pparts pensemb resolved-includes ppstate state)))
          ((mv erp standalone-pfile pensemb resolved-includes state)
-          (b* (((reterr) (irr-pfile) nil nil state)
-               (name+pfile (assoc-equal resolved-file pensemb)))
-            (if name+pfile
-                (retok (cdr name+pfile) pensemb resolved-includes state)
+          (b* (((reterr) (irr-pfile) (irr-pensemble) nil state)
+               (pfiles (pensemble->pfiles pensemb))
+               (path+pfile (omap::assoc (filepath resolved-file) pfiles)))
+            (if path+pfile
+                (retok (cdr path+pfile) pensemb resolved-includes state)
               (b* (((erp pfile
                          pensemb
                          resolved-includes
@@ -4743,7 +4686,9 @@
                                 ienv
                                 state
                                 (1- limit)))
-                   (pensemb (acons resolved-file pfile pensemb)))
+                   (pfiles (pensemble->pfiles pensemb))
+                   (pfiles (omap::update (filepath resolved-file) pfile pfiles))
+                   (pensemb (change-pensemble pensemb :pfiles pfiles)))
                 (retok pfile pensemb resolved-includes state)))))
          (preserve-include-p
           (and (not erp)
@@ -4784,7 +4729,7 @@
   (define pproc-if ((file stringp)
                     (base-dir stringp)
                     (include-dirs string-listp)
-                    (pensemb string-pfile-alistp)
+                    (pensemb pensemblep)
                     (resolved-includes string-header-name-string-map-mapp)
                     (pending string-listp)
                     (ppstate ppstatep)
@@ -4792,7 +4737,7 @@
                     (limit natp))
     :returns (mv erp
                  (pparts ppart-listp)
-                 (new-pensemb string-pfile-alistp)
+                 (new-pensemb pensemblep)
                  (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
@@ -4826,7 +4771,7 @@
        of which at most one is non-empty,
        thus in effect eliminating the scaffolding."))
     (b* ((ppstate (ppstate-fix ppstate))
-         ((reterr) nil nil nil ppstate state)
+         ((reterr) nil (irr-pensemble) nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp pexpr condp ppstate) (pproc-const-expr ppstate))
          ((erp pparts pelifs pelse? pensemb resolved-includes ppstate state)
@@ -4858,7 +4803,7 @@
                               (file stringp)
                               (base-dir stringp)
                               (include-dirs string-listp)
-                              (pensemb string-pfile-alistp)
+                              (pensemb pensemblep)
                               (resolved-includes
                                string-header-name-string-map-mapp)
                               (pending string-listp)
@@ -4867,7 +4812,7 @@
                               (limit natp))
     :returns (mv erp
                  (pparts ppart-listp)
-                 (new-pensemb string-pfile-alistp)
+                 (new-pensemb pensemblep)
                  (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
@@ -4889,7 +4834,7 @@
       "This function is very similar to @(tsee pproc-if):
        see that function's documentation."))
     (b* ((ppstate (ppstate-fix ppstate))
-         ((reterr) nil nil nil ppstate state)
+         ((reterr) nil (irr-pensemble) nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp & ident? span ppstate) (read-token/newline ppstate))
          ((unless (plexeme?-identp ident?)) ; #ifdef/#ifndef ident
@@ -4940,7 +4885,7 @@
                                       (file stringp)
                                       (base-dir stringp)
                                       (include-dirs string-listp)
-                                      (pensemb string-pfile-alistp)
+                                      (pensemb pensemblep)
                                       (resolved-includes
                                        string-header-name-string-map-mapp)
                                       (pending string-listp)
@@ -4951,7 +4896,7 @@
                  (pparts ppart-listp)
                  (pelifs pelif-listp)
                  (pelse? pelse-optionp)
-                 (new-pensemb string-pfile-alistp)
+                 (new-pensemb pensemblep)
                  (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
@@ -5013,10 +4958,10 @@
        Finally, if the group instead with @('#endif'),
        we ensure there is just a new line after that."))
     (b* ((ppstate (ppstate-fix ppstate))
-         ((reterr) nil nil nil nil nil ppstate state)
+         ((reterr) nil nil nil (irr-pensemble) nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp first-pparts groupend pensemb resolved-includes ppstate state)
-          (b* (((reterr) nil (irr-groupend) nil nil ppstate state))
+          (b* (((reterr) nil (irr-groupend) (irr-pensemble) nil ppstate state))
             (if (and condp
                      (not donep))
                 (pproc-*-group-part file
@@ -5032,7 +4977,7 @@
                     (pproc-*-group-part-skipped ppstate)))
                 (retok nil ; no group parts
                        groupend
-                       (string-pfile-alist-fix pensemb)
+                       (pensemble-fix pensemb)
                        (string-header-name-string-map-map-fix
                         resolved-includes)
                        ppstate
@@ -5079,7 +5024,8 @@
                                :expected "a new line"
                                :found (plexeme?-to-msg toknl)))
                   ((erp pparts groupend pensemb resolved-includes ppstate state)
-                   (b* (((reterr) nil (irr-groupend) nil nil ppstate state))
+                   (b* (((reterr)
+                         nil (irr-groupend) (irr-pensemble) nil ppstate state))
                      (if (not donep)
                          (pproc-*-group-part file
                                              base-dir
@@ -5141,21 +5087,11 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((local
-              (in-theory
-               (enable
-                acons
-                pfilep-of-cdr-of-assoc-equal-when-string-pfile-alistp))))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   :verify-guards :after-returns
 
-  :guard-hints
-  (("Goal" :in-theory (enable alistp-when-string-pfile-alistp-rewrite
-                              true-listp-when-plexeme-listp
-                              true-listp-when-ppart-listp
-                              plexeme?-identp))))
+  :guard-hints (("Goal" :in-theory (enable true-listp-when-plexeme-listp
+                                           true-listp-when-ppart-listp
+                                           plexeme?-identp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5167,7 +5103,7 @@
                      state
                      (recursion-limit natp))
   :returns (mv erp
-               (pensemb string-pfile-alistp)
+               (pensemb pensemblep)
                (resolved-includes string-header-name-string-map-mapp)
                state)
   :short "Preprocess zero or more files."
@@ -5187,14 +5123,14 @@
     "The elements of @('files') are preprocessed in order.
      Each file is read from the file system,
      preprocessed via @(tsee pproc-file),
-     and added to the @('pensemb') alist.
+     and added to the preprocessing ensemble.
      It is possible for a file in @('files')
      to @('#include') another file in @('files'),
      which, as explained in @(see preservable-inclusions),
      causes the second file to be re-processed afresh
      to see whether the @('#include') can be preserved.
      If this happens before the loop below considers the second file,
-     the file will be already in the @('pensemb') alist,
+     the file will be already in the preprocessing ensemble,
      so it does not need to be added.
      Note that the resulting @(tsee pfile) cannot differ,
      because all the files in @('files'), in the loop below,
@@ -5203,13 +5139,13 @@
     "We keep track of the files under preprocessing in a list (initially empty),
      to detect and avoid circularities.")
    (xdoc::p
-    "The result of this function is an alist of @(tsee pfile)s,
-     whose keys are generally a superset of the input file names,
+    "The result of this function is a preprocessing ensemble,
+     whose map's keys are generally a superset of the input file names,
      as already explained in @(see preprocessor)."))
   (pproc-files-loop files
                     base-dir
                     include-dirs
-                    nil ; pensemb
+                    (make-pensemble :pfiles nil)
                     nil ; resolved-includes
                     nil ; pending
                     options
@@ -5222,7 +5158,7 @@
   ((define pproc-files-loop ((files string-listp)
                              (base-dir stringp)
                              (include-dirs string-listp)
-                             (pensemb string-pfile-alistp)
+                             (pensemb pensemblep)
                              (resolved-includes
                               string-header-name-string-map-mapp)
                              (pending string-listp)
@@ -5231,13 +5167,13 @@
                              state
                              (recursion-limit natp))
      :returns (mv erp
-                  (new-pensemb string-pfile-alistp)
+                  (new-pensemb pensemblep)
                   (new-resolved-includes string-header-name-string-map-mapp)
                   state)
      :parents nil
-     (b* (((reterr) nil nil state)
+     (b* (((reterr) (irr-pensemble) nil state)
           ((when (endp files))
-           (retok (string-pfile-alist-fix pensemb)
+           (retok (pensemble-fix pensemb)
                   (string-header-name-string-map-map-fix resolved-includes)
                   state))
           (file (str-fix (car files)))
@@ -5263,9 +5199,13 @@
                        ienv
                        state
                        recursion-limit))
-          (pensemb (if (assoc-equal file pensemb)
+          (pfiles (pensemble->pfiles pensemb))
+          (pensemb (if (omap::assoc (filepath file) pfiles)
                        pensemb
-                     (acons file pfile pensemb))))
+                     (change-pensemble pensemb
+                                       :pfiles (omap::update (filepath file)
+                                                             pfile
+                                                             pfiles)))))
        (pproc-files-loop (cdr files)
                          base-dir
                          include-dirs
@@ -5277,9 +5217,6 @@
                          state
                          recursion-limit))
      :no-function nil
-     :guard-hints
-     (("Goal" :in-theory (enable alistp-when-string-pfile-alistp-rewrite)))
-     :prepwork ((local (in-theory (enable acons))))
      :hooks nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5306,7 +5243,7 @@
    (xdoc::p
     "We call @(tsee pproc-files) with a recursion limit of 1,000,000,000,
      which should be normally sufficient.
-     We convert the resulting alist into a file set."))
+     We convert the resulting preprocessing ensemble into a file set."))
   (b* (((reterr) (irr-fileset) nil state)
        ((erp pensemb resolved-includes state)
         (pproc-files files
@@ -5315,9 +5252,10 @@
                      options
                      ienv
                      state
-                     1000000000)))
-    (retok (fileset
-            (string-pfile-alist-to-filepath-filedata-map pensemb))
+                     1000000000))
+       (pfiles (pensemble->pfiles pensemb))
+       (filemap (filepath-pfile-map-to-filepath-filedata-map pfiles)))
+    (retok (fileset filemap)
            resolved-includes
            state))
   :hooks nil)
