@@ -1,6 +1,6 @@
 ; A formalization of XML datatypes
 ;
-; Copyright (C) 2014-2025 Kestrel Institute
+; Copyright (C) 2014-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,8 @@
 (in-package "ACL2")
 
 ;; This book describes a quick-and-dirty ACL2 encoding of XML as S-expressions.
+
+(local (include-book "tools/flag" :dir :system))
 
 ;; TODO: Handle Unicode (in strings, in tags?)
 ;; TODO: Handle character entities like &lt; and &gt;.
@@ -339,6 +341,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Recognizes a true-listp of xml-elements.
+(defun xml-element-listp (elems)
+  (declare (xargs :guard t))
+  (if (not (consp elems))
+      (null elems)
+    (and (xml-elementp (first elems))
+         (xml-element-listp (rest elems)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defconst *whitespace-chars*
   '(#\Space #\Tab #\Return #\Newline))
 
@@ -381,15 +393,21 @@
          (cons (drop-whitespace-strings-from-parsed-xml-element item)
                (drop-whitespace-strings-from-parsed-xml-items (rest items))))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(local (make-flag drop-whitespace-strings-from-parsed-xml-element))
 
-;; Recognizes a true-listp of xml-elements.
-(defun xml-element-listp (elems)
-  (declare (xargs :guard t))
-  (if (not (consp elems))
-      (null elems)
-    (and (xml-elementp (first elems))
-         (xml-element-listp (rest elems)))))
+(defthm-flag-drop-whitespace-strings-from-parsed-xml-element
+  (defthm theorem-for-drop-whitespace-strings-from-parsed-xml-element
+    (implies (xml-elementp elem)
+             (xml-elementp (drop-whitespace-strings-from-parsed-xml-element elem)))
+    :flag drop-whitespace-strings-from-parsed-xml-element)
+  (defthm theorem-for-drop-whitespace-strings-from-parsed-xml-items
+    (implies (xml-item-listp items)
+             (xml-item-listp (drop-whitespace-strings-from-parsed-xml-items items)))
+    :flag drop-whitespace-strings-from-parsed-xml-items)
+  :hints (("Goal" :in-theory (enable xml-element-tag ; todo
+                                     ))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun filter-elements-with-attribute (elements attribute-name attribute-value)
   (declare (xargs :guard (and (xml-element-listp elements)
