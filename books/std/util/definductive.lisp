@@ -2975,6 +2975,17 @@
 
 ;;;;;;;;;;
 
+(define defind-proof-valid-return-thm-name ((pred-name symbolp)
+                                            (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of the return theorem of a @('p[i]-proof-validp') function."
+  (packn-pos (list 'booleanp-of-
+                   (defind-proof-valid-fn-name pred-name name))
+             (symbol-lfix name)))
+
+
+;;;;;;;;;;
+
 (define defind-irule-valid-suff-thm-name ((pred-name symbolp)
                                           (irule-name symbolp)
                                           (name symbolp))
@@ -4535,7 +4546,10 @@
    (xdoc::p
     "This takes the information about the predicate, not just its name,
      because the arguments of the conclusion are formals of this function;
-     see @(tsee defind-proof2-concl-var-names)."))
+     see @(tsee defind-proof2-concl-var-names).")
+   (xdoc::p
+    "The @(':returns') theorem is also a type prescription rule,
+     which @(tsee defind-gen-proof2-pred) uses."))
   (b* (((defind-pred-info pred-info))
        (pred2-name (defind-pred2-name pred-info.name name))
        (fn-name (defind-proof-valid-fn-name pred2-name name))
@@ -4553,7 +4567,8 @@
        (count-fn (defind-proof-count-fn-name pred2-name name))
        ((unless standalonep)
         `(define ,fn-name ((,fn-formal ,proof-recog) ,@concl-vars)
-           :returns (yes/no booleanp)
+           :returns (yes/no booleanp
+                            :rule-classes (:rewrite :type-prescription))
            ,@(and xdocp
                   `(:parents (,(symbol-lfix name))
                     :short ,(str::cat "Validity of a proof for @('"
@@ -4567,6 +4582,7 @@
        (kind-fixing-thm (defind-proof2-kind-fixing-thm-name pred2-name name)))
     `(define ,fn-name ((,fn-formal ,proof-recog) ,@concl-vars)
        :returns (yes/no booleanp
+                        :rule-classes (:rewrite :type-prescription)
                         :hints (("Goal"
                                  ,@(and recursivep '(:induct t))
                                  :in-theory '(,fn-name
@@ -4756,6 +4772,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-gen-proof2-pred ((pred-info defind-pred-infop)
+                                (name symbolp)
+                                (xdocp booleanp))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @('p[i]-2') predicate."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-pred),
+     but the arguments of the conclusion are arguments of
+     the proof validity predicate,
+     instead of being compared with the conclusion of the proof.
+     So this needs neither the @('p[i]-proof->conclusion') function
+     nor the @('p[i]-assertion') fixtype.")
+   (xdoc::p
+    "The @(':returns') proof needs to know that
+     the proof validity predicate returns a boolean.
+     We use the type prescription rule from its @(':returns') theorem,
+     which is proved,
+     rather than the type prescription that ACL2 infers for it.
+     The inferred one is in fact a boolean
+     because every conclusion has at least one argument
+     and so every case of the function ends with an equality;
+     but that is a property of the shape of the generated body,
+     not something established."))
+  (b* (((defind-pred-info pred-info))
+       (pred2-name (defind-pred2-name pred-info.name name))
+       (proof (defind-proof-var-name name))
+       (proofp (defind-proof-recog-name pred2-name name))
+       (proof-validp (defind-proof-valid-fn-name pred2-name name))
+       (valid-return-thm (defind-proof-valid-return-thm-name pred2-name name))
+       (witness (defind-proof-witness-fn-name pred2-name name)))
+    `(define-sk ,pred2-name (,@pred-info.formals)
+       :returns (yes/no booleanp
+                        :hints (("Goal"
+                                 :in-theory
+                                 '(,pred2-name
+                                   booleanp
+                                   (:type-prescription ,valid-return-thm)))))
+       ,@(and xdocp
+              `(:parents (,(symbol-lfix name))
+                :short ,(str::cat "Definition of the predicate @('"
+                                  (str::downcase-string
+                                   (symbol-name pred2-name))
+                                  "') via proof existence.")))
+       (exists (,proof)
+               (and (,proofp ,proof)
+                    (,proof-validp ,proof ,@pred-info.formals)))
+       :skolem-name ,witness
+       :verify-guards nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-gen-preds ((pred-infos defind-pred-info-listp)
                           (name symbolp)
                           (xdocp booleanp))
@@ -4764,6 +4833,17 @@
   (cond ((endp pred-infos) nil)
         (t (cons (defind-gen-pred (car pred-infos) name xdocp)
                  (defind-gen-preds (cdr pred-infos) name xdocp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-preds ((pred-infos defind-pred-info-listp)
+                                 (name symbolp)
+                                 (xdocp booleanp))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate all the @('p[i]-2') predicates."
+  (cond ((endp pred-infos) nil)
+        (t (cons (defind-gen-proof2-pred (car pred-infos) name xdocp)
+                 (defind-gen-proof2-preds (cdr pred-infos) name xdocp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5594,6 +5674,8 @@
           pred-infos irule-infos leveled-cliques name xdocp))
        (pred-events
         (defind-gen-preds pred-infos name xdocp))
+       (proof2-pred-events
+        (defind-gen-proof2-preds pred-infos name xdocp))
        (proof-for-rule-events
         (defind-gen-irule-proof-fns irule-infos pred-infos name xdocp))
        (irules-event
@@ -5610,6 +5692,7 @@
                            proof2-valid-events
                            proof-valid-events
                            pred-events
+                           proof2-pred-events
                            proof-for-rule-events
                            (list irules-event)
                            (list minimality-event))))
