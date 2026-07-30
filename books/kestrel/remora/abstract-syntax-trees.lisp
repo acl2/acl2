@@ -314,7 +314,14 @@
   :elt-type ispace-var
   :true-listp t
   :elementp-of-nil nil
-  :pred ispace-var-listp)
+  :pred ispace-var-listp
+
+  ///
+
+  (defruled cdr-of-ispace-var-list-fix
+    (equal (cdr (ispace-var-list-fix vars))
+           (ispace-var-list-fix (cdr vars)))
+    :enable ispace-var-list-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -381,7 +388,14 @@
   :elt-type type-var
   :true-listp t
   :elementp-of-nil nil
-  :pred type-var-listp)
+  :pred type-var-listp
+
+  ///
+
+  (defruled cdr-of-type-var-list-fix
+    (equal (cdr (type-var-list-fix vars))
+           (type-var-list-fix (cdr vars)))
+    :enable type-var-list-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -460,8 +474,10 @@
        by using singleton lists in @(':funn')
        for the case of a parenthesized type,
        using instead @(':fun') for an unparenthesized one.
-       The n-ary @(':funn') is also allowed to have no input types;
-       see grammar.")
+       The Remora concrete syntax allows a nullary function type,
+       and treats it the same as the output type;
+       we represent this as an n-ary @(':funn') in our ASTs,
+       with an empty list of input types.")
      (xdoc::p
       "The @(':forall'), @(':pi'), and @(':sigma') summands are
        the main, core form of universal, product, and sum type,
@@ -513,7 +529,14 @@
     :elt-type type
     :true-listp t
     :elementp-of-nil nil
-    :pred type-listp))
+    :pred type-listp
+
+    ///
+
+    (defruled cdr-of-type-list-fix
+      (equal (cdr (type-list-fix types))
+             (type-list-fix (cdr types)))
+      :enable type-list-fix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -554,7 +577,14 @@
   :elt-type var+type?
   :true-listp t
   :elementp-of-nil nil
-  :pred var+type?-listp)
+  :pred var+type?-listp
+
+  ///
+
+  (defruled cdr-of-var+type?-list-fix
+    (equal (cdr (var+type?-list-fix vts))
+           (var+type?-list-fix (cdr vts)))
+    :enable var+type?-list-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
