@@ -3989,6 +3989,15 @@
   :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
   :returns (event pseudo-event-formp)
   :short "Generate a @('p[l[k]]-proof-for-rule[k]') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theory for the validity theorem includes
+     the fixing theorems for the predicates of
+     both the conclusion and the premises of the rule
+     (without duplicates).
+     The theory for the conclusion theorem
+     only involves the predicate of the conclusion."))
   (b* (((defind-irule-info info))
        ((defind-conclusion-info cinfo) info.conclusion)
        (fn-name (defind-proof-for-rule-fn-name cinfo.name info.name name))
@@ -4016,12 +4025,10 @@
             (defind-irule-valid-fn-name cinfo.name info.name name)
           (defind-irule-valid-suff-thm-name cinfo.name info.name name)))
        (concl (defind-concl-var-name name))
-       (cong-thm (defind-valid-congruence-thm-name cinfo.name name))
-       (fix-id-thm (defind-assert-fix-id-thm-name cinfo.name name))
-       (assert-return-thm
-        (defind-assert-constr-return-thm-name cinfo.name name))
-       (concl-fix-thm (defind-proof-concl-fixing-thm-name cinfo.name name))
-       (proof-fix-equiv-thm (defind-proof-fix-equiv-thm-name cinfo.name name))
+       (fixing-thms (defind-gen-irule-proof-fn-preds-loop
+                      (set::insert cinfo.name
+                                   (defind-preds-in-premises info.premises))
+                      name))
        (concl-of-constr-thm
         (defind-proof-concl-of-constr-thm-name cinfo.name info.name name))
        (pred-info (defind-lookup-pred cinfo.name pred-infos))
@@ -4064,13 +4071,9 @@
                   :use (:instance ,suff/def-thm
                                   (,concl (,assert ,@concl-args))
                                   ,@prem-insts)
-                  :in-theory '(,cong-thm
+                  :in-theory '(,@fixing-thms
                                ,fn-name
                                ,proof-valid-fn
-                               ,fix-id-thm
-                               ,assert-return-thm
-                               ,concl-fix-thm
-                               ,proof-fix-equiv-thm
                                ,concl-of-constr-thm
                                ,@prem-of-constr-thms
                                ,proof-return))))
@@ -4093,7 +4096,24 @@
   :guard-hints (("Goal" :in-theory (enable set::sets-are-true-lists)))
 
   :prepwork
-  ((define defind-gen-irule-proof-fn-loop ((irule-name symbolp)
+
+  ((local (in-theory (enable emptyp-of-symbol-sfix)))
+
+   (define defind-gen-irule-proof-fn-preds-loop ((preds symbol-setp)
+                                                 (name symbolp))
+     :returns (thms true-listp)
+     :parents nil
+     (b* (((when (set::emptyp (symbol-sfix preds))) nil)
+          (pred (set::head preds))
+          (thms (defind-gen-irule-proof-fn-preds-loop (set::tail preds) name)))
+       (list* (defind-valid-congruence-thm-name pred name)
+              (defind-assert-fix-id-thm-name pred name)
+              (defind-assert-constr-return-thm-name pred name)
+              (defind-proof-concl-fixing-thm-name pred name)
+              (defind-proof-fix-equiv-thm-name pred name)
+              thms)))
+
+   (define defind-gen-irule-proof-fn-loop ((irule-name symbolp)
                                            (infos defind-premise-info-listp)
                                            (num posp)
                                            (name symbolp))
