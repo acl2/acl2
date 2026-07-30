@@ -808,6 +808,9 @@
     type-spec-struct-vinfop
     type-spec-struct-vinfo->type
 
+    type-spec-union-vinfop
+    type-spec-union-vinfo->type
+
     type-vinfop
     type-vinfo-fix
     type-vinfo->type

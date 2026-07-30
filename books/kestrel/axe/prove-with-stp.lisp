@@ -1651,13 +1651,13 @@
 
 (local
   (defthm node-given-empty-type-type
-    (implies (and (nodenum-type-alistp known-nodenum-type-alist)
-                  )
+    (implies (nodenum-type-alistp known-nodenum-type-alist)
              (or (null (node-given-empty-type known-nodenum-type-alist))
                  (and (integerp (node-given-empty-type known-nodenum-type-alist))
                       (<= 0 (node-given-empty-type known-nodenum-type-alist)))))
     :rule-classes :type-prescription
-    :hints (("Goal" :in-theory (enable node-given-empty-type nodenum-type-alistp)))))
+    :hints (("Goal" :induct t
+             :in-theory (enable node-given-empty-type nodenum-type-alistp)))))
 
 (local
   (defthm node-given-empty-type-return-type-rewrite

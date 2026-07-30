@@ -325,6 +325,13 @@
   ((pfiles filepath-pfile-map))
   :pred pensemblep)
 
+;;;;;;;;;;
+
+(defirrelevant irr-pensemble
+  :short "An irrelevant preprocessing ensemble."
+  :type pensemblep
+  :body (pensemble nil))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define concatenate-cond-bodies ((parts ppart-listp)
