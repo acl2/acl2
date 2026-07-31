@@ -55,9 +55,18 @@
     clear-extend-of-write-of-clear-retract
     write-of-clear-retract))
 
-(defun lifter-rules32 ()
+(defund register-aliases ()
+  (declare (xargs :guard t))
+  '(;; register names (we expand these to REG):
+    x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15
+    ;; register aliases:
+    ;; zero
+    ra sp gp tp t0 t1 t2 s0 fp s1 a0 a1 a2 a3 a4 a5 a6 a7))
+
+(defund lifter-rules32 ()
   (declare (xargs :guard t))
   (append
+   (register-aliases)
    (shadowed-write-rules32)
    (acl2::base-rules) ; gets us if-same-branches, for example
    (acl2::core-rules-bv)
@@ -269,12 +278,6 @@
      stat32p-of-set-reg
      stat32p-of-write
      ;; stat32p-of-set-pc ; uncomment?
-
-     ;; register names (we expand these to REG):
-     x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15
-     ;; register aliases:
-     ;; zero
-     ra sp gp tp t0 t1 t2 s0 fp s1 a0 a1 a2 a3 a4 a5
 
      acl2::subregion32p-constant-opener
      acl2::in-region32p-constant-opener
@@ -534,6 +537,11 @@
      acl2::ifix-when-integerp
      acl2::mod-becomes-bvchop-when-power-of-2p
      )))
+
+ ;todo: add more?
+(defund assumption-simplification-rules ()
+  (declare (xargs :guard t))
+  (register-aliases))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
