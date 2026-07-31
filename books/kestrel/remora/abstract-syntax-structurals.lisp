@@ -692,6 +692,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-binders-count ((type typep))
+  :returns (count natp)
+  :short "Number of variables bound by the binder of a type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for the binder of universal, product, and sum types.
+     We return 0 for the other types."))
+  (type-case type
+             :var 0
+             :base 0
+             :array 0
+             :bracket 0
+             :fun 0
+             :funn 0
+             :forall 1
+             :foralln (len type.params)
+             :pi 1
+             :pin (len type.params)
+             :sigma 1
+             :sigman (len type.params)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define fun-curried-out ((in type-listp) (out typep))
   :guard (consp in)
   :returns (new-out typep)
