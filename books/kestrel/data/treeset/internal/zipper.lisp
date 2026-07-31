@@ -25,8 +25,11 @@
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
+(local (include-book "kestrel/data/utilities/oset" :dir :system))
+
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
@@ -2131,6 +2134,176 @@
   :use (:instance len-of-tree-in-order (tree (zip-plug zip)))
   :enable tree-in-order-of-zip-plug-split-at-cursor
   :disable len-of-tree-in-order)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The two sides as osets, built with oset primitives. Unlike @(tsee
+;; zip-before) and @(tsee zip-after), which read the two sides off as slices
+;; of the in-order sequence and are only osets when the tree is a search tree,
+;; these are @(tsee set::setp) structurally, for any zipper at all. Over a
+;; search tree the two versions are the same object; see @(tsee
+;; zip-oset-before-becomes-zip-before). The oset versions are the logical
+;; form: statements phrased over them face the mature oset theory.
+
+(define zip-path-oset-before ((path zip-frame-listp))
+  :returns (oset set::setp)
+  :verify-guards :after-returns
+  :short "The elements which precede the focus subtree, as an oset."
+  (if (endp path)
+      nil
+    (set::union (zip-path-oset-before (cdr path))
+                (if (zip-frame->from-left (car path))
+                    nil
+                  (set::insert (tree-element->val (zip-frame->elem (car path)))
+                               (tree-oset (zip-frame->sibling (car path))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-path-oset-after ((path zip-frame-listp))
+  :returns (oset set::setp)
+  :verify-guards :after-returns
+  :short "The elements which follow the focus subtree, as an oset."
+  (if (endp path)
+      nil
+    (set::union (if (zip-frame->from-left (car path))
+                    (set::insert (tree-element->val (zip-frame->elem (car path)))
+                                 (tree-oset (zip-frame->sibling (car path))))
+                  nil)
+                (zip-path-oset-after (cdr path)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-oset-before ((zip zipp))
+  :returns (oset set::setp)
+  :short "The elements which precede the cursor, as an oset."
+  (set::union (zip-path-oset-before (zip->path zip))
+              (tree-oset (tree->left (zip->focus zip)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-oset-after ((zip zipp))
+  :returns (oset set::setp)
+  :short "The elements which follow the cursor, as an oset."
+  (set::union (tree-oset (tree->right (zip->focus zip)))
+              (zip-path-oset-after (zip->path zip))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t zip-path-oset-before) (:t zip-path-oset-after)
+                    (:t zip-oset-before) (:t zip-oset-after)))
+
+(defrule zip-oset-before-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-oset-before zip0)
+                  (zip-oset-before zip1)))
+  :rule-classes :congruence
+  :enable zip-oset-before)
+
+(defrule zip-oset-after-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-oset-after zip0)
+                  (zip-oset-after zip1)))
+  :rule-classes :congruence
+  :enable zip-oset-after)
+
+;; Membership in each oset is membership in the corresponding sequence, with
+;; no hypothesis: the fold inserts exactly the elements the sequence reads
+;; off, whether or not the tree is ordered.
+
+(defrule in-of-zip-path-oset-before
+  (iff (set::in x (zip-path-oset-before path))
+       (member-equal x (zip-path-before path)))
+  :induct t
+  :enable (zip-path-oset-before
+           zip-path-before))
+
+(defrule in-of-zip-path-oset-after
+  (iff (set::in x (zip-path-oset-after path))
+       (member-equal x (zip-path-after path)))
+  :induct t
+  :enable (zip-path-oset-after
+           zip-path-after))
+
+(defrule in-of-zip-oset-before
+  (iff (set::in x (zip-oset-before zip))
+       (member-equal x (zip-before zip)))
+  :enable (zip-oset-before
+           zip-before))
+
+(defrule in-of-zip-oset-after
+  (iff (set::in x (zip-oset-after zip))
+       (member-equal x (zip-after zip)))
+  :enable (zip-oset-after
+           zip-after))
+
+;; Over a search tree the sequences are osets themselves: each is a
+;; contiguous slice of the in-order sequence, which is then ordered and
+;; duplicate-free.
+
+(defruledl setp-of-cdr-when-osetp
+  (implies (set::setp l)
+           (set::setp (cdr l)))
+  :enable set::setp)
+
+(defruledl osetp-of-prefix
+  (implies (and (true-listp x)
+                (set::setp (append x y)))
+           (set::setp x))
+  :induct t
+  :enable (set::setp
+           append))
+
+(defruledl osetp-of-suffix
+  (implies (set::setp (append x y))
+           (set::setp y))
+  :induct (append x y)
+  :enable (set::setp
+           append
+           setp-of-cdr-when-osetp))
+
+(defrule osetp-of-zip-before-when-bstp
+  (implies (bstp (zip-plug zip))
+           (set::setp (zip-before zip)))
+  :use ((:instance tree-in-order-of-zip-plug-split-at-cursor)
+        (:instance osetp-of-tree-in-order-when-bstp (tree (zip-plug zip)))
+        (:instance osetp-of-prefix
+                   (x (zip-before zip))
+                   (y (cons (zip-value zip) (zip-after zip)))))
+  :disable (osetp-of-tree-in-order-when-bstp
+            tree-in-order-of-zip-plug))
+
+(defrule osetp-of-zip-after-when-bstp
+  (implies (bstp (zip-plug zip))
+           (set::setp (zip-after zip)))
+  :use ((:instance tree-in-order-of-zip-plug-split-at-cursor)
+        (:instance osetp-of-tree-in-order-when-bstp (tree (zip-plug zip)))
+        (:instance osetp-of-suffix
+                   (x (zip-before zip))
+                   (y (cons (zip-value zip) (zip-after zip))))
+        (:instance setp-of-cdr-when-osetp
+                   (l (cons (zip-value zip) (zip-after zip)))))
+  :disable (osetp-of-tree-in-order-when-bstp
+            tree-in-order-of-zip-plug))
+
+;; So over a search tree the two versions are not merely equivalent but the
+;; same object: both are osets, and they have the same members. This is the
+;; bridge a proof crosses to trade sequence facts for set facts.
+
+(defruled zip-oset-before-becomes-zip-before
+  (implies (bstp (zip-plug zip))
+           (equal (zip-oset-before zip)
+                  (zip-before zip)))
+  :enable (set::in-to-member
+           set::double-containment
+           set::pick-a-point-subset-strategy))
+
+(defruled zip-oset-after-becomes-zip-after
+  (implies (bstp (zip-plug zip))
+           (equal (zip-oset-after zip)
+                  (zip-after zip)))
+  :enable (set::in-to-member
+           set::double-containment
+           set::pick-a-point-subset-strategy))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
