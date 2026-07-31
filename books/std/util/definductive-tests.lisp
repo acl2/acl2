@@ -458,9 +458,6 @@
                   (odd n))
              (odd-alt n))))
 
- ; The second representation has no minimality or sameness theorems here
- ; because EVEN and ODD form a clique of multiple predicates.
-
  (must-be-redundant
   (defthm even-2-even-0
     (even-2 0)))
@@ -476,6 +473,32 @@
     (implies (and (even-2 n)
                   (natp n))
              (odd-2 (1+ n)))))
+
+ (must-be-redundant
+  (defthm even-2-alt-when-even-2
+    (implies (and (even-2-alt-even-0-p)
+                  (even-2-alt-even-step-p)
+                  (odd-2-alt-odd-step-p)
+                  (even-2 n))
+             (even-2-alt n))))
+
+ (must-be-redundant
+  (defthm odd-2-alt-when-odd-2
+    (implies (and (even-2-alt-even-0-p)
+                  (even-2-alt-even-step-p)
+                  (odd-2-alt-odd-step-p)
+                  (odd-2 n))
+             (odd-2-alt n))))
+
+ (must-be-redundant
+  (defthm even-2-is-even
+    (equal (even-2 n)
+           (even n))))
+
+ (must-be-redundant
+  (defthm odd-2-is-odd
+    (equal (odd-2 n)
+           (odd n))))
 
  ; The predicates hold on some of the expected numbers.
 
@@ -548,10 +571,6 @@
                   (q x y))
              (q-alt x y))))
 
- ; As in EVENODD above, the second representation has
- ; no minimality or sameness theorems here
- ; because P and Q form a clique of multiple predicates.
-
  (must-be-redundant
   (defthm p-2-p0
     (p-2 0)))
@@ -568,7 +587,35 @@
  (must-be-redundant
   (defthm q-2-qp
     (implies (p-2 x)
-             (q-2 x x)))))
+             (q-2 x x))))
+
+ (must-be-redundant
+  (defthm p-2-alt-when-p-2
+    (implies (and (p-2-alt-p0-p)
+                  (q-2-alt-q0-p)
+                  (p-2-alt-pq-p)
+                  (q-2-alt-qp-p)
+                  (p-2 x))
+             (p-2-alt x))))
+
+ (must-be-redundant
+  (defthm q-2-alt-when-q-2
+    (implies (and (p-2-alt-p0-p)
+                  (q-2-alt-q0-p)
+                  (p-2-alt-pq-p)
+                  (q-2-alt-qp-p)
+                  (q-2 x y))
+             (q-2-alt x y))))
+
+ (must-be-redundant
+  (defthm p-2-is-p
+    (equal (p-2 x)
+           (p x))))
+
+ (must-be-redundant
+  (defthm q-2-is-q
+    (equal (q-2 x y)
+           (q x y)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -954,10 +1001,6 @@
                   (natp x))
              (odn-2 (1+ x)))))
 
- ; The second representation has minimality and sameness theorems for NT,
- ; which forms a singleton clique,
- ; but not for EVN and ODN, which form a clique of two predicates.
-
  (must-be-redundant
   (defthm nt-2-alt-when-nt-2
     (implies (and (nt-2-alt-nt0-p)
@@ -969,9 +1012,39 @@
              (nt-2-alt x))))
 
  (must-be-redundant
+  (defthm evn-2-alt-when-evn-2
+    (implies (and (nt-2-alt-nt0-p)
+                  (nt-2-alt-ntstep-p)
+                  (evn-2-alt-evn0-p)
+                  (evn-2-alt-evnstep-p)
+                  (odn-2-alt-odnstep-p)
+                  (evn-2 x))
+             (evn-2-alt x))))
+
+ (must-be-redundant
+  (defthm odn-2-alt-when-odn-2
+    (implies (and (nt-2-alt-nt0-p)
+                  (nt-2-alt-ntstep-p)
+                  (evn-2-alt-evn0-p)
+                  (evn-2-alt-evnstep-p)
+                  (odn-2-alt-odnstep-p)
+                  (odn-2 x))
+             (odn-2-alt x))))
+
+ (must-be-redundant
   (defthm nt-2-is-nt
     (equal (nt-2 x)
-           (nt x)))))
+           (nt x))))
+
+ (must-be-redundant
+  (defthm evn-2-is-evn
+    (equal (evn-2 x)
+           (evn x))))
+
+ (must-be-redundant
+  (defthm odn-2-is-odn
+    (equal (odn-2 x)
+           (odn x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

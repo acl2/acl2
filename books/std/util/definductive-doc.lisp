@@ -661,13 +661,6 @@
        They have the same form and the same statements,
        with @('p[i]-2') in place of @('p[i]').")
      (xdoc::p
-      "The stubs and the propositions are generated
-       for all the predicates and rules,
-       but the two theorems are currently generated only for
-       the predicates that form cliques of one predicate.
-       The ones for a clique of multiple predicates
-       must be proved by mutual induction.")
-     (xdoc::p
       "If XDOC is generated, all these items are put
        in a @(tsee defsection) whose name is obtained by
        extending the @('name') input with the suffix @('-2-minimal')."))
@@ -686,10 +679,6 @@
        which its rule theorems say.
        The equality follows from the two inclusions,
        since both predicates are booleans.")
-     (xdoc::p
-      "These theorems are generated only for the predicates
-       for which the minimality theorems just above are,
-       which they are derived from.")
      (xdoc::p
       "If XDOC is generated, all these theorems are put
        in a @(tsee defsection) whose name is obtained by
