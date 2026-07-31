@@ -499,8 +499,7 @@
    (xdoc::p
      "The elements a forward walk has already passed. This excludes the value
       the iterator is at: that one has not been passed yet."))
-  (from-oset (tree-iter-before (iter-fix iter)))
-  :guard-hints (("Goal" :in-theory (enable* iterp setp break-abstraction))))
+  (from-oset (tree-iter-oset-before (iter-fix iter))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -524,8 +523,7 @@
    (xdoc::p
      "The elements a forward walk has yet to reach. This excludes the value the
       iterator is at, so it is what remains strictly after the current step."))
-  (from-oset (tree-iter-after (iter-fix iter)))
-  :guard-hints (("Goal" :in-theory (enable* iterp setp break-abstraction))))
+  (from-oset (tree-iter-oset-after (iter-fix iter))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -550,7 +548,7 @@
                   (empty)))
   :enable (before
            before-firstp
-           tree-iter-before
+           tree-iter-oset-before
            (:e empty)))
 
 (defrule after-when-after-lastp
@@ -559,7 +557,7 @@
                   (empty)))
   :enable (after
            after-lastp
-           tree-iter-after
+           tree-iter-oset-after
            (:e empty)))
 
 ;; At the constructors the same holds with no hypothesis, including over the
@@ -574,11 +572,31 @@
            tree-iter-next
            tree-iter-has-value-p))
 
+;; An empty sequence means an empty oset on the same side, since the oset is
+;; the sequence's members.
+
+(defruledl tree-iter-oset-before-when-not-consp-of-tree-iter-before
+  (implies (not (consp (tree-iter-before iter)))
+           (equal (tree-iter-oset-before iter)
+                  nil))
+  :use emptyp-of-tree-iter-oset-before
+  :enable set::emptyp
+  :disable emptyp-of-tree-iter-oset-before)
+
+(defruledl tree-iter-oset-after-when-not-consp-of-tree-iter-after
+  (implies (not (consp (tree-iter-after iter)))
+           (equal (tree-iter-oset-after iter)
+                  nil))
+  :use emptyp-of-tree-iter-oset-after
+  :enable set::emptyp
+  :disable emptyp-of-tree-iter-oset-after)
+
 (defrule before-of-iter-min
   (equal (before (iter-min set))
          (empty))
   :enable (before
            tree-iter-before-of-iter-min
+           tree-iter-oset-before-when-not-consp-of-tree-iter-before
            (:e empty)))
 
 (defruledl tree-iter-after-of-iter-max
@@ -594,6 +612,7 @@
          (empty))
   :enable (after
            tree-iter-after-of-iter-max
+           tree-iter-oset-after-when-not-consp-of-tree-iter-after
            (:e empty)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -699,19 +718,25 @@
 ;; Left disabled: these cross from sets back to the underlying lists, which is
 ;; only what a proof about the order of a walk wants.
 
+(defruled in-of-before-becomes-set-in
+  (equal (in x (before iter))
+         (set::in x (tree-iter-oset-before (iter-fix iter))))
+  :enable before)
+
+(defruled in-of-after-becomes-set-in
+  (equal (in x (after iter))
+         (set::in x (tree-iter-oset-after (iter-fix iter))))
+  :enable after)
+
 (defruled in-of-before-becomes-member-equal
   (equal (in x (before iter))
          (and (member-equal x (tree-iter-before (iter-fix iter))) t))
-  :enable (before
-           set::in-to-member
-           bstp-of-tree-iter-plug-of-iter-fix))
+  :enable in-of-before-becomes-set-in)
 
 (defruled in-of-after-becomes-member-equal
   (equal (in x (after iter))
          (and (member-equal x (tree-iter-after (iter-fix iter))) t))
-  :enable (after
-           set::in-to-member
-           bstp-of-tree-iter-plug-of-iter-fix))
+  :enable in-of-after-becomes-set-in)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1086,12 +1111,11 @@
 (defrule has-valuep-of-next
   (equal (has-valuep (next iter))
          (not (emptyp (after iter))))
-  :enable (after
+  :enable (not
+           after
            has-valuep
            next
-           tree-iter-has-value-p-of-tree-iter-next
-           bstp-of-tree-iter-plug-of-iter-fix
-           set::emptyp))
+           tree-iter-has-value-p-of-tree-iter-next))
 
 (defrule value-of-next
   (implies (has-valuep (next iter))
@@ -1153,12 +1177,11 @@
 (defrule has-valuep-of-prev
   (equal (has-valuep (prev iter))
          (not (emptyp (before iter))))
-  :enable (before
+  :enable (not
+           before
            has-valuep
            prev
-           tree-iter-has-value-p-of-tree-iter-prev
-           bstp-of-tree-iter-plug-of-iter-fix
-           set::emptyp))
+           tree-iter-has-value-p-of-tree-iter-prev))
 
 ;; Left disabled: with @(tsee before-becomes-insert-of-before-of-prev) it
 ;; loops, since that rule introduces the very @(tsee value) term this one

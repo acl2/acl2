@@ -2237,6 +2237,33 @@
   :enable (zip-oset-after
            zip-after))
 
+;; Each oset is empty exactly when its sequence is: a member of one is a
+;; member of the other, and an oset with no members is nil.
+
+(defrule emptyp-of-zip-oset-before
+  (equal (set::emptyp (zip-oset-before zip))
+         (not (consp (zip-before zip))))
+  :use ((:instance in-of-zip-oset-before
+                   (x (set::head (zip-oset-before zip))))
+        (:instance in-of-zip-oset-before
+                   (x (car (zip-before zip))))
+        (:instance set::in-head
+                   (set::x (zip-oset-before zip))))
+  :disable (in-of-zip-oset-before
+            set::in-head))
+
+(defrule emptyp-of-zip-oset-after
+  (equal (set::emptyp (zip-oset-after zip))
+         (not (consp (zip-after zip))))
+  :use ((:instance in-of-zip-oset-after
+                   (x (set::head (zip-oset-after zip))))
+        (:instance in-of-zip-oset-after
+                   (x (car (zip-after zip))))
+        (:instance set::in-head
+                   (set::x (zip-oset-after zip))))
+  :disable (in-of-zip-oset-after
+            set::in-head))
+
 ;; Over a search tree the sequences are osets themselves: each is a
 ;; contiguous slice of the in-order sequence, which is then ordered and
 ;; duplicate-free.

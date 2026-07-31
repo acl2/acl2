@@ -1218,6 +1218,32 @@
   :enable (tree-iter-oset-after
            tree-iter-after))
 
+;; Each oset is empty exactly when its sequence is.
+
+(defrule emptyp-of-tree-iter-oset-before
+  (equal (set::emptyp (tree-iter-oset-before iter))
+         (not (consp (tree-iter-before iter))))
+  :use ((:instance in-of-tree-iter-oset-before
+                   (x (set::head (tree-iter-oset-before iter))))
+        (:instance in-of-tree-iter-oset-before
+                   (x (car (tree-iter-before iter))))
+        (:instance set::in-head
+                   (set::x (tree-iter-oset-before iter))))
+  :disable (in-of-tree-iter-oset-before
+            set::in-head))
+
+(defrule emptyp-of-tree-iter-oset-after
+  (equal (set::emptyp (tree-iter-oset-after iter))
+         (not (consp (tree-iter-after iter))))
+  :use ((:instance in-of-tree-iter-oset-after
+                   (x (set::head (tree-iter-oset-after iter))))
+        (:instance in-of-tree-iter-oset-after
+                   (x (car (tree-iter-after iter))))
+        (:instance set::in-head
+                   (set::x (tree-iter-oset-after iter))))
+  :disable (in-of-tree-iter-oset-after
+            set::in-head))
+
 ;; Over a search tree the oset and sequence versions are the same object.
 
 (defruled tree-iter-oset-before-becomes-tree-iter-before
