@@ -53,7 +53,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is very similar to @(tsee types-equivp),
+      "This is very similar to @(tsee type-equivp),
        since type values are essentially a subset of types.")
      (xdoc::p
       "The two type values must be in the same summand.")

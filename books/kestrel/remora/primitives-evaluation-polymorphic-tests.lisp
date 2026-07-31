@@ -765,3 +765,119 @@
                                                            :s2val (list 6))
                         *mat23*)
        :primop)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation transpose2d:
+; instantiation stage transitions and application of the final stage.
+
+; Type application: transpose2d applied to one atom type value.
+
+(acl2::assert-equal
+ (eval-primop-tfun (primop-value-transpose2d) *tv-int*)
+ (expr-value-primop (primop-value-transpose2d-t *tv-int*)))
+
+; Array type value where an atom one is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-tfun (primop-value-transpose2d)
+                            (make-type-value-array :elem *tv-int*
+                                                   :dims (list 3)))))
+
+; Ispace applications: transpose2d-t applied to a dimension,
+; then transpose2d-t-m applied to another dimension.
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-transpose2d-t *tv-int*)
+                   (ispace-value-dim 2))
+ (expr-value-primop (make-primop-value-transpose2d-t-m :tval *tv-int*
+                                                       :mval 2)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-transpose2d-t-m :tval *tv-int*
+                                                      :mval 2)
+                   (ispace-value-dim 3))
+ (expr-value-primop (make-primop-value-transpose2d-t-m-n :tval *tv-int*
+                                                         :mval 2
+                                                         :nval 3)))
+
+; A shape where a dimension is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-transpose2d-t *tv-int*)
+                            (ispace-value-shape (list 2)))))
+
+; Application of the fully instantiated operation.
+
+; Transposing a 2x3 matrix yields the 3x2 matrix
+; with the atoms rearranged column-first.
+(acl2::assert-equal
+ (prim-transpose2d *tv-int* 2 3 *mat23*)
+ (expr-value-vector
+  (list (expr-value-vector (list (iv 1) (iv 4)))
+        (expr-value-vector (list (iv 2) (iv 5)))
+        (expr-value-vector (list (iv 3) (iv 6))))))
+
+; Transposing twice gives back the original matrix.
+(acl2::assert-equal
+ (prim-transpose2d *tv-int* 3 2 (prim-transpose2d *tv-int* 2 3 *mat23*))
+ *mat23*)
+
+; Transposing a 1x3 matrix yields the 3x1 matrix.
+(acl2::assert-equal
+ (prim-transpose2d *tv-int* 1 3 (expr-value-vector (list *vec3*)))
+ (expr-value-vector
+  (list (expr-value-vector (list (iv 1)))
+        (expr-value-vector (list (iv 2)))
+        (expr-value-vector (list (iv 3))))))
+
+; Transposing a 1x1 matrix yields the same matrix.
+(acl2::assert-equal
+ (prim-transpose2d *tv-int* 1 1
+                   (expr-value-vector (list (expr-value-vector (list (iv 7))))))
+ (expr-value-vector (list (expr-value-vector (list (iv 7))))))
+
+; Transposing a 0x3 matrix yields the 3x0 matrix.
+(acl2::assert-equal
+ (prim-transpose2d *tv-int* 0 3
+                   (make-expr-value-vector-empty :dims (list 3)
+                                                 :elem *tv-int*))
+ (expr-value-vector
+  (list (make-expr-value-vector-empty :dims nil :elem *tv-int*)
+        (make-expr-value-vector-empty :dims nil :elem *tv-int*)
+        (make-expr-value-vector-empty :dims nil :elem *tv-int*))))
+
+; Transposing a 2x0 matrix yields the 0x2 matrix.
+(acl2::assert-equal
+ (prim-transpose2d *tv-int* 2 0
+                   (expr-value-vector
+                    (list (make-expr-value-vector-empty :dims nil
+                                                        :elem *tv-int*)
+                          (make-expr-value-vector-empty :dims nil
+                                                        :elem *tv-int*))))
+ (make-expr-value-vector-empty :dims (list 2) :elem *tv-int*))
+
+; Cell dimensions not matching the instantiation.
+(acl2::assert-event (reserrp (prim-transpose2d *tv-int* 3 2 *mat23*)))
+(acl2::assert-event (reserrp (prim-transpose2d *tv-int* 2 3 *vec3*)))
+
+; Via eval-primop-fun.
+
+(acl2::assert-equal
+ (eval-primop-fun (make-primop-value-transpose2d-t-m-n :tval *tv-int*
+                                                       :mval 2
+                                                       :nval 3)
+                  *mat23*)
+ (expr-value-vector
+  (list (expr-value-vector (list (iv 1) (iv 4)))
+        (expr-value-vector (list (iv 2) (iv 5)))
+        (expr-value-vector (list (iv 3) (iv 6))))))
+
+; Wrong number of argument cells:
+; one cell already yields a final result,
+; not an operation applicable to another cell.
+(acl2::assert-event
+ (not (expr-value-case
+       (eval-primop-fun (make-primop-value-transpose2d-t-m-n :tval *tv-int*
+                                                             :mval 2
+                                                             :nval 3)
+                        *mat23*)
+       :primop)))

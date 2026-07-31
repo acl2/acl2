@@ -47,14 +47,12 @@
     "This is used to turn, for example, the string @('$x')
      into the dimension variable with name @('x');
      the @('$') prefix is as in the concrete syntax (see ABNF grammar)."))
-  (b* ((str (str::str-fix str))
-       (prefixes (str::character-list-fix prefixes))
-       (chars (str::explode str))
+  (b* ((chars (str::explode str))
        ((unless (consp chars))
         (raise "Empty string.")
         (mv (code-char 0) ""))
        (prefix (car chars))
-       ((unless (member prefix prefixes))
+       ((unless (member prefix (str::character-list-fix prefixes)))
         (raise "Disallowed prefix ~x0." prefix)
         (mv (code-char 0) "")))
     (mv prefix (str::implode (cdr chars))))
@@ -62,7 +60,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dim-term-from-var/const/other (dim)
+(define dim-term-from-var/const/other (term)
   :short "Construct a dimension term from
           a string denoting a variable,
           or a natural number denoting a constant,
@@ -71,84 +69,130 @@
   (xdoc::topstring
    (xdoc::p
     "The string denoting a variable must start with @('$')."))
-  (cond ((stringp dim)
-         (b* (((mv & name) (var-string-split dim '(#\$))))
+  (cond ((stringp term)
+         (b* (((mv & name) (var-string-split term '(#\$))))
            `(dim-var ,name)))
-        ((natp dim) `(dim-const ,dim))
-        (t dim)))
+        ((natp term) `(dim-const ,term))
+        (t term)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define dim-terms-from-vars/consts/others ((dims true-listp))
+(define dim-terms-from-vars/consts/others ((terms true-listp))
   :short "Lift @(tsee dim-term-from-var/const/other) to lists."
-  (cond ((endp dims) nil)
-        (t (cons (dim-term-from-var/const/other (car dims))
-                 (dim-terms-from-vars/consts/others (cdr dims))))))
+  (cond ((endp terms) nil)
+        (t (cons (dim-term-from-var/const/other (car terms))
+                 (dim-terms-from-vars/consts/others (cdr terms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ dim+ (&rest dims)
-  :short "Construct an addition dimension term from argument dimensions."
-  `(dim-add (list ,@(dim-terms-from-vars/consts/others dims))))
+(defmacro+ dim+ (&rest terms)
+  :short "Construct an addition dimension term
+          from argument dimension terms."
+  `(dim-add (list ,@(dim-terms-from-vars/consts/others terms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ dim* (&rest dims)
-  :short "Construct a multiplication dimension term from argument dimensions."
-  `(dim-mul (list ,@(dim-terms-from-vars/consts/others dims))))
+(defmacro+ dim* (&rest terms)
+  :short "Construct a multiplication dimension term
+          from argument dimension terms."
+  `(dim-mul (list ,@(dim-terms-from-vars/consts/others terms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ dim- (&rest dims)
-  :short "Construct a subtraction dimension term from argument dimensions."
-  `(dim-sub (list ,@(dim-terms-from-vars/consts/others dims))))
+(defmacro+ dim- (&rest terms)
+  :short "Construct a subtraction dimension term
+          from argument dimension terms."
+  `(dim-sub (list ,@(dim-terms-from-vars/consts/others terms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ shp (&rest dims)
-  :short "Construct a shape term from component dimensions."
-  `(shape-dims (list ,@(dim-terms-from-vars/consts/others dims))))
+(defmacro+ shp (&rest terms)
+  :short "Construct a shape term from component dimension terms."
+  `(shape-dims (list ,@(dim-terms-from-vars/consts/others terms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define shape-term-from-var/dim/other (dim/shape)
+(define shape-term-from-var/other (term)
   :short "Construct a shape term from
-          a string denoting a dimension or shape variable,
-          or a natural number denoting a dimension,
-          or a dimension arithmetic term
-          (@(tsee dim+), @(tsee dim*), or @(tsee dim-)),
+          a string denoting a variable,
           or some other term that is left unchanged."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The string denoting a variable must start with @('$') or @('@').")
-   (xdoc::p
-    "Dimensions are lifted to shapes."))
-  (cond ((stringp dim/shape)
-         (b* (((mv prefix name) (var-string-split dim/shape '(#\$ #\@))))
-           (case prefix
-             (#\$ `(shape-dims (list (dim-var ,name))))
-             (#\@ `(shape-var ,name)))))
-        ((natp dim/shape) `(shape-dims (list (dim-const ,dim/shape))))
-        ((and (consp dim/shape)
-              (member-eq (car dim/shape) '(dim+ dim* dim-)))
-         `(shape-dims (list ,dim/shape)))
-        (t dim/shape)))
+    "The string denoting a variable must start with @('@')."))
+  (cond ((stringp term)
+         (b* (((mv & name) (var-string-split term '(#\@))))
+           `(shape-var ,name)))
+        (t term)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define shape-terms-from-vars/dims/others ((dims/shapes true-listp))
-  :short "Lift @(tsee shape-term-from-var/dim/other) to lists."
-  (cond ((endp dims/shapes) nil)
-        (t (cons (shape-term-from-var/dim/other (car dims/shapes))
-                 (shape-terms-from-vars/dims/others (cdr dims/shapes))))))
+(define shape-terms-from-vars/others ((terms true-listp))
+  :short "Lift @(tsee shape-term-from-var/other) to lists."
+  (cond ((endp terms) nil)
+        (t (cons (shape-term-from-var/other (car terms))
+                 (shape-terms-from-vars/others (cdr terms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ shape++ (&rest dims/shapes)
-  :short "Construct a shape concatenation term
-          from dimensions and shapes to concatenate."
-  `(shape-append (list ,@(shape-terms-from-vars/dims/others dims/shapes))))
+(defmacro+ shp++ (&rest terms)
+  :short "Construct a shape concatenation term from component shape terms."
+  `(shape-append (list ,@(shape-terms-from-vars/others terms))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ispace-term-from-var/dim/shape/other (term)
+  :short "Construct an ispace term from
+          a string denoting a dimension or shape variable,
+          or a natural number denoting a dimension,
+          or a dimension term starting with a macro
+          (@(tsee dim+), @(tsee dim*), or @(tsee dim-)),
+          or a dimension term starting with a fixtype constructor,
+          or a shape term starting with a fixtype constructor,
+          or some other term that is left unchanged."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The string denoting a variable must start with @('$') or @('@')."))
+  (cond ((stringp term)
+         (b* (((mv prefix name) (var-string-split term '(#\$ #\@))))
+           (case prefix
+             (#\$ `(ispace-dim (dim-var ,name)))
+             (#\@ `(ispace-shape (shape-var ,name))))))
+        ((natp term) `(ispace-dim (dim-const ,term)))
+        ((and (consp term)
+              (member-eq (car term)
+                         '(dim+
+                           dim*
+                           dim-
+                           dim-var
+                           dim-const
+                           dim-add
+                           dim-mul
+                           dim-sub)))
+         `(ispace-dim ,term))
+        ((and (consp term)
+              (member-eq (car term)
+                         '(shape-var
+                           shape-dims
+                           shape-append
+                           shape-splice)))
+         `(ispace-shape ,term))
+        (t term)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define ispace-terms-from-vars/dims/shapes/others ((terms true-listp))
+  :short "Lift @(tsee ispace-term-from-var/dim/shape/other) to lists."
+  (cond ((endp terms) nil)
+        (t (cons (ispace-term-from-var/dim/shape/other (car terms))
+                 (ispace-terms-from-vars/dims/shapes/others (cdr terms))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ shp[] (&rest terms)
+  :short "Construct a shape splice term from component ispace terms."
+  `(shape-splice (list ,@(ispace-terms-from-vars/dims/shapes/others terms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -222,7 +266,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ t[] (type dim/shape)
+(defmacro+ t[] (type shape)
   :short "Construct a type term from the element type and the shape."
   :long
   (xdoc::topstring
@@ -230,7 +274,7 @@
     "Strings, natural numbers, and base type keywords
      are auto-coerced to ispaces and types."))
   `(type-array ,(type-term-from-var/base/other type)
-               (ispace-shape ,(shape-term-from-var/dim/other dim/shape))))
+               (ispace-shape ,(shape-term-from-var/other shape))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

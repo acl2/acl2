@@ -317,8 +317,8 @@
        (pred-of-delete (acl2::packn-pos (list x.pred '-of-delete) x.pred))
        )
     (if x.already-definedp
-        '(progn)
-      `(define ,x.pred (,x.xvar)
+        '((progn))
+      `((define ,x.pred (,x.xvar)
          :parents (,x.name)
          :short ,(concatenate 'string "Recognizer for " type-ref ".")
          ,@(if x.measure `(:measure ,x.measure)
@@ -402,7 +402,7 @@
            (implies (,x.pred ,x.xvar)
                     (,x.pred (set::delete ,a ,x.xvar)))
            :induct t
-           :enable set::delete)))))
+           :enable set::delete))))))
 
 (define flexset-fix-def (x flagp)
   (b* (((flexset x))
