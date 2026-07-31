@@ -1377,3 +1377,28 @@
                 types)))
     types)
   :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define param-declor-type ((pdeclor param-declorp))
+  :guard (and (param-declor-unambp pdeclor)
+              (param-declor-annop pdeclor))
+  :returns (type typep)
+  :short "Type of a parameter declarator, from the validation information."
+  (param-declor-case
+   pdeclor
+   :nonabstract (type+uid-vinfo->type pdeclor.info)
+   :abstract (type-vinfo->type pdeclor.info)
+   :none (type-vinfo->type pdeclor.info)
+   :ambig (prog2$ (impossible) (irr-type)))
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define param-declon-type ((pdeclon param-declonp))
+  :guard (and (param-declon-unambp pdeclon)
+              (param-declon-annop pdeclon))
+  :returns (type typep)
+  :short "Type of a parameter declaration, from the validation information."
+  (param-declor-type (param-declon->declor pdeclon))
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules))))
