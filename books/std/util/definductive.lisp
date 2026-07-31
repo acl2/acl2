@@ -2709,6 +2709,26 @@
 
 ;;;;;;;;;;
 
+(define defind-proof-fix-id-thm-name ((pred-name symbolp) (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of the theorem that rewrites away
+          the fixer of @('p[i]-proof') when the recognizer holds."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the counterpart of @(tsee defind-assert-fix-id-thm-name),
+     for the fixtypes of proofs.
+     It is needed by the @('p[l[k]]-2-rule[k]') theorems of recursive rules:
+     a constructor stores its fields fixed,
+     so an accessor applied to it yields a fixed proof,
+     which the hypothesis of the theorem shows to be a proof already."))
+  (packn-pos (list (defind-proof-fixer-name pred-name name)
+                   '-when-
+                   (defind-proof-recog-name pred-name name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
 (define defind-proof-kind-poss-thm-name ((pred-name symbolp) (name symbolp))
   :returns (thm-name symbolp)
   :short "Name of the kind possibilities theorem for a @('p[i]-proof') fixtype."
@@ -2922,6 +2942,32 @@
 
 ;;;;;;;;;;
 
+(define defind-proof-var-of-constr-thm-names ((pred-name symbolp)
+                                              (irule-name symbolp)
+                                              (vars symbol-listp)
+                                              (name symbolp))
+  :returns (thm-names symbol-listp)
+  :short "Names of the theorems about the application of
+          the variable accessors of a @('p[i]-2-proof') fixtype
+          to the constructor of the fixtype."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the counterparts of
+     @(tsee defind-proof-concl-of-constr-thm-name),
+     for the fields named after the variables of the rule."))
+  (cond ((endp vars) nil)
+        (t (cons (packn-pos
+                  (list (defind-proof-var-acc-name
+                          pred-name irule-name (car vars) name)
+                        '-of-
+                        (defind-proof-constr-name pred-name irule-name name))
+                  (symbol-lfix name))
+                 (defind-proof-var-of-constr-thm-names
+                   pred-name irule-name (cdr vars) name)))))
+
+;;;;;;;;;;
+
 (define defind-proof-prem-of-constr-thm-name ((pred-name symbolp)
                                               (irule-name symbolp)
                                               (num posp)
@@ -3091,6 +3137,14 @@
   (packn-pos (list (symbol-lfix name) '-rules) (symbol-lfix name)))
 
 ;;;;;;;;;;
+
+(define defind-proof2-rule-thm-section-name ((name symbolp))
+  :returns (topic symbolp)
+  :short "Name of the @(tsee defsection) containing
+          the @('p[l[k]]-2-rule[k]') theorems."
+  (packn-pos (list (symbol-lfix name) '-2-rules) (symbol-lfix name)))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define defind-minimality-section-name ((name symbolp))
   :returns (topic symbolp)
@@ -5145,6 +5199,165 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-gen-proof2-irule-thm-hyps ((infos defind-premise-info-listp)
+                                          (name symbolp))
+  :returns (mv (pred-hyps true-listp)
+               (other-hyps true-listp))
+  :short "Generate the hypotheses of a @('p[l[k]]-2-rule[k]') theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-irule-thm-hyps),
+     but the premises that are calls of the predicates being defined
+     become calls of the @('p[i]-2') predicates."))
+  (b* (((when (endp infos)) (mv nil nil))
+       (info (car infos))
+       ((mv pred-hyps other-hyps)
+        (defind-gen-proof2-irule-thm-hyps (cdr infos) name)))
+    (defind-premise-info-case
+      info
+      :pred (mv (cons `(,(defind-pred2-name info.name name)
+                        ,@(defind-term-info-list->uterm info.args))
+                      pred-hyps)
+                other-hyps)
+      :other (mv pred-hyps
+                 (cons (defind-term-info->uterm info.term)
+                       other-hyps)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-irule-thm-prems ((infos defind-premise-info-listp)
+                                           (pred-name symbolp)
+                                           (irule-name symbolp)
+                                           (num posp)
+                                           (name symbolp))
+  :returns (mv (proofcalls true-listp)
+               (of-constr-thms symbol-listp))
+  :short "Generate the proofs of the premises of a rule
+          in a @('p[l[k]]-2-rule[k]') theorem,
+          along with the names of some relevant theorems."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The proof of a premise that is a call of a predicate being defined
+     is the witness of that call,
+     which the corresponding hypothesis of the theorem provides.")
+   (xdoc::p
+    "The @('pred-name') input is the @('p[i]-2') predicate
+     of the conclusion of the rule,
+     because the accessors belong to the fixtype of its proofs."))
+  (b* (((when (endp infos)) (mv nil nil))
+       (info (car infos)))
+    (defind-premise-info-case
+      info
+      :pred (b* ((witfn (defind-proof-witness-fn-name
+                          (defind-pred2-name info.name name) name))
+                 (proofcall
+                  `(,witfn ,@(defind-term-info-list->uterm info.args)))
+                 (of-constr-thm (defind-proof-prem-of-constr-thm-name
+                                  pred-name irule-name num name))
+                 ((mv proofcalls of-constr-thms)
+                  (defind-gen-proof2-irule-thm-prems
+                    (cdr infos) pred-name irule-name (1+ (lposfix num)) name)))
+              (mv (cons proofcall proofcalls)
+                  (cons of-constr-thm of-constr-thms)))
+      :other (defind-gen-proof2-irule-thm-prems
+               (cdr infos) pred-name irule-name num name))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-irule-thm ((info defind-irule-infop)
+                                     (pred-infos defind-pred-info-listp)
+                                     (name symbolp))
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @('p[l[k]]-2-rule[k]') theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The statement is the one of @(tsee defind-gen-irule-thm),
+     with @('p[i]-2') in place of @('p[i]').")
+   (xdoc::p
+    "Unlike @(tsee defind-gen-irule-thm),
+     the proof does not go through a function that builds the proof:
+     the constructor of the fixtype of proofs is that proof,
+     so we use the @('p[i]-2-suff') theorem on it directly.
+     Expanding the hypotheses that are calls of the @('p[i]-2') predicates
+     yields the proofs of those premises,
+     which the constructor takes as its subproofs.
+     Then the proof validity predicate opens on the known kind,
+     the accessors of the constructor yield its arguments,
+     and the @('p[l[k]]-2-rule[k]-validp') function
+     closes the equalities for the arguments of the conclusion.")
+   (xdoc::p
+    "The theorem about the return type of the constructor
+     gives both the recognizer and the kind of the constructed proof.
+     For a rule with premises that are calls of the predicates being defined
+     we also need @(tsee defind-proof-fix-id-thm-name);
+     see that function."))
+  (b* (((defind-irule-info info))
+       ((defind-conclusion-info cinfo) info.conclusion)
+       (pred2-name (defind-pred2-name cinfo.name name))
+       (concl-args (defind-term-info-list->uterm cinfo.args))
+       (concl `(,pred2-name ,@concl-args))
+       ((mv pred-hyps other-hyps)
+        (defind-gen-proof2-irule-thm-hyps info.premises name))
+       (thm-name (defind-pred-irule-thm-name pred2-name info.name name))
+       (pred-suff (defind-pred-suff-thm-name pred2-name name))
+       (vars (defind-irule-info-free-vars info))
+       ((mv proofcalls prem-of-constr-thms)
+        (defind-gen-proof2-irule-thm-prems
+          info.premises pred2-name info.name 1 name))
+       (constr (defind-proof-constr-name pred2-name info.name name))
+       (proofcall `(,constr ,@(symbol-list-fix vars) ,@proofcalls))
+       (pinfo (defind-lookup-pred cinfo.name pred-infos))
+       ((unless pinfo)
+        (raise "Internal error: predicate ~x0 not found." cinfo.name)
+        '(_))
+       (formals (defind-pred-info->formals pinfo))
+       (formals-inst (alist-to-doublets (pairlis$ formals concl-args)))
+       (proof-var (defind-proof-var-name name))
+       (proof-validp (defind-proof-valid-fn-name pred2-name name))
+       (irule-validp (defind-irule-valid-fn-name pred2-name info.name name))
+       (constr-return-thm
+        (defind-proof-constr-return-thm pred2-name info.name name))
+       (var-of-constr-thms
+        (defind-proof-var-of-constr-thm-names pred2-name info.name vars name))
+       (fix-id-thm (defind-proof-fix-id-thm-name pred2-name name)))
+    `(defruled ,thm-name
+       ,(defind-gen-implication (append pred-hyps other-hyps) concl)
+       ,@(and pred-hyps
+              (list :expand pred-hyps))
+       :use (:instance ,pred-suff
+                       (,proof-var ,proofcall)
+                       ,@formals-inst)
+       :in-theory '(,proof-validp
+                    ,irule-validp
+                    ,constr-return-thm
+                    ,@var-of-constr-thms
+                    ,@prem-of-constr-thms
+                    ,@(and pred-hyps (list fix-id-thm)))))
+  :no-function nil
+  :guard-hints (("Goal" :in-theory (enable set::sets-are-true-lists
+                                           symbol-listp-when-symbol-setp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-irule-thms ((irule-infos defind-irule-info-listp)
+                                      (pred-infos defind-pred-info-listp)
+                                      (name symbolp))
+  :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+              (no-duplicatesp-equal (defind-irule-info-list->name irule-infos)))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate all the @('p[l[k]]-2-rule[k]') theorems."
+  (cond ((endp irule-infos) nil)
+        (t (cons (defind-gen-proof2-irule-thm
+                   (car irule-infos) pred-infos name)
+                 (defind-gen-proof2-irule-thms
+                   (cdr irule-infos) pred-infos name)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-gen-irule-defsection ((irule-infos defind-irule-info-listp)
                                      (pred-infos defind-pred-info-listp)
                                      (name symbolp)
@@ -5159,6 +5372,27 @@
     (if xdocp
         `(defsection ,(defind-rule-thm-section-name name)
            :short "Theorems corresponding to the inference rules."
+           ,@thms)
+      `(progn ,@thms))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-irule-defsection
+  ((irule-infos defind-irule-info-listp)
+   (pred-infos defind-pred-info-listp)
+   (name symbolp)
+   (xdocp booleanp))
+  :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+              (no-duplicatesp-equal (defind-irule-info-list->name irule-infos)))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @(tsee defsection) or @(tsee progn) with
+          all the @('p[l[k]]-2-rule[k]') theorems,
+          depending on whether XDOC is to be generated."
+  (b* ((thms (defind-gen-proof2-irule-thms irule-infos pred-infos name)))
+    (if xdocp
+        `(defsection ,(defind-proof2-rule-thm-section-name name)
+           :short "Theorems corresponding to the inference rules,
+                   for the second representation of proofs."
            ,@thms)
       `(progn ,@thms))))
 
@@ -5680,6 +5914,9 @@
         (defind-gen-irule-proof-fns irule-infos pred-infos name xdocp))
        (irules-event
         (defind-gen-irule-defsection irule-infos pred-infos name xdocp))
+       (proof2-irules-event
+        (defind-gen-proof2-irule-defsection
+          irule-infos pred-infos name xdocp))
        (minimality-event
         (defind-gen-minimality-defsection pred-infos irule-infos name xdocp))
        (all-events (append (list name-doc-event)
@@ -5695,6 +5932,7 @@
                            proof2-pred-events
                            proof-for-rule-events
                            (list irules-event)
+                           (list proof2-irules-event)
                            (list minimality-event))))
     `(encapsulate
        ()
