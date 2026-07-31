@@ -210,7 +210,7 @@
      This function turns such scalar types into their element types,
      and leaves all other types unchanged,
      providing a normalization to facilitate (the rest of) equivalence checking
-     in @(tsee types-equivp).")
+     in @(tsee type-equivp).")
    (xdoc::p
     "We apply the above normalization to
      both the @(':array') and the @(':bracket') summands,
@@ -256,7 +256,6 @@
 
 (define type-equivp ((type1 typep) (type2 typep))
   :returns (yes/no booleanp)
-  :parents (type-equivalence types-equivp)
   :short "Check if two types are equivalent."
   :long
   (xdoc::topstring
@@ -653,7 +652,6 @@
 
 (define type-list-equivp ((types1 type-listp) (types2 type-listp))
   :returns (yes/no booleanp)
-  :parents (type-equivalence types-equivp)
   :short "Check if two lists of types are the same modulo renaming."
   (or (and (endp types1)
            (endp types2))
