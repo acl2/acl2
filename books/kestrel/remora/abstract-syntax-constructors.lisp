@@ -146,7 +146,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ shape++ (&rest dims/shapes)
+(defmacro+ shp++ (&rest dims/shapes)
   :short "Construct a shape concatenation term
           from dimensions and shapes to concatenate."
   `(shape-append (list ,@(shape-terms-from-vars/dims/others dims/shapes))))

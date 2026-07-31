@@ -165,33 +165,33 @@
        (head-type
         (t[] (tforall ("&t")
                       (tpi ("$d" "@s")
-                           (t-> ((t[] "&t" (shape++ (dim+ 1 "$d") "@s")))
+                           (t-> ((t[] "&t" (shp++ (dim+ 1 "$d") "@s")))
                                 (t[] "&t" "@s"))))
              (shp)))
        (tail-type
         (t[] (tforall ("&t")
                       (tpi ("$d" "@s")
-                           (t-> ((t[] "&t" (shape++ (dim+ 1 "$d") "@s")))
-                                (t[] "&t" (shape++ "$d" "@s")))))
+                           (t-> ((t[] "&t" (shp++ (dim+ 1 "$d") "@s")))
+                                (t[] "&t" (shp++ "$d" "@s")))))
              (shp)))
        (length-type
         (t[] (tforall ("&t")
                       (tpi ("$d" "@s")
-                           (t-> ((t[] "&t" (shape++ "$d" "@s")))
+                           (t-> ((t[] "&t" (shp++ "$d" "@s")))
                                 :int)))
              (shp)))
        (append-type
         (t[] (tforall ("&t")
                       (tpi ("$m" "$n" "@s")
-                           (t-> ((t[] "&t" (shape++ "$m" "@s"))
-                                 (t[] "&t" (shape++ "$n" "@s")))
-                                (t[] "&t" (shape++ (dim+ "$m" "$n") "@s")))))
+                           (t-> ((t[] "&t" (shp++ "$m" "@s"))
+                                 (t[] "&t" (shp++ "$n" "@s")))
+                                (t[] "&t" (shp++ (dim+ "$m" "$n") "@s")))))
              (shp)))
        (reverse-type
         (t[] (tforall ("&t")
                       (tpi ("$d" "@s")
-                           (t-> ((t[] "&t" (shape++ "$d" "@s")))
-                                (t[] "&t" (shape++ "$d" "@s")))))
+                           (t-> ((t[] "&t" (shp++ "$d" "@s")))
+                                (t[] "&t" (shp++ "$d" "@s")))))
              (shp)))
        (index-type
         (t[] (tforall ("&t")
@@ -203,7 +203,7 @@
        (index2d-type
         (t[] (tforall ("&t")
                       (tpi ("$m" "$n")
-                           (t-> ((t[] "&t" (shape++ "$m" "$n"))
+                           (t-> ((t[] "&t" (shp++ "$m" "$n"))
                                  (t[] :int (shp 2)))
                                 "&t")))
              (shp)))
@@ -221,8 +221,8 @@
        (transpose2d-type
         (t[] (tforall ("&t")
                       (tpi ("$m" "$n")
-                           (t-> ((t[] "&t" (shape++ "$m" "$n")))
-                                (t[] "&t" (shape++ "$n" "$m")))))
+                           (t-> ((t[] "&t" (shp++ "$m" "$n")))
+                                (t[] "&t" (shp++ "$n" "$m")))))
              (shp))))
     (omap::from-alist
      (list (cons "+" int-binop-type)
