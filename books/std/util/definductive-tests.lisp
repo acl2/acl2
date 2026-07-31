@@ -76,7 +76,12 @@
                   (r*-2-alt-refl-p)
                   (r*-2-alt-trans-p)
                   (r*-2 a b))
-             (r*-2-alt a b)))))
+             (r*-2-alt a b))))
+
+ (must-be-redundant
+  (defthm r*-2-is-r*
+    (equal (r*-2 a b)
+           (r* a b)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -121,7 +126,12 @@
     (implies (and (p-2-alt-base-p)
                   (p-2-alt-step-p)
                   (p-2 a))
-             (p-2-alt a)))))
+             (p-2-alt a))))
+
+ (must-be-redundant
+  (defthm p-2-is-p
+    (equal (p-2 a)
+           (p a)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -180,7 +190,12 @@
                   (gnd-2-alt-step-p)
                   (gnd-2-alt-ax2-p)
                   (gnd-2 a))
-             (gnd-2-alt a)))))
+             (gnd-2-alt a))))
+
+ (must-be-redundant
+  (defthm gnd-2-is-gnd
+    (equal (gnd-2 a)
+           (gnd a)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -225,7 +240,12 @@
     (implies (and (bn-2-alt-base-p)
                   (bn-2-alt-step-p)
                   (bn-2 x))
-             (bn-2-alt x)))))
+             (bn-2-alt x))))
+
+ (must-be-redundant
+  (defthm bn-2-is-bn
+    (equal (bn-2 x)
+           (bn x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -266,7 +286,12 @@
   (defthm p-2-alt-when-p-2
     (implies (and (p-2-alt-ax-p)
                   (p-2 x))
-             (p-2-alt x)))))
+             (p-2-alt x))))
+
+ (must-be-redundant
+  (defthm p-2-is-p
+    (equal (p-2 x)
+           (p x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -297,7 +322,12 @@
   (defthm p-2-alt-when-p-2
     (implies (and (p-2-alt-ax-p)
                   (p-2 x))
-             (p-2-alt x)))))
+             (p-2-alt x))))
+
+ (must-be-redundant
+  (defthm p-2-is-p
+    (equal (p-2 x)
+           (p x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -349,7 +379,12 @@
     (implies (and (m-2-alt-pair-p)
                   (m-2-alt-proj-p)
                   (m-2 a))
-             (m-2-alt a)))))
+             (m-2-alt a))))
+
+ (must-be-redundant
+  (defthm m-2-is-m
+    (equal (m-2 a)
+           (m a)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

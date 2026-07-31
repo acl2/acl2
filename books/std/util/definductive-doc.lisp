@@ -159,9 +159,9 @@
       The two versions have the same interface:
       the same introduction rule theorems and the same minimality theorems,
       with @('p[i]-2') in place of @('p[i]').
-      Each is therefore a least relation satisfying the rules
-      and are therefore the same,
-      although this macro does not yet prove this fact.
+      Each is therefore a least relation satisfying the rules,
+      and so the two are the same;
+      this macro proves that, as described below.
       We generate both representations while we compare them;
       eventually we may keep just one."))
 
@@ -522,8 +522,8 @@
     (xdoc::p
      "The following items are the second representation of proofs,
       described in the Section `Introduction' above.
-      They are independent of the items above:
-      neither representation is used to define or prove the other.")
+      Neither representation is used to define or prove the other;
+      the theorems described last relate the two.")
 
     (xdoc::desc
      (list
@@ -624,4 +624,23 @@
      (xdoc::p
       "If XDOC is generated, all these items are put
        in a @(tsee defsection) whose name is obtained by
-       extending the @('name') input with the suffix @('-2-minimal').")))))
+       extending the @('name') input with the suffix @('-2-minimal')."))
+
+    (xdoc::desc
+     (list
+      "@('p[i]-2-when-p[i]')"
+      "@('p[i]-when-p[i]-2')"
+      "@('p[i]-2-is-p[i]')")
+     (xdoc::p
+      "Theorems saying that the two representations of proofs
+       define the same predicates.
+       Each inclusion follows from the minimality theorem of one of the two,
+       used with the predicate of the other in place of the stub:
+       what remains to prove is that the latter satisfies the rules,
+       which its rule theorems say.
+       The equality follows from the two inclusions,
+       since both predicates are booleans.")
+     (xdoc::p
+      "If XDOC is generated, all these theorems are put
+       in a @(tsee defsection) whose name is obtained by
+       extending the @('name') input with the suffix @('-2-same').")))))

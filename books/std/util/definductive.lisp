@@ -3146,6 +3146,64 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(define defind-pred-alt-irule-witness-fn-name ((pred-name symbolp)
+                                               (irule-name symbolp)
+                                               (name symbolp))
+  :returns (fn-name symbolp)
+  :short "Name of the witness function of
+          a @('p[l[k]]-alt-rule[k]-p') function."
+  (packn-pos (list (defind-pred-alt-irule-fn-name pred-name irule-name name)
+                   '-witness)
+             (symbol-lfix name)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-pred2-when-pred-thm-name ((pred-name symbolp) (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of a @('p[i]-2-when-p[i]') theorem."
+  (packn-pos (list (defind-pred2-name pred-name name)
+                   '-when-
+                   (symbol-lfix pred-name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-pred-when-pred2-thm-name ((pred-name symbolp) (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of a @('p[i]-when-p[i]-2') theorem."
+  (packn-pos (list (symbol-lfix pred-name)
+                   '-when-
+                   (defind-pred2-name pred-name name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-pred2-is-pred-thm-name ((pred-name symbolp) (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of a @('p[i]-2-is-p[i]') theorem."
+  (packn-pos (list (defind-pred2-name pred-name name)
+                   '-is-
+                   (symbol-lfix pred-name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-pred-return-thm-name ((pred-name symbolp) (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of the return theorem of a @('p[i]') predicate."
+  (packn-pos (list 'booleanp-of- (symbol-lfix pred-name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-proof2-equivalence-section-name ((name symbolp))
+  :returns (topic symbolp)
+  :short "Name of the @(tsee defsection) containing
+          the theorems that relate the two representations of proofs."
+  (packn-pos (list (symbol-lfix name) '-2-same) (symbol-lfix name)))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define defind-proof2-minimality-section-name ((name symbolp))
   :returns (topic symbolp)
   :short "Name of the @(tsee defsection) containing
@@ -6204,6 +6262,188 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-gen-proof2-same-subst ((infos defind-irule-info-listp)
+                                      (pred2p booleanp)
+                                      (name symbolp))
+  :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
+  :returns (mv (subst true-listp)
+               (irule-thms symbol-listp))
+  :short "Substitutions for the propositions of the rules,
+          in a theorem that relates the two representations of proofs,
+          along with the rule theorems that discharge them."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The minimality theorem of one representation is used
+     with the predicate of the other in place of the stub;
+     see @(tsee defind-gen-proof2-same-thm).
+     Each proposition saying that the stub satisfies a rule
+     is replaced by @('t'),
+     which leaves, as proof obligation, that the other predicate
+     satisfies that rule: this is its rule theorem.")
+   (xdoc::p
+    "A proposition for a non-ground rule is a @(tsee defun-sk),
+     so its witness must be replaced as well;
+     any value of the right shape will do,
+     which is a single one for a rule with one variable
+     and an @(tsee mv) of the right length otherwise.
+     A proposition for a ground rule is a @(tsee defun),
+     which has no witness.")
+   (xdoc::p
+    "The @('pred2p') input says which of the two representations
+     the propositions belong to:
+     the ones of the first when it is @('nil'),
+     the ones of the second when it is @('t').
+     The rule theorems returned are the ones of the other representation."))
+  (b* (((when (endp infos)) (mv nil nil))
+       ((defind-irule-info info) (car infos))
+       ((defind-conclusion-info cinfo) info.conclusion)
+       (pred2-name (defind-pred2-name cinfo.name name))
+       (prop-pred (if pred2p pred2-name cinfo.name))
+       (thm-pred (if pred2p cinfo.name pred2-name))
+       (prop (defind-pred-alt-irule-fn-name prop-pred info.name name))
+       (irule-thm (defind-pred-irule-thm-name thm-pred info.name name))
+       (vars (defind-irule-info-free-vars info))
+       (nvars (set::cardinality vars))
+       (prop-subst `(,prop (lambda () t)))
+       (witness-subst
+        (and (not (defind-irule-groundp info))
+             (b* ((witness (defind-pred-alt-irule-witness-fn-name
+                             prop-pred info.name name))
+                  (value (if (= nvars 1)
+                             nil
+                           `(mv ,@(repeat nvars nil)))))
+               (list `(,witness (lambda () ,value))))))
+       ((mv subst irule-thms)
+        (defind-gen-proof2-same-subst (cdr infos) pred2p name)))
+    (mv (cons prop-subst (append witness-subst subst))
+        (cons irule-thm irule-thms)))
+  :guard-hints (("Goal" :in-theory (enable set::cardinality))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-same-thm ((pred-name symbolp)
+                                    (pred-formals symbol-listp)
+                                    (irule-infos defind-irule-info-listp)
+                                    (pred2p booleanp)
+                                    (name symbolp))
+  :guard (no-duplicatesp-equal (defind-irule-info-list->name irule-infos))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @('p[i]-2-when-p[i]') or @('p[i]-when-p[i]-2') theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each of these two theorems is one inclusion between
+     the predicate of one representation and the one of the other.
+     It follows from the minimality theorem of the first of the two:
+     the predicate of the second satisfies the rules,
+     by its rule theorems,
+     and so it is no smaller than the predicate of the first.")
+   (xdoc::p
+    "The @('pred2p') input says which of the two inclusions to generate:
+     @('p[i]-2-when-p[i]') when it is @('nil'),
+     since that one uses the minimality theorem of @('p[i]');
+     @('p[i]-when-p[i]-2') when it is @('t')."))
+  (b* ((pred2-name (defind-pred2-name pred-name name))
+       (formals (symbol-list-fix pred-formals))
+       (from (if pred2p pred2-name (symbol-lfix pred-name)))
+       (to (if pred2p (symbol-lfix pred-name) pred2-name))
+       (thm-name (if pred2p
+                     (defind-pred-when-pred2-thm-name pred-name name)
+                   (defind-pred2-when-pred-thm-name pred-name name)))
+       (min-thm (defind-pred-alt-when-pred-thm-name
+                  (if pred2p pred2-name (symbol-lfix pred-name)) name))
+       (alt-fn (defind-pred-alt-fn-name
+                 (if pred2p pred2-name (symbol-lfix pred-name)) name))
+       ((mv subst irule-thms)
+        (defind-gen-proof2-same-subst irule-infos pred2p name)))
+    `(defruled ,thm-name
+       (implies (,from ,@formals)
+                (,to ,@formals))
+       :use ((:functional-instance ,min-thm
+                                   (,alt-fn ,to)
+                                   ,@subst))
+       :in-theory '(,@irule-thms))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-is-pred-thm ((pred-name symbolp)
+                                       (pred-formals symbol-listp)
+                                       (name symbolp))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @('p[i]-2-is-p[i]') theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This says that the two representations of proofs
+     define the same predicate.
+     It follows from the two inclusions,
+     since both predicates are booleans."))
+  (b* ((pred2-name (defind-pred2-name pred-name name))
+       (formals (symbol-list-fix pred-formals))
+       (thm-name (defind-pred2-is-pred-thm-name pred-name name))
+       (thm1 (defind-pred2-when-pred-thm-name pred-name name))
+       (thm2 (defind-pred-when-pred2-thm-name pred-name name))
+       (return-thm (defind-pred-return-thm-name pred-name name))
+       (return-thm2 (defind-pred-return-thm-name pred2-name name)))
+    `(defruled ,thm-name
+       (equal (,pred2-name ,@formals)
+              (,(symbol-lfix pred-name) ,@formals))
+       :use (,thm1
+             ,thm2
+             (:instance ,return-thm)
+             (:instance ,return-thm2))
+       :in-theory '(booleanp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-same-defsection
+  ((pred-infos defind-pred-info-listp)
+   (irule-infos defind-irule-info-listp)
+   (name symbolp)
+   (xdocp booleanp))
+  :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+              (no-duplicatesp-equal (defind-irule-info-list->name irule-infos)))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @(tsee defsection) or @(tsee progn) with
+          all the theorems that relate the two representations of proofs."
+  (b* ((events (defind-gen-proof2-same-thms
+                 pred-infos irule-infos name)))
+    (if xdocp
+        `(defsection ,(defind-proof2-equivalence-section-name name)
+           :short "Sameness of the predicates of
+                   the two representations of proofs."
+           ,@events)
+      `(progn ,@events)))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable true-listp-when-pseudo-event-form-listp-rewrite)))
+
+  :prepwork
+  ((define defind-gen-proof2-same-thms
+     ((pred-infos defind-pred-info-listp)
+      (irule-infos defind-irule-info-listp)
+      (name symbolp))
+     :guard (and (no-duplicatesp-equal
+                  (defind-pred-info-list->name pred-infos))
+                 (no-duplicatesp-equal
+                  (defind-irule-info-list->name irule-infos)))
+     :returns (events pseudo-event-form-listp)
+     :parents nil
+     (b* (((when (endp pred-infos)) nil)
+          ((defind-pred-info info) (car pred-infos))
+          (thm1 (defind-gen-proof2-same-thm
+                  info.name info.formals irule-infos nil name))
+          (thm2 (defind-gen-proof2-same-thm
+                  info.name info.formals irule-infos t name))
+          (thm3 (defind-gen-proof2-is-pred-thm
+                  info.name info.formals name))
+          (events (defind-gen-proof2-same-thms
+                    (cdr pred-infos) irule-infos name)))
+       (list* thm1 thm2 thm3 events)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-gen-events ((name symbolp)
                            (pred-infos defind-pred-info-listp)
                            (irule-infos defind-irule-info-listp)
@@ -6258,6 +6498,9 @@
        (proof2-minimality-event
         (defind-gen-proof2-minimality-defsection
           pred-infos irule-infos name xdocp))
+       (proof2-same-event
+        (defind-gen-proof2-same-defsection
+          pred-infos irule-infos name xdocp))
        (all-events (append (list name-doc-event)
                            assert-type-events
                            proof-type-events
@@ -6273,7 +6516,8 @@
                            (list irules-event)
                            (list proof2-irules-event)
                            (list minimality-event)
-                           (list proof2-minimality-event))))
+                           (list proof2-minimality-event)
+                           (list proof2-same-event))))
     `(encapsulate
        ()
        ,@all-events
