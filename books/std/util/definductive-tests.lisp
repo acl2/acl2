@@ -1065,8 +1065,9 @@
 ; The variables of a rule become fields of the summand of the proof,
 ; for the second representation of proofs;
 ; so they must differ from the names that those events use
-; for the arguments of the conclusion and for the proofs of the premises.
-; The first of these two is the one that matters:
+; for the arguments of the conclusion, for the proofs of the premises,
+; and for the variable of the fixtypes of proofs.
+; The first of these three is the one that matters:
 ; without the check, the variable would shadow
 ; the formal of the proof validity predicate in the case for the rule,
 ; turning the equality for that argument of the conclusion
@@ -1081,7 +1082,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The second of the two: a variable named after a premise field
+; The second of the three: a variable named after a premise field
 ; would clash with that field in the summand.
 
 (must-fail
@@ -1091,3 +1092,16 @@
                   (q 0))
             (step ((q premise1-proof))
                   (q (1+ premise1-proof))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The third of the three: a variable named after
+; the variable of the fixtypes of proofs
+; would make FTY reject the fixtype,
+; since no field can have the same name as that variable.
+
+(must-fail
+ (definductive xvar-clash
+   :preds ((r a))
+   :irules ((ax ((natp proof$))
+                (r proof$)))))

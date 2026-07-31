@@ -291,9 +291,12 @@
        the variables that the events for the second representation of proofs
        use for the arguments of the conclusion,
        which are @('concl.x[i,1]'), ..., @('concl.x[i,m[i]]'),
-       and from the names of the fields
+       from the names of the fields
        that hold the proofs of the premises,
-       which are @('premise[1]-proof'), @('premise[2]-proof'), and so on."))
+       which are @('premise[1]-proof'), @('premise[2]-proof'), and so on,
+       and from @('proof$'),
+       which is the variable of the fixtypes of proofs
+       of that representation."))
 
     (xdoc::desc
      (list
@@ -658,8 +661,12 @@
      (xdoc::p
       "The counterparts, for the @('p[i]-2') predicates,
        of the items for minimality described above.
-       They have the same form and the same statements,
-       with @('p[i]-2') in place of @('p[i]').")
+       They have the same form,
+       and the same statements with @('p[i]-2') in place of @('p[i]'),
+       except for the @('p[i]-2-alt-when-proof-validp') theorems:
+       there the arguments of the conclusion are
+       arguments of the proof validity predicate,
+       so the theorem has no conclusion of the proof to destructure.")
      (xdoc::p
       "If XDOC is generated, all these items are put
        in a @(tsee defsection) whose name is obtained by
