@@ -141,7 +141,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ispace-term-from-var/dim/shape/other (ispace)
+(define ispace-term-from-var/dim/shape/other (term)
   :short "Construct an ispace term from
           a string denoting a dimension or shape variable,
           or a natural number denoting a dimension,
@@ -154,14 +154,14 @@
   (xdoc::topstring
    (xdoc::p
     "The string denoting a variable must start with @('$') or @('@')."))
-  (cond ((stringp ispace)
-         (b* (((mv prefix name) (var-string-split ispace '(#\$ #\@))))
+  (cond ((stringp term)
+         (b* (((mv prefix name) (var-string-split term '(#\$ #\@))))
            (case prefix
              (#\$ `(ispace-dim (dim-var ,name)))
              (#\@ `(ispace-shape (shape-var ,name))))))
-        ((natp ispace) `(ispace-dim (dim-const ,ispace)))
-        ((and (consp ispace)
-              (member-eq (car ispace)
+        ((natp term) `(ispace-dim (dim-const ,term)))
+        ((and (consp term)
+              (member-eq (car term)
                          '(dim+
                            dim*
                            dim-
@@ -170,29 +170,29 @@
                            dim-add
                            dim-mul
                            dim-sub)))
-         `(ispace-dim ,ispace))
-        ((and (consp ispace)
-              (member-eq (car ispace)
+         `(ispace-dim ,term))
+        ((and (consp term)
+              (member-eq (car term)
                          '(shape-var
                            shape-dims
                            shape-append
                            shape-splice)))
-         `(ispace-shape ,ispace))
-        (t ispace)))
+         `(ispace-shape ,term))
+        (t term)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define ispace-terms-from-vars/dims/shapes/others ((ispaces true-listp))
+(define ispace-terms-from-vars/dims/shapes/others ((terms true-listp))
   :short "Lift @(tsee ispace-term-from-var/dim/shape/other) to lists."
-  (cond ((endp ispaces) nil)
-        (t (cons (ispace-term-from-var/dim/shape/other (car ispaces))
-                 (ispace-terms-from-vars/dims/shapes/others (cdr ispaces))))))
+  (cond ((endp terms) nil)
+        (t (cons (ispace-term-from-var/dim/shape/other (car terms))
+                 (ispace-terms-from-vars/dims/shapes/others (cdr terms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ shp[] (&rest ispaces)
+(defmacro+ shp[] (&rest terms)
   :short "Construct a shape splice term from component ispace terms."
-  `(shape-splice (list ,@(ispace-terms-from-vars/dims/shapes/others ispaces))))
+  `(shape-splice (list ,@(ispace-terms-from-vars/dims/shapes/others terms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
