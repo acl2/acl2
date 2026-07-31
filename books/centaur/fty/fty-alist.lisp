@@ -156,10 +156,10 @@
                                    :short nil
                                    :long nil)))))
     (if alist.already-definedp
-        `(progn
+        `((progn
            (local (in-theory (disable ,alist.pred)))
-           . ,std-defalist-call)
-      `(define ,alist.pred (,alist.xvar)
+           . ,std-defalist-call))
+      `((define ,alist.pred (,alist.xvar)
          :parents (,alist.name)
          :progn t
          :short ,(str::cat "Recognizer for @(see " (xdoc::full-escape-symbol alist.name) ").")
@@ -211,7 +211,7 @@
                                 (,alist.pred ,alist.xvar)))
                     :hints (("goal" :expand ((,alist.pred (cons a ,alist.xvar))))))
                   ))
-         . ,std-defalist-call))))
+         . ,std-defalist-call)))))
 
 (define flexalist-fix-def (x flagp)
   (b* (((flexalist x) x))

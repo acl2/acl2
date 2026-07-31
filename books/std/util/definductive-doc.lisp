@@ -203,12 +203,8 @@
       "For each @('i'),
        the symbols @('x[i,1]'), ..., @('x[i,m[i]]') must be all distinct.")
      (xdoc::p
-      "Currently, this macro only supports one predicate,
-       i.e. @('n') must be 1.
-       We plan to extend the macro soon.")
-     (xdoc::p
-      "We also plan to add support for guards to the predicates,
-       and likely the ability for @('x[i,j]') to be "
+      "In the future we may add support for guards to the predicates,
+       and the ability for @('x[i,j]') to be "
       (xdoc::seetopic "std::extended-formals" "extended formals")
       " as in @(tsee define)."))
 
@@ -234,27 +230,44 @@
        All the rule names @('rule[1]'), ..., @('rule[r]') must be distinct;
        there must be at least one rule, i.e. @('r') must be positive.")
      (xdoc::p
-      "A predicate @('p[i]') is recursive when it depends on itself,
-       directly or indirectly,
-       where a predicate @('p[i]') depends on a predicate @('p[j]') when
-       some rule has @('p[i]') in its conclusion and @('p[j]') in some premise.
-       For a single predicate (the only case currently supported),
-       being recursive amounts to having at least one rule
-       with a premise of the form (i) above.
-       A non-recursive predicate could be more simply defined
-       without using inference rules,
-       but we do not prevent such definitions.
-       Predicates that are not mutually recursive
-       should be defined by separate uses of this macro,
-       in dependency order.")
+      "Each predicate @('p[i]') must be
+       in the conclusion of at least one rule.")
      (xdoc::p
-      "There must be at least one rule
-       whose premises all have the form (ii) above.
-       That is, there must be at least one base case
-       for the recursive definition,
-       otherwise the smallest predicate satisfying the rules is empty.
-       This condition will be generalized when
-       we remove the restriction to one predicate mentioned above."))
+      "A predicate @('p[i]') depends on a predicate @('p[j]') when
+       some rule has @('p[i]') in its conclusion and @('p[j]') in some premise,
+       or, transitively, when @('p[i]') depends on a predicate
+       that depends on @('p[j]').
+       A predicate is singly recursive when it depends on itself.
+       Two or more predicates are mutually recursive when
+       they all depend on each other.")
+     (xdoc::p
+      "The predicates are partitioned into cliques of mutual dependency:
+       two different predicates are in the same clique
+       when each one depends on the other.
+       Thus each clique consists of
+       either two or more mutually recursive predicates,
+       or a single predicate, which may or may not be singly recursive.
+       The cliques are ordered by dependency,
+       which is always possible because
+       the dependencies between different cliques form no cycles;
+       the events generated for each clique come after
+       the ones generated for the cliques it depends on.")
+     (xdoc::p
+      "The predicates of each clique are organized into levels, as follows.
+       A predicate is at level 0 if some rule has it in its conclusion
+       and no premises of the form (i) above
+       that call predicates of the same clique;
+       premises that call predicates of preceding cliques are allowed,
+       since those predicates are already defined.
+       A predicate is at level @('L+1') if some rule has it in its conclusion
+       and all its premises of the form (i)
+       that call predicates of the same clique
+       call predicates at level @('L') or lower.
+       Every predicate must be at some level.
+       For a predicate that forms a singleton clique,
+       being at some level amounts to being at level 0,
+       i.e. to the existence of a rule with no premises
+       that call the predicate itself."))
 
     (xdoc::desc
      (list
@@ -315,10 +328,15 @@
        for each premise of the form @('(p[j] ...)'),
        whose corresponding field has type @('p[j]-proof').")
      (xdoc::p
-      "These fixtypes are mutually recursive in general,
-       in which case they are put inside a @(tsee fty::deftypes);
-       currently, since only one predicate is supported,
-       a single @(tsee fty::deftagsum) is generated."))
+      "One event is generated for each clique of predicates
+       (see the @(':irules') input), in dependency order.
+       For a clique of a single predicate,
+       the event is a @(tsee fty::deftagsum).
+       For a clique of two or more predicates,
+       the fixtypes are mutually recursive,
+       and the event is a @(tsee fty::deftypes)
+       named after the first predicate of the clique,
+       with the suffix @('-proof-clique')."))
 
     (xdoc::desc
      (list
@@ -364,6 +382,17 @@
        every node of the tree must be
        a valid instance of the corresponding inference rule,
        according to the @('p[l[k]]-rule[k]-validp') predicates.")
+     (xdoc::p
+      "As with the fixtypes of proofs,
+       one event is generated for each clique of predicates,
+       in dependency order.
+       For a clique of a single predicate,
+       the event is a @(tsee define).
+       For a clique of two or more predicates,
+       the functions are mutually recursive,
+       and the event is a @(tsee defines)
+       named after the first predicate of the clique,
+       with the suffix @('-proof-validp-clique').")
      (xdoc::p
       "These predicates are currently not guard-verified,
        because they call the non-guard-verified
@@ -479,7 +508,17 @@
        then the validity of each proof tree
        with conclusion @('(p[i] x[i,1] ... x[i,m[i]])')
        implies that @('(p[i]-alt x[i,1] ... x[i,m[i]])') holds.
-       That is, a proof for @('p[i]') is also a proof for @('p[i]-alt')."))
+       That is, a proof for @('p[i]') is also a proof for @('p[i]-alt').")
+     (xdoc::p
+      "As with the fixtypes of proofs and the proof validity predicates,
+       these theorems are generated one clique at a time,
+       in dependency order:
+       the ones of a clique of two or more predicates are proved together,
+       by mutual induction on the @('p[i]-proof-validp') predicates,
+       while the theorems of the preceding cliques
+       play, for the premises that call predicates of those cliques,
+       the role that the induction hypothesis plays
+       for the premises that call predicates of the same clique."))
 
     (xdoc::desc
      (list
