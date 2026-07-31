@@ -15,6 +15,7 @@
 (include-book "fresh-variable-operations")
 
 (include-book "kestrel/fty/string-string-map-quadruple-result" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
@@ -240,12 +241,21 @@
   (defret type-count-of-normalize-type
     (<= (type-count type1)
         (type-count type))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defrule type-binders-count-of-normalize-type
+    (implies (equal (type-count (normalize-type type))
+                    (type-count type))
+             (equal (type-binders-count (normalize-type type))
+                    (type-binders-count type)))
+    :enable (normalize-type type-binders-count)
+    :expand ((type-count type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines types-equivp
   :short "Check if two types or lists of types are equivalent."
+  :hints (("Goal" :in-theory (enable nfix)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -291,44 +301,34 @@
        via @(tsee normalize-type) for the second type,
        and directly in the @(':funn') case for the first type.")
      (xdoc::p
-      "In the case of two universal types,
-       we use @(tsee fresh-type-var-renaming) to check that
-       they have the same number and kinds of bound variables,
-       forming renaming maps to fresh variables,
-       which we apply to the bodies of the types,
+      "In the case of universal, product, and sum types,
+       we follow the curried view,
+       as we do for function types:
+       we peel one bound variable from each of the two types,
+       and we compare what remains.
+       We use
+       @(tsee fresh-type-var-renaming) for universal types and
+       @(tsee fresh-ispace-var-renaming) for product and sum types,
+       on the singleton lists of the two peeled bound variables,
+       to check that they have the same kind or sort
+       and to form renaming maps to a common fresh variable,
+       which we apply to what remains of the two types,
        which we then compare for equivalence.
-       The fresh variables must not be in any of the two types:
+       The fresh variable must not be in any of the two types:
        so we set the set of variables to avoid to
        all the (free and bound) variables in the two types.")
      (xdoc::p
-      "In the case of two product types or two sum types,
-       we use @(tsee fresh-ispace-var-renaming) to check that
-       they have the same number and sorts of bound variables,
-       forming renaming maps to fresh variables,
-       which we apply to the bodies of the types,
-       which we then compare for equivalence.
-       The fresh variables must not be in any of the two types:
-       so we set the set of variables to avoid to
-       all the (free and bound) variables in the two types.")
-     (xdoc::p
-      "Two unary universal types, and two unary product or sum types,
-       are handled the same way,
-       on the singleton lists of their bound variables.")
-     (xdoc::p
-      "A unary universal, product, or sum type
-       is also equivalent to an n-ary one with at least one parameter,
-       when, after renaming
-       the bound variable of the unary type and
-       the first bound variable of the n-ary type
-       to a common fresh variable,
-       the body of the unary type is equivalent to
-       the result of peeling the first parameter off the n-ary type
-       (see @(tsee forall-curried-body) and analogous operations).
-       However, two n-ary (universal, product, or sum) types
-       with different numbers of parameters are never equivalent,
-       even though they are expressible as nests of unary types
-       that may well be equivalent;
-       relating them is left for the future.")
+      "What remains of a type, after peeling one bound variable,
+       is the body for a unary type,
+       and the result of @(tsee forall-curried-body) or analogous operations
+       for an n-ary type.
+       Thus a unary type may be equivalent to an n-ary one,
+       and two n-ary types may be equivalent
+       even if they have different numbers of bound variables.
+       An n-ary type with no bound variables,
+       which is not well-formed,
+       is only equivalent to another one with no bound variables,
+       with equivalent bodies.")
      (xdoc::p
       "Since we are renaming (ispace and type) variables to fresh ones,
        we do not call the predicates to check for variable capture.
@@ -467,19 +467,28 @@
                                                             maps.3rd
                                                             maps.4th)))
                            (type-equivp body1 body2))
-                 :foralln (b* ((used (set::union (type-all-type-vars type1)
+                 :foralln (b* (((when (endp type1.params))
+                                (and (endp type2.params)
+                                     (type-equivp type1.body type2.body)))
+                               ((when (endp type2.params)) nil)
+                               (used (set::union (type-all-type-vars type1)
                                                  (type-all-type-vars type2)))
-                               (maps (fresh-type-var-renaming type1.params
-                                                              type2.params
-                                                              used))
+                               (maps (fresh-type-var-renaming
+                                      (list (car type1.params))
+                                      (list (car type2.params))
+                                      used))
                                ((when (reserrp maps)) nil)
                                ((string-string-map-quadruple maps) maps)
-                               (body1 (type-rename-type-vars type1.body
-                                                             maps.1st
-                                                             maps.2nd))
-                               (body2 (type-rename-type-vars type2.body
-                                                             maps.3rd
-                                                             maps.4th)))
+                               (body1 (type-rename-type-vars
+                                       (forall-curried-body type1.params
+                                                            type1.body)
+                                       maps.1st
+                                       maps.2nd))
+                               (body2 (type-rename-type-vars
+                                       (forall-curried-body type2.params
+                                                            type2.body)
+                                       maps.3rd
+                                       maps.4th)))
                             (type-equivp body1 body2))
                  :otherwise nil))
      :pi (b* ((type2 (normalize-type type2)))
@@ -537,19 +546,26 @@
                                                       maps.3rd
                                                       maps.4th)))
                    (type-equivp body1 body2))
-             :pin (b* ((used (set::union (type-all-ispace-vars type1)
+             :pin (b* (((when (endp type1.params))
+                        (and (endp type2.params)
+                             (type-equivp type1.body type2.body)))
+                       ((when (endp type2.params)) nil)
+                       (used (set::union (type-all-ispace-vars type1)
                                          (type-all-ispace-vars type2)))
-                       (maps (fresh-ispace-var-renaming type1.params
-                                                        type2.params
-                                                        used))
+                       (maps (fresh-ispace-var-renaming
+                              (list (car type1.params))
+                              (list (car type2.params))
+                              used))
                        ((when (reserrp maps)) nil)
                        ((string-string-map-quadruple maps) maps)
-                       (body1 (type-rename-ispace-vars type1.body
-                                                       maps.1st
-                                                       maps.2nd))
-                       (body2 (type-rename-ispace-vars type2.body
-                                                       maps.3rd
-                                                       maps.4th)))
+                       (body1 (type-rename-ispace-vars
+                               (pi-curried-body type1.params type1.body)
+                               maps.1st
+                               maps.2nd))
+                       (body2 (type-rename-ispace-vars
+                               (pi-curried-body type2.params type2.body)
+                               maps.3rd
+                               maps.4th)))
                     (type-equivp body1 body2))
              :otherwise nil))
      :sigma (b* ((type2 (normalize-type type2)))
@@ -609,22 +625,34 @@
                                                             maps.3rd
                                                             maps.4th)))
                          (type-equivp body1 body2))
-                :sigman (b* ((used (set::union (type-all-ispace-vars type1)
+                :sigman (b* (((when (endp type1.params))
+                              (and (endp type2.params)
+                                   (type-equivp type1.body type2.body)))
+                             ((when (endp type2.params)) nil)
+                             (used (set::union (type-all-ispace-vars type1)
                                                (type-all-ispace-vars type2)))
-                             (maps (fresh-ispace-var-renaming type1.params
-                                                              type2.params
-                                                              used))
+                             (maps (fresh-ispace-var-renaming
+                                    (list (car type1.params))
+                                    (list (car type2.params))
+                                    used))
                              ((when (reserrp maps)) nil)
                              ((string-string-map-quadruple maps) maps)
-                             (body1 (type-rename-ispace-vars type1.body
-                                                             maps.1st
-                                                             maps.2nd))
-                             (body2 (type-rename-ispace-vars type2.body
-                                                             maps.3rd
-                                                             maps.4th)))
+                             (body1 (type-rename-ispace-vars
+                                     (sigma-curried-body type1.params
+                                                         type1.body)
+                                     maps.1st
+                                     maps.2nd))
+                             (body2 (type-rename-ispace-vars
+                                     (sigma-curried-body type2.params
+                                                         type2.body)
+                                     maps.3rd
+                                     maps.4th)))
                           (type-equivp body1 body2))
                 :otherwise nil)))
-    :measure (+ (type-count type1) (type-count type2)))
+    :measure (two-nats-measure (+ (type-count type1)
+                                  (type-count type2))
+                               (+ (type-binders-count type1)
+                                  (type-binders-count type2))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -638,7 +666,9 @@
              (consp types2)
              (type-equivp (car types1) (car types2))
              (type-list-equivp (cdr types1) (cdr types2))))
-    :measure (+ (type-list-count types1) (type-list-count types2))
+    :measure (two-nats-measure (+ (type-list-count types1)
+                                  (type-list-count types2))
+                               0)
 
     ///
 
