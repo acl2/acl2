@@ -145,7 +145,25 @@
       and theorems showing that the defined predicates are
       the smallest ones that satisfy the inference rules.
       In order to generate these artifacts,
-      the macro performs sufficient checks for the monotonicity of the rules."))
+      the macro performs sufficient checks for the monotonicity of the rules.")
+
+    (xdoc::p
+     "This macro currently generates two representations of proofs,
+      and thus two versions of each predicate, @('p[i]') and @('p[i]-2').
+      In the first, each node of a proof carries its own conclusion
+      and the validity of a proof is a predicate of the proof alone.
+      In the second, each node carries instead
+      the variables of the rule that builds it,
+      and the arguments of the conclusion are arguments
+      of the proof validity predicate.
+      The two versions have the same interface:
+      the same introduction rule theorems and the same minimality theorems,
+      with @('p[i]-2') in place of @('p[i]').
+      Each is therefore a least relation satisfying the rules
+      and are therefore the same,
+      although this macro does not yet prove this fact.
+      We generate both representations while we compare them;
+      eventually we may keep just one."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -254,7 +272,15 @@
        for the recursive definition,
        otherwise the smallest predicate satisfying the rules is empty.
        This condition will be generalized when
-       we remove the restriction to one predicate mentioned above."))
+       we remove the restriction to one predicate mentioned above.")
+     (xdoc::p
+      "The variables of a rule must differ from
+       the variables that the events for the second representation of proofs
+       use for the arguments of the conclusion,
+       which are @('concl.x[i,1]'), ..., @('concl.x[i,m[i]]'),
+       and from the names of the fields
+       that hold the proofs of the premises,
+       which are @('premise[1]-proof'), @('premise[2]-proof'), and so on."))
 
     (xdoc::desc
      (list
@@ -491,4 +517,111 @@
        if the @(tsee defun-sk)s just above hold,
        then the alternate predicates hold whenever the defined ones do.
        That is, the defined predicates are the smallest ones
-       among those that satisfy the inference rules.")))))
+       among those that satisfy the inference rules."))
+
+    (xdoc::p
+     "The following items are the second representation of proofs,
+      described in the Section `Introduction' above.
+      They are independent of the items above:
+      neither representation is used to define or prove the other.")
+
+    (xdoc::desc
+     (list
+      "@('p[1]-2-proof')"
+      "@('...')"
+      "@('p[n]-2-proof')")
+     (xdoc::p
+      "@(tsee fty::deftagsum) fixtypes that reify proofs,
+       as @('p[i]-proof') does, but under a different representation.
+       Each summand has a field for each variable of the rule,
+       named after the variable and having no type.
+       It has the same fields for the proofs of the premises,
+       but it does not have a field for the conclusion,
+       so there is no counterpart of
+       the @('p[i]-assertion') fixtypes
+       or of the @('p[i]-proof->conclusion') functions:
+       the conclusion is not part of a proof."))
+
+    (xdoc::desc
+     (list
+      "@('p[l[1]]-2-rule[1]-validp')"
+      "@('...')"
+      "@('p[l[r]]-2-rule[r]-validp')")
+     (xdoc::p
+      "Predicates saying whether the conditions of each rule hold,
+       except for the ones about the proofs of the premises.
+       Each takes the arguments of the conclusion
+       and the variables of the rule,
+       and says whether the premises that are not
+       calls of the predicates being defined hold,
+       and whether the arguments of the conclusion
+       are the ones that the rule derives.")
+     (xdoc::p
+      "Unlike @('p[l[k]]-rule[k]-validp'),
+       these are never @(tsee defun-sk)s:
+       the variables of the rule are formals,
+       supplied from the fields of the proof,
+       so there is nothing to quantify."))
+
+    (xdoc::desc
+     (list
+      "@('p[1]-2-proof-validp')"
+      "@('...')"
+      "@('p[n]-2-proof-validp')")
+     (xdoc::p
+      "Predicates expressing the validity of proofs,
+       as @('p[i]-proof-validp') does,
+       but taking the arguments of the conclusion as arguments.
+       Each recurs on the proofs of the premises
+       and calls @('p[l[k]]-2-rule[k]-validp') for the rest.")
+     (xdoc::p
+      "Since these predicates involve no quantifiers,
+       they can be executed on a proof and a conclusion.
+       In general @('p[i]-proof-validp') cannot,
+       because the @('p[l[k]]-rule[k]-validp') predicates that it calls
+       are @(tsee defun-sk)s, unless every rule is ground.
+       These predicates are currently not guard-verified,
+       because they may involve arbitrary user-supplied terms."))
+
+    (xdoc::desc
+     (list
+      "@('p[1]-2')"
+      "@('...')"
+      "@('p[n]-2')")
+     (xdoc::p
+      "Definitions of the predicates,
+       in terms of the existence of valid proofs,
+       as for @('p[i]'), but with the arguments
+       passed to @('p[i]-2-proof-validp')
+       instead of being compared with the conclusion of the proof."))
+
+    (xdoc::desc
+     (list
+      "@('p[l[1]]-2-rule[1]')"
+      "@('...')"
+      "@('p[l[r]]-2-rule[r]')")
+     (xdoc::p
+      "Theorems showing that the @('p[i]-2') predicates satisfy the rules.
+       These have the same statements as
+       @('p[l[k]]-rule[k]'),
+       with @('p[i]-2') in place of @('p[i]').")
+     (xdoc::p
+      "If XDOC is generated, all these theorems are put
+       in a @(tsee defsection) whose name is obtained by
+       extending the @('name') input with the suffix @('-2-rules')."))
+
+    (xdoc::desc
+     (list
+      "@('p[i]-2-alt')"
+      "@('p[l[k]]-2-alt-rule[k]-p')"
+      "@('p[i]-2-alt-when-proof-validp')"
+      "@('p[i]-2-alt-when-p[i]-2')")
+     (xdoc::p
+      "The counterparts, for the @('p[i]-2') predicates,
+       of the items for minimality described above.
+       They have the same form and the same statements,
+       with @('p[i]-2') in place of @('p[i]').")
+     (xdoc::p
+      "If XDOC is generated, all these items are put
+       in a @(tsee defsection) whose name is obtained by
+       extending the @('name') input with the suffix @('-2-minimal').")))))
