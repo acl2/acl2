@@ -975,6 +975,21 @@
            tree-iter-has-value-p
            tree-in-order-becomes-value-and-after-of-zip-first))
 
+;; What lies behind gains the value stepped away from, at its back. Unlike the
+;; rule above this needs the iterator to be at a value: from the rewound
+;; position a step lands on the first element having passed nothing.
+
+(defrule tree-iter-before-of-tree-iter-next
+  (implies (tree-iter-has-value-p iter)
+           (equal (tree-iter-before (tree-iter-next iter))
+                  (append (tree-iter-before iter)
+                          (list (tree-iter-value iter)))))
+  :enable (tree-iter-before
+           tree-iter-next
+           tree-iter-value
+           tree-iter-has-value-p
+           tree-in-order-of-zip-plug-split-at-cursor))
+
 ;; The mirror, which cannot be stated the same way: a step back drops the LAST
 ;; value from what lies behind, and there is no @(tsee cdr) for that. So it is
 ;; stated in the reconstructive direction instead, and needs the step to land
@@ -992,6 +1007,21 @@
            tree-iter-has-value-p
            tree-in-order-becomes-before-and-value-of-zip-last
            zip-before-of-zip-prev))
+
+;; And what lies ahead of a step back gains the value stepped away from, at
+;; its front.
+
+(defrule tree-iter-after-of-tree-iter-prev
+  (implies (tree-iter-has-value-p iter)
+           (equal (tree-iter-after (tree-iter-prev iter))
+                  (cons (tree-iter-value iter)
+                        (tree-iter-after iter))))
+  :enable (tree-iter-after
+           tree-iter-prev
+           tree-iter-value
+           tree-iter-has-value-p
+           zip-after-of-zip-prev
+           tree-in-order-of-zip-plug-split-at-cursor))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1217,6 +1247,13 @@
          (consp (tree-iter-after iter)))
   :enable (tree-iter-after
            tree-iter-next
+           tree-iter-has-value-p))
+
+(defrule tree-iter-has-value-p-of-tree-iter-prev
+  (equal (tree-iter-has-value-p (tree-iter-prev iter))
+         (consp (tree-iter-before iter)))
+  :enable (tree-iter-before
+           tree-iter-prev
            tree-iter-has-value-p))
 
 ;; The only positions with no value are the two ends, and nothing lies ahead of

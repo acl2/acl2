@@ -2309,6 +2309,25 @@
                   (zip (zip-prev zip)))
   :disable zip-before-of-zip-next)
 
+;; What follows a step back gains the value stepped away from, at its front.
+;; Read off the round trip: what follows the previous position loses its head
+;; to a forward step, and that head is the value that step lands on.
+
+(defrule zip-after-of-zip-prev
+  (implies (not (zip-at-first-p zip))
+           (equal (zip-after (zip-prev zip))
+                  (cons (zip-value zip)
+                        (zip-after zip))))
+  :use ((:instance zip-after-of-zip-next (zip (zip-prev zip)))
+        (:instance zip-value-of-zip-next (zip (zip-prev zip)))
+        (:instance zip-at-last-p-when-not-consp-of-zip-after
+                   (zip (zip-prev zip)))
+        (:instance acl2::cons-car-cdr (acl2::x (zip-after (zip-prev zip)))))
+  :disable (zip-after-of-zip-next
+            zip-value-of-zip-next
+            zip-at-last-p-when-not-consp-of-zip-after
+            acl2::cons-car-cdr))
+
 ;;;;;;;;;;;;;;;;;;;;
 
 ;; UNIQUENESS. A zipper is determined by the tree it is a cursor into together

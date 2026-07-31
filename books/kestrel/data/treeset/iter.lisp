@@ -82,10 +82,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-;; GJ: I'm not sure about this rule. Do we add definition rules to
-;; break-abstraction elsewhere?
-(add-to-ruleset break-abstraction '(iterp))
-
 (defruled iterp-compound-recognizer
   (implies (iterp x)
            (consp x))
@@ -94,12 +90,16 @@
 
 (add-to-ruleset break-abstraction '(iterp-compound-recognizer))
 
-;; GJ: This is abstraction-breaking.
-(defrule tree-iter-p-when-iterp-forward-chaining
+;; Left disabled and registered, like the rule below: it fires from a purely
+;; public hypothesis and concludes something about the representation.
+
+(defruled tree-iter-p-when-iterp-forward-chaining
   (implies (iterp iter)
            (tree-iter-p iter))
   :rule-classes :forward-chaining
   :enable iterp)
+
+(add-to-ruleset break-abstraction '(tree-iter-p-when-iterp-forward-chaining))
 
 ;; Left disabled and registered: this fires from a purely public hypothesis and
 ;; concludes something about the representation, so enabled it would introduce
@@ -270,7 +270,7 @@
 ;; direction stops at the one it is heading towards.
 
 (define after-lastp ((iter iterp))
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (iterator)
   :short "Check whether an @(see iterator) is after the last element."
   (tree-iter-after-last-p (iter-fix iter))
@@ -279,7 +279,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define before-firstp ((iter iterp))
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (iterator)
   :short "Check whether an @(see iterator) is before the first element."
   :long
@@ -295,7 +295,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define has-valuep ((iter iterp))
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (iterator)
   :short "Check whether an @(see iterator) has a value to read."
   ;; Should the logical value be
@@ -306,8 +306,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-;; GJ: We should either leave these enabled or prove our own type-prescription
-;; rules.
+;; The returns theorems above are the type prescriptions, so the automatic
+;; rules add nothing.
+
 (in-theory (disable (:t after-lastp) (:t before-firstp) (:t has-valuep)))
 
 (defrule after-lastp-when-iter-equiv-congruence
@@ -429,7 +430,6 @@
 (defrule has-valuep-of-iter-min
   (equal (has-valuep (iter-min set))
          (not (emptyp set)))
-  :enable ((:t has-valuep))
   :use ((:instance has-valuep-when-neither-end (iter (iter-min set)))
         (:instance not-after-lastp-when-has-valuep (iter (iter-min set))))
   :disable (has-valuep-when-neither-end
@@ -476,7 +476,6 @@
 (defrule has-valuep-of-iter-max
   (equal (has-valuep (iter-max set))
          (not (emptyp set)))
-  :enable ((:t has-valuep))
   :use ((:instance has-valuep-when-neither-end (iter (iter-max set)))
         (:instance not-before-firstp-when-has-valuep (iter (iter-max set))))
   :disable (has-valuep-when-neither-end
@@ -685,16 +684,6 @@
             tree-iter-plug-when-tree-iter-has-value-p
             tree-iter-value))
 
-;; GJ: I think we need theorems like
-;;   (implies (has-value-p iter)
-;;            (equal (value iter)
-;;                   (min (diff (from-iter iter) (before iter)))))
-;; and
-;;   (implies (has-value-p iter)
-;;            (equal (value iter)
-;;                   (max (diff (from-iter iter) (after iter)))))
-;; I think this should help characterize value for the different traversals.
-
 ;;;;;;;;;;;;;;;;;;;;
 
 ;; The tree an iterator is a position in is a search tree. This is what makes
@@ -723,6 +712,123 @@
   :enable (after
            set::in-to-member
            bstp-of-tree-iter-plug-of-iter-fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+;; The iteration follows the set order: the value an iterator is at lies above
+;; everything behind it and below everything ahead of it. These are what tie a
+;; traversal's order to @(tsee <<); the laws below are all consequences.
+;;
+;; The generic list facts are stated over osets, whose strict ordering is what
+;; carries the comparisons. The two sides and the value assemble into one such
+;; list, so comparing across the cut is comparing across an append.
+
+(defruledl setp-of-cdr-when-osetp
+  (implies (set::setp l)
+           (set::setp (cdr l)))
+  :enable set::setp)
+
+(defruledl setp-of-suffix-when-osetp-of-append
+  (implies (set::setp (append a b))
+           (set::setp b))
+  :induct (append a b)
+  :enable (set::setp append setp-of-cdr-when-osetp))
+
+(defruledl <<-of-car-when-member-equal-of-cdr
+  (implies (and (set::setp l)
+                (member-equal x (cdr l)))
+           (<< (car l) x))
+  :induct (member-equal x l)
+  :enable (set::setp
+           member-equal
+           set::not-member-when-smaller
+           setp-of-cdr-when-osetp
+           data::<<-rules))
+
+(defruledl <<-of-cars-when-osetp-of-append
+  (implies (and (set::setp (append a b))
+                (consp a)
+                (consp b))
+           (<< (car a) (car b)))
+  :induct (append a b)
+  :enable (set::setp
+           append
+           setp-of-cdr-when-osetp
+           data::<<-rules))
+
+(defruledl <<-across-append-when-osetp
+  (implies (and (set::setp (append a b))
+                (member-equal x a)
+                (consp b))
+           (<< x (car b)))
+  :induct (append a b)
+  :enable (set::setp
+           append
+           member-equal
+           setp-of-cdr-when-osetp
+           <<-of-cars-when-osetp-of-append
+           data::<<-rules))
+
+(defrule <<-of-value-when-in-of-after
+  (implies (and (has-valuep iter)
+                (in x (after iter)))
+           (<< (value iter) x))
+  :enable (value
+           has-valuep
+           in-of-after-becomes-member-equal
+           bstp-of-tree-iter-plug-of-iter-fix)
+  :disable (tree-in-order-of-zip-plug
+            tree-iter-plug-when-tree-iter-has-value-p
+            tree-iter-plug-when-zipp)
+  :use ((:instance setp-of-suffix-when-osetp-of-append
+                   (a (tree-iter-before (iter-fix iter)))
+                   (b (cons (tree-iter-value (iter-fix iter))
+                            (tree-iter-after (iter-fix iter)))))
+        (:instance <<-of-car-when-member-equal-of-cdr
+                   (l (cons (tree-iter-value (iter-fix iter))
+                            (tree-iter-after (iter-fix iter)))))))
+
+(defrule <<-of-arg1-and-value-when-in-of-before
+  (implies (and (has-valuep iter)
+                (in x (before iter)))
+           (<< x (value iter)))
+  :enable (value
+           has-valuep
+           in-of-before-becomes-member-equal
+           bstp-of-tree-iter-plug-of-iter-fix)
+  :disable (tree-in-order-of-zip-plug
+            tree-iter-plug-when-tree-iter-has-value-p
+            tree-iter-plug-when-zipp)
+  :use ((:instance <<-across-append-when-osetp
+                   (a (tree-iter-before (iter-fix iter)))
+                   (b (cons (tree-iter-value (iter-fix iter))
+                            (tree-iter-after (iter-fix iter)))))))
+
+;; So the value is on neither side, and the sides are disjoint.
+
+(defrule not-in-of-value-and-before
+  (implies (has-valuep iter)
+           (not (in (value iter) (before iter))))
+  :use (:instance <<-of-arg1-and-value-when-in-of-before (x (value iter)))
+  :disable <<-of-arg1-and-value-when-in-of-before
+  :enable data::<<-rules)
+
+(defrule not-in-of-value-and-after
+  (implies (has-valuep iter)
+           (not (in (value iter) (after iter))))
+  :use (:instance <<-of-value-when-in-of-after (x (value iter)))
+  :disable <<-of-value-when-in-of-after
+  :enable data::<<-rules)
+
+(defrule not-in-of-after-when-in-of-before
+  (implies (and (has-valuep iter)
+                (in x (before iter)))
+           (not (in x (after iter))))
+  :use (<<-of-value-when-in-of-after
+        <<-of-arg1-and-value-when-in-of-before)
+  :disable (<<-of-value-when-in-of-after
+            <<-of-arg1-and-value-when-in-of-before)
+  :enable data::<<-rules)
 
 (add-to-ruleset break-abstraction
                 '(in-of-before-becomes-member-equal
@@ -805,14 +911,17 @@
   :inline t
   :guard-hints (("Goal" :in-theory (enable after-lastp))))
 
-;; GJ: We should have rules along the lines of
-;;  (implies (has-valuep iter)
-;;           (equal (before (next iter))
-;;                  (insert (value iter) (before iter))))
-;; and
-;;  (implies (has-valuep iter)
-;;           (equal (after (next iter))
-;;                  (delete (min (before iter)) (before iter))))
+;; A step forward moves the value across the cut: what lies behind gains it.
+
+(defrule before-of-next
+  (implies (has-valuep iter)
+           (equal (before (next iter))
+                  (insert (value iter) (before iter))))
+  :enable (extensionality
+           in-of-before-becomes-member-equal
+           next
+           value
+           has-valuep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -834,8 +943,6 @@
   (tree-iter-prev (iter-fix iter))
   :inline t
   :guard-hints (("Goal" :in-theory (enable before-firstp))))
-
-;; GJ: Same as suggestion for next, but mirrored
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -972,7 +1079,124 @@
            prev
            value
            has-valuep))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; A step forward has a value to land on exactly when something lies ahead,
+;; and the value it lands on is the least of what lay ahead. So a forward walk
+;; visits the elements in @(tsee <<) order, from the least on up.
+
+(defrule has-valuep-of-next
+  (equal (has-valuep (next iter))
+         (not (emptyp (after iter))))
+  :enable (after
+           has-valuep
+           next
+           tree-iter-has-value-p-of-tree-iter-next
+           bstp-of-tree-iter-plug-of-iter-fix
+           set::emptyp))
+
+(defrule value-of-next
+  (implies (has-valuep (next iter))
+           (equal (value (next iter))
+                  (min (after iter))))
+  :enable (equal-of-min-becomes-sk
+           not-<<-all-l-sk
+           in-of-after-becomes-member-equal
+           bstp-of-tree-iter-plug-of-iter-fix
+           value
+           next
+           has-valuep
+           tree-iter-value-of-tree-iter-next
+           tree-iter-has-value-p-of-tree-iter-next
+           data::<<-rules)
+  :use ((:instance <<-of-car-when-member-equal-of-cdr
+                   (l (tree-iter-after (iter-fix iter)))
+                   (x (not-<<-all-l-sk-witness
+                        (after iter)
+                        (car (tree-iter-after (iter-fix iter))))))
+        (:instance in-when-emptyp
+                   (x (car (tree-iter-after (iter-fix iter))))
+                   (set (after iter)))))
+
+;; The step law again, phrased on the position stepped from rather than the
+;; position landed on: what lies ahead loses its least element. Unlike @(tsee
+;; after-of-next) this covers the step off the last element, where what lay
+;; ahead was already empty and stays so.
+
+(defrule after-of-next-when-has-valuep
+  (implies (has-valuep iter)
+           (equal (after (next iter))
+                  (delete (min (after iter)) (after iter))))
+  :cases ((has-valuep (next iter)))
+  :enable (value-of-next
+           has-valuep-of-next
+           extensionality
+           in-when-emptyp)
+  :use ((:instance has-valuep-when-neither-end (iter (next iter))))
+  :disable has-valuep-when-neither-end)
+
+;;;;;;;;;;;;;;;;;;;;
+
+;; The mirror laws for a step back. What lies ahead gains the value stepped
+;; away from; a step back has a value to land on exactly when something lies
+;; behind; and the value it lands on is the greatest of what lay behind. So a
+;; backward walk visits the elements in reverse @(tsee <<) order.
+
+(defrule after-of-prev
+  (implies (has-valuep iter)
+           (equal (after (prev iter))
+                  (insert (value iter) (after iter))))
+  :enable (extensionality
+           in-of-after-becomes-member-equal
+           prev
+           value
+           has-valuep))
+
+(defrule has-valuep-of-prev
+  (equal (has-valuep (prev iter))
+         (not (emptyp (before iter))))
+  :enable (before
+           has-valuep
+           prev
+           tree-iter-has-value-p-of-tree-iter-prev
+           bstp-of-tree-iter-plug-of-iter-fix
+           set::emptyp))
+
+;; Left disabled: with @(tsee before-becomes-insert-of-before-of-prev) it
+;; loops, since that rule introduces the very @(tsee value) term this one
+;; rewrites back into a @(tsee before) term.
+
+(defruled value-of-prev
+  (implies (has-valuep (prev iter))
+           (equal (value (prev iter))
+                  (max (before iter))))
+  :enable (data::binary-max-<<
+           data::<<-rules)
+  :use ((:instance <<-of-arg1-and-value-when-in-of-before
+                   (iter (prev iter))
+                   (x (max (before (prev iter))))))
+  :disable <<-of-arg1-and-value-when-in-of-before)
+
+(theory-invariant
+  (incompatible (:rewrite value-of-prev)
+                (:rewrite before-becomes-insert-of-before-of-prev)))
+
+(defrule before-of-prev-when-has-valuep
+  (implies (has-valuep iter)
+           (equal (before (prev iter))
+                  (delete (max (before iter)) (before iter))))
+  :cases ((has-valuep (prev iter)))
+  :enable (delete-when-not-in
+           delete-of-insert-same
+           extensionality
+           in-when-emptyp)
+  :use ((:instance value-of-prev)
+        (:instance not-in-of-value-and-before (iter (prev iter)))
+        (:instance has-valuep-when-neither-end (iter (prev iter)))
+        (:instance has-valuep-of-prev))
+  :disable (not-in-of-value-and-before
+            has-valuep-when-neither-end
+            has-valuep-of-prev))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The measures. Each counts the moves left in one direction, so each is a
 ;; suitable measure for a walk that way.
