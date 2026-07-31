@@ -1008,35 +1008,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-declor-nonabstract-sts-safep ((declor declorp)
-                                            info
-                                            (spec sts-struct-specp)
-                                            (vtable valid-tablep)
-                                            (completions type-completions-p))
+(define param-declon-info-sts-safep ((pdeclon param-declonp)
+                                     (spec sts-struct-specp)
+                                     (vtable valid-tablep)
+                                     (completions type-completions-p))
   :returns (yes/no booleanp)
-  :short "Check if a non-abstract parameter declarator
+  :short "Check if the type of a parameter declaration
           is safe for the STS transformation."
-  (and (or (type+uid-vinfop info)
-           (raise "Internal error: malformed ~x0." info))
-       (or (top-type-sts-safep
-            (type+uid-vinfo->type info) spec vtable completions)
-           (sts-reject (param-declor-nonabstract declor info))))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define param-declor-abstract-sts-safep ((declor absdeclorp)
-                                         info
-                                         (spec sts-struct-specp)
-                                         (vtable valid-tablep)
-                                         (completions type-completions-p))
-  :returns (yes/no booleanp)
-  :short "Check if an abstract parameter declarator
-          is safe for the STS transformation."
-  (and (or (type-vinfop info)
-           (raise "Internal error: malformed ~x0." info))
-       (or (top-type-sts-safep (type-vinfo->type info) spec vtable completions)
-           (sts-reject (param-declor-abstract declor info))))
+  (and (or (and (param-declon-unambp pdeclon)
+                (param-declon-annop pdeclon))
+           (raise "Internal error: ambiguous or unannotated ~x0."
+                  (param-declon-fix pdeclon)))
+       (or (top-type-sts-safep (param-declon-type pdeclon)
+                               spec vtable completions)
+           (sts-reject (param-declon-fix pdeclon))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1407,26 +1392,19 @@
    (type-spec :auto-type (sts-reject (type-spec-fix type-spec)))
    (decl-spec :stdcall (sts-reject (decl-spec-fix decl-spec)))
    (decl-spec :declspec (sts-reject (decl-spec-fix decl-spec)))
-   (param-declor :nonabstract (and (declor-sts-safep param-declor.declor
+   (param-declon (b* (((param-declon param-declon)))
+                   (and (decl-spec-list-sts-safep param-declon.specs
+                                                  spec
+                                                  vtable
+                                                  completions)
+                        (param-declor-sts-safep param-declon.declor
+                                                spec
+                                                vtable
+                                                completions)
+                        (param-declon-info-sts-safep param-declon
                                                      spec
                                                      vtable
-                                                     completions)
-                                   (param-declor-nonabstract-sts-safep
-                                    param-declor.declor
-                                    param-declor.info
-                                    spec
-                                    vtable
-                                    completions)))
-   (param-declor :abstract (and (absdeclor-sts-safep param-declor.declor
-                                                     spec
-                                                     vtable
-                                                     completions)
-                                (param-declor-abstract-sts-safep
-                                 param-declor.declor
-                                 param-declor.info
-                                 spec
-                                 vtable
-                                 completions)))
+                                                     completions))))
    (tyname (b* (((tyname tyname)))
              (and (spec/qual-list-sts-safep tyname.specquals
                                             spec
