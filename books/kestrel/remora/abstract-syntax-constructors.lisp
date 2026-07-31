@@ -60,7 +60,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dim-term-from-var/const/other (dim)
+(define dim-term-from-var/const/other (term)
   :short "Construct a dimension term from
           a string denoting a variable,
           or a natural number denoting a constant,
@@ -69,46 +69,46 @@
   (xdoc::topstring
    (xdoc::p
     "The string denoting a variable must start with @('$')."))
-  (cond ((stringp dim)
-         (b* (((mv & name) (var-string-split dim '(#\$))))
+  (cond ((stringp term)
+         (b* (((mv & name) (var-string-split term '(#\$))))
            `(dim-var ,name)))
-        ((natp dim) `(dim-const ,dim))
-        (t dim)))
+        ((natp term) `(dim-const ,term))
+        (t term)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define dim-terms-from-vars/consts/others ((dims true-listp))
+(define dim-terms-from-vars/consts/others ((terms true-listp))
   :short "Lift @(tsee dim-term-from-var/const/other) to lists."
-  (cond ((endp dims) nil)
-        (t (cons (dim-term-from-var/const/other (car dims))
-                 (dim-terms-from-vars/consts/others (cdr dims))))))
+  (cond ((endp terms) nil)
+        (t (cons (dim-term-from-var/const/other (car terms))
+                 (dim-terms-from-vars/consts/others (cdr terms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ dim+ (&rest dims)
+(defmacro+ dim+ (&rest terms)
   :short "Construct an addition dimension term
           from argument dimension terms."
-  `(dim-add (list ,@(dim-terms-from-vars/consts/others dims))))
+  `(dim-add (list ,@(dim-terms-from-vars/consts/others terms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ dim* (&rest dims)
+(defmacro+ dim* (&rest terms)
   :short "Construct a multiplication dimension term
           from argument dimension terms."
-  `(dim-mul (list ,@(dim-terms-from-vars/consts/others dims))))
+  `(dim-mul (list ,@(dim-terms-from-vars/consts/others terms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ dim- (&rest dims)
+(defmacro+ dim- (&rest terms)
   :short "Construct a subtraction dimension term
           from argument dimension terms."
-  `(dim-sub (list ,@(dim-terms-from-vars/consts/others dims))))
+  `(dim-sub (list ,@(dim-terms-from-vars/consts/others terms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ shp (&rest dims)
+(defmacro+ shp (&rest terms)
   :short "Construct a shape term from component dimension terms."
-  `(shape-dims (list ,@(dim-terms-from-vars/consts/others dims))))
+  `(shape-dims (list ,@(dim-terms-from-vars/consts/others terms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
