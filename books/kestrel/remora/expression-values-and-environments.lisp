@@ -467,6 +467,17 @@
     (:reshape-t-s1-s2 ((tval type-value)
                        (s1val nat-list)
                        (s2val nat-list)))
+    (:flatten ())
+    (:flatten-t ((tval type-value)))
+    (:flatten-t-m ((tval type-value)
+                   (mval nat)))
+    (:flatten-t-m-n ((tval type-value)
+                     (mval nat)
+                     (nval nat)))
+    (:flatten-t-m-n-s ((tval type-value)
+                       (mval nat)
+                       (nval nat)
+                       (sval nat-list)))
     (:transpose2d ())
     (:transpose2d-t ((tval type-value)))
     (:transpose2d-t-m ((tval type-value)
@@ -2002,6 +2013,11 @@
                      :reshape-t nil
                      :reshape-t-s1 nil
                      :reshape-t-s1-s2 t
+                     :flatten nil
+                     :flatten-t nil
+                     :flatten-t-m nil
+                     :flatten-t-m-n nil
+                     :flatten-t-m-n-s t
                      :transpose2d nil
                      :transpose2d-t nil
                      :transpose2d-t-m nil
@@ -2083,6 +2099,11 @@
                      :reshape-t nil
                      :reshape-t-s1 nil
                      :reshape-t-s1-s2 nil
+                     :flatten t
+                     :flatten-t nil
+                     :flatten-t-m nil
+                     :flatten-t-m-n nil
+                     :flatten-t-m-n-s nil
                      :transpose2d t
                      :transpose2d-t nil
                      :transpose2d-t-m nil
@@ -2163,6 +2184,11 @@
                      :reshape-t t
                      :reshape-t-s1 t
                      :reshape-t-s1-s2 nil
+                     :flatten nil
+                     :flatten-t t
+                     :flatten-t-m t
+                     :flatten-t-m-n t
+                     :flatten-t-m-n-s nil
                      :transpose2d nil
                      :transpose2d-t t
                      :transpose2d-t-m t
@@ -2251,6 +2277,10 @@
                      :reshape-t (primop-value-reshape)
                      :reshape-t-s1 (primop-value-reshape)
                      :reshape-t-s1-s2 (primop-value-reshape)
+                     :flatten-t (primop-value-flatten)
+                     :flatten-t-m (primop-value-flatten)
+                     :flatten-t-m-n (primop-value-flatten)
+                     :flatten-t-m-n-s (primop-value-flatten)
                      :transpose2d (primop-value-transpose2d)
                      :transpose2d-t (primop-value-transpose2d)
                      :transpose2d-t-m (primop-value-transpose2d)
@@ -2521,6 +2551,19 @@
                               (make-type-value-array
                                :elem op.tval
                                :dims op.s2val))
+                       :dims nil)
+     :flatten (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :flatten-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :flatten-t-m (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :flatten-t-m-n (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :flatten-t-m-n-s (make-type-value-array
+                       :elem (nest-function-type-values
+                              (list (make-type-value-array
+                                     :elem op.tval
+                                     :dims (list* op.mval op.nval op.sval)))
+                              (make-type-value-array
+                               :elem op.tval
+                               :dims (cons (* op.mval op.nval) op.sval)))
                        :dims nil)
      :transpose2d (prog2$ (impossible) (type-value-base (base-type-bool)))
      :transpose2d-t (prog2$ (impossible) (type-value-base (base-type-bool)))
@@ -3249,6 +3292,7 @@
          (cons "index2d" (expr-value-primop (primop-value-index2d)))
          (cons "sum" (expr-value-primop (primop-value-sum)))
          (cons "reshape" (expr-value-primop (primop-value-reshape)))
+         (cons "flatten" (expr-value-primop (primop-value-flatten)))
          (cons "transpose2d" (expr-value-primop (primop-value-transpose2d))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
