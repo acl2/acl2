@@ -1112,7 +1112,7 @@
    :funcall (type-vinfo->type expr.info)
    :member (type-vinfo->type expr.info)
    :memberp (type-vinfo->type expr.info)
-   :complit (type-unknown)
+   :complit (type-vinfo->type (tyname->info expr.type))
    :unary (type-vinfo->type expr.info)
    :label-addr (type-pointer (type-void))
    :sizeof (type-unknown-arithmetic)

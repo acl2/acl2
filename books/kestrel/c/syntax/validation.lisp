@@ -17,6 +17,7 @@
 (include-book "initializer-validation")
 (include-book "validation-tables")
 (include-book "validation-annotations")
+(include-book "constant-expressions")
 (include-book "null-pointer-constants")
 (include-book "validator")
 
@@ -48,5 +49,6 @@
                     initializer-validation
                     validation-tables
                     validation-annotations
+                    constant-expressions
                     null-pointer-constants
                     validator))
