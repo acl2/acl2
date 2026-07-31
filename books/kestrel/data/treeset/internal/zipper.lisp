@@ -2268,35 +2268,14 @@
 ;; contiguous slice of the in-order sequence, which is then ordered and
 ;; duplicate-free.
 
-(defruledl setp-of-cdr-when-osetp
-  (implies (set::setp l)
-           (set::setp (cdr l)))
-  :enable set::setp)
-
-(defruledl osetp-of-prefix
-  (implies (and (true-listp x)
-                (set::setp (append x y)))
-           (set::setp x))
-  :induct t
-  :enable (set::setp
-           append))
-
-(defruledl osetp-of-suffix
-  (implies (set::setp (append x y))
-           (set::setp y))
-  :induct (append x y)
-  :enable (set::setp
-           append
-           setp-of-cdr-when-osetp))
-
 (defrule osetp-of-zip-before-when-bstp
   (implies (bstp (zip-plug zip))
            (set::setp (zip-before zip)))
   :use ((:instance tree-in-order-of-zip-plug-split-at-cursor)
         (:instance osetp-of-tree-in-order-when-bstp (tree (zip-plug zip)))
-        (:instance osetp-of-prefix
-                   (x (zip-before zip))
-                   (y (cons (zip-value zip) (zip-after zip)))))
+        (:instance data::setp-of-prefix-when-osetp-of-append
+                   (data::x (zip-before zip))
+                   (data::y (cons (zip-value zip) (zip-after zip)))))
   :disable (osetp-of-tree-in-order-when-bstp
             tree-in-order-of-zip-plug))
 
@@ -2305,11 +2284,11 @@
            (set::setp (zip-after zip)))
   :use ((:instance tree-in-order-of-zip-plug-split-at-cursor)
         (:instance osetp-of-tree-in-order-when-bstp (tree (zip-plug zip)))
-        (:instance osetp-of-suffix
-                   (x (zip-before zip))
-                   (y (cons (zip-value zip) (zip-after zip))))
-        (:instance setp-of-cdr-when-osetp
-                   (l (cons (zip-value zip) (zip-after zip)))))
+        (:instance data::setp-of-suffix-when-osetp-of-append
+                   (data::x (zip-before zip))
+                   (data::y (cons (zip-value zip) (zip-after zip))))
+        (:instance data::setp-of-cdr-when-osetp
+                   (data::l (cons (zip-value zip) (zip-after zip)))))
   :disable (osetp-of-tree-in-order-when-bstp
             tree-in-order-of-zip-plug))
 
@@ -2357,9 +2336,9 @@
         (:instance data::<<-of-car-when-member-equal-of-cdr
                    (data::l (cons (zip-value zip) (zip-after zip)))
                    (data::x x))
-        (:instance osetp-of-suffix
-                   (x (zip-before zip))
-                   (y (cons (zip-value zip) (zip-after zip)))))
+        (:instance data::setp-of-suffix-when-osetp-of-append
+                   (data::x (zip-before zip))
+                   (data::y (cons (zip-value zip) (zip-after zip)))))
   :disable (member-equal-of-tree-in-order-under-iff
             osetp-of-tree-in-order-when-bstp
             tree-in-order-of-zip-plug))
@@ -2382,9 +2361,9 @@
         (:instance data::<<-of-car-when-member-equal-of-cdr
                    (data::l (cons (zip-value zip) (zip-after zip)))
                    (data::x x))
-        (:instance osetp-of-suffix
-                   (x (zip-before zip))
-                   (y (cons (zip-value zip) (zip-after zip)))))
+        (:instance data::setp-of-suffix-when-osetp-of-append
+                   (data::x (zip-before zip))
+                   (data::y (cons (zip-value zip) (zip-after zip)))))
   :disable (member-equal-of-tree-in-order-under-iff
             osetp-of-tree-in-order-when-bstp
             tree-in-order-of-zip-plug))

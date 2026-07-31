@@ -56,6 +56,24 @@
            (setp (cdr l)))
   :enable setp)
 
+;; Splitting an oset: both halves of an append are osets themselves.
+
+(defruled setp-of-prefix-when-osetp-of-append
+  (implies (and (true-listp x)
+                (setp (append x y)))
+           (setp x))
+  :induct t
+  :enable (setp
+           append))
+
+(defruled setp-of-suffix-when-osetp-of-append
+  (implies (setp (append x y))
+           (setp y))
+  :induct (append x y)
+  :enable (setp
+           append
+           setp-of-cdr-when-osetp))
+
 ;; An oset is strictly increasing, so its head is below every later element,
 ;; and every element of a prefix is below the head of what follows.
 
@@ -92,4 +110,17 @@
            member-equal
            setp-of-cdr-when-osetp
            <<-of-cars-when-osetp-of-append
+           <<-rules))
+
+;; An oset has no duplicates, so membership in the tail is membership anywhere
+;; but at the head.
+
+(defruled member-equal-of-cdr-when-osetp
+  (implies (setp l)
+           (iff (member-equal x (cdr l))
+                (and (not (equal x (car l)))
+                     (member-equal x l))))
+  :induct t
+  :enable (setp
+           set::not-member-when-smaller
            <<-rules))

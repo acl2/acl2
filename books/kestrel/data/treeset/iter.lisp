@@ -744,55 +744,9 @@
 ;; everything behind it and below everything ahead of it. These are what tie a
 ;; traversal's order to @(tsee <<); the laws below are all consequences.
 ;;
-;; The generic list facts are stated over osets, whose strict ordering is what
-;; carries the comparisons. The two sides and the value assemble into one such
-;; list, so comparing across the cut is comparing across an append.
-
-(defruledl setp-of-cdr-when-osetp
-  (implies (set::setp l)
-           (set::setp (cdr l)))
-  :enable set::setp)
-
-(defruledl setp-of-suffix-when-osetp-of-append
-  (implies (set::setp (append a b))
-           (set::setp b))
-  :induct (append a b)
-  :enable (set::setp append setp-of-cdr-when-osetp))
-
-(defruledl <<-of-car-when-member-equal-of-cdr
-  (implies (and (set::setp l)
-                (member-equal x (cdr l)))
-           (<< (car l) x))
-  :induct (member-equal x l)
-  :enable (set::setp
-           member-equal
-           set::not-member-when-smaller
-           setp-of-cdr-when-osetp
-           data::<<-rules))
-
-(defruledl <<-of-cars-when-osetp-of-append
-  (implies (and (set::setp (append a b))
-                (consp a)
-                (consp b))
-           (<< (car a) (car b)))
-  :induct (append a b)
-  :enable (set::setp
-           append
-           setp-of-cdr-when-osetp
-           data::<<-rules))
-
-(defruledl <<-across-append-when-osetp
-  (implies (and (set::setp (append a b))
-                (member-equal x a)
-                (consp b))
-           (<< x (car b)))
-  :induct (append a b)
-  :enable (set::setp
-           append
-           member-equal
-           setp-of-cdr-when-osetp
-           <<-of-cars-when-osetp-of-append
-           data::<<-rules))
+;; The generic oset facts carrying the comparisons come from the oset
+;; utilities. The two sides and the value assemble into one ordered list, so
+;; comparing across the cut is comparing across an append.
 
 (defrule <<-of-value-when-in-of-after
   (implies (and (has-valuep iter)
@@ -805,13 +759,14 @@
   :disable (tree-in-order-of-zip-plug
             tree-iter-plug-when-tree-iter-has-value-p
             tree-iter-plug-when-zipp)
-  :use ((:instance setp-of-suffix-when-osetp-of-append
-                   (a (tree-iter-before (iter-fix iter)))
-                   (b (cons (tree-iter-value (iter-fix iter))
-                            (tree-iter-after (iter-fix iter)))))
-        (:instance <<-of-car-when-member-equal-of-cdr
-                   (l (cons (tree-iter-value (iter-fix iter))
-                            (tree-iter-after (iter-fix iter)))))))
+  :use ((:instance data::setp-of-suffix-when-osetp-of-append
+                   (data::x (tree-iter-before (iter-fix iter)))
+                   (data::y (cons (tree-iter-value (iter-fix iter))
+                                  (tree-iter-after (iter-fix iter)))))
+        (:instance data::<<-of-car-when-member-equal-of-cdr
+                   (data::l (cons (tree-iter-value (iter-fix iter))
+                                  (tree-iter-after (iter-fix iter))))
+                   (data::x x))))
 
 (defrule <<-of-arg1-and-value-when-in-of-before
   (implies (and (has-valuep iter)
@@ -824,10 +779,11 @@
   :disable (tree-in-order-of-zip-plug
             tree-iter-plug-when-tree-iter-has-value-p
             tree-iter-plug-when-zipp)
-  :use ((:instance <<-across-append-when-osetp
-                   (a (tree-iter-before (iter-fix iter)))
-                   (b (cons (tree-iter-value (iter-fix iter))
-                            (tree-iter-after (iter-fix iter)))))))
+  :use ((:instance data::<<-across-append-when-osetp
+                   (data::a (tree-iter-before (iter-fix iter)))
+                   (data::b (cons (tree-iter-value (iter-fix iter))
+                                  (tree-iter-after (iter-fix iter))))
+                   (data::x x))))
 
 ;; So the value is on neither side, and the sides are disjoint.
 
@@ -1066,23 +1022,13 @@
 ;; An oset has no duplicates, so dropping the head of the sequence is deleting
 ;; that one element from the set it denotes.
 
-(defruledl member-equal-of-cdr-when-osetp
-  (implies (set::setp l)
-           (iff (member-equal x (cdr l))
-                (and (not (equal x (car l)))
-                     (member-equal x l))))
-  :induct t
-  :enable (set::setp
-           set::not-member-when-smaller
-           data::<<-rules))
-
 (defrule after-of-next
   (implies (has-valuep (next iter))
            (equal (after (next iter))
                   (delete (value (next iter)) (after iter))))
   :enable (extensionality
            in-of-after-becomes-member-equal
-           member-equal-of-cdr-when-osetp
+           data::member-equal-of-cdr-when-osetp
            bstp-of-tree-iter-plug-of-iter-fix
            next
            value
@@ -1131,11 +1077,11 @@
            tree-iter-value-of-tree-iter-next
            tree-iter-has-value-p-of-tree-iter-next
            data::<<-rules)
-  :use ((:instance <<-of-car-when-member-equal-of-cdr
-                   (l (tree-iter-after (iter-fix iter)))
-                   (x (not-<<-all-l-sk-witness
-                        (after iter)
-                        (car (tree-iter-after (iter-fix iter))))))
+  :use ((:instance data::<<-of-car-when-member-equal-of-cdr
+                   (data::l (tree-iter-after (iter-fix iter)))
+                   (data::x (not-<<-all-l-sk-witness
+                              (after iter)
+                              (car (tree-iter-after (iter-fix iter))))))
         (:instance in-when-emptyp
                    (x (car (tree-iter-after (iter-fix iter))))
                    (set (after iter)))))

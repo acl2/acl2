@@ -1113,34 +1113,14 @@
 ;; which is an oset by @(tsee osetp-of-tree-in-order-when-bstp). So the sets to
 ;; either side of the iterator are available without building anything.
 
-(defruledl osetp-of-prefix
-  (implies (and (true-listp x)
-                (set::setp (append x y)))
-           (set::setp x))
-  :induct t
-  :enable (set::setp
-           append))
-
-(defruledl osetp-of-cdr
-  (implies (set::setp x)
-           (set::setp (cdr x)))
-  :enable set::setp)
-
-(defruledl osetp-of-suffix
-  (implies (set::setp (append x y))
-           (set::setp y))
-  :induct t
-  :enable (set::setp
-           append))
-
 (defrule osetp-of-tree-iter-before-when-bstp
   (implies (bstp (tree-iter-plug iter))
            (set::setp (tree-iter-before iter)))
   :cases ((tree-iter-has-value-p iter))
   :enable (tree-iter-before
            tree-in-order-of-zip-plug-split-at-cursor
-           osetp-of-prefix
-           osetp-of-suffix)
+           data::setp-of-prefix-when-osetp-of-append
+           data::setp-of-suffix-when-osetp-of-append)
   :disable tree-in-order-of-zip-plug
   :use ((:instance osetp-of-tree-in-order-when-bstp
                    (tree (tree-iter-plug iter)))))
@@ -1154,11 +1134,11 @@
   :disable tree-in-order-of-zip-plug
   :use ((:instance osetp-of-tree-in-order-when-bstp
                    (tree (tree-iter-plug iter)))
-        (:instance osetp-of-suffix
-                   (x (zip-before iter))
-                   (y (cons (zip-value iter) (zip-after iter))))
-        (:instance osetp-of-cdr
-                   (x (cons (zip-value iter) (zip-after iter))))))
+        (:instance data::setp-of-suffix-when-osetp-of-append
+                   (data::x (zip-before iter))
+                   (data::y (cons (zip-value iter) (zip-after iter))))
+        (:instance data::setp-of-cdr-when-osetp
+                   (data::l (cons (zip-value iter) (zip-after iter))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
