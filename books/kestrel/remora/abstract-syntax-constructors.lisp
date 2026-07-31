@@ -153,6 +153,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ispace-term-from-var/dim/shape/other (ispace)
+  :short "Construct an ispace term from
+          a string denoting a dimension or shape variable,
+          or a natural number denoting a dimension,
+          or a dimension term starting with a macro
+          (@(tsee dim+), @(tsee dim*), or @(tsee dim-)),
+          or a dimension term starting with a fixtype constructor,
+          or a shape term starting with a fixtype constructor,
+          or some other term that is left unchanged."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The string denoting a variable must start with @('$') or @('@')."))
+  (cond ((stringp ispace)
+         (b* (((mv prefix name) (var-string-split ispace '(#\$ #\@))))
+           (case prefix
+             (#\$ `(ispace-dim (dim-var ,name)))
+             (#\@ `(ispace-shape (shape-var ,name))))))
+        ((natp ispace) `(ispace-dim (dim-const ,ispace)))
+        ((and (consp ispace)
+              (member-eq (car ispace)
+                         '(dim+
+                           dim*
+                           dim-
+                           dim-var
+                           dim-const
+                           dim-add
+                           dim-mul
+                           dim-sub)))
+         `(ispace-dim ,ispace))
+        ((and (consp ispace)
+              (member-eq (car ispace)
+                         '(shape-var
+                           shape-dims
+                           shape-append
+                           shape-splice)))
+         `(ispace-shape ,ispace))
+        (t ispace)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define ispace-terms-from-vars/dims/shapes/others ((ispaces true-listp))
+  :short "Lift @(tsee ispace-term-from-var/dim/shape/other) to lists."
+  (cond ((endp ispaces) nil)
+        (t (cons (ispace-term-from-var/dim/shape/other (car ispaces))
+                 (ispace-terms-from-vars/dims/shapes/others (cdr ispaces))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ shp[] (&rest ispaces)
+  :short "Construct a shape splice term from component ispace terms."
+  `(shape-splice (list ,@(ispace-terms-from-vars/dims/shapes/others ispaces))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ispace-var-term-from-string ((str stringp))
   :short "Build an ispace variable term from a string."
   :long
