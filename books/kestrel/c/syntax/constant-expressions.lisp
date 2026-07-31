@@ -417,51 +417,6 @@
        :unary
        (unop-case
          expr.op
-         :address
-         (3and
-          (expr-ice-core-3p
-           expr.arg evaluatedp cast-restrictionsp dialect)
-          extended-operand)
-         :indir
-         (3and
-          (expr-ice-core-3p
-           expr.arg evaluatedp cast-restrictionsp dialect)
-          extended-operand)
-         :plus
-         (expr-ice-core-3p
-          expr.arg evaluatedp cast-restrictionsp dialect)
-         :minus
-         (b* ((arg (expr-ice-core-3p
-                    expr.arg evaluatedp cast-restrictionsp dialect)))
-           (if evaluatedp
-               (3and arg :unknown)
-             arg))
-         :bitnot
-         (expr-ice-core-3p
-          expr.arg evaluatedp cast-restrictionsp dialect)
-         :lognot
-         (expr-ice-core-3p
-          expr.arg evaluatedp cast-restrictionsp dialect)
-         :preinc
-         (3and
-          (3not evaluatedp)
-          (expr-ice-core-3p
-           expr.arg evaluatedp cast-restrictionsp dialect))
-         :predec
-         (3and
-          (3not evaluatedp)
-          (expr-ice-core-3p
-           expr.arg evaluatedp cast-restrictionsp dialect))
-         :postinc
-         (3and
-          (3not evaluatedp)
-          (expr-ice-core-3p
-           expr.arg evaluatedp cast-restrictionsp dialect))
-         :postdec
-         (3and
-          (3not evaluatedp)
-          (expr-ice-core-3p
-           expr.arg evaluatedp cast-restrictionsp dialect))
          :sizeof
          (b* ((result-constp
                (expr-sizeof-result-const-3p expr.arg))
@@ -475,16 +430,26 @@
          (3and
           (expr-ice-core-3p expr.arg nil nil dialect)
           :unknown)
-         :real
-         (3and
-          (expr-ice-core-3p
-           expr.arg evaluatedp cast-restrictionsp dialect)
-          :unknown)
-         :imag
-         (3and
-          (expr-ice-core-3p
-           expr.arg evaluatedp cast-restrictionsp dialect)
-          :unknown))
+         :otherwise
+         (b* ((arg (expr-ice-core-3p
+                    expr.arg evaluatedp cast-restrictionsp dialect))
+              (operator
+               (cond
+                ((unop-case expr.op '(:plus :bitnot :lognot))
+                 t)
+                ((unop-case expr.op '(:address :indir))
+                 extended-operand)
+                ((unop-case
+                   expr.op
+                   '(:preinc :predec :postinc :postdec))
+                 (3not evaluatedp))
+                ((unop-case expr.op :minus)
+                 (if evaluatedp :unknown t))
+                ((unop-case expr.op '(:real :imag))
+                 :unknown)
+                (t
+                 (prog2$ (impossible) :unknown)))))
+           (3and arg operator)))
        :label-addr
        :unknown
        :sizeof
