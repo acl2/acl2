@@ -91,7 +91,6 @@
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/arithmetic-light/truncate" :dir :system)
-(include-book "kestrel/utilities/real-time-since" :dir :system)
 (include-book "kestrel/utilities/untranslate-dollar-list" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/utilities/doublet-listp" :dir :system))
@@ -201,38 +200,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp assumptions hits state)
-(defund simplify-assumptions (assumptions rules count-hits no-warn-ground-functions state)
-  (declare (xargs :guard (and (pseudo-term-listp assumptions)
-                              (symbol-listp rules)
-                              (count-hits-argp count-hits)
-                              (symbol-listp no-warn-ground-functions))
-                  :stobjs state))
-  (b* ((- (cw "(Simplifying ~x0 assumptions...~%" (len assumptions)))
-       ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
-       ((mv erp assumption-rule-alist)
-        (make-rule-alist rules (w state)))
-       ((when erp) (mv erp nil nil state))
-       ;; TODO: Option to turn this off, or to do just one pass:
-       ((mv erp assumptions hits)
-        (simplify-conjunction-basic assumptions
-                                    assumption-rule-alist
-                                    (known-booleans (w state))
-                                    nil ;; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
-                                    no-warn-ground-functions
-                                    nil ; don't memoize (avoids time spent making empty-memoizations)
-                                    count-hits
-                                    t   ; todo: warn just once
-                                    ))
-       ((when erp) (mv erp nil hits state))
-       (assumptions (get-conjuncts-of-terms2 assumptions)) ; should already be done above, when repeatedly simplifying?
-       ((mv assumption-simp-elapsed state) (real-time-since assumption-simp-start-real-time state))
-       (- (cw " (Simplifying assumptions took ") ; usually <= .01 seconds
-          (print-to-hundredths assumption-simp-elapsed)
-          (cw "s.)~%"))
-       (- (cw " Done simplifying assumptions)~%")))
-    (mv nil assumptions hits state)))
-
 ;; Returns (mv erp assumptions assumption-rules hits state)
 ;; todo: don't return the assumption-rules?
 (defund simplify-assumptions-x86 (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state)
@@ -249,7 +216,7 @@
        ;; Remove the remove-assumption-rules:
        (assumption-rules (set-difference-eq-fast assumption-rules remove-assumption-rules))
        ((mv erp assumptions hits state)
-        (simplify-assumptions assumptions assumption-rules count-hits *no-warn-ground-functions* state))
+        (acl2::simplify-assumptions assumptions assumption-rules count-hits *no-warn-ground-functions* state))
        ((when erp) (mv erp nil nil hits state)))
     (mv nil assumptions assumption-rules hits state)))
 
