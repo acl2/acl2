@@ -47,14 +47,12 @@
     "This is used to turn, for example, the string @('$x')
      into the dimension variable with name @('x');
      the @('$') prefix is as in the concrete syntax (see ABNF grammar)."))
-  (b* ((str (str::str-fix str))
-       (prefixes (str::character-list-fix prefixes))
-       (chars (str::explode str))
+  (b* ((chars (str::explode str))
        ((unless (consp chars))
         (raise "Empty string.")
         (mv (code-char 0) ""))
        (prefix (car chars))
-       ((unless (member prefix prefixes))
+       ((unless (member prefix (str::character-list-fix prefixes)))
         (raise "Disallowed prefix ~x0." prefix)
         (mv (code-char 0) "")))
     (mv prefix (str::implode (cdr chars))))
@@ -88,25 +86,28 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ dim+ (&rest dims)
-  :short "Construct an addition dimension term from argument dimensions."
+  :short "Construct an addition dimension term
+          from argument dimension terms."
   `(dim-add (list ,@(dim-terms-from-vars/consts/others dims))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ dim* (&rest dims)
-  :short "Construct a multiplication dimension term from argument dimensions."
+  :short "Construct a multiplication dimension term
+          from argument dimension terms."
   `(dim-mul (list ,@(dim-terms-from-vars/consts/others dims))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ dim- (&rest dims)
-  :short "Construct a subtraction dimension term from argument dimensions."
+  :short "Construct a subtraction dimension term
+          from argument dimension terms."
   `(dim-sub (list ,@(dim-terms-from-vars/consts/others dims))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ shp (&rest dims)
-  :short "Construct a shape term from component dimensions."
+  :short "Construct a shape term from component dimension terms."
   `(shape-dims (list ,@(dim-terms-from-vars/consts/others dims))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
