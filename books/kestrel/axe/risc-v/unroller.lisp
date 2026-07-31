@@ -60,6 +60,7 @@
 (include-book "kestrel/executable-parsers/elf-tools" :dir :system)
 (include-book "kestrel/axe/utilities" :dir :system) ; for the user's convenience
 (include-book "kestrel/utilities/untranslate-dollar-list" :dir :system)
+(include-book "kestrel/lists-light/set-difference-equal-fast" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/utilities/w" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -234,6 +235,8 @@
 ;; TODO: Make use of this (see what we do for x86)
 (defconst *non-stp-assumption-functions* nil)
 
+(local (in-theory (disable acl2::member-of-cons)))
+
 ;; 10 seconds
 (acl2::make-repeatedly-run-function repeatedly-run acl2::simplify-dag-risc-v)
 
@@ -256,8 +259,8 @@
                                 prune-approx
                                 extra-rules
                                 remove-rules
-                                ;; extra-assumption-rules ; todo: why "extra"?
-                                ;; remove-assumption-rules
+                                extra-assumption-rules
+                                remove-assumption-rules
                                 step-limit
                                 step-increment
                                 ;; stop-pcs
@@ -290,8 +293,8 @@
                                   (natp prune-approx))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
-                              ;; (symbol-listp extra-assumption-rules)
-                              ;; (symbol-listp remove-assumption-rules)
+                              (symbol-listp extra-assumption-rules)
+                              (symbol-listp remove-assumption-rules)
                               (natp step-limit)
                               (step-incrementp step-increment)
                               ;; (nat-listp stop-pcs)
@@ -363,8 +366,7 @@
         )
        ((when erp)
         (er hard? 'unroll-risc-v-code-core "Error generating assumptions: ~x0." erp)
-        (mv erp nil ; nil nil nil nil nil
-            state))
+        (mv erp nil state))
        ;; Decide where to start lifting:
        (target-offset (if (eq :entry-point target)
                           (parsed-elf-entry-point parsed-executable)
@@ -390,6 +392,18 @@
                           assumptions))
        (assumptions (union-equal extra-assumptions assumptions))
        ;; (assumptions (set-difference-equal assumptions remove-assumptions))
+
+       ;; Simplify assumptions (todo: skip if no extra-assumptions?):
+       (assumption-rules (assumption-simplification-rules))
+       ;; Add the extra-assumption-rules:
+       (assumption-rules (append extra-assumption-rules assumption-rules))
+       ;; Remove the remove-assumption-rules:
+       (assumption-rules (set-difference-eq-fast assumption-rules remove-assumption-rules))
+       ((mv erp assumptions & state) ; todo: use the hits?
+        (acl2::simplify-assumptions assumptions assumption-rules count-hits
+                                    nil ; no-warn-ground-functions
+                                    state))
+       ((when erp) (mv erp nil state))
 
        (- (and print (progn$ (cw "(Assumptions for lifting (~x0):~%" (len assumptions))
                              (let ((assumptions (untranslate$-list assumptions nil state))) ; for readable output
@@ -518,8 +532,8 @@
                         prune-approx
                         extra-rules
                         remove-rules
-                        ;; extra-assumption-rules
-                        ;; remove-assumption-rules
+                        extra-assumption-rules
+                        remove-assumption-rules
                         step-limit
                         step-increment
                         ;;stop-pcs
@@ -560,8 +574,8 @@
                                   (natp prune-approx))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
-                              ;; (symbol-listp extra-assumption-rules)
-                              ;; (symbol-listp remove-assumption-rules)
+                              (symbol-listp extra-assumption-rules)
+                              (symbol-listp remove-assumption-rules)
                               (natp step-limit)
                               (step-incrementp step-increment)
                               ;; (nat-listp stop-pcs)
@@ -616,7 +630,7 @@
                                  ;inputs type-assumptions-for-array-varsp
                                  output-indicator
                                  prune-precise prune-approx extra-rules remove-rules
-                                 ;; extra-assumption-rules remove-assumption-rules
+                                 extra-assumption-rules remove-assumption-rules
                                  step-limit step-increment
                                  ;;stop-pcs
                                  memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslatep state))
@@ -775,8 +789,8 @@
                                   (prune-approx 't)
                                   (extra-rules 'nil)
                                   (remove-rules 'nil)
-;;                                  (extra-assumption-rules 'nil)
-;;                                  (remove-assumption-rules 'nil)
+                                  (extra-assumption-rules 'nil)
+                                  (remove-assumption-rules 'nil)
                                   (step-limit '1000000)
                                   (step-increment '100)
                                   ;;(stop-pcs 'nil)
@@ -815,8 +829,8 @@
         ',prune-approx
         ,extra-rules ; gets evaluated since not quoted
         ,remove-rules ; gets evaluated since not quoted
-        ;;      ,extra-assumption-rules ; gets evaluated since not quoted
-        ;;      ,remove-assumption-rules ; gets evaluated since not quoted
+        ,extra-assumption-rules ; gets evaluated since not quoted
+        ,remove-assumption-rules ; gets evaluated since not quoted
         ',step-limit
         ',step-increment
         ;;      ,stop-pcs
@@ -864,8 +878,8 @@
          ;; todo: how do these affect assumption simp:
          (extra-rules "Rules to use in addition to (unroller-rules32) or (unroller-rules64) plus a few others.")
          (remove-rules "Rules to turn off.")
-         ;; (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
-         ;; (remove-assumption-rules "Rules to be removed when simplifying assumptions.")
+         (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
+         (remove-assumption-rules "Rules to be removed when simplifying assumptions.")
          (step-limit "Limit on the total number of symbolic executions steps to allow (total number of steps over all branches, if the simulation splits).")
          (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
 ;;         (stop-pcs "A list of program counters (natural numbers) at which to stop the execution, for debugging.")
