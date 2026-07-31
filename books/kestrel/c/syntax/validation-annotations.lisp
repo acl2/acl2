@@ -655,6 +655,11 @@
                 (type-vinfop info)))
     :expand (param-declor-annop (param-declor-abstract declor info)))
 
+  (defruled param-declor-annop-of-param-declor-none
+    (equal (param-declor-annop (param-declor-none info))
+           (type-vinfop info))
+    :expand (param-declor-annop (param-declor-none info)))
+
   (defruled tyname-annop-of-tyname
     (equal (tyname-annop (tyname specquals declor? info))
            (and (spec/qual-list-annop specquals)
@@ -935,6 +940,12 @@
              (type-vinfop (param-declor-abstract->info param-declor)))
     :enable param-declor-annop)
 
+  (defruled type-vinfop-of-param-declor-none->info
+    (implies (and (param-declor-annop param-declor)
+                  (param-declor-case param-declor :none))
+             (type-vinfop (param-declor-none->info param-declor)))
+    :enable param-declor-annop)
+
   (defruled spec/qual-list-annop-of-tyname->specquals
     (implies (tyname-annop tyname)
              (spec/qual-list-annop (tyname->specquals tyname)))
@@ -1057,6 +1068,7 @@
      param-declon-annop-of-param-declon
      param-declor-annop-of-param-declor-nonabstract
      param-declor-annop-of-param-declor-abstract
+     param-declor-annop-of-param-declor-none
      tyname-annop-of-tyname
      struct-declor-annop-of-struct-declor
      init-declor-annop-of-init-declor
@@ -1103,6 +1115,7 @@
      type+uid-vinfop-of-param-declor-nonabstract->info
      absdeclor-annop-of-param-declor-abstract->declor
      type-vinfop-of-param-declor-abstract->info
+     type-vinfop-of-param-declor-none->info
      spec/qual-list-annop-of-tyname->specquals
      absdeclor-option-annop-of-tyname->declor?
      type-vinfop-of-tyname->info
