@@ -112,44 +112,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define shape-term-from-var/dim/other (dim/shape)
+(define shape-term-from-var/other (term)
   :short "Construct a shape term from
-          a string denoting a dimension or shape variable,
-          or a natural number denoting a dimension,
-          or a dimension arithmetic term
-          (@(tsee dim+), @(tsee dim*), or @(tsee dim-)),
+          a string denoting a variable,
           or some other term that is left unchanged."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The string denoting a variable must start with @('$') or @('@').")
-   (xdoc::p
-    "Dimensions are lifted to shapes."))
-  (cond ((stringp dim/shape)
-         (b* (((mv prefix name) (var-string-split dim/shape '(#\$ #\@))))
-           (case prefix
-             (#\$ `(shape-dims (list (dim-var ,name))))
-             (#\@ `(shape-var ,name)))))
-        ((natp dim/shape) `(shape-dims (list (dim-const ,dim/shape))))
-        ((and (consp dim/shape)
-              (member-eq (car dim/shape) '(dim+ dim* dim-)))
-         `(shape-dims (list ,dim/shape)))
-        (t dim/shape)))
+    "The string denoting a variable must start with @('@')."))
+  (cond ((stringp term)
+         (b* (((mv & name) (var-string-split term '(#\@))))
+           `(shape-var ,name)))
+        (t term)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define shape-terms-from-vars/dims/others ((dims/shapes true-listp))
-  :short "Lift @(tsee shape-term-from-var/dim/other) to lists."
-  (cond ((endp dims/shapes) nil)
-        (t (cons (shape-term-from-var/dim/other (car dims/shapes))
-                 (shape-terms-from-vars/dims/others (cdr dims/shapes))))))
+(define shape-terms-from-vars/others ((terms true-listp))
+  :short "Lift @(tsee shape-term-from-var/other) to lists."
+  (cond ((endp terms) nil)
+        (t (cons (shape-term-from-var/other (car terms))
+                 (shape-terms-from-vars/others (cdr terms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ shp++ (&rest dims/shapes)
-  :short "Construct a shape concatenation term
-          from dimensions and shapes to concatenate."
-  `(shape-append (list ,@(shape-terms-from-vars/dims/others dims/shapes))))
+(defmacro+ shp++ (&rest terms)
+  :short "Construct a shape concatenation term from component shape terms."
+  `(shape-append (list ,@(shape-terms-from-vars/others terms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -278,7 +266,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ t[] (type dim/shape)
+(defmacro+ t[] (type shape)
   :short "Construct a type term from the element type and the shape."
   :long
   (xdoc::topstring
@@ -286,7 +274,7 @@
     "Strings, natural numbers, and base type keywords
      are auto-coerced to ispaces and types."))
   `(type-array ,(type-term-from-var/base/other type)
-               (ispace-shape ,(shape-term-from-var/dim/other dim/shape))))
+               (ispace-shape ,(shape-term-from-var/other shape))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
