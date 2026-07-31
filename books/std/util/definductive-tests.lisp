@@ -53,7 +53,30 @@
                   (r*-alt-refl-p)
                   (r*-alt-trans-p)
                   (r* a b))
-             (r*-alt a b)))))
+             (r*-alt a b))))
+
+ (must-be-redundant
+  (defthm r*-2-base
+    (implies (r x y)
+             (r*-2 x y))))
+
+ (must-be-redundant
+  (defthm r*-2-refl
+    (r*-2 x x)))
+
+ (must-be-redundant
+  (defthm r*-2-trans
+    (implies (and (r*-2 x y)
+                  (r*-2 y z))
+             (r*-2 x z))))
+
+ (must-be-redundant
+  (defthm r*-2-alt-when-r*-2
+    (implies (and (r*-2-alt-base-p)
+                  (r*-2-alt-refl-p)
+                  (r*-2-alt-trans-p)
+                  (r*-2 a b))
+             (r*-2-alt a b)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -81,7 +104,24 @@
     (implies (and (p-alt-base-p)
                   (p-alt-step-p)
                   (p a))
-             (p-alt a)))))
+             (p-alt a))))
+
+ (must-be-redundant
+  (defthm p-2-base
+    (p-2 nil)))
+
+ (must-be-redundant
+  (defthm p-2-step
+    (implies (and (p-2 x)
+                  (p-2 y))
+             (p-2 (cons x y)))))
+
+ (must-be-redundant
+  (defthm p-2-alt-when-p-2
+    (implies (and (p-2-alt-base-p)
+                  (p-2-alt-step-p)
+                  (p-2 a))
+             (p-2-alt a)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -118,7 +158,29 @@
                   (gnd-alt-step-p)
                   (gnd-alt-ax2-p)
                   (gnd a))
-             (gnd-alt a)))))
+             (gnd-alt a))))
+
+ (must-be-redundant
+  (defthm gnd-2-ax
+    (gnd-2 0)))
+
+ (must-be-redundant
+  (defthm gnd-2-step
+    (implies (gnd-2 0)
+             (gnd-2 1))))
+
+ (must-be-redundant
+  (defthm gnd-2-ax2
+    (implies (gstub)
+             (gnd-2 2))))
+
+ (must-be-redundant
+  (defthm gnd-2-alt-when-gnd-2
+    (implies (and (gnd-2-alt-ax-p)
+                  (gnd-2-alt-step-p)
+                  (gnd-2-alt-ax2-p)
+                  (gnd-2 a))
+             (gnd-2-alt a)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -146,7 +208,24 @@
     (implies (and (bn-alt-base-p)
                   (bn-alt-step-p)
                   (bn x))
-             (bn-alt x)))))
+             (bn-alt x))))
+
+ (must-be-redundant
+  (defthm bn-2-base
+    (bn-2 0)))
+
+ (must-be-redundant
+  (defthm bn-2-step
+    (implies (and (bn-2 x)
+                  (<= x 5))
+             (bn-2 (1+ x)))))
+
+ (must-be-redundant
+  (defthm bn-2-alt-when-bn-2
+    (implies (and (bn-2-alt-base-p)
+                  (bn-2-alt-step-p)
+                  (bn-2 x))
+             (bn-2-alt x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -177,7 +256,17 @@
   (defthm p-alt-when-p
     (implies (and (p-alt-ax-p)
                   (p x))
-             (p-alt x)))))
+             (p-alt x))))
+
+ (must-be-redundant
+  (defthm p-2-ax
+    (p-2 0)))
+
+ (must-be-redundant
+  (defthm p-2-alt-when-p-2
+    (implies (and (p-2-alt-ax-p)
+                  (p-2 x))
+             (p-2-alt x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -197,7 +286,18 @@
   (defthm p-alt-when-p
     (implies (and (p-alt-ax-p)
                   (p x))
-             (p-alt x)))))
+             (p-alt x))))
+
+ (must-be-redundant
+  (defthm p-2-ax
+    (implies (natp x)
+             (p-2 x))))
+
+ (must-be-redundant
+  (defthm p-2-alt-when-p-2
+    (implies (and (p-2-alt-ax-p)
+                  (p-2 x))
+             (p-2-alt x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -232,7 +332,24 @@
     (implies (and (m-alt-pair-p)
                   (m-alt-proj-p)
                   (m a))
-             (m-alt a)))))
+             (m-alt a))))
+
+ (must-be-redundant
+  (defthm m-2-pair
+    (implies (r x y)
+             (m-2 (cons x y)))))
+
+ (must-be-redundant
+  (defthm m-2-proj
+    (implies (r x y)
+             (m-2 x))))
+
+ (must-be-redundant
+  (defthm m-2-alt-when-m-2
+    (implies (and (m-2-alt-pair-p)
+                  (m-2-alt-proj-p)
+                  (m-2 a))
+             (m-2-alt a)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -251,3 +368,35 @@
                    (p (cons x x)))
             (step2 ((p x) (p y))
                    (p (cons x y))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The variables of a rule become fields of the summand of the proof,
+; for the second representation of proofs;
+; so they must differ from the names that those events use
+; for the arguments of the conclusion and for the proofs of the premises.
+; The first of these two is the one that matters:
+; without the check, the variable would shadow
+; the formal of the proof validity predicate in the case for the rule,
+; turning the equality for that argument of the conclusion
+; into an equality of the field with itself,
+; which would silently define the wrong relation.
+
+(must-fail
+ (definductive concl-var-clash
+   :preds ((p a))
+   :irules ((ax ((natp concl.a))
+                (p concl.a)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The second of the two: a variable named after a premise field
+; would clash with that field in the summand.
+
+(must-fail
+ (definductive prem-field-clash
+   :preds ((q a))
+   :irules ((base ()
+                  (q 0))
+            (step ((q premise1-proof))
+                  (q (1+ premise1-proof))))))
