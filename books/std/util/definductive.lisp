@@ -3146,6 +3146,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(define defind-proof2-minimality-section-name ((name symbolp))
+  :returns (topic symbolp)
+  :short "Name of the @(tsee defsection) containing
+          the stubs, propositions, and theorems
+          for the minimality of the @('p[i]-2') predicates."
+  (packn-pos (list (symbol-lfix name) '-2-minimal) (symbol-lfix name)))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define defind-minimality-section-name ((name symbolp))
   :returns (topic symbolp)
   :short "Name of the @(tsee defsection) containing
@@ -5868,6 +5877,333 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-gen-proof2-pred-alt-stubs ((infos defind-pred-info-listp)
+                                          (name symbolp))
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name infos))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate the @('p[i]-2-alt') stubs."
+  (b* (((when (endp infos)) nil)
+       ((defind-pred-info info) (car infos))
+       (fn-name (defind-pred-alt-fn-name
+                  (defind-pred2-name info.name name) name))
+       (stub `(defstub ,fn-name ,(repeat (len info.formals) '*) => *))
+       (stubs (defind-gen-proof2-pred-alt-stubs (cdr infos) name)))
+    (cons stub stubs)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-pred-alt-irule-prop-prems
+  ((infos defind-premise-info-listp)
+   (name symbolp))
+  :returns (prems true-listp)
+  :short "Premises of the proposition (nullary function) saying that
+          a @('p[i]-2-alt') stub satisfies an inference rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-pred-alt-irule-prop-prems),
+     with the @('p[i]-2-alt') stubs in place of the @('p[i]-alt') ones."))
+  (b* (((when (endp infos)) nil)
+       (prems (defind-gen-proof2-pred-alt-irule-prop-prems (cdr infos) name))
+       (info (car infos)))
+    (defind-premise-info-case
+      info
+      :pred (cons `(,(defind-pred-alt-fn-name
+                       (defind-pred2-name info.name name) name)
+                    ,@(defind-term-info-list->uterm info.args))
+                  prems)
+      :other (cons (defind-term-info->uterm info.term)
+                   prems))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-pred-alt-irule-prop ((info defind-irule-infop)
+                                               (name symbolp))
+  :returns (mv (event pseudo-event-formp)
+               call)
+  :short "Proposition (nullary function) saying that
+          a @('p[i]-2-alt') stub satisfies an inference rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-pred-alt-irule-prop);
+     in particular, a ground rule yields a @(tsee defun)
+     instead of a @(tsee defun-sk),
+     since there is nothing to quantify."))
+  (b* (((defind-irule-info info))
+       ((defind-conclusion-info cinfo) info.conclusion)
+       (pred2-name (defind-pred2-name cinfo.name name))
+       (fn-name (defind-pred-alt-irule-fn-name pred2-name info.name name))
+       (prems (defind-gen-proof2-pred-alt-irule-prop-prems info.premises name))
+       (concl `(,(defind-pred-alt-fn-name pred2-name name)
+                ,@(defind-term-info-list->uterm cinfo.args)))
+       (vars (defind-irule-info-free-vars info))
+       (body/matrix (defind-gen-implication prems concl))
+       (event (if (defind-irule-groundp info)
+                  `(defun ,fn-name ()
+                     (declare (xargs :verify-guards nil))
+                     ,body/matrix)
+                `(defun-sk ,fn-name ()
+                   (declare (xargs :verify-guards nil))
+                   (forall ,vars ,body/matrix))))
+       (call `(,fn-name)))
+    (mv event call)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-pred-alt-irule-props
+  ((infos defind-irule-info-listp)
+   (name symbolp))
+  :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
+  :returns (mv (events pseudo-event-form-listp)
+               (calls true-listp))
+  :short "Propositions (nullary functions) saying that
+          the @('p[i]-2-alt') stubs satisfy the inference rules."
+  (b* (((when (endp infos)) (mv nil nil))
+       ((mv event call)
+        (defind-gen-proof2-pred-alt-irule-prop (car infos) name))
+       ((mv events calls)
+        (defind-gen-proof2-pred-alt-irule-props (cdr infos) name)))
+    (mv (cons event events) (cons call calls))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-alt-inst-doublets ((vars symbol-listp)
+                                             (pred-name symbolp)
+                                             (irule-name symbolp)
+                                             (name symbolp))
+  :returns (doublets true-list-listp)
+  :short "Bindings of the variables of a rule
+          in the instance of the proposition for that rule,
+          in a @('p[i]-2-alt-when-proof-validp') theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each variable of the rule is bound to
+     the field of the proof named after it.
+     This is where the second representation of proofs pays off
+     in this theorem: the variables of the rule are fields of the proof,
+     so these are plain accessor calls,
+     while @(tsee defind-gen-pred-alt-when-proof-valid-thm) must extract them
+     from the witness of the validity of the rule
+     (see @(tsee defind-gen-irule-mv-nth-doublets))."))
+  (b* (((when (endp vars)) nil)
+       (var (symbol-lfix (car vars)))
+       (acc (defind-proof-var-acc-name pred-name irule-name var name))
+       (proof (defind-proof-var-name name))
+       (doublet `(,var (,acc ,proof))))
+    (cons doublet
+          (defind-gen-proof2-alt-inst-doublets
+            (cdr vars) pred-name irule-name name))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-pred-alt-when-proof-valid-thm
+  ((pred-name symbolp)
+   (pred-formals symbol-listp)
+   (irule-infos defind-irule-info-listp)
+   (prop-calls true-listp)
+   (name symbolp))
+  :guard (no-duplicatesp-equal (defind-irule-info-list->name irule-infos))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @('p[i]-2-alt-when-proof-validp') theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-pred-alt-when-proof-valid-thm);
+     see that function for the shape of the computed hints,
+     which we follow, including the treatment of the last branch.
+     Using a single @(':use') hint with all the instances instead
+     is much slower, as noted there:
+     with eight rules we measured about sixty times as many prover steps.")
+   (xdoc::p
+    "The conclusion of the theorem is
+     the @('p[i]-2-alt') stub on the arguments of the conclusion,
+     which are arguments of the proof validity predicate,
+     rather than fields of the proof to be extracted;
+     so, unlike @(tsee defind-gen-pred-alt-when-proof-valid-thm),
+     there is nothing to destructure,
+     and each branch of the hints needs
+     just the proof validity predicate and the one for the rule."))
+  (b* ((recursivep (defind-pred-recursivep pred-name irule-infos))
+       (pred2-name (defind-pred2-name pred-name name))
+       (thm-name (defind-pred-alt-when-proof-valid-thm-name pred2-name name))
+       (valid-fn (defind-proof-valid-fn-name pred2-name name))
+       (proof (defind-proof-var-name name))
+       (pred-alt (defind-pred-alt-fn-name pred2-name name))
+       (concls (defind-proof2-concl-var-names pred-formals name))
+       ((unless (consp irule-infos))
+        (raise "Internal error: no inference rules.")
+        '(_))
+       (first-kind
+        (defind-irule-tag (defind-irule-info->name (car irule-infos))))
+       ((mv hint-branches lemma-instances irule-valid-fns)
+        (defind-gen-proof2-pred-alt-when-proof-valid-thm-loop
+          irule-infos name first-kind))
+       (formula
+        `(implies (and ,@prop-calls
+                       (,valid-fn ,proof ,@concls))
+                  (,pred-alt ,@concls)))
+       ((when recursivep)
+        `(defruled ,thm-name
+           ,formula
+           :induct t
+           :in-theory '(,valid-fn
+                        eql)
+           :hints ((cond ,@hint-branches))))
+       (poss-thm (defind-proof-kind-poss-thm-name pred2-name name)))
+    `(defruled ,thm-name
+       ,formula
+       :use ,lemma-instances
+       :in-theory '(,valid-fn
+                    ,poss-thm
+                    ,@irule-valid-fns)))
+  :no-function nil
+
+  :prepwork
+  ((define defind-gen-proof2-pred-alt-when-proof-valid-thm-loop
+     ((infos defind-irule-info-listp)
+      (name symbolp)
+      (first-kind symbolp))
+     :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
+     :returns (mv (hint-branches true-listp)
+                  (lemma-instances true-listp)
+                  (irule-valid-fns symbol-listp))
+     :parents nil
+     (b* (((when (endp infos)) (mv nil nil nil))
+          ((defind-irule-info info) (car infos))
+          ((defind-conclusion-info cinfo) info.conclusion)
+          (pred2-name (defind-pred2-name cinfo.name name))
+          (proof-kind (defind-proof-kind$inline-fn-name pred2-name name))
+          (proof (defind-proof-var-name name))
+          (kind (defind-irule-tag info.name))
+          (lastp (endp (cdr infos)))
+          (literal (if lastp
+                       `(equal (,proof-kind ,proof) ',(symbol-lfix first-kind))
+                     `(not (equal (,proof-kind ,proof) ',kind))))
+          (cond `(member-equal ',literal clause))
+          (necc/def-rule
+           (if (defind-irule-groundp info)
+               (defind-pred-alt-irule-fn-name pred2-name info.name name)
+             (defind-pred-alt-irule-thm-name pred2-name info.name name)))
+          (inst-doublets
+           (defind-gen-proof2-alt-inst-doublets
+             (defind-irule-info-free-vars info) pred2-name info.name name))
+          (lemma-instance `(:instance ,necc/def-rule ,@inst-doublets))
+          (valid-fn (defind-proof-valid-fn-name pred2-name name))
+          (irule-valid-fn
+           (defind-irule-valid-fn-name pred2-name info.name name))
+          (hint-branch
+           `(,cond
+             '(:use ,lemma-instance
+               :in-theory '(,valid-fn
+                            ,irule-valid-fn))))
+          ((mv hint-branches lemma-instances irule-valid-fns)
+           (defind-gen-proof2-pred-alt-when-proof-valid-thm-loop
+             (cdr infos) name first-kind)))
+       (mv (cons hint-branch hint-branches)
+           (cons lemma-instance lemma-instances)
+           (cons irule-valid-fn irule-valid-fns)))
+     :guard-hints
+     (("Goal" :in-theory (enable symbol-listp-when-symbol-setp))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-pred-alt-when-proof-valid-thms
+  ((pred-infos defind-pred-info-listp)
+   (irule-infos defind-irule-info-listp)
+   (prop-calls true-listp)
+   (name symbolp))
+  :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+              (no-duplicatesp-equal (defind-irule-info-list->name irule-infos)))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate all the @('p[i]-2-alt-when-proof-validp') theorems."
+  (b* (((when (endp pred-infos)) nil)
+       ((defind-pred-info info) (car pred-infos))
+       (thm (defind-gen-proof2-pred-alt-when-proof-valid-thm
+              info.name info.formals irule-infos prop-calls name))
+       (thms (defind-gen-proof2-pred-alt-when-proof-valid-thms
+               (cdr pred-infos) irule-infos prop-calls name)))
+    (cons thm thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-pred-alt-when-pred-thm ((pred-name symbolp)
+                                                  (pred-formals symbol-listp)
+                                                  (prop-calls true-listp)
+                                                  (name symbolp))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @('p[i]-2-alt-when-p[i]-2') theorem."
+  (b* ((pred2-name (defind-pred2-name pred-name name))
+       (thm-name (defind-pred-alt-when-pred-thm-name pred2-name name))
+       (pred-alt (defind-pred-alt-fn-name pred2-name name))
+       (valid-thm (defind-pred-alt-when-proof-valid-thm-name pred2-name name))
+       (proof-var (defind-proof-var-name name))
+       (proof-wit (defind-proof-witness-fn-name pred2-name name))
+       (formals (symbol-list-fix pred-formals))
+       (concls (defind-proof2-concl-var-names pred-formals name))
+       (concls-inst (alist-to-doublets (pairlis$ concls formals))))
+    `(defruled ,thm-name
+       (implies (and ,@prop-calls
+                     (,pred2-name ,@formals))
+                (,pred-alt ,@formals))
+       :in-theory '(,pred2-name)
+       :use (:instance ,valid-thm
+                       (,proof-var (,proof-wit ,@formals))
+                       ,@concls-inst))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-pred-alt-when-pred-thms
+  ((pred-infos defind-pred-info-listp)
+   (prop-calls true-listp)
+   (name symbolp))
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate all the @('p[i]-2-alt-when-p[i]-2') theorems."
+  (b* (((when (endp pred-infos)) nil)
+       ((defind-pred-info info) (car pred-infos))
+       (thm (defind-gen-proof2-pred-alt-when-pred-thm
+              info.name info.formals prop-calls name))
+       (thms (defind-gen-proof2-pred-alt-when-pred-thms
+               (cdr pred-infos) prop-calls name)))
+    (cons thm thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-minimality-defsection
+  ((pred-infos defind-pred-info-listp)
+   (irule-infos defind-irule-info-listp)
+   (name symbolp)
+   (xdocp booleanp))
+  :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+              (no-duplicatesp-equal (defind-irule-info-list->name irule-infos)))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @(tsee defsection) or @(tsee progn) with
+          all the @('p[i]-2-alt') stubs,
+          all the @('p[l[k]]-2-alt-rule[k]-p') propositions,
+          all the @('p[i]-2-alt-when-proof-validp') theorems,
+          and all the @('p[i]-2-alt-when-p[i]-2') theorems."
+  (b* ((stubs (defind-gen-proof2-pred-alt-stubs pred-infos name))
+       ((mv props prop-calls)
+        (defind-gen-proof2-pred-alt-irule-props irule-infos name))
+       (valid-thms (defind-gen-proof2-pred-alt-when-proof-valid-thms
+                     pred-infos irule-infos prop-calls name))
+       (min-thms (defind-gen-proof2-pred-alt-when-pred-thms
+                   pred-infos prop-calls name))
+       (events (append stubs props valid-thms min-thms)))
+    (if xdocp
+        `(defsection ,(defind-proof2-minimality-section-name name)
+           :short "Minimality of the predicates,
+                   for the second representation of proofs."
+           ,@events)
+      `(progn ,@events)))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable true-listp-when-pseudo-event-form-listp-rewrite))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-gen-events ((name symbolp)
                            (pred-infos defind-pred-info-listp)
                            (irule-infos defind-irule-info-listp)
@@ -5919,6 +6255,9 @@
           irule-infos pred-infos name xdocp))
        (minimality-event
         (defind-gen-minimality-defsection pred-infos irule-infos name xdocp))
+       (proof2-minimality-event
+        (defind-gen-proof2-minimality-defsection
+          pred-infos irule-infos name xdocp))
        (all-events (append (list name-doc-event)
                            assert-type-events
                            proof-type-events
@@ -5933,7 +6272,8 @@
                            proof-for-rule-events
                            (list irules-event)
                            (list proof2-irules-event)
-                           (list minimality-event))))
+                           (list minimality-event)
+                           (list proof2-minimality-event))))
     `(encapsulate
        ()
        ,@all-events
