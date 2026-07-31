@@ -4255,7 +4255,7 @@
      and the ones that the rule derives.")
    (xdoc::p
     "Unlike @(tsee defind-gen-irule-valid-fn),
-     this is never a @(tsee define-sk):
+     this is never a @(tsee std::define-sk):
      the variables of the rule are formals of the function,
      which the caller supplies from the fields of the proof,
      and so there is nothing to quantify.

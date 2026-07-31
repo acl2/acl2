@@ -600,7 +600,7 @@
        are the ones that the rule derives.")
      (xdoc::p
       "Unlike @('p[l[k]]-rule[k]-validp'),
-       these are never @(tsee defun-sk)s:
+       these are never @(tsee std::define-sk)s:
        the variables of the rule are formals,
        supplied from the fields of the proof,
        so there is nothing to quantify."))
@@ -621,7 +621,7 @@
        they can be executed on a proof and a conclusion.
        In general @('p[i]-proof-validp') cannot,
        because the @('p[l[k]]-rule[k]-validp') predicates that it calls
-       are @(tsee defun-sk)s, unless every rule is ground.
+       are @(tsee std::define-sk)s, unless every rule is ground.
        These predicates are currently not guard-verified,
        because they may involve arbitrary user-supplied terms."))
 
