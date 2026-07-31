@@ -13,28 +13,29 @@
 (include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(include-book "internal/iter")
 (include-book "set-defs")
 (include-book "min-max-defs")
 (include-book "in-defs")
 (include-book "insert-defs")
 (include-book "delete-defs")
-(include-book "internal/iter")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "set"))
-(local (include-book "min-max"))
-(local (include-book "internal/min-max"))
-(local (include-book "in"))
-(local (include-book "internal/in"))
-(local (include-book "internal/tree"))
-(local (include-book "internal/bst"))
-(local (include-book "internal/heap"))
-(local (include-book "internal/in-order"))
-(local (include-book "insert"))
 (local (include-book "kestrel/data/utilities/oset" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
+
+(local (include-book "internal/tree"))
+(local (include-book "internal/bst"))
+(local (include-book "internal/min-max"))
+(local (include-book "internal/in"))
+(local (include-book "internal/heap"))
+(local (include-book "internal/in-order"))
+(local (include-book "set"))
+(local (include-book "min-max"))
+(local (include-book "insert"))
+(local (include-book "in"))
 (local (include-book "delete"))
 (local (include-book "extensionality"))
 
@@ -81,15 +82,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+;; GJ: I'm not sure about this rule. Do we add definition rules to
+;; break-abstraction elsewhere?
 (add-to-ruleset break-abstraction '(iterp))
-
-;; Every iterator is a cons, whichever of the three it is. Note that it is not
-;; a @(tsee true-listp): the two ends carry the tree in their @(tsee cdr), not
-;; a list.
-;;
-;; Left disabled and registered as abstraction-breaking: that an iterator is a
-;; cons at all is a fact about the representation, which a caller should not
-;; come to depend on.
 
 (defruled iterp-compound-recognizer
   (implies (iterp x)
@@ -99,6 +94,7 @@
 
 (add-to-ruleset break-abstraction '(iterp-compound-recognizer))
 
+;; GJ: This is abstraction-breaking.
 (defrule tree-iter-p-when-iterp-forward-chaining
   (implies (iterp iter)
            (tree-iter-p iter))
@@ -124,7 +120,7 @@
   :returns (iter iterp
                  :hints (("Goal" :in-theory (enable* iterp break-abstraction))))
   :parents (iterator)
-  :short "Construct an @(see iterator) over a @(see treeset)."
+  :short "Construct an @(see iterator) at the first element of a @(see treeset)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -184,7 +180,9 @@
   :returns (iter$ iterp)
   :parents (iterator)
   :short "Fixer for @(see iterator)s."
-  (mbe :logic (if (iterp iter) iter (iter-min (empty)))
+  (mbe :logic (if (iterp iter)
+                  iter
+                (iter-min (empty)))
        :exec iter)
   :inline t)
 
@@ -202,6 +200,9 @@
   (equal (tree-iter-fix (iter-fix iter))
          (iter-fix iter)))
 
+;; Rules like this that mention an internal function (tree-iter-next) should
+;; not be imported from the book enabled. It should either be local or disabled
+;; and added to break-abstraction.
 (defrule iter-fix-of-tree-iter-next-of-iter-fix
   (equal (iter-fix (tree-iter-next (iter-fix iter)))
          (tree-iter-next (iter-fix iter)))
@@ -249,20 +250,18 @@
          (iter-fix y))
   :inline t
   ///
-  (defequiv iter-equiv
-    :hints (("Goal" :in-theory (enable iter-equiv))))
+
+  (defequiv iter-equiv)
 
   (defrule iter-fix-under-iter-equiv
     (iter-equiv (iter-fix iter)
-                iter)
-    :enable iter-equiv)
+                iter))
 
   (defrule iter-fix-when-iter-equiv-congruence
     (implies (iter-equiv iter0 iter1)
              (equal (iter-fix iter0)
                     (iter-fix iter1)))
-    :rule-classes :congruence
-    :enable iter-equiv))
+    :rule-classes :congruence))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -299,11 +298,16 @@
   :returns (yes/no booleanp)
   :parents (iterator)
   :short "Check whether an @(see iterator) has a value to read."
+  ;; Should the logical value be
+  ;; (and (not (before-first iter) (after-lastp iter)))
+  ;; ?
   (tree-iter-has-value-p (iter-fix iter))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
 
+;; GJ: We should either leave these enabled or prove our own type-prescription
+;; rules.
 (in-theory (disable (:t after-lastp) (:t before-firstp) (:t has-valuep)))
 
 (defrule after-lastp-when-iter-equiv-congruence
@@ -681,6 +685,16 @@
             tree-iter-plug-when-tree-iter-has-value-p
             tree-iter-value))
 
+;; GJ: I think we need theorems like
+;;   (implies (has-value-p iter)
+;;            (equal (value iter)
+;;                   (min (diff (from-iter iter) (before iter)))))
+;; and
+;;   (implies (has-value-p iter)
+;;            (equal (value iter)
+;;                   (max (diff (from-iter iter) (after iter)))))
+;; I think this should help characterize value for the different traversals.
+
 ;;;;;;;;;;;;;;;;;;;;
 
 ;; The tree an iterator is a position in is a search tree. This is what makes
@@ -720,16 +734,16 @@
 
 (defruledl tree-in-of-tree-iter-plug-split
   (implies (tree-iter-has-value-p iter)
-           (iff (tree-in x (tree-iter-plug iter))
-                (or (member-equal x (tree-iter-before iter))
-                    (equal x (tree-iter-value iter))
-                    (member-equal x (tree-iter-after iter)))))
+           (equal (tree-in x (tree-iter-plug iter))
+                  (or (and (member-equal x (tree-iter-before iter)) t)
+                      (equal x (tree-iter-value iter))
+                      (and (member-equal x (tree-iter-after iter)) t))))
   :use ((:instance member-equal-of-tree-in-order-under-iff
                    (tree (tree-iter-plug iter)))
         (:instance append-of-tree-iter-before-and-tree-iter-after-when-has-value))
   :disable (member-equal-of-tree-in-order-under-iff
             append-of-tree-iter-before-and-tree-iter-after-when-has-value
-            tree-in-order-of-tree-zip-plug))
+            tree-in-order-of-zip-plug))
 
 ;; The same split at the public layer: the two sides and the value account for
 ;; the set, and since the sides exclude the value they do so without overlap.
@@ -750,15 +764,15 @@
   :use (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
                   (iter (iter-fix iter)))
   :disable (tree-iter-plug
-            tree-iter-plug-when-tree-zip-p
+            tree-iter-plug-when-zipp
             tree-iter-plug-when-tree-iter-has-value-p))
 
 (defrule in-of-from-iter-when-has-valuep
   (implies (has-valuep iter)
-           (iff (in x (from-iter iter))
-                (or (in x (before iter))
-                    (equal x (value iter))
-                    (in x (after iter)))))
+           (equal (in x (from-iter iter))
+                  (or (in x (before iter))
+                      (equal x (value iter))
+                      (in x (after iter)))))
   :enable (in-of-before-becomes-member-equal
            in-of-after-becomes-member-equal
            in-of-from-iter-becomes-tree-in
@@ -766,12 +780,13 @@
            value
            has-valuep)
   :disable (tree-iter-plug
-            tree-iter-plug-when-tree-zip-p
+            tree-iter-plug-when-zipp
             tree-iter-plug-when-tree-iter-has-value-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define next ((iter iterp))
+  :guard (not (after-lastp iter))
   :returns (iter$ iterp
                   :hints (("Goal"
                            :in-theory (enable iterp)
@@ -787,11 +802,22 @@
      "Past the last element this stays put. Time complexity: @($O(\\log(n))$)
       in the worst case, @($O(1)$) amortized over a walk."))
   (tree-iter-next (iter-fix iter))
-  :inline t)
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable after-lastp))))
+
+;; GJ: We should have rules along the lines of
+;;  (implies (has-valuep iter)
+;;           (equal (before (next iter))
+;;                  (insert (value iter) (before iter))))
+;; and
+;;  (implies (has-valuep iter)
+;;           (equal (after (next iter))
+;;                  (delete (min (before iter)) (before iter))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define prev ((iter iterp))
+  :guard (not (before-firstp iter))
   :returns (iter$ iterp
                   :hints (("Goal"
                            :in-theory (enable iterp)
@@ -806,7 +832,10 @@
    (xdoc::p
      "The mirror of @(tsee next). Before the first element this stays put."))
   (tree-iter-prev (iter-fix iter))
-  :inline t)
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable before-firstp))))
+
+;; GJ: Same as suggestion for next, but mirrored
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -895,7 +924,6 @@
   :enable (next
            prev
            before-firstp))
-
 
 ;;;;;;;;;;;;;;;;;;;;
 
