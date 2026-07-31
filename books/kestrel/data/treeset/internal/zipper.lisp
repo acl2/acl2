@@ -2314,9 +2314,9 @@
 
 (defrule in-of-zip-oset-before-when-bstp
   (implies (bstp (zip-plug zip))
-           (iff (set::in x (zip-oset-before zip))
-                (and (tree-in x (zip-plug zip))
-                     (<< x (zip-value zip)))))
+           (equal (set::in x (zip-oset-before zip))
+                  (and (tree-in x (zip-plug zip))
+                       (<< x (zip-value zip)))))
   :enable (tree-in-order-of-zip-plug-split-at-cursor
            data::<<-rules)
   :use ((:instance member-equal-of-tree-in-order-under-iff
@@ -2339,9 +2339,9 @@
 
 (defrule in-of-zip-oset-after-when-bstp
   (implies (bstp (zip-plug zip))
-           (iff (set::in x (zip-oset-after zip))
-                (and (tree-in x (zip-plug zip))
-                     (<< (zip-value zip) x))))
+           (equal (set::in x (zip-oset-after zip))
+                  (and (tree-in x (zip-plug zip))
+                       (<< (zip-value zip) x))))
   :enable (tree-in-order-of-zip-plug-split-at-cursor
            data::<<-rules)
   :use ((:instance member-equal-of-tree-in-order-under-iff

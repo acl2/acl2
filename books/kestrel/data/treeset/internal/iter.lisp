@@ -1244,9 +1244,9 @@
 (defrule in-of-tree-iter-oset-before-when-bstp
   (implies (and (bstp (tree-iter-plug iter))
                 (tree-iter-has-value-p iter))
-           (iff (set::in x (tree-iter-oset-before iter))
-                (and (tree-in x (tree-iter-plug iter))
-                     (<< x (tree-iter-value iter)))))
+           (equal (set::in x (tree-iter-oset-before iter))
+                  (and (tree-in x (tree-iter-plug iter))
+                       (<< x (tree-iter-value iter)))))
   :enable (tree-iter-oset-before
            tree-iter-value)
   :disable in-of-tree-iter-oset-before)
@@ -1254,9 +1254,9 @@
 (defrule in-of-tree-iter-oset-after-when-bstp
   (implies (and (bstp (tree-iter-plug iter))
                 (tree-iter-has-value-p iter))
-           (iff (set::in x (tree-iter-oset-after iter))
-                (and (tree-in x (tree-iter-plug iter))
-                     (<< (tree-iter-value iter) x))))
+           (equal (set::in x (tree-iter-oset-after iter))
+                  (and (tree-in x (tree-iter-plug iter))
+                       (<< (tree-iter-value iter) x))))
   :enable (tree-iter-oset-after
            tree-iter-value)
   :disable in-of-tree-iter-oset-after)
