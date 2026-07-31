@@ -824,8 +824,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defsection types-count-of-rename-ispace-vars
-  :short "Renaming ispace variables does not change the measure of types."
+(defsection rename-ispace-vars-count-theorems
+  :short "Theorems about counts under renaming of ispace variables."
 
   (defret-mutual type-count-of-rename-ispace-vars
     (defret type-count-of-type-rename-ispace-vars
@@ -840,7 +840,14 @@
     :hints (("Goal" :in-theory (enable type-rename-ispace-vars
                                        type-list-rename-ispace-vars
                                        type-count
-                                       type-list-count)))))
+                                       type-list-count))))
+
+  (defrule type-binders-count-of-type-rename-ispace-vars
+    (equal (type-binders-count
+            (type-rename-ispace-vars type dim-renam shape-renam))
+           (type-binders-count type))
+    :enable type-binders-count
+    :expand ((type-rename-ispace-vars type dim-renam shape-renam))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -993,8 +1000,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defsection types-count-of-rename-type-vars
-  :short "Renaming type variables does not change the measure of types."
+(defsection rename-type-vars-count-theorems
+  :short "Theorems about counts under renaming of type variables."
 
   (defret-mutual type-count-of-rename-type-vars
     (defret type-count-of-type-rename-type-vars
@@ -1009,7 +1016,14 @@
     :hints (("Goal" :in-theory (enable type-rename-type-vars
                                        type-list-rename-type-vars
                                        type-count
-                                       type-list-count)))))
+                                       type-list-count))))
+
+  (defrule type-binders-count-of-type-rename-type-vars
+    (equal (type-binders-count
+            (type-rename-type-vars type atom-renam array-renam))
+           (type-binders-count type))
+    :enable type-binders-count
+    :expand ((type-rename-type-vars type atom-renam array-renam))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
