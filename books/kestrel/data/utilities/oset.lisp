@@ -16,6 +16,7 @@
 (include-book "std/osets/top" :dir :system)
 
 (local (include-book "kestrel/lists-light/last" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
 (include-book "total-order/total-order")
@@ -49,3 +50,46 @@
            emptyp
            tail
            setp))
+
+(defruled setp-of-cdr-when-osetp
+  (implies (setp l)
+           (setp (cdr l)))
+  :enable setp)
+
+;; An oset is strictly increasing, so its head is below every later element,
+;; and every element of a prefix is below the head of what follows.
+
+(defruled <<-of-car-when-member-equal-of-cdr
+  (implies (and (setp l)
+                (member-equal x (cdr l)))
+           (<< (car l) x))
+  :induct (member-equal x l)
+  :enable (setp
+           member-equal
+           set::not-member-when-smaller
+           setp-of-cdr-when-osetp
+           <<-rules))
+
+(defruled <<-of-cars-when-osetp-of-append
+  (implies (and (setp (append a b))
+                (consp a)
+                (consp b))
+           (<< (car a) (car b)))
+  :induct (append a b)
+  :enable (setp
+           append
+           setp-of-cdr-when-osetp
+           <<-rules))
+
+(defruled <<-across-append-when-osetp
+  (implies (and (setp (append a b))
+                (member-equal x a)
+                (consp b))
+           (<< x (car b)))
+  :induct (append a b)
+  :enable (setp
+           append
+           member-equal
+           setp-of-cdr-when-osetp
+           <<-of-cars-when-osetp-of-append
+           <<-rules))

@@ -1160,6 +1160,107 @@
         (:instance osetp-of-cdr
                    (x (cons (zip-value iter) (zip-after iter))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The two sides as osets, lifted through the three shapes: nothing lies
+;; behind the left end or ahead of the right one, and at either end the whole
+;; tree lies on the other side. Structurally @(tsee set::setp), like the
+;; zipper versions they wrap.
+
+(define tree-iter-oset-before ((iter tree-iter-p))
+  :returns (oset set::setp)
+  :short "The elements to the left of the iterator, as an oset."
+  (cond ((tree-iter-before-first-p iter) nil)
+        ((tree-iter-after-last-p iter) (tree-oset (tree-iter-plug iter)))
+        (t (zip-oset-before (tree-iter->zip iter)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tree-iter-oset-after ((iter tree-iter-p))
+  :returns (oset set::setp)
+  :short "The elements to the right of the iterator, as an oset."
+  (cond ((tree-iter-after-last-p iter) nil)
+        ((tree-iter-before-first-p iter) (tree-oset (tree-iter-plug iter)))
+        (t (zip-oset-after (tree-iter->zip iter)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t tree-iter-oset-before) (:t tree-iter-oset-after)))
+
+(defrule tree-iter-oset-before-when-tree-iter-equiv-congruence
+  (implies (tree-iter-equiv iter0 iter1)
+           (equal (tree-iter-oset-before iter0)
+                  (tree-iter-oset-before iter1)))
+  :rule-classes :congruence
+  :expand ((tree-iter-oset-before iter0)
+           (tree-iter-oset-before iter1)))
+
+(defrule tree-iter-oset-after-when-tree-iter-equiv-congruence
+  (implies (tree-iter-equiv iter0 iter1)
+           (equal (tree-iter-oset-after iter0)
+                  (tree-iter-oset-after iter1)))
+  :rule-classes :congruence
+  :expand ((tree-iter-oset-after iter0)
+           (tree-iter-oset-after iter1)))
+
+;; Membership in each oset is membership in the corresponding sequence, with
+;; no hypothesis.
+
+(defrule in-of-tree-iter-oset-before
+  (iff (set::in x (tree-iter-oset-before iter))
+       (member-equal x (tree-iter-before iter)))
+  :enable (tree-iter-oset-before
+           tree-iter-before))
+
+(defrule in-of-tree-iter-oset-after
+  (iff (set::in x (tree-iter-oset-after iter))
+       (member-equal x (tree-iter-after iter)))
+  :enable (tree-iter-oset-after
+           tree-iter-after))
+
+;; Over a search tree the oset and sequence versions are the same object.
+
+(defruled tree-iter-oset-before-becomes-tree-iter-before
+  (implies (bstp (tree-iter-plug iter))
+           (equal (tree-iter-oset-before iter)
+                  (tree-iter-before iter)))
+  :enable (tree-iter-oset-before
+           tree-iter-before
+           tree-oset-becomes-tree-in-order
+           zip-oset-before-becomes-zip-before))
+
+(defruled tree-iter-oset-after-becomes-tree-iter-after
+  (implies (bstp (tree-iter-plug iter))
+           (equal (tree-iter-oset-after iter)
+                  (tree-iter-after iter)))
+  :enable (tree-iter-oset-after
+           tree-iter-after
+           tree-oset-becomes-tree-in-order
+           zip-oset-after-becomes-zip-after))
+
+;; The order filters, lifted: at an element, each side holds exactly the
+;; elements of the tree on that side of the value in the @(tsee <<) order.
+
+(defrule in-of-tree-iter-oset-before-when-bstp
+  (implies (and (bstp (tree-iter-plug iter))
+                (tree-iter-has-value-p iter))
+           (iff (set::in x (tree-iter-oset-before iter))
+                (and (tree-in x (tree-iter-plug iter))
+                     (<< x (tree-iter-value iter)))))
+  :enable (tree-iter-oset-before
+           tree-iter-value)
+  :disable in-of-tree-iter-oset-before)
+
+(defrule in-of-tree-iter-oset-after-when-bstp
+  (implies (and (bstp (tree-iter-plug iter))
+                (tree-iter-has-value-p iter))
+           (iff (set::in x (tree-iter-oset-after iter))
+                (and (tree-in x (tree-iter-plug iter))
+                     (<< (tree-iter-value iter) x))))
+  :enable (tree-iter-oset-after
+           tree-iter-value)
+  :disable in-of-tree-iter-oset-after)
+
 ;; A step forward can never land before the first element, whichever
 ;; position it began at. This is what lets a forward walk know it may read
 ;; the element it is on.

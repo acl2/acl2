@@ -17,6 +17,7 @@
 (include-book "bst-defs")
 (include-book "heap-defs")
 (include-book "count-defs")
+(include-book "in-defs")
 (include-book "in-order-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -2304,6 +2305,62 @@
   :enable (set::in-to-member
            set::double-containment
            set::pick-a-point-subset-strategy))
+
+;; The two osets as order filters of the whole set: over a search tree, what
+;; lies on each side of the cursor is exactly the elements on that side of the
+;; value in the @(tsee <<) order. This is what ties the geometry of a zipper
+;; to the order of the set, and every ordering law downstream is a
+;; consequence.
+
+(defrule in-of-zip-oset-before-when-bstp
+  (implies (bstp (zip-plug zip))
+           (iff (set::in x (zip-oset-before zip))
+                (and (tree-in x (zip-plug zip))
+                     (<< x (zip-value zip)))))
+  :enable (tree-in-order-of-zip-plug-split-at-cursor
+           data::<<-rules)
+  :use ((:instance member-equal-of-tree-in-order-under-iff
+                   (tree (zip-plug zip)))
+        (:instance osetp-of-tree-in-order-when-bstp
+                   (tree (zip-plug zip)))
+        (:instance data::<<-across-append-when-osetp
+                   (data::a (zip-before zip))
+                   (data::b (cons (zip-value zip) (zip-after zip)))
+                   (data::x x))
+        (:instance data::<<-of-car-when-member-equal-of-cdr
+                   (data::l (cons (zip-value zip) (zip-after zip)))
+                   (data::x x))
+        (:instance osetp-of-suffix
+                   (x (zip-before zip))
+                   (y (cons (zip-value zip) (zip-after zip)))))
+  :disable (member-equal-of-tree-in-order-under-iff
+            osetp-of-tree-in-order-when-bstp
+            tree-in-order-of-zip-plug))
+
+(defrule in-of-zip-oset-after-when-bstp
+  (implies (bstp (zip-plug zip))
+           (iff (set::in x (zip-oset-after zip))
+                (and (tree-in x (zip-plug zip))
+                     (<< (zip-value zip) x))))
+  :enable (tree-in-order-of-zip-plug-split-at-cursor
+           data::<<-rules)
+  :use ((:instance member-equal-of-tree-in-order-under-iff
+                   (tree (zip-plug zip)))
+        (:instance osetp-of-tree-in-order-when-bstp
+                   (tree (zip-plug zip)))
+        (:instance data::<<-across-append-when-osetp
+                   (data::a (zip-before zip))
+                   (data::b (cons (zip-value zip) (zip-after zip)))
+                   (data::x x))
+        (:instance data::<<-of-car-when-member-equal-of-cdr
+                   (data::l (cons (zip-value zip) (zip-after zip)))
+                   (data::x x))
+        (:instance osetp-of-suffix
+                   (x (zip-before zip))
+                   (y (cons (zip-value zip) (zip-after zip)))))
+  :disable (member-equal-of-tree-in-order-under-iff
+            osetp-of-tree-in-order-when-bstp
+            tree-in-order-of-zip-plug))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
