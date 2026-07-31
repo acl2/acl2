@@ -350,17 +350,18 @@
        does not actually declare a parameter.
        The type is present otherwise, and it is the type of the parameter.")
      (xdoc::p
-      "Non-abstract parameter declarators are annotated
-       with their types and their UIDs.
-       Abstract parameter declarators are annotated with their types.
-       Absent (i.e. @(':none')) parameter declarators
-       are annotated with their types;
-       in the case of this being part of
-       a single @('void') parameter declaration,
-       which has a special meaning (i.e. a function with zero parameters),
-       we annotate the parameter declarator with the @('void') type.
-       Note that @('void') can never be confused with
-       the type of a function parameter, which cannot be @('void').")
+      "A parameter declarator is annotated with its type,
+       which is determined (by the validator)
+       from the whole parameter declaration that the declarator is part of.
+       In the case of the absent (i.e. @(':none')) parameter declarator
+       that is part of a @('void') parameter declaration
+       (which has a special meaning, used as the sole parameter),
+       the declarator is annotated with the @('void') type;
+       note that @('void') can never be confused with
+       the type of an actual function parameter, which cannot be @('void').
+       Additionally, a non-abstract parameter declarator,
+       which includes an identifier,
+       is annotated with its UID.")
      (xdoc::p
       "Type names are annotated with the type they denote.")
      (xdoc::p
