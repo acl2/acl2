@@ -129,7 +129,7 @@
       @(see treeset) is empty.")
    (xdoc::p
      "Time complexity: @($O(\\log(n))$), to descend to the first element."))
-  (tree-iter-next (tree-iter-before-first (fix set)))
+  (tree-iter-min (fix set))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
 
@@ -160,7 +160,7 @@
       is the one where that walk is immediately over.")
    (xdoc::p
      "Time complexity: @($O(\\log(n))$), to descend to the last element."))
-  (tree-iter-prev (tree-iter-after-last (fix set)))
+  (tree-iter-max (fix set))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
 
@@ -387,44 +387,45 @@
   :rule-classes :congruence
   :enable from-iter)
 
-(defruledl tree-iter-plug-of-iter-min
-  (equal (tree-iter-plug (iter-min set))
-         (fix set))
-  :hints (("Goal" :in-theory (enable* iter-min break-abstraction))))
+;; The fixer drops on the unfolded constructors: their internal cores build
+;; proper iterators. These are what let the laws below unfold @(tsee iter-min)
+;; and @(tsee iter-max) and still reach the internal rules.
+
+(defruledl iter-fix-of-tree-iter-min-of-fix
+  (equal (iter-fix (tree-iter-min (fix set)))
+         (tree-iter-min (fix set)))
+  :hints (("Goal" :in-theory (enable* iter-fix iterp break-abstraction))))
+
+(defruledl iter-fix-of-tree-iter-max-of-fix
+  (equal (iter-fix (tree-iter-max (fix set)))
+         (tree-iter-max (fix set)))
+  :hints (("Goal" :in-theory (enable* iter-fix iterp break-abstraction))))
 
 (defrule from-iter-of-iter-min
   (equal (from-iter (iter-min set))
          (fix set))
-  :enable (from-iter
-           tree-iter-plug-of-iter-min))
+  :hints (("Goal" :in-theory (enable* from-iter iter-min
+                                      iter-fix-of-tree-iter-min-of-fix
+                                      break-abstraction))))
 
 ;; A fresh iterator is at the end exactly when there is nothing to walk.
-
-(defruledl tree-iter-after-last-p-of-iter-min
-  (equal (tree-iter-after-last-p (iter-min set))
-         (tree-empty-p (fix set)))
-  :enable (iter-min
-           tree-iter-next
-           tree-iter-has-value-p))
 
 (defrule after-lastp-of-iter-min
   (equal (after-lastp (iter-min set))
          (emptyp set))
   :enable (after-lastp
            emptyp
-           tree-iter-after-last-p-of-iter-min))
+           iter-min
+           iter-fix-of-tree-iter-min-of-fix))
 
 ;; A fresh iterator is never rewound: it is built by stepping forward from the
 ;; rewound position, and a step never lands there.
 
-(defruledl tree-iter-before-first-p-of-iter-min
-  (not (tree-iter-before-first-p (iter-min set)))
-  :enable iter-min)
-
 (defrule not-before-firstp-of-iter-min
   (not (before-firstp (iter-min set)))
   :enable (before-firstp
-           tree-iter-before-first-p-of-iter-min))
+           iter-min
+           iter-fix-of-tree-iter-min-of-fix))
 
 ;; So a fresh iterator is at a value exactly when there is one to be at.
 
@@ -440,39 +441,26 @@
 
 ;; The same four facts for @(tsee iter-max), with the two ends exchanged.
 
-(defruledl tree-iter-plug-of-iter-max
-  (equal (tree-iter-plug (iter-max set))
-         (fix set))
-  :hints (("Goal" :in-theory (enable* iter-max break-abstraction))))
-
 (defrule from-iter-of-iter-max
   (equal (from-iter (iter-max set))
          (fix set))
-  :enable (from-iter
-           tree-iter-plug-of-iter-max))
-
-(defruledl tree-iter-before-first-p-of-iter-max
-  (equal (tree-iter-before-first-p (iter-max set))
-         (tree-empty-p (fix set)))
-  :enable (iter-max
-           tree-iter-prev
-           tree-iter-has-value-p))
+  :hints (("Goal" :in-theory (enable* from-iter iter-max
+                                      iter-fix-of-tree-iter-max-of-fix
+                                      break-abstraction))))
 
 (defrule before-firstp-of-iter-max
   (equal (before-firstp (iter-max set))
          (emptyp set))
   :enable (before-firstp
            emptyp
-           tree-iter-before-first-p-of-iter-max))
-
-(defruledl tree-iter-after-last-p-of-iter-max
-  (not (tree-iter-after-last-p (iter-max set)))
-  :enable iter-max)
+           iter-max
+           iter-fix-of-tree-iter-max-of-fix))
 
 (defrule not-after-lastp-of-iter-max
   (not (after-lastp (iter-max set)))
   :enable (after-lastp
-           tree-iter-after-last-p-of-iter-max))
+           iter-max
+           iter-fix-of-tree-iter-max-of-fix))
 
 (defrule has-valuep-of-iter-max
   (equal (has-valuep (iter-max set))
@@ -608,54 +596,21 @@
 ;; empty @(see treeset), where the iterator lands on the far end and the side
 ;; in question is empty for the other reason.
 
-(defruledl tree-iter-before-of-iter-min
-  (equal (tree-iter-before (iter-min set))
-         nil)
-  :enable (iter-min
-           tree-iter-before
-           tree-iter-next
-           tree-iter-has-value-p))
-
-;; An empty sequence means an empty oset on the same side, since the oset is
-;; the sequence's members.
-
-(defruledl tree-iter-oset-before-when-not-consp-of-tree-iter-before
-  (implies (not (consp (tree-iter-before iter)))
-           (equal (tree-iter-oset-before iter)
-                  nil))
-  :use emptyp-of-tree-iter-oset-before
-  :enable set::emptyp
-  :disable emptyp-of-tree-iter-oset-before)
-
-(defruledl tree-iter-oset-after-when-not-consp-of-tree-iter-after
-  (implies (not (consp (tree-iter-after iter)))
-           (equal (tree-iter-oset-after iter)
-                  nil))
-  :use emptyp-of-tree-iter-oset-after
-  :enable set::emptyp
-  :disable emptyp-of-tree-iter-oset-after)
-
 (defrule before-of-iter-min
   (equal (before (iter-min set))
          (empty))
   :enable (before
-           tree-iter-before-of-iter-min
+           iter-min
+           iter-fix-of-tree-iter-min-of-fix
            tree-iter-oset-before-when-not-consp-of-tree-iter-before
            (:e empty)))
-
-(defruledl tree-iter-after-of-iter-max
-  (equal (tree-iter-after (iter-max set))
-         nil)
-  :enable (iter-max
-           tree-iter-after
-           tree-iter-prev
-           tree-iter-has-value-p))
 
 (defrule after-of-iter-max
   (equal (after (iter-max set))
          (empty))
   :enable (after
-           tree-iter-after-of-iter-max
+           iter-max
+           iter-fix-of-tree-iter-max-of-fix
            tree-iter-oset-after-when-not-consp-of-tree-iter-after
            (:e empty)))
 
@@ -683,44 +638,26 @@
 ;; What a walk yields first: the minimum. This is what ties the values an
 ;; iterator produces to the set it walks; everything else here is structural.
 
-(defruledl tree-iter-value-of-iter-min
-  (implies (not (tree-empty-p (fix set)))
-           (equal (tree-iter-value (iter-min set))
-                  (tree-leftmost (fix set))))
-  :enable (iter-min
-           tree-iter-next
-           tree-iter-value
-           tree-iter-has-value-p))
-
 (defrule value-of-iter-min
   (implies (not (emptyp set))
            (equal (value (iter-min set))
                   (min set)))
   :hints (("Goal"
-           :in-theory (enable* value min emptyp setp
-                               tree-iter-value-of-iter-min
+           :in-theory (enable* value min emptyp setp iter-min
+                               iter-fix-of-tree-iter-min-of-fix
                                break-abstraction)
            :use ((:instance tree-leftmost-when-bstp (tree (fix set)))
                  (:instance setp-of-fix (set set))))))
 
 ;; And symmetrically, what a backward walk yields first: the maximum.
 
-(defruledl tree-iter-value-of-iter-max
-  (implies (not (tree-empty-p (fix set)))
-           (equal (tree-iter-value (iter-max set))
-                  (tree-rightmost (fix set))))
-  :enable (iter-max
-           tree-iter-prev
-           tree-iter-value
-           tree-iter-has-value-p))
-
 (defrule value-of-iter-max
   (implies (not (emptyp set))
            (equal (value (iter-max set))
                   (max set)))
   :hints (("Goal"
-           :in-theory (enable* value max emptyp setp
-                               tree-iter-value-of-iter-max
+           :in-theory (enable* value max emptyp setp iter-max
+                               iter-fix-of-tree-iter-max-of-fix
                                break-abstraction)
            :use ((:instance tree-rightmost-when-bstp (tree (fix set)))
                  (:instance setp-of-fix (set set))))))
@@ -854,19 +791,6 @@
 ;; The whole sequence is the two sides with the value between them, so an
 ;; element of the tree is on one side, on the other, or is the value itself.
 ;; Stated over @(tsee tree-iter-plug), where every function is still folded.
-
-(defruledl tree-in-of-tree-iter-plug-split
-  (implies (tree-iter-has-value-p iter)
-           (equal (tree-in x (tree-iter-plug iter))
-                  (or (and (member-equal x (tree-iter-before iter)) t)
-                      (equal x (tree-iter-value iter))
-                      (and (member-equal x (tree-iter-after iter)) t))))
-  :use ((:instance member-equal-of-tree-in-order-under-iff
-                   (tree (tree-iter-plug iter)))
-        (:instance append-of-tree-iter-before-and-tree-iter-after-when-has-value))
-  :disable (member-equal-of-tree-in-order-under-iff
-            append-of-tree-iter-before-and-tree-iter-after-when-has-value
-            tree-in-order-of-zip-plug))
 
 ;; The same split at the public layer: the two sides and the value account for
 ;; the set, and since the sides exclude the value they do so without overlap.

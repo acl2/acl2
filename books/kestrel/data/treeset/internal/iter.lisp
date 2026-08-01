@@ -902,6 +902,23 @@
            tree-iter-value
            tree-in-order-of-zip-plug-split-at-cursor))
 
+;; The whole sequence is the two sides with the value between them, so an
+;; element of the tree is on one side, on the other, or is the value itself.
+;; Stated over @(tsee tree-iter-plug), where every function is still folded.
+
+(defruled tree-in-of-tree-iter-plug-split
+  (implies (tree-iter-has-value-p iter)
+           (equal (tree-in x (tree-iter-plug iter))
+                  (or (and (member-equal x (tree-iter-before iter)) t)
+                      (equal x (tree-iter-value iter))
+                      (and (member-equal x (tree-iter-after iter)) t))))
+  :use ((:instance member-equal-of-tree-in-order-under-iff
+                   (tree (tree-iter-plug iter)))
+        (:instance append-of-tree-iter-before-and-tree-iter-after-when-has-value))
+  :disable (member-equal-of-tree-in-order-under-iff
+            append-of-tree-iter-before-and-tree-iter-after-when-has-value
+            tree-in-order-of-zip-plug))
+
 (defrule append-of-tree-iter-before-and-tree-iter-after-when-no-value
   (implies (not (tree-iter-has-value-p iter))
            (equal (append (tree-iter-before iter)
@@ -1224,6 +1241,25 @@
   :disable (in-of-tree-iter-oset-after
             set::in-head))
 
+;; An empty sequence means an empty oset on the same side, since the oset is
+;; the sequence's members.
+
+(defruled tree-iter-oset-before-when-not-consp-of-tree-iter-before
+  (implies (not (consp (tree-iter-before iter)))
+           (equal (tree-iter-oset-before iter)
+                  nil))
+  :use emptyp-of-tree-iter-oset-before
+  :enable set::emptyp
+  :disable emptyp-of-tree-iter-oset-before)
+
+(defruled tree-iter-oset-after-when-not-consp-of-tree-iter-after
+  (implies (not (consp (tree-iter-after iter)))
+           (equal (tree-iter-oset-after iter)
+                  nil))
+  :use emptyp-of-tree-iter-oset-after
+  :enable set::emptyp
+  :disable emptyp-of-tree-iter-oset-after)
+
 ;; Over a search tree the oset and sequence versions are the same object.
 
 (defruled tree-iter-oset-before-becomes-tree-iter-before
@@ -1309,6 +1345,116 @@
   :use ((:instance tree-in-order-becomes-before-and-value-of-zip-last)
         (:instance car-of-last-of-tree-in-order))
   :disable car-of-last-of-tree-in-order)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The iterators at the two extremes: step inward from an end. Each starts a
+;; walk in its own direction, landing on a value exactly when there is one.
+
+(define tree-iter-min ((tree treep))
+  :returns (iter tree-iter-p)
+  :short "The tree iterator at the least element."
+  (tree-iter-next (tree-iter-before-first tree))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tree-iter-max ((tree treep))
+  :returns (iter tree-iter-p)
+  :short "The tree iterator at the greatest element."
+  (tree-iter-prev (tree-iter-after-last tree))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t tree-iter-min) (:t tree-iter-max)))
+
+(defrule tree-iter-min-when-tree-equiv-congruence
+  (implies (tree-equiv tree0 tree1)
+           (equal (tree-iter-min tree0)
+                  (tree-iter-min tree1)))
+  :rule-classes :congruence
+  :enable tree-iter-min)
+
+(defrule tree-iter-max-when-tree-equiv-congruence
+  (implies (tree-equiv tree0 tree1)
+           (equal (tree-iter-max tree0)
+                  (tree-iter-max tree1)))
+  :rule-classes :congruence
+  :enable tree-iter-max)
+
+(defrule tree-iter-plug-of-tree-iter-min
+  (equal (tree-iter-plug (tree-iter-min tree))
+         (tree-fix tree))
+  :enable tree-iter-min)
+
+(defrule tree-iter-plug-of-tree-iter-max
+  (equal (tree-iter-plug (tree-iter-max tree))
+         (tree-fix tree))
+  :enable tree-iter-max)
+
+;; A fresh iterator is at its far end exactly when there is nothing to walk,
+;; and is never at its near end, since a step never lands there.
+
+(defrule tree-iter-after-last-p-of-tree-iter-min
+  (equal (tree-iter-after-last-p (tree-iter-min tree))
+         (tree-empty-p tree))
+  :enable (tree-iter-min
+           tree-iter-next
+           tree-iter-has-value-p))
+
+(defrule tree-iter-before-first-p-of-tree-iter-max
+  (equal (tree-iter-before-first-p (tree-iter-max tree))
+         (tree-empty-p tree))
+  :enable (tree-iter-max
+           tree-iter-prev
+           tree-iter-has-value-p))
+
+(defrule not-tree-iter-before-first-p-of-tree-iter-min
+  (not (tree-iter-before-first-p (tree-iter-min tree)))
+  :enable tree-iter-min)
+
+(defrule not-tree-iter-after-last-p-of-tree-iter-max
+  (not (tree-iter-after-last-p (tree-iter-max tree)))
+  :enable tree-iter-max)
+
+;; Nothing lies behind a walk about to begin.
+
+(defrule tree-iter-before-of-tree-iter-min
+  (equal (tree-iter-before (tree-iter-min tree))
+         nil)
+  :enable (tree-iter-min
+           tree-iter-before
+           tree-iter-next
+           tree-iter-has-value-p))
+
+(defrule tree-iter-after-of-tree-iter-max
+  (equal (tree-iter-after (tree-iter-max tree))
+         nil)
+  :enable (tree-iter-max
+           tree-iter-after
+           tree-iter-prev
+           tree-iter-has-value-p))
+
+;; What each walk reads first: the extremum on its own side.
+
+(defrule tree-iter-value-of-tree-iter-min
+  (implies (not (tree-empty-p tree))
+           (equal (tree-iter-value (tree-iter-min tree))
+                  (tree-leftmost tree)))
+  :enable (tree-iter-min
+           tree-iter-next
+           tree-iter-value
+           tree-iter-has-value-p))
+
+(defrule tree-iter-value-of-tree-iter-max
+  (implies (not (tree-empty-p tree))
+           (equal (tree-iter-value (tree-iter-max tree))
+                  (tree-rightmost tree)))
+  :enable (tree-iter-max
+           tree-iter-prev
+           tree-iter-value
+           tree-iter-has-value-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
