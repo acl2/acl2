@@ -171,5 +171,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection identityp-ext
+  :extension identityp
+
+  (defrule identityp-of-update-same
+    (implies (identityp map)
+             (identityp (update k k map)))
+    :enable (pick-a-point-identityp
+             assoc-when-identityp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-theory (disable values-is-keys-when-identityp
                     assoc-when-identityp))
