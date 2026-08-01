@@ -67,18 +67,53 @@ void f(void) {
 
 (test-ice "1" t)
 
+;; An object identifier is not an allowed C17 ICE operand.
 (test-ice "x" nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Rejected expressions.
+
+;; A floating constant is only allowed as an immediate cast operand.
+(test-ice "1.0" nil)
+
+;; An evaluated assignment is prohibited in a constant expression.
+(test-ice "x = 1" nil)
+
+;; An evaluated increment is prohibited in a constant expression.
+(test-ice "x++" nil)
+
+;; An evaluated comma operator is prohibited in a constant expression.
+(test-ice "1, 2" nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Cases requiring value evaluation.
+
+;; Unary minus is not evaluated to establish representability.
+(test-ice "-1" :unknown)
+
+;; Addition is not evaluated to establish representability.
+(test-ice "1 + 2" :unknown)
+
+;; Division is not evaluated to detect division by zero.
+(test-ice "1 / 0" :unknown)
+
+;; The cast is not evaluated to establish representability.
+(test-ice "(int) 1.0" :unknown)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Cast restrictions.
 
+;; The cast target is not an integer type.
 (test-ice "(double) 1" nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Expression operands of sizeof.
 
+;; The unevaluated identifier is still not an allowed ICE operand.
 (test-ice "sizeof(x)" nil)
 
 (test-ice "sizeof((double) 1)" t)
@@ -87,6 +122,7 @@ void f(void) {
 
 ;; Target type names of casts.
 
+;; The cast target's array bound contains the disallowed identifier x.
 (test-ice "sizeof((int (*)[x]) 1)" nil)
 
 (test-ice "sizeof((int (*)[(int) (double) 1]) 1)" t)
@@ -95,16 +131,17 @@ void f(void) {
 
 ;; Type-name operands of sizeof.
 
+;; The operand type's array bound contains the disallowed identifier x.
 (test-ice "sizeof(int (*)[x])" nil)
 
-;; The casts are exempted, but the bound may be evaluated, and this checker
-;; does not establish the representability of the conversions.
+;; The possibly evaluated casts have unknown representability.
 (test-ice "sizeof(int (*)[(int) (double) 1])" :unknown)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Standard type-name operands of alignof.
 
+;; The operand type's array bound contains the disallowed identifier x.
 (test-ice "_Alignof(int (*)[x])" nil)
 
 ;; Unlike the sizeof case above, the alignof operand is definitely unevaluated.
@@ -114,10 +151,12 @@ void f(void) {
 
 ;; GCC expression operands of alignof.
 
+;; The expression operand contains the disallowed identifier x.
 (test-ice "__alignof__(x)"
           nil
           :dialect *constant-expressions-test-gcc-c17-dialect*)
 
+;; The expression-operand extension has unknown ICE status.
 (test-ice "__alignof__(1)"
           :unknown
           :dialect *constant-expressions-test-gcc-c17-dialect*)
@@ -126,10 +165,12 @@ void f(void) {
 
 ;; Operands of typeof.
 
+;; The typeof operand contains the disallowed identifier x.
 (test-ice "sizeof(typeof(x))"
           nil
           :dialect *constant-expressions-test-gcc-c17-dialect*)
 
+;; The nested type's array bound contains the disallowed identifier x.
 (test-ice "sizeof(typeof(int (*)[x]))"
           nil
           :dialect *constant-expressions-test-gcc-c17-dialect*)
