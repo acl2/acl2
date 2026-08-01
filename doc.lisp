@@ -3673,6 +3673,9 @@ Subtopics
   [Improper-consp]
       Recognizer for improper (non-[30m[47mnil[0m[0m-terminated) non-empty lists
 
+  [In-logic-mode]
+      Permit [program]-mode code in [logic]-mode definitions
+
   [In-package]
       Select current package
 
@@ -56758,6 +56761,82 @@ Frequent Contributors
   cannot construct it with the usual [theory-functions] or by
   reference to previously named theories.  Instead, you must
   explicitly list the runic designators constituting the theory.")
+ (IN-LOGIC-MODE
+  (MACROS ACL2-BUILT-INS PROGRAMMING)
+  "Permit [program]-mode code in [logic]-mode definitions
+
+  It is generally prohibited for the body of a [logic]-mode function to
+  call a [program]-mode function.  This prohibition can be overcome,
+  in a sense described below, by wrapping [30m[47min-logic-mode[0m[0m around code
+  that includes program-mode code.
+
+  See also [magic-ev-fncall] for a related utility that is a bit less
+  general (operating only on function calls applied to argument
+  lists; but see also magic-ev) but has the advantage of having some
+  logical content (see [meta-extract]).  Unlike [30m[47mmagic-ev-fncall[0m[0m and
+  [30m[47mmagic-ev[0m[0m, [30m[47min-logic-mode[0m[0m does not cause errors that can be caused by
+  [safe-mode].  [30m[47mIn-logic-mode[0m[0m also has a simpler interface than those
+  utilities, but unlike those utilities, [30m[47min-logic-mode[0m[0m not only takes
+  [30m[47m[state][0m[0m but also returns [30m[47mstate[0m[0m.
+
+    General Form:
+    (in-logic-mode <form> state &optional (quote <variable-list>))
+
+  where [30m[47m<form>[0m[0m is code that returns a single, non-[30m[47m[stobj][0m[0m value, but
+  which may include calls of program-mode functions; and [30m[47mstate[0m[0m must
+  be the symbol, [30m[47mstate[0m[0m, if the [30m[47min-logic-mode[0m[0m call is to be executed
+  (as opposed to being in the statement of a theorem).  If [30m[47m<form>[0m[0m is
+  of the form [30m[47m(f t1 ... tn)[0m[0m where each [30m[47mti[0m[0m is an atom, then, but only
+  then, may the optional argument be omitted.  Otherwise,
+  [30m[47m<variable-list>[0m[0m should be a list of symbols, which usually consists
+  of the variables occurring free in the ([translation] of) [30m[47m<form>[0m[0m,
+  as discussed below.
+
+  The following example shows a typical (though very simple) use of
+  [30m[47min-logic-mode[0m[0m, where we see the [logic]-mode function, [30m[47mf[0m[0m, calling
+  the [program]-mode function, [30m[47mp[0m[0m.
+
+    (defun p (x)
+      (declare (xargs :mode :program))
+      (cons x x))
+
+    (defun f (x state)
+      (declare (xargs :stobjs state))
+      (in-logic-mode (p x) state))
+
+  About the only thing we can prove about [30m[47mf[0m[0m is the following.
+
+    (equal (f x state)
+           (read-acl2-oracle state))
+
+  But when we evaluate with [30m[47mf[0m[0m at the top level, we invoke [30m[47mp[0m[0m.
+
+    ACL2 !>(f 3 state)
+     (3 . 3)
+    ACL2 !>
+
+  Notice the space printed in front of the result, [30m[47m(3 . 3)[0m[0m.  This space
+  indicates that the return value is actually a multiple-value
+  return, specifically an [error-triple], which we may write as [30m[47m(mv
+  nil (3 . 3) state)[0m[0m.
+
+  The forms [30m[47m(in-logic-mode <form>)[0m[0m and [30m[47m(in-logic-mode <form> (quote
+  <variable-list>))[0m[0m are logically just [30m[47m(read-acl2-oracle state)[0m[0m.
+  More precisely, their single-step macroexpansions produce
+
+    (prog2$ (list v1 ... vk)
+            (read-acl2-oracle state))
+
+  where [30m[47m(v1 ... vk)[0m[0m is [30m[47m<variable-list>[0m[0m if supplied, else is the list of
+  arguments of [30m[47m<form>[0m[0m.  The presence of [30m[47m(list v1 ... vk)[0m[0m avoids the
+  need for an [30m[47mignore[0m[0m or [30m[47mignorable[0m[0m [declaration].
+
+  Thus, logically, a call of [30m[47min-logic-mode[0m[0m returns an [error-triple],
+  [30m[47m(mv erp val state)[0m[0m.  This is of course legitimate code to occur in
+  the body of a [30m[47m[logic][0m[0m-mode definition, but nothing can be proved
+  about [30m[47merp[0m[0m or [30m[47mval[0m[0m.  However, in code that is executed, then [30m[47m<form>[0m[0m
+  is evaluated and in the absence of error, [30m[47merp[0m[0m is [30m[47mnil[0m[0m and [30m[47mval[0m[0m is the
+  result of that evaluation.")
  (IN-PACKAGE
   (PACKAGES ACL2-BUILT-INS)
   "Select current package
@@ -74899,6 +74978,9 @@ Subtopics
   [Defmacro-untouchable]
       Define an ``untouchable'' macro
 
+  [In-logic-mode]
+      Permit [program]-mode code in [logic]-mode definitions
+
   [Macro-aliases-table]
       A [table] used to associate function names with macro names
 
@@ -75049,7 +75131,9 @@ Subtopics
       the resulting value will be the corresponding list [30m[47m(v1 v2 ...)[0m[0m.
 
     * A reasonable model for [30m[47m(magic-ev-fncall 'fn (list a1 a2 ...) state h
-      aokp)[0m[0m is [30m[47m(ec-call (fn a1 a2 ...))[0m[0m.")
+      aokp)[0m[0m is [30m[47m(ec-call (fn a1 a2 ...))[0m[0m.
+
+    * See also magic-ev and [in-logic-mode] for related utilities.")
  (MAILING-LISTS
   (ACL2 ABOUT-ACL2 COMMUNITY)
   "Mailing lists for ACL2 users
@@ -106852,6 +106936,12 @@ New Features
   returns a sorted list of keys of the hash table.  See [defstobj].
   Thanks to Eric Smith for requesting this enhancement.
 
+  A new macro, [30m[47m[in-logic-mode][0m[0m, allows [program]-mode code to be
+  included, for execution only, in the body of a [logic]-mode
+  function.  See [in-logic-mode].  Thanks to Alessandro Coglio for
+  requesting such a capability and to him and Eric Smith for helpful
+  discussions.
+
 
 Heuristic and Efficiency Improvements
 
@@ -115837,6 +115927,9 @@ Subtopics
   [Translate11]
       See [system-utilities].
 
+  [Translation]
+      See [translate].
+
   [Trust-tag]
       See [defttag].
 
@@ -118531,6 +118624,9 @@ Subtopics
 
   [Hons]
       [30m[47m(hons x y)[0m[0m returns a [normed] object equal to [30m[47m(cons x y)[0m[0m.
+
+  [In-logic-mode]
+      Permit [program]-mode code in [logic]-mode definitions
 
   [Introduction-to-programming-in-ACL2-for-those-who-know-lisp]
       Introduction to programming in ACL2 for Lisp users
@@ -155441,6 +155537,8 @@ Subtopics
                  "See [system-utilities].")
  (TRANSLATE11 (POINTERS)
               "See [system-utilities].")
+ (TRANSLATION (POINTERS)
+              "See [translate].")
  (TRANSPARENT-FUNCTIONS
   (META)
   "Working around restrictions on the use of evaluators in meta-level

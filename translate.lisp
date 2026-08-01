@@ -15822,6 +15822,7 @@
 ;   local
     with-live-state
     swap-stobjs ; to get the check offered by swap-stobjs-check
+    in-logic-mode ; so taht raw Lisp code is run even for :ideal functions
     ))
 
 ; Historical Note: The following material -- chk-no-duplicate-defuns,
@@ -17981,6 +17982,7 @@
                                  read-user-stobj-alist
                                  stobj-let
                                  swap-stobjs
+                                 in-logic-mode
                                  translate-and-test
                                  with-global-stobj
                                  with-local-stobj))
@@ -26117,13 +26119,28 @@
                   See :DOC user-stobjs-modified-warnings."
                  (car x)))
      (t
-      (mv-let
-        (erp expansion)
-        (macroexpand1-cmp x ctx wrld state-vars)
+      (mv-let (erp val bindings)
+        (cond ((and (not (eq stobjs-out t))
+                    (eq (car x) 'in-logic-mode))
+               (translate11 (cadr x)
+                            nil '(nil) bindings known-stobjs known-dfs
+                            flet-alist cform ctx wrld state-vars))
+              (t (mv nil nil bindings)))
         (cond
-         (erp (mv erp expansion bindings))
-         (t (translate11 expansion ilk stobjs-out bindings known-stobjs
-                         known-dfs flet-alist x ctx wrld state-vars)))))))
+         (erp (trans-er ctx
+                        "The expression ~x0 is illegal because the attempt to ~
+                         translate its first argument failed, with the ~
+                         following message:~|~@1"
+                        x
+                        val))
+         (t (mv-let
+              (erp expansion)
+              (macroexpand1-cmp x ctx wrld state-vars)
+              (cond
+               (erp (mv erp expansion bindings))
+               (t (translate11 expansion ilk stobjs-out bindings known-stobjs
+                               known-dfs flet-alist x ctx wrld
+                               state-vars))))))))))
    ((eq (car x) 'let)
     (translate11-let x nil nil stobjs-out bindings known-stobjs known-dfs
                      flet-alist ctx wrld state-vars))
