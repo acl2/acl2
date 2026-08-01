@@ -3791,22 +3791,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap header-name-string-map
-  :short "Fixtype of maps from header names to strings."
+(fty::defomap header-name-filepath-map
+  :short "Fixtype of maps from header names to file paths."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are used to record how header names in @('#include') directives
-     resolve to files identified by strings.
-     A map from header names to strings pertains to one file;
-     see @(tsee string-header-name-string-map-map)."))
+     resolve to files paths.
+     A map from header names to file paths pertains to one file;
+     see @(tsee string-header-name-filepath-map-map)."))
   :key-type header-name
-  :val-type string
-  :pred header-name-string-mapp)
+  :val-type filepath
+  :pred header-name-filepath-mapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap string-header-name-string-map-map
+(fty::defomap string-header-name-filepath-map-map
   :short "Fixtype of maps from strings to
           maps from header names to strings."
   :long
@@ -3820,8 +3820,8 @@
      the keys of the outer map identify the files or translation units,
      and each inner map records the mapping for that file."))
   :key-type string
-  :val-type header-name-string-map
-  :pred string-header-name-string-map-mapp)
+  :val-type header-name-filepath-map
+  :pred string-header-name-filepath-map-mapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3862,7 +3862,7 @@
      This is temporary, because we plan to put that information
      directly in the ASTs for the @('#include') directives."))
   ((units filepath-trans-unit-map)
-   (resolved-includes string-header-name-string-map-map)
+   (resolved-includes string-header-name-filepath-map-map)
    (info any))
   :pred trans-ensemblep
   :layout :fulltree)

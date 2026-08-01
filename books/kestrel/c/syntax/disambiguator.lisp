@@ -3989,7 +3989,7 @@
                            (dstate dstatep)
                            (tumap-orig filepath-trans-unit-mapp)
                            (resolved-includes
-                            string-header-name-string-map-mapp)
+                            string-header-name-filepath-map-mapp)
                            (tumap-dimb filepath-trans-unit-mapp)
                            (limit natp))
     :returns (mv (erp maybe-msgp)
@@ -4130,7 +4130,7 @@
                                 (dstate dstatep)
                                 (tumap-orig filepath-trans-unit-mapp)
                                 (resolved-includes
-                                 string-header-name-string-map-mapp)
+                                 string-header-name-filepath-map-mapp)
                                 (tumap-dimb filepath-trans-unit-mapp)
                                 (limit natp))
     :returns (mv (erp maybe-msgp)
@@ -4170,7 +4170,7 @@
   (define dimb-include ((header header-namep)
                         (dstate dstatep)
                         (tumap-orig filepath-trans-unit-mapp)
-                        (resolved-includes string-header-name-string-map-mapp)
+                        (resolved-includes string-header-name-filepath-map-mapp)
                         (tumap-dimb filepath-trans-unit-mapp)
                         (limit natp))
     :returns (mv (erp maybe-msgp)
@@ -4207,12 +4207,12 @@
          ;; Look up translation unit through the 3 maps.
          (including (dstate->file dstate))
          (including+inner (omap::assoc including
-                                       (string-header-name-string-map-map-fix
+                                       (string-header-name-filepath-map-map-fix
                                         resolved-includes)))
          ((unless including+inner)
           (raise "Internal error: ~x0 not in ~x1."
                  including
-                 (string-header-name-string-map-map-fix resolved-includes))
+                 (string-header-name-filepath-map-map-fix resolved-includes))
           (reterr "irrelevant"))
          (inner (cdr including+inner))
          (header+included (omap::assoc (header-name-fix header) inner))
@@ -4222,7 +4222,7 @@
                  inner)
           (reterr "irrelevant"))
          (included (cdr header+included))
-         (included+tunit (omap::assoc (filepath included)
+         (included+tunit (omap::assoc included
                                       (filepath-trans-unit-map-fix tumap-orig)))
          ((unless included+tunit)
           (raise "Internal error: ~x0 not in ~x1."
@@ -4233,7 +4233,7 @@
          ;; Dismbiguate the included translation unit in context.
          ;; This must not fail; if it does,
          ;; the disambiguation of the including translation unit fails.
-         (dstate (change-dstate dstate :file included))
+         (dstate (change-dstate dstate :file (filepath->string included)))
          ((erp new-tunit-in-context dstate tumap-dimb)
           (dimb-trans-unit tunit
                            dstate
@@ -4248,11 +4248,12 @@
          ((mv erp new-tunit-stand-alone tumap-dimb)
           (b* (((reterr) (irr-trans-unit) nil)
                (included+tunit
-                (omap::assoc (filepath included)
+                (omap::assoc included
                              (filepath-trans-unit-map-fix tumap-dimb)))
                ((when included+tunit)
                 (retok (cdr included+tunit) tumap-dimb))
-               (dstate-fresh (init-dstate included (dstate->ienv dstate)))
+               (dstate-fresh (init-dstate (filepath->string included)
+                                          (dstate->ienv dstate)))
                ((erp new-tunit-stand-alone & tumap-dimb)
                 (dimb-trans-unit tunit
                                  dstate-fresh
@@ -4273,7 +4274,7 @@
                                           (dstate->ienv dstate))))
           (retok (list (trans-item-include header))
                  dstate
-                 (omap::update (filepath included)
+                 (omap::update included
                                new-tunit-stand-alone
                                (filepath-trans-unit-map-fix tumap-dimb)))))
       ;; Otherwise, we expand the #include in place.
@@ -4288,7 +4289,7 @@
   (define dimb-elif ((elif hash-elifp)
                      (dstate dstatep)
                      (tumap-orig filepath-trans-unit-mapp)
-                     (resolved-includes string-header-name-string-map-mapp)
+                     (resolved-includes string-header-name-filepath-map-mapp)
                      (tumap-dimb filepath-trans-unit-mapp)
                      (donep booleanp)
                      (limit natp))
@@ -4353,7 +4354,7 @@
   (define dimb-elif-list ((elifs hash-elif-listp)
                           (dstate dstatep)
                           (tumap-orig filepath-trans-unit-mapp)
-                          (resolved-includes string-header-name-string-map-mapp)
+                          (resolved-includes string-header-name-filepath-map-mapp)
                           (tumap-dimb filepath-trans-unit-mapp)
                           (donep booleanp)
                           (limit natp))
@@ -4407,7 +4408,7 @@
                             (dstate dstatep)
                             (tumap-orig filepath-trans-unit-mapp)
                             (resolved-includes
-                             string-header-name-string-map-mapp)
+                             string-header-name-filepath-map-mapp)
                             (tumap-dimb filepath-trans-unit-mapp)
                             (donep booleanp)
                             (limit natp))
@@ -4458,7 +4459,7 @@
                            (dstate dstatep)
                            (tumap-orig filepath-trans-unit-mapp)
                            (resolved-includes
-                            string-header-name-string-map-mapp)
+                            string-header-name-filepath-map-mapp)
                            (tumap-dimb filepath-trans-unit-mapp)
                            (limit natp))
     :returns (mv (erp maybe-msgp)
@@ -4566,7 +4567,7 @@
 
 (define dimb-filepath-trans-unit-map ((tumap filepath-trans-unit-mapp)
                                       (resolved-includes
-                                       string-header-name-string-map-mapp)
+                                       string-header-name-filepath-map-mapp)
                                       (ienv ienvp)
                                       (keep-going booleanp))
   :returns (mv (erp maybe-msgp)
@@ -4599,7 +4600,7 @@
   ((define dimb-filepath-trans-unit-map-loop
      ((paths filepath-setp)
       (tumap filepath-trans-unit-mapp)
-      (resolved-includes string-header-name-string-map-mapp)
+      (resolved-includes string-header-name-filepath-map-mapp)
       (ienv ienvp)
       (keep-going booleanp)
       (tumap-dimb filepath-trans-unit-mapp))
@@ -4613,7 +4614,7 @@
           (tumap (filepath-trans-unit-map-fix tumap))
           (tumap-dimb (filepath-trans-unit-map-fix tumap-dimb))
           (resolved-includes
-           (string-header-name-string-map-map-fix resolved-includes))
+           (string-header-name-filepath-map-map-fix resolved-includes))
           (path (set::head paths))
           (tunit (omap::lookup path tumap))
           (file (filepath->string path))
