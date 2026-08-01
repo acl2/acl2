@@ -212,23 +212,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod param-declon-vinfo
-  :short "Fixtype of validation information for parameter declarations."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of the annotations that
-     the validator adds to parameter declarations.
-     The information consists of the optional type of the declared parameter.
-     The type is absent for the special @('(void)') syntax
-     that denotes an empty parameter list,
-     where the single parameter declaration
-     does not actually declare a parameter."))
-  ((type type-option))
-  :pred param-declon-vinfop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod init-declor-vinfo
   :short "Fixtype of validation information for initializer declarators."
   :long
