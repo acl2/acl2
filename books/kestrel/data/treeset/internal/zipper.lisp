@@ -38,6 +38,7 @@
 (local (include-book "bst"))
 (local (include-book "heap"))
 (local (include-book "count"))
+(local (include-book "in"))
 (local (include-book "in-order"))
 (local (include-book "subset"))
 
@@ -2762,15 +2763,6 @@
 
 ;; The built trees hold exactly the elements of the oset sides.
 
-(defruledl tree-in-of-tree-fix
-  (equal (tree-in x (tree-fix tree))
-         (tree-in x tree))
-  :use ((:instance member-equal-of-tree-in-order-under-iff)
-        (:instance member-equal-of-tree-in-order-under-iff
-                   (tree (tree-fix tree))))
-  :enable not
-  :disable member-equal-of-tree-in-order-under-iff)
-
 (defrule tree-in-of-zip-path-tree-before
   (equal (tree-in x (zip-path-tree-before path acc))
          (or (set::in x (zip-path-oset-before path))
@@ -2778,8 +2770,7 @@
   :induct (zip-path-tree-before path acc)
   :enable (zip-path-tree-before
            zip-path-oset-before
-           tree-in
-           tree-in-of-tree-fix))
+           tree-in))
 
 (defrule tree-in-of-zip-path-tree-after
   (equal (tree-in x (zip-path-tree-after path acc))
@@ -2789,8 +2780,7 @@
   :expand ((zip-path-after path))
   :enable (zip-path-tree-after
            zip-path-oset-after
-           tree-in
-           tree-in-of-tree-fix))
+           tree-in))
 
 (defrule tree-in-of-zip-tree-before
   (equal (tree-in x (zip-tree-before zip))
@@ -2810,54 +2800,6 @@
 ;; inherited from the plug: the frame element bounds its sibling directly, and
 ;; bounds the accumulator because the accumulator stays a subset of the
 ;; subtree the focus came from.
-
-(defruledl <<-when-<<-all-r-and-tree-in
-  (implies (and (<<-all-r x tree)
-                (tree-in y tree))
-           (<< x y))
-  :induct (tree-in y tree)
-  :enable (tree-in <<-all-r))
-
-(defruledl <<-when-<<-all-l-and-tree-in
-  (implies (and (<<-all-l tree x)
-                (tree-in y tree))
-           (<< y x))
-  :induct (tree-in y tree)
-  :enable (tree-in <<-all-l))
-
-(defruledl heap<-when-heap<-all-l-and-tree-in
-  (implies (and (heap<-all-l tree x)
-                (tree-in y tree))
-           (heap< y x))
-  :induct (tree-in y tree)
-  :enable (tree-in heap<-all-l))
-
-(defruledl <<-all-r-when-tree-subset-p
-  (implies (and (<<-all-r x tree)
-                (tree-subset-p acc tree))
-           (<<-all-r x acc))
-  :induct (tree-subset-p acc tree)
-  :enable (tree-subset-p
-           <<-all-r
-           <<-when-<<-all-r-and-tree-in))
-
-(defruledl <<-all-l-when-tree-subset-p
-  (implies (and (<<-all-l tree x)
-                (tree-subset-p acc tree))
-           (<<-all-l acc x))
-  :induct (tree-subset-p acc tree)
-  :enable (tree-subset-p
-           <<-all-l
-           <<-when-<<-all-l-and-tree-in))
-
-(defruledl heap<-all-l-when-tree-subset-p
-  (implies (and (heap<-all-l tree x)
-                (tree-subset-p acc tree))
-           (heap<-all-l acc x))
-  :induct (tree-subset-p acc tree)
-  :enable (tree-subset-p
-           heap<-all-l
-           heap<-when-heap<-all-l-and-tree-in))
 
 ;; What the plug knows about a plugged node, in the syntactic form the
 ;; induction below leaves in its wake.
@@ -3072,7 +3014,7 @@
   :enable (zip-tree-before
            zip-plug
            heapp-of-zip-path-tree-before
-           heapp-of-tree->left-when-tree-orderdp
+           heapp-of-tree->left-when-heapp
            tree-subset-p-of-tree->left-when-tree-subset-p))
 
 (defrule bstp-of-zip-tree-after-when-bstp-of-zip-plug

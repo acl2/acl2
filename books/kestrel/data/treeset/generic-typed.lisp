@@ -333,11 +333,6 @@
 ;; succeeding walk is eventually read. At @(tsee iter-min) nothing is behind,
 ;; so that covers the whole set.
 
-(defruledl not-emptyp-when-in
-  (implies (in x set)
-           (not (emptyp set)))
-  :use in-when-emptyp)
-
 (defruledl genericp-when-in-of-after
   (implies (and (in x (after iter))
                 (iter-all-genericp iter))

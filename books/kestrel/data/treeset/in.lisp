@@ -102,6 +102,11 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :enable in-when-emptyp)
 
+(defruled not-emptyp-when-in
+  (implies (in x set)
+           (not (emptyp set)))
+  :use in-when-emptyp)
+
 (defrule in-of-arg1-and-empty
   (not (in x (empty)))
   :enable in-when-emptyp)
