@@ -1942,6 +1942,169 @@
 ;; The focus of a zipper occupies a contiguous run of the in-order sequence of
 ;; the whole tree, and what flanks that run is fixed by the path alone. The two
 ;; functions below name those flanks, cutting the sequence in three.
+;;
+;; The tree fold below is the one primitive; the list and oset flanks are
+;; views of it, read off with @(tsee tree-in-order) and @(tsee tree-oset).
+
+;; The sides as trees, built directly. A frame whose focus hangs as the right
+;; child holds an element and a sibling subtree which precede the focus, and
+;; they arrive ordered and heap-dominated: the element is an ancestor of
+;; everything gathered so far, so a plain node placed over the sibling and the
+;; accumulator is already a valid treap. No comparison or rotation is needed;
+;; this is a split which keeps one half, along a path already traversed.
+
+(define zip-path-tree-before ((path zip-frame-listp)
+                              (acc treep))
+  :returns (tree treep)
+  :short "The elements which precede the focus subtree, as a tree atop an
+          accumulator."
+  (if (endp path)
+      (tree-fix acc)
+    (zip-path-tree-before
+      (cdr path)
+      (if (zip-frame->from-left (car path))
+          acc
+        (tree-node (zip-frame->elem (car path))
+                   (zip-frame->sibling (car path))
+                   acc))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-path-tree-after ((path zip-frame-listp)
+                             (acc treep))
+  :returns (tree treep)
+  :short "The elements which follow the focus subtree, as a tree atop an
+          accumulator."
+  (if (endp path)
+      (tree-fix acc)
+    (zip-path-tree-after
+      (cdr path)
+      (if (zip-frame->from-left (car path))
+          (tree-node (zip-frame->elem (car path))
+                     acc
+                     (zip-frame->sibling (car path)))
+        acc)))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t zip-path-tree-before) (:t zip-path-tree-after)))
+
+(defrule zip-path-tree-before-when-tree-equiv-of-arg2-congruence
+  (implies (tree-equiv acc0 acc1)
+           (equal (zip-path-tree-before path acc0)
+                  (zip-path-tree-before path acc1)))
+  :rule-classes :congruence
+  :induct t
+  :enable zip-path-tree-before)
+
+(defrule zip-path-tree-after-when-tree-equiv-of-arg2-congruence
+  (implies (tree-equiv acc0 acc1)
+           (equal (zip-path-tree-after path acc0)
+                  (zip-path-tree-after path acc1)))
+  :rule-classes :congruence
+  :induct t
+  :enable zip-path-tree-after)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-tree-before ((zip zipp))
+  :returns (tree treep)
+  :short "The elements which precede the cursor, as a tree."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "Time complexity: @($O(d)$), where @($d$) is the depth of the focus, and
+      so @($O(\\log(n))$) over a @(see treeset). One node is built per
+      contributing frame; every subtree hangs off the original tree
+      unchanged."))
+  (zip-path-tree-before (zip->path zip)
+                        (tree->left (zip->focus zip))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-tree-after ((zip zipp))
+  :returns (tree treep)
+  :short "The elements which follow the cursor, as a tree."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "Time complexity: @($O(d)$), where @($d$) is the depth of the focus, and
+      so @($O(\\log(n))$) over a @(see treeset). One node is built per
+      contributing frame; every subtree hangs off the original tree
+      unchanged."))
+  (zip-path-tree-after (zip->path zip)
+                       (tree->right (zip->focus zip))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t zip-tree-before) (:t zip-tree-after)))
+
+(defrule zip-tree-before-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-tree-before zip0)
+                  (zip-tree-before zip1)))
+  :rule-classes :congruence
+  :enable zip-tree-before)
+
+(defrule zip-tree-after-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-tree-after zip0)
+                  (zip-tree-after zip1)))
+  :rule-classes :congruence
+  :enable zip-tree-after)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The recursive list flanks survive only as local scaffolding: the exported
+;; functions are views of the tree fold, and the lemmas which relate a fold to
+;; its seed are proven against the recursion and then transferred.
+
+(local
+  (define zip-path-before-rec ((path zip-frame-listp))
+    :returns (list true-listp :rule-classes :type-prescription)
+    :verify-guards nil
+    (if (endp path)
+        nil
+      (append (zip-path-before-rec (cdr path))
+              (if (zip-frame->from-left (car path))
+                  nil
+                (append (tree-in-order (zip-frame->sibling (car path)))
+                        (list (tree-element->val
+                                (zip-frame->elem (car path))))))))))
+
+(local
+  (define zip-path-after-rec ((path zip-frame-listp))
+    :returns (list true-listp :rule-classes :type-prescription)
+    :verify-guards nil
+    (if (endp path)
+        nil
+      (append (if (zip-frame->from-left (car path))
+                  (cons (tree-element->val (zip-frame->elem (car path)))
+                        (tree-in-order (zip-frame->sibling (car path))))
+                nil)
+              (zip-path-after-rec (cdr path))))))
+
+(defruledl tree-in-order-of-zip-path-tree-before-rec
+  (equal (tree-in-order (zip-path-tree-before path acc))
+         (append (zip-path-before-rec path)
+                 (tree-in-order acc)))
+  :induct (zip-path-tree-before path acc)
+  :enable (zip-path-tree-before
+           zip-path-before-rec
+           tree-in-order))
+
+(defruledl tree-in-order-of-zip-path-tree-after-rec
+  (equal (tree-in-order (zip-path-tree-after path acc))
+         (append (tree-in-order acc)
+                 (zip-path-after-rec path)))
+  :induct (zip-path-tree-after path acc)
+  :enable (zip-path-tree-after
+           zip-path-after-rec
+           tree-in-order))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-path-before ((path zip-frame-listp))
   :returns (list true-listp :rule-classes :type-prescription)
@@ -1949,17 +2112,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "A frame contributes its node and its sibling subtree exactly when the
-      focus lies in the right child, since only then does that node precede the
-      focus. Frames further out contribute further to the left."))
-  (if (endp path)
-      nil
-    (append (zip-path-before (cdr path))
-            (if (zip-frame->from-left (car path))
-                nil
-              (append (tree-in-order (zip-frame->sibling (car path)))
-                      (list (tree-element->val
-                              (zip-frame->elem (car path)))))))))
+     "A view of the tree fold: the in-order sequence of the side built over an
+      empty seed."))
+  (tree-in-order (zip-path-tree-before path nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1969,33 +2124,60 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "The mirror of @(tsee zip-path-before): a frame contributes exactly
-      when the focus lies in the left child."))
-  (if (endp path)
-      nil
-    (append (if (zip-frame->from-left (car path))
-                (cons (tree-element->val (zip-frame->elem (car path)))
-                      (tree-in-order (zip-frame->sibling (car path))))
-              nil)
-            (zip-path-after (cdr path)))))
+     "The mirror of @(tsee zip-path-before)."))
+  (tree-in-order (zip-path-tree-after path nil)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (in-theory (disable (:t zip-path-before) (:t zip-path-after)))
+
+(defruledl zip-path-before-becomes-rec
+  (equal (zip-path-before path)
+         (zip-path-before-rec path))
+  :enable (zip-path-before
+           tree-in-order-of-zip-path-tree-before-rec))
+
+(defruledl zip-path-after-becomes-rec
+  (equal (zip-path-after path)
+         (zip-path-after-rec path))
+  :enable (zip-path-after
+           tree-in-order-of-zip-path-tree-after-rec))
+
+;; Reading a fold over any seed splits into the flank and the seed's own
+;; sequence. These are the general forms; the definitions above are the
+;; empty-seed instances.
+
+(defrule tree-in-order-of-zip-path-tree-before
+  (equal (tree-in-order (zip-path-tree-before path acc))
+         (append (zip-path-before path)
+                 (tree-in-order acc)))
+  :enable (zip-path-before-becomes-rec
+           tree-in-order-of-zip-path-tree-before-rec))
+
+(defrule tree-in-order-of-zip-path-tree-after
+  (equal (tree-in-order (zip-path-tree-after path acc))
+         (append (tree-in-order acc)
+                 (zip-path-after path)))
+  :enable (zip-path-after-becomes-rec
+           tree-in-order-of-zip-path-tree-after-rec))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (defrule zip-path-before-when-not-consp-cheap
   (implies (not (consp path))
            (equal (zip-path-before path)
                   nil))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :enable zip-path-before)
+  :enable (zip-path-before-becomes-rec
+           zip-path-before-rec))
 
 (defrule zip-path-after-when-not-consp-cheap
   (implies (not (consp path))
            (equal (zip-path-after path)
                   nil))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :enable zip-path-after)
+  :enable (zip-path-after-becomes-rec
+           zip-path-after-rec))
 
 (defrule zip-path-before-of-cons
   (equal (zip-path-before (cons frame path))
@@ -2005,7 +2187,8 @@
                    (append (tree-in-order (zip-frame->sibling frame))
                            (list (tree-element->val
                                    (zip-frame->elem frame)))))))
-  :enable zip-path-before)
+  :enable (zip-path-before-becomes-rec
+           zip-path-before-rec))
 
 (defrule zip-path-after-of-cons
   (equal (zip-path-after (cons frame path))
@@ -2014,7 +2197,8 @@
                            (tree-in-order (zip-frame->sibling frame)))
                    nil)
                  (zip-path-after path)))
-  :enable zip-path-after)
+  :enable (zip-path-after-becomes-rec
+           zip-path-after-rec))
 
 ;; A path with no left frames has nothing to the right of the focus, and
 ;; symmetrically. This is what the cached counts are testing.
@@ -2023,16 +2207,18 @@
   (implies (equal (zip-count-lefts path) 0)
            (equal (zip-path-after path)
                   nil))
-  :induct t
-  :enable (zip-path-after
+  :induct (zip-path-after-rec path)
+  :enable (zip-path-after-becomes-rec
+           zip-path-after-rec
            zip-count-lefts))
 
 (defrule zip-path-before-when-zip-count-rights-zero
   (implies (equal (zip-count-rights path) 0)
            (equal (zip-path-before path)
                   nil))
-  :induct t
-  :enable (zip-path-before
+  :induct (zip-path-before-rec path)
+  :enable (zip-path-before-becomes-rec
+           zip-path-before-rec
            zip-count-rights))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -2044,8 +2230,10 @@
                  (zip-path-after path)))
   :induct (zip-path-plug path tree)
   :enable (zip-path-plug
-           zip-path-before
-           zip-path-after
+           zip-path-before-becomes-rec
+           zip-path-after-becomes-rec
+           zip-path-before-rec
+           zip-path-after-rec
            zip-frame-plug
            tree-in-order))
 
@@ -2059,8 +2247,8 @@
 (define zip-before ((zip zipp))
   :returns (list true-listp :rule-classes :type-prescription)
   :short "The values which precede the cursor, in order."
-  (append (zip-path-before (zip->path zip))
-          (tree-in-order (tree->left (zip->focus zip))))
+  (tree-in-order (zip-path-tree-before (zip->path zip)
+                                       (tree->left (zip->focus zip))))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2068,8 +2256,8 @@
 (define zip-after ((zip zipp))
   :returns (list true-listp :rule-classes :type-prescription)
   :short "The values which follow the cursor, in order."
-  (append (tree-in-order (tree->right (zip->focus zip)))
-          (zip-path-after (zip->path zip)))
+  (tree-in-order (zip-path-tree-after (zip->path zip)
+                                      (tree->right (zip->focus zip))))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -2150,45 +2338,31 @@
 
 (define zip-path-oset-before ((path zip-frame-listp))
   :returns (oset set::setp)
-  :verify-guards :after-returns
   :short "The elements which precede the focus subtree, as an oset."
-  (if (endp path)
-      nil
-    (set::union (zip-path-oset-before (cdr path))
-                (if (zip-frame->from-left (car path))
-                    nil
-                  (set::insert (tree-element->val (zip-frame->elem (car path)))
-                               (tree-oset (zip-frame->sibling (car path))))))))
+  (tree-oset (zip-path-tree-before path nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-path-oset-after ((path zip-frame-listp))
   :returns (oset set::setp)
-  :verify-guards :after-returns
   :short "The elements which follow the focus subtree, as an oset."
-  (if (endp path)
-      nil
-    (set::union (if (zip-frame->from-left (car path))
-                    (set::insert (tree-element->val (zip-frame->elem (car path)))
-                                 (tree-oset (zip-frame->sibling (car path))))
-                  nil)
-                (zip-path-oset-after (cdr path)))))
+  (tree-oset (zip-path-tree-after path nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-oset-before ((zip zipp))
   :returns (oset set::setp)
   :short "The elements which precede the cursor, as an oset."
-  (set::union (zip-path-oset-before (zip->path zip))
-              (tree-oset (tree->left (zip->focus zip)))))
+  (tree-oset (zip-path-tree-before (zip->path zip)
+                                   (tree->left (zip->focus zip)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-oset-after ((zip zipp))
   :returns (oset set::setp)
   :short "The elements which follow the cursor, as an oset."
-  (set::union (tree-oset (tree->right (zip->focus zip)))
-              (zip-path-oset-after (zip->path zip))))
+  (tree-oset (zip-path-tree-after (zip->path zip)
+                                  (tree->right (zip->focus zip)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2216,28 +2390,36 @@
 (defrule in-of-zip-path-oset-before
   (iff (set::in x (zip-path-oset-before path))
        (member-equal x (zip-path-before path)))
-  :induct t
   :enable (zip-path-oset-before
-           zip-path-before))
+           zip-path-before)
+  :disable tree-in-order-of-zip-path-tree-before)
 
 (defrule in-of-zip-path-oset-after
   (iff (set::in x (zip-path-oset-after path))
        (member-equal x (zip-path-after path)))
-  :induct t
   :enable (zip-path-oset-after
-           zip-path-after))
+           zip-path-after)
+  :disable tree-in-order-of-zip-path-tree-after)
 
 (defrule in-of-zip-oset-before
   (iff (set::in x (zip-oset-before zip))
        (member-equal x (zip-before zip)))
   :enable (zip-oset-before
-           zip-before))
+           zip-before)
+  :use (:instance member-equal-of-tree-in-order-under-iff
+                  (tree (zip-path-tree-before (zip->path zip)
+                                              (tree->left (zip->focus zip)))))
+  :disable member-equal-of-tree-in-order-under-iff)
 
 (defrule in-of-zip-oset-after
   (iff (set::in x (zip-oset-after zip))
        (member-equal x (zip-after zip)))
   :enable (zip-oset-after
-           zip-after))
+           zip-after)
+  :use (:instance member-equal-of-tree-in-order-under-iff
+                  (tree (zip-path-tree-after (zip->path zip)
+                                             (tree->right (zip->focus zip)))))
+  :disable member-equal-of-tree-in-order-under-iff)
 
 ;; Each oset is empty exactly when its sequence is: a member of one is a
 ;; member of the other, and an oset with no members is nil.
@@ -2404,10 +2586,11 @@
                           (tree-in-order (zip->focus zip)))))
   :induct (zip-ascend-to-left-frame zip)
   :expand ((zip-count-lefts (zip->path zip))
-           (zip-path-before (zip->path zip)))
+           (zip-path-before-rec (zip->path zip)))
   :enable (zip-ascend-to-left-frame
            zip-ascend-one
            zip-before
+           zip-path-before-becomes-rec
            zip-frame-plug
            tree-in-order))
 
@@ -2459,15 +2642,17 @@
 (defruledl zip-count-rights-when-not-consp-of-zip-path-before
   (implies (not (consp (zip-path-before path)))
            (equal (zip-count-rights path) 0))
-  :induct t
-  :enable (zip-path-before
+  :induct (zip-path-before-rec path)
+  :enable (zip-path-before-becomes-rec
+           zip-path-before-rec
            zip-count-rights))
 
 (defruledl zip-count-lefts-when-not-consp-of-zip-path-after
   (implies (not (consp (zip-path-after path)))
            (equal (zip-count-lefts path) 0))
-  :induct t
-  :enable (zip-path-after
+  :induct (zip-path-after-rec path)
+  :enable (zip-path-after-becomes-rec
+           zip-path-after-rec
            zip-count-lefts))
 
 (defrule zip-before-when-zip-at-first-p
@@ -2650,114 +2835,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The sides as trees, built directly. A frame whose focus hangs as the right
-;; child holds an element and a sibling subtree which precede the focus, and
-;; they arrive ordered and heap-dominated: the element is an ancestor of
-;; everything gathered so far, so a plain node placed over the sibling and the
-;; accumulator is already a valid treap. No comparison or rotation is needed;
-;; this is a split which keeps one half, along a path already traversed.
-
-(define zip-path-tree-before ((path zip-frame-listp)
-                              (acc treep))
-  :returns (tree treep)
-  :short "The elements which precede the focus subtree, as a tree atop an
-          accumulator."
-  (if (endp path)
-      (tree-fix acc)
-    (zip-path-tree-before
-      (cdr path)
-      (if (zip-frame->from-left (car path))
-          acc
-        (tree-node (zip-frame->elem (car path))
-                   (zip-frame->sibling (car path))
-                   acc))))
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define zip-path-tree-after ((path zip-frame-listp)
-                             (acc treep))
-  :returns (tree treep)
-  :short "The elements which follow the focus subtree, as a tree atop an
-          accumulator."
-  (if (endp path)
-      (tree-fix acc)
-    (zip-path-tree-after
-      (cdr path)
-      (if (zip-frame->from-left (car path))
-          (tree-node (zip-frame->elem (car path))
-                     acc
-                     (zip-frame->sibling (car path)))
-        acc)))
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-path-tree-before) (:t zip-path-tree-after)))
-
-(defrule zip-path-tree-before-when-tree-equiv-of-arg2-congruence
-  (implies (tree-equiv acc0 acc1)
-           (equal (zip-path-tree-before path acc0)
-                  (zip-path-tree-before path acc1)))
-  :rule-classes :congruence
-  :induct t
-  :enable zip-path-tree-before)
-
-(defrule zip-path-tree-after-when-tree-equiv-of-arg2-congruence
-  (implies (tree-equiv acc0 acc1)
-           (equal (zip-path-tree-after path acc0)
-                  (zip-path-tree-after path acc1)))
-  :rule-classes :congruence
-  :induct t
-  :enable zip-path-tree-after)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define zip-tree-before ((zip zipp))
-  :returns (tree treep)
-  :short "The elements which precede the cursor, as a tree."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-     "Time complexity: @($O(d)$), where @($d$) is the depth of the focus, and
-      so @($O(\\log(n))$) over a @(see treeset). One node is built per
-      contributing frame; every subtree hangs off the original tree
-      unchanged."))
-  (zip-path-tree-before (zip->path zip)
-                        (tree->left (zip->focus zip))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define zip-tree-after ((zip zipp))
-  :returns (tree treep)
-  :short "The elements which follow the cursor, as a tree."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-     "Time complexity: @($O(d)$), where @($d$) is the depth of the focus, and
-      so @($O(\\log(n))$) over a @(see treeset). One node is built per
-      contributing frame; every subtree hangs off the original tree
-      unchanged."))
-  (zip-path-tree-after (zip->path zip)
-                       (tree->right (zip->focus zip))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-tree-before) (:t zip-tree-after)))
-
-(defrule zip-tree-before-when-zip-equiv-congruence
-  (implies (zip-equiv zip0 zip1)
-           (equal (zip-tree-before zip0)
-                  (zip-tree-before zip1)))
-  :rule-classes :congruence
-  :enable zip-tree-before)
-
-(defrule zip-tree-after-when-zip-equiv-congruence
-  (implies (zip-equiv zip0 zip1)
-           (equal (zip-tree-after zip0)
-                  (zip-tree-after zip1)))
-  :rule-classes :congruence
-  :enable zip-tree-after)
+;; (The tree fold is defined above, with the flanks it underlies.)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2767,20 +2845,27 @@
   (equal (tree-in x (zip-path-tree-before path acc))
          (or (set::in x (zip-path-oset-before path))
              (tree-in x acc)))
-  :induct (zip-path-tree-before path acc)
-  :enable (zip-path-tree-before
-           zip-path-oset-before
-           tree-in))
+  :enable zip-path-oset-before
+  :use ((:instance member-equal-of-tree-in-order-under-iff
+                   (tree (zip-path-tree-before path acc)))
+        (:instance member-equal-of-tree-in-order-under-iff
+                   (tree (zip-path-tree-before path nil)))
+        (:instance member-equal-of-tree-in-order-under-iff
+                   (tree acc)))
+  :disable member-equal-of-tree-in-order-under-iff)
 
 (defrule tree-in-of-zip-path-tree-after
   (equal (tree-in x (zip-path-tree-after path acc))
          (or (set::in x (zip-path-oset-after path))
              (tree-in x acc)))
-  :induct (zip-path-tree-after path acc)
-  :expand ((zip-path-after path))
-  :enable (zip-path-tree-after
-           zip-path-oset-after
-           tree-in))
+  :enable zip-path-oset-after
+  :use ((:instance member-equal-of-tree-in-order-under-iff
+                   (tree (zip-path-tree-after path acc)))
+        (:instance member-equal-of-tree-in-order-under-iff
+                   (tree (zip-path-tree-after path nil)))
+        (:instance member-equal-of-tree-in-order-under-iff
+                   (tree acc)))
+  :disable member-equal-of-tree-in-order-under-iff)
 
 (defrule tree-in-of-zip-tree-before
   (equal (tree-in x (zip-tree-before zip))
@@ -3041,44 +3126,6 @@
 ;; representations exactly. The in-order sequence of the tree side is the list
 ;; side, and its element set is the oset side, with no hypotheses -- the fold
 ;; is structural, whether or not the zipper's tree is a search tree.
-
-(defrule tree-in-order-of-zip-path-tree-before
-  (equal (tree-in-order (zip-path-tree-before path acc))
-         (append (zip-path-before path)
-                 (tree-in-order acc)))
-  :induct (zip-path-tree-before path acc)
-  :enable (zip-path-tree-before
-           zip-path-before
-           tree-in-order))
-
-(defrule tree-in-order-of-zip-path-tree-after
-  (equal (tree-in-order (zip-path-tree-after path acc))
-         (append (tree-in-order acc)
-                 (zip-path-after path)))
-  :induct (zip-path-tree-after path acc)
-  :enable (zip-path-tree-after
-           zip-path-after
-           tree-in-order))
-
-(defrule tree-oset-of-zip-path-tree-before
-  (equal (tree-oset (zip-path-tree-before path acc))
-         (set::union (zip-path-oset-before path)
-                     (tree-oset acc)))
-  :induct (zip-path-tree-before path acc)
-  :enable (zip-path-tree-before
-           zip-path-oset-before
-           tree-oset))
-
-(defrule tree-oset-of-zip-path-tree-after
-  (equal (tree-oset (zip-path-tree-after path acc))
-         (set::union (tree-oset acc)
-                     (zip-path-oset-after path)))
-  :induct (zip-path-tree-after path acc)
-  :enable (zip-path-tree-after
-           zip-path-oset-after
-           tree-oset))
-
-;;;;;;;;;;;;;;;;;;;;
 
 (defrule tree-in-order-of-zip-tree-before
   (equal (tree-in-order (zip-tree-before zip))
