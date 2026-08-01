@@ -42,6 +42,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; The rules which rewrite @(tsee tree-iter-plug) to a zipper's plug are held
+;; off for this whole book: the proofs here are stated against the folded
+;; form, and unfolding it loses every rule which matches it.
+
+(local (in-theory (disable tree-iter-plug-when-tree-iter-has-value-p
+                           tree-iter-plug-when-zipp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc iterator
   :parents (treeset)
   :short "A position within a @(see treeset)."
@@ -210,8 +219,7 @@
   :enable (iterp iter-fix)
   :use ((:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
                    (iter (iter-fix iter)))
-        (:instance tree-in-of-tree-iter-value (iter (iter-fix iter))))
-  :disable tree-iter-plug-when-tree-iter-has-value-p)
+        (:instance tree-in-of-tree-iter-value (iter (iter-fix iter)))))
 
 (defrule iter-fix-of-tree-iter-prev-of-iter-fix
   (equal (iter-fix (tree-iter-prev (iter-fix iter)))
@@ -681,7 +689,6 @@
         (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
                    (iter (iter-fix iter))))
   :disable (tree-iter-plug
-            tree-iter-plug-when-tree-iter-has-value-p
             tree-iter-value))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -739,9 +746,7 @@
            in-of-after-becomes-set-in
            in-of-tree-iter-oset-after-when-bstp
            bstp-of-tree-iter-plug-of-iter-fix)
-  :disable (in-of-tree-iter-oset-after
-            tree-iter-plug-when-tree-iter-has-value-p
-            tree-iter-plug-when-zipp))
+  :disable in-of-tree-iter-oset-after)
 
 (defrule <<-of-arg1-and-value-when-in-of-before
   (implies (and (has-valuep iter)
@@ -752,9 +757,7 @@
            in-of-before-becomes-set-in
            in-of-tree-iter-oset-before-when-bstp
            bstp-of-tree-iter-plug-of-iter-fix)
-  :disable (in-of-tree-iter-oset-before
-            tree-iter-plug-when-tree-iter-has-value-p
-            tree-iter-plug-when-zipp))
+  :disable in-of-tree-iter-oset-before)
 
 ;; So the value is on neither side, and the sides are disjoint.
 
@@ -810,9 +813,7 @@
            fix-when-setp)
   :use (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
                   (iter (iter-fix iter)))
-  :disable (tree-iter-plug
-            tree-iter-plug-when-zipp
-            tree-iter-plug-when-tree-iter-has-value-p))
+  :disable tree-iter-plug)
 
 (defrule in-of-from-iter-when-has-valuep
   (implies (has-valuep iter)
@@ -826,9 +827,7 @@
            tree-in-of-tree-iter-plug-split
            value
            has-valuep)
-  :disable (tree-iter-plug
-            tree-iter-plug-when-zipp
-            tree-iter-plug-when-tree-iter-has-value-p))
+  :disable tree-iter-plug)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1220,9 +1219,8 @@
            tree-iter-nexts
            data::cardinality-becomes-len-when-osetp
            tree-iter-oset-after-becomes-tree-iter-after
-           bstp-of-tree-iter-plug-of-iter-fix)
-  :disable (tree-iter-plug-when-tree-iter-has-value-p
-            tree-iter-plug-when-zipp))
+           bstp-of-tree-iter-plug-of-iter-fix))
+
 
 (defruled prevs-becomes-cardinality-of-before
   (implies (not (before-firstp iter))
@@ -1234,6 +1232,5 @@
            tree-iter-prevs
            data::cardinality-becomes-len-when-osetp
            tree-iter-oset-before-becomes-tree-iter-before
-           bstp-of-tree-iter-plug-of-iter-fix)
-  :disable (tree-iter-plug-when-tree-iter-has-value-p
-            tree-iter-plug-when-zipp))
+           bstp-of-tree-iter-plug-of-iter-fix))
+
