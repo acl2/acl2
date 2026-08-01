@@ -149,7 +149,7 @@
 
     (xdoc::p
      "This macro currently generates two representations of proofs,
-      and thus two versions of each predicate, @('p[i]') and @('p[i]-2').
+      and thus two versions of each predicate.
       In the first, each node of a proof carries its own conclusion
       and the validity of a proof is a predicate of the proof alone.
       In the second, each node carries instead
@@ -157,8 +157,7 @@
       and the arguments of the conclusion are arguments
       of the proof validity predicate.
       The two versions have the same interface:
-      the same introduction rule theorems and the same minimality theorems,
-      with @('p[i]-2') in place of @('p[i]').
+      the same introduction rule theorems and the same minimality theorems.
       Each is therefore a least relation satisfying the rules,
       and so the two are the same;
       this macro proves that, as described below.
@@ -291,10 +290,10 @@
        the variables that the events for the second representation of proofs
        use for the arguments of the conclusion,
        which are @('concl.x[i,1]'), ..., @('concl.x[i,m[i]]'),
-       from the names of the fields
+       differ from the names of the fields
        that hold the proofs of the premises,
        which are @('premise[1]-proof'), @('premise[2]-proof'), and so on,
-       and from @('proof$'),
+       and differ from @('proof$'),
        which is the variable of the fixtypes of proofs
        of that representation."))
 
