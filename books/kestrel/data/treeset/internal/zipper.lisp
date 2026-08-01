@@ -39,6 +39,7 @@
 (local (include-book "heap"))
 (local (include-book "count"))
 (local (include-book "in-order"))
+(local (include-book "subset"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2645,3 +2646,449 @@
   :disable zip-before-of-zip-prev
   :cases ((consp (zip-before zip)))
   :enable not-equal-of-append-of-singleton)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The sides as trees, built directly. A frame whose focus hangs as the right
+;; child holds an element and a sibling subtree which precede the focus, and
+;; they arrive ordered and heap-dominated: the element is an ancestor of
+;; everything gathered so far, so a plain node placed over the sibling and the
+;; accumulator is already a valid treap. No comparison or rotation is needed;
+;; this is a split which keeps one half, along a path already traversed.
+
+(define zip-path-tree-before ((path zip-frame-listp)
+                              (acc treep))
+  :returns (tree treep)
+  :short "The elements which precede the focus subtree, as a tree atop an
+          accumulator."
+  (if (endp path)
+      (tree-fix acc)
+    (zip-path-tree-before
+      (cdr path)
+      (if (zip-frame->from-left (car path))
+          acc
+        (tree-node (zip-frame->elem (car path))
+                   (zip-frame->sibling (car path))
+                   acc))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-path-tree-after ((path zip-frame-listp)
+                             (acc treep))
+  :returns (tree treep)
+  :short "The elements which follow the focus subtree, as a tree atop an
+          accumulator."
+  (if (endp path)
+      (tree-fix acc)
+    (zip-path-tree-after
+      (cdr path)
+      (if (zip-frame->from-left (car path))
+          (tree-node (zip-frame->elem (car path))
+                     acc
+                     (zip-frame->sibling (car path)))
+        acc)))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t zip-path-tree-before) (:t zip-path-tree-after)))
+
+(defrule zip-path-tree-before-when-tree-equiv-of-arg2-congruence
+  (implies (tree-equiv acc0 acc1)
+           (equal (zip-path-tree-before path acc0)
+                  (zip-path-tree-before path acc1)))
+  :rule-classes :congruence
+  :induct t
+  :enable zip-path-tree-before)
+
+(defrule zip-path-tree-after-when-tree-equiv-of-arg2-congruence
+  (implies (tree-equiv acc0 acc1)
+           (equal (zip-path-tree-after path acc0)
+                  (zip-path-tree-after path acc1)))
+  :rule-classes :congruence
+  :induct t
+  :enable zip-path-tree-after)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-tree-before ((zip zipp))
+  :returns (tree treep)
+  :short "The elements which precede the cursor, as a tree."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "Time complexity: @($O(d)$), where @($d$) is the depth of the focus, and
+      so @($O(\\log(n))$) over a @(see treeset). One node is built per
+      contributing frame; every subtree hangs off the original tree
+      unchanged."))
+  (zip-path-tree-before (zip->path zip)
+                        (tree->left (zip->focus zip))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-tree-after ((zip zipp))
+  :returns (tree treep)
+  :short "The elements which follow the cursor, as a tree."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "Time complexity: @($O(d)$), where @($d$) is the depth of the focus, and
+      so @($O(\\log(n))$) over a @(see treeset). One node is built per
+      contributing frame; every subtree hangs off the original tree
+      unchanged."))
+  (zip-path-tree-after (zip->path zip)
+                       (tree->right (zip->focus zip))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t zip-tree-before) (:t zip-tree-after)))
+
+(defrule zip-tree-before-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-tree-before zip0)
+                  (zip-tree-before zip1)))
+  :rule-classes :congruence
+  :enable zip-tree-before)
+
+(defrule zip-tree-after-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-tree-after zip0)
+                  (zip-tree-after zip1)))
+  :rule-classes :congruence
+  :enable zip-tree-after)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The built trees hold exactly the elements of the oset sides.
+
+(defruledl tree-in-of-tree-fix
+  (equal (tree-in x (tree-fix tree))
+         (tree-in x tree))
+  :use ((:instance member-equal-of-tree-in-order-under-iff)
+        (:instance member-equal-of-tree-in-order-under-iff
+                   (tree (tree-fix tree))))
+  :enable not
+  :disable member-equal-of-tree-in-order-under-iff)
+
+(defrule tree-in-of-zip-path-tree-before
+  (equal (tree-in x (zip-path-tree-before path acc))
+         (or (set::in x (zip-path-oset-before path))
+             (tree-in x acc)))
+  :induct (zip-path-tree-before path acc)
+  :enable (zip-path-tree-before
+           zip-path-oset-before
+           tree-in
+           tree-in-of-tree-fix))
+
+(defrule tree-in-of-zip-path-tree-after
+  (equal (tree-in x (zip-path-tree-after path acc))
+         (or (set::in x (zip-path-oset-after path))
+             (tree-in x acc)))
+  :induct (zip-path-tree-after path acc)
+  :expand ((zip-path-after path))
+  :enable (zip-path-tree-after
+           zip-path-oset-after
+           tree-in
+           tree-in-of-tree-fix))
+
+(defrule tree-in-of-zip-tree-before
+  (equal (tree-in x (zip-tree-before zip))
+         (set::in x (zip-oset-before zip)))
+  :enable (zip-tree-before
+           zip-oset-before))
+
+(defrule tree-in-of-zip-tree-after
+  (equal (tree-in x (zip-tree-after zip))
+         (set::in x (zip-oset-after zip)))
+  :enable (zip-tree-after
+           zip-oset-after))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Both invariants pass to the built trees. Each fact an added node needs is
+;; inherited from the plug: the frame element bounds its sibling directly, and
+;; bounds the accumulator because the accumulator stays a subset of the
+;; subtree the focus came from.
+
+(defruledl <<-when-<<-all-r-and-tree-in
+  (implies (and (<<-all-r x tree)
+                (tree-in y tree))
+           (<< x y))
+  :induct (tree-in y tree)
+  :enable (tree-in <<-all-r))
+
+(defruledl <<-when-<<-all-l-and-tree-in
+  (implies (and (<<-all-l tree x)
+                (tree-in y tree))
+           (<< y x))
+  :induct (tree-in y tree)
+  :enable (tree-in <<-all-l))
+
+(defruledl heap<-when-heap<-all-l-and-tree-in
+  (implies (and (heap<-all-l tree x)
+                (tree-in y tree))
+           (heap< y x))
+  :induct (tree-in y tree)
+  :enable (tree-in heap<-all-l))
+
+(defruledl <<-all-r-when-tree-subset-p
+  (implies (and (<<-all-r x tree)
+                (tree-subset-p acc tree))
+           (<<-all-r x acc))
+  :induct (tree-subset-p acc tree)
+  :enable (tree-subset-p
+           <<-all-r
+           <<-when-<<-all-r-and-tree-in))
+
+(defruledl <<-all-l-when-tree-subset-p
+  (implies (and (<<-all-l tree x)
+                (tree-subset-p acc tree))
+           (<<-all-l acc x))
+  :induct (tree-subset-p acc tree)
+  :enable (tree-subset-p
+           <<-all-l
+           <<-when-<<-all-l-and-tree-in))
+
+(defruledl heap<-all-l-when-tree-subset-p
+  (implies (and (heap<-all-l tree x)
+                (tree-subset-p acc tree))
+           (heap<-all-l acc x))
+  :induct (tree-subset-p acc tree)
+  :enable (tree-subset-p
+           heap<-all-l
+           heap<-when-heap<-all-l-and-tree-in))
+
+;; What the plug knows about a plugged node, in the syntactic form the
+;; induction below leaves in its wake.
+
+(defruledl bstp-parts-of-zip-path-plug-of-tree-node
+  (implies (bstp (zip-path-plug path (tree-node head left right)))
+           (and (bstp left)
+                (bstp right)
+                (<<-all-l left (tree-element->val head))
+                (<<-all-r (tree-element->val head) right)))
+  :use (:instance bstp-of-arg2-when-bstp-of-zip-path-plug
+                  (tree (tree-node head left right)))
+  :disable bstp-of-arg2-when-bstp-of-zip-path-plug)
+
+(defruledl heapp-parts-of-zip-path-plug-of-tree-node
+  (implies (heapp (zip-path-plug path (tree-node head left right)))
+           (and (heapp left)
+                (heapp right)
+                (heap<-all-l left (tree-element->val head))
+                (heap<-all-l right (tree-element->val head))))
+  :use (:instance heapp-of-arg2-when-heapp-of-zip-path-plug
+                  (tree (tree-node head left right)))
+  :disable heapp-of-arg2-when-heapp-of-zip-path-plug)
+
+(defruledl <<-all-r-of-elem-when-subset-of-right
+  (implies (and (tree-subset-p acc right)
+                (bstp (zip-path-plug path (tree-node head left right))))
+           (<<-all-r (tree-element->val head) acc))
+  :use ((:instance <<-all-r-when-tree-subset-p
+                   (x (tree-element->val head))
+                   (tree right))
+        (:instance bstp-of-arg2-when-bstp-of-zip-path-plug
+                   (tree (tree-node head left right))))
+  :disable bstp-of-arg2-when-bstp-of-zip-path-plug)
+
+(defruledl <<-all-l-of-elem-when-subset-of-left
+  (implies (and (tree-subset-p acc left)
+                (bstp (zip-path-plug path (tree-node head left right))))
+           (<<-all-l acc (tree-element->val head)))
+  :use ((:instance <<-all-l-when-tree-subset-p
+                   (x (tree-element->val head))
+                   (tree left))
+        (:instance bstp-of-arg2-when-bstp-of-zip-path-plug
+                   (tree (tree-node head left right))))
+  :disable bstp-of-arg2-when-bstp-of-zip-path-plug)
+
+(defruledl heap<-all-l-when-subset-of-right
+  (implies (and (tree-subset-p acc right)
+                (heapp (zip-path-plug path (tree-node head left right))))
+           (heap<-all-l acc (tree-element->val head)))
+  :use ((:instance heap<-all-l-when-tree-subset-p
+                   (x (tree-element->val head))
+                   (tree right))
+        (:instance heapp-of-arg2-when-heapp-of-zip-path-plug
+                   (tree (tree-node head left right))))
+  :disable heapp-of-arg2-when-heapp-of-zip-path-plug)
+
+(defruledl heap<-all-l-when-subset-of-left
+  (implies (and (tree-subset-p acc left)
+                (heapp (zip-path-plug path (tree-node head left right))))
+           (heap<-all-l acc (tree-element->val head)))
+  :use ((:instance heap<-all-l-when-tree-subset-p
+                   (x (tree-element->val head))
+                   (tree left))
+        (:instance heapp-of-arg2-when-heapp-of-zip-path-plug
+                   (tree (tree-node head left right))))
+  :disable heapp-of-arg2-when-heapp-of-zip-path-plug)
+
+;; The accumulator stays a subset as both it and the reference subtree are
+;; wrapped under the same frame.
+
+(defruledl tree-subset-p-of-tree-nodes-sharing-left
+  (implies (tree-subset-p acc tree)
+           (tree-subset-p (tree-node head sibling acc)
+                          (tree-node head sibling tree)))
+  :enable (tree-subset-p
+           tree-in
+           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->left
+           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->right))
+
+(defruledl tree-subset-p-of-tree-nodes-sharing-right
+  (implies (tree-subset-p acc tree)
+           (tree-subset-p (tree-node head acc sibling)
+                          (tree-node head tree sibling)))
+  :enable (tree-subset-p
+           tree-in
+           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->left
+           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->right))
+
+;; The builders and the plug ascend the path together.
+
+(local
+  (define zip-path-tree-before-induction ((path zip-frame-listp)
+                                          (tree treep)
+                                          (acc treep))
+    :verify-guards nil
+    :enabled t
+    (if (endp path)
+        (list tree acc)
+      (zip-path-tree-before-induction
+        (cdr path)
+        (zip-frame-plug (car path) tree)
+        (if (zip-frame->from-left (car path))
+            acc
+          (tree-node (zip-frame->elem (car path))
+                     (zip-frame->sibling (car path))
+                     acc))))))
+
+(local
+  (define zip-path-tree-after-induction ((path zip-frame-listp)
+                                         (tree treep)
+                                         (acc treep))
+    :verify-guards nil
+    :enabled t
+    (if (endp path)
+        (list tree acc)
+      (zip-path-tree-after-induction
+        (cdr path)
+        (zip-frame-plug (car path) tree)
+        (if (zip-frame->from-left (car path))
+            (tree-node (zip-frame->elem (car path))
+                       acc
+                       (zip-frame->sibling (car path)))
+          acc)))))
+
+(defruledl bstp-of-zip-path-tree-before
+  (implies (and (bstp (zip-path-plug path tree))
+                (bstp acc)
+                (tree-subset-p acc tree))
+           (bstp (zip-path-tree-before path acc)))
+  :induct (zip-path-tree-before-induction path tree acc)
+  :enable (zip-path-tree-before
+           zip-path-plug
+           zip-frame-plug
+           bstp-parts-of-zip-path-plug-of-tree-node
+           <<-all-r-of-elem-when-subset-of-right
+           tree-subset-p-of-tree-nodes-sharing-left
+           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->left
+           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->right)
+  :disable (tree-element-elim
+            zip-frame-elim
+            tree-node-elim))
+
+(defruledl heapp-of-zip-path-tree-before
+  (implies (and (heapp (zip-path-plug path tree))
+                (heapp acc)
+                (tree-subset-p acc tree))
+           (heapp (zip-path-tree-before path acc)))
+  :induct (zip-path-tree-before-induction path tree acc)
+  :enable (zip-path-tree-before
+           zip-path-plug
+           zip-frame-plug
+           heapp-parts-of-zip-path-plug-of-tree-node
+           heap<-all-l-when-subset-of-right
+           tree-subset-p-of-tree-nodes-sharing-left
+           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->left
+           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->right)
+  :disable (tree-element-elim
+            zip-frame-elim
+            tree-node-elim))
+
+(defruledl bstp-of-zip-path-tree-after
+  (implies (and (bstp (zip-path-plug path tree))
+                (bstp acc)
+                (tree-subset-p acc tree))
+           (bstp (zip-path-tree-after path acc)))
+  :induct (zip-path-tree-after-induction path tree acc)
+  :enable (zip-path-tree-after
+           zip-path-plug
+           zip-frame-plug
+           bstp-parts-of-zip-path-plug-of-tree-node
+           <<-all-l-of-elem-when-subset-of-left
+           tree-subset-p-of-tree-nodes-sharing-right
+           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->left
+           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->right)
+  :disable (tree-element-elim
+            zip-frame-elim
+            tree-node-elim))
+
+(defruledl heapp-of-zip-path-tree-after
+  (implies (and (heapp (zip-path-plug path tree))
+                (heapp acc)
+                (tree-subset-p acc tree))
+           (heapp (zip-path-tree-after path acc)))
+  :induct (zip-path-tree-after-induction path tree acc)
+  :enable (zip-path-tree-after
+           zip-path-plug
+           zip-frame-plug
+           heapp-parts-of-zip-path-plug-of-tree-node
+           heap<-all-l-when-subset-of-left
+           tree-subset-p-of-tree-nodes-sharing-right
+           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->left
+           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->right)
+  :disable (tree-element-elim
+            zip-frame-elim
+            tree-node-elim))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule bstp-of-zip-tree-before-when-bstp-of-zip-plug
+  (implies (bstp (zip-plug zip))
+           (bstp (zip-tree-before zip)))
+  :enable (zip-tree-before
+           zip-plug
+           bstp-of-zip-path-tree-before
+           bstp-of-tree->left-when-bstp
+           tree-subset-p-of-tree->left-when-tree-subset-p))
+
+(defrule heapp-of-zip-tree-before-when-heapp-of-zip-plug
+  (implies (heapp (zip-plug zip))
+           (heapp (zip-tree-before zip)))
+  :enable (zip-tree-before
+           zip-plug
+           heapp-of-zip-path-tree-before
+           heapp-of-tree->left-when-tree-orderdp
+           tree-subset-p-of-tree->left-when-tree-subset-p))
+
+(defrule bstp-of-zip-tree-after-when-bstp-of-zip-plug
+  (implies (bstp (zip-plug zip))
+           (bstp (zip-tree-after zip)))
+  :enable (zip-tree-after
+           zip-plug
+           bstp-of-zip-path-tree-after
+           bstp-of-tree->right-when-bstp
+           tree-subset-p-of-tree->right-when-tree-subset-p))
+
+(defrule heapp-of-zip-tree-after-when-heapp-of-zip-plug
+  (implies (heapp (zip-plug zip))
+           (heapp (zip-tree-after zip)))
+  :enable (zip-tree-after
+           zip-plug
+           heapp-of-zip-path-tree-after
+           heapp-of-tree->right-when-heapp
+           tree-subset-p-of-tree->right-when-tree-subset-p))
