@@ -91,7 +91,6 @@
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/arithmetic-light/truncate" :dir :system)
-(include-book "kestrel/utilities/real-time-since" :dir :system)
 (include-book "kestrel/utilities/untranslate-dollar-list" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/utilities/doublet-listp" :dir :system))
@@ -202,42 +201,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp assumptions assumption-rules hits state)
-(defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state)
+;; todo: don't return the assumption-rules?
+(defund simplify-assumptions-x86 (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp remove-assumption-rules)
                               (booleanp 64-bitp)
                               (count-hits-argp count-hits))
                   :stobjs state))
-  (b* ((- (cw "(Simplifying ~x0 assumptions...~%" (len assumptions)))
-       ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
-       ;; todo: optimize:
+  (b* (;; todo: optimize:
        (assumption-rules (if 64-bitp (assumption-simplification-rules64) (assumption-simplification-rules32)))
        ;; Add the extra-assumption-rules:
        (assumption-rules (append extra-assumption-rules assumption-rules))
        ;; Remove the remove-assumption-rules:
        (assumption-rules (set-difference-eq-fast assumption-rules remove-assumption-rules))
-       ((mv erp assumption-rule-alist)
-        (make-rule-alist assumption-rules (w state)))
-       ((when erp) (mv erp nil nil nil state))
-       ;; TODO: Option to turn this off, or to do just one pass:
-       ((mv erp assumptions hits)
-        (simplify-conjunction-basic assumptions
-                                    assumption-rule-alist
-                                    (known-booleans (w state))
-                                    nil ;; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
-                                    *no-warn-ground-functions*
-                                    nil ; don't memoize (avoids time spent making empty-memoizations)
-                                    count-hits
-                                    t   ; todo: warn just once
-                                    ))
-       ((when erp) (mv erp nil nil hits state))
-       (assumptions (get-conjuncts-of-terms2 assumptions)) ; should already be done above, when repeatedly simplifying?
-       ((mv assumption-simp-elapsed state) (real-time-since assumption-simp-start-real-time state))
-       (- (cw " (Simplifying assumptions took ") ; usually <= .01 seconds
-          (print-to-hundredths assumption-simp-elapsed)
-          (cw "s.)~%"))
-       (- (cw " Done simplifying assumptions)~%")))
+       ((mv erp assumptions hits state)
+        (acl2::simplify-assumptions assumptions assumption-rules count-hits *no-warn-ground-functions* state))
+       ((when erp) (mv erp nil nil hits state)))
     (mv nil assumptions assumption-rules hits state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -315,7 +295,7 @@
            ((mv erp assumptions assumption-rules hits state)
             (if extra-assumptions
                 ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
+                (simplify-assumptions-x86 assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
               (mv nil assumptions nil (empty-hits) state)))
            ((when erp) (mv erp nil nil nil nil state)))
         (mv (erp-nil) assumptions assumption-rules input-assumption-vars hits state))
@@ -341,7 +321,7 @@
              ((mv erp assumptions assumption-rules hits state)
               (if extra-assumptions
                   ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                  (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
+                  (simplify-assumptions-x86 assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
                 (mv nil assumptions nil (empty-hits) state)))
              ((when erp) (mv erp nil nil nil nil state)))
           (mv (erp-nil) assumptions assumption-rules input-assumption-vars hits state))
@@ -367,7 +347,7 @@
                ((mv erp assumptions assumption-rules hits state)
                 (if extra-assumptions
                     ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                    (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
+                    (simplify-assumptions-x86 assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
                   (mv nil assumptions nil (empty-hits) state)))
                ((when erp) (mv erp nil nil nil nil state)))
             (mv (erp-nil) assumptions assumption-rules input-assumption-vars hits state))
@@ -529,7 +509,7 @@
         ;;      ;; others, because opening things like read64 involves testing
         ;;      ;; canonical-addressp (which we know from other assumptions is true):
         ;;      ((mv erp assumptions assumption-rules state)
-        ;;       (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state))
+        ;;       (simplify-assumptions-x86 assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state))
         ;;      ((when erp) (mv erp nil nil nil nil state)))
         ;;   (mv nil assumptions
         ;;       untranslated-assumptions ; seems ok to use the original, unrewritten assumptions here
@@ -626,7 +606,7 @@
              ;; others, because opening things like read64 involves testing
              ;; canonical-addressp (which we know from other assumptions is true):
              ((mv erp assumptions assumption-rules hits state)
-              (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules nil count-hits state))
+              (simplify-assumptions-x86 assumptions extra-assumption-rules remove-assumption-rules nil count-hits state))
              ((when erp) (mv erp nil nil nil nil state)))
           (mv nil assumptions assumption-rules input-assumption-vars hits state))))))
 
