@@ -100,7 +100,15 @@
                (equal (compose x x)
                       (mfix x)))
     :enable (extensionality
-             assoc-of-compose)))
+             assoc-of-compose))
+
+  (defruled lookup-when-identityp
+    (implies (and (identityp map)
+                  (set::in key (keys map)))
+             (equal (lookup key map)
+                    key))
+    :induct t
+    :enable lookup))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
