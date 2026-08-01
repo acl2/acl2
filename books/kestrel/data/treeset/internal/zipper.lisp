@@ -3034,3 +3034,72 @@
            heapp-of-zip-path-tree-after
            heapp-of-tree->right-when-heapp
            tree-subset-p-of-tree->right-when-tree-subset-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; One fold, three views: reading a built side back out recovers the other two
+;; representations exactly. The in-order sequence of the tree side is the list
+;; side, and its element set is the oset side, with no hypotheses -- the fold
+;; is structural, whether or not the zipper's tree is a search tree.
+
+(defrule tree-in-order-of-zip-path-tree-before
+  (equal (tree-in-order (zip-path-tree-before path acc))
+         (append (zip-path-before path)
+                 (tree-in-order acc)))
+  :induct (zip-path-tree-before path acc)
+  :enable (zip-path-tree-before
+           zip-path-before
+           tree-in-order))
+
+(defrule tree-in-order-of-zip-path-tree-after
+  (equal (tree-in-order (zip-path-tree-after path acc))
+         (append (tree-in-order acc)
+                 (zip-path-after path)))
+  :induct (zip-path-tree-after path acc)
+  :enable (zip-path-tree-after
+           zip-path-after
+           tree-in-order))
+
+(defrule tree-oset-of-zip-path-tree-before
+  (equal (tree-oset (zip-path-tree-before path acc))
+         (set::union (zip-path-oset-before path)
+                     (tree-oset acc)))
+  :induct (zip-path-tree-before path acc)
+  :enable (zip-path-tree-before
+           zip-path-oset-before
+           tree-oset))
+
+(defrule tree-oset-of-zip-path-tree-after
+  (equal (tree-oset (zip-path-tree-after path acc))
+         (set::union (tree-oset acc)
+                     (zip-path-oset-after path)))
+  :induct (zip-path-tree-after path acc)
+  :enable (zip-path-tree-after
+           zip-path-oset-after
+           tree-oset))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule tree-in-order-of-zip-tree-before
+  (equal (tree-in-order (zip-tree-before zip))
+         (zip-before zip))
+  :enable (zip-tree-before
+           zip-before))
+
+(defrule tree-in-order-of-zip-tree-after
+  (equal (tree-in-order (zip-tree-after zip))
+         (zip-after zip))
+  :enable (zip-tree-after
+           zip-after))
+
+(defrule tree-oset-of-zip-tree-before
+  (equal (tree-oset (zip-tree-before zip))
+         (zip-oset-before zip))
+  :enable (zip-tree-before
+           zip-oset-before))
+
+(defrule tree-oset-of-zip-tree-after
+  (equal (tree-oset (zip-tree-after zip))
+         (zip-oset-after zip))
+  :enable (zip-tree-after
+           zip-oset-after))

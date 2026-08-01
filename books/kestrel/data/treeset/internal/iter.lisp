@@ -1603,3 +1603,32 @@
            (heapp (tree-iter-tree-after iter)))
   :enable (tree-iter-tree-after
            tree-iter-plug-when-tree-iter-has-value-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The views lift through the three shapes: reading the built side back out as
+;; a sequence or as an oset recovers the corresponding side directly.
+
+(defrule tree-in-order-of-tree-iter-tree-before
+  (equal (tree-in-order (tree-iter-tree-before iter))
+         (tree-iter-before iter))
+  :enable (tree-iter-tree-before
+           tree-iter-before))
+
+(defrule tree-in-order-of-tree-iter-tree-after
+  (equal (tree-in-order (tree-iter-tree-after iter))
+         (tree-iter-after iter))
+  :enable (tree-iter-tree-after
+           tree-iter-after))
+
+(defrule tree-oset-of-tree-iter-tree-before
+  (equal (tree-oset (tree-iter-tree-before iter))
+         (tree-iter-oset-before iter))
+  :enable (tree-iter-tree-before
+           tree-iter-oset-before))
+
+(defrule tree-oset-of-tree-iter-tree-after
+  (equal (tree-oset (tree-iter-tree-after iter))
+         (tree-iter-oset-after iter))
+  :enable (tree-iter-tree-after
+           tree-iter-oset-after))
