@@ -42,9 +42,7 @@
 (local (include-book "subset"))
 (local (include-book "insert"))
 (local (include-book "delete"))
-(local (include-book "internal/in-order"))
 (local (include-book "internal/bst"))
-(local (include-book "internal/min-max"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -330,105 +328,48 @@
 ;; it can succeed over a set that is not all generic. The correspondence is
 ;; therefore stated at @(tsee iter-min), where nothing has been passed yet.
 ;;
-;; The proof names the values a walk still has to read. A step drops the head of
-;; that list, so an induction on the walk meets each value in turn; and at a
-;; fresh iterator the list is the whole set, in order.
+;; The proof is an induction along the walk, run on the public step laws: a
+;; step reads the least of what lies ahead, so every element ahead of a
+;; succeeding walk is eventually read. At @(tsee iter-min) nothing is behind,
+;; so that covers the whole set.
 
-(local
-  (define iter-remaining ((iter iterp))
-    :verify-guards nil
-    (if (has-valuep iter)
-        (cons (value iter) (tree-iter-after (iter-fix iter)))
-      nil)))
+(defruledl not-emptyp-when-in
+  (implies (in x set)
+           (not (emptyp set)))
+  :use in-when-emptyp)
 
-(defruledl iter-remaining-when-has-valuep
-  (implies (has-valuep iter)
-           (equal (iter-remaining iter)
-                  (cons (value iter) (iter-remaining (next iter)))))
-  :enable (iter-remaining
-           value
-           next
-           has-valuep
-           before-firstp
-           tree-iter-value-of-tree-iter-next
-           tree-iter-has-value-p-of-tree-iter-next
-           tree-iter-has-value-p-when-consp-of-tree-iter-after))
-
-(defruledl iter-remaining-when-after-lastp
-  (implies (after-lastp iter)
-           (equal (iter-remaining iter)
-                  nil))
-  :enable (iter-remaining
-           has-valuep
-           after-lastp))
-
-;; With those two the induction needs no help: the walk either stops, or reads
-;; the head and recurs on the tail.
-
-(defruledl genericp-when-member-equal-of-iter-remaining
-  (implies (and (iter-all-genericp iter)
-                (not (before-firstp iter))
-                (member-equal x (iter-remaining iter)))
+(defruledl genericp-when-in-of-after
+  (implies (and (in x (after iter))
+                (iter-all-genericp iter))
            (genericp x))
   :induct (iter-all-genericp iter)
+  :expand ((iter-all-genericp iter)
+           (iter-all-genericp (next iter)))
   :enable (iter-all-genericp
-           member-equal
-           iter-remaining-when-has-valuep
-           iter-remaining-when-after-lastp))
+           not-emptyp-when-in))
 
-;; A fresh iterator has read nothing, so everything is still ahead of it.
+;; The first value a walk reads is the minimum, and reading it succeeds over a
+;; nonempty set.
 
-(defruledl tree-iter-after-of-iter-min
-  (equal (tree-iter-after (iter-min set))
-         (cdr (tree-in-order (fix set))))
-  :enable (iter-min
-           tree-iter-after-of-tree-iter-before-first))
+(defruledl genericp-of-min-when-iter-all-genericp-of-iter-min
+  (implies (and (iter-all-genericp (iter-min set))
+                (not (emptyp set)))
+           (genericp (min set)))
+  :expand ((iter-all-genericp (iter-min set))))
 
-;; The first value of a walk is the head of the in-order sequence. Stated over
-;; trees rather than sets, so that it still matches after the prover has
-;; generalized away the fixer.
+;; Any element is either that minimum or lies ahead of the fresh iterator,
+;; since nothing is behind it.
 
-(defruledl cons-of-tree-min-and-cdr-of-tree-in-order
-  (implies (and (bstp tree)
-                (not (tree-empty-p tree)))
-           (equal (cons (tree-min tree)
-                        (cdr (tree-in-order tree)))
-                  (tree-in-order tree)))
-  :use ((:instance acl2::cons-car-cdr (x (tree-in-order tree))))
-  :disable acl2::cons-car-cdr)
-
-;; The same two facts at the set level. They are packaged separately so that
-;; the proof below can leave @(tsee emptyp) folded, which is what lets @(tsee
-;; value-of-iter-min) fire.
-
-(defruledl cons-of-min-and-cdr-of-tree-in-order-of-fix
-  (implies (not (emptyp set))
-           (equal (cons (min set)
-                        (cdr (tree-in-order (fix set))))
-                  (tree-in-order (fix set))))
-  :enable (min
-           emptyp)
-  :use ((:instance cons-of-tree-min-and-cdr-of-tree-in-order
-                   (tree (fix set)))
-        (:instance bstp-of-fix)))
-
-(defruledl tree-in-order-of-fix-when-emptyp
-  (implies (emptyp set)
-           (equal (tree-in-order (fix set))
-                  nil))
-  :enable (emptyp
-           tree-in-order-when-tree-empty-p))
-
-(defruledl iter-remaining-of-iter-min
-  (equal (iter-remaining (iter-min set))
-         (tree-in-order (fix set)))
-  :enable (iter-remaining
-           tree-iter-after-of-iter-min
-           value-of-iter-min
-           empty
-           tree-empty-p
-           cons-of-min-and-cdr-of-tree-in-order-of-fix
-           tree-in-order-of-fix-when-emptyp))
+(defruledl genericp-when-in-and-iter-all-genericp-of-iter-min
+  (implies (and (in x set)
+                (iter-all-genericp (iter-min set)))
+           (genericp x))
+  :use ((:instance in-of-from-iter-when-has-valuep
+                   (iter (iter-min set))))
+  :enable (genericp-when-in-of-after
+           genericp-of-min-when-iter-all-genericp-of-iter-min
+           not-emptyp-when-in)
+  :disable in-of-from-iter-when-has-valuep)
 
 ;; So a walk that starts at the beginning reads every element, and the two
 ;; checks agree.
@@ -437,9 +378,7 @@
   (implies (iter-all-genericp (iter-min set))
            (set-all-genericp set))
   :enable (set-all-genericp-pick-a-point
-           in
-           genericp-when-member-equal-of-iter-remaining
-           iter-remaining-of-iter-min))
+           genericp-when-in-and-iter-all-genericp-of-iter-min))
 
 ;; The stub in the body means the recursion is not visibly boolean, so this has
 ;; to be said rather than read off the type prescription.
