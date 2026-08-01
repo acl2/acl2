@@ -18,6 +18,7 @@
 
 (define identity ((keys set::setp))
   :returns (map mapp)
+  :parents (omaps)
   :short "Build an identity map from a set."
   (b* (((when (set::emptyp keys)) nil)
        (key (set::head keys)))
