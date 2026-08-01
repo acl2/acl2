@@ -395,7 +395,8 @@
           (ident+kind (assoc-equal (ident-fix ident) scope))
           ((when ident+kind) (dimb-kind-fix (cdr ident+kind))))
        (dimb-lookup-ident-loop ident (cdr table)))
-     :guard-hints (("Goal" :in-theory (enable alistp-when-dimb-scopep-rewrite))))))
+     :guard-hints
+     (("Goal" :in-theory (enable alistp-when-dimb-scopep-rewrite))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1950,7 +1951,8 @@
     (b* (((reterr) nil (irr-dstate))
          ((when (endp specquals)) (retok nil (dstate-fix dstate)))
          ((erp new-specqual dstate) (dimb-spec/qual (car specquals) dstate))
-         ((erp new-specquals dstate) (dimb-spec/qual-list (cdr specquals) dstate)))
+         ((erp new-specquals dstate)
+          (dimb-spec/qual-list (cdr specquals) dstate)))
       (retok (cons new-specqual new-specquals) dstate))
     :measure (spec/qual-list-count specquals))
 
@@ -3002,7 +3004,8 @@
        and passed to this function as input."))
     (b* (((reterr) nil (irr-dstate))
          ((when (endp ideclors)) (retok nil (dstate-fix dstate)))
-         ((erp new-ideclor dstate) (dimb-init-declor (car ideclors) kind dstate))
+         ((erp new-ideclor dstate)
+          (dimb-init-declor (car ideclors) kind dstate))
          ((erp new-ideclors dstate)
           (dimb-init-declor-list (cdr ideclors) kind dstate)))
       (retok (cons new-ideclor new-ideclors) dstate))
@@ -3951,12 +3954,14 @@
            (retok (/= intval 0)))
      :ifdef (b* ((name (ident->unwrap if/ifdef/ifndef.name))
                  ((unless (stringp name))
-                  (raise "Internal error: identifier ~x0." if/ifdef/ifndef.name)
+                  (raise "Internal error: identifier ~x0."
+                         if/ifdef/ifndef.name)
                   (reterr "irrelevant")))
               (retok (and (macro-lookup name macros) t)))
      :ifndef (b* ((name (ident->unwrap if/ifdef/ifndef.name))
                   ((unless (stringp name))
-                   (raise "Internal error: identifier ~x0." if/ifdef/ifndef.name)
+                   (raise "Internal error: identifier ~x0."
+                          if/ifdef/ifndef.name)
                    (reterr "irrelevant")))
                (retok (not (macro-lookup name macros))))))
   :no-function nil)
@@ -3989,7 +3994,7 @@
                            (dstate dstatep)
                            (tumap-orig filepath-trans-unit-mapp)
                            (resolved-includes
-                            string-header-name-filepath-map-mapp)
+                            filepath-header-name-filepath-map-mapp)
                            (tumap-dimb filepath-trans-unit-mapp)
                            (limit natp))
     :returns (mv (erp maybe-msgp)
@@ -4130,7 +4135,7 @@
                                 (dstate dstatep)
                                 (tumap-orig filepath-trans-unit-mapp)
                                 (resolved-includes
-                                 string-header-name-filepath-map-mapp)
+                                 filepath-header-name-filepath-map-mapp)
                                 (tumap-dimb filepath-trans-unit-mapp)
                                 (limit natp))
     :returns (mv (erp maybe-msgp)
@@ -4170,7 +4175,8 @@
   (define dimb-include ((header header-namep)
                         (dstate dstatep)
                         (tumap-orig filepath-trans-unit-mapp)
-                        (resolved-includes string-header-name-filepath-map-mapp)
+                        (resolved-includes
+                         filepath-header-name-filepath-map-mapp)
                         (tumap-dimb filepath-trans-unit-mapp)
                         (limit natp))
     :returns (mv (erp maybe-msgp)
@@ -4206,13 +4212,14 @@
           (reterr "irrelevant"))
          ;; Look up translation unit through the 3 maps.
          (including (dstate->file dstate))
-         (including+inner (omap::assoc including
-                                       (string-header-name-filepath-map-map-fix
-                                        resolved-includes)))
+         (including+inner (omap::assoc
+                           (filepath including)
+                           (filepath-header-name-filepath-map-map-fix
+                            resolved-includes)))
          ((unless including+inner)
           (raise "Internal error: ~x0 not in ~x1."
                  including
-                 (string-header-name-filepath-map-map-fix resolved-includes))
+                 (filepath-header-name-filepath-map-map-fix resolved-includes))
           (reterr "irrelevant"))
          (inner (cdr including+inner))
          (header+included (omap::assoc (header-name-fix header) inner))
@@ -4289,7 +4296,7 @@
   (define dimb-elif ((elif hash-elifp)
                      (dstate dstatep)
                      (tumap-orig filepath-trans-unit-mapp)
-                     (resolved-includes string-header-name-filepath-map-mapp)
+                     (resolved-includes filepath-header-name-filepath-map-mapp)
                      (tumap-dimb filepath-trans-unit-mapp)
                      (donep booleanp)
                      (limit natp))
@@ -4354,7 +4361,8 @@
   (define dimb-elif-list ((elifs hash-elif-listp)
                           (dstate dstatep)
                           (tumap-orig filepath-trans-unit-mapp)
-                          (resolved-includes string-header-name-filepath-map-mapp)
+                          (resolved-includes
+                           filepath-header-name-filepath-map-mapp)
                           (tumap-dimb filepath-trans-unit-mapp)
                           (donep booleanp)
                           (limit natp))
@@ -4408,7 +4416,7 @@
                             (dstate dstatep)
                             (tumap-orig filepath-trans-unit-mapp)
                             (resolved-includes
-                             string-header-name-filepath-map-mapp)
+                             filepath-header-name-filepath-map-mapp)
                             (tumap-dimb filepath-trans-unit-mapp)
                             (donep booleanp)
                             (limit natp))
@@ -4459,7 +4467,7 @@
                            (dstate dstatep)
                            (tumap-orig filepath-trans-unit-mapp)
                            (resolved-includes
-                            string-header-name-filepath-map-mapp)
+                            filepath-header-name-filepath-map-mapp)
                            (tumap-dimb filepath-trans-unit-mapp)
                            (limit natp))
     :returns (mv (erp maybe-msgp)
@@ -4567,7 +4575,7 @@
 
 (define dimb-filepath-trans-unit-map ((tumap filepath-trans-unit-mapp)
                                       (resolved-includes
-                                       string-header-name-filepath-map-mapp)
+                                       filepath-header-name-filepath-map-mapp)
                                       (ienv ienvp)
                                       (keep-going booleanp))
   :returns (mv (erp maybe-msgp)
@@ -4600,7 +4608,7 @@
   ((define dimb-filepath-trans-unit-map-loop
      ((paths filepath-setp)
       (tumap filepath-trans-unit-mapp)
-      (resolved-includes string-header-name-filepath-map-mapp)
+      (resolved-includes filepath-header-name-filepath-map-mapp)
       (ienv ienvp)
       (keep-going booleanp)
       (tumap-dimb filepath-trans-unit-mapp))
@@ -4614,7 +4622,7 @@
           (tumap (filepath-trans-unit-map-fix tumap))
           (tumap-dimb (filepath-trans-unit-map-fix tumap-dimb))
           (resolved-includes
-           (string-header-name-filepath-map-map-fix resolved-includes))
+           (filepath-header-name-filepath-map-map-fix resolved-includes))
           (path (set::head paths))
           (tunit (omap::lookup path tumap))
           (file (filepath->string path))
