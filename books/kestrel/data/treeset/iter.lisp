@@ -19,6 +19,7 @@
 (include-book "in-defs")
 (include-book "insert-defs")
 (include-book "delete-defs")
+(include-book "cardinality-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -1235,3 +1236,37 @@
            (< (prevs (prev iter))
               (prevs iter)))
   :rule-classes :linear)
+
+;; The measures against the public sets: the moves left in a direction are one
+;; more than the count of elements on that side. Behind the fixer the plug is
+;; a search tree, so cardinality and sequence length agree. Left disabled:
+;; termination proofs run on the decrement laws above, which match the
+;; measures folded.
+
+(defruled nexts-becomes-cardinality-of-after
+  (implies (not (after-lastp iter))
+           (equal (nexts iter)
+                  (+ 1 (cardinality (after iter)))))
+  :enable (nexts
+           after
+           after-lastp
+           tree-iter-nexts
+           data::cardinality-becomes-len-when-osetp
+           tree-iter-oset-after-becomes-tree-iter-after
+           bstp-of-tree-iter-plug-of-iter-fix)
+  :disable (tree-iter-plug-when-tree-iter-has-value-p
+            tree-iter-plug-when-zipp))
+
+(defruled prevs-becomes-cardinality-of-before
+  (implies (not (before-firstp iter))
+           (equal (prevs iter)
+                  (+ 1 (cardinality (before iter)))))
+  :enable (prevs
+           before
+           before-firstp
+           tree-iter-prevs
+           data::cardinality-becomes-len-when-osetp
+           tree-iter-oset-before-becomes-tree-iter-before
+           bstp-of-tree-iter-plug-of-iter-fix)
+  :disable (tree-iter-plug-when-tree-iter-has-value-p
+            tree-iter-plug-when-zipp))
