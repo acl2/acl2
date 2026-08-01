@@ -491,6 +491,29 @@
 ;; The sequences these are built from are already ordered, so an oset is
 ;; exactly what they are; @(tsee from-oset) only changes the representation.
 
+;; Over a search tree each side's built tree and its oset denote the same
+;; elements, and treesets are canonical, so they are the same object. This is
+;; what lets the builders serve as the executable branch below while the
+;; logical definitions stay on the osets.
+
+(defruledl tree-iter-tree-before-becomes-from-oset
+  (implies (setp (tree-iter-plug iter))
+           (equal (tree-iter-tree-before iter)
+                  (from-oset (tree-iter-oset-before iter))))
+  :enable (extensionality
+           setp
+           in
+           fix-when-setp))
+
+(defruledl tree-iter-tree-after-becomes-from-oset
+  (implies (setp (tree-iter-plug iter))
+           (equal (tree-iter-tree-after iter)
+                  (from-oset (tree-iter-oset-after iter))))
+  :enable (extensionality
+           setp
+           in
+           fix-when-setp))
+
 (define before ((iter iterp))
   :returns (set setp)
   :parents (iterator)
@@ -499,8 +522,18 @@
   (xdoc::topstring
    (xdoc::p
      "The elements a forward walk has already passed. This excludes the value
-      the iterator is at: that one has not been passed yet."))
-  (from-oset (tree-iter-oset-before (iter-fix iter))))
+      the iterator is at: that one has not been passed yet.")
+   (xdoc::p
+     "Time complexity: @($O(\\log(n))$) expected. The result is built with
+      one fresh node per step of the iterator's path; every subtree hangs off
+      the underlying set unchanged."))
+  (mbe :logic (from-oset (tree-iter-oset-before (iter-fix iter)))
+       :exec (tree-iter-tree-before (iter-fix iter)))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable tree-iter-tree-before-becomes-from-oset)
+    :use (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
+                    (iter (iter-fix iter))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -523,8 +556,18 @@
   (xdoc::topstring
    (xdoc::p
      "The elements a forward walk has yet to reach. This excludes the value the
-      iterator is at, so it is what remains strictly after the current step."))
-  (from-oset (tree-iter-oset-after (iter-fix iter))))
+      iterator is at, so it is what remains strictly after the current step.")
+   (xdoc::p
+     "Time complexity: @($O(\\log(n))$) expected. The result is built with
+      one fresh node per step of the iterator's path; every subtree hangs off
+      the underlying set unchanged."))
+  (mbe :logic (from-oset (tree-iter-oset-after (iter-fix iter)))
+       :exec (tree-iter-tree-after (iter-fix iter)))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable tree-iter-tree-after-becomes-from-oset)
+    :use (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
+                    (iter (iter-fix iter))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 

@@ -1374,3 +1374,86 @@
            (tree-iter-has-value-p iter))
   :enable (tree-iter-after
            tree-iter-has-value-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The sides as trees, through the three shapes. At an end the near side is
+;; empty and the far side is the whole tree -- which is the plug itself, with
+;; nothing to build.
+
+(define tree-iter-tree-before ((iter tree-iter-p))
+  :returns (tree treep)
+  :short "The elements to the left of the iterator, as a tree."
+  (cond ((tree-iter-before-first-p iter) nil)
+        ((tree-iter-after-last-p iter) (tree-iter-plug iter))
+        (t (zip-tree-before (tree-iter->zip iter)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tree-iter-tree-after ((iter tree-iter-p))
+  :returns (tree treep)
+  :short "The elements to the right of the iterator, as a tree."
+  (cond ((tree-iter-after-last-p iter) nil)
+        ((tree-iter-before-first-p iter) (tree-iter-plug iter))
+        (t (zip-tree-after (tree-iter->zip iter)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t tree-iter-tree-before) (:t tree-iter-tree-after)))
+
+(defrule tree-iter-tree-before-when-tree-iter-equiv-congruence
+  (implies (tree-iter-equiv iter0 iter1)
+           (equal (tree-iter-tree-before iter0)
+                  (tree-iter-tree-before iter1)))
+  :rule-classes :congruence
+  :expand ((tree-iter-tree-before iter0)
+           (tree-iter-tree-before iter1)))
+
+(defrule tree-iter-tree-after-when-tree-iter-equiv-congruence
+  (implies (tree-iter-equiv iter0 iter1)
+           (equal (tree-iter-tree-after iter0)
+                  (tree-iter-tree-after iter1)))
+  :rule-classes :congruence
+  :expand ((tree-iter-tree-after iter0)
+           (tree-iter-tree-after iter1)))
+
+;; The built trees hold exactly the elements of the oset sides.
+
+(defrule tree-in-of-tree-iter-tree-before
+  (equal (tree-in x (tree-iter-tree-before iter))
+         (set::in x (tree-iter-oset-before iter)))
+  :enable (tree-iter-tree-before
+           tree-iter-oset-before))
+
+(defrule tree-in-of-tree-iter-tree-after
+  (equal (tree-in x (tree-iter-tree-after iter))
+         (set::in x (tree-iter-oset-after iter)))
+  :enable (tree-iter-tree-after
+           tree-iter-oset-after))
+
+;; Both invariants pass from the plug, so over a search tree the built sides
+;; are proper treesets.
+
+(defrule bstp-of-tree-iter-tree-before-when-bstp
+  (implies (bstp (tree-iter-plug iter))
+           (bstp (tree-iter-tree-before iter)))
+  :enable (tree-iter-tree-before
+           tree-iter-plug-when-tree-iter-has-value-p))
+
+(defrule heapp-of-tree-iter-tree-before-when-heapp
+  (implies (heapp (tree-iter-plug iter))
+           (heapp (tree-iter-tree-before iter)))
+  :enable (tree-iter-tree-before
+           tree-iter-plug-when-tree-iter-has-value-p))
+
+(defrule bstp-of-tree-iter-tree-after-when-bstp
+  (implies (bstp (tree-iter-plug iter))
+           (bstp (tree-iter-tree-after iter)))
+  :enable (tree-iter-tree-after
+           tree-iter-plug-when-tree-iter-has-value-p))
+
+(defrule heapp-of-tree-iter-tree-after-when-heapp
+  (implies (heapp (tree-iter-plug iter))
+           (heapp (tree-iter-tree-after iter)))
+  :enable (tree-iter-tree-after
+           tree-iter-plug-when-tree-iter-has-value-p))
