@@ -744,9 +744,10 @@
 ;; everything behind it and below everything ahead of it. These are what tie a
 ;; traversal's order to @(tsee <<); the laws below are all consequences.
 ;;
-;; The generic oset facts carrying the comparisons come from the oset
-;; utilities. The two sides and the value assemble into one ordered list, so
-;; comparing across the cut is comparing across an append.
+;; These read straight off the filter characterizations: each side collects
+;; the elements of the set on its own side of the value. The rules which
+;; rewrite @(tsee tree-iter-plug) to a zipper's plug are held off so that the
+;; @(tsee bstp) hypothesis keeps its folded form.
 
 (defrule <<-of-value-when-in-of-after
   (implies (and (has-valuep iter)
@@ -754,19 +755,12 @@
            (<< (value iter) x))
   :enable (value
            has-valuep
-           in-of-after-becomes-member-equal
+           in-of-after-becomes-set-in
+           in-of-tree-iter-oset-after-when-bstp
            bstp-of-tree-iter-plug-of-iter-fix)
-  :disable (tree-in-order-of-zip-plug
+  :disable (in-of-tree-iter-oset-after
             tree-iter-plug-when-tree-iter-has-value-p
-            tree-iter-plug-when-zipp)
-  :use ((:instance data::setp-of-suffix-when-osetp-of-append
-                   (data::x (tree-iter-before (iter-fix iter)))
-                   (data::y (cons (tree-iter-value (iter-fix iter))
-                                  (tree-iter-after (iter-fix iter)))))
-        (:instance data::<<-of-car-when-member-equal-of-cdr
-                   (data::l (cons (tree-iter-value (iter-fix iter))
-                                  (tree-iter-after (iter-fix iter))))
-                   (data::x x))))
+            tree-iter-plug-when-zipp))
 
 (defrule <<-of-arg1-and-value-when-in-of-before
   (implies (and (has-valuep iter)
@@ -774,16 +768,12 @@
            (<< x (value iter)))
   :enable (value
            has-valuep
-           in-of-before-becomes-member-equal
+           in-of-before-becomes-set-in
+           in-of-tree-iter-oset-before-when-bstp
            bstp-of-tree-iter-plug-of-iter-fix)
-  :disable (tree-in-order-of-zip-plug
+  :disable (in-of-tree-iter-oset-before
             tree-iter-plug-when-tree-iter-has-value-p
-            tree-iter-plug-when-zipp)
-  :use ((:instance data::<<-across-append-when-osetp
-                   (data::a (tree-iter-before (iter-fix iter)))
-                   (data::b (cons (tree-iter-value (iter-fix iter))
-                                  (tree-iter-after (iter-fix iter))))
-                   (data::x x))))
+            tree-iter-plug-when-zipp))
 
 ;; So the value is on neither side, and the sides are disjoint.
 
@@ -812,7 +802,9 @@
   :enable data::<<-rules)
 
 (add-to-ruleset break-abstraction
-                '(in-of-before-becomes-member-equal
+                '(in-of-before-becomes-set-in
+                  in-of-after-becomes-set-in
+                  in-of-before-becomes-member-equal
                   in-of-after-becomes-member-equal))
 
 ;; The whole sequence is the two sides with the value between them, so an
