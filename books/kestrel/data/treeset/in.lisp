@@ -38,7 +38,7 @@
   :long
   (xdoc::topstring
     (xdoc::p
-      "Time complexity: @($O(log(n))$).")
+      "Time complexity: @($O(\\log(n))$).")
     (xdoc::section
       "General form"
       (xdoc::codeblock
