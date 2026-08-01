@@ -34,7 +34,7 @@
       (mv-let (k v) (head x)
         (and (equal k v)
              (identityp (tail x)))))
-  
+
   ///
 
   (defcong mequiv equal (identityp x) 1)
@@ -173,4 +173,3 @@
 
 (in-theory (disable values-is-keys-when-identityp
                     assoc-when-identityp))
-
