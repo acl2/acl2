@@ -18,9 +18,9 @@
                 (append *std-pkg-symbols*
                         '(define-sk
                           defxdoc+
-                          fast-<<
-                          identity))
+                          fast-<<))
                 '(assoc
+                  identity
                   map
                   values
                   set::emptyp
