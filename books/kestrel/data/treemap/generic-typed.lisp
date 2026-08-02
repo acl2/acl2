@@ -29,6 +29,7 @@
 (include-book "update-star-defs")
 (include-book "delete-defs")
 (include-book "restrict-defs")
+(include-book "submap-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -56,6 +57,7 @@
 (local (include-book "update-star"))
 (local (include-book "delete"))
 (local (include-book "restrict"))
+(local (include-book "submap"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -94,10 +96,7 @@
 (defrule set-all-genericp-of-keys-of-restrict
   (implies (treeset::set-all-genericp (keys map))
            (treeset::set-all-genericp (keys (restrict s map))))
-  :use (:instance treeset::set-all-genericp-when-subset-and-set-all-genericp
-                  (treeset::x (treeset::intersect s (keys map)))
-                  (treeset::y (keys map)))
-  :disable treeset::set-all-genericp-when-subset-and-set-all-genericp)
+  :enable treeset::set-all-genericp-when-set-all-genericp-and-subset)
 
 (defrule set-all-genericp-of-keys-of-update*
   (equal (treeset::set-all-genericp (keys (update* m1 m2)))
@@ -123,43 +122,35 @@
 
 ;; The value treeset. There are no exact bridges here: an operation removes a
 ;; value from the value treeset only when no surviving key shares it. What
-;; does hold is membership -- each proof picks the witness key with @(tsee
-;; rlookup) -- and from membership, containment; and containment is all an
-;; all-elements predicate needs.
+;; does hold is membership, and one lemma carries the whole witness argument:
+;; a value of a submap is a value of the map, since some key produces it there
+;; and the same key produces it in the map. @(tsee rlookup) names the witness;
+;; this is the one place it is needed, and the @(tsee delete) and @(tsee
+;; restrict) bridges are its instances through @(tsee submap-of-delete) and
+;; @(tsee submap-of-restrict).
 
-(defrule in-of-values-of-delete
-  (implies (treeset::in v (values (delete k map)))
-           (treeset::in v (values map)))
+(defrule in-of-values-when-submap
+  (implies (and (treeset::in v (values m1))
+                (submap m1 m2))
+           (treeset::in v (values m2)))
   :use ((:instance treeset::in-of-head
-                   (treeset::set (rlookup v (delete k map))))
-        (:instance in-of-rlookup
-                   (key (treeset::head (rlookup v (delete k map))))
-                   (val v)
-                   (map (delete k map)))
-        (:instance in-of-lookup-and-values
-                   (key (treeset::head (rlookup v (delete k map))))
+                   (treeset::set (rlookup v m1)))
+        (:instance lookup-when-in-of-keys-and-submap
+                   (key (treeset::head (rlookup v m1)))
                    (default nil)
-                   (map map)))
+                   (x m1)
+                   (y m2))
+        (:instance in-of-lookup-and-values
+                   (key (treeset::head (rlookup v m1)))
+                   (default nil)
+                   (map m2)))
   :disable (treeset::in-of-head
-            in-of-rlookup
+            lookup-when-in-of-keys-and-submap
             in-of-lookup-and-values))
 
-(defrule in-of-values-of-restrict
-  (implies (treeset::in v (values (restrict s map)))
-           (treeset::in v (values map)))
-  :use ((:instance treeset::in-of-head
-                   (treeset::set (rlookup v (restrict s map))))
-        (:instance in-of-rlookup
-                   (key (treeset::head (rlookup v (restrict s map))))
-                   (val v)
-                   (map (restrict s map)))
-        (:instance in-of-lookup-and-values
-                   (key (treeset::head (rlookup v (restrict s map))))
-                   (default nil)
-                   (map map)))
-  :disable (treeset::in-of-head
-            in-of-rlookup
-            in-of-lookup-and-values))
+;; An update may bind a fresh value, so its bridges carry the one case the
+;; submap lemma cannot: the witness argument repeats, relative to the updated
+;; map.
 
 (defrule in-of-values-of-update
   (implies (and (treeset::in v0 (values (update k v map)))
@@ -233,18 +224,12 @@
 (defrule set-all-genericp-of-values-of-delete
   (implies (treeset::set-all-genericp (values map))
            (treeset::set-all-genericp (values (delete k map))))
-  :use (:instance treeset::set-all-genericp-when-subset-and-set-all-genericp
-                  (treeset::x (values (delete k map)))
-                  (treeset::y (values map)))
-  :disable treeset::set-all-genericp-when-subset-and-set-all-genericp)
+  :enable treeset::set-all-genericp-when-set-all-genericp-and-subset)
 
 (defrule set-all-genericp-of-values-of-restrict
   (implies (treeset::set-all-genericp (values map))
            (treeset::set-all-genericp (values (restrict s map))))
-  :use (:instance treeset::set-all-genericp-when-subset-and-set-all-genericp
-                  (treeset::x (values (restrict s map)))
-                  (treeset::y (values map)))
-  :disable treeset::set-all-genericp-when-subset-and-set-all-genericp)
+  :enable treeset::set-all-genericp-when-set-all-genericp-and-subset)
 
 (defrule set-all-genericp-of-values-of-update
   (implies (and (treeset::genericp v)
