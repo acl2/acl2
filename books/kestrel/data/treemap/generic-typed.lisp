@@ -18,6 +18,7 @@
 (include-book "kestrel/data/treeset/subset-defs" :dir :system)
 (include-book "kestrel/data/treeset/union-defs" :dir :system)
 
+(include-book "internal/tree-defs")
 (include-book "map-defs")
 (include-book "keys-defs")
 (include-book "values-defs")
@@ -35,6 +36,7 @@
 (local (acl2::controlled-configuration :hooks nil))
 
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "kestrel/data/treeset/in" :dir :system))
@@ -46,6 +48,9 @@
 (local (include-book "kestrel/data/treeset/min-max" :dir :system))
 (local (include-book "kestrel/data/treeset/extensionality" :dir :system))
 
+(local (include-book "internal/tree"))
+(local (include-book "internal/keys"))
+(local (include-book "internal/values"))
 (local (include-book "map"))
 (local (include-book "keys"))
 (local (include-book "values"))
@@ -263,3 +268,52 @@
   (implies (and (treeset::set-all-genericp (values map))
                 (not (emptyp map)))
            (treeset::genericp (head-val map))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Structural folds over the map's own tree, one per projection. Each is a
+;; single walk reading its component at every node; neither builds a treeset.
+;; The bridges below let an executable recognizer conjoining the two folds
+;; meet the projection laws above, one functional instance per fold.
+
+(define tree-all-keys-genericp ((tree treep))
+  (or (tree-empty-p tree)
+      (and (treeset::genericp (tree-element->key (tree->head tree)))
+           (tree-all-keys-genericp (tree->left tree))
+           (tree-all-keys-genericp (tree->right tree)))))
+
+(define tree-all-vals-genericp ((tree treep))
+  (or (tree-empty-p tree)
+      (and (treeset::genericp (tree-element->val (tree->head tree)))
+           (tree-all-vals-genericp (tree->left tree))
+           (tree-all-vals-genericp (tree->right tree)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled tree-all-keys-genericp-becomes-set-all-genericp-of-tree-key-set
+  (equal (tree-all-keys-genericp tree)
+         (treeset::set-all-genericp (tree-key-set tree)))
+  :induct t
+  :enable (tree-all-keys-genericp
+           tree-key-set))
+
+(defruled tree-all-vals-genericp-becomes-set-all-genericp-of-tree-val-set
+  (equal (tree-all-vals-genericp tree)
+         (treeset::set-all-genericp (tree-val-set tree)))
+  :induct t
+  :enable (tree-all-vals-genericp
+           tree-val-set))
+
+(defruled tree-all-keys-genericp-becomes-set-all-genericp-of-keys
+  (implies (mapp map)
+           (equal (tree-all-keys-genericp map)
+                  (treeset::set-all-genericp (keys map))))
+  :enable (keys
+           tree-all-keys-genericp-becomes-set-all-genericp-of-tree-key-set))
+
+(defruled tree-all-vals-genericp-becomes-set-all-genericp-of-values
+  (implies (mapp map)
+           (equal (tree-all-vals-genericp map)
+                  (treeset::set-all-genericp (values map))))
+  :enable (values
+           tree-all-vals-genericp-becomes-set-all-genericp-of-tree-val-set))
