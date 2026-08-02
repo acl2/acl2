@@ -212,23 +212,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod param-declon-vinfo
-  :short "Fixtype of validation information for parameter declarations."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of the annotations that
-     the validator adds to parameter declarations.
-     The information consists of the optional type of the declared parameter.
-     The type is absent for the special @('(void)') syntax
-     that denotes an empty parameter list,
-     where the single parameter declaration
-     does not actually declare a parameter."))
-  ((type type-option))
-  :pred param-declon-vinfop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod init-declor-vinfo
   :short "Fixtype of validation information for initializer declarators."
   :long
@@ -350,17 +333,18 @@
        does not actually declare a parameter.
        The type is present otherwise, and it is the type of the parameter.")
      (xdoc::p
-      "Non-abstract parameter declarators are annotated
-       with their types and their UIDs.
-       Abstract parameter declarators are annotated with their types.
-       Absent (i.e. @(':none')) parameter declarators
-       are annotated with their types;
-       in the case of this being part of
-       a single @('void') parameter declaration,
-       which has a special meaning (i.e. a function with zero parameters),
-       we annotate the parameter declarator with the @('void') type.
-       Note that @('void') can never be confused with
-       the type of a function parameter, which cannot be @('void').")
+      "A parameter declarator is annotated with its type,
+       which is determined (by the validator)
+       from the whole parameter declaration that the declarator is part of.
+       In the case of the absent (i.e. @(':none')) parameter declarator
+       that is part of a @('void') parameter declaration
+       (which has a special meaning, used as the sole parameter),
+       the declarator is annotated with the @('void') type;
+       note that @('void') can never be confused with
+       the type of an actual function parameter, which cannot be @('void').
+       Additionally, a non-abstract parameter declarator,
+       which includes an identifier,
+       is annotated with its UID.")
      (xdoc::p
       "Type names are annotated with the type they denote.")
      (xdoc::p
@@ -654,6 +638,11 @@
                 (type-vinfop info)))
     :expand (param-declor-annop (param-declor-abstract declor info)))
 
+  (defruled param-declor-annop-of-param-declor-none
+    (equal (param-declor-annop (param-declor-none info))
+           (type-vinfop info))
+    :expand (param-declor-annop (param-declor-none info)))
+
   (defruled tyname-annop-of-tyname
     (equal (tyname-annop (tyname specquals declor? info))
            (and (spec/qual-list-annop specquals)
@@ -934,6 +923,12 @@
              (type-vinfop (param-declor-abstract->info param-declor)))
     :enable param-declor-annop)
 
+  (defruled type-vinfop-of-param-declor-none->info
+    (implies (and (param-declor-annop param-declor)
+                  (param-declor-case param-declor :none))
+             (type-vinfop (param-declor-none->info param-declor)))
+    :enable param-declor-annop)
+
   (defruled spec/qual-list-annop-of-tyname->specquals
     (implies (tyname-annop tyname)
              (spec/qual-list-annop (tyname->specquals tyname)))
@@ -1056,6 +1051,7 @@
      param-declon-annop-of-param-declon
      param-declor-annop-of-param-declor-nonabstract
      param-declor-annop-of-param-declor-abstract
+     param-declor-annop-of-param-declor-none
      tyname-annop-of-tyname
      struct-declor-annop-of-struct-declor
      init-declor-annop-of-init-declor
@@ -1102,6 +1098,7 @@
      type+uid-vinfop-of-param-declor-nonabstract->info
      absdeclor-annop-of-param-declor-abstract->declor
      type-vinfop-of-param-declor-abstract->info
+     type-vinfop-of-param-declor-none->info
      spec/qual-list-annop-of-tyname->specquals
      absdeclor-option-annop-of-tyname->declor?
      type-vinfop-of-tyname->info
@@ -1159,7 +1156,7 @@
    :funcall (type-vinfo->type expr.info)
    :member (type-vinfo->type expr.info)
    :memberp (type-vinfo->type expr.info)
-   :complit (type-unknown)
+   :complit (type-vinfo->type (tyname->info expr.type))
    :unary (type-vinfo->type expr.info)
    :label-addr (type-pointer (type-void))
    :sizeof (type-unknown-arithmetic)
@@ -1362,4 +1359,29 @@
                   (set::insert (type-void) (set::delete nil types))
                 types)))
     types)
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define param-declor-type ((pdeclor param-declorp))
+  :guard (and (param-declor-unambp pdeclor)
+              (param-declor-annop pdeclor))
+  :returns (type typep)
+  :short "Type of a parameter declarator, from the validation information."
+  (param-declor-case
+   pdeclor
+   :nonabstract (type+uid-vinfo->type pdeclor.info)
+   :abstract (type-vinfo->type pdeclor.info)
+   :none (type-vinfo->type pdeclor.info)
+   :ambig (prog2$ (impossible) (irr-type)))
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define param-declon-type ((pdeclon param-declonp))
+  :guard (and (param-declon-unambp pdeclon)
+              (param-declon-annop pdeclon))
+  :returns (type typep)
+  :short "Type of a parameter declaration, from the validation information."
+  (param-declor-type (param-declon->declor pdeclon))
   :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules))))

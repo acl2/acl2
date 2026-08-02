@@ -139,8 +139,9 @@
    (xdoc::h4 "Tools Library")
 
    (xdoc::p
-    "Fixed a bug in @(see with-supporters) that was preventing @(see disable)s for
-     names of theorems (as opposed to functions).")
+    "Fixed @(see with-supporters) to @(see disable) appropriate names of
+     theorems (not merely functions) and to avoid dropping suitable
+     macro-aliases (see @(see macro-aliases-table)).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
