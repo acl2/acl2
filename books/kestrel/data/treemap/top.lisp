@@ -19,6 +19,7 @@
 (include-book "rlookup")
 (include-book "submap")
 (include-book "extensionality")
+(include-book "induction")
 (include-book "min-max")
 (include-book "update")
 (include-book "delete")
