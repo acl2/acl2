@@ -259,6 +259,18 @@
            (set-all-genericp x))
   :enable set-all-genericp-pick-a-point-polar)
 
+;; The same fact with the hypotheses exchanged: here the containing set is
+;; found in the context and the containment itself is left to rewriting, which
+;; suits goals whose subset fact is a rule rather than a hypothesis. Left
+;; disabled: with both orders enabled every all-elements goal would search the
+;; context twice.
+
+(defruled set-all-genericp-when-set-all-genericp-and-subset
+  (implies (and (set-all-genericp y)
+                (subset x y))
+           (set-all-genericp x))
+  :by set-all-genericp-when-subset-and-set-all-genericp)
+
 (defrule set-all-genericp-of-insert
   (equal (set-all-genericp (insert x set))
          (and (genericp x)
