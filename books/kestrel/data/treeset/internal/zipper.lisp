@@ -2161,6 +2161,16 @@
   :enable (zip-path-after-becomes-rec
            tree-in-order-of-zip-path-tree-after-rec))
 
+;; Each general rule rewrites a read of the fold into the view, and the view's
+;; definition unfolds back into a read of the fold. Enabling either
+;; definition together with its rule loops, so proofs pick one.
+
+(theory-invariant (incompatible (:rewrite tree-in-order-of-zip-path-tree-before)
+                                (:definition zip-path-before)))
+
+(theory-invariant (incompatible (:rewrite tree-in-order-of-zip-path-tree-after)
+                                (:definition zip-path-after)))
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule zip-path-before-when-not-consp-cheap
@@ -2277,6 +2287,57 @@
                   (zip-after zip1)))
   :rule-classes :congruence
   :enable zip-after)
+
+;; A side tree is empty exactly when its sequence is, and counting it is
+;; measuring its sequence.
+
+(defrule tree-empty-p-of-zip-tree-before
+  (equal (tree-empty-p (zip-tree-before zip))
+         (not (consp (zip-before zip))))
+  :enable (not
+           zip-before
+           zip-tree-before)
+  :use (:instance consp-of-tree-in-order
+                  (tree (zip-path-tree-before (zip->path zip)
+                                              (tree->left (zip->focus zip)))))
+  :disable (consp-of-tree-in-order
+            tree-in-order-of-zip-path-tree-before))
+
+(defrule tree-empty-p-of-zip-tree-after
+  (equal (tree-empty-p (zip-tree-after zip))
+         (not (consp (zip-after zip))))
+  :enable (not
+           zip-after
+           zip-tree-after)
+  :use (:instance consp-of-tree-in-order
+                  (tree (zip-path-tree-after (zip->path zip)
+                                             (tree->right (zip->focus zip)))))
+  :disable (consp-of-tree-in-order
+            tree-in-order-of-zip-path-tree-after))
+
+(defrule tree-nodes-count-of-zip-tree-before
+  (equal (tree-nodes-count (zip-tree-before zip))
+         (len (zip-before zip)))
+  :enable (not
+           zip-before
+           zip-tree-before)
+  :use (:instance len-of-tree-in-order
+                  (tree (zip-path-tree-before (zip->path zip)
+                                              (tree->left (zip->focus zip)))))
+  :disable (len-of-tree-in-order
+            tree-in-order-of-zip-path-tree-before))
+
+(defrule tree-nodes-count-of-zip-tree-after
+  (equal (tree-nodes-count (zip-tree-after zip))
+         (len (zip-after zip)))
+  :enable (not
+           zip-after
+           zip-tree-after)
+  :use (:instance len-of-tree-in-order
+                  (tree (zip-path-tree-after (zip->path zip)
+                                             (tree->right (zip->focus zip)))))
+  :disable (len-of-tree-in-order
+            tree-in-order-of-zip-path-tree-after))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -3150,3 +3211,5 @@
          (zip-oset-after zip))
   :enable (zip-tree-after
            zip-oset-after))
+
+

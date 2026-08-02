@@ -589,6 +589,8 @@
   :enable (before
            before-firstp
            tree-iter-oset-before
+           tree-iter-tree-before
+           tree-oset
            (:e empty)))
 
 (defrule after-when-after-lastp
@@ -598,6 +600,8 @@
   :enable (after
            after-lastp
            tree-iter-oset-after
+           tree-iter-tree-after
+           tree-oset
            (:e empty)))
 
 ;; At the constructors the same holds with no hypothesis, including over the
