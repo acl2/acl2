@@ -1694,8 +1694,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (The side trees are defined above, beside the views they underlie.)
-
 ;; The built trees hold exactly the elements of the oset sides.
 
 (defrule tree-in-of-tree-iter-tree-before

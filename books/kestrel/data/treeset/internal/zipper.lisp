@@ -2896,10 +2896,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (The tree fold is defined above, with the flanks it underlies.)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; The built trees hold exactly the elements of the oset sides.
 
 (defrule tree-in-of-zip-path-tree-before
