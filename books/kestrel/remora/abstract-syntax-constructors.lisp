@@ -267,10 +267,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ t[] (type shape)
-  :short "Construct a type term from an element type term and a shape term."
+(defmacro+ t[] (type ispace)
+  :short "Construct a type term from an element type term and an ispace term."
   `(type-array ,(type-term-from-var/base/other type)
-               (ispace-shape ,(shape-term-from-var/other shape))))
+               ,(ispace-term-from-var/dim/shape/other ispace)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
