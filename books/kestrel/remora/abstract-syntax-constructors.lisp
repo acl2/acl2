@@ -148,6 +148,8 @@
           or a dimension term starting with a macro
           (@(tsee dim+), @(tsee dim*), or @(tsee dim-)),
           or a dimension term starting with a fixtype constructor,
+          or a shape term starting with a macro
+          (@(tsee shp) or @(tsee shp++)),
           or a shape term starting with a fixtype constructor,
           or some other term that is left unchanged."
   :long
@@ -173,7 +175,9 @@
          `(ispace-dim ,term))
         ((and (consp term)
               (member-eq (car term)
-                         '(shape-var
+                         '(shp
+                           shp++
+                           shape-var
                            shape-dims
                            shape-append
                            shape-splice)))
