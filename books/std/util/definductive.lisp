@@ -3080,6 +3080,77 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-check-proof2-names ((irule-infos defind-irule-info-listp)
+                                   (pred-infos defind-pred-info-listp)
+                                   (name symbolp))
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (erp "@('nil') or an error message.")
+  :short "Check that the variables of the rules do not clash with
+          the names that the second representation reserves."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A summand of a @('p[i]-2-proof') fixtype has a field
+     for each variable of the rule,
+     so a variable that is also the @(':xvar') of the fixtype,
+     or the name of one of the premise fields,
+     makes FTY reject the fixtype.
+     A variable that is also one of the variables
+     for the arguments of the conclusion is worse:
+     it shadows the formal of the @('p[i]-2-proof-validp') function
+     in the case for the rule,
+     which turns the equality for that argument of the conclusion
+     into an equality of the field with itself,
+     silently defining the wrong relation.")
+   (xdoc::p
+    "We take the names of the premise fields from
+     @(tsee defind-gen-proof2-prem-fields),
+     so that this check cannot drift from what is generated.
+     This is why this check is here,
+     among the event generation code,
+     instead of with the rest of the input processing;
+     it also needs the name of the macro call,
+     which is not available in that phase.")
+   (xdoc::p
+    "These names are reserved only by the second representation of proofs:
+     if that representation is dropped, so is this check.")
+   (xdoc::p
+    "We do not check the proof variable, @(tsee defind-proof-var-name).
+     A rule variable with that name does make the macro fail,
+     but in the events for the first representation,
+     at the theorem about the conclusion of a proof built by a rule.
+     That failure predates the second representation
+     and does not involve it,
+     so it belongs with the first representation;
+     until it is fixed,
+     such a rule is rejected by a proof failure
+     instead of by a message from here."))
+  (b* (((reterr))
+       ((when (endp irule-infos)) (retok))
+       ((defind-irule-info info) (car irule-infos))
+       (pred-name (defind-conclusion-info->name info.conclusion))
+       (pinfo (defind-lookup-pred pred-name pred-infos))
+       ((unless pinfo) (retok)) ; never happens: checked while processing
+       (reserved
+        (cons (defind-proof2-xvar-name name)
+              (append (defind-proof2-concl-var-names
+                        (defind-pred-info->formals pinfo) name)
+                      (defind-prem-field-names (len info.premises) name))))
+       (clashing (intersection-eq (defind-irule-info-free-vars info) reserved))
+       ((when clashing)
+        (reterr (msg "The variables of a rule must differ from ~
+                      the variables and field names that ~
+                      the generated events use for ~
+                      the arguments of the conclusion and the proofs. ~
+                      This does not hold for the rule ~x0, ~
+                      whose variables include ~&1."
+                     info.name clashing))))
+    (defind-check-proof2-names (cdr irule-infos) pred-infos name))
+  :guard-hints (("Goal" :in-theory (enable symbol-listp-when-symbol-setp
+                                           set::sets-are-true-lists))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-process-inputs (name
                                preds
                                (preds-suppliedp booleanp)
@@ -3110,6 +3181,7 @@
         (defind-process-preds preds preds-suppliedp wrld))
        ((erp irule-infos leveled-cliques state)
         (defind-process-irules irules irules-suppliedp pred-infos state))
+       ((erp) (defind-check-proof2-names irule-infos pred-infos name))
        ((erp parents short long xdocp)
         (defind-process-parents/short/long
           parents parents-suppliedp
@@ -6344,77 +6416,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defind-check-proof2-names ((irule-infos defind-irule-info-listp)
-                                   (pred-infos defind-pred-info-listp)
-                                   (name symbolp))
-  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-  :returns (erp "@('nil') or an error message.")
-  :short "Check that the variables of the rules do not clash with
-          the names that the second representation reserves."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A summand of a @('p[i]-2-proof') fixtype has a field
-     for each variable of the rule,
-     so a variable that is also the @(':xvar') of the fixtype,
-     or the name of one of the premise fields,
-     makes FTY reject the fixtype.
-     A variable that is also one of the variables
-     for the arguments of the conclusion is worse:
-     it shadows the formal of the @('p[i]-2-proof-validp') function
-     in the case for the rule,
-     which turns the equality for that argument of the conclusion
-     into an equality of the field with itself,
-     silently defining the wrong relation.")
-   (xdoc::p
-    "We take the names of the premise fields from
-     @(tsee defind-gen-proof2-prem-fields),
-     so that this check cannot drift from what is generated.
-     This is why this check is here,
-     among the event generation code,
-     instead of with the rest of the input processing;
-     it also needs the name of the macro call,
-     which is not available in that phase.")
-   (xdoc::p
-    "These names are reserved only by the second representation of proofs:
-     if that representation is dropped, so is this check.")
-   (xdoc::p
-    "We do not check the proof variable, @(tsee defind-proof-var-name).
-     A rule variable with that name does make the macro fail,
-     but in the events for the first representation,
-     at the theorem about the conclusion of a proof built by a rule.
-     That failure predates the second representation
-     and does not involve it,
-     so it belongs with the first representation;
-     until it is fixed,
-     such a rule is rejected by a proof failure
-     instead of by a message from here."))
-  (b* (((reterr))
-       ((when (endp irule-infos)) (retok))
-       ((defind-irule-info info) (car irule-infos))
-       (pred-name (defind-conclusion-info->name info.conclusion))
-       (pinfo (defind-lookup-pred pred-name pred-infos))
-       ((unless pinfo) (retok)) ; never happens: checked while processing
-       (reserved
-        (cons (defind-proof2-xvar-name name)
-              (append (defind-proof2-concl-var-names
-                        (defind-pred-info->formals pinfo) name)
-                      (defind-prem-field-names (len info.premises) name))))
-       (clashing (intersection-eq (defind-irule-info-free-vars info) reserved))
-       ((when clashing)
-        (reterr (msg "The variables of a rule must differ from ~
-                      the variables and field names that ~
-                      the generated events use for ~
-                      the arguments of the conclusion and the proofs. ~
-                      This does not hold for the rule ~x0, ~
-                      whose variables include ~&1."
-                     info.name clashing))))
-    (defind-check-proof2-names (cdr irule-infos) pred-infos name))
-  :guard-hints (("Goal" :in-theory (enable symbol-listp-when-symbol-setp
-                                           set::sets-are-true-lists))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define defind-gen-proof2-pred-alt-stubs ((infos defind-pred-info-listp)
                                           (name symbolp))
   :guard (no-duplicatesp-equal (defind-pred-info-list->name infos))
@@ -7286,8 +7287,6 @@
           short short-suppliedp
           long long-suppliedp
           state))
-       (erp (defind-check-proof2-names irule-infos pred-infos name))
-       ((when erp) (reterr erp))
        (event (defind-gen-events
                 name pred-infos irule-infos leveled-cliques
                 parents short long xdocp)))
