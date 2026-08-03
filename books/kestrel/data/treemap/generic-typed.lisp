@@ -108,6 +108,17 @@
          (and (treeset::set-all-genericp (keys m1))
               (treeset::set-all-genericp (keys m2)))))
 
+;; The peel step of a min/delete recursion over the map, keys side, for an
+;; arbitrary bound key.
+(defruled set-all-genericp-of-keys-of-delete-when-in
+  (implies (treeset::in k (keys map))
+           (equal (treeset::set-all-genericp (keys map))
+                  (and (treeset::genericp k)
+                       (treeset::set-all-genericp (keys (delete k map))))))
+  :use ((:instance treeset::set-all-genericp-of-delete-when-in
+                   (treeset::x k)
+                   (treeset::set (keys map)))))
+
 (defrule genericp-of-min-key-when-set-all-genericp-of-keys
   (implies (and (treeset::set-all-genericp (keys map))
                 (not (emptyp map)))
@@ -236,7 +247,7 @@
            (treeset::set-all-genericp (values (restrict s map))))
   :enable treeset::set-all-genericp-when-set-all-genericp-and-subset)
 
-(defrule set-all-genericp-of-values-of-update
+(defruledl set-all-genericp-of-values-of-update-weak
   (implies (and (treeset::genericp v)
                 (treeset::set-all-genericp (values map)))
            (treeset::set-all-genericp (values (update k v map))))
@@ -244,6 +255,29 @@
                   (treeset::x (values (update k v map)))
                   (treeset::y (treeset::insert v (values map))))
   :disable treeset::set-all-genericp-when-subset-and-set-all-genericp)
+
+;; The peel step of a min/delete recursion over the map, values side: peeling
+;; a bound key removes exactly its value from view. The reverse direction is
+;; the put-back argument, updating the key with its own value.
+(defruled set-all-genericp-of-values-of-delete-when-in
+  (implies (treeset::in k (keys map))
+           (equal (treeset::set-all-genericp (values map))
+                  (and (treeset::genericp (lookup k map))
+                       (treeset::set-all-genericp (values (delete k map))))))
+  :use ((:instance set-all-genericp-of-values-of-update-weak
+                   (v (lookup k map))
+                   (map (delete k map))))
+  :enable (update-of-delete-same
+           update-redundant-cheap
+           fix-under-equiv))
+
+(defrule set-all-genericp-of-values-of-update
+  (equal (treeset::set-all-genericp (values (update k v map)))
+         (and (treeset::genericp v)
+              (treeset::set-all-genericp (values (delete k map)))))
+  :use ((:instance set-all-genericp-of-values-of-delete-when-in
+                   (map (update k v map))))
+  :enable treeset::in-of-insert)
 
 (defrule set-all-genericp-of-values-of-update*
   (implies (and (treeset::set-all-genericp (values m1))
