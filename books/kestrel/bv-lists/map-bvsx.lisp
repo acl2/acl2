@@ -1,6 +1,6 @@
 ; BV Lists Library: map-bvsx
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,8 @@
 (in-package "ACL2")
 
 (include-book "kestrel/bv/bvsx" :dir :system)
-(include-book "unsigned-byte-listp")
+(include-book "unsigned-byte-listp-def")
+(local (include-book "unsigned-byte-listp"))
 
 (defund map-bvsx (high low lst)
   (if (endp lst)
