@@ -149,7 +149,7 @@
           (@(tsee dim+), @(tsee dim*), or @(tsee dim-)),
           or a dimension term starting with a fixtype constructor,
           or a shape term starting with a macro
-          (@(tsee shp) or @(tsee shp++)),
+          (@(tsee shp), @(tsee shp++), or @(tsee shp[])),
           or a shape term starting with a fixtype constructor,
           or some other term that is left unchanged."
   :long
@@ -177,6 +177,7 @@
               (member-eq (car term)
                          '(shp
                            shp++
+                           shp[]
                            shape-var
                            shape-dims
                            shape-append
