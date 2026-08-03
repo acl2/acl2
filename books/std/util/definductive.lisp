@@ -1386,6 +1386,17 @@
   :short "Name of a premise field of a @('p[i]-proof') fixtype."
   (packn-pos (list 'premise (lposfix num) '-proof) (symbol-lfix name)))
 
+;;;;;;;;;;
+
+(define defind-prem-field-names ((num natp) (name symbolp))
+  :returns (field-names symbol-listp)
+  :short "Name of the premise fields of a @('p[i]-proof') fixtype."
+  (cond ((zp num) nil)
+        (t (append (defind-prem-field-names (1- (lnfix num)) name)
+                   (list (defind-prem-field-name num name)))))
+  :measure (nfix num)
+  :prepwork ((local (in-theory (enable nfix)))))
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (define defind-assert-var-name ((name symbolp))
@@ -6388,8 +6399,7 @@
         (cons (defind-proof2-xvar-name name)
               (append (defind-proof2-concl-var-names
                         (defind-pred-info->formals pinfo) name)
-                      (strip-cars (defind-gen-proof2-prem-fields
-                                    info.premises 1 name)))))
+                      (defind-prem-field-names (len info.premises) name))))
        (clashing (intersection-eq (defind-irule-info-free-vars info) reserved))
        ((when clashing)
         (reterr (msg "The variables of a rule must differ from ~
