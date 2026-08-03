@@ -268,12 +268,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ t[] (type shape)
-  :short "Construct a type term from the element type and the shape."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Strings, natural numbers, and base type keywords
-     are auto-coerced to ispaces and types."))
+  :short "Construct a type term from an element type term and a shape term."
   `(type-array ,(type-term-from-var/base/other type)
                (ispace-shape ,(shape-term-from-var/other shape))))
 
