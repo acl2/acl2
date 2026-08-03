@@ -238,31 +238,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-term-from-var/base/other (type)
+(define type-term-from-var/base/other (term)
   :short "Construct a type term from
-          a string denoting an atom type variable,
+          a string denoting a variable,
           or a keyword denoting a base type,
           or some other term that is left unchanged."
   :long
   (xdoc::topstring
    (xdoc::p
     "The string denoting a variable must start with @('&') or @('*')."))
-  (cond ((stringp type) `(type-var ,(type-var-term-from-string type)))
-        ((eq type :bool) '(type-array (type-base (base-type-bool))
-                                      (ispace-shape (shp))))
-        ((eq type :int) '(type-array (type-base (base-type-int))
-                                     (ispace-shape (shp))))
-        ((eq type :float) '(type-array (type-base (base-type-float))
-                                       (ispace-shape (shp))))
-        (t type)))
+  (cond ((stringp term) `(type-var ,(type-var-term-from-string term)))
+        ((eq term :bool) '(type-base (base-type-bool)))
+        ((eq term :int) '(type-base (base-type-int)))
+        ((eq term :float) '(type-base (base-type-float)))
+        (t term)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define type-terms-from-vars/bases/others ((types true-listp))
+(define type-terms-from-vars/bases/others ((terms true-listp))
   :short "Lift @(tsee type-term-from-var/base/other) to lists."
-  (cond ((endp types) nil)
-        (t (cons (type-term-from-var/base/other (car types))
-                 (type-terms-from-vars/bases/others (cdr types))))))
+  (cond ((endp terms) nil)
+        (t (cons (type-term-from-var/base/other (car terms))
+                 (type-terms-from-vars/bases/others (cdr terms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
