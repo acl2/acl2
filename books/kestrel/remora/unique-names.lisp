@@ -15,12 +15,11 @@
 (include-book "bound-and-free-variable-operations")
 (include-book "fresh-variable-operations")
 (include-book "variable-renaming-operations")
+(include-book "osets")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 
 (include-book "portcullis")
-
-(local (include-book "osets"))
 (local (include-book "std/omaps/top" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
@@ -33,13 +32,13 @@
 ; disabled; the free-variable ones are switched on in the individual hints
 ; that need them, exactly as the local rules they replace were.
 
-(local (acl2::deftheory theory-before-lists-light (acl2::current-theory :here)))
+(local (deftheory theory-before-lists-light (current-theory :here)))
 
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/intersectp-equal" :dir :system))
 
-(local (acl2::in-theory
-        (acl2::union-theories (acl2::theory 'theory-before-lists-light)
+(local (in-theory
+        (union-theories (theory 'theory-before-lists-light)
                               '(acl2::subsetp-equal-self
                                 acl2::subsetp-equal-of-append
                                 acl2::subsetp-equal-of-cons-arg1
@@ -54,7 +53,19 @@
 ; handles.  Running it on every goal of the large traversal proofs below is
 ; therefore pure overhead, so we turn it off.  This must come after the
 ; THEORY-BEFORE-LISTS-LIGHT restore above, which would otherwise put it back.
-(local (acl2::in-theory (acl2::disable (:e acl2::tau-system))))
+(local (in-theory (disable (:e tau-system))))
+
+; USED is now a CONS-built list, which wakes up the SET-EQUIV congruence
+; machinery from STD/LISTS/SETS -- including two permutative commutativity
+; rules on APPEND.  None of it contributes here (the reasoning is ordinary
+; SUBSETP-EQUAL/INTERSECTP-EQUAL), and it cost several seconds in the
+; identity proof, so it is turned off.
+(local (in-theory
+        (disable acl2::append-of-cons-under-set-equiv
+                       acl2::commutativity-of-append-under-set-equiv
+                       acl2::commutativity-2-of-append-under-set-equiv
+                       acl2::set-equiv-implies-set-equiv-cons-2
+                       acl2::set-equiv-implies-set-equiv-append-2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -238,7 +249,7 @@
   (b* ((pair (omap::assoc (str-fix name) (string-string-map-fix renam))))
     (if pair (str-fix (cdr pair)) (str-fix name))))
 
-(define fresh-bind-name ((name stringp) (used string-setp) (avoid string-setp))
+(define fresh-bind-name ((name stringp) (used string-listp) (avoid string-setp))
   :returns (new-name stringp)
   :short "Keep @('name') if it is not in @('used');
           otherwise generate a fresh variant of it,
@@ -254,9 +265,14 @@
     "The variant avoids not only the names seen so far (@('used')) but also
      all names occurring anywhere in the expression (@('avoid')), so that it
      cannot capture, or be captured by, any binder --- including binders not
-     yet encountered by the traversal."))
-  (if (set::in (str-fix name) (string-sfix used))
-      (fresh-expr-var name (set::union (string-sfix used)
+     yet encountered by the traversal.")
+   (xdoc::p
+    "@('used') is a plain list, so the membership test is @(tsee member-equal);
+     only the collision branch needs a set, for @(tsee fresh-expr-var), and it
+     builds one there.  That branch is the rare one --- it runs only when a
+     name actually collides."))
+  (if (member-equal (str-fix name) (str::string-list-fix used))
+      (fresh-expr-var name (set::union (list-to-oset (str::string-list-fix used))
                                        (string-sfix avoid)))
     (str-fix name)))
 
@@ -283,35 +299,10 @@
 ; Support lemmas for the no-duplicate-names theorem about PROG-UNIQUIFY-NAMES
 ; (see the DEFRET-MUTUAL further below for the overall proof plan).
 ; Everything here is about plain-list membership, subset, disjointness, and
-; duplicate-freeness over the (ordered-set) USED values that the traversal
-; threads via SET::INSERT; the generic bridge between SET::INSERT and the
-; plain-list notions (MEMBER-EQUAL, INTERSECTP-EQUAL, SUBSETP-EQUAL) is
-; supplied by the locally included osets book, whose SET::SETP lemmas are
-; specialized here to the STRING-SETP hypotheses the traversal provides.
-
-(defrule member-equal-of-insert-when-string-setp
-  (implies (string-setp used)
-           (iff (member-equal a (set::insert b used))
-                (or (equal a b) (member-equal a used))))
-  :enable (member-equal-of-insert-when-setp acl2::setp-when-string-setp))
-
-(defrule intersectp-equal-of-insert-when-string-setp
-  (implies (string-setp used)
-           (iff (intersectp-equal names (set::insert b used))
-                (or (member-equal b names)
-                    (intersectp-equal names used))))
-  :use (:instance intersectp-equal-of-insert-when-setp (l names) (x used))
-  :enable acl2::setp-when-string-setp)
-
-; USED only grows (as a plain list, via SUBSETP-EQUAL) under SET::INSERT,
-; and disjointness from a bigger set implies disjointness from any of its
-; subsets (see the monotonicity rules below).
-
-(defrule subsetp-equal-of-insert
-  (implies (string-setp x)
-           (subsetp-equal x (set::insert a x)))
-  :enable (subsetp-equal-of-insert-right-when-setp
-           acl2::setp-when-string-setp))
+; duplicate-freeness over the USED values that the traversal threads.  USED
+; is a plain list grown by CONS, so no oset/list bridge lemmas are needed:
+; the CONS decompositions come straight from KESTREL/LISTS-LIGHT and the
+; INTERSECTP-EQUAL book.
 
 ; Monotonicity of (non-)intersection in a subset, in the three orientations
 ; used below (which argument of INTERSECTP-EQUAL the known-disjoint bigger
@@ -323,75 +314,32 @@
 ; earlier USED value or an earlier sub-computation's names (both of which
 ; the invariant places inside that USED value).
 
-; The corresponding single-element facts: an element of a set known disjoint
-; from L (in either orientation) is not in L, and membership/non-membership
-; transports along subsets.
-
-(defruled not-member-equal-when-subsetp-equal
-  (implies (and (not (member-equal a big))
-                (subsetp-equal small big))
-           (not (member-equal a small)))
-  :induct (len small)
-  :enable subsetp-equal)
-
-; Variants of the monotonicity rules above with the containment hypothesis
-; FIRST, so that the free BIG is bound by matching that hypothesis rather
-; than the (non-)intersection one.  The identity proof below needs these:
-; there BIG is an (APPEND USED NAMES), which never occurs as a disjointness
-; hypothesis and so could not be found by matching one.
-
-(defruled not-member-equal-when-subsetp-equal-b
-  (implies (and (subsetp-equal small big)
-                (not (member-equal a big)))
-           (not (member-equal a small)))
-  :rule-classes ((:rewrite :match-free :all))
-  :enable not-member-equal-when-subsetp-equal)
-
-(defruled not-intersectp-equal-when-subsetp-equal-b
-  (implies (and (subsetp-equal small big)
-                (not (intersectp-equal l big)))
-           (not (intersectp-equal l small)))
-  :rule-classes ((:rewrite :match-free :all))
-  :enable acl2::not-intersectp-equal-when-subsetp-equal-arg2)
-
-(defruled not-intersectp-equal-when-subsetp-equal-b2
-  (implies (and (subsetp-equal small big)
-                (not (intersectp-equal big l)))
-           (not (intersectp-equal small l)))
-  :rule-classes ((:rewrite :match-free :all))
-  :enable acl2::not-intersectp-equal-when-subsetp-equal-arg1)
-
-; The USED values grow by SET::INSERT, so the upper bounds also need the
-; plain-list reading of a single insertion, again specialized from the
-; SET::SETP lemma of the locally included osets book.
-
-(defrule subsetp-equal-of-insert-when-string-setp
-  (implies (and (string-setp x)
-                (member-equal a l)
-                (subsetp-equal x l))
-           (subsetp-equal (set::insert a x) l))
-  :enable (subsetp-equal-of-insert-left-when-setp
-           acl2::setp-when-string-setp))
-
-
-(defrule not-in-used-of-fresh-bind-name
-  :parents (fresh-bind-name)
-  :short "@(tsee fresh-bind-name) never returns a name already in @('used')."
-  (not (set::in (fresh-bind-name name used avoid) (string-sfix used)))
-  :enable (fresh-bind-name set::union-in)
-  :use (:instance fresh-expr-var-is-fresh
-                  (prefix name)
-                  (used (set::union (string-sfix used) (string-sfix avoid)))))
+; The corresponding single-element facts -- an element of a set known
+; disjoint from L is not in L, and non-membership transports along subsets --
+; come from KESTREL/LISTS-LIGHT, as do the INTERSECTP monotonicity rules:
+; NOT-MEMBER-EQUAL-WHEN-NOT-INTERSECTP-EQUAL and the two orderings
+; NOT-MEMBER-EQUAL-WHEN-SUBSETP-EQUAL-1 (containment hypothesis first, which
+; is what the identity proof below needs, since there BIG is an
+; (APPEND USED NAMES) that never appears in a non-membership hypothesis)
+; and ...-2.
 
 (defrule not-member-equal-of-fresh-bind-name
   :parents (fresh-bind-name)
-  :short "@(tsee fresh-bind-name) never returns a name already in @('used'),
-          restated in terms of @(tsee member-equal)."
-  (not (member-equal (fresh-bind-name name used avoid) (string-sfix used)))
-  :use (not-in-used-of-fresh-bind-name
-        (:instance set::in-to-member
-                   (set::a (fresh-bind-name name used avoid))
-                   (set::x (string-sfix used)))))
+  :short "@(tsee fresh-bind-name) never returns a name already in @('used')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The freshness of @(tsee fresh-expr-var) is stated with @(tsee set::in)
+     over the set it is given; SET::UNION-IN and SET::IN-MERGESORT carry it
+     back to @(tsee member-equal) on the list, so no bridge lemma of our own
+     is needed."))
+  (not (member-equal (fresh-bind-name name used avoid)
+                     (str::string-list-fix used)))
+  :enable (fresh-bind-name set::union-in)
+  :use (:instance fresh-expr-var-is-fresh
+                  (prefix name)
+                  (used (set::union (list-to-oset (str::string-list-fix used))
+                                    (string-sfix avoid)))))
 
 (defrule not-member-equal-of-fresh-bind-name-when-subsetp-equal
   :parents (fresh-bind-name)
@@ -399,11 +347,11 @@
           of @('used'), such as the names contributed by an earlier
           sub-computation.  Free-variable-free: @('used') is bound by the
           conclusion and the subset hypothesis is relieved by rewriting."
-  (implies (subsetp-equal l (string-sfix used))
+  (implies (subsetp-equal l (str::string-list-fix used))
            (not (member-equal (fresh-bind-name name used avoid) l)))
-  :use (:instance not-member-equal-when-subsetp-equal
+  :use (:instance acl2::not-member-equal-when-subsetp-equal-2
                   (a (fresh-bind-name name used avoid))
-                  (big (string-sfix used))
+                  (big (str::string-list-fix used))
                   (small l)))
 
 ; The dual facts, for the identity proof below: nothing is renamed when no
@@ -414,12 +362,9 @@
   :parents (fresh-bind-name)
   :short "@(tsee fresh-bind-name) keeps the name it is given
           when that name is not in @('used')."
-  (implies (not (member-equal (str-fix name) (string-sfix used)))
+  (implies (not (member-equal (str-fix name) (str::string-list-fix used)))
            (equal (fresh-bind-name name used avoid) (str-fix name)))
-  :enable fresh-bind-name
-  :use (:instance set::in-to-member
-                  (set::a (str-fix name))
-                  (set::x (string-sfix used))))
+  :enable fresh-bind-name)
 
 ; That (OMAP::DELETE key NIL) and (OMAP::DELETE* keys NIL) are NIL is
 ; supplied by OMAP::DELETE-WHEN-EMPTYP and OMAP::DELETE*-WHEN-RIGHT-EMPTYP
@@ -434,19 +379,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define uniq-expr-params ((params var+type?-listp)
-                          (used string-setp)
+                          (used string-listp)
                           (avoid string-setp)
                           (renam string-string-mapp))
-  :returns (mv (new-used string-setp :hyp :guard)
+  :returns (mv (new-used string-listp :hyp :guard)
                (new-params var+type?-listp :hyp :guard)
                (new-renam string-string-mapp :hyp :guard))
   :short "Uniquify the names of a list of expression-variable parameters.
           The types in the parameters must have been renamed already."
   (b* (((when (endp params))
-        (mv (string-sfix used) nil (string-string-map-fix renam)))
+        (mv (str::string-list-fix used) nil (string-string-map-fix renam)))
        ((var+type? p) (car params))
        (new-name (fresh-bind-name p.var used avoid))
-       (used (set::insert new-name (string-sfix used)))
+       (used (cons new-name (str::string-list-fix used)))
        (renam (extend-renaming p.var new-name renam))
        ((mv used new-rest renam)
         (uniq-expr-params (cdr params) used avoid renam)))
@@ -455,23 +400,23 @@
         renam)))
 
 (define uniq-type-var-params ((params type-var-listp)
-                              (used string-setp)
+                              (used string-listp)
                               (avoid string-setp)
                               (atom-renam string-string-mapp)
                               (array-renam string-string-mapp))
-  :returns (mv (new-used string-setp :hyp :guard)
+  :returns (mv (new-used string-listp :hyp :guard)
                (new-params type-var-listp :hyp :guard)
                (new-atom-renam string-string-mapp :hyp :guard)
                (new-array-renam string-string-mapp :hyp :guard))
   :short "Uniquify the names of a list of type-variable parameters."
   (b* (((when (endp params))
-        (mv (string-sfix used) nil
+        (mv (str::string-list-fix used) nil
             (string-string-map-fix atom-renam)
             (string-string-map-fix array-renam)))
        (var (car params))
        (name (type-var->name var))
        (new-name (fresh-bind-name name used avoid))
-       (used (set::insert new-name (string-sfix used)))
+       (used (cons new-name (str::string-list-fix used)))
        ((mv new-var atom-renam array-renam)
         (type-var-case var
           :atom (mv (type-var-atom new-name)
@@ -486,23 +431,23 @@
     (mv used (cons new-var new-rest) atom-renam array-renam)))
 
 (define uniq-ispace-var-params ((params ispace-var-listp)
-                                (used string-setp)
+                                (used string-listp)
                                 (avoid string-setp)
                                 (dim-renam string-string-mapp)
                                 (shape-renam string-string-mapp))
-  :returns (mv (new-used string-setp :hyp :guard)
+  :returns (mv (new-used string-listp :hyp :guard)
                (new-params ispace-var-listp :hyp :guard)
                (new-dim-renam string-string-mapp :hyp :guard)
                (new-shape-renam string-string-mapp :hyp :guard))
   :short "Uniquify the names of a list of ispace-variable parameters."
   (b* (((when (endp params))
-        (mv (string-sfix used) nil
+        (mv (str::string-list-fix used) nil
             (string-string-map-fix dim-renam)
             (string-string-map-fix shape-renam)))
        (var (car params))
        (name (ispace-var->name var))
        (new-name (fresh-bind-name name used avoid))
-       (used (set::insert new-name (string-sfix used)))
+       (used (cons new-name (str::string-list-fix used)))
        ((mv new-var dim-renam shape-renam)
         (ispace-var-case var
                          :dim (mv (ispace-var-dim new-name)
@@ -550,9 +495,9 @@
 ; rather than being restated once per function.
 
 (define uniq-name-list ((names string-listp)
-                        (used string-setp)
+                        (used string-listp)
                         (avoid string-setp))
-  :returns (mv (new-used string-setp :hyp :guard)
+  :returns (mv (new-used string-listp :hyp :guard)
                (new-names string-listp))
   :short "Freshen a list of binder names,
           threading the set of names seen so far."
@@ -565,9 +510,9 @@
      a fresh variant, and is added to the set of seen names before the next
      name is processed; so duplicate names within a single list are made
      distinct too."))
-  (b* (((when (endp names)) (mv (string-sfix used) nil))
+  (b* (((when (endp names)) (mv (str::string-list-fix used) nil))
        (new-name (fresh-bind-name (car names) used avoid))
-       (used (set::insert new-name (string-sfix used)))
+       (used (cons new-name (str::string-list-fix used)))
        ((mv used new-rest) (uniq-name-list (cdr names) used avoid)))
     (mv used (cons new-name new-rest)))
 
@@ -633,9 +578,9 @@
 
   (defret uniq-name-list-facts
     (and (no-duplicatesp-equal new-names)
-         (not (intersectp-equal new-names (string-sfix used)))
-         (subsetp-equal new-names (string-sfix new-used))
-         (subsetp-equal (string-sfix used) (string-sfix new-used)))
+         (not (intersectp-equal new-names (str::string-list-fix used)))
+         (subsetp-equal new-names (str::string-list-fix new-used))
+         (subsetp-equal (str::string-list-fix used) (str::string-list-fix new-used)))
     :hints (("Goal" :induct t
                     :in-theory (enable intersectp-equal
                                        not-member-equal-of-fresh-bind-name
@@ -650,14 +595,12 @@
   (defret uniq-name-list-used-upper-bound
     (implies (and (string-listp names)
                   (no-duplicatesp-equal names)
-                  (not (intersectp-equal names (string-sfix used))))
-             (subsetp-equal (string-sfix new-used)
-                            (append (string-sfix used) names)))
+                  (not (intersectp-equal names (str::string-list-fix used))))
+             (subsetp-equal (str::string-list-fix new-used)
+                            (append (str::string-list-fix used) names)))
     :hints (("Goal" :induct t
                     :in-theory (enable intersectp-equal
                                        no-duplicatesp-equal
-                                       member-equal-of-insert-when-string-setp
-                                       subsetp-equal-of-insert-when-string-setp
                                        acl2::subsetp-equal-of-append-2-2
                                        acl2::subsetp-equal-of-append-2-1
                                        acl2::subsetp-equal-of-cons-arg2
@@ -675,91 +618,91 @@
 ; (in both argument orders) from the freshly chosen names.
 
 (defrule subsetp-equal-through-uniq-name-list
-  (implies (subsetp-equal l (string-sfix used))
+  (implies (subsetp-equal l (str::string-list-fix used))
            (subsetp-equal
-             l (string-sfix (mv-nth 0 (uniq-name-list names used avoid)))))
+             l (str::string-list-fix (mv-nth 0 (uniq-name-list names used avoid)))))
   :use (:instance acl2::subsetp-equal-transitive-alt
-                  (x l) (y (string-sfix used))
-                  (z (string-sfix
+                  (x l) (y (str::string-list-fix used))
+                  (z (str::string-list-fix
                        (mv-nth 0 (uniq-name-list names used avoid))))))
 
 (defrule not-intersectp-equal-of-uniq-name-list-names-1
-  (implies (subsetp-equal l (string-sfix used))
+  (implies (subsetp-equal l (str::string-list-fix used))
           (not (intersectp-equal
                 (mv-nth 1 (uniq-name-list names used avoid))
                 l)))
   :use (:instance acl2::not-intersectp-equal-when-subsetp-equal-arg2
                   (x (mv-nth 1 (uniq-name-list names used avoid)))
-                  (big (string-sfix used))
+                  (big (str::string-list-fix used))
                   (small l)))
 
 (defrule not-intersectp-equal-of-uniq-name-list-names-2
-  (implies (subsetp-equal l (string-sfix used))
+  (implies (subsetp-equal l (str::string-list-fix used))
           (not (intersectp-equal
                 l
                 (mv-nth 1 (uniq-name-list names used avoid)))))
   :use (:instance acl2::not-intersectp-equal-when-subsetp-equal-arg1-alt
                   (x (mv-nth 1 (uniq-name-list names used avoid)))
-                  (big (string-sfix used))
+                  (big (str::string-list-fix used))
                   (small l)))
 
 (defrule not-intersectp-equal-of-uniq-name-list-new-used
   (implies (and (string-listp names)
                 (no-duplicatesp-equal names)
-                (not (intersectp-equal names (string-sfix used)))
-                (not (intersectp-equal l (string-sfix used)))
+                (not (intersectp-equal names (str::string-list-fix used)))
+                (not (intersectp-equal l (str::string-list-fix used)))
                 (not (intersectp-equal l names)))
            (and (not (intersectp-equal
                       l
-                      (string-sfix
+                      (str::string-list-fix
                        (mv-nth 0 (uniq-name-list names used avoid)))))
                 (not (intersectp-equal
-                      (string-sfix
+                      (str::string-list-fix
                        (mv-nth 0 (uniq-name-list names used avoid)))
                       l))))
   :use (uniq-name-list-used-upper-bound
         (:instance acl2::not-intersectp-equal-when-subsetp-equal-arg2
                    (x l)
-                   (big (append (string-sfix used) names))
-                   (small (string-sfix
+                   (big (append (str::string-list-fix used) names))
+                   (small (str::string-list-fix
                            (mv-nth 0 (uniq-name-list names used avoid)))))
         (:instance acl2::not-intersectp-equal-when-subsetp-equal-arg1-alt
                    (x l)
-                   (big (append (string-sfix used) names))
-                   (small (string-sfix
+                   (big (append (str::string-list-fix used) names))
+                   (small (str::string-list-fix
                            (mv-nth 0 (uniq-name-list names used avoid))))))
   :disable uniq-name-list-used-upper-bound)
 
 (defrule not-member-equal-of-uniq-name-list-new-used
   (implies (and (string-listp names)
                 (no-duplicatesp-equal names)
-                (not (intersectp-equal names (string-sfix used)))
-                (not (member-equal a (string-sfix used)))
+                (not (intersectp-equal names (str::string-list-fix used)))
+                (not (member-equal a (str::string-list-fix used)))
                 (not (member-equal a names)))
            (not (member-equal
                  a
-                 (string-sfix (mv-nth 0 (uniq-name-list names used avoid))))))
+                 (str::string-list-fix (mv-nth 0 (uniq-name-list names used avoid))))))
   :use (uniq-name-list-used-upper-bound
-        (:instance not-member-equal-when-subsetp-equal
-                   (big (append (string-sfix used) names))
-                   (small (string-sfix
+        (:instance acl2::not-member-equal-when-subsetp-equal-2
+                   (big (append (str::string-list-fix used) names))
+                   (small (str::string-list-fix
                            (mv-nth 0 (uniq-name-list names used avoid))))))
   :disable uniq-name-list-used-upper-bound)
 
 (defrule subsetp-equal-of-uniq-name-list-new-used
   (implies (and (string-listp names)
                 (no-duplicatesp-equal names)
-                (not (intersectp-equal names (string-sfix used)))
-                (subsetp-equal (string-sfix used) l)
+                (not (intersectp-equal names (str::string-list-fix used)))
+                (subsetp-equal (str::string-list-fix used) l)
                 (subsetp-equal names l))
            (subsetp-equal
-            (string-sfix (mv-nth 0 (uniq-name-list names used avoid)))
+            (str::string-list-fix (mv-nth 0 (uniq-name-list names used avoid)))
             l))
   :use (uniq-name-list-used-upper-bound
         (:instance acl2::subsetp-equal-transitive-alt
-                   (x (string-sfix
+                   (x (str::string-list-fix
                        (mv-nth 0 (uniq-name-list names used avoid))))
-                   (y (append (string-sfix used) names))
+                   (y (append (str::string-list-fix used) names))
                    (z l)))
   :disable uniq-name-list-used-upper-bound)
 
@@ -773,7 +716,7 @@
 ; target and so is known only through a containment.
 
 (defrule not-member-equal-of-uniq-name-list-new-used-b
-  (implies (and (subsetp-equal (string-sfix used) big)
+  (implies (and (subsetp-equal (str::string-list-fix used) big)
                 (string-listp names)
                 (no-duplicatesp-equal names)
                 (not (intersectp-equal names big))
@@ -781,22 +724,22 @@
                 (not (member-equal a names)))
            (not (member-equal
                  a
-                 (string-sfix (mv-nth 0 (uniq-name-list names used avoid))))))
+                 (str::string-list-fix (mv-nth 0 (uniq-name-list names used avoid))))))
   :rule-classes ((:rewrite :match-free :all))
   :use ((:instance acl2::not-intersectp-equal-when-subsetp-equal-arg2
-                   (x names) (big big) (small (string-sfix used)))
-        (:instance not-member-equal-when-subsetp-equal
-                   (a a) (big big) (small (string-sfix used)))
+                   (x names) (big big) (small (str::string-list-fix used)))
+        (:instance acl2::not-member-equal-when-subsetp-equal-2
+                   (a a) (big big) (small (str::string-list-fix used)))
         uniq-name-list-used-upper-bound
-        (:instance not-member-equal-when-subsetp-equal
+        (:instance acl2::not-member-equal-when-subsetp-equal-2
                    (a a)
-                   (big (append (string-sfix used) names))
-                   (small (string-sfix
+                   (big (append (str::string-list-fix used) names))
+                   (small (str::string-list-fix
                            (mv-nth 0 (uniq-name-list names used avoid))))))
   :disable uniq-name-list-used-upper-bound)
 
 (defrule not-intersectp-equal-of-uniq-name-list-new-used-b
-  (implies (and (subsetp-equal (string-sfix used) big)
+  (implies (and (subsetp-equal (str::string-list-fix used) big)
                 (string-listp names)
                 (no-duplicatesp-equal names)
                 (not (intersectp-equal names big))
@@ -804,27 +747,27 @@
                 (not (intersectp-equal l names)))
            (and (not (intersectp-equal
                       l
-                      (string-sfix
+                      (str::string-list-fix
                        (mv-nth 0 (uniq-name-list names used avoid)))))
                 (not (intersectp-equal
-                      (string-sfix
+                      (str::string-list-fix
                        (mv-nth 0 (uniq-name-list names used avoid)))
                       l))))
   :rule-classes ((:rewrite :match-free :all))
   :use ((:instance acl2::not-intersectp-equal-when-subsetp-equal-arg2
-                   (x names) (big big) (small (string-sfix used)))
+                   (x names) (big big) (small (str::string-list-fix used)))
         (:instance acl2::not-intersectp-equal-when-subsetp-equal-arg2
-                   (x l) (big big) (small (string-sfix used)))
+                   (x l) (big big) (small (str::string-list-fix used)))
         uniq-name-list-used-upper-bound
         (:instance acl2::not-intersectp-equal-when-subsetp-equal-arg2
                    (x l)
-                   (big (append (string-sfix used) names))
-                   (small (string-sfix
+                   (big (append (str::string-list-fix used) names))
+                   (small (str::string-list-fix
                            (mv-nth 0 (uniq-name-list names used avoid)))))
         (:instance acl2::not-intersectp-equal-when-subsetp-equal-arg1-alt
                    (x l)
-                   (big (append (string-sfix used) names))
-                   (small (string-sfix
+                   (big (append (str::string-list-fix used) names))
+                   (small (str::string-list-fix
                            (mv-nth 0 (uniq-name-list names used avoid))))))
   :disable uniq-name-list-used-upper-bound)
 
@@ -838,7 +781,7 @@
   (b* ((names (var+type?-list->var params)))
     (implies (and (equal renam nil)
                   (no-duplicatesp-equal names)
-                  (not (intersectp-equal names (string-sfix used))))
+                  (not (intersectp-equal names (str::string-list-fix used))))
              (and (equal new-params (var+type?-list-fix params))
                   (equal new-renam nil))))
   :fn uniq-expr-params
@@ -848,16 +791,14 @@
                               var+type?-list-fix
                               extend-renaming
                               intersectp-equal
-                              no-duplicatesp-equal
-                              member-equal-of-insert-when-string-setp
-                              subsetp-equal-of-insert-when-string-setp))))
+                              no-duplicatesp-equal))))
 
 (defret uniq-type-var-params-identity
   (b* ((names (type-var-list->name params)))
     (implies (and (equal atom-renam nil)
                   (equal array-renam nil)
                   (no-duplicatesp-equal names)
-                  (not (intersectp-equal names (string-sfix used))))
+                  (not (intersectp-equal names (str::string-list-fix used))))
              (and (equal new-params (type-var-list-fix params))
                   (equal new-atom-renam nil)
                   (equal new-array-renam nil))))
@@ -869,16 +810,14 @@
                               type-var-list-fix
                               extend-renaming
                               intersectp-equal
-                              no-duplicatesp-equal
-                              member-equal-of-insert-when-string-setp
-                              subsetp-equal-of-insert-when-string-setp))))
+                              no-duplicatesp-equal))))
 
 (defret uniq-ispace-var-params-identity
   (b* ((names (ispace-var-list->name params)))
     (implies (and (equal dim-renam nil)
                   (equal shape-renam nil)
                   (no-duplicatesp-equal names)
-                  (not (intersectp-equal names (string-sfix used))))
+                  (not (intersectp-equal names (str::string-list-fix used))))
              (and (equal new-params (ispace-var-list-fix params))
                   (equal new-dim-renam nil)
                   (equal new-shape-renam nil))))
@@ -890,9 +829,7 @@
                               ispace-var-list-fix
                               extend-renaming
                               intersectp-equal
-                              no-duplicatesp-equal
-                              member-equal-of-insert-when-string-setp
-                              subsetp-equal-of-insert-when-string-setp))))
+                              no-duplicatesp-equal))))
 
 ; Under empty renaming maps, all the renaming operations of
 ; variable-renaming-operations.lisp are the identity.  This is what makes
@@ -1129,7 +1066,7 @@
 ;
 ; The traversal functions take:
 ;   x    : AST node          — the node being processed
-;   used : string-setp       — all names seen so far (bind names, parameter
+;   used : string-listp       — all names seen so far (bind names, parameter
 ;                              names, and the expression's free variable names)
 ;   r    : var-renamings-p   — the renamings currently in scope
 ; and return (mv new-used new-x), plus, for binds, the renamings extended
@@ -1148,9 +1085,9 @@
   ; The flag function is used by the DEFRET-MUTUAL further below.
   :flag-local nil
 
-  (define uniq-expr ((x exprp) (used string-setp) (r var-renamings-p))
+  (define uniq-expr ((x exprp) (used string-listp) (r var-renamings-p))
     :short "Uniquify binder names in an expression."
-    :returns (mv (new-used string-setp :hyp :guard)
+    :returns (mv (new-used string-listp :hyp :guard)
                  (new-x exprp :hyp :guard))
     :measure (expr-count x)
     (expr-case x
@@ -1220,7 +1157,7 @@
                    (uniq-ispace-var-params (list x.ispace) used r-.avoid
                                            r-.dim r-.shape))
                   (new-var (fresh-bind-name x.var used r-.avoid))
-                  (used (set::insert new-var (string-sfix used)))
+                  (used (cons new-var (str::string-list-fix used)))
                   (expr-renam (extend-renaming x.var new-var r-.expr))
                   (body-r (change-var-renamings r
                                                 :dim dim-renam
@@ -1242,7 +1179,7 @@
                     (uniq-ispace-var-params x.ispaces used r-.avoid
                                             r-.dim r-.shape))
                    (new-var (fresh-bind-name x.var used r-.avoid))
-                   (used (set::insert new-var (string-sfix used)))
+                   (used (cons new-var (str::string-list-fix used)))
                    (expr-renam (extend-renaming x.var new-var r-.expr))
                    (body-r (change-var-renamings r
                                                  :dim dim-renam
@@ -1262,9 +1199,9 @@
                 ((mv used new-body) (uniq-expr x.body used new-r)))
              (mv used (expr-let new-binds new-body)))))
 
-  (define uniq-expr-list ((x expr-listp) (used string-setp) (r var-renamings-p))
+  (define uniq-expr-list ((x expr-listp) (used string-listp) (r var-renamings-p))
     :short "Uniquify binder names in a list of expressions."
-    :returns (mv (new-used string-setp :hyp :guard)
+    :returns (mv (new-used string-listp :hyp :guard)
                  (new-x expr-listp :hyp :guard))
     :measure (expr-list-count x)
     (if (endp x)
@@ -1273,9 +1210,9 @@
            ((mv used new-rest) (uniq-expr-list (cdr x) used r)))
         (mv used (cons new-e new-rest)))))
 
-  (define uniq-atom ((x atomp) (used string-setp) (r var-renamings-p))
+  (define uniq-atom ((x atomp) (used string-listp) (r var-renamings-p))
     :short "Uniquify binder names in an atom."
-    :returns (mv (new-used string-setp :hyp :guard)
+    :returns (mv (new-used string-listp :hyp :guard)
                  (new-x atomp :hyp :guard))
     :measure (atom-count x)
     (atom-case x
@@ -1287,7 +1224,7 @@
                                 (var+type?->type? x.param) r))
                    (new-var (fresh-bind-name (var+type?->var x.param)
                                              used r-.avoid))
-                   (used (set::insert new-var (string-sfix used)))
+                   (used (cons new-var (str::string-list-fix used)))
                    (expr-renam (extend-renaming (var+type?->var x.param)
                                                 new-var r-.expr))
                    (new-param (make-var+type? :var new-var :type? new-atype?))
@@ -1312,7 +1249,7 @@
       :tlambda (b* (((var-renamings r-) r)
                     (name (type-var->name x.param))
                     (new-name (fresh-bind-name name used r-.avoid))
-                    (used (set::insert new-name (string-sfix used)))
+                    (used (cons new-name (str::string-list-fix used)))
                     ((mv new-param atom-renam array-renam)
                      (type-var-case x.param
                        :atom (mv (type-var-atom new-name)
@@ -1342,7 +1279,7 @@
       :ilambda (b* (((var-renamings r-) r)
                     (name (ispace-var->name x.param))
                     (new-name (fresh-bind-name name used r-.avoid))
-                    (used (set::insert new-name (string-sfix used)))
+                    (used (cons new-name (str::string-list-fix used)))
                     ((mv new-param dim-renam shape-renam)
                      (ispace-var-case x.param
                        :dim (mv (ispace-var-dim new-name)
@@ -1382,9 +1319,9 @@
                                   new-array
                                   (type-rename-all-vars x.type r))))))
 
-  (define uniq-atom-list ((x atom-listp) (used string-setp) (r var-renamings-p))
+  (define uniq-atom-list ((x atom-listp) (used string-listp) (r var-renamings-p))
     :short "Uniquify binder names in a list of atoms."
-    :returns (mv (new-used string-setp :hyp :guard)
+    :returns (mv (new-used string-listp :hyp :guard)
                  (new-x atom-listp :hyp :guard))
     :measure (atom-list-count x)
     (if (endp x)
@@ -1393,10 +1330,10 @@
            ((mv used new-rest) (uniq-atom-list (cdr x) used r)))
         (mv used (cons new-a new-rest)))))
 
-  (define uniq-bind ((x bindp) (used string-setp) (r var-renamings-p))
+  (define uniq-bind ((x bindp) (used string-listp) (r var-renamings-p))
     :short "Uniquify binder names in a bind, renaming the bind itself
             if its name has been seen before."
-    :returns (mv (new-used string-setp :hyp :guard)
+    :returns (mv (new-used string-listp :hyp :guard)
                  (new-x bindp :hyp :guard)
                  (new-r var-renamings-p :hyp :guard))
     :long
@@ -1416,7 +1353,7 @@
                                                           r-.dim r-.shape))
                    (name (ispace-var->name x.var))
                    (new-name (fresh-bind-name name used r-.avoid))
-                   (used (set::insert new-name (string-sfix used)))
+                   (used (cons new-name (str::string-list-fix used)))
                    ((mv new-var new-r)
                     (ispace-var-case x.var
                       :dim (mv (ispace-var-dim new-name)
@@ -1432,7 +1369,7 @@
                  (new-type (type-rename-all-vars x.type r))
                  (name (type-var->name x.var))
                  (new-name (fresh-bind-name name used r-.avoid))
-                 (used (set::insert new-name (string-sfix used)))
+                 (used (cons new-name (str::string-list-fix used)))
                  ((mv new-var new-r)
                   (type-var-case x.var
                     :atom (mv (type-var-atom new-name)
@@ -1448,7 +1385,7 @@
                 (new-type? (type-option-rename-all-vars x.type? r))
                 ((mv used new-expr) (uniq-expr x.expr used r))
                 (new-name (fresh-bind-name x.var used r-.avoid))
-                (used (set::insert new-name (string-sfix used)))
+                (used (cons new-name (str::string-list-fix used)))
                 (new-r (change-var-renamings
                         r :expr (extend-renaming x.var new-name r-.expr))))
              (mv used (bind-val new-name new-type? new-expr) new-r))
@@ -1462,7 +1399,7 @@
                  (uniq-expr x.expr used
                             (change-var-renamings r :expr expr-renam)))
                 (new-name (fresh-bind-name x.var used r-.avoid))
-                (used (set::insert new-name (string-sfix used)))
+                (used (cons new-name (str::string-list-fix used)))
                 (new-r (change-var-renamings
                         r :expr (extend-renaming x.var new-name r-.expr))))
              (mv used (bind-fun new-name new-params new-type? new-expr) new-r))
@@ -1477,7 +1414,7 @@
                  (new-type? (type-option-rename-all-vars x.type? inner-r))
                  ((mv used new-expr) (uniq-expr x.expr used inner-r))
                  (new-name (fresh-bind-name x.var used r-.avoid))
-                 (used (set::insert new-name (string-sfix used)))
+                 (used (cons new-name (str::string-list-fix used)))
                  (new-r (change-var-renamings
                          r :expr (extend-renaming x.var new-name r-.expr))))
               (mv used
@@ -1494,7 +1431,7 @@
                  (new-type? (type-option-rename-all-vars x.type? inner-r))
                  ((mv used new-expr) (uniq-expr x.expr used inner-r))
                  (new-name (fresh-bind-name x.var used r-.avoid))
-                 (used (set::insert new-name (string-sfix used)))
+                 (used (cons new-name (str::string-list-fix used)))
                  (new-r (change-var-renamings
                          r :expr (extend-renaming x.var new-name r-.expr))))
               (mv used
@@ -1526,7 +1463,7 @@
                   (uniq-expr x.expr used
                              (change-var-renamings inner-r :expr expr-renam)))
                  (new-name (fresh-bind-name x.var used r-.avoid))
-                 (used (set::insert new-name (string-sfix used)))
+                 (used (cons new-name (str::string-list-fix used)))
                  (new-r (change-var-renamings
                          r :expr (extend-renaming x.var new-name r-.expr))))
               (mv used
@@ -1546,10 +1483,10 @@
                                   :expr new-expr)
                   new-r))))
 
-  (define uniq-bind-list ((x bind-listp) (used string-setp) (r var-renamings-p))
+  (define uniq-bind-list ((x bind-listp) (used string-listp) (r var-renamings-p))
     :short "Uniquify binder names in a list of binds, threading the renamings
             through the binds' sequential scopes."
-    :returns (mv (new-used string-setp :hyp :guard)
+    :returns (mv (new-used string-listp :hyp :guard)
                  (new-x bind-listp :hyp :guard)
                  (new-r var-renamings-p :hyp :guard))
     :measure (bind-list-count x)
@@ -1583,7 +1520,7 @@
 
   ; Keep the traversal definitions closed inside /// (DEFINES enables them
   ; here); the proof below opens just the top-level call via :EXPAND.
-  (local (acl2::in-theory (acl2::disable uniq-expr uniq-expr-list uniq-atom
+  (local (in-theory (disable uniq-expr uniq-expr-list uniq-atom
                                          uniq-atom-list uniq-bind uniq-bind-list)))
 
   ; For the unary :UNBOX case, UNIQ-EXPR freshens the single ispace variable
@@ -1596,46 +1533,46 @@
     (defret uniq-expr-facts
       (b* ((names (expr-binder-names new-x)))
         (and (no-duplicatesp-equal names)
-             (not (intersectp-equal names (string-sfix used)))
-             (subsetp-equal names (string-sfix new-used))
-             (subsetp-equal (string-sfix used) (string-sfix new-used))))
+             (not (intersectp-equal names (str::string-list-fix used)))
+             (subsetp-equal names (str::string-list-fix new-used))
+             (subsetp-equal (str::string-list-fix used) (str::string-list-fix new-used))))
       :fn uniq-expr)
     (defret uniq-expr-list-facts
       (b* ((names (expr-list-binder-names new-x)))
         (and (no-duplicatesp-equal names)
-             (not (intersectp-equal names (string-sfix used)))
-             (subsetp-equal names (string-sfix new-used))
-             (subsetp-equal (string-sfix used) (string-sfix new-used))))
+             (not (intersectp-equal names (str::string-list-fix used)))
+             (subsetp-equal names (str::string-list-fix new-used))
+             (subsetp-equal (str::string-list-fix used) (str::string-list-fix new-used))))
       :fn uniq-expr-list)
     (defret uniq-atom-facts
       (b* ((names (atom-binder-names new-x)))
         (and (no-duplicatesp-equal names)
-             (not (intersectp-equal names (string-sfix used)))
-             (subsetp-equal names (string-sfix new-used))
-             (subsetp-equal (string-sfix used) (string-sfix new-used))))
+             (not (intersectp-equal names (str::string-list-fix used)))
+             (subsetp-equal names (str::string-list-fix new-used))
+             (subsetp-equal (str::string-list-fix used) (str::string-list-fix new-used))))
       :fn uniq-atom)
     (defret uniq-atom-list-facts
       (b* ((names (atom-list-binder-names new-x)))
         (and (no-duplicatesp-equal names)
-             (not (intersectp-equal names (string-sfix used)))
-             (subsetp-equal names (string-sfix new-used))
-             (subsetp-equal (string-sfix used) (string-sfix new-used))))
+             (not (intersectp-equal names (str::string-list-fix used)))
+             (subsetp-equal names (str::string-list-fix new-used))
+             (subsetp-equal (str::string-list-fix used) (str::string-list-fix new-used))))
       :fn uniq-atom-list)
     (defret uniq-bind-facts
       (b* ((names (append (bind-binder-names new-x)
                           (list (bind-name new-x)))))
         (and (no-duplicatesp-equal names)
-             (not (intersectp-equal names (string-sfix used)))
-             (subsetp-equal names (string-sfix new-used))
-             (subsetp-equal (string-sfix used) (string-sfix new-used))))
+             (not (intersectp-equal names (str::string-list-fix used)))
+             (subsetp-equal names (str::string-list-fix new-used))
+             (subsetp-equal (str::string-list-fix used) (str::string-list-fix new-used))))
       :fn uniq-bind)
     (defret uniq-bind-list-facts
       (b* ((names (append (bind-list-names new-x)
                           (bind-list-binder-names new-x))))
         (and (no-duplicatesp-equal names)
-             (not (intersectp-equal names (string-sfix used)))
-             (subsetp-equal names (string-sfix new-used))
-             (subsetp-equal (string-sfix used) (string-sfix new-used))))
+             (not (intersectp-equal names (str::string-list-fix used)))
+             (subsetp-equal names (str::string-list-fix new-used))
+             (subsetp-equal (str::string-list-fix used) (str::string-list-fix new-used))))
       :fn uniq-bind-list)
     :mutual-recursion uniquify-names-impl
     ;; The traversal functions are opened via :EXPAND, on just the top-level
@@ -1665,7 +1602,7 @@
                                           acl2::not-intersectp-equal-when-subsetp-equal-arg1-alt
                                           acl2::not-intersectp-equal-when-subsetp-equal-arg1
                                           acl2::not-member-equal-when-not-intersectp-equal
-                                          not-member-equal-when-subsetp-equal
+                                          acl2::not-member-equal-when-subsetp-equal-2
                                           acl2::subsetp-equal-transitive-alt
                                           acl2::subsetp-equal-transitive-2-alt
                                           acl2::member-equal-when-subsetp-equal-1
@@ -1678,10 +1615,10 @@
                         return-type-of-uniq-atom-list.new-used
                         return-type-of-uniq-bind.new-used
                         return-type-of-uniq-bind-list.new-used
-                        string-setp-of-uniq-expr-params.new-used
-                        string-setp-of-uniq-type-var-params.new-used
-                        string-setp-of-uniq-ispace-var-params.new-used
-                        string-setp-of-uniq-name-list.new-used)))))
+                        string-listp-of-uniq-expr-params.new-used
+                        string-listp-of-uniq-type-var-params.new-used
+                        string-listp-of-uniq-ispace-var-params.new-used
+                        string-listp-of-uniq-name-list.new-used)))))
 
   ) ; uniquify-names-impl
 
@@ -1704,57 +1641,57 @@
     (b* ((names (expr-binder-names x)))
       (implies (and (var-renamings-emptyp r)
                     (no-duplicatesp-equal names)
-                    (not (intersectp-equal names (string-sfix used))))
+                    (not (intersectp-equal names (str::string-list-fix used))))
                (and (equal new-x (expr-fix x))
-                    (subsetp-equal (string-sfix new-used)
-                                   (append (string-sfix used) names)))))
+                    (subsetp-equal (str::string-list-fix new-used)
+                                   (append (str::string-list-fix used) names)))))
     :fn uniq-expr)
   (defret uniq-expr-list-identity
     (b* ((names (expr-list-binder-names x)))
       (implies (and (var-renamings-emptyp r)
                     (no-duplicatesp-equal names)
-                    (not (intersectp-equal names (string-sfix used))))
+                    (not (intersectp-equal names (str::string-list-fix used))))
                (and (equal new-x (expr-list-fix x))
-                    (subsetp-equal (string-sfix new-used)
-                                   (append (string-sfix used) names)))))
+                    (subsetp-equal (str::string-list-fix new-used)
+                                   (append (str::string-list-fix used) names)))))
     :fn uniq-expr-list)
   (defret uniq-atom-identity
     (b* ((names (atom-binder-names x)))
       (implies (and (var-renamings-emptyp r)
                     (no-duplicatesp-equal names)
-                    (not (intersectp-equal names (string-sfix used))))
+                    (not (intersectp-equal names (str::string-list-fix used))))
                (and (equal new-x (atom-fix x))
-                    (subsetp-equal (string-sfix new-used)
-                                   (append (string-sfix used) names)))))
+                    (subsetp-equal (str::string-list-fix new-used)
+                                   (append (str::string-list-fix used) names)))))
     :fn uniq-atom)
   (defret uniq-atom-list-identity
     (b* ((names (atom-list-binder-names x)))
       (implies (and (var-renamings-emptyp r)
                     (no-duplicatesp-equal names)
-                    (not (intersectp-equal names (string-sfix used))))
+                    (not (intersectp-equal names (str::string-list-fix used))))
                (and (equal new-x (atom-list-fix x))
-                    (subsetp-equal (string-sfix new-used)
-                                   (append (string-sfix used) names)))))
+                    (subsetp-equal (str::string-list-fix new-used)
+                                   (append (str::string-list-fix used) names)))))
     :fn uniq-atom-list)
   (defret uniq-bind-identity
     (b* ((names (append (bind-binder-names x) (list (bind-name x)))))
       (implies (and (var-renamings-emptyp r)
                     (no-duplicatesp-equal names)
-                    (not (intersectp-equal names (string-sfix used))))
+                    (not (intersectp-equal names (str::string-list-fix used))))
                (and (equal new-x (bind-fix x))
                     (equal new-r (var-renamings-fix r))
-                    (subsetp-equal (string-sfix new-used)
-                                   (append (string-sfix used) names)))))
+                    (subsetp-equal (str::string-list-fix new-used)
+                                   (append (str::string-list-fix used) names)))))
     :fn uniq-bind)
   (defret uniq-bind-list-identity
     (b* ((names (append (bind-list-names x) (bind-list-binder-names x))))
       (implies (and (var-renamings-emptyp r)
                     (no-duplicatesp-equal names)
-                    (not (intersectp-equal names (string-sfix used))))
+                    (not (intersectp-equal names (str::string-list-fix used))))
                (and (equal new-x (bind-list-fix x))
                     (equal new-r (var-renamings-fix r))
-                    (subsetp-equal (string-sfix new-used)
-                                   (append (string-sfix used) names)))))
+                    (subsetp-equal (str::string-list-fix new-used)
+                                   (append (str::string-list-fix used) names)))))
     :fn uniq-bind-list)
   :mutual-recursion uniquify-names-impl
   :hints
@@ -1776,17 +1713,15 @@
                                         extend-renaming
                                         intersectp-equal
                                         no-duplicatesp-equal
-                                        member-equal-of-insert-when-string-setp
-                                        subsetp-equal-of-insert-when-string-setp
                                         acl2::subsetp-equal-of-append-2-2
                                         acl2::subsetp-equal-of-append-2-1
                                         acl2::subsetp-equal-of-cons-arg2
                                         acl2::intersectp-equal-commutative
-                                        not-intersectp-equal-when-subsetp-equal-b
-                                        not-intersectp-equal-when-subsetp-equal-b2
-                                        not-member-equal-when-subsetp-equal-b
+                                        acl2::not-intersectp-equal-when-subsetp-equal-arg2-subsetp-first
+                                        acl2::not-intersectp-equal-when-subsetp-equal-arg1-subsetp-first
+                                        acl2::not-member-equal-when-subsetp-equal-1
                                         acl2::not-member-equal-when-not-intersectp-equal
-                                        not-member-equal-when-subsetp-equal
+                                        acl2::not-member-equal-when-subsetp-equal-2
                                         acl2::subsetp-equal-transitive-alt
                                         acl2::subsetp-equal-transitive-2-alt
                                         acl2::member-equal-when-subsetp-equal-1
@@ -1801,10 +1736,10 @@
                       return-type-of-uniq-atom-list.new-used
                       return-type-of-uniq-bind.new-used
                       return-type-of-uniq-bind-list.new-used
-                      string-setp-of-uniq-expr-params.new-used
-                      string-setp-of-uniq-type-var-params.new-used
-                      string-setp-of-uniq-ispace-var-params.new-used
-                      string-setp-of-uniq-name-list.new-used)))))
+                      string-listp-of-uniq-expr-params.new-used
+                      string-listp-of-uniq-type-var-params.new-used
+                      string-listp-of-uniq-ispace-var-params.new-used
+                      string-listp-of-uniq-name-list.new-used)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1867,9 +1802,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-uniquify-names ((expr exprp))
-  :returns (new-expr exprp)
+  :returns (new-expr
+            exprp
+            :hints (("Goal" :in-theory
+                     (enable acl2::string-listp-when-string-setp))))
   :short "Rename binds and parameters so that all binder names in an
           expression are distinct, keeping the original names where possible."
+  ;; USED is seeded with the free variable names, which come back as an oset;
+  ;; an oset is already a list, so it needs no conversion -- just the (by
+  ;; default disabled) rule saying so.
+  :guard-hints (("Goal" :in-theory (enable acl2::string-listp-when-string-setp)))
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1986,4 +1928,8 @@
                   (expr-fix expr)))
   :enable (expr-uniquify-names-is-uniq-expr
            expr-duplicate-names
-           var-renamings-emptyp))
+           var-renamings-emptyp
+           ;; the seed USED is an oset, hence already a list, so its
+           ;; STRING-LIST-FIX is the identity
+           acl2::string-listp-when-string-setp
+           str::string-list-fix-when-string-listp))

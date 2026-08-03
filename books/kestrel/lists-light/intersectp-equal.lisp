@@ -131,18 +131,12 @@
 ;; conclusion.  All four are disabled, since BIG is a free variable in each
 ;; and they are expensive as blanket rewrites; enable them where needed.
 
-(local
- (defthm not-member-equal-when-subsetp-equal
-   (implies (and (not (member-equal a big))
-                 (subsetp-equal small big))
-            (not (member-equal a small)))
-   :hints (("Goal" :in-theory (enable subsetp-equal member-equal)))))
-
 (defthmd not-intersectp-equal-when-subsetp-equal-arg2
   (implies (and (not (intersectp-equal x big))
                 (subsetp-equal small big))
            (not (intersectp-equal x small)))
-  :hints (("Goal" :in-theory (enable intersectp-equal))))
+  :hints (("Goal" :in-theory (enable intersectp-equal
+                                     not-member-equal-when-subsetp-equal-2))))
 
 (defthmd not-intersectp-equal-when-subsetp-equal-arg1
   (implies (and (not (intersectp-equal big x))
@@ -168,3 +162,24 @@
   :hints (("Goal"
            :use (not-intersectp-equal-when-subsetp-equal-arg2
                  (:instance intersectp-equal-commutative (x big) (y x))))))
+
+;; The same two facts with the SUBSETP-EQUAL hypothesis stated FIRST.  BIG is
+;; a free variable in all of these, and ACL2 binds it by matching the first
+;; hypothesis it can relieve; which order is usable therefore depends on which
+;; fact is present in the context.  When BIG is a term that appears only in a
+;; containment hypothesis -- an APPEND, say -- and never in a disjointness
+;; one, only these orderings can find it.  Disabled, like the four above.
+
+(defthmd not-intersectp-equal-when-subsetp-equal-arg2-subsetp-first
+  (implies (and (subsetp-equal small big)
+                (not (intersectp-equal x big)))
+           (not (intersectp-equal x small)))
+  :rule-classes ((:rewrite :match-free :all))
+  :hints (("Goal" :in-theory (enable not-intersectp-equal-when-subsetp-equal-arg2))))
+
+(defthmd not-intersectp-equal-when-subsetp-equal-arg1-subsetp-first
+  (implies (and (subsetp-equal small big)
+                (not (intersectp-equal big x)))
+           (not (intersectp-equal small x)))
+  :rule-classes ((:rewrite :match-free :all))
+  :hints (("Goal" :in-theory (enable not-intersectp-equal-when-subsetp-equal-arg1))))

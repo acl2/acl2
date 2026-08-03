@@ -13,6 +13,7 @@
 (include-book "std/osets/top" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "std/util/defmacro-plus" :dir :system)
 
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
@@ -27,47 +28,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Bridge lemmas between oset membership over SET::INSERT and the plain-list
-; notions MEMBER-EQUAL, INTERSECTP-EQUAL, and SUBSETP-EQUAL: an insertion
-; into an oset reads, at the list level, as consing on the inserted element.
-; The bridge between SET::IN and MEMBER-EQUAL is SET::IN-TO-MEMBER.
-
-(defruled member-equal-of-insert-when-setp
-  (implies (set::setp x)
-           (iff (member-equal a (set::insert b x))
-                (or (equal a b) (member-equal a x))))
-  :use ((:instance set::in-to-member (set::a a) (set::x (set::insert b x)))
-        (:instance set::in-to-member (set::a a) (set::x x)))
-  :enable (set::in-insert set::insert-produces-set))
-
-(defruled intersectp-equal-of-insert-when-setp
-  (implies (set::setp x)
-           (iff (intersectp-equal l (set::insert b x))
-                (or (member-equal b l)
-                    (intersectp-equal l x))))
-  :induct (intersectp-equal l x)
-  :enable (intersectp-equal member-equal member-equal-of-insert-when-setp))
-
-; The two SUBSETP-EQUAL facts go through the SET-EQUIV normal form of
-; SET::INSERT; the book that provides it also installs a pick-a-point
-; strategy for SUBSETP-EQUAL that can be disruptive in some client books,
-; so it is included strictly locally here.
-
-(encapsulate ()
-
-  (local (include-book "std/osets/under-set-equiv" :dir :system))
-
-  (defruled subsetp-equal-of-insert-right-when-setp
-    (implies (set::setp x)
-             (subsetp-equal x (set::insert a x)))
-    :enable set::insert-under-set-equiv)
-
-  (defruled subsetp-equal-of-insert-left-when-setp
-    (implies (and (set::setp x)
-                  (member-equal a l)
-                  (subsetp-equal x l))
-             (subsetp-equal (set::insert a x) l))
-    :enable set::insert-under-set-equiv))
+(defmacro+ list-to-oset (l)
+  :short "Converts a list to an oset by sorting and removing dupliates."
+  `(set::mergesort ,l))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
