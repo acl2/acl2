@@ -283,6 +283,19 @@
            (set-all-genericp (delete x set)))
   :enable set-all-genericp-pick-a-point-polar)
 
+;; The peel step of the min/delete recursion, for an arbitrary member.
+(defruled set-all-genericp-of-delete-when-in
+  (implies (in x set)
+           (equal (set-all-genericp set)
+                  (and (genericp x)
+                       (set-all-genericp (delete x set)))))
+  :use ((:instance set-all-genericp-of-insert
+                   (set (delete x set))))
+  :disable set-all-genericp-of-insert
+  :enable (insert-of-delete-same
+           insert-when-in
+           fix-under-equiv))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The same check, run with an @(see iterator) instead of by repeatedly taking
