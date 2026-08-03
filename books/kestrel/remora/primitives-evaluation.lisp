@@ -2022,7 +2022,7 @@
           (expr-value-with-empty-dim s2 tval)))
        (atoms (expr-value-atoms val1)))
     (expr-value-with-nonempty-dims s2 atoms))
-  
+
   ///
 
   (defret expr-value-wfp-of-prim-reshape
@@ -2055,7 +2055,7 @@
      and the result is the array with the leading two axes
      merged into a single axis,
      whose dimensions are the dimension @('m*n')
-     followed by the shape @('s').     
+     followed by the shape @('s').
      The guard requires the argument cell to be well-formed;
      we defensively check that it has the expected dimensions.")
    (xdoc::p
@@ -2157,7 +2157,7 @@
                               consp-of-car-list-split)
            :expand ((nat-list-product (dims-of-expr-value val1))
                     (member-equal 0 (dims-of-expr-value val1)))))
-  
+
   ///
 
   (defret expr-value-wfp-of-prim-transpose2d
@@ -2654,7 +2654,7 @@
                            (make-primop-value-transpose2d-t-m-n :tval op.tval
                                                                 :mval op.mval
                                                                 :nval ival.val))
-                     :shape (reserr nil)) 
+                     :shape (reserr nil))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp)))
 

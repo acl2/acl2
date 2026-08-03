@@ -923,7 +923,7 @@
              (expr-value-list-wfp (append-all vals)))
     :induct t
     :enable append-all)
-  
+
   (defrule expr-value-list-list-wfp-of-transpose-list-list
     (implies (expr-value-list-list-wfp vals)
              (expr-value-list-list-wfp (transpose-list-list vals)))
@@ -1182,7 +1182,7 @@
            (cdr-list (dims-of-expr-value-list-list valss)))
     :induct t
     :enable cdr-list)
-  
+
   (defrule dims-of-expr-value-list-of-append-all
     (equal (dims-of-expr-value-list (append-all valss))
            (append-all (dims-of-expr-value-list-list valss)))
