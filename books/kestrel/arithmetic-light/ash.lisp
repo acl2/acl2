@@ -77,12 +77,12 @@
 
 (defthm unsigned-byte-p-ash-alt-strong
   (implies (and (natp i)
-                (natp size)
                 (natp count)
-                (<= COUNT SIZE) ;move to conc
+                (<= count size) ;try to move to conc
                 )
            (equal (unsigned-byte-p size (ash i count))
-                  (unsigned-byte-p (- size count) i)))
+                  (and (unsigned-byte-p (- size count) i)
+                       (natp size))))
   :hints (("Goal" :in-theory (enable ash expt-of-+))))
 
 ;; could make a version restricted to constant c and k
@@ -115,6 +115,7 @@
   :rule-classes ((:linear :trigger-terms ((ash i c))))
   :hints (("Goal" :in-theory (enable ash))))
 
+;; or just make the definition of into a linear rule?
 (defthm <-of-ash-linear-when-<-free-linear
   (implies (and (< i free)
                 (integerp i)
@@ -186,7 +187,7 @@
 ;move
 (local
   (defthm <=-of-*-of-expt-2-when-negative-linear
-    (implies (and (< c 0)
+    (implies (and (<= c 0)
                   (<= 0 i)
                   (integerp c)
                   (rationalp i))

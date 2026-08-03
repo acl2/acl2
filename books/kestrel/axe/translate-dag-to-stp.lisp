@@ -39,8 +39,6 @@
 ;; (time$ (len (string-append-all2 (repeat 20000 "foo") "")))
 ;; (time$ (len (string-append-all2 (repeat 30000 "foo") "")))
 
-; TODO: Consider adding support for array terms that are if-then-else nests.
-
 ;The only variables appearing in the translated file should be of the forms NODE<num> or ARRAY<num>.  Even if, say, node 100 is the variable x, it is translated as the variable NODE100.  This should prevent any variable name clashes.
 ;FIXME could put in the real names of true input vars in comments?
 

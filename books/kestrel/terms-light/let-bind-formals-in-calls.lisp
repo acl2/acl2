@@ -1,6 +1,6 @@
 ; Changes all calls of a function to be on its (lambda-bound) formals
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,8 +12,8 @@
 
 ;; This is useful when generating C code with ATC.
 
-(include-book "tools/flag" :dir :system)
 (include-book "kestrel/utilities/non-trivial-bindings" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 ;; Ensures that all calls of TARGET-FN are on actuals that are just its formals
@@ -60,7 +60,7 @@
   :hints (("Goal" :in-theory (enable (:i len)
                                      let-bind-formals-in-calls-in-terms))))
 
-(make-flag let-bind-formals-in-calls-in-term)
+(local (make-flag let-bind-formals-in-calls-in-term))
 
 ;; Let binding formals preserves pseudo-termp.
 (defthm-flag-let-bind-formals-in-calls-in-term

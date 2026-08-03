@@ -13,6 +13,7 @@
 (include-book "variable-substitution-operations")
 (include-book "fresh-variable-operations")
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration)
@@ -516,8 +517,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :extra-args ((dim-subst string-dim-mapp)
                (shape-subst string-shape-mapp)
                (avoid ispace-var-setp))
@@ -531,11 +531,23 @@
    (ispace :dim (ispace-dim (dim-subst-dim-vars ispace.dim dim-subst)))
    (type :pi
          (b* (((mv fresh-params dim-subst shape-subst)
-               (dim/shape-subst-alpha-bound type.params
+               (dim/shape-subst-alpha-bound (list type.param)
                                             dim-subst
                                             shape-subst
                                             (type-free-ispace-vars type.body))))
            (make-type-pi
+            :param (car fresh-params)
+            :body (type-subst-ispace-vars-alpha-aux type.body
+                                                    dim-subst
+                                                    shape-subst
+                                                    avoid))))
+   (type :pin
+         (b* (((mv fresh-params dim-subst shape-subst)
+               (dim/shape-subst-alpha-bound type.params
+                                            dim-subst
+                                            shape-subst
+                                            (type-free-ispace-vars type.body))))
+           (make-type-pin
             :params fresh-params
             :body (type-subst-ispace-vars-alpha-aux type.body
                                                     dim-subst
@@ -543,11 +555,23 @@
                                                     avoid))))
    (type :sigma
          (b* (((mv fresh-params dim-subst shape-subst)
-               (dim/shape-subst-alpha-bound type.params
+               (dim/shape-subst-alpha-bound (list type.param)
                                             dim-subst
                                             shape-subst
                                             (type-free-ispace-vars type.body))))
            (make-type-sigma
+            :param (car fresh-params)
+            :body (type-subst-ispace-vars-alpha-aux type.body
+                                                    dim-subst
+                                                    shape-subst
+                                                    avoid))))
+   (type :sigman
+         (b* (((mv fresh-params dim-subst shape-subst)
+               (dim/shape-subst-alpha-bound type.params
+                                            dim-subst
+                                            shape-subst
+                                            (type-free-ispace-vars type.body))))
+           (make-type-sigman
             :params fresh-params
             :body (type-subst-ispace-vars-alpha-aux type.body
                                                     dim-subst
@@ -559,11 +583,29 @@
                                                         shape-subst
                                                         avoid))
               ((mv fresh-ispaces dim-subst shape-subst)
-               (dim/shape-subst-alpha-bound expr.ispaces
+               (dim/shape-subst-alpha-bound (list expr.ispace)
                                             dim-subst
                                             shape-subst
                                             (expr-free-ispace-vars expr.body))))
            (make-expr-unbox
+            :ispace (car fresh-ispaces)
+            :var expr.var
+            :target target
+            :body (expr-subst-ispace-vars-alpha-aux expr.body
+                                                    dim-subst
+                                                    shape-subst
+                                                    avoid))))
+   (expr :unboxn
+         (b* ((target (expr-subst-ispace-vars-alpha-aux expr.target
+                                                        dim-subst
+                                                        shape-subst
+                                                        avoid))
+              ((mv fresh-ispaces dim-subst shape-subst)
+               (dim/shape-subst-alpha-bound expr.ispaces
+                                            dim-subst
+                                            shape-subst
+                                            (expr-free-ispace-vars expr.body))))
+           (make-expr-unboxn
             :ispaces fresh-ispaces
             :var expr.var
             :target target
@@ -593,11 +635,26 @@
                                                     avoid))))
    (atom :ilambda
          (b* (((mv fresh-params dim-subst shape-subst)
+               (dim/shape-subst-alpha-bound (list atom.param)
+                                            dim-subst
+                                            shape-subst
+                                            (expr-free-ispace-vars atom.body)))
+              (fresh-param (if (consp fresh-params)
+                               (car fresh-params)
+                             atom.param)))
+           (make-atom-ilambda
+            :param fresh-param
+            :body (expr-subst-ispace-vars-alpha-aux atom.body
+                                                    dim-subst
+                                                    shape-subst
+                                                    avoid))))
+   (atom :ilambdan
+         (b* (((mv fresh-params dim-subst shape-subst)
                (dim/shape-subst-alpha-bound atom.params
                                             dim-subst
                                             shape-subst
                                             (expr-free-ispace-vars atom.body))))
-           (make-atom-ilambda
+           (make-atom-ilambdan
             :params fresh-params
             :body (expr-subst-ispace-vars-alpha-aux atom.body
                                                     dim-subst
@@ -754,21 +811,6 @@
      can be started empty here."))
   (atom-subst-ispace-vars-alpha-aux atom dim-subst shape-subst nil))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define prog-subst-ispace-vars-alpha ((prog progp)
-                                      (dim-subst string-dim-mapp)
-                                      (shape-subst string-shape-mapp))
-  :returns (new-prog progp)
-  :short "Substitute ispace variables in a program,
-          with automatic alpha renaming to avoid capture."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the top-level entry point for programs;
-     see @(tsee type-subst-ispace-vars-alpha) for why the @('avoid') set
-     can be started empty here."))
-  (prog-subst-ispace-vars-alpha-aux prog dim-subst shape-subst nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -853,8 +895,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :extra-args ((atom-subst string-type-mapp)
                (array-subst string-type-mapp)
                (avoid type-var-setp))
@@ -874,11 +915,23 @@
                      (type-var (type-var-array type.var.name))))))
    (type :forall
          (b* (((mv fresh-params atom-subst array-subst)
-               (atom/array-subst-alpha-bound type.params
+               (atom/array-subst-alpha-bound (list type.param)
                                              atom-subst
                                              array-subst
                                              (type-free-type-vars type.body))))
            (make-type-forall
+            :param (car fresh-params)
+            :body (type-subst-type-vars-alpha-aux type.body
+                                                  atom-subst
+                                                  array-subst
+                                                  avoid))))
+   (type :foralln
+         (b* (((mv fresh-params atom-subst array-subst)
+               (atom/array-subst-alpha-bound type.params
+                                             atom-subst
+                                             array-subst
+                                             (type-free-type-vars type.body))))
+           (make-type-foralln
             :params fresh-params
             :body (type-subst-type-vars-alpha-aux type.body
                                                   atom-subst
@@ -906,11 +959,23 @@
                                                   avoid))))
    (atom :tlambda
          (b* (((mv fresh-params atom-subst array-subst)
-               (atom/array-subst-alpha-bound atom.params
+               (atom/array-subst-alpha-bound (list atom.param)
                                              atom-subst
                                              array-subst
                                              (expr-free-type-vars atom.body))))
            (make-atom-tlambda
+            :param (car fresh-params)
+            :body (expr-subst-type-vars-alpha-aux atom.body
+                                                  atom-subst
+                                                  array-subst
+                                                  avoid))))
+   (atom :tlambdan
+         (b* (((mv fresh-params atom-subst array-subst)
+               (atom/array-subst-alpha-bound atom.params
+                                             atom-subst
+                                             array-subst
+                                             (expr-free-type-vars atom.body))))
+           (make-atom-tlambdan
             :params fresh-params
             :body (expr-subst-type-vars-alpha-aux atom.body
                                                   atom-subst
@@ -1071,21 +1136,6 @@
      can be started empty here."))
   (atom-subst-type-vars-alpha-aux atom atom-subst array-subst nil))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define prog-subst-type-vars-alpha ((prog progp)
-                                    (atom-subst string-type-mapp)
-                                    (array-subst string-type-mapp))
-  :returns (new-prog progp)
-  :short "Substitute type variables in a program,
-          with automatic alpha renaming to avoid capture."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the top-level entry point for programs;
-     see @(tsee type-subst-type-vars-alpha) for why the @('avoid') set
-     can be started empty here."))
-  (prog-subst-type-vars-alpha-aux prog atom-subst array-subst nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1171,8 +1221,7 @@
      (nothing in the substitution maps to it any more,
      and, being fresh, it does not occur in the original ASTs),
      so reusing it cannot cause capture."))
-  :types (exprs/atoms/binds
-          prog)
+  :types (exprs/atoms/binds)
   :extra-args ((subst string-expr-mapp)
                (avoid string-setp))
   :override
@@ -1188,6 +1237,17 @@
                                        subst
                                        (expr-free-expr-vars expr.body))))
            (make-expr-unbox
+            :ispace expr.ispace
+            :var (car fresh)
+            :target target
+            :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid))))
+   (expr :unboxn
+         (b* ((target (expr-subst-expr-vars-alpha-aux expr.target subst avoid))
+              ((mv fresh subst)
+               (expr-subst-alpha-bound (list expr.var)
+                                       subst
+                                       (expr-free-expr-vars expr.body))))
+           (make-expr-unboxn
             :ispaces expr.ispaces
             :var (car fresh)
             :target target
@@ -1206,11 +1266,22 @@
             :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid))))
    (atom :lambda
          (b* (((mv fresh subst)
+               (expr-subst-alpha-bound (list (var+type?->var atom.param))
+                                       subst
+                                       (expr-free-expr-vars atom.body)))
+              (param (make-var+type? :var (car fresh)
+                                     :type? (var+type?->type? atom.param))))
+           (make-atom-lambda
+            :param param
+            :body (expr-subst-expr-vars-alpha-aux atom.body subst avoid)
+            :type? atom.type?)))
+   (atom :lambdan
+         (b* (((mv fresh subst)
                (expr-subst-alpha-bound (var+type?-list->var atom.params)
                                        subst
                                        (expr-free-expr-vars atom.body)))
               (params (var+type?-list-set-vars fresh atom.params)))
-           (make-atom-lambda
+           (make-atom-lambdan
             :params params
             :body (expr-subst-expr-vars-alpha-aux atom.body subst avoid)
             :type? atom.type?)))
@@ -1309,17 +1380,3 @@
      see @(tsee expr-subst-expr-vars-alpha) for why the @('avoid') set
      can be started empty here."))
   (atom-subst-expr-vars-alpha-aux atom subst nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define prog-subst-expr-vars-alpha ((prog progp) (subst string-expr-mapp))
-  :returns (new-prog progp)
-  :short "Substitute expression variables in a program,
-          with automatic alpha renaming to avoid capture."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the top-level entry point for programs;
-     see @(tsee expr-subst-expr-vars-alpha) for why the @('avoid') set
-     can be started empty here."))
-  (prog-subst-expr-vars-alpha-aux prog subst nil))

@@ -1,6 +1,6 @@
 ; A lightweight function to read the ACL2 objects from a channel
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -38,6 +38,11 @@
         (mv (reverse acc) state)
       (read-objects-from-channel-aux channel (cons maybe-object acc) state))))
 
+(defthm true-listp-of-mv-nth-0-of-read-objects-from-channel-aux
+  (implies (true-listp acc)
+           (true-listp (mv-nth 0 (read-objects-from-channel-aux channel acc state))))
+  :hints (("Goal" :in-theory (enable read-objects-from-channel-aux))))
+
 (defthm state-p1-of-mv-nth-1-of-read-objects-from-channel-aux
   (implies (state-p1 state)
            (state-p1 (mv-nth 1 (read-objects-from-channel-aux channel acc state))))
@@ -46,6 +51,11 @@
 (defthm state-p-of-mv-nth-1-of-read-objects-from-channel-aux
   (implies (state-p state)
            (state-p (mv-nth 1 (read-objects-from-channel-aux channel acc state))))
+  :hints (("Goal" :in-theory (enable read-objects-from-channel-aux))))
+
+(defthm open-input-channel-p1-of-mv-nth-1-of-read-objects-from-channel-aux
+  (implies (open-input-channel-p1 channel typ state)
+           (open-input-channel-p1 channel typ (mv-nth 1 (read-objects-from-channel-aux channel2 acc state))))
   :hints (("Goal" :in-theory (enable read-objects-from-channel-aux))))
 
 (defthm open-input-channel-any-p1-of-mv-nth-1-of-read-objects-from-channel-aux
@@ -64,6 +74,10 @@
                   :stobjs state))
   (read-objects-from-channel-aux channel nil state))
 
+(defthm true-listp-of-mv-nth-0-of-read-objects-from-channel
+  (true-listp (mv-nth 0 (read-objects-from-channel channel state)))
+  :hints (("Goal" :in-theory (enable read-objects-from-channel))))
+
 (defthm state-p1-of-mv-nth-1-of-read-objects-from-channel
   (implies (state-p1 state)
            (state-p1 (mv-nth 1 (read-objects-from-channel channel state))))
@@ -72,6 +86,11 @@
 (defthm state-p-of-mv-nth-1-of-read-objects-from-channel
   (implies (state-p state)
            (state-p (mv-nth 1 (read-objects-from-channel channel state))))
+  :hints (("Goal" :in-theory (enable read-objects-from-channel))))
+
+(defthm open-input-channel-p1-of-mv-nth-1-of-read-objects-from-channel
+  (implies (open-input-channel-p1 channel typ state)
+           (open-input-channel-p1 channel typ (mv-nth 1 (read-objects-from-channel channel2 state))))
   :hints (("Goal" :in-theory (enable read-objects-from-channel))))
 
 (defthm open-input-channel-any-p1-of-mv-nth-1-of-read-objects-from-channel
@@ -91,6 +110,10 @@
   (mv-let (objects state)
     (read-objects-from-channel channel state)
     (mv nil objects state)))
+
+(defthm true-listp-of-mv-nth-1-of-read-objects-from-channel-error-triple
+  (true-listp (mv-nth 1 (read-objects-from-channel-error-triple channel state)))
+  :hints (("Goal" :in-theory (enable read-objects-from-channel-error-triple))))
 
 (defthm state-p1-of-mv-nth-2-of-read-objects-from-channel-error-triple
   (implies (state-p1 state)

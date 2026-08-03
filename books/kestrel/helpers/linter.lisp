@@ -91,6 +91,7 @@
 (include-book "kestrel/terms-light/get-hyps-and-conc" :dir :system)
 (include-book "kestrel/world-light/fn-primitivep" :dir :system)
 (include-book "kestrel/world-light/defs-in-world" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
@@ -945,7 +946,7 @@
      (union-equal (non-variable-subterms (first terms))
                   (non-variable-subterms-list (rest terms))))))
 
-(make-flag non-variable-subterms)
+(local (make-flag non-variable-subterms))
 
 (defthm-flag-non-variable-subterms
   (defthm pseudo-term-listp-of-non-variable-subterms

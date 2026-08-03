@@ -1,7 +1,7 @@
 ; Recognizing a list all of whose elements are the same
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -40,3 +40,18 @@
                     nil)))
   :hints (("Goal" :use nth-when-all-same
            :in-theory (disable nth-when-all-same))))
+
+(defthm all-same-of-revappend
+  (equal (all-same (revappend l1 l2))
+         (and (all-same l1)
+              (all-same l2)
+              (if (or (endp l1)
+                      (endp l2))
+                  t
+                (equal (car l1) (car l2)))))
+  :hints (("Goal" :in-theory (enable all-same))))
+
+(defthm all-same-of-reverse
+  (equal (all-same (reverse l1))
+         (all-same l1))
+  :hints (("Goal" :in-theory (enable reverse all-same))))

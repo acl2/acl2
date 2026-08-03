@@ -118,7 +118,7 @@
   (implies (and (syntaxp (quotep k))
                 (power-of-2p k)
                 (integerp x)
-                (natp n))
+                (integerp n))
            (equal (bvchop n (* k x))
                   (* k (bvchop (- n (+ -1 (integer-length k))) x))))
   :hints (("Goal" ;:use (:instance bvchop-shift-gen (m (+ -1 (integer-length k))))
@@ -1226,16 +1226,14 @@
 
 
 (defthm logtail-of-logorc1
-  (IMPLIES (NATP N)
-           (EQUAL (LOGTAIL N (LOGORC1 A B))
-                  (LOGORC1 (LOGTAIL N A) (LOGTAIL N B))))
-  :hints (("Goal" :in-theory (enable LOGORC1))))
+  (equal (logtail n (logorc1 a b))
+         (logorc1 (logtail n a) (logtail n b)))
+  :hints (("Goal" :in-theory (enable logorc1))))
 
 (defthm logtail-of-logeqv
-  (IMPLIES (NATP N)
-           (EQUAL (LOGTAIL N (LOGEQV A B))
-                  (LOGEQV (LOGTAIL N A) (LOGTAIL N B))))
-  :hints (("Goal" :in-theory (enable LOGEQV))))
+  (equal (logtail n (logeqv a b))
+         (logeqv (logtail n a) (logtail n b)))
+  :hints (("Goal" :in-theory (enable logeqv))))
 
 (defthm add-bvchops-to-equality-of-sbps-1
   (implies (and (syntaxp (and (equal (car x) 'logext)
@@ -1250,8 +1248,8 @@
 (defthm signed-byte-p-of-logtail-hack
   (IMPLIES (AND (EQUAL (FLOOR X (EXPT 2 M))
                        (- (* 1/2 (EXPT 2 N))))
-                (POSP M)
-                (INTEGERP X)
+                ;; (POSP M)
+                ;; (INTEGERP X)
                 (POSP N))
            (NOT (< X (- (* 1/2 (EXPT 2 M) (EXPT 2 N))))))
   :hints (("Goal" ;:do-not '(generalize eliminate-destructors)
@@ -1259,10 +1257,10 @@
 
 (defthm signed-byte-p-of-logtail
   (implies (and (integerp x)
-                (posp n)
-                (posp m))
+                (natp m))
            (equal (signed-byte-p n (logtail m x))
-                  (signed-byte-p (+ n m) x)))
+                  (and (signed-byte-p (+ n m) x)
+                       (posp n))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :use ((:instance FLOOR-WEAK-MONOTONE (i1 (- (EXPT 2 (+ -1 M N)))) (i2 x) (j (expt 2 m)))
                  (:instance FLOOR-WEAK-MONOTONE (i2 (- (EXPT 2 (+ -1 M N)))) (i1 x) (j (expt 2 m)))
@@ -4383,7 +4381,8 @@
  (implies (integerp x)
           (equal (GETBIT 31 (+ 4294967296 x))
                  (GETBIT 31 x)))
- :hints (("Goal" :in-theory (enable getbit))))
+; :hints (("Goal" :in-theory (enable getbit)))
+ )
 
 ;move
 ; not safe, can loop when rewriting the binding hyp
@@ -6026,11 +6025,10 @@
  ;two ways to write this, but I prefer to split on x since it might be constant
 (defthmd slice-of-bvplus-cases-helper
   (implies (natp low)
-           (equal (<= (EXPT 2 low) (+ (BVCHOP low X) (BVCHOP low Y)))
-                  (if (EQUAL 0 (BVCHOP LOW x))
+           (equal (<= (expt 2 low) (+ (bvchop low x) (bvchop low y)))
+                  (if (equal 0 (bvchop low x))
                       nil
-                    (not (bvlt low y (bvuminus low x)))
-                    )))
+                    (not (bvlt low y (bvuminus low x))))))
   :hints (("Goal" :in-theory (e/d (bvplus slice-of-sum-cases
                                           bvlt
                                           bvchop-of-sum-cases
@@ -6062,3 +6060,27 @@
                                      slice-of-bvplus-cases-helper
                                      bvchop-when-i-is-not-an-integer
                                      slice-when-val-is-not-an-integer))))
+
+;expensive?
+(defthmd bvplus-tighten-when-no-overflow
+  (implies (and (bvlt bigsize (bvplus bigsize k y) (expt 2 smallsize))
+                (< smallsize bigsize)
+                (natp smallsize)
+                (natp bigsize))
+           (equal (bvplus bigsize k y)
+                  (bvplus smallsize k y)))
+  :hints (("Goal" :in-theory (e/d (bvlt) (bvlt-tighten-when-getbit-0)))))
+
+;disable?
+(defthmd bvplus-commutative-2-sizes-differ
+  (implies (and (syntaxp (quotep k)) ;gen?
+                (bvlt bigsize (bvplus bigsize k y) (expt 2 smallsize)) ;can this loop or be expensive?
+                (< smallsize bigsize)
+                (natp smallsize)
+                (natp bigsize))
+           (equal (bvplus bigsize x (bvplus smallsize k y))
+                  (bvplus bigsize k (bvplus bigsize x y))))
+  :hints (("Goal" :use (:instance bvplus-commutative-2 (size bigsize) (z y) (y k))
+           :in-theory (e/d (bvplus-tighten-when-no-overflow)
+                           (bvplus-commutative-2
+                            equal-of-bvplus-and-bvplus-cancel-arg3-and-arg3)))))

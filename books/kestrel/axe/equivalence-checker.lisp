@@ -17896,7 +17896,7 @@
          (debug-nodes "Nodenums whose values should be printed for each test-case, and whose subdags should be printing when attempting a merge.  These nodenums refer to the DAG used for sweeping-and-merging (after pre-simplification, etc, if any), specifically the DAG for the first sweep.")
          (extra-rules "A symbol list containing the names of extra rules to use when simplifying")
          (remove-rules "A symbol list containing the names of rules to be removed from the set of rules used when simplifying")
-         (initial-rule-sets "Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets)")
+         (initial-rule-sets "Sequence of rule-sets to apply initially to simplify the miter (:auto means use phased-bv-axe-rule-sets)")
          (monitor "Rule names (symbols) to monitor when rewriting")
          (use-context-when-miteringp "Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)")
          (random-seed "Seed for the random number generator used to make test cases, or nil meaning use the default.")

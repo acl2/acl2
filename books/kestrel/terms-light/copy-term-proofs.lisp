@@ -15,6 +15,7 @@
 ;(include-book "lambdas-closed-in-termp")
 ;(include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "no-nils-in-termp")
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "termp-simple")) ; nicer definition of termp
 (local (include-book "arglistp1"))

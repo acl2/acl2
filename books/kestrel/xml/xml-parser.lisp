@@ -14,6 +14,7 @@
 (include-book "xml")
 (include-book "kestrel/typed-lists-light/map-code-char" :dir :system)
 (include-book "std/util/bstar" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
@@ -29,8 +30,9 @@
 ;; TODO: Thread through and return errors, instead of throwing hard errors
 ;; TODO: Consider Unicode
 ;; TODO: Consider character escapes
-;; TODO: Prove that the parser always returns an xml-item-listp.
 ;; TODO: Remove/replace all #xD characters at the very start
+
+;; TODO: Consider making many of the theorems in the book local
 
 ;; See also books/xdoc/parse-xml.lisp (not sure how that compares to this)
 
@@ -817,12 +819,12 @@
                        ((when erp) (mv erp nil nil)))
                     (mv nil (cons item items) chars)))))))))))
 
-(include-book "tools/flag" :dir :system)
-(make-flag parse-xml-element
-           :hints (("Goal" ; :induct t
-                    :in-theory (enable maybe-skip-xml-comment skip-xml-comment)
-                    ;; :expand (PARSE-XML-ELEMENT CHARS) ;todo: illegal hint!
-                    )))
+(local
+  (make-flag parse-xml-element
+             :hints (("Goal" ; :induct t
+                      :in-theory (enable maybe-skip-xml-comment skip-xml-comment)
+                      ;; :expand (PARSE-XML-ELEMENT CHARS) ;todo: illegal hint!
+                      ))))
 
 (in-theory (disable xml-elementp-rewrite)) ; todo
 
@@ -905,3 +907,7 @@
                              (drop-whitespace-strings-from-parsed-xml-items parsed-items)
                            parsed-items)))
         (mv nil parsed-items state)))))
+
+(defthm xml-item-listp-of-mv-nth-1-of-parse-xml-file
+  (xml-item-listp (mv-nth 1 (parse-xml-file input-xml-file drop-whitespace-stringsp state)))
+  :hints (("Goal" :in-theory (enable parse-xml-file))))

@@ -47,6 +47,7 @@
 
 ;; ======================================================================
 
+(include-book "crc32-spec")
 (include-book "../decoding-and-spec-utils")
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
@@ -1399,5 +1400,108 @@
        ;; otherwise ZF is cleared.
        (output-rflags (!rflagsBits->zf (bool->bit (equal source 0)) 0))
        (x86 (write-user-rflags output-rflags 0 x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
+;; ======================================================================
+;; INSTRUCTION: CRC32
+;; ======================================================================
+
+(def-inst x86-crc32
+
+  ;; F2 0F 38 F0 /r   CRC32 r32, r/m8
+  ;; F2 0F 38 F1 /r   CRC32 r32, r/m16
+  ;; F2 0F 38 F1 /r   CRC32 r32, r/m32
+
+  ;; F2 REX.W 0F 38 F0 /r   CRC32 r64, r/m8
+  ;; F2 REX.W 0F 38 F1 /r   CRC32 r64, r/m64
+
+  :parents (three-byte-opcodes)
+
+  :short "Accumulate CRC32 value."
+
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The source operand is 8 bits for opcode @('F0'),
+     and 16, 32, or 64 bits for opcode @('F1'),
+     according to the operand size.
+     The low 32 bits of the destination register are
+     the CRC accumulated so far,
+     which this instruction updates with the source data,
+     via the function @(tsee crc32).
+     With @('REX.W'), the destination register is 64 bits,
+     and its high 32 bits are zeroed.
+     No flags are affected."))
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :guard-hints (("Goal" :in-theory (e/d () (reg-indexp))))
+
+  :modr/m t
+
+  :body
+
+  (b* (((the (integer 1 8) source-size)
+        (select-operand-size proc-mode
+                             (eql opcode #xF0) ; byte-operand?
+                             rex-byte
+                             nil ; imm?
+                             prefixes
+                             nil ; default64?
+                             nil ; ignore-rex?
+                             nil ; ignore-p3-64?
+                             x86))
+
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes->adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (inst-ac? t)
+       ((mv flg0
+            source
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               #.*gpr-access*
+                                               source-size
+                                               inst-ac?
+                                               nil ;; Not memory pointer operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ;; No immediate data
+                                               x86))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       (dst-index (reg-index reg rex-byte *r*))
+       ;; The destination register is 64 bits with REX.W
+       ;; (its high 32 bits are zeroed), and 32 bits otherwise;
+       ;; the CRC accumulator is its low 32 bits.
+       (dst-size (if (logbitp #.*w* rex-byte) 8 4))
+       ((the (unsigned-byte 32) old-crc)
+        (rgfi-size 4 dst-index rex-byte x86))
+
+       ((the (unsigned-byte 32) new-crc)
+        (crc32 old-crc source (* 8 source-size)))
+
+       ;; Update the x86 state (no flags are affected).
+       (x86 (!rgfi-size dst-size dst-index new-crc rex-byte x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))

@@ -187,7 +187,13 @@
     :elt-type tree
     :true-listp t
     :elementp-of-nil nil
-    :pred tree-listp)
+    :pred tree-listp
+
+    ///
+
+    (defruled true-listp-when-tree-listp
+      (implies (tree-listp x)
+               (true-listp x))))
 
   (fty::deflist tree-list-list
     :short "True lists of true lists

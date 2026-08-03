@@ -5,6 +5,11 @@ struct point {
 
 static struct point arr[2];
 
+static int get(struct point *p) {
+  return p->x + p->z;
+}
+
 int main(void) {
-  return arr[0].x;
+  arr[1].z = arr[0].x;
+  return get(&arr[1]);
 }

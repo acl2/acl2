@@ -955,4 +955,5 @@
                 (not (equal 0 r)) ;gen?
                 )
            (equal (* (expt r i) (expt r (+ j (- i))))
-                  (expt r j))) :hints (("Goal" :in-theory (enable expt-of-+))))
+                  (expt r j)))
+  :hints (("Goal" :in-theory (enable expt-of-+))))

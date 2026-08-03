@@ -1,6 +1,6 @@
 ; Substituting lambda vars that only appear once
 ;
-; Copyright (C) 2024-2025 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,6 +20,7 @@
 (include-book "count-vars")
 (include-book "substitute-lambda-formals") ; for subst-formals-in-lambda-application; make those names more consistent
 (include-book "make-lambda-with-hint")
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -126,7 +127,7 @@
     :hints (("Goal" :induct (len terms)
              :in-theory (enable (:i len))))))
 
-(make-flag substitute-unnecessary-lambda-vars-in-term2)
+(local (make-flag substitute-unnecessary-lambda-vars-in-term2))
 
 (defthm-flag-substitute-unnecessary-lambda-vars-in-term2
   (defthm pseudo-termp-of-substitute-unnecessary-lambda-vars-in-term2

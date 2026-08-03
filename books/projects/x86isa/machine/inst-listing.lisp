@@ -19947,7 +19947,7 @@
     (INST "CRC32" (OP :OP #xF38F0 :PFX :F2
                       :FEAT '(:SSE4.2))
           (ARG :OP1 '(G D) :OP2 '(E B))
-          'NIL
+          '(X86-CRC32)
           '((:UD (UD-LOCK-USED))))
     (INST "MOVBE" (OP :OP #xF38F1 :PFX :NO-PREFIX
                       :FEAT '(:MOVBE))
@@ -19968,7 +19968,7 @@
     (INST "CRC32" (OP :OP #xF38F1 :PFX :F2
                       :FEAT '(:SSE4.2))
           (ARG :OP1 '(G D) :OP2 '(E Y))
-          'NIL
+          '(X86-CRC32)
           '((:UD (UD-LOCK-USED))))
     (INST "ANDN"
           (OP :OP #xF38F2

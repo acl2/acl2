@@ -340,7 +340,8 @@
                          nil))
         :union (b* (((erp spec) (type-struni-to-struni-spec
                                   (type-union->tag/members type) ienv)))
-                 (retok (list (spec/qual-typespec (type-spec-union spec)))
+                 (retok (list (spec/qual-typespec
+                               (make-type-spec-union :spec spec :info nil)))
                         nil))
         :otherwise (b* (((erp specquals)
                          (type-scalar-to-spec/qual-list type)))

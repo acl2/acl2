@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "preprocessor-files")
+(include-book "preprocessing-abstract-syntax")
 (include-book "grammar-characters")
 
 (include-book "kestrel/fty/byte-list" :dir :system)

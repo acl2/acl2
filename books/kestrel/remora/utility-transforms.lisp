@@ -50,8 +50,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :override
   ((expr :let (nest-let-binds
                 (bind-list-singletonize-let expr.binds)
@@ -87,8 +86,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :override
   ((expr :let (coalesce-let (bind-list-flatten-let expr.binds)
                             (expr-flatten-let expr.body))))

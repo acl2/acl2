@@ -26,3 +26,4 @@
 (include-book "restrict")
 (include-book "restrict-values")
 (include-book "closedp")
+(include-book "identity")

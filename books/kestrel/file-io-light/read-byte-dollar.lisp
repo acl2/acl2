@@ -97,7 +97,8 @@
                        ;; (cddr (assoc-equal channel (open-input-channels state)))
                        )))
   :hints (("Goal" :use (:instance nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
-                                  (channels (open-input-channels state)))
+                                  (channels (open-input-channels state))
+                                  (output-p nil))
            :in-theory (e/d (read-byte$ channel-contents)
                            (nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
                             true-listp)))))
@@ -108,7 +109,8 @@
            (iff (integerp (mv-nth 0 (read-byte$ channel state)))
                 (mv-nth 0 (read-byte$ channel state))))
   :hints (("Goal" :use (:instance nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
-                                  (channels (open-input-channels state)))
+                                  (channels (open-input-channels state))
+                                  (output-p nil))
            :in-theory (e/d (read-byte$ channel-contents)
                            (nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
                             true-listp)))))
@@ -119,7 +121,8 @@
            (iff (unsigned-byte-p 8 (mv-nth 0 (read-byte$ channel state)))
                 (mv-nth 0 (read-byte$ channel state))))
   :hints (("Goal" :use (:instance unsigned-byte-listp-of-cddr-of-assoc-equal-when-open-channel-listp
-                                  (channels (open-input-channels state)))
+                                  (channels (open-input-channels state))
+                                  (output-p nil))
            :in-theory (e/d (read-byte$ channel-contents UNSIGNED-BYTE-LISTP)
                            (unsigned-byte-listp-of-cddr-of-assoc-equal-when-open-channel-listp
                             true-listp)))))
@@ -130,7 +133,8 @@
            (not (< (mv-nth 0 (read-byte$ channel state))
                    0)))
   :hints (("Goal" :use (:instance nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
-                                  (channels (open-input-channels state)))
+                                  (channels (open-input-channels state))
+                                  (output-p nil))
            :in-theory (e/d (read-byte$ channel-contents open-input-channel-p1)
                            (nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
                             true-listp)))))

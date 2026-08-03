@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "simple-untranslate-in-term")
-(include-book "tools/flag" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 
 ;; The untranslate pass leaves atoms alone.
 (defthm simple-untranslate-in-term-when-atom
@@ -21,7 +21,7 @@
 
 ;; Length preservation on the -in-terms walker (used when proving theorems
 ;; about callers that walk argument lists).
-(make-flag simple-untranslate-in-term)
+(local (make-flag simple-untranslate-in-term))
 
 (defthm-flag-simple-untranslate-in-term
   (defthm len-of-simple-untranslate-in-terms

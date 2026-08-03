@@ -50,6 +50,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/prefixp" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
 (local (in-theory (disable mv-nth member-equal true-listp)))
 
@@ -414,22 +415,16 @@
         (mv 0 0 chars) ;we can say that a lack of digits represents a value of 0
         ))))
 
-(local
- (defthm natp-of-expt
-   (implies (and (natp r)
-                 (natp i))
-            (natp (expt r i)))
-   :rule-classes :type-prescription))
-
 (defthm natp-of-mv-nth-1-of-parse-json-digits
   (natp (mv-nth 1 (parse-json-digits chars)))
   :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable parse-json-digits))))
+  :hints (("Goal" :induct t :in-theory (enable parse-json-digits))))
 
 (defthm natp-of-mv-nth-0-of-parse-json-digits
   (natp (mv-nth 0 (parse-json-digits chars)))
   :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable parse-json-digits member-equal))))
+  :hints (("Goal" :induct t
+           :in-theory (enable parse-json-digits member-equal))))
 
 (verify-guards parse-json-digits)
 
@@ -443,7 +438,7 @@
            (< (len (mv-nth 2 (parse-json-digits chars)))
               (len chars)))
   :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable parse-json-digits))))
+  :hints (("Goal" :induct t :in-theory (enable parse-json-digits))))
 
 (defthm len-of-mv-nth-2-of-parse-json-digits-bound-bound
   (<= (len (mv-nth 2 (parse-json-digits chars)))

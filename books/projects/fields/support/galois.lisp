@@ -1622,7 +1622,7 @@
                   :use (roots-auto-lemma-1 embeddingp-phi-psi embed-b-psi
 			(:instance embedding-surjective (phi (phi% a e f p)) (k (k% a e f p))) 
 			(:instance embedding-surjective (phi (psi% a e f p)) (k e) (e (k% a e f p)))
-                        (:instance embed-embedding-inv (phi (psi% a e f p)) (e (k% a e f p)) (k e) (x (b% a e f p)))))))
+                        (:instance inv-embed-embedding (phi (psi% a e f p)) (e (k% a e f p)) (k e) (x (b% a e f p)))))))
 
 (defthmd roots-auto-lemma
   (implies (and (extensionp e f) (not (equal e f)) (polyp p f)
@@ -2536,7 +2536,7 @@
 		     (member (embed (fneg (cadr p) e) (inv-auto x e f) e f) l))))
   :hints (("Goal" :induct (len l))
           ("Subgoal *1/1" :in-theory (enable embed-fneg inv-auto root-poly)
-	                  :use ((:instance embed-embedding-inv (phi x) (k e) (x (car l)))
+	                  :use ((:instance inv-embed-embedding (phi x) (k e) (x (car l)))
 			        (:instance embed-inv-embedding (phi x) (k e) (x (cadr p)))
 				(:instance embeddingp-inv-embedding (phi x) (k e))
 			        (:instance embed-fneg (phi (inv-embedding x e e f)) (k e) (x (fneg (cadr p) e)))))))
@@ -2585,7 +2585,7 @@
   :hints (("Goal" :induct (len l))  
           ("Subgoal *1/1" :in-theory (e/d (inv-auto root-poly) (fneg-fneg))
 	                  :use ((:instance member-pembed-root-poly-list (p (pembed (root-poly (car l) e) x e f)) (l (cdr l)))
-			        (:instance embed-embedding-inv (phi x) (k e) (x (car l)))
+			        (:instance inv-embed-embedding (phi x) (k e) (x (car l)))
 				(:instance embed-fneg (phi x) (x (car l)) (k e))
 				(:instance fneg-fneg (f e) (x (embed (car l) x e f)))))))
 
@@ -3550,7 +3550,7 @@
 	                        (:instance extends-trans (e k) (f (cdr d)))
 	                        (:instance extends-trans (d k) (f d))
 	                        (:instance extends-trans (d k))
-				(:instance preembed-embed (x (flift (primitive d) d e)) (phi x) (k e))
+				(:instance embedding-inv-embed (x (flift (primitive d) d e)) (phi x) (k e))
 	                        (:instance fixing-auto-fixes (phi x) (x (flift (primitive d) d k)))))))
 
 (local-defthmd inv-fixing-autos-2
@@ -4387,7 +4387,7 @@
   :hints (("Goal" :in-theory (enable inv-auto)
                   :use (ngsne-12 ngsne-20
                         (:instance extends-trans (d k))
-                        (:instance embed-embedding-inv (x (y% e k f)) (k e) (phi (phi3% e k f)))))))
+                        (:instance inv-embed-embedding (x (y% e k f)) (k e) (phi (phi3% e k f)))))))
 
 (local-defthmd ngsne-22
   (implies (and (extensionp e k) (extensionp k f) (galoisp e f) (not (normal-extension-p k f)))
@@ -5104,57 +5104,9 @@
 ;; system of linear equations.  These results are proved in "../linear/reduction.lisp" for the generic
 ;; field f0.  We can easily prove by functional instantiarion that they hold for an arbitrary field e.
 
-;; In embeddings.lisp, we define several functions pertaining to lists of elements of a field e.  We
-;; shall require some additional definitions.
-
-;; Addition, scalar multiplication, and dot product:
-
-(defun elist-add (x y e)
-  (if (consp x)
-      (cons (fadd (car x) (car y) e)
-            (elist-add (cdr x) (cdr y) e))
-    ()))
-
-(defun elist-scalar-mul (c x e)
-  (if (consp x)
-      (cons (fmul c (car x) e)
-            (elist-scalar-mul c (cdr x) e))
-    ()))
-
-(defun edot (x y e)
-  (if (consp x)
-      (fadd (fmul (car x) (car y) e)
-            (edot (cdr x) (cdr y) e)
-	    e)
-    (fzero e)))
-
-;; mxn matrix over e:
-
-(defun ematp (a m n e)
-  (declare (xargs :measure (nfix m)))
-  (if (zp m)
-      (null a)
-    (and (consp a)
-	 (elistnp (car a) n e)
-	 (ematp (cdr a) (1- m) n e))))
-
-;; Matrix multiplication:
-
-(defun edot-list (x l e)
-  (if (consp l)
-      (cons (edot x (car l) e)
-            (edot-list x (cdr l) e))
-    ()))
-
-(defund emat* (a b e)
-  (if (consp a)
-      (cons (edot-list (car a) (transpose-mat b) e)
-            (emat* (cdr a) b e))
-    ()))
-
 ;; We need the following lemmas, proved by functional instantiation of the corresponding lemmas in "../linear/fmat.lisp":
 
-(in-theory (enable fmat* emat*))
+(in-theory (enable elist-add elist-scalar-mul edot ematp edot-list fmat* emat*))
 
 (defthmd emat-entry-diff-lemma
   (implies (and (fieldp e) (posp m) (posp n) (ematp a m n e) (ematp b m n e) (not (equal a b)))
@@ -5174,6 +5126,7 @@
 			 (f/ (lambda (x) (if (fieldp e) (frecip x e) (f/ x))))
 			 (flistnp (lambda (x n) (if (fieldp e) (elistnp x n e) (flistnp x n))))
 			 (fmatp (lambda (a m n) (if (fieldp e) (ematp a m n e) (fmatp a m n)))))))
+	  ("Subgoal 18.5" :expand ((ematp a m n e)))
 	  ("Subgoal 6" :use (f*assoc (:instance fmul-assoc (f e))))
 	  ("Subgoal 5" :use (f+assoc (:instance fadd-assoc (f e))))
 	  ("Subgoal 4" :use (f*comm (:instance fmul-comm (f e))))

@@ -131,7 +131,7 @@
        (stdx (intern-in-package-of-symbol "X" x.pred))
        ;; (stda (intern-in-package-of-symbol "A" 'acl2::foo)))
        )
-    `(,@(if x.already-definedp
+    `((,@(if x.already-definedp
             '(progn)
           `(define ,x.pred (,x.xvar)
              ;; BOZO not exactly clear when/where to add docs for the predicate
@@ -201,7 +201,7 @@
        ;;                     :induct (true-listp ,x.xvar)
        ;;                     :in-theory (enable true-listp)))
        ;;            :rule-classes :compound-recognizer)))
-       )))
+       ))))
 
 
 (define flexlist-fix-def (x flagp)

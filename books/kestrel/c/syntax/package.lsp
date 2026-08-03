@@ -34,7 +34,19 @@
                                    typep
                                    unread-char
                                    value))
-              '(any
+              '(3p
+                3fix
+                3=
+                3<
+                3<=
+                3join
+                3not
+                3and
+                3or
+                3xor
+                3implies
+                3iff
+                any
                 assert!-stobj
                 bool
                 bool-fix

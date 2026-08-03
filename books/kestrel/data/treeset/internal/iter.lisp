@@ -511,6 +511,12 @@
   :enable (tree-left-spine
            pairwise-tree-subset-p-of-left))
 
+(defrule equal-of-tree-left-spine-and-tree-left-spine-nil
+  (equal (equal (tree-left-spine tree)
+                (tree-left-spine nil))
+         (tree-empty-p tree))
+  :expand ((tree-left-spine tree)))
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (defruledl tree-in-tree-iter-to-tree-of-tree-left-spine

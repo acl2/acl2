@@ -19,6 +19,7 @@
 (include-book "parser-interface")
 (include-book "printer")
 (include-book "parse-directory-files") ; for testing
+(include-book "value-printing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,4 +81,5 @@
                     post-parsing
                     syntax-abstraction
                     printer
-                    parse-directory-utilities))
+                    parse-directory-utilities
+                    value-printing))

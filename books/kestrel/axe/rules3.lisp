@@ -6869,29 +6869,6 @@
   (equal (booland (not y) (boolor y x))
          (booland x (not y))))
 
-;expensive?
-(defthmd bvplus-tighten-when-no-overflow
-  (implies (and (bvlt bigsize (bvplus bigsize k y) (expt 2 smallsize))
-                (< smallsize bigsize)
-                (natp smallsize)
-                (natp bigsize))
-           (equal (bvplus bigsize k y)
-                  (bvplus smallsize k y)))
-  :hints (("Goal" :in-theory (disable BVLT-TIGHTEN-WHEN-GETBIT-0))))
-
-(defthm bvplus-commutative-2-sizes-differ
-  (implies (and (syntaxp (quotep k)) ;gen?
-                (bvlt bigsize (bvplus bigsize k y) (expt 2 smallsize)) ;can this loop or be expensive?
-                (< smallsize bigsize)
-                (natp smallsize)
-                (natp bigsize))
-           (equal (bvplus bigsize x (bvplus smallsize k y))
-                  (bvplus bigsize k (bvplus bigsize x y))))
-  :hints (("Goal" :use (:instance bvplus-commutative-2 (size bigsize) (z y) (y k))
-           :in-theory (e/d (bvplus-tighten-when-no-overflow)
-                           (bvplus-commutative-2
-                            equal-of-bvplus-and-bvplus-cancel-arg3-and-arg3)))))
-
 (defthm unsigned-byte-p-of-*-of-1/2
   (implies (and (natp size)
                 (natp x))

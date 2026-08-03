@@ -3799,16 +3799,19 @@
                          ((when info?)
                           (if (equal (valid-tag-info->kind info?)
                                      (tag-kind-union))
-                              (retok (type-spec-union new-spec)
-                                     (make-type-union
-                                      :uid (valid-tag-info->uid info?)
-                                      :tunit? (vstate->filepath vstate)
-                                      :tag/members
-                                      (type-struni-tag/members-tagged
-                                       tyspec.spec.name?))
-                                     nil
-                                     types
-                                     vstate)
+                              (b* ((type (make-type-union
+                                          :uid (valid-tag-info->uid info?)
+                                          :tunit? (vstate->filepath vstate)
+                                          :tag/members
+                                          (type-struni-tag/members-tagged
+                                           tyspec.spec.name?)))
+                                   (info (type-spec-union-vinfo type)))
+                                (retok (make-type-spec-union :spec new-spec
+                                                             :info info)
+                                       type
+                                       nil
+                                       types
+                                       vstate))
                             (retmsg$ "The tag is expected ~
                                       to be of kind 'struct', ~
                                       but it is of kind 'union'. ~
@@ -3823,13 +3826,16 @@
                                                  (make-valid-tag-info
                                                   :kind (tag-kind-union)
                                                   :uid uid)
-                                                 vstate)))
-                      (retok (type-spec-union new-spec)
-                             (make-type-union
-                              :uid uid
-                              :tunit? (vstate->filepath vstate)
-                              :tag/members (type-struni-tag/members-tagged
-                                            tyspec.spec.name?))
+                                                 vstate))
+                         (type (make-type-union
+                                :uid uid
+                                :tunit? (vstate->filepath vstate)
+                                :tag/members (type-struni-tag/members-tagged
+                                              tyspec.spec.name?)))
+                         (info (type-spec-union-vinfo type)))
+                      (retok (make-type-spec-union :spec new-spec
+                                                   :info info)
+                             type
                              nil
                              types
                              vstate)))
@@ -3880,8 +3886,10 @@
                             :completions (hons-acons
                                           uid
                                           type-struni-members
-                                          (vstate->completions vstate)))))
-                (retok (type-spec-union new-spec)
+                                          (vstate->completions vstate))))
+                   (info (type-spec-union-vinfo type)))
+                (retok (make-type-spec-union :spec new-spec
+                                             :info info)
                        type
                        nil
                        types
@@ -8242,12 +8250,13 @@
              (retmsg$ "Error in translation unit ~x0: ~@1"
                       (filepath->string path)
                       erp)))
-          ((erp new-tumap -) (valid-filepath-trans-unit-map-loop (set::tail paths)
-                                                                 tumap
-                                                                 keep-going
-                                                                 vstate)))
+          ((erp new-tumap final-vstate)
+           (valid-filepath-trans-unit-map-loop (set::tail paths)
+                                                tumap
+                                                keep-going
+                                                vstate)))
        (retok (omap::update path new-tunit new-tumap)
-              vstate))
+              final-vstate))
      :no-function nil
      :prepwork ((local (in-theory (enable emptyp-of-filepath-set-fix))))
      :verify-guards :after-returns

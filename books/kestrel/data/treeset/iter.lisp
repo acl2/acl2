@@ -284,9 +284,19 @@
   :rule-classes :congruence
   :enable donep)
 
-(defrule donep-of-iter-empty
-  (donep (iter (empty)))
-  :enable donep)
+(defrule donep-of-iter
+  (equal (donep (iter set))
+         (emptyp set))
+  :use (:instance equal-of-tree-left-spine-and-tree-left-spine-nil
+                  (tree set))
+  :enable (donep
+           iter
+           emptyp
+           empty
+           fix
+           iterp
+           break-abstraction)
+  :disable equal-of-tree-left-spine-and-tree-left-spine-nil)
 
 (defrule iter-under-iter-equiv-whe-donep
   (implies (donep iter)
@@ -386,6 +396,11 @@
            (equal (value iter0)
                   (value iter1)))
   :rule-classes :congruence
+  :enable value)
+
+(defrule value-of-iter
+  (equal (value (iter set))
+         (min set))
   :enable value)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -514,6 +529,13 @@
               (iter-measure iter)))
   :rule-classes :linear
   :enable iter-measure-of-next)
+
+;; TODO: is iter-measure useful? Or should we just use the definition directly?
+(defrule iter-measure-linear
+  (equal (iter-measure iter)
+         (cardinality (from-iter iter)))
+  :rule-classes :linear
+  :enable iter-measure)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

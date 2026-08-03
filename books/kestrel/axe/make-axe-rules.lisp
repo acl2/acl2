@@ -47,6 +47,8 @@
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/terms-light/all-fnnames1" :dir :system))
+(local (include-book "kestrel/terms-light/expand-lambdas-in-term-proofs" :dir :system))
+
 ;(local (include-book "kestrel/terms-light/pre-simplify-term-proofs" :dir :system))
 
 (local

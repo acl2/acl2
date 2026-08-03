@@ -11,10 +11,14 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-structurals")
+(include-book "abstract-syntax-core")
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 
 (acl2::controlled-configuration)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local (in-theory (enable* ast-corep-rules)))
 

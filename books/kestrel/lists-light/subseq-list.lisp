@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function SUBSEQ-LIST
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -31,4 +31,10 @@
            (equal (character-listp (subseq-list lst start end))
                   (or (<= end start) ; result will be empty
                       (<= end (len lst)))))
+  :hints (("Goal" :in-theory (enable subseq-list))))
+
+;; Non-standard var name "X" here is to match STD
+(defthm len-of-subseq-list
+  (equal (len (subseq-list x start end))
+         (nfix (- end start)))
   :hints (("Goal" :in-theory (enable subseq-list))))

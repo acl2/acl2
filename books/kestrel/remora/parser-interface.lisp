@@ -40,7 +40,12 @@
      AST.")
    (xdoc::p
     "The canonical entry points are @(tsee parse-from-string) (string &rarr;
-     AST) and @(tsee parse-from-file) (file &rarr; AST).  The per-rule
+     AST) and @(tsee parse-from-file) (file &rarr; AST), which parse a
+     source file (imports followed by declarations) to a @(tsee file) AST.
+     For standalone expressions &mdash; the input format of the
+     implementation's @('interpret -e') and REPL &mdash; use
+     @(tsee parse-top-exp-from-string) and
+     @(tsee parse-top-exp-from-file).  The per-rule
      entries are retained for ongoing development and debugging, since they
      are useful for testing fragments of source in isolation.
      The per-rule entries currently cover @('ispace'), @('base-val'),
@@ -60,47 +65,50 @@
      @('let-exp') &mdash; will parse successfully under @(tsee
      parse-exp-from-string) as an @('app-exp') applying the identifier
      @('let') to no arguments, since the parser proper does not consult
-     the keyword list.  Only the program-level entries
-     (@(tsee parse-from-string), @(tsee parse-from-file), and the CST
-     helpers @(tsee parse-program-from-bytes) and
-     @(tsee parse-program-from-codepoints)) run the
+     the keyword list.  Only the top-level entries
+     (@(tsee parse-from-string) and @(tsee parse-from-file) for source
+     files, @(tsee parse-top-exp-from-string) and
+     @(tsee parse-top-exp-from-file) for standalone expressions, and
+     their CST helpers @(tsee parse-file-from-codepoints) and
+     @(tsee parse-top-exp-from-codepoints)) run the
      @(tsee check-tree-no-keyword-identifiers) walk that rejects
      keyword-named identifiers.  Consumers that need [SC2] enforcement
      on a fragment must apply it themselves; or, equivalently, route
-     through the program-level entries and treat the fragment as the
-     body of a program."))
+     through the top-level entries and treat the fragment as the
+     body of a standalone expression."))
   :order-subtopics t
   :default-parent t)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Program-level entry points for parsing to CSTs
+;; Top-level-expression entry point for parsing to a CST.
 ;; For entry points for parsing to ASTs see the end of this file.
 ;;
-;; parse-program-from-codepoints and parse-program-from-bytes and
-;; and parse-program-from-string are
-;; CST-producing helpers shared by the user-facing AST entries.  Each
-;; bundles the SC2 check from post-parsing.lisp (xdoc topic
-;; post-parsing) into the parsing pipeline (parse + [SC2] + input
-;; exhaustion).
+;; parse-top-exp-from-codepoints is the CST-producing helper shared by
+;; the user-facing AST entries.  It bundles the SC2 check from
+;; post-parsing.lisp (xdoc topic post-parsing) into the parsing
+;; pipeline (parse + [SC2] + input exhaustion).
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-program-from-codepoints ((codepoints nat-listp))
+(define parse-top-exp-from-codepoints ((codepoints nat-listp))
   :returns (tree abnf::tree-resultp)
   :hooks nil
-  :short "Parse a Remora program from a list of Unicode code points."
+  :short "Parse a standalone Remora expression
+          from a list of Unicode code points."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Parses the result as a Remora program, checks that all input is
-     consumed, checks that the fringe of the output CST is equal to
+    "Parses the input as a @('top-exp')
+     (an expression surrounded by optional whitespace),
+     checks that all input is consumed,
+     checks that the fringe of the output CST is equal to
      the input list of codepoints, and checks the extra-grammatical
      constraint [SC2] (no identifier may match a reserved keyword).
      Returns a @(tsee abnf::tree-resultp): a parse tree on success,
      or an error on failure."))
-  (b* (((mv tree rest) (parse-program codepoints))
+  (b* (((mv tree rest) (parse-top-exp codepoints))
        ((when (reserrp tree)) (reserrf-push tree))
        ((unless (null rest))
         (reserrf (cons :remaining-input rest)))
@@ -111,38 +119,6 @@
        (check (check-tree-no-keyword-identifiers tree))
        ((when (reserrp check)) (reserrf-push check)))
     tree))
-
-(define parse-program-from-bytes ((bytes nat-listp))
-  :returns (tree abnf::tree-resultp)
-  :hooks nil
-  :short "Parse a Remora program from UTF-8 bytes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Decodes @('bytes') as UTF-8 into Unicode code points,
-     and then composes @(tsee parse-program-from-codepoints).
-     Returns a @(tsee abnf::tree-resultp):
-     a parse tree on success, or an error on failure."))
-  (b* (((unless (acl2::unsigned-byte-listp 8 bytes))
-        (reserrf (cons :invalid-octets bytes)))
-       (codepoints (acl2::utf8=>ustring bytes))
-       ((unless (nat-listp codepoints))
-        (reserrf (cons :invalid-utf-8 bytes))))
-    (parse-program-from-codepoints codepoints)))
-
-(define parse-program-from-string ((string stringp))
-  :returns (tree abnf::tree-resultp)
-  :hooks nil
-  :short "Parse a Remora program from an ACL2 string into a CST."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Treats @('string') as UTF-8 bytes (ACL2 strings are sequences of
-     bytes with char-codes 0&ndash;255), and
-     @(tsee parse-program-from-bytes) to obtain a CST.
-     Returns a @(tsee abnf::tree-resultp):
-     a parse tree on success, or an error on failure."))
-  (parse-program-from-bytes (string=>nats string)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -169,8 +145,8 @@
      to the corresponding Unicode code points.  Returns a @(see reserr)
      if the byte sequence is not valid UTF-8.")
    (xdoc::p
-    "This mirrors the bytes-to-code-points step in @(tsee
-     parse-program-from-bytes)."))
+    "This is the bytes-to-code-points step shared by the
+     string-input entry points."))
   (b* ((bytes (string=>nats (str-fix string)))
        ((unless (acl2::unsigned-byte-listp 8 bytes))
         (reserrf (cons :invalid-octets bytes)))
@@ -323,39 +299,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Program-level entry points for parsing to ASTs.
+;; Top-level-expression entry points for parsing to ASTs.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-from-string ((string stringp))
-  :returns (ast prog-resultp)
+(define parse-top-exp-from-string ((string stringp))
+  :returns (ast expr-resultp)
   :hooks nil
-  :short "Parse a Remora program from an ACL2 string to a @(tsee prog) AST."
+  :short "Parse a standalone Remora expression from an ACL2 string
+          to an @(tsee expr) AST."
   :long
   (xdoc::topstring
    (xdoc::p
     "Treats @('string') as UTF-8 bytes (ACL2 strings are sequences of
-     bytes with char-codes 0&ndash;255), composes
-     @(tsee parse-program-from-bytes) to obtain a CST, then
-     @(tsee abs-prog) to lift the CST to a @(tsee prog) AST.
+     bytes with char-codes 0&ndash;255), decodes them to code points,
+     composes @(tsee parse-top-exp-from-codepoints) to obtain a CST, then
+     @(tsee abs-top-exp) to lift the CST to an @(tsee expr) AST.
      The full pipeline is UTF-8 decode + ABNF parse +
-     [SC2] keyword check + input exhaustion + CST&rarr;AST abstraction."))
-  (b* (((okf tree) (parse-program-from-string string)))
-    (abs-prog tree)))
+     [SC2] keyword check + input exhaustion + CST&rarr;AST abstraction.
+     This is the analogue of the implementation's expression entry
+     points (@('interpret -e') and the REPL); for source files see
+     @(tsee parse-from-string)."))
+  (b* (((okf codepoints) (decode-utf8-string string))
+       ((okf tree) (parse-top-exp-from-codepoints codepoints)))
+    (abs-top-exp tree)))
 
-(define parse-from-file ((filename stringp) state)
-  :returns (mv (ast prog-resultp) state)
+(define parse-top-exp-from-file ((filename stringp) state)
+  :returns (mv (ast expr-resultp) state)
   :hooks nil
   :prepwork ((local (in-theory (disable acl2::read-utf8))))
-  :short "Parse a Remora program from a file on disk to a @(tsee prog) AST."
+  :short "Parse a standalone Remora expression from a file on disk
+          to an @(tsee expr) AST."
   :long
   (xdoc::topstring
    (xdoc::p
     "Reads @('filename') as a UTF-8 file (using @('acl2::read-utf8')),
-     composes @(tsee parse-program-from-codepoints) to obtain a CST,
-     then @(tsee abs-prog) to lift the CST to a @(tsee prog) AST.
+     composes @(tsee parse-top-exp-from-codepoints) to obtain a CST,
+     then @(tsee abs-top-exp) to lift the CST to an @(tsee expr) AST.
      Relative paths are interpreted relative to the @('cbd').
-     Returns @('(mv prog-resultp state)'): an AST on success, or
+     Returns @('(mv expr-resultp state)'): an AST on success, or
      an error on file-read / UTF-8 decode / parse / [SC2] / input
      exhaustion / abstraction failure.")
    (xdoc::p
@@ -367,7 +349,87 @@
        ((unless (nat-listp codepoints))
         (mv (reserrf (cons :file-read-or-utf8-error codepoints))
             state))
-       (tree (parse-program-from-codepoints codepoints))
+       (tree (parse-top-exp-from-codepoints codepoints))
        ((when (reserrp tree))
         (mv tree state)))
-    (mv (abs-prog tree) state)))
+    (mv (abs-top-exp tree) state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; File-level entry points for parsing to ASTs.
+;; These are the canonical entries for parsing Remora source.
+;;
+;; A `file` (grammar rule) is the contents of a .remora source file:
+;; imports followed by declarations.  Like the top-exp entries
+;; (and unlike the per-rule entries), these enforce the full pipeline:
+;; UTF-8 decode + parse + [SC2] keyword check + input exhaustion +
+;; CST->AST abstraction.
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-file-from-codepoints ((codepoints nat-listp))
+  :returns (tree abnf::tree-resultp)
+  :hooks nil
+  :short "Parse a Remora source file from a list of Unicode code points."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "File-level analogue of @(tsee parse-top-exp-from-codepoints):
+     parses the input as a @('file') (imports followed by declarations),
+     checks that all input is consumed,
+     checks that the fringe of the output CST equals the input,
+     and checks the extra-grammatical constraint [SC2]
+     (no identifier may match a reserved keyword).
+     Returns a @(tsee abnf::tree-resultp): a parse tree on success,
+     or an error on failure."))
+  (b* (((mv tree rest) (parse-file codepoints))
+       ((when (reserrp tree)) (reserrf-push tree))
+       ((unless (null rest))
+        (reserrf (cons :remaining-input rest)))
+       ((unless (equal (abnf::tree->string tree)
+                       codepoints))
+        (reserrf (cons :fringe-mismatch
+                       "internal parser bug -- please report this with the source that triggered it")))
+       (check (check-tree-no-keyword-identifiers tree))
+       ((when (reserrp check)) (reserrf-push check)))
+    tree))
+
+(define parse-from-string ((string stringp))
+  :returns (ast file-resultp)
+  :hooks nil
+  :short "Parse a Remora source file from an ACL2 string
+          to a @(tsee file) AST."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Treats @('string') as UTF-8 bytes (ACL2 strings are sequences of
+     bytes with char-codes 0&ndash;255), decodes them to code points,
+     composes @(tsee parse-file-from-codepoints) to obtain a CST, then
+     @(tsee abs-file) to lift the CST to a @(tsee file) AST.
+     For standalone expressions see @(tsee parse-top-exp-from-string)."))
+  (b* (((okf codepoints) (decode-utf8-string string))
+       ((okf tree) (parse-file-from-codepoints codepoints)))
+    (abs-file tree)))
+
+(define parse-from-file ((filename stringp) state)
+  :returns (mv (ast file-resultp) state)
+  :hooks nil
+  :prepwork ((local (in-theory (disable acl2::read-utf8))))
+  :short "Parse a Remora source file from a file on disk
+          to a @(tsee file) AST."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reads @('filename') as a UTF-8 file (using @('acl2::read-utf8')),
+     composes @(tsee parse-file-from-codepoints) to obtain a CST,
+     then @(tsee abs-file) to lift the CST to a @(tsee file) AST.
+     Relative paths are interpreted relative to the @('cbd')."))
+  (b* (((mv codepoints state)
+        (acl2::read-utf8 (str-fix filename) state))
+       ((unless (nat-listp codepoints))
+        (mv (reserrf (cons :file-read-or-utf8-error codepoints))
+            state))
+       (tree (parse-file-from-codepoints codepoints))
+       ((when (reserrp tree))
+        (mv tree state)))
+    (mv (abs-file tree) state)))

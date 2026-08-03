@@ -13,8 +13,9 @@
 (in-theory (disable open-channels-p))
 
 (defthm symbolp-when-assoc-equal-and-open-channels-p-forward
-  (implies (and (open-channels-p channels)
+  (implies (and (open-channels-p channels output-p)
                 (assoc-equal channel channels))
            (symbolp channel))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable open-channels-p ordered-symbol-alistp))))
+

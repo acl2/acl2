@@ -17,6 +17,7 @@
 (include-book "no-nils-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "empty-eval-helpers"))
 (local (include-book "helpers"))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -98,6 +99,8 @@
     (implies (myquotep term)
              (no-nils-in-termp term))
     :hints (("Goal" :in-theory (enable no-nils-in-termp)))))
+
+(local (make-flag substitute-constants-in-lambdas-aux))
 
 (local
   (defthm-flag-substitute-constants-in-lambdas-aux
@@ -499,6 +502,9 @@
                         (:instance empty-eval-of-fncall-args
                                    (a a))))))
 
+(local (make-flag free-vars-in-term))
+
+;move?
 (defthm-flag-free-vars-in-term
   (defthm empty-eval-when-not-consp-of-free-vars
     (implies (and (syntaxp (not (equal a *nil*)))

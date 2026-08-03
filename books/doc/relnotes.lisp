@@ -136,6 +136,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Tools Library")
+
+   (xdoc::p
+    "Fixed @(see with-supporters) to @(see disable) appropriate names of
+     theorems (not merely functions) and to avoid dropping suitable
+     macro-aliases (see @(see macro-aliases-table)).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "zfc" "Set Theory Library"))
 
    (xdoc::p

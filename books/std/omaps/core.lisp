@@ -1468,6 +1468,13 @@
     :enable (keys values set::expensive-rules)
     :rule-classes :linear)
 
+  (defruled in-values-when-in-lookup*
+    (implies (set::in x (lookup* keys map))
+             (set::in x (values map)))
+    :induct t
+    :enable (lookup*
+             lookup))
+
   (defrule lookup*-subset-values
     (set::subset (lookup* keys map)
                  (values map))

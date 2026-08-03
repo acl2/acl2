@@ -6,10 +6,17 @@
 
 ;; Field:
 
-(encapsulate (((fp *) => *)                   ;field element recognizer
-              ((f+ * *) => *) ((f* * *) => *) ;addition and multiplication
-	      ((f0) => *) ((f1) => *)         ;identities
-	      ((f- *) => *) ((f/ *) => *))    ;inverses 
+(encapsulate (;field element recognizer
+              ((fp *) => *)                                              
+              ;addition and multiplication
+	      ((f+ * *) => * :formals (x y) :guard (and (fp x) (fp y)))  
+              ((f* * *) => * :formals (x y) :guard (and (fp x) (fp y)))
+              ;identities
+	      ((f0) => *)                                                
+              ((f1) => *)
+              ;inverses
+	      ((f- *) => * :formals (x) :guard (fp x))                   
+              ((f/ *) => * :formals (x) :guard (and (fp x) (not (equal x (f0))))))
   (local (defun fp (x) (rationalp x)))
   (local (defun f+ (x y) (+ x y)))
   (local (defun f* (x y) (* x y)))
@@ -39,6 +46,14 @@
   (defthm f*inv (implies (and (fp x) (not (equal x (f0)))) (equal (f* x (f/ x)) (f1))))
   ;; Distributivity:
   (defthm fdist (implies (and (fp x) (fp y) (fp z)) (equal (f* x (f+ y z)) (f+ (f* x y) (f* x z))))))
+
+;; We attach the corresponding functions pertaining to the rationals to the above
+;; constrained functions, so that all functions will be executable: 
+
+(defun nullary-0 () (declare (xargs :guard t)) 0)
+(defun nullary-1 () (declare (xargs :guard t)) 1)
+(defattach (fp rationalp) (f+ binary-+) (f* binary-*)
+           (f0 nullary-0) (f1 nullary-1) (f- unary--) (f/ unary-/))
 
 ;; Trivial consequences of the axioms:
 

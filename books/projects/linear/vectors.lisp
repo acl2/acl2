@@ -143,6 +143,20 @@
   (equal (vcoords0 (v0))
          (flistn0 (vdim))))
 
+;; Coordinates of a sum:
+
+(defthmd vcoords0-v+
+  (implies (and (vp x) (vp y))
+           (equal (vcoords0 (v+ x y))
+	          (flist-add (vcoords0 x) (vcoords0 y)))))
+
+;; Coordinates of a scalar product:
+
+(defthmd vcoords0-v*
+  (implies (and (vp x) (fp c))
+           (equal (vcoords0 (v* c x))
+	          (flist-scalar-mul c (vcoords0 x)))))
+
 
 ;;---------------------------------------------------------------------------------------------------------------------
 ;;  Linear Dependence
@@ -241,7 +255,7 @@
   (implies (and (posp m) (vlistnp l m) (vdepp l))
 	   (let ((c (vdep-coeffs l)))
 	     (and (flistnp c m)
-		  (not (= c (flistn0 m)))
+		  (not (equal c (flistn0 m)))
 		  (equal (vcomb c l) (v0))))))
 
 ;; Note that the axiom vbasis0-lin-indep ensures that vbasis0 is a linearly independent list:
@@ -343,6 +357,16 @@
   (implies (and (natp m) (> m (vdim))
 		(vlistnp l m))
 	   (vdepp l)))
+
+;; Combining vdepp-vcomb-v0 with vdep-if->-dim, we can construct a linear dependency of a list of more
+;; than(vdim) vectors:
+
+(defthmd vcomb-v0-if->-dim
+  (implies (and (posp m) (vlistnp l m) (> m (vdim)))
+	   (let ((c (vdep-coeffs l)))
+	     (and (flistnp c m)
+		  (not (equal c (flistn0 m)))
+		  (equal (vcomb c l) (v0))))))
 
 ;; Let l be a list of vectors and let x be a vector.  Suppose l is linearly independent and (cons x l)
 ;; is linearly dependent.  We shall construct a list of scalars (vcoords x l) such that
@@ -724,6 +748,16 @@
          (flistn0 (wdim))))
 
 
+(defthmd wcoords0-w+
+  (implies (and (wp x) (wp y))
+           (equal (wcoords0 (w+ x y))
+	          (flist-add (wcoords0 x) (wcoords0 y)))))
+
+(defthmd wcoords0-w*
+  (implies (and (wp x) (fp c))
+           (equal (wcoords0 (w* c x))
+	          (flist-scalar-mul c (wcoords0 x)))))
+
 ;;  Linear Dependence
 
 (defun wcoord-mat (l)
@@ -755,7 +789,7 @@
   (implies (and (posp m) (wlistnp l m) (wdepp l))
 	   (let ((c (wdep-coeffs l)))
 	     (and (flistnp c m)
-		  (not (= c (flistn0 m)))
+		  (not (equal c (flistn0 m)))
 		  (equal (wcomb c l) (w0))))))
 
 (defthm windepp-wbasis0
@@ -967,10 +1001,12 @@
 (defund lin-mat ()
   (wcoord-mat (lin-list (vbasis0))))
 
-(defthmd lin-mat-lin
-  (implies (and (vp x))
-           (equal (wcoords0 (lin x))
-	          (car (fmat* (list (vcoords0 x)) (lin-mat))))))
+(in-theory (disable (lin-mat)))
+
+(defthm fmatp-lin-mat
+  (fmatp (lin-mat) (vdim) (wdim)))
+
+;; If (vp x), then (wcoords0 (lin x)) = (car (fmat* (list (vcoords0 x)) (lin-mat)).
 
 ;; Proof: Let c = (vcoords0 x). By vbasis0-spans, x = (vcomb c (vbasis0)), and by lin-vcomb,
 ;; (lin x) = (wcomb c (lin-list (wbasis0))).  Thus, by wcoords0-wcomb,
@@ -978,6 +1014,10 @@
 ;;   (wcoords0 (lin x)) = (wcoords0 (wcomb c (wbasis0)))
 ;;                     = (car (fmat* (list c) (wcoord-mat (wbasis0))))
 ;; 		       = (car (fmat* (list (vcoords0 x)) (lin-mat)))  
+(defthmd lin-mat-lin
+  (implies (and (vp x))
+           (equal (wcoords0 (lin x))
+	          (car (fmat* (list (vcoords0 x)) (lin-mat))))))
 
 ;; lin is injective if the following is true:
 
@@ -1028,37 +1068,28 @@
 
 (in-theory (disable lin-injective-p lin-surjective-p))
 
-;; If lin is injective, (vlistnp l n), and l is linearly independent, then (lin-list l) is linearly independent:
+;; If lin is injective, (vlistnp l n), and l is linearly independent, then (lin-list l) is linearly independent.
+
+;; Proof: Suppose (wcomb c (lin-list l)) = (w0).  By lin-vcomb, (lin (vcomb c l)) = (w0).  Since lin is injective,
+;; (vcomb c l) = (v0), and since l is linearly independent, c = (flistn0 n).
 
 (defthmd lin-injective-vindepp-windepp
   (implies (and (lin-injective-p) (natp n) (vlistnp l n) (vindepp l))
            (windepp (lin-list l))))
 
-;; Proof: Suppose (wcomb c (lin-list l)) = (w0).  By lin-vcomb, (lin (vcomb c l)) = (w0).  Since lin is injective,
-;; (vcomb c l) = (v0), and since l is linearly independent, c = (flistn0 n).
-
-;; Our final 2 results will be critical (along with the lemma not-vindepp-sk-if->-dim) to our formalization of
-;; Galois theory.
-
-;; If lin is injective, then (dimv) <= (dimw):
-
-(defthmd injection-dim-<=
-  (implies (lin-injective-p)
-           (<= (vdim) (wdim))))
+;; If lin is injective, then (dimv) <= (dimw).
 
 ;; Proof: Suppose (dimv) > (dimw).  Then (len (lin-list (vbasis0))) = (len (vbasis0)) = (dimv) > (dimw).
 ;; By wdep-if->-dim, (lin-list (vbasis0)) is linearly dependent, but by lin-injective-vindepp-windepp, this
 ;; contradicts the linear independence of (vbasis0).
 
-;; If lin is injective, then lin is surjective iff (dimv) = (dimw):
-
-(defthmd injection-surjection-dim-=
+(defthmd injection-dim-<=
   (implies (lin-injective-p)
-           (iff (lin-surjective-p)
-	        (equal (vdim) (wdim)))))
+           (<= (vdim) (wdim))))
+
+;; If lin is injective, then lin is surjective iff (dimv) = (dimw).
 
 ;; Proof: Let l = (lin-list (vbasis0)).  By lin-injective-vindepp-windepp, l is linearly independent.
-
 ;; Suppose vdim = wdim.  Let (wp y).  Since (len (cons y l)) = (vdim) + 1 = (wdim) + 1 > (wdim).  By wdep-if->-dim,
 ;; (cons y l) is linearly dependent.  By wdepp-wcomb and lin-vcomb,
 
@@ -1068,3 +1099,94 @@
 ;; x = (lin-preimage y), and c = (vcoords x (vbasis0)).  By wp-wunspanned and lin-surjective-p-lemma, (wp y), (vp x),
 ;; and (lin x) = y.  By vbasisp-vbasis0 and vbasis-spans, (flistnp c (vdim)) and x = (vcomb c (vbasis0)).  By lin-vcomb,
 ;; y = (wcomb c l), contradicting wunspanned-not-wcomb.
+
+(defthmd injection-surjection-dim-=
+  (implies (lin-injective-p)
+           (iff (lin-surjective-p)
+	        (equal (vdim) (wdim)))))
+
+;; If lin is both injective and surjective, then we can define an inverse linear transformation from W to V.
+;; Unlike the function lin-preimage, this definition is constructive, requiring no Skolem functions.
+;; This will be important in our formalization of Galois theory, which will involve the functional instantiation
+;; of the lemma lin-lin-inv below, resulting in an executable definition of the inverse operator of the Galois group.
+
+;; First we show that if lin is injective, then (row-rank (lin-mat)) = (vdim).
+;; Let m = (vdim), n = (wdim), a = (lin-mat), ar = (row-reduce a), and p = (row-reduce-mat a).
+;; Let z = (funit (1- m) m) and z' = (car (fmat* (list z) p)).  Then 
+
+;;   (car (fmat* (list z') (inverse-mat p))) = (car (fmat* (list (car (fmat* (list z) p))) (inverse-mat p)))
+;;                                           = (car (fmat* (fmat* (list z) p) (inverse-mat p)))
+;;                                           = (car (fmat* (list z) (fmat* p (inverse-mat p))))
+;;                                           = (car (list z))
+;;                                           = z
+
+;; and since z != (flistn0 n), it follows that z' != (flistn0 n).
+;; Suppose (row-rank a) < m.  Then the final row of ar is zero: (flist0p (row (1- m) ar)).  It is easily shown that
+
+;;   (car (fmat* (list z) ar)) = (flistn0 n),
+
+;; which implies
+
+;;   (car (fmat* (list z') a)) = (car (fmat* (fmat* (list z) p) a)) = (car (fmat* (list z) ar)) = (flistn0 n).
+
+;; Let x = (vcomb z' (vbasis0)).  Then (vp x) and x != (v0).  By vcoords0-unique, (vcoords0 x) = z'.  By lin-mat-lin,
+
+;;   (wcoords0 (lin x)) = (car (fmat* (list z') a)) = (flistn0 n)
+
+;; and hence, (lin x) = (w0), contradicting injectivity:
+
+(defthmd row-rank-lin-mat
+  (implies (lin-injective-p)
+           (equal (row-rank (lin-mat))
+                  (vdim))))
+
+;; Now suppose lin is both injective and surjective.  Then m = n and a is invertible.  We define
+
+(defund lin-inv (y)
+  (vcomb (car (fmat* (list (wcoords0 y)) (inverse-mat (lin-mat))))
+         (vbasis0)))
+
+;; It is easily verified that lin-inv satisfies the properties of a linear transformation:
+
+(defthm vp-lin-inv
+  (implies (and (lin-injective-p) (= (vdim) (wdim)) (wp y))
+           (vp (lin-inv y))))
+
+(defthmd lin-inv-w0
+  (implies (and (lin-injective-p) (= (vdim) (wdim)))
+           (equal (lin-inv (w0)) (v0))))
+
+(defthmd lin-inv-w+
+  (implies (and (lin-injective-p) (= (vdim) (wdim))
+                (wp x) (wp y))
+           (equal (lin-inv (w+ x y))
+	          (v+ (lin-inv x) (lin-inv y)))))
+
+(defthmd lin-inv-w*
+  (implies (and (lin-injective-p) (= (vdim) (wdim))
+                (wp x) (fp c))
+           (equal (lin-inv (w* c x))
+	          (v* c (lin-inv x)))))
+
+;; Suppose (wp y) and let x = (lin-inv y).  Then (vp x).  We shall show that (lin x) = y.  By vcoords0-unique,
+
+;;   (vcoords0 x) = (car (fmat* (list (wcoords0 y)) (inverse-mat (lin-mat))).
+
+;; By lin-mat-lin,
+
+;;   (wcoords0 (lin x)) = (car (fmat* (list (vcoords0 x)) (lin-mat)))
+;;                      = (car (fmat* (list (car (fmat* (list (wcoords0 y)) (inverse-mat (lin-mat))))) (lin-mat)))
+;;                      = (car (fmat* (fmat* (list (wcoords0 y)) (inverse-mat (lin-mat))) (lin-mat)))
+;;                      = (car (fmat* (list (wcoords0 y)) (fmat* (inverse-mat (lin-mat)) (lin-mat))))
+;;                      = (car (list (wcoords0 y))
+;;                      = (wcoords0 y)
+
+;; which implies (lin x) = y.
+
+(defthmd lin-lin-inv
+  (implies (and (lin-injective-p)
+                (lin-surjective-p)
+                (wp y))
+           (let ((x (lin-inv y)))
+             (and (vp x)
+                  (equal (lin x) y)))))

@@ -1,6 +1,6 @@
 ; A simple utility to check that lambdas never have duplicate formals
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "free-vars-in-term")
+(local (include-book "tools/flag" :dir :system))
 
 ;; Checks that each list of lambda-formals is duplicate-free.
 (mutual-recursion
@@ -137,28 +138,17 @@
 
 (local (make-flag no-duplicate-lambda-formals-in-termp))
 
-(local
- (defthm-flag-no-duplicate-lambda-formals-in-termp
-   (defthm no-duplicate-lambda-formals-in-termp-when-termp
-     (implies (termp term w)
-              (no-duplicate-lambda-formals-in-termp term))
-     :flag no-duplicate-lambda-formals-in-termp)
-   (defthm no-duplicate-lambda-formals-in-termsp-when-term-listp
-     (implies (term-listp terms w)
-              (no-duplicate-lambda-formals-in-termsp terms))
-     :flag no-duplicate-lambda-formals-in-termsp)
-   :hints (("Goal" :expand (free-vars-in-terms terms)
-            :in-theory (enable free-vars-in-term no-duplicate-lambda-formals-in-termp)))))
-
-;; redundant and non-local
-(defthm no-duplicate-lambda-formals-in-termp-when-termp
-  (implies (termp term w)
-           (no-duplicate-lambda-formals-in-termp term)))
-
-;; redundant and non-local
-(defthm no-duplicate-lambda-formals-in-termsp-when-term-listp
-  (implies (term-listp terms w)
-           (no-duplicate-lambda-formals-in-termsp terms)))
+(defthm-flag-no-duplicate-lambda-formals-in-termp
+  (defthm no-duplicate-lambda-formals-in-termp-when-termp
+    (implies (termp term w)
+             (no-duplicate-lambda-formals-in-termp term))
+    :flag no-duplicate-lambda-formals-in-termp)
+  (defthm no-duplicate-lambda-formals-in-termsp-when-term-listp
+    (implies (term-listp terms w)
+             (no-duplicate-lambda-formals-in-termsp terms))
+    :flag no-duplicate-lambda-formals-in-termsp)
+  :hints (("Goal" :expand (free-vars-in-terms terms)
+           :in-theory (enable free-vars-in-term no-duplicate-lambda-formals-in-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

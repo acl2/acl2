@@ -1,7 +1,7 @@
 ; Signed bit-vector division
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,21 +12,12 @@
 (in-package "ACL2")
 
 (include-book "unsigned-byte-p-forced")
-(include-book "bvchop")
+(include-book "bvchop") ; localize?
+(include-book "sbvdiv-def")
 (include-book "logext-def")
 (local (include-book "getbit"))
 (local (include-book "logext"))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
-
-;fixme make sure this is right
-;this is like java's idiv
-;takes and returns USBs
-(defund sbvdiv (n x y)
-  (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y)
-           (xargs :guard (not (equal 0 (bvchop n y)))))
-  (bvchop n (truncate (logext n x) (logext n y))))
 
 (defthm unsigned-byte-p-of-sbvdiv
   (implies (<= size size2)
@@ -34,11 +25,6 @@
                   (natp size2)))
   :hints (("Goal" :in-theory (enable sbvdiv))))
 
-(defthm natp-of-sbvdiv
-  (natp (sbvdiv size x y)))
-
-(defthm integerp-of-sbvdiv
-  (integerp (sbvdiv size x y)))
 
 ;do not remove (helps justify the translation to STP)
 (defthm sbvdiv-of-bvchop-arg2
@@ -60,20 +46,6 @@
   :hints (("Goal" :cases ((equal 0 size))
            :in-theory (enable sbvdiv))))
 
-; a totalized version of sbvdiv, where division by 0 yields 0
-;logically this is equal to sbvdiv (see theorem sbvdiv-total-becomes-sbvdiv)
-(defund sbvdiv-total (n x y)
-  (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y))
-  (if (equal 0 (logext n y))
-      (logext n 0)
-    (sbvdiv n x y)))
-
-(defthm sbvdiv-total-becomes-sbvdiv
-  (equal (sbvdiv-total n x y)
-         (sbvdiv n x y))
-  :hints (("Goal" :in-theory (enable SBVDIV sbvdiv-total truncate))))
 
 ;do not remove (helps justify the translation to STP)
 (defthm sbvdiv-of-0-arg1
@@ -91,10 +63,6 @@
   (equal (sbvdiv size x 0)
          0)
   :hints (("Goal" :in-theory (enable sbvdiv))))
-
-(defthm sbvdiv-total-of-0
-  (equal (sbvdiv-total n x 0)
-         0))
 
 (defthm unsigned-byte-p-forced-of-sbvdiv
   (equal (unsigned-byte-p-forced size (sbvdiv size x y))
@@ -118,3 +86,25 @@
                   (bvchop size x)))
   :hints (("Goal" :cases ((equal 1 size))
            :in-theory (e/d (sbvdiv) (truncate)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: Move to separate file
+
+; a totalized version of sbvdiv, where division by 0 yields 0
+;logically this is equal to sbvdiv (see theorem sbvdiv-total-becomes-sbvdiv)
+(defund sbvdiv-total (n x y)
+  (declare (type (integer 1 *) n)
+           (type integer x y))
+  (if (equal 0 (logext n y))
+      (logext n 0)
+    (sbvdiv n x y)))
+
+(defthm sbvdiv-total-becomes-sbvdiv
+  (equal (sbvdiv-total n x y)
+         (sbvdiv n x y))
+  :hints (("Goal" :in-theory (enable SBVDIV sbvdiv-total truncate))))
+
+(defthm sbvdiv-total-of-0
+  (equal (sbvdiv-total n x 0)
+         0))

@@ -14,6 +14,7 @@
 (include-book "arith-fix-and-equiv")
 (include-book "auto-instance")
 (include-book "auto-termination")
+(include-book "bind-to-bool")
 (include-book "bits-as-digits")
 (include-book "bits-and-bytes-as-digits")
 (include-book "bits-and-ubyte11s-as-digits")

@@ -76,9 +76,9 @@
 ;;              (assoc-equal k1 a))))
 
 (defthm open-channel-listp-of-add-pair
-  (implies (and (open-channel1 v)
-                (open-channel-listp x))
-           (open-channel-listp (add-pair k v x))))
+  (implies (and (open-channel1 v output-p)
+                (open-channel-listp x output-p))
+           (open-channel-listp (add-pair k v x) output-p)))
 
 ;; [Jared] Removed because this is now built into ACL2
 ;; (defthm ordered-symbol-alistp-of-add-pair
@@ -88,14 +88,14 @@
 
 (defthm open-channels-p-of-add-pair
   (implies (and (symbolp k)
-                (open-channel1 v)
-                (open-channels-p x))
-           (open-channels-p (add-pair k v x)))
+                (open-channel1 v output-p)
+                (open-channels-p x output-p))
+           (open-channels-p (add-pair k v x) output-p))
   :hints(("Goal" :in-theory (enable open-channels-p))))
 
 (defthm open-channels-p-of-remove1-assoc-equal
-  (implies (open-channels-p x)
-           (open-channels-p (remove1-assoc-equal k x)))
+  (implies (open-channels-p x output-p)
+           (open-channels-p (remove1-assoc-equal k x) output-p))
   :hints(("Goal" :in-theory (enable open-channels-p
                                     open-channel-listp
                                     ordered-symbol-alistp))))
@@ -199,19 +199,19 @@ open a file that does not exist or for which you do not have permission.</p>"
 
 ;; helper theorems for reading
 (local (defthm lookup-in-open-channels-p
-         (implies (and (open-channels-p x)
+         (implies (and (open-channels-p x output-p)
                        (assoc k x))
-                  (open-channel1 (cdr (assoc k x))))
+                  (open-channel1 (cdr (assoc k x)) output-p))
          :hints(("Goal" :in-theory (enable open-channels-p
                                            ordered-symbol-alistp
                                            open-channel-listp)))))
 
 (local (defthm open-channel1-of-read
-         (implies (open-channel1 x)
-                  (open-channel1 (cons (car x) (cddr x))))))
+         (implies (open-channel1 x output-p)
+                  (open-channel1 (cons (car x) (cddr x)) output-p))))
 
 (local (defthm read-file-listp1-from-open-channel1
-         (implies (and (open-channel1 x)
+         (implies (and (open-channel1 x nil)
                        (natp y))
                   (read-file-listp1 (list (caddar x)
                                           (cadar x)
@@ -383,7 +383,7 @@ input streams.  So, that might be worth considering.</p>"
              (open-input-channel-p1 channel :character (mv-nth 1 (read-char$ channel state)))))
 
   (local (defthm character-cadr-of-open-channel1
-           (implies (and (open-channel1 x)
+           (implies (and (open-channel1 x nil)
                          (equal (cadar x) :character)
                          (cdr x))
                     (characterp (cadr x)))))
@@ -473,7 +473,7 @@ the end of the file, @('nil') is returned.</p>"
              (open-input-channel-p1 channel :byte (mv-nth 1 (read-byte$ channel state)))))
 
   (local (defthm bytep-cadr-of-open-channel1
-           (implies (and (open-channel1 x)
+           (implies (and (open-channel1 x nil)
                          (equal (cadar x) :byte)
                          (cdr x))
                     (and (bytep (cadr x))
@@ -513,14 +513,14 @@ the end of the file, @('nil') is returned.</p>"
                          (open-input-channel-p1 channel :byte state))
                     (let* ((entry  (cdr (assoc-equal channel (nth 0 state)))) ;; open-input-channels
                            (header (car entry)))
-                      (and (open-channel1 entry)
+                      (and (open-channel1 entry nil)
                            (equal (second header) :byte))))
            :hints(("Goal" :in-theory (enable state-p1)))))
 
   (local (defthm l2
            (let ((header (car entry))
                  (stream (cdr entry)))
-             (implies (and (open-channel1 entry)
+             (implies (and (open-channel1 entry nil)
                            (equal (second header) :byte))
                       (typed-io-listp stream :byte)))))
 
@@ -653,13 +653,13 @@ foo
                       (equal (cdr a) y)))))
 
  (local (defthm lemma2-char
-          (implies (and (open-channel1 foo)
+          (implies (and (open-channel1 foo nil)
                         (equal (cadar foo) :character)
                         (not (cadr foo)))
                    (equal (cddr foo) (cdr foo)) )))
 
  (local (defthm lemma2-byte
-          (implies (and (open-channel1 foo)
+          (implies (and (open-channel1 foo nil)
                         (equal (cadar foo) :byte)
                         (not (cadr foo)))
                    (equal (cddr foo) (cdr foo)) )))
@@ -830,7 +830,7 @@ have permission.</p>"
 
 (local
  (defthm written-file-from-open-channel1
-   (implies (and (open-channel1 x)
+   (implies (and (open-channel1 x t)
                  (natp y))
             (written-file (cons (list (caddar x)
                                       (cadar x)
@@ -902,16 +902,16 @@ output channels when you are done with them to avoid resource leaks.</p>"
 ;; BOZO Should these be local?
 
 (defthm open-channel1-of-cons-byte
-  (implies (and (open-channel1 x)
+  (implies (and (open-channel1 x output-p)
                 (equal (cadar x) :byte)
                 (natp y)
                 (< y 256))
-           (open-channel1 (list* (car x) y (cdr x)))))
+           (open-channel1 (list* (car x) y (cdr x)) output-p)))
 
 (defthm open-channel1-of-cons-object
-  (implies (and (open-channel1 x)
+  (implies (and (open-channel1 x output-p)
                 (equal (cadar x) :object))
-           (open-channel1 (list* (car x) y (cdr x)))))
+           (open-channel1 (list* (car x) y (cdr x)) output-p)))
 
 (defthm typed-io-listp-of-append
   (equal (typed-io-listp (append x y) type)
@@ -924,10 +924,10 @@ output channels when you are done with them to avoid resource leaks.</p>"
   :hints(("Goal" :in-theory (enable rev))))
 
 (defthm open-channel1-of-revappend-charlist
-  (implies (and (open-channel1 x)
+  (implies (and (open-channel1 x output-p)
                 (equal (cadar x) :character)
                 (character-listp y))
-           (open-channel1 (cons (car x) (append (rev y) (cdr x))))))
+           (open-channel1 (cons (car x) (append (rev y) (cdr x))) output-p)))
 
 
 (defsection std/io/princ$

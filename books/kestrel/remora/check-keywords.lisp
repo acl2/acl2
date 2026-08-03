@@ -46,7 +46,7 @@
     "We deliberately do not redefine @(tsee *remora-keywords-as-natlists*)
      in terms of the grammar.  Doing so would force every book that
      consumes the keyword list (e.g. @(tsee fresh-variable-operations),
-     @(tsee abstract-syntax-well-formed)) to transitively include the
+     @(tsee abstract-syntax-well-formedness)) to transitively include the
      grammar and the ABNF machinery.  Keeping the two listings
      independent and cross-checking them here preserves the lightweight
      dependency story for AST-side code."))

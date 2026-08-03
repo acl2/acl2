@@ -1,6 +1,6 @@
 ; A simpler utility to find all the vars in a term
 ;
-; Copyright (C) 2019-2024 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "tools/flag" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "all-vars1"))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
@@ -42,7 +42,7 @@
      (union-eq (free-vars-in-term (first terms))
                (free-vars-in-terms (rest terms))))))
 
-(make-flag free-vars-in-term)
+(local (make-flag free-vars-in-term))
 
 (defthm-flag-free-vars-in-term
   (defthm symbol-listp-of-free-vars-in-term

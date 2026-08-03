@@ -1,7 +1,7 @@
 ; Applying a substitution to a term and evaluating ground terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,7 +14,8 @@
 ;; (include-book "all-quotep")
 (include-book "kestrel/utilities/symbol-term-alistp" :dir :system)
 (include-book "kestrel/utilities/unquote-list" :dir :system)
-(include-book "tools/flag" :dir :system)
+(include-book "std/util/bstar" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 
 ;; TODO: Consider getting rid of (if x 't 'nil) when x is boolean.  Or take an iff flag?
 
@@ -67,7 +68,7 @@
      (cons (sublis-var-and-magic-eval alist (car terms) state)
            (sublis-var-and-magic-eval-lst alist (cdr terms) state)))))
 
-(make-flag sublis-var-and-magic-eval)
+(local (make-flag sublis-var-and-magic-eval))
 
 ;; (defthm-flag-sublis-var-and-magic-eval
 ;;   (defthm sublis-var-and-magic-eval-of-nil

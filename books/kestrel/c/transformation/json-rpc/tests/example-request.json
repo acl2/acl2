@@ -6,5 +6,6 @@
             "struct-tag": "point",
             "right-members": ["z"],
             "new-tag": "point_right",
+            "unsafe": true,
             "preprocess": false},
  "id": 1}

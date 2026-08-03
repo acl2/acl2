@@ -263,7 +263,7 @@
          ((when erp)
           (mv (cw "Initial file set writing fails: ~x0" erp) state))
          ;; Full-expansion preprocessing of original files.
-         ((mv erp pfiles-original & state)
+         ((mv erp pensemb-original & state)
           (pproc-files files base-dir include-dirs
                        options-expand ienv state 1000000000))
          ((when erp)
@@ -272,7 +272,8 @@
               state))
          (fileset-original
           (fileset
-           (string-pfile-alist-to-filepath-filedata-map pfiles-original)))
+           (filepath-pfile-map-to-filepath-filedata-map
+            (pensemble->pfiles pensemb-original))))
          (fileset-original
           (fileset-relativize-absolute-paths fileset-original))
          ((mv erp state)
@@ -282,7 +283,7 @@
          ;; Full-expansion preprocessing of transformed files.
          (include-dirs-initial
           (relativize-include-dirs include-dirs out-dir-initial))
-         ((mv erp pfiles-transformed & state)
+         ((mv erp pensemb-transformed & state)
           (pproc-files files out-dir-initial include-dirs-initial
                        options-expand ienv state 1000000000))
          ((when erp)
@@ -291,7 +292,8 @@
               state))
          (fileset-transformed
           (fileset
-           (string-pfile-alist-to-filepath-filedata-map pfiles-transformed)))
+           (filepath-pfile-map-to-filepath-filedata-map
+            (pensemble->pfiles pensemb-transformed))))
          (fileset-transformed
           (fileset-relativize-absolute-paths fileset-transformed))
          ((mv erp state)
@@ -299,7 +301,8 @@
          ((when erp)
           (mv (cw "Transformed file set writing fails: ~x0" erp) state)))
       ;; Comparison.
-      (mv (compare-expanded-pfiles pfiles-original pfiles-transformed)
+      (mv (compare-expanded-pfiles (pensemble->pfiles pensemb-original)
+                                   (pensemble->pfiles pensemb-transformed))
           state))
     state))
 

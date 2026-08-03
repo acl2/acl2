@@ -1,7 +1,7 @@
 ; Correctness proof of the optimization
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,6 +14,9 @@
 
 (include-book "unify-term-and-dag")
 (include-book "unify-term-and-dag-fast")
+(local (include-book "tools/flag" :dir :system))
+
+(local (make-flag unify-term-and-dag))
 
 (defthm-flag-unify-term-and-dag
   (defthmd unify-term-and-dag-item-fast-correct-helper

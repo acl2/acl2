@@ -1,0 +1,221 @@
+; =========================================================================
+; ABNF Grammar for the Futhark textual subset emitted by remora futhark
+; =========================================================================
+;
+; This is not the full Futhark surface language.  The official language
+; reference at
+;
+;   https://futhark.readthedocs.io/en/stable/language-reference.html
+;
+; gives an ambiguous grammar for ordinary Futhark source.  The current Remora
+; compiler uses the Futhark Haskell library to pretty-print SOACS IR into
+; .fut_soacs files.  This grammar captures the textual subset seen in that
+; output: name_source/types headers, fun declarations, entry declarations,
+; let/in bodies, simple array and call expressions, apply, map, and SOACS
+; lambda forms.
+;
+; The parser in parser.lisp follows the Remora front-end organization:
+; nonrecursive lexical parsers are generated from this grammar, while recursive
+; syntactic parsers are hand-written and return concrete syntax trees.
+;
+; Input is a sequence of Unicode code points, normally obtained by decoding a
+; UTF-8 Futhark IR file.
+
+; -------------------------------------------------------------------------
+; Syntactic grammar
+; -------------------------------------------------------------------------
+
+program         = ws [ name-source ws ] [ types-section ws ] *( decl ws )
+
+name-source     = %s"name_source" ws "{" ws word ws "}"
+types-section   = %s"types" ws "{" ws "}"
+
+decl            = fun-decl / entry-decl
+fun-decl        = %s"fun" ws name ws params ws ":" ws result-types ws "=" ws body
+entry-decl      = entry-attr ws name ws params ws ":" ws result-types ws "=" ws body
+entry-attr      = %s"entry" ws "(" ws string-lit ws "," ws entry-input-types ws ","
+                  ws entry-result-types [ ws "," ws entry-doc ] ws ")"
+                  ; [SC4] entry-doc is allowed only when entry-result-types
+                  ; uses the current single entry-type alternative.  The
+                  ; legacy entry-result-type-list alternative has no doc.
+entry-doc       = string-lit
+
+params          = "(" ws [ param *( ws "," ws param ) ] ws ")"
+param           = name ws ":" ws type
+pattern         = "{" ws [ param *( ws "," ws param ) ] ws "}"
+result-types    = "{" ws [ type *( ws "," ws type ) ] ws "}"
+entry-input-types = pattern
+entry-result-types = entry-result-type-list / entry-type
+entry-result-type-list = "{" ws [ entry-type *( ws "," ws entry-type ) ] ws "}"
+entry-type      = entry-array-type / prim-type
+entry-array-type = "[" ws "]" ws entry-type
+
+body            = "{" ws ( body-core / result-exps ) ws "}"
+body-core       = *( stmt ws ) %s"in" ws result-exps
+stmt            = %s"let" ws pattern ws "=" ws exp
+result-exps     = "{" ws [ exp *( ws "," ws exp ) ] ws "}"
+
+exp             = lambda-exp
+                / array-exp
+                / brace-exp
+                / apply-exp
+                / call-exp
+                / map-exp
+                / paren-exp
+                / literal
+                / name
+
+lambda-exp      = %x5C ws pattern ws ":" ws result-types ws "->" ws lambda-body
+lambda-body     = body-core / result-exps
+array-exp       = "[" ws [ exp *( ws "," ws exp ) ] ws "]" ws ":" ws "[]" type
+brace-exp       = "{" ws [ exp *( ws "," ws exp ) ] ws "}"
+apply-exp       = %s"apply" ws name ws "(" ws [ exp *( ws "," ws exp ) ] ws ")"
+                  ws ":" ws result-types
+map-exp         = %s"map" ws "(" ws exp ws "," ws exp ws "," ws exp
+                  [ ws "," ws exp ] ws ")"
+                  ; [SC5] The first expression is a name or literal width,
+                  ; the second is a brace expression containing only names,
+                  ; and the remaining expressions are lambdas.  Three
+                  ; arguments are the Futhark 0.25.34 form; four are the
+                  ; current Remora-pinned form with a post-lambda.
+call-exp        = name ws "(" ws [ exp *( ws "," ws exp ) ] ws ")"
+paren-exp       = "(" ws exp ws ")"
+
+type            = array-type / prim-type
+array-type      = "[" ws word ws "]" ws type
+prim-type       = word
+
+literal         = bool-lit / word
+                  ; [SC2] word must look like a literal
+bool-lit        = %s"true" / %s"false"
+
+name            = word
+
+; -------------------------------------------------------------------------
+; Lexical grammar
+; -------------------------------------------------------------------------
+
+word            = 1*word-char
+word-char       = ascii-letter / ascii-digit / non-ascii
+                / exclamation / percent / ampersand / apostrophe / asterisk
+                / plus / hyphen / dot / slash / less-than / equals
+                / greater-than / caret / underscore / pipe
+
+name-start      = ascii-letter / non-ascii
+                / exclamation / percent / ampersand / asterisk / plus
+                / hyphen / dot / slash / less-than / equals / greater-than
+                / caret / underscore / pipe
+
+string-lit      = dquote *string-elem dquote
+string-elem     = string-char / escape-seq
+string-char     = %x20-21 / %x23-5B / %x5D-D7FF / %xE000-10FFFF
+escape-seq      = backslash ( char-escape / ascii-escape / caret-escape
+                              / num-escape / empty-escape )
+char-escape     = %s"a" / %s"b" / %s"f" / %s"n" / %s"r" / %s"t" / %s"v"
+                / backslash / dquote / apostrophe
+ascii-escape    = %s"NUL" / %s"SOH" / %s"STX" / %s"ETX" / %s"EOT"
+                / %s"ENQ" / %s"ACK" / %s"BEL" / %s"BS" / %s"HT"
+                / %s"LF" / %s"VT" / %s"FF" / %s"CR" / %s"SO" / %s"SI"
+                / %s"DLE" / %s"DC1" / %s"DC2" / %s"DC3" / %s"DC4"
+                / %s"NAK" / %s"SYN" / %s"ETB" / %s"CAN" / %s"EM"
+                / %s"SUB" / %s"ESC" / %s"FS" / %s"GS" / %s"RS"
+                / %s"US" / %s"SP" / %s"DEL"
+caret-escape    = caret %x40-5F
+num-escape      = 1*ascii-digit / ( %s"o" 1*oct-digit )
+                / ( %s"x" 1*hex-digit )
+empty-escape    = ampersand
+
+ws              = *( ascii-space / line-comment )
+line-comment    = "--" *not-line-feed-or-carriage-return
+                  ( lf / cr / "" )
+not-line-feed-or-carriage-return = %x00-09 / %x0B-0C / %x0E-D7FF
+                                 / %xE000-10FFFF
+ascii-space     = htab / lf / vt / ff / cr / sp
+
+; Common ASCII code point names used above.
+
+htab            = %x09
+lf              = %x0A
+vt              = %x0B
+ff              = %x0C
+cr              = %x0D
+sp              = %x20
+exclamation     = %x21
+dquote          = %x22
+percent         = %x25
+ampersand       = %x26
+apostrophe      = %x27
+asterisk        = %x2A
+plus            = %x2B
+hyphen          = %x2D
+dot             = %x2E
+slash           = %x2F
+ascii-digit     = %x30-39
+less-than       = %x3C
+equals          = %x3D
+greater-than    = %x3E
+uppercase-letter = %x41-5A
+backslash       = %x5C
+caret           = %x5E
+underscore      = %x5F
+lowercase-letter = %x61-7A
+pipe            = %x7C
+
+ascii-letter    = uppercase-letter / lowercase-letter
+oct-digit       = %x30-37
+hex-digit       = ascii-digit / %x41-46 / %x61-66
+
+; Non-ASCII characters accepted in names.  This follows Remora's ACL2
+; treatment: non-ASCII scalar values that are not Unicode whitespace and not
+; surrogates.  It is a practical executable over-approximation of Futhark's
+; Haskell Unicode alphabetic checks.
+
+non-ascii       = %x80-9F
+                / %xA1-167F
+                / %x1681-1FFF
+                / %x200B-2027
+                / %x202A-202E
+                / %x2030-205E
+                / %x2060-2FFF
+                / %x3001-D7FF
+                / %xE000-10FFFF
+
+; -------------------------------------------------------------------------
+; Side conditions
+; -------------------------------------------------------------------------
+;
+; [SC1] Keyword boundary.
+;
+;   Futhark's IR reader matches keyword strings case-sensitively and only
+;   when the next character is not a word constituent.  Thus "funx" is a
+;   single word, not the keyword "fun" followed by the name "x".  ABNF cannot
+;   express this negative lookahead directly; parser.lisp enforces it in
+;   parse-keyword.
+;
+; [SC2] Literal-looking words.
+;
+;   The literal production admits word syntactically, but abstraction accepts
+;   only boolean literals and words that look like numeric Futhark IR
+;   literals.  Other words in expression position become names.
+;
+; [SC3] Name-looking words.
+;
+;   The name production admits word syntactically because expression parsing
+;   must first parse a maximal word and then distinguish names from literals.
+;   Abstraction accepts names whose first code point satisfies name-start, all
+;   remaining code points satisfy word-char, and whose text is not a keyword
+;   or literal-looking word.
+;
+; [SC4] Version-specific entry attributes.
+;
+;   Futhark 0.25.34 uses a brace-delimited list of entry result types and has
+;   no documentation string.  The current Remora-pinned Futhark accepts one
+;   entry type followed by an optional documentation string.  parser.lisp
+;   accepts both profiles but rejects combinations of their alternatives.
+;
+; [SC5] Version-specific map operands.
+;
+;   Both supported map forms require a name or literal width, a brace list of
+;   names, and a lambda.  The current Remora-pinned form has one additional
+;   post-lambda.  parser.lisp checks these operand shapes after parsing each
+;   expression CST.

@@ -27,7 +27,8 @@
 
 ;; Make a symbolic list term (a cons nest) containing the variables <base-name>0
 ;; through <base-name>(len-1).  Can be useful when unrolling specs.
-;; rename symbolic-var-list?
+;; rename symbolic-var-list?  The package used for the new symbols is the
+;; package of BASE-NAME.
 (defund symbolic-list (base-name len)
   (declare (xargs :guard (and (symbolp base-name)
                               (natp len))))
@@ -41,7 +42,7 @@
 
 ;; A version of symbolic-list that makes clear by its name that the vars are
 ;; intended to be bytes (that fact should actually get enforced by additional
-;; assumptions).
+;; assumptions).  The package used for the new symbols is the package of BASE-NAME.
 (defund symbolic-byte-list (base-name len)
   (declare (xargs :guard (and (symbolp base-name)
                               (natp len))))
@@ -53,6 +54,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; The package used for the new symbols is the package of VAR-NAME.
 (defund symbolic-array-aux (current-index len element-size var-name)
   (declare (xargs :measure (nfix (+ 1 (- len current-index)))
                   :guard (and (natp current-index)
@@ -60,13 +62,16 @@
                               (posp element-size)
                               (symbolp var-name))))
   (if (or (<= len current-index)
-          (not (natp len))
-          (not (natp current-index)))
+          ;; for termination:
+          (not (mbt (and (natp len)
+                         (natp current-index)))))
+      ;; The core value is a list of zeros.  Writes of each element then get
+      ;; wrapped around this core:
       (list 'quote (repeat len '0))
     `(bv-array-write ',element-size
                      ',len
                      ',current-index
-                     ,(pack$ var-name (nat-to-string current-index))
+                     ,(pack-in-package-of-symbol var-name var-name (nat-to-string current-index))
                      ,(symbolic-array-aux (+ 1 current-index) len element-size var-name))))
 
 (local
@@ -79,10 +84,11 @@
     :hints (("Goal" :in-theory (enable symbolic-array-aux)))))
 
 ;; Makes a term representing a symbolic array of bit vector variables, named
-;; BASE-NAME0 through BASE-NAME(length-1), each of ELEMENT-WIDTH bits.
+;; BASE-NAME0 through BASE-NAME(length-1), each of ELEMENT-WIDTH bits.  The
+;; package used for the new symbols is the package of BASE-NAME.
 (defund symbolic-array (base-name length element-width)
   (declare (xargs :guard (and (symbolp base-name)
-                              (natp length)
+                              (natp length) ; todo: try posp, or even > 1
                               (posp element-width))))
   (symbolic-array-aux 0 length element-width base-name))
 
@@ -131,6 +137,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; The package used for the new symbols is the package of VAR-NAME.
 (defund bit-blasted-symbolic-array-aux (current-index len element-size var-name)
   (declare (xargs :measure (nfix (+ 1 (- len current-index)))
                   :guard (and (natp current-index)

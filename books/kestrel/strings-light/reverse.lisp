@@ -30,3 +30,9 @@
            (equal (reverse (reverse x))
                   x))
   :hints (("Goal" :in-theory (enable reverse))))
+
+(defthm length-of-reverse-when-stringp
+  (implies (stringp x)
+           (equal (length (reverse x))
+                  (length x)))
+  :hints (("Goal" :in-theory (enable reverse length))))

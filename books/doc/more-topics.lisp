@@ -232,7 +232,7 @@ of proofs.")
 
  <li><a
  href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2026/index.html'>ACL2
- Workshop 2026</a>: November 16-17, 2026, Menlo Park, California, USA and also online.</li>
+ Workshop 2026</a>: November 16-18, 2026, Menlo Park, California, USA and also online.</li>
 
  <li><a
  href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2025/index.html'>ACL2

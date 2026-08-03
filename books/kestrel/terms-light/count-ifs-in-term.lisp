@@ -12,8 +12,7 @@
 
 (mutual-recursion
  (defund count-ifs-in-term (term)
-   (declare (xargs :guard (pseudo-termp term)
-                   :verify-guards nil))
+   (declare (xargs :guard (pseudo-termp term)))
    (if (variablep term)
        0
      (let ((fn (ffn-symb term)))

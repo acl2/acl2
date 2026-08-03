@@ -14,6 +14,9 @@
 (include-book "lists")
 (include-book "nat-lists")
 (include-book "integer-lists")
+(include-book "osets")
+(include-book "omaps")
+(include-book "unit-types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -28,4 +31,7 @@
   :order-subtopics (arithmetic
                     lists
                     nat-lists
-                    integer-lists))
+                    integer-lists
+                    osets
+                    omaps
+                    unit-types))

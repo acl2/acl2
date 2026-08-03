@@ -6,10 +6,16 @@
 
 ;; Characterization of a commutative ring with unity as a constrained set of functions:
 
-(encapsulate (((rp *) => *)                   ;ring element recognizer
-              ((r+ * *) => *) ((r* * *) => *) ;addition and multiplication
-	      ((r0) => *) ((r1) => *)         ;identities
-	      ((r- *) => *))                  ;additive inverse
+(encapsulate (;ring element recognizer
+              ((rp *) => *)                   
+              ;addition and multiplication
+	      ((r+ * *) => * :formals (x y) :guard (and (rp x) (rp y)))  
+              ((r* * *) => * :formals (x y) :guard (and (rp x) (rp y)))
+	      ;identities
+	      ((r0) => *)
+	      ((r1) => *)         
+	      ;additive inverse
+	      ((r- *) => * :formals (x) :guard (rp x)))
   (local (defun rp (x) (rationalp x)))
   (local (defun r+ (x y) (+ x y)))
   (local (defun r* (x y) (* x y)))
@@ -36,6 +42,14 @@
   (defthm r+inv (implies (rp x) (equal (r+ x (r- x)) (r0))))
   ;; Distributivity:
   (defthm rdist (implies (and (rp x) (rp y) (rp z)) (equal (r* x (r+ y z)) (r+ (r* x y) (r* x z))))))
+
+;; We attach the corresponding functions pertaining to the integers to the above
+;; constrained functions, so that all functions will be executable:;; 
+
+(defun nullary-0 () (declare (xargs :guard t)) 0)
+(defun nullary-1 () (declare (xargs :guard t)) 1)
+(defattach (rp integerp) (r+ binary-+) (r* binary-*)
+           (r0 nullary-0) (r1 nullary-1) (r- unary--))
 
 ;; Trivial consequences of the axioms:
 

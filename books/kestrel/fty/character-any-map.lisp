@@ -1,6 +1,6 @@
 ; FTY Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,6 +11,8 @@
 (in-package "ACL2")
 
 (include-book "kestrel/fty/defomap" :dir :system)
+(include-book "kestrel/fty/character-set" :dir :system)
+(include-book "std/omaps/identity" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,4 +23,12 @@
   :val-type any
   :pred character-any-mapp
   :fix character-any-mfix
-  :equiv character-any-mequiv)
+  :equiv character-any-mequiv
+
+  ///
+
+  (defrule character-any-mapp-of-identity-when-character-setp
+    (implies (character-setp keys)
+             (character-any-mapp (omap::identity keys)))
+    :induct t
+    :enable omap::identity))

@@ -44,6 +44,16 @@
            (open-output-channel-p channel typ (write-objects-to-channel-aux list channel2 state)))
   :hints (("Goal" :in-theory (enable open-output-channel-p))))
 
+(defthm open-output-channel-any-p1-of-write-objects-to-channel-aux
+  (implies (open-output-channel-any-p1 channel state)
+           (open-output-channel-any-p1 channel (write-objects-to-channel-aux objects channel2 state)))
+  :hints (("Goal" :in-theory (enable open-output-channel-any-p1))))
+
+(defthm open-output-channel-any-p-of-write-objects-to-channel-aux
+  (implies (open-output-channel-any-p channel state)
+           (open-output-channel-any-p channel (write-objects-to-channel-aux objects channel2 state)))
+    :hints (("Goal" :in-theory (enable open-output-channel-any-p))))
+
 (defthm state-p1-of-write-objects-to-channel-aux
   (implies (and (open-output-channel-p1 channel :object state)
                 (state-p1 state))
@@ -81,6 +91,21 @@
   (implies (open-output-channel-p1 channel typ state)
            (open-output-channel-p1 channel typ (write-objects-to-channel list channel2 state)))
   :hints (("Goal" :in-theory (enable write-objects-to-channel))))
+
+(defthm open-output-channel-p-of-write-objects-to-channel
+  (implies (open-output-channel-p channel typ state)
+           (open-output-channel-p channel typ (write-objects-to-channel objects channel2 state)))
+  :hints (("Goal" :in-theory (enable open-output-channel-p))))
+
+(defthm open-output-channel-any-p1-of-write-objects-to-channel
+  (implies (open-output-channel-any-p1 channel state)
+           (open-output-channel-any-p1 channel (write-objects-to-channel objects channel2 state)))
+  :hints (("Goal" :in-theory (enable open-output-channel-any-p1))))
+
+(defthm open-output-channel-any-p-of-write-objects-to-channel
+  (implies (open-output-channel-any-p channel state)
+           (open-output-channel-any-p channel (write-objects-to-channel objects channel2 state)))
+    :hints (("Goal" :in-theory (enable open-output-channel-any-p))))
 
 (defthm state-p1-of-write-objects-to-channel
   (implies (and (open-output-channel-p1 channel :object state)

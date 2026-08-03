@@ -210,36 +210,31 @@
        (int-format (c::integer-format-inc-sign-tcnpnt (* 8 ienv.int-bytes)))
        (long-format (c::integer-format-inc-sign-tcnpnt (* 8 ienv.long-bytes)))
        (llong-format (c::integer-format-inc-sign-tcnpnt (* 8 ienv.llong-bytes)))
-       (bool-format (c::bool-format-lsb))
-       (char+short+int+long+llong+bool-format
-        (c::char+short+int+long+llong+bool-format uchar-format
-                                                  schar-format
-                                                  char-format
-                                                  short-format
-                                                  int-format
-                                                  long-format
-                                                  llong-format
-                                                  bool-format)))
+       (bool-format (c::bool-format-lsb)))
     (c::make-ienv
      :dialect ienv.dialect
-     :char+short+int+long+llong+bool-format
-     char+short+int+long+llong+bool-format))
+     :uchar uchar-format
+     :schar schar-format
+     :char char-format
+     :short short-format
+     :int int-format
+     :long long-format
+     :llong llong-format
+     :bool bool-format))
   :guard-hints (("Goal" :in-theory (enable ldm-ienv-wfp-lemma)))
 
   :prepwork
   ((defruled ldm-ienv-wfp-lemma
-     (c::char+short+int+long+llong+bool-format-wfp
-      (c::char+short+int+long+llong+bool-format
-       '((c::size . 8))
-       '((c::signed :twos-complement) (c::trap))
-       char-format
-       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->short-bytes ienv)))
-       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->int-bytes ienv)))
-       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->long-bytes ienv)))
-       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->llong-bytes ienv)))
-       '((byte-size . 1) (c::value-index . 0) (c::trap))))
+     (c::ienv-requirep
+      '((c::size . 8))
+      '((c::signed :twos-complement) (c::trap))
+      (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->short-bytes ienv)))
+      (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->int-bytes ienv)))
+      (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->long-bytes ienv)))
+      (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->llong-bytes ienv)))
+      '((byte-size . 1) (c::value-index . 0) (c::trap)))
      :use (:instance ienv-requirements (x ienv))
-     :enable (c::char+short+int+long+llong+bool-format-wfp
+     :enable (c::ienv-requirep
               c::integer-format-short-wfp-of-integer-format-inc-sign-tcnpnt
               c::integer-format-int-wfp-of-integer-format-inc-sign-tcnpnt
               c::integer-format-long-wfp-of-integer-format-inc-sign-tcnpnt

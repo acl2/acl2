@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function binary-append.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -106,7 +106,8 @@
   (implies (true-listp x)
            (equal (equal x (append x y))
                   (equal y nil)))
-  :hints (("Goal" :in-theory (enable append))))
+  :hints (("Goal" :induct t
+           :in-theory (enable append))))
 
 (defthm equal-of-append-same-arg2
   (equal (equal y (append x y))
@@ -163,7 +164,8 @@
          (if (consp y)
              (last y)
            (append (last x) y)))
-  :hints (("Goal" :in-theory (enable last append))))
+  :hints (("Goal" :induct t
+           :in-theory (enable last append))))
 
 ;; (defthm last-of-append
 ;;   (implies (and (true-listp x)

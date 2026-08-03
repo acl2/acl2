@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Quan Luu (quan.luu@kestrel.edu)
+; Contributing Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,7 +35,7 @@
       (mv-let (k v) (head x)
         (and (equal k v)
              (identityp (tail x)))))
-  
+
   ///
 
   (defcong mequiv equal (identityp x) 1)
@@ -99,7 +100,15 @@
                (equal (compose x x)
                       (mfix x)))
     :enable (extensionality
-             assoc-of-compose)))
+             assoc-of-compose))
+
+  (defruled lookup-when-identityp
+    (implies (and (identityp map)
+                  (set::in key (keys map)))
+             (equal (lookup key map)
+                    key))
+    :induct t
+    :enable lookup))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -171,6 +180,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection identityp-ext
+  :extension identityp
+
+  (defrule identityp-of-update-same
+    (implies (identityp map)
+             (identityp (update k k map)))
+    :enable (pick-a-point-identityp
+             assoc-when-identityp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-theory (disable values-is-keys-when-identityp
                     assoc-when-identityp))
-

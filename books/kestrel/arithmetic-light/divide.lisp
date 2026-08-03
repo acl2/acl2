@@ -436,10 +436,11 @@
 (defthm <=-of-*-of-/-when-both-nonnegative-linear
   (implies (and (<= 0 i)
                 (<= 1 j)
-                (rationalp i)
+                (not (complex/complex-rationalp i)) ; (real/rationalp i)
                 (rationalp j))
            (<= (* i (/ j)) i))
-  :rule-classes :linear)
+  :rule-classes :linear
+  :hints (("Goal" :cases ((real/rationalp i)))))
 
 (defthm equal-of-*-/-and---same
   (implies (and (rationalp i)

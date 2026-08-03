@@ -97,6 +97,7 @@
 
      x86isa ; so that top-level :doc topic is also in "ACL2" package
 
+     acl2::defxdoc+
      )
    (union-eq *acl2-exports*
              acl2::*bitops-exports*
