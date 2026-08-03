@@ -23,6 +23,7 @@
 (include-book "map-defs")
 (include-book "keys-defs")
 (include-book "lookup-defs")
+(include-book "update-defs")
 (include-book "delete-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -33,6 +34,7 @@
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (local (include-book "kestrel/data/treeset/in" :dir :system))
+(local (include-book "kestrel/data/treeset/insert" :dir :system))
 (local (include-book "kestrel/data/treeset/min-max" :dir :system))
 
 (local (include-book "internal/tree"))
@@ -46,6 +48,7 @@
 (local (include-book "map"))
 (local (include-book "keys"))
 (local (include-book "lookup"))
+(local (include-book "update"))
 (local (include-book "delete"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -201,6 +204,16 @@
                   (- (map-generic-count map)
                      (+ 1 (generic-count key (lookup key map))))))
   :enable map-generic-count-of-delete)
+
+(defrule map-generic-count-of-update
+  (equal (map-generic-count (update key val map))
+         (+ 1
+            (generic-count key val)
+            (map-generic-count (delete key map))))
+  :use ((:instance map-generic-count-of-delete-when-in
+                   (map (update key val map))))
+  :disable map-generic-count-of-delete-when-in
+  :enable treeset::in-of-insert)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
