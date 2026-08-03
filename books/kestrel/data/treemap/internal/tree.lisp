@@ -164,6 +164,15 @@
   :enable (tree-element->key
            tree-element-equiv))
 
+(defrule acl2-count-of-tree-element->key-linear
+  (<= (acl2-count (tree-element->key elem))
+      (acl2-count elem))
+  :rule-classes :linear
+  :enable (tree-element->key
+           tree-element-fix
+           irr-tree-element
+           acl2-count))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-element->val ((elem tree-element-p))
@@ -180,6 +189,15 @@
   :rule-classes :congruence
   :enable (tree-element->val
            tree-element-equiv))
+
+(defrule acl2-count-of-tree-element->val-linear
+  (<= (acl2-count (tree-element->val elem))
+      (acl2-count elem))
+  :rule-classes :linear
+  :enable (tree-element->val
+           tree-element-fix
+           irr-tree-element
+           acl2-count))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
