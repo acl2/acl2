@@ -518,6 +518,134 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Two mutually recursive predicates,
+; where some rules have two premises with predicates of the clique:
+; EVEN-SUM has two EVN premises,
+; and MIXED-SUM has an EVN premise and an ODN premise.
+; This kind of clique requires, in the generated proofs,
+; the :EXPAND hints in the fixing equivalences of the validity functions
+; and the flag equivalence theorem in the minimality theorems.
+
+(must-succeed*
+
+ (definductive evenodd-sums
+   :preds ((evn n)
+           (odn n))
+   :irules ((zero ()
+                  (evn 0))
+            (even-step ((natp n)
+                        (odn n))
+                       (evn (1+ n)))
+            (odd-step ((natp n)
+                       (evn n))
+                      (odn (1+ n)))
+            (even-sum ((natp n)
+                       (natp m)
+                       (evn n)
+                       (evn m))
+                      (evn (+ n m)))
+            (mixed-sum ((natp n)
+                        (natp m)
+                        (evn n)
+                        (odn m))
+                       (odn (+ n m)))))
+
+ (must-be-redundant
+  (defthm evn-zero
+    (evn 0)))
+
+ (must-be-redundant
+  (defthm evn-even-step
+    (implies (and (odn n)
+                  (natp n))
+             (evn (1+ n)))))
+
+ (must-be-redundant
+  (defthm odn-odd-step
+    (implies (and (evn n)
+                  (natp n))
+             (odn (1+ n)))))
+
+ (must-be-redundant
+  (defthm evn-even-sum
+    (implies (and (evn n)
+                  (evn m)
+                  (natp n)
+                  (natp m))
+             (evn (+ n m)))))
+
+ (must-be-redundant
+  (defthm odn-mixed-sum
+    (implies (and (evn n)
+                  (odn m)
+                  (natp n)
+                  (natp m))
+             (odn (+ n m)))))
+
+ (must-be-redundant
+  (defthm evn-alt-when-evn
+    (implies (and (evn-alt-zero-p)
+                  (evn-alt-even-step-p)
+                  (odn-alt-odd-step-p)
+                  (evn-alt-even-sum-p)
+                  (odn-alt-mixed-sum-p)
+                  (evn n))
+             (evn-alt n))))
+
+ (must-be-redundant
+  (defthm odn-alt-when-odn
+    (implies (and (evn-alt-zero-p)
+                  (evn-alt-even-step-p)
+                  (odn-alt-odd-step-p)
+                  (evn-alt-even-sum-p)
+                  (odn-alt-mixed-sum-p)
+                  (odn n))
+             (odn-alt n))))
+
+ (must-be-redundant
+  (defthm evn-2-even-sum
+    (implies (and (evn-2 n)
+                  (evn-2 m)
+                  (natp n)
+                  (natp m))
+             (evn-2 (+ n m)))))
+
+ (must-be-redundant
+  (defthm odn-2-mixed-sum
+    (implies (and (evn-2 n)
+                  (odn-2 m)
+                  (natp n)
+                  (natp m))
+             (odn-2 (+ n m)))))
+
+ (must-be-redundant
+  (defthm evn-2-is-evn
+    (equal (evn-2 n)
+           (evn n))))
+
+ (must-be-redundant
+  (defthm odn-2-is-odn
+    (equal (odn-2 n)
+           (odn n))))
+
+ ; The predicates hold on some of the expected numbers.
+
+ (defthm evn-4
+   (evn 4)
+   :rule-classes nil
+   :hints (("Goal" :in-theory (enable evn-zero
+                                      evn-even-step
+                                      odn-odd-step))))
+
+ (defthm evn-double
+   (implies (and (evn n)
+                 (natp n))
+            (evn (+ n n)))
+   :rule-classes nil
+   :hints (("Goal" :in-theory (enable evn-even-sum)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Two mutually recursive predicates, with different arities,
 ; both at level 0, because each has a rule with no premise predicates.
 
