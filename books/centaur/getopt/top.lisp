@@ -29,7 +29,11 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "GETOPT")
-(include-book "std/util/top" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
+(include-book "std/util/define" :dir :system)
+(include-book "defsort/duplicated-members" :dir :system)
+(include-book "defsort/uniquep" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
 (include-book "std/strings/strprefixp" :dir :system)
 (include-book "std/strings/subseq" :dir :system)
