@@ -1888,7 +1888,7 @@
 ;;                       (bvchop-list 8 (take 4 data))
 ;;                     (bv-array-write '8 '4 (bvchop 2 x) val data))))
 ;;   :hints (("Goal" :in-theory (e/d (unsigned-byte-p-forced bv-array-write update-nth2 bvlt)
-;;                                   (update-nth-becomes-update-nth2-extend-gen)))))
+;;                                   ()))))
 
 
 ;rename
