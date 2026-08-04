@@ -15,6 +15,7 @@
 (include-book "expression-values-and-environments")
 (include-book "values-to-abstract-syntax")
 (include-book "type-value-equivalence")
+(include-book "primitives-evaluation-on-types")
 (include-book "primitives-evaluation")
 (include-book "evaluation")
 (include-book "evaluation-rules")
@@ -69,6 +70,7 @@
                     expression-values-and-environments
                     values-to-abstract-syntax
                     type-value-equivalence
+                    primitives-evaluation-on-types
                     primitives-evaluation
                     evaluation
                     evaluation-rules))
