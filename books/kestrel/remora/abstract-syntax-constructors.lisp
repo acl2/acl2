@@ -303,7 +303,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ tforall (params type)
+(defmacro+ tfa (params type)
   :short "Construct a universal type from
           a parenthesized list of variable strings (parameters)
           and a type term (body)."
