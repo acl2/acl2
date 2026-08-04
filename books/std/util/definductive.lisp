@@ -14,7 +14,6 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
-(include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/set-list" :dir :system)
 (include-book "kestrel/fty/symbol-set" :dir :system)
 (include-book "kestrel/fty/symbol-set-list" :dir :system)
@@ -25,8 +24,7 @@
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/basic/symbol-lfix" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
-(include-book "std/omaps/core" :dir :system)
-(include-book "std/system/check-user-term" :dir :system)
+(include-book "std/system/check-user-term-dollar" :dir :system)
 (include-book "std/system/fresh-namep" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
@@ -39,6 +37,7 @@
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/system/all-vars" :dir :system))
 (local (include-book "std/system/pseudo-event-form-listp" :dir :system))
+(local (include-book "std/system/w" :dir :system))
 (local (include-book "std/alists/pairlis" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
@@ -167,35 +166,14 @@
 
   (xdoc::evmac-topic-implementation-item-input "long")
 
-  "@('xdocp') is a flag saying whether XDOC should be generated or not."
-
-  "@('translations') is an omap of type @(tsee defind-translation-omap)
-   from user-supplied terms in the @(':irules') input
-   to the results of running @(tsee check-user-term) on those terms.
-   It is the bridge between phases 2 and 3 of input processing,
-   described below.")
+  "@('xdocp') is a flag saying whether XDOC should be generated or not.")
 
  :additional
 
  ((xdoc::p
    "As also done above, the documentation of the implementation
     refers to the notation used in the user documentation,
-    e.g. the names @('p[i]') of the predicates being defined.")
-  (xdoc::p
-   "To validate the terms in the inference rules,
-    we need to use the program-mode function @(tsee check-user-term),
-    because the logic-mode function @(tsee check-user-term$)
-    has limitations (see its documentation) that make it unsuitable here.
-    To minimize the amount of program-mode code,
-    input processing is divided into three phases:
-    the first phase, in logic mode,
-    validates the @(':preds') input and collects the terms to translate
-    from the @(':irules') inputs;
-    the second phase, in program mode,
-    performs the translation of all the terms, caching the results;
-    the third phase, in logic mode,
-    validates the @(':irules') input,
-    accessing the cached results of the translation.")))
+    e.g. the names @('p[i]') of the predicates being defined.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1283,883 +1261,13 @@
   :no-function nil
   :guard-hints (("Goal" :in-theory (enable set-listp-when-symbol-set-listp))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod defind-translation
-  :short "Fixtype of translations of terms."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the result of running @(tsee check-user-term) on a term:
-     the translated term, or an error message if translation fails,
-     together with the output stobjs of the term.")
-   (xdoc::p
-    "The first component is a @(tsee pseudo-termp) or a @(tsee msgp),
-     but we leave the field untyped
-     because there is currently no fixtype for
-     the union of translated terms and messages;
-     the field is checked by the logic-mode validation code,
-     in @(tsee defind-process-term)."))
-  ((term/msg "The translated term, or an error message.")
-   (stobjs-out symbol-list))
-  :pred defind-translationp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defomap defind-translation-omap
-  :short "Fixtype of omaps from terms to translations of the terms."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These omaps associate untranslated terms,
-     which may be any values,
-     to their translations."))
-  :key-type any
-  :val-type defind-translation
-  :pred defind-translation-omapp)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(xdoc::evmac-topic-input-processing definductive)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-name (name (wrld plist-worldp))
-  :returns (mv erp (name symbolp))
-  :short "Process the @('name') input."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Although currently we do not generate any event with this name
-     (technically, XDOC topics are not ACL2 event names),
-     we check that it is not an existing event name,
-     to reduce possible confusion
-     and the chance that it may shadow another XDOC topic.")
-   (xdoc::p
-    "We may also check directly that it does not shadow any topic.
-     But all these checks only take the current world into consideration:
-     shadowing may occur when putting different books together,
-     and can be realiably detected only when building the whole manual.
-     We could also omit these checks if no XDOC topic is in fact generated,
-     but it seems conceptually best, even in that case,
-     to ensure some separation between the name supplied here
-     and any existing names in the world."))
-  (b* (((reterr) nil)
-       ((unless (symbolp name))
-        (reterr (msg "The NAME input must be a symbol, ~
-                      but it is ~x0 instead."
-                     name)))
-       ((when (keywordp name))
-        (reterr (msg "The NAME input must not be a keyword, ~
-                      but it is ~x0 instead."
-                     name)))
-       (msg/nil (fresh-namep-msg-weak name nil wrld))
-       ((when msg/nil)
-        ;; No period at the end of the following string
-        ;; because MSG/NIL ends with period already.
-        (reterr (msg "The NAME input must be a fresh name, but ~@0"
-                     msg/nil))))
-    (retok name)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-pred (pred (i posp) (wrld plist-worldp))
-  :returns (mv erp (info defind-pred-infop))
-  :short "Process an element of the @(':preds') input."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('i') input of this function is
-     the index of the predicate @('p[i]')
-     that must be described by the @('pred') of this function.")
-   (xdoc::p
-    "We ensure that the name is a valid fresh one for a function."))
-  (b* (((reterr) (irr-defind-pred-info))
-       ((unless (and (symbol-listp pred)
-                     (consp pred)
-                     (consp (cdr pred))))
-        (reterr (msg "The ~n0 element of the :PREDS input ~
-                      must be a list of at least two symbols, ~
-                      but it is ~x1 instead."
-                     (list (lposfix i)) pred)))
-       (pred-name (car pred))
-       (pred-formals (cdr pred))
-       ((when (keywordp pred-name))
-        (reterr (msg "The name of the predicate in ~
-                      the ~n0 element of the :PREDS input ~
-                      must not be a keyword, ~
-                      but it is ~x1 instead."
-                     (list (lposfix i)) pred-name)))
-       (msg/nil (fresh-namep-msg-weak pred-name 'function wrld))
-       ((when msg/nil)
-        ;; No period at the end of the following string
-        ;; because MSG/NIL ends with period already.
-        (reterr (msg "The name of the predicate in ~
-                      the ~n0 element of the :PREDS input ~
-                      must be fresh, but ~@1"
-                     (list (lposfix i)) msg/nil)))
-       ((unless (legal-variable-listp pred-formals))
-        (reterr (msg "The formals of the predicate in ~
-                      the ~n0 element of the :PREDS input ~
-                      must be legal variable names, ~
-                      but at least one in ~&1 is not."
-                     (list (lposfix i)) pred-formals)))
-       ((unless (no-duplicatesp-eq pred-formals))
-        (reterr (msg "The formals of the predicate in ~
-                      the ~n0 element of the :PREDS input ~
-                      must be all distinct, ~
-                      but there are duplicates among ~&1."
-                     (list (lposfix i)) pred-formals))))
-    (retok (make-defind-pred-info :name pred-name
-                                  :formals pred-formals))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-preds (preds
-                              (preds-suppliedp booleanp)
-                              (wrld plist-worldp))
-  :returns (mv erp (infos defind-pred-info-listp))
-  :short "Process the @(':preds') input."
-  (b* (((reterr) nil)
-       ((unless preds-suppliedp)
-        (reterr (msg "The :PREDS input must be supplied.")))
-       ((unless (and (true-listp preds)
-                     (consp preds)))
-        (reterr (msg "The :PREDS input must be a non-empty list, ~
-                      but it is ~x0 instead."
-                     preds)))
-       ((erp infos) (defind-process-preds-loop preds 1 wrld))
-       (pred-names (defind-pred-info-list->name infos))
-       ((unless (no-duplicatesp-eq pred-names))
-        (reterr (msg "The names of the predicates in the :PREDS input ~
-                      must be all distinct, ~
-                      but there are duplicates among ~&0."
-                     pred-names))))
-    (retok infos))
-
-  :prepwork
-  ((define defind-process-preds-loop ((preds true-listp)
-                                      (i posp)
-                                      (wrld plist-worldp))
-     :returns (mv erp (infos defind-pred-info-listp))
-     :parents nil
-     (b* (((reterr) nil)
-          ((when (endp preds)) (retok nil))
-          ((erp info) (defind-process-pred (car preds) i wrld))
-          ((erp infos)
-           (defind-process-preds-loop (cdr preds) (1+ (lposfix i)) wrld)))
-       (retok (cons info infos)))))
-
-  ///
-
-  (defret no-duplicatesp-equal-of-defind-process-preds
-    (no-duplicatesp-equal (defind-pred-info-list->name infos))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-terms-to-translate-in-premise (prem (pred-names symbol-listp))
-  :returns (terms set::setp)
-  :short "Collect the terms to translate in a premise of a rule."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the premise contains a predicate being defined,
-     the terms to translate are the arguments of the predicate;
-     otherwise, the term to translate is the whole premise.
-     The test for the form of the premise is
-     the same one used in @(tsee defind-process-premise).")
-   (xdoc::p
-    "The collected terms are translated
-     in phase 2 of input processing
-     (see @(tsee defind-process-inputs-2)),
-     ahead of their validation
-     in phase 3 of input processing
-     (see @(tsee defind-process-term)).
-     Collection may over-approximate the terms that are validated
-     (e.g. arguments are collected
-     even if their number does not match the arity of the predicate,
-     in which case validation stops before the arguments),
-     but it must never miss a term that is validated.")
-   (xdoc::p
-    "This function, and the other term collection functions,
-     return sets of terms, so that duplicate terms are collected once,
-     and thus each distinct term is translated only once in phase 2."))
-  (if (and (true-listp prem)
-           (consp prem)
-           (member-equal (car prem) (symbol-list-fix pred-names)))
-      (set::mergesort (cdr prem))
-    (set::insert prem nil)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define defind-terms-to-translate-in-premises (prems
-                                               (pred-names symbol-listp))
-  :returns (terms set::setp)
-  :short "Collect the terms to translate in the premises of a rule."
-  (if (consp prems)
-      (set::union
-       (defind-terms-to-translate-in-premise (car prems) pred-names)
-       (defind-terms-to-translate-in-premises (cdr prems) pred-names))
-    nil)
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define defind-terms-to-translate-in-conclusion (concl
-                                                 (pred-names symbol-listp))
-  :returns (terms set::setp)
-  :short "Collect the terms to translate in the conclusion of a rule."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the conclusion contains a predicate being defined,
-     the terms to translate are the arguments of the predicate;
-     otherwise, there are no terms to translate,
-     because validation rejects the conclusion in phase 3."))
-  (if (and (true-listp concl)
-           (consp concl)
-           (member-equal (car concl) (symbol-list-fix pred-names)))
-      (set::mergesort (cdr concl))
-    nil))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define defind-terms-to-translate-in-irule (irule (pred-names symbol-listp))
-  :returns (terms set::setp)
-  :short "Collect the terms to translate in a rule."
-  (if (and (true-listp irule)
-           (= (len irule) 3))
-      (set::union
-       (defind-terms-to-translate-in-premises (cadr irule) pred-names)
-       (defind-terms-to-translate-in-conclusion (caddr irule) pred-names))
-    nil)
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define defind-terms-to-translate-in-irules (irules (pred-names symbol-listp))
-  :returns (terms set::setp)
-  :short "Collect the terms to translate in the @(':irules') input."
-  (if (consp irules)
-      (set::union
-       (defind-terms-to-translate-in-irule (car irules) pred-names)
-       (defind-terms-to-translate-in-irules (cdr irules) pred-names))
-    nil)
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-term (term (desc msgp) (translations defind-translation-omapp))
-  :returns (mv erp (info defind-term-infop))
-  :short "Process a term in a rule."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The input to this function is
-     either a whole premise that does not have the form @('(p[i] ...'))
-     or an argument of a premise or conclusion that has that form.
-     The @(tsee definductive) macro accepts any terms there,
-     so long as they are well-formed,
-     which is checked by this function.
-     The term must be a valid untranslated term:
-     its translation is looked up in the @('translations') omap,
-     built in phase 2 of input processing
-     (see @(tsee defind-process-inputs-2)).
-     If the translation was successful,
-     we return both the untranslated and translated term,
-     packaged in a @(tsee defind-term-info).")
-   (xdoc::p
-    "Note that, before we get here,
-     we have checked, in @(tsee defind-process-pred),
-     that the predicates being defined are new.
-     Thus, the translation of the term fails
-     if the term mentions those predicates.
-     So we automatically check their absence from the term.")
-   (xdoc::p
-    "We ensure that the term is single-valued, not a stobj.")
-   (xdoc::p
-    "The @('desc') input of this function is
-     a description of the term, for error messages.")
-   (xdoc::p
-    "The internal errors are impossible
-     for the terms collected in phase 1 of input processing
-     (see @(tsee defind-process-inputs-1)):
-     they defend against divergence between
-     the collection and validation traversals,
-     and against malformed translation results."))
-  (b* (((reterr) (irr-defind-term-info))
-       (term+translation
-        (omap::assoc term (defind-translation-omap-fix translations)))
-       ((unless (consp term+translation))
-        (raise "Internal error: no translation for ~x0." term)
-        (reterr "irrelevant"))
-       ((defind-translation translation) (cdr term+translation))
-       ((unless (or (pseudo-termp translation.term/msg)
-                    (msgp translation.term/msg)))
-        (raise "Internal error: malformed translation result ~x0 for ~x1."
-               translation.term/msg term)
-        (reterr "irrelevant"))
-       ((unless (pseudo-termp translation.term/msg))
-        ;; No period at the end of the following string
-        ;; because TRANSLATION.TERM/MSG ends with period already.
-        (reterr (msg "~@0 must be a valid untranslated term, but: ~@1"
-                     desc translation.term/msg)))
-       ((unless (equal translation.stobjs-out (list nil)))
-        (reterr (msg "~@0 must return a single non-stobj value, ~
-                      but it returns ~x1 instead."
-                     desc translation.stobjs-out))))
-    (retok (make-defind-term-info :uterm term
-                                  :tterm translation.term/msg)))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-args ((args true-listp)
-                             (prem/concl-desc msgp)
-                             (translations defind-translation-omapp))
-  :returns (mv erp (infos defind-term-info-listp))
-  :short "Process the arguments of a premise or conclusion of a rule
-          that contains a predicate being defined."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('prem/concl-desc') input of this function provides
-     a description of the premise or conclusion
-     that the purported arguments belong to;
-     it is used for error messages."))
-  (defind-process-args-loop args prem/concl-desc 1 translations)
-
-  :prepwork
-  ((define defind-process-args-loop ((args true-listp)
-                                     (prem/concl-desc msgp)
-                                     (q posp)
-                                     (translations defind-translation-omapp))
-     :returns (mv erp (infos defind-term-info-listp))
-     :parents nil
-     (b* (((reterr) nil)
-          ((when (endp args)) (retok nil))
-          (arg-desc (msg "the ~n0 argument of ~@1"
-                         (list (lposfix q))
-                         (msg-downcase-first prem/concl-desc)))
-          ((erp info) (defind-process-term (car args) arg-desc translations))
-          ((erp infos) (defind-process-args-loop
-                         (cdr args) prem/concl-desc (1+ (lposfix q))
-                         translations)))
-       (retok (cons info infos)))
-     :guard-hints (("Goal" :in-theory (enable character-alistp))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-conclusion (concl
-                                   (desc msgp)
-                                   (pred-infos defind-pred-info-listp)
-                                   (translations defind-translation-omapp))
-  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-  :returns (mv erp (info defind-conclusion-infop))
-  :short "Process the conclusion of a rule."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must have the form of a predicate @('p[i]') applied to some terms.")
-   (xdoc::p
-    "The @('desc') input of this function is
-     a description of the conclusion, for error messages."))
-  (b* (((reterr) (irr-defind-conclusion-info))
-       ((unless (and (true-listp concl)
-                     (consp concl)))
-        (reterr (msg "~@0 must be a non-empty list, ~
-                      but it is ~x1 instead."
-                     desc concl)))
-       (pred-name (car concl))
-       ((unless (symbolp pred-name))
-        (reterr (msg "~@0 must start with a symbol, ~
-                      but it starts with ~x1 instead."
-                     desc pred-name)))
-       (args (cdr concl))
-       (pred-info (defind-lookup-pred pred-name pred-infos))
-       ((unless pred-info)
-        (reterr (msg "~@0 must have the form of ~
-                      one of the predicates among ~&1 applied to some terms, ~
-                      but ~x2 is not one of them."
-                     desc (defind-pred-info-list->name pred-infos) pred-name)))
-       (pred-formals (defind-pred-info->formals pred-info))
-       ((unless (= (len args) (len pred-formals)))
-        (reterr (msg "The number of arguments in ~@0 ~
-                      must match the number ~x1 of formals ~
-                      of the predicate ~x2, ~
-                      but it is ~x3 instead."
-                     (msg-downcase-first desc)
-                     (len pred-formals)
-                     pred-name
-                     (len args))))
-       (args-desc (msg "the arguments of ~@0" (msg-downcase-first desc)))
-       ((erp arg-infos) (defind-process-args args args-desc translations)))
-    (retok (make-defind-conclusion-info :name pred-name :args arg-infos)))
-  :guard-hints (("Goal" :in-theory (enable character-alistp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-premise (prem
-                                (desc msgp)
-                                (pred-infos defind-pred-info-listp)
-                                (translations defind-translation-omapp))
-  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-  :returns (mv erp (info defind-premise-infop))
-  :short "Process the premise of a rule."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This may contain a @('p[i]') predicate,
-     as in @(tsee defind-process-conclusion),
-     or it may be some other term not involving
-     the predicates being defined.")
-   (xdoc::p
-    "The @('desc') input of this function is
-     a description of the premise, for error messages."))
-  (b* (((reterr) (irr-defind-premise-info))
-       (pred-names (defind-pred-info-list->name pred-infos)))
-    (if (and (true-listp prem)
-             (consp prem)
-             (member-equal (car prem) pred-names))
-        (b* ((pred-name (car prem))
-             (args (cdr prem))
-             ((unless (symbolp pred-name))
-              (raise "Internal error: ~x0 is not a symbol." pred-name)
-              (reterr "irrelevant"))
-             (pred-info (defind-lookup-pred pred-name pred-infos))
-             ((unless pred-info)
-              (raise "Internal error: no information for ~x0." pred-name)
-              (reterr "irrelevant"))
-             (pred-formals (defind-pred-info->formals pred-info))
-             ((unless (= (len args) (len pred-formals)))
-              (reterr (msg "The number of arguments in ~@0 ~
-                            must match the number ~x1 of formals ~
-                            of the predicate ~x2, ~
-                            but it is ~x3 instead."
-                           (msg-downcase-first desc)
-                           (len pred-formals)
-                           pred-name
-                           (len args))))
-             (args-desc (msg "the arguments of ~@0" (msg-downcase-first desc)))
-             ((erp arg-infos)
-              (defind-process-args args args-desc translations)))
-          (retok (make-defind-premise-info-pred :name pred-name
-                                                :args arg-infos)))
-      (b* ((desc (msg "Since ~@0 does not have the form of ~
-                       one of the predicates among ~&1 applied to some terms, ~
-                       it"
-                      (msg-downcase-first desc) pred-names))
-           ((erp info) (defind-process-term prem desc translations)))
-        (retok (make-defind-premise-info-other :term info)))))
-  :no-function nil
-  :guard-hints (("Goal" :in-theory (enable character-alistp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-premises (prems
-                                 (irule-desc msgp)
-                                 (pred-infos defind-pred-info-listp)
-                                 (translations defind-translation-omapp))
-  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-  :returns (mv erp (infos defind-premise-info-listp))
-  :short "Process the premises of a rule."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('irule-desc') input of this function is
-     a description of the rule that the premises belong to;
-     it is used for error message."))
-  (b* (((reterr) nil)
-       ((unless (true-listp prems))
-        (reterr (msg "The premises of ~@0 must be a list, ~
-                      but they are ~x1 instead."
-                     irule-desc prems))))
-    (defind-process-premises-loop prems 1 irule-desc pred-infos translations))
-
-  :prepwork
-  ((define defind-process-premises-loop ((prems true-listp)
-                                         (q posp)
-                                         (irule-desc msgp)
-                                         (pred-infos defind-pred-info-listp)
-                                         (translations defind-translation-omapp))
-     :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-     :returns (mv erp (infos defind-premise-info-listp))
-     :parents nil
-     (b* (((reterr) nil)
-          ((when (endp prems)) (retok nil))
-          (prem (car prems))
-          (prem-desc
-           (msg "The ~n0 premise of ~@1"
-                (list (lposfix q))
-                (msg-downcase-first irule-desc)))
-          ((erp info)
-           (defind-process-premise prem prem-desc pred-infos translations))
-          ((erp infos) (defind-process-premises-loop
-                         (cdr prems) (1+ (lposfix q))
-                         irule-desc pred-infos translations)))
-       (retok (cons info infos)))
-     :guard-hints (("Goal" :in-theory (enable character-alistp))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-irule (irule
-                              (desc msgp)
-                              (pred-infos defind-pred-info-listp)
-                              (translations defind-translation-omapp))
-  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-  :returns (mv erp (info defind-irule-infop))
-  :short "Process a rule."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('desc') input of this function is
-     a description of the rule, for error messages."))
-  (b* (((reterr) (irr-defind-irule-info))
-       ((unless (and (true-listp irule)
-                     (= (len irule) 3)))
-        (reterr (msg "~@0 must be a list of three elements, ~
-                       but it is ~x1 instead."
-                     desc irule)))
-       ((list name prems concl) irule)
-       ((unless (symbolp name))
-        (reterr (msg "The first element of ~@0 must be a symbol, ~
-                      but it is ~x1 instead."
-                     desc name)))
-       ((erp prem-infos)
-        (defind-process-premises prems desc pred-infos translations))
-       (concl-desc (msg "The conclusion of ~@0" (msg-downcase-first desc)))
-       ((erp concl-info)
-        (defind-process-conclusion concl concl-desc pred-infos translations)))
-    (retok (make-defind-irule-info :name name
-                                   :premises prem-infos
-                                   :conclusion concl-info)))
-  :guard-hints (("Goal" :in-theory (enable character-alistp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-irules (irules
-                               (irules-suppliedp booleanp)
-                               (pred-infos defind-pred-info-listp)
-                               (translations defind-translation-omapp))
-  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-  :returns (mv erp
-               (infos defind-irule-info-listp)
-               (leveled-cliques symbol-set-list-listp))
-  :short "Process the @(':irules') input."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Besides processing the individual rules,
-     we check that the rule names are all distinct.
-     Then we organize the predicates into
-     cliques in dependency order, each organized into levels,
-     and we use the result to enforce the restrictions described next.")
-   (xdoc::p
-    "We check that every predicate is in the conclusion of some rule.
-     A predicate without rules has no proof trees,
-     which is also captured by the check on levels described below,
-     but we check it first, for a more informative error message.")
-   (xdoc::p
-    "The predicates do not have to be all mutually recursive,
-     and they do not have to be recursive at all:
-     they form one or more cliques,
-     which we return in dependency order,
-     so that the events for each clique are generated
-     after the events for the cliques it depends on.
-     A predicate that is not recursive forms a singleton clique,
-     and yields a non-recursive proof validity function.")
-   (xdoc::p
-    "We also check that every predicate is at some level in its clique.
-     A predicate at no level would have no proof trees:
-     the generated fixtype of its proofs would be empty,
-     but fixtypes, like all ACL2 types, must be non-empty;
-     concretely, FTY would reject the generated fixtype,
-     for lack of a base case.
-     For a single predicate,
-     being at some level amounts to being at level 0,
-     i.e. to the existence of a non-recursive rule,
-     which provides a base case for the inductive definition.
-     For multiple predicates, it suffices that some of them are at level 0,
-     with the others reachable from those through the levels.")
-   (xdoc::p
-    "We return the leveled cliques along with the rule information,
-     for use in event generation."))
-  (b* (((reterr) nil nil)
-       ((unless irules-suppliedp)
-        (reterr (msg "The :IRULES input must be supplied.")))
-       ((unless (and (true-listp irules)
-                     (consp irules)))
-        (reterr (msg "The :IRULES input must be a non-empty list, ~
-                      but it is ~x0 instead."
-                     irules)))
-       ((erp infos)
-        (defind-process-irules-loop irules 1 pred-infos translations))
-       (irule-names (defind-irule-info-list->name infos))
-       ((unless (no-duplicatesp-eq irule-names))
-        (reterr (msg "The names of the rules in the :IRULES input ~
-                      must be all distinct, ~
-                      but there are duplicates among ~&0."
-                     irule-names)))
-       (pred-names (defind-pred-info-list->name pred-infos))
-       (ruleless-preds (defind-preds-without-irules pred-names infos))
-       ((when (consp ruleless-preds))
-        (reterr (msg "Every predicate being defined must be ~
-                      in the conclusion of at least one rule ~
-                      in the :IRULES input. ~
-                      This does not hold for ~&0. ~
-                      A predicate without rules would have no proofs, ~
-                      and thus it would be empty."
-                     ruleless-preds)))
-       ((mv leveled-cliques unleveled)
-        (defind-leveled-cliques pred-names infos))
-       ((unless (set::emptyp unleveled))
-        (reterr (msg "Every predicate being defined ~
-                      must be at some level: ~
-                      a predicate is at level 0 if ~
-                      some rule in the :IRULES input ~
-                      has the predicate as its conclusion ~
-                      and no premises that are ~
-                      calls of the predicates being defined; ~
-                      a predicate is at a higher level if ~
-                      some rule has the predicate as its conclusion ~
-                      and all its premises that are ~
-                      calls of the predicates being defined ~
-                      call predicates at lower levels. ~
-                      This does not hold for ~&0. ~
-                      For a predicate at no level, ~
-                      the generated fixtype of its proofs would be empty, ~
-                      but fixtypes must be non-empty."
-                     unleveled))))
-    (retok infos leveled-cliques))
-  :guard-hints
-  (("Goal"
-    :in-theory (enable consp-under-iff-when-true-listp-no-backchain-limit
-                       true-listp-when-symbol-set-list-listp)))
-
-  :prepwork
-  ((define defind-process-irules-loop ((irules true-listp)
-                                       (k posp)
-                                       (pred-infos defind-pred-info-listp)
-                                       (translations defind-translation-omapp))
-     :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-     :returns (mv erp (infos defind-irule-info-listp))
-     :parents nil
-     (b* (((reterr) nil)
-          ((when (endp irules)) (retok nil))
-          (desc (msg "The ~n0 element of the :IRULES input" (list (lposfix k))))
-          ((erp info)
-           (defind-process-irule (car irules) desc pred-infos translations))
-          ((erp infos) (defind-process-irules-loop
-                         (cdr irules) (1+ (lposfix k))
-                         pred-infos translations)))
-       (retok (cons info infos)))
-     :guard-hints (("Goal" :in-theory (enable character-alistp)))))
-
-  ///
-
-  (defret no-duplicatesp-equal-of-defind-process-irules
-    (no-duplicatesp-equal (defind-irule-info-list->name infos))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-parents/short/long (parents
-                                           (parents-suppliedp booleanp)
-                                           short
-                                           (short-suppliedp booleanp)
-                                           long
-                                           (long-suppliedp booleanp))
-  :returns (mv erp (parents symbol-listp) short long (xdocp booleanp))
-  :short "Process the @(':parents'), @(':short'), and @(':long') inputs."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We do not perform any check on the @(':short') and @(':long') inputs,
-     which in general may be terms consisting of XDOC constructors."))
-  (b* (((reterr) nil nil nil nil)
-       ((when (and (not parents-suppliedp)
-                   (not short-suppliedp)
-                   (not long-suppliedp)))
-        (retok nil nil nil nil))
-       ((when (and parents-suppliedp
-                   (not (and (symbol-listp parents)
-                             (consp parents)))))
-        (reterr (msg "The :PARENTS input must be a non-empty list of symbols, ~
-                      but it is ~x0 instead."
-                     parents)))
-       (parents (and parents-suppliedp parents))
-       (short (and short-suppliedp short))
-       (long (and long-suppliedp long)))
-    (retok parents short long t)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-inputs-1 (name
-                                 preds
-                                 (preds-suppliedp booleanp)
-                                 irules
-                                 (wrld plist-worldp))
-  :returns (mv erp
-               (name symbolp)
-               (pred-infos defind-pred-info-listp)
-               (terms set::setp))
-  :short "Process the inputs, phase 1:
-          process the @('name') and @(':preds') inputs,
-          and collect the terms to translate from the @(':irules') input."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Input processing is split into three phases:
-     this phase, in logic mode,
-     which processes the @('name') and @(':preds') inputs
-     and collects the terms to translate from the @(':irules') input;
-     phase 2 (see @(tsee defind-process-inputs-2)), in program mode,
-     which translates the collected terms;
-     and phase 3 (see @(tsee defind-process-inputs-3)), in logic mode,
-     which processes the @(':irules') input,
-     using the translations from phase 2,
-     and the @(':parents'), @(':short'), and @(':long') inputs.")
-   (xdoc::p
-    "The collection of the terms does not depend on
-     the @(':irules') input being well-formed:
-     ill-formed parts contribute no terms,
-     and are rejected in phase 3
-     before their translations are ever needed."))
-  (b* (((reterr) nil nil nil)
-       ((erp name) (defind-process-name name wrld))
-       ((erp pred-infos)
-        (defind-process-preds preds preds-suppliedp wrld))
-       (pred-names (defind-pred-info-list->name pred-infos))
-       (terms (defind-terms-to-translate-in-irules irules pred-names)))
-    (retok name pred-infos terms))
-
-  ///
-
-  (defret no-duplicatesp-equal-of-defind-process-inputs-1
-    (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-inputs-2 ((terms true-listp) state)
-  :returns (translations "A @(tsee defind-translation-omapp)
-                          from the terms to their translation results.")
-  :mode :program
-  :short "Process the inputs, phase 2:
-          translate the terms collected in phase 1."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the only part of input processing in program mode;
-     see @(tsee defind-process-inputs-1) for
-     a description of the three phases of input processing.")
-   (xdoc::p
-    "For each term collected in phase 1,
-     we call @(tsee check-user-term),
-     and we associate to the term the result of the translation,
-     as a @(tsee defind-translation) value with
-     (i) the translated term or error message
-     and (ii) the output stobjs.
-     These results are checked, in logic mode,
-     in @(tsee defind-process-term).")
-   (xdoc::p
-    "This must be in program mode because
-     @(tsee check-user-term) is in program mode,
-     as it calls the ACL2 translator, which is in program mode.
-     Calling it directly, as opposed to via @(tsee magic-ev-fncall)
-     (see @(tsee check-user-term$)),
-     avoids the restrictions of safe mode,
-     which reject terms containing macros with special raw Lisp code
-     (e.g. @('+') and @('1+'))."))
-  (b* (((when (endp terms)) nil)
-       (term (car terms))
-       ((mv term/msg stobjs-out) (check-user-term term (w state))))
-    (omap::update term
-                  (make-defind-translation :term/msg term/msg
-                                           :stobjs-out stobjs-out)
-                  (defind-process-inputs-2 (cdr terms) state)))
-  :hooks nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-inputs-3 (irules
-                                 (irules-suppliedp booleanp)
-                                 parents
-                                 (parents-suppliedp booleanp)
-                                 short
-                                 (short-suppliedp booleanp)
-                                 long
-                                 (long-suppliedp booleanp)
-                                 (pred-infos defind-pred-info-listp)
-                                 (translations defind-translation-omapp))
-  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-  :returns (mv erp
-               (irule-infos defind-irule-info-listp)
-               (leveled-cliques symbol-set-list-listp)
-               (parents symbol-listp)
-               short
-               long
-               (xdocp booleanp))
-  :short "Process the inputs, phase 3:
-          process the @(':irules') input,
-          using the translations from phase 2,
-          and the @(':parents'), @(':short'), and @(':long') inputs."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "See @(tsee defind-process-inputs-1) for
-     a description of the three phases of input processing."))
-  (b* (((reterr) nil nil nil nil nil nil)
-       ((erp irule-infos leveled-cliques)
-        (defind-process-irules irules irules-suppliedp
-          pred-infos translations))
-       ((erp parents short long xdocp)
-        (defind-process-parents/short/long
-          parents parents-suppliedp
-          short short-suppliedp
-          long long-suppliedp)))
-    (retok irule-infos leveled-cliques parents short long xdocp))
-
-  ///
-
-  (defret no-duplicatesp-equal-of-defind-process-inputs-3
-    (no-duplicatesp-equal (defind-irule-info-list->name irule-infos))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(xdoc::evmac-topic-event-generation definductive)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-gen-conjunction ((conjuncts true-listp))
-  :returns (term "An untranslated term.")
-  :short "Generate a conjunction of zero or more untranslated terms."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If there are no conjuncts, we generate @('t').
-     If there is exactly one conjunct, we generate that conjunct.
-     If there are two or more conjuncts, we generate an @(tsee and) of them.
-     This way, we avoid generating empty and singleton conjunctions."))
-  (cond ((endp conjuncts) t)
-        ((endp (cdr conjuncts)) (car conjuncts))
-        (t `(and ,@(true-list-fix conjuncts)))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define defind-gen-implication ((antecedents true-listp) consequent)
-  :returns (term "An untranslated term.")
-  :short "Generate an implication of a consequent
-          from zero or more antecedents,
-          all untranslated terms."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If there are no antecedents, we generate just the consequent.
-     Otherwise, we generate an @(tsee implies)
-     whose antecedent is the conjunction of the antecedents.
-     This way, we avoid generating implications with trivial antecedents."))
-  (if (consp antecedents)
-      `(implies ,(defind-gen-conjunction antecedents) ,consequent)
-    consequent))
+(defxdoc+ definductive-names
+  :parents (definductive-implementation)
+  :short "Names of generated events and their constituents."
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2186,7 +1294,7 @@
      so this is the only naming function specific to that representation."))
   (packn-pos (list (symbol-lfix pred-name) '-2) (symbol-lfix name)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (define defind-assert-type-name ((pred-name symbolp) (name symbolp))
   :returns (type-name symbolp)
@@ -2277,6 +1385,17 @@
   :returns (field-name symbolp)
   :short "Name of a premise field of a @('p[i]-proof') fixtype."
   (packn-pos (list 'premise (lposfix num) '-proof) (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-prem-field-names ((num natp) (name symbolp))
+  :returns (field-names symbol-listp)
+  :short "Name of the premise fields of a @('p[i]-proof') fixtype."
+  (cond ((zp num) nil)
+        (t (append (defind-prem-field-names (1- (lnfix num)) name)
+                   (list (defind-prem-field-name num name)))))
+  :measure (nfix num)
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -3394,6 +2513,728 @@
           the stubs, propositions, and theorems
           for the minimality of the predicates."
   (packn-pos (list (symbol-lfix name) '-minimal) (symbol-lfix name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::evmac-topic-input-processing definductive)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-name (name (wrld plist-worldp))
+  :returns (mv erp (name symbolp))
+  :short "Process the @('name') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Although currently we do not generate any event with this name
+     (technically, XDOC topics are not ACL2 event names),
+     we check that it is not an existing event name,
+     to reduce possible confusion
+     and the chance that it may shadow another XDOC topic.")
+   (xdoc::p
+    "We may also check directly that it does not shadow any topic.
+     But all these checks only take the current world into consideration:
+     shadowing may occur when putting different books together,
+     and can be realiably detected only when building the whole manual.
+     We could also omit these checks if no XDOC topic is in fact generated,
+     but it seems conceptually best, even in that case,
+     to ensure some separation between the name supplied here
+     and any existing names in the world."))
+  (b* (((reterr) nil)
+       ((unless (symbolp name))
+        (reterr (msg "The NAME input must be a symbol, ~
+                      but it is ~x0 instead."
+                     name)))
+       ((when (keywordp name))
+        (reterr (msg "The NAME input must not be a keyword, ~
+                      but it is ~x0 instead."
+                     name)))
+       (msg/nil (fresh-namep-msg-weak name nil wrld))
+       ((when msg/nil)
+        ;; No period at the end of the following string
+        ;; because MSG/NIL ends with period already.
+        (reterr (msg "The NAME input must be a fresh name, but ~@0"
+                     msg/nil))))
+    (retok name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-pred (pred (i posp) (wrld plist-worldp))
+  :returns (mv erp (info defind-pred-infop))
+  :short "Process an element of the @(':preds') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('i') input of this function is
+     the index of the predicate @('p[i]')
+     that must be described by the @('pred') of this function.")
+   (xdoc::p
+    "We ensure that the name is a valid fresh one for a function."))
+  (b* (((reterr) (irr-defind-pred-info))
+       ((unless (and (symbol-listp pred)
+                     (consp pred)
+                     (consp (cdr pred))))
+        (reterr (msg "The ~n0 element of the :PREDS input ~
+                      must be a list of at least two symbols, ~
+                      but it is ~x1 instead."
+                     (list (lposfix i)) pred)))
+       (pred-name (car pred))
+       (pred-formals (cdr pred))
+       ((when (keywordp pred-name))
+        (reterr (msg "The name of the predicate in ~
+                      the ~n0 element of the :PREDS input ~
+                      must not be a keyword, ~
+                      but it is ~x1 instead."
+                     (list (lposfix i)) pred-name)))
+       (msg/nil (fresh-namep-msg-weak pred-name 'function wrld))
+       ((when msg/nil)
+        ;; No period at the end of the following string
+        ;; because MSG/NIL ends with period already.
+        (reterr (msg "The name of the predicate in ~
+                      the ~n0 element of the :PREDS input ~
+                      must be fresh, but ~@1"
+                     (list (lposfix i)) msg/nil)))
+       ((unless (legal-variable-listp pred-formals))
+        (reterr (msg "The formals of the predicate in ~
+                      the ~n0 element of the :PREDS input ~
+                      must be legal variable names, ~
+                      but at least one in ~&1 is not."
+                     (list (lposfix i)) pred-formals)))
+       ((unless (no-duplicatesp-eq pred-formals))
+        (reterr (msg "The formals of the predicate in ~
+                      the ~n0 element of the :PREDS input ~
+                      must be all distinct, ~
+                      but there are duplicates among ~&1."
+                     (list (lposfix i)) pred-formals))))
+    (retok (make-defind-pred-info :name pred-name
+                                  :formals pred-formals))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-preds (preds
+                              (preds-suppliedp booleanp)
+                              (wrld plist-worldp))
+  :returns (mv erp (infos defind-pred-info-listp))
+  :short "Process the @(':preds') input."
+  (b* (((reterr) nil)
+       ((unless preds-suppliedp)
+        (reterr (msg "The :PREDS input must be supplied.")))
+       ((unless (and (true-listp preds)
+                     (consp preds)))
+        (reterr (msg "The :PREDS input must be a non-empty list, ~
+                      but it is ~x0 instead."
+                     preds)))
+       ((erp infos) (defind-process-preds-loop preds 1 wrld))
+       (pred-names (defind-pred-info-list->name infos))
+       ((unless (no-duplicatesp-eq pred-names))
+        (reterr (msg "The names of the predicates in the :PREDS input ~
+                      must be all distinct, ~
+                      but there are duplicates among ~&0."
+                     pred-names))))
+    (retok infos))
+
+  :prepwork
+  ((define defind-process-preds-loop ((preds true-listp)
+                                      (i posp)
+                                      (wrld plist-worldp))
+     :returns (mv erp (infos defind-pred-info-listp))
+     :parents nil
+     (b* (((reterr) nil)
+          ((when (endp preds)) (retok nil))
+          ((erp info) (defind-process-pred (car preds) i wrld))
+          ((erp infos)
+           (defind-process-preds-loop (cdr preds) (1+ (lposfix i)) wrld)))
+       (retok (cons info infos)))))
+
+  ///
+
+  (defret no-duplicatesp-equal-of-defind-process-preds
+    (no-duplicatesp-equal (defind-pred-info-list->name infos))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-term (term (desc msgp) state)
+  :returns (mv erp (info defind-term-infop) state)
+  :short "Process a term in a rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The input to this function is
+     either a whole premise that does not have the form @('(p[i] ...'))
+     or an argument of a premise or conclusion that has that form.
+     The @(tsee definductive) macro accepts any terms there,
+     so long as they are well-formed,
+     which is checked by this function.
+     The term must be a valid untranslated term,
+     which we attempt to translate here.
+     If the translation is successful,
+     we return both the untranslated and translated term,
+     packaged in a @(tsee defind-term-info).")
+   (xdoc::p
+    "Note that, before we get here,
+     we have checked, in @(tsee defind-process-pred),
+     that the predicates being defined are new.
+     Thus, the translation of the term fails
+     if the term mentions those predicates.
+     So this automatically checks their absence from the term.")
+   (xdoc::p
+    "We ensure that the term is single-valued, not a stobj.")
+   (xdoc::p
+    "The @('desc') input of this function is
+     a description of the term, for error messages."))
+  (b* (((reterr) (irr-defind-term-info) state)
+       ((mv term/msg stobjs-out state) (check-user-term$ term state))
+       ((unless (pseudo-termp term/msg))
+        ;; No period at the end of the following string
+        ;; because TERM/MSG ends with period already.
+        (reterr (msg "~@0 must be a valid untranslated term, but: ~@1"
+                     desc term/msg)))
+       ((unless (equal stobjs-out (list nil)))
+        (reterr (msg "~@0 must return a single non-stobj value, ~
+                      but it returns ~x1 instead."
+                     desc stobjs-out))))
+    (retok (make-defind-term-info :uterm term :tterm term/msg) state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-args ((args true-listp)
+                             (prem/concl-desc msgp)
+                             state)
+  :returns (mv erp (infos defind-term-info-listp) state)
+  :short "Process the arguments of a premise or conclusion of a rule
+          that contains a predicate being defined."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('prem/concl-desc') input of this function provides
+     a description of the premise or conclusion
+     that the purported arguments belong to;
+     it is used for error messages."))
+  (defind-process-args-loop args prem/concl-desc 1 state)
+
+  :prepwork
+  ((define defind-process-args-loop ((args true-listp)
+                                     (prem/concl-desc msgp)
+                                     (q posp)
+                                     state)
+     :returns (mv erp (infos defind-term-info-listp) state)
+     :parents nil
+     (b* (((reterr) nil state)
+          ((when (endp args)) (retok nil state))
+          (arg-desc (msg "the ~n0 argument of ~@1"
+                         (list (lposfix q))
+                         (msg-downcase-first prem/concl-desc)))
+          ((erp info state) (defind-process-term (car args) arg-desc state))
+          ((erp infos state) (defind-process-args-loop
+                              (cdr args) prem/concl-desc (1+ (lposfix q))
+                              state)))
+       (retok (cons info infos) state))
+     :guard-hints (("Goal" :in-theory (enable character-alistp))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-conclusion (concl
+                                   (desc msgp)
+                                   (pred-infos defind-pred-info-listp)
+                                   state)
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (mv erp (info defind-conclusion-infop) state)
+  :short "Process the conclusion of a rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must have the form of a predicate @('p[i]') applied to some terms.")
+   (xdoc::p
+    "The @('desc') input of this function is
+     a description of the conclusion, for error messages."))
+  (b* (((reterr) (irr-defind-conclusion-info) state)
+       ((unless (and (true-listp concl)
+                     (consp concl)))
+        (reterr (msg "~@0 must be a non-empty list, ~
+                      but it is ~x1 instead."
+                     desc concl)))
+       (pred-name (car concl))
+       ((unless (symbolp pred-name))
+        (reterr (msg "~@0 must start with a symbol, ~
+                      but it starts with ~x1 instead."
+                     desc pred-name)))
+       (args (cdr concl))
+       (pred-info (defind-lookup-pred pred-name pred-infos))
+       ((unless pred-info)
+        (reterr (msg "~@0 must have the form of ~
+                      one of the predicates among ~&1 applied to some terms, ~
+                      but ~x2 is not one of them."
+                     desc (defind-pred-info-list->name pred-infos) pred-name)))
+       (pred-formals (defind-pred-info->formals pred-info))
+       ((unless (= (len args) (len pred-formals)))
+        (reterr (msg "The number of arguments in ~@0 ~
+                      must match the number ~x1 of formals ~
+                      of the predicate ~x2, ~
+                      but it is ~x3 instead."
+                     (msg-downcase-first desc)
+                     (len pred-formals)
+                     pred-name
+                     (len args))))
+       (args-desc (msg "the arguments of ~@0" (msg-downcase-first desc)))
+       ((erp arg-infos state) (defind-process-args args args-desc state)))
+    (retok (make-defind-conclusion-info :name pred-name :args arg-infos)
+           state))
+  :guard-hints (("Goal" :in-theory (enable character-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-premise (prem
+                                (desc msgp)
+                                (pred-infos defind-pred-info-listp)
+                                state)
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (mv erp (info defind-premise-infop) state)
+  :short "Process the premise of a rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This may contain a @('p[i]') predicate,
+     as in @(tsee defind-process-conclusion),
+     or it may be some other term not involving
+     the predicates being defined.")
+   (xdoc::p
+    "The @('desc') input of this function is
+     a description of the premise, for error messages."))
+  (b* (((reterr) (irr-defind-premise-info) state)
+       (pred-names (defind-pred-info-list->name pred-infos)))
+    (if (and (true-listp prem)
+             (consp prem)
+             (member-equal (car prem) pred-names))
+        (b* ((pred-name (car prem))
+             (args (cdr prem))
+             ((unless (symbolp pred-name))
+              (raise "Internal error: ~x0 is not a symbol." pred-name)
+              (reterr "irrelevant"))
+             (pred-info (defind-lookup-pred pred-name pred-infos))
+             ((unless pred-info)
+              (raise "Internal error: no information for ~x0." pred-name)
+              (reterr "irrelevant"))
+             (pred-formals (defind-pred-info->formals pred-info))
+             ((unless (= (len args) (len pred-formals)))
+              (reterr (msg "The number of arguments in ~@0 ~
+                            must match the number ~x1 of formals ~
+                            of the predicate ~x2, ~
+                            but it is ~x3 instead."
+                           (msg-downcase-first desc)
+                           (len pred-formals)
+                           pred-name
+                           (len args))))
+             (args-desc (msg "the arguments of ~@0" (msg-downcase-first desc)))
+             ((erp arg-infos state)
+              (defind-process-args args args-desc state)))
+          (retok (make-defind-premise-info-pred :name pred-name
+                                                :args arg-infos)
+                 state))
+      (b* ((desc (msg "Since ~@0 does not have the form of ~
+                       one of the predicates among ~&1 applied to some terms, ~
+                       it"
+                      (msg-downcase-first desc) pred-names))
+           ((erp info state) (defind-process-term prem desc state)))
+        (retok (make-defind-premise-info-other :term info) state))))
+  :no-function nil
+  :guard-hints (("Goal" :in-theory (enable character-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-premises (prems
+                                 (irule-desc msgp)
+                                 (pred-infos defind-pred-info-listp)
+                                 state)
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (mv erp (infos defind-premise-info-listp) state)
+  :short "Process the premises of a rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('irule-desc') input of this function is
+     a description of the rule that the premises belong to;
+     it is used for error message."))
+  (b* (((reterr) nil state)
+       ((unless (true-listp prems))
+        (reterr (msg "The premises of ~@0 must be a list, ~
+                      but they are ~x1 instead."
+                     irule-desc prems))))
+    (defind-process-premises-loop prems 1 irule-desc pred-infos state))
+
+  :prepwork
+  ((define defind-process-premises-loop ((prems true-listp)
+                                         (q posp)
+                                         (irule-desc msgp)
+                                         (pred-infos defind-pred-info-listp)
+                                         state)
+     :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+     :returns (mv erp (infos defind-premise-info-listp) state)
+     :parents nil
+     (b* (((reterr) nil state)
+          ((when (endp prems)) (retok nil state))
+          (prem (car prems))
+          (prem-desc
+           (msg "The ~n0 premise of ~@1"
+                (list (lposfix q))
+                (msg-downcase-first irule-desc)))
+          ((erp info state)
+           (defind-process-premise prem prem-desc pred-infos state))
+          ((erp infos state) (defind-process-premises-loop
+                              (cdr prems) (1+ (lposfix q))
+                              irule-desc pred-infos state)))
+       (retok (cons info infos) state))
+     :guard-hints (("Goal" :in-theory (enable character-alistp))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-irule (irule
+                              (desc msgp)
+                              (pred-infos defind-pred-info-listp)
+                              state)
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (mv erp (info defind-irule-infop) state)
+  :short "Process a rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('desc') input of this function is
+     a description of the rule, for error messages."))
+  (b* (((reterr) (irr-defind-irule-info) state)
+       ((unless (and (true-listp irule)
+                     (= (len irule) 3)))
+        (reterr (msg "~@0 must be a list of three elements, ~
+                       but it is ~x1 instead."
+                     desc irule)))
+       ((list name prems concl) irule)
+       ((unless (symbolp name))
+        (reterr (msg "The first element of ~@0 must be a symbol, ~
+                      but it is ~x1 instead."
+                     desc name)))
+       ((erp prem-infos state)
+        (defind-process-premises prems desc pred-infos state))
+       (concl-desc (msg "The conclusion of ~@0" (msg-downcase-first desc)))
+       ((erp concl-info state)
+        (defind-process-conclusion concl concl-desc pred-infos state)))
+    (retok (make-defind-irule-info :name name
+                                   :premises prem-infos
+                                   :conclusion concl-info)
+           state))
+  :guard-hints (("Goal" :in-theory (enable character-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-irules (irules
+                               (irules-suppliedp booleanp)
+                               (pred-infos defind-pred-info-listp)
+                               state)
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (mv erp
+               (infos defind-irule-info-listp)
+               (leveled-cliques symbol-set-list-listp)
+               state)
+  :short "Process the @(':irules') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Besides processing the individual rules,
+     we check that the rule names are all distinct.
+     Then we organize the predicates into
+     cliques in dependency order, each organized into levels,
+     and we use the result to enforce the restrictions described next.")
+   (xdoc::p
+    "We check that every predicate is in the conclusion of some rule.
+     A predicate without rules has no proof trees,
+     which is also captured by the check on levels described below,
+     but we check it first, for a more informative error message.")
+   (xdoc::p
+    "The predicates do not have to be all mutually recursive,
+     and they do not have to be recursive at all:
+     they form one or more cliques,
+     which we return in dependency order,
+     so that the events for each clique are generated
+     after the events for the cliques it depends on.
+     A predicate that is not recursive forms a singleton clique,
+     and yields a non-recursive proof validity function.")
+   (xdoc::p
+    "We also check that every predicate is at some level in its clique.
+     A predicate at no level would have no proof trees:
+     the generated fixtype of its proofs would be empty,
+     but fixtypes, like all ACL2 types, must be non-empty;
+     concretely, FTY would reject the generated fixtype,
+     for lack of a base case.
+     For a single predicate,
+     being at some level amounts to being at level 0,
+     i.e. to the existence of a non-recursive rule,
+     which provides a base case for the inductive definition.
+     For multiple predicates, it suffices that some of them are at level 0,
+     with the others reachable from those through the levels.")
+   (xdoc::p
+    "We return the leveled cliques along with the rule information,
+     for use in event generation."))
+  (b* (((reterr) nil nil state)
+       ((unless irules-suppliedp)
+        (reterr (msg "The :IRULES input must be supplied.")))
+       ((unless (and (true-listp irules)
+                     (consp irules)))
+        (reterr (msg "The :IRULES input must be a non-empty list, ~
+                      but it is ~x0 instead."
+                     irules)))
+       ((erp infos state)
+        (defind-process-irules-loop irules 1 pred-infos state))
+       (irule-names (defind-irule-info-list->name infos))
+       ((unless (no-duplicatesp-eq irule-names))
+        (reterr (msg "The names of the rules in the :IRULES input ~
+                      must be all distinct, ~
+                      but there are duplicates among ~&0."
+                     irule-names)))
+       (pred-names (defind-pred-info-list->name pred-infos))
+       (ruleless-preds (defind-preds-without-irules pred-names infos))
+       ((when (consp ruleless-preds))
+        (reterr (msg "Every predicate being defined must be ~
+                      in the conclusion of at least one rule ~
+                      in the :IRULES input. ~
+                      This does not hold for ~&0. ~
+                      A predicate without rules would have no proofs, ~
+                      and thus it would be empty."
+                     ruleless-preds)))
+       ((mv leveled-cliques unleveled)
+        (defind-leveled-cliques pred-names infos))
+       ((unless (set::emptyp unleveled))
+        (reterr (msg "Every predicate being defined ~
+                      must be at some level: ~
+                      a predicate is at level 0 if ~
+                      some rule in the :IRULES input ~
+                      has the predicate as its conclusion ~
+                      and no premises that are ~
+                      calls of the predicates being defined; ~
+                      a predicate is at a higher level if ~
+                      some rule has the predicate as its conclusion ~
+                      and all its premises that are ~
+                      calls of the predicates being defined ~
+                      call predicates at lower levels. ~
+                      This does not hold for ~&0. ~
+                      For a predicate at no level, ~
+                      the generated fixtype of its proofs would be empty, ~
+                      but fixtypes must be non-empty."
+                     unleveled))))
+    (retok infos leveled-cliques state))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable consp-under-iff-when-true-listp-no-backchain-limit
+                       true-listp-when-symbol-set-list-listp)))
+
+  :prepwork
+  ((define defind-process-irules-loop ((irules true-listp)
+                                       (k posp)
+                                       (pred-infos defind-pred-info-listp)
+                                       state)
+     :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+     :returns (mv erp (infos defind-irule-info-listp) state)
+     :parents nil
+     (b* (((reterr) nil state)
+          ((when (endp irules)) (retok nil state))
+          (desc (msg "The ~n0 element of the :IRULES input" (list (lposfix k))))
+          ((erp info state)
+           (defind-process-irule (car irules) desc pred-infos state))
+          ((erp infos state) (defind-process-irules-loop
+                              (cdr irules) (1+ (lposfix k))
+                              pred-infos state)))
+       (retok (cons info infos) state))
+     :guard-hints (("Goal" :in-theory (enable character-alistp)))))
+
+  ///
+
+  (defret no-duplicatesp-equal-of-defind-process-irules
+    (no-duplicatesp-equal (defind-irule-info-list->name infos))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-parents/short/long (parents
+                                           (parents-suppliedp booleanp)
+                                           short
+                                           (short-suppliedp booleanp)
+                                           long
+                                           (long-suppliedp booleanp))
+  :returns (mv erp (parents symbol-listp) short long (xdocp booleanp))
+  :short "Process the @(':parents'), @(':short'), and @(':long') inputs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We do not perform any check on the @(':short') and @(':long') inputs,
+     which in general may be terms consisting of XDOC constructors."))
+  (b* (((reterr) nil nil nil nil)
+       ((when (and (not parents-suppliedp)
+                   (not short-suppliedp)
+                   (not long-suppliedp)))
+        (retok nil nil nil nil))
+       ((when (and parents-suppliedp
+                   (not (and (symbol-listp parents)
+                             (consp parents)))))
+        (reterr (msg "The :PARENTS input must be a non-empty list of symbols, ~
+                      but it is ~x0 instead."
+                     parents)))
+       (parents (and parents-suppliedp parents))
+       (short (and short-suppliedp short))
+       (long (and long-suppliedp long)))
+    (retok parents short long t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-check-proof2-names ((irule-infos defind-irule-info-listp)
+                                   (pred-infos defind-pred-info-listp)
+                                   (name symbolp))
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (erp "@('nil') or an error message.")
+  :short "Check that the variables of the rules do not clash with
+          the names that the second representation reserves."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A summand of a @('p[i]-2-proof') fixtype has a field
+     for each variable of the rule,
+     so a variable that is also the @(':xvar') of the fixtype,
+     or the name of one of the premise fields,
+     makes FTY reject the fixtype.
+     A variable that is also one of the variables
+     for the arguments of the conclusion is worse:
+     it shadows the formal of the @('p[i]-2-proof-validp') function
+     in the case for the rule,
+     which turns the equality for that argument of the conclusion
+     into an equality of the field with itself,
+     silently defining the wrong relation.")
+   (xdoc::p
+    "We take the names of the premise fields from
+     @(tsee defind-gen-proof2-prem-fields),
+     so that this check cannot drift from what is generated.
+     This is why this check is here,
+     among the event generation code,
+     instead of with the rest of the input processing;
+     it also needs the name of the macro call,
+     which is not available in that phase.")
+   (xdoc::p
+    "These names are reserved only by the second representation of proofs:
+     if that representation is dropped, so is this check.")
+   (xdoc::p
+    "We do not check the proof variable, @(tsee defind-proof-var-name).
+     A rule variable with that name does make the macro fail,
+     but in the events for the first representation,
+     at the theorem about the conclusion of a proof built by a rule.
+     That failure predates the second representation
+     and does not involve it,
+     so it belongs with the first representation;
+     until it is fixed,
+     such a rule is rejected by a proof failure
+     instead of by a message from here."))
+  (b* (((reterr))
+       ((when (endp irule-infos)) (retok))
+       ((defind-irule-info info) (car irule-infos))
+       (pred-name (defind-conclusion-info->name info.conclusion))
+       (pinfo (defind-lookup-pred pred-name pred-infos))
+       ((unless pinfo) (retok)) ; never happens: checked while processing
+       (reserved
+        (cons (defind-proof2-xvar-name name)
+              (append (defind-proof2-concl-var-names
+                        (defind-pred-info->formals pinfo) name)
+                      (defind-prem-field-names (len info.premises) name))))
+       (clashing (intersection-eq (defind-irule-info-free-vars info) reserved))
+       ((when clashing)
+        (reterr (msg "The variables of a rule must differ from ~
+                      the variables and field names that ~
+                      the generated events use for ~
+                      the arguments of the conclusion and the proofs. ~
+                      This does not hold for the rule ~x0, ~
+                      whose variables include ~&1."
+                     info.name clashing))))
+    (defind-check-proof2-names (cdr irule-infos) pred-infos name))
+  :guard-hints (("Goal" :in-theory (enable symbol-listp-when-symbol-setp
+                                           set::sets-are-true-lists))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-inputs (name
+                               preds
+                               (preds-suppliedp booleanp)
+                               irules
+                               (irules-suppliedp booleanp)
+                               parents
+                               (parents-suppliedp booleanp)
+                               short
+                               (short-suppliedp booleanp)
+                               long
+                               (long-suppliedp booleanp)
+                               state)
+  :returns (mv erp
+               (name symbolp)
+               (pred-infos defind-pred-info-listp)
+               (irule-infos defind-irule-info-listp)
+               (leveled-cliques symbol-set-list-listp)
+               (parents symbol-listp)
+               short
+               long
+               (xdocp booleanp)
+               state)
+  :short "Process all the inputs."
+  (b* (((reterr) nil nil nil nil nil nil nil nil state)
+       (wrld (w state))
+       ((erp name) (defind-process-name name wrld))
+       ((erp pred-infos)
+        (defind-process-preds preds preds-suppliedp wrld))
+       ((erp irule-infos leveled-cliques state)
+        (defind-process-irules irules irules-suppliedp pred-infos state))
+       ((erp) (defind-check-proof2-names irule-infos pred-infos name))
+       ((erp parents short long xdocp)
+        (defind-process-parents/short/long
+          parents parents-suppliedp
+          short short-suppliedp
+          long long-suppliedp)))
+    (retok name pred-infos irule-infos leveled-cliques
+           parents short long xdocp state))
+
+  ///
+
+  (defret no-duplicatesp-equal-of-defind-process-inputs-preds
+    (no-duplicatesp-equal (defind-pred-info-list->name pred-infos)))
+
+  (defret no-duplicatesp-equal-of-defind-process-inputs-irules
+    (no-duplicatesp-equal (defind-irule-info-list->name irule-infos))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::evmac-topic-event-generation definductive)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-conjunction ((conjuncts true-listp))
+  :returns (term "An untranslated term.")
+  :short "Generate a conjunction of zero or more untranslated terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there are no conjuncts, we generate @('t').
+     If there is exactly one conjunct, we generate that conjunct.
+     If there are two or more conjuncts, we generate an @(tsee and) of them.
+     This way, we avoid generating empty and singleton conjunctions."))
+  (cond ((endp conjuncts) t)
+        ((endp (cdr conjuncts)) (car conjuncts))
+        (t `(and ,@(true-list-fix conjuncts)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-implication ((antecedents true-listp) consequent)
+  :returns (term "An untranslated term.")
+  :short "Generate an implication of a consequent
+          from zero or more antecedents,
+          all untranslated terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there are no antecedents, we generate just the consequent.
+     Otherwise, we generate an @(tsee implies)
+     whose antecedent is the conjunction of the antecedents.
+     This way, we avoid generating implications with trivial antecedents."))
+  (if (consp antecedents)
+      `(implies ,(defind-gen-conjunction antecedents) ,consequent)
+    consequent))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6575,78 +6416,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defind-check-proof2-names ((irule-infos defind-irule-info-listp)
-                                   (pred-infos defind-pred-info-listp)
-                                   (name symbolp))
-  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-  :returns (erp "@('nil') or an error message.")
-  :short "Check that the variables of the rules do not clash with
-          the names that the second representation reserves."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A summand of a @('p[i]-2-proof') fixtype has a field
-     for each variable of the rule,
-     so a variable that is also the @(':xvar') of the fixtype,
-     or the name of one of the premise fields,
-     makes FTY reject the fixtype.
-     A variable that is also one of the variables
-     for the arguments of the conclusion is worse:
-     it shadows the formal of the @('p[i]-2-proof-validp') function
-     in the case for the rule,
-     which turns the equality for that argument of the conclusion
-     into an equality of the field with itself,
-     silently defining the wrong relation.")
-   (xdoc::p
-    "We take the names of the premise fields from
-     @(tsee defind-gen-proof2-prem-fields),
-     so that this check cannot drift from what is generated.
-     This is why this check is here,
-     among the event generation code,
-     instead of with the rest of the input processing;
-     it also needs the name of the macro call,
-     which is not available in that phase.")
-   (xdoc::p
-    "These names are reserved only by the second representation of proofs:
-     if that representation is dropped, so is this check.")
-   (xdoc::p
-    "We do not check the proof variable, @(tsee defind-proof-var-name).
-     A rule variable with that name does make the macro fail,
-     but in the events for the first representation,
-     at the theorem about the conclusion of a proof built by a rule.
-     That failure predates the second representation
-     and does not involve it,
-     so it belongs with the first representation;
-     until it is fixed,
-     such a rule is rejected by a proof failure
-     instead of by a message from here."))
-  (b* (((reterr))
-       ((when (endp irule-infos)) (retok))
-       ((defind-irule-info info) (car irule-infos))
-       (pred-name (defind-conclusion-info->name info.conclusion))
-       (pinfo (defind-lookup-pred pred-name pred-infos))
-       ((unless pinfo) (retok)) ; never happens: checked while processing
-       (reserved
-        (cons (defind-proof2-xvar-name name)
-              (append (defind-proof2-concl-var-names
-                        (defind-pred-info->formals pinfo) name)
-                      (strip-cars (defind-gen-proof2-prem-fields
-                                    info.premises 1 name)))))
-       (clashing (intersection-eq (defind-irule-info-free-vars info) reserved))
-       ((when clashing)
-        (reterr (msg "The variables of a rule must differ from ~
-                      the variables and field names that ~
-                      the generated events use for ~
-                      the arguments of the conclusion and the proofs. ~
-                      This does not hold for the rule ~x0, ~
-                      whose variables include ~&1."
-                     info.name clashing))))
-    (defind-check-proof2-names (cdr irule-infos) pred-infos name))
-  :guard-hints (("Goal" :in-theory (enable symbol-listp-when-symbol-setp
-                                           set::sets-are-true-lists))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define defind-gen-proof2-pred-alt-stubs ((infos defind-pred-info-listp)
                                           (name symbolp))
   :guard (no-duplicatesp-equal (defind-pred-info-list->name infos))
@@ -7492,6 +7261,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-process-inputs-and-gen-events (name
+                                              preds
+                                              (preds-suppliedp booleanp)
+                                              irules
+                                              (irules-suppliedp booleanp)
+                                              parents
+                                              (parents-suppliedp booleanp)
+                                              short
+                                              (short-suppliedp booleanp)
+                                              long
+                                              (long-suppliedp booleanp)
+                                              state)
+  :returns (mv erp (event pseudo-event-formp) state)
+  :parents (definductive-implementation)
+  :short "Process the inputs and generate all the events."
+  (b* (((reterr) '(_) state)
+       ((erp name pred-infos irule-infos leveled-cliques
+             parents short long xdocp state)
+        (defind-process-inputs
+          name
+          preds preds-suppliedp
+          irules irules-suppliedp
+          parents parents-suppliedp
+          short short-suppliedp
+          long long-suppliedp
+          state))
+       (event (defind-gen-events
+                name pred-infos irule-infos leveled-cliques
+                parents short long xdocp)))
+    (retok event state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define definductive-fn (name
                          preds
                          (preds-suppliedp booleanp)
@@ -7506,40 +7308,20 @@
                          (ctx ctxp)
                          state)
   :returns (mv erp
-               (event "A @(tsee pseudo-event-formp).")
+               (event pseudo-event-formp)
                state)
-  :mode :program
-  :hooks nil
   :parents (definductive-implementation)
-  :short "Process all the inputs and generate all the events."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This calls the three phases of input processing
-     (see @(tsee defind-process-inputs-1))
-     and then the event generation code.
-     This function is in program mode because
-     phase 2 of input processing is in program mode;
-     the rest of input processing, and all of event generation,
-     are in logic mode, and guard-verified."))
-  (b* ((wrld (w state))
-       ((mv erp name pred-infos terms)
-        (defind-process-inputs-1 name preds preds-suppliedp irules wrld))
-       ((when erp) (er-soft+ ctx t '(_) "~@0" erp))
-       (translations (defind-process-inputs-2 terms state))
-       ((mv erp irule-infos leveled-cliques parents short long xdocp)
-        (defind-process-inputs-3
+  :short "Event expansion of @(tsee definductive) from the inputs."
+  (b* (((mv erp event state)
+        (defind-process-inputs-and-gen-events
+          name
+          preds preds-suppliedp
           irules irules-suppliedp
           parents parents-suppliedp
           short short-suppliedp
           long long-suppliedp
-          pred-infos translations))
-       ((when erp) (er-soft+ ctx t '(_) "~@0" erp))
-       (erp (defind-check-proof2-names irule-infos pred-infos name))
-       ((when erp) (er-soft+ ctx t '(_) "~@0" erp))
-       (event (defind-gen-events
-                name pred-infos irule-infos leveled-cliques
-                parents short long xdocp)))
+          state))
+       ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
     (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
