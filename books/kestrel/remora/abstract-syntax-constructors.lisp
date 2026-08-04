@@ -268,7 +268,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ tyarr (type-term ispace-term)
+(defmacro+ tarr (type-term ispace-term)
   :short "Construct an array type term from an element type and an ispace term."
   `(type-array ,(type-term-from-var/base/other type-term)
                ,(ispace-term-from-var/dim/shape/other ispace-term)))
