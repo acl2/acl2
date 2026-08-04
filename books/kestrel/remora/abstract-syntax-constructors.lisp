@@ -284,6 +284,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection t->
+  :short "Construct a nest of one or more unary function type terms
+          from two or more type terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The last type term in the list is the output,
+     while the other types are curried inputs.")
+   (xdoc::@def "t->"))
+
+  (defun t->-fn (type-terms)
+    (declare (xargs :guard (true-listp type-terms)))
+    (cond ((endp type-terms) nil) ; never happens
+          ((endp (cdr type-terms))
+           (type-term-from-var/base/other (car type-terms)))
+          (t `(type-fun ,(type-term-from-var/base/other (car type-terms))
+                        ,(t->-fn (cdr type-terms))))))
+
+  (defmacro+ t-> (type-term1 type-term2 &rest type-terms) ; two or more
+    (t->-fn (list* type-term1 type-term2 type-terms))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro+ tn-> (intypes outtype)
   :short "Construct a function type term from the input and output types."
   :long
