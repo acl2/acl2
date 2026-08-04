@@ -2022,7 +2022,7 @@
           (expr-value-with-empty-dim s2 tval)))
        (atoms (expr-value-atoms val1)))
     (expr-value-with-nonempty-dims s2 atoms))
-  
+
   ///
 
   (defret expr-value-wfp-of-prim-reshape
@@ -2030,6 +2030,68 @@
              (expr-value-wfp val))
     :hyp (and (nat-listp s2)
               (expr-value-wfp val1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-flatten ((tval type-valuep)
+                      (m natp)
+                      (n natp)
+                      (s nat-listp)
+                      (val1 expr-valuep))
+  :guard (expr-value-wfp val1)
+  :returns (val expr-value-resultp)
+  :short "Evaluation of array flattening."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the fully instantiated @('flatten') operation
+     (see the @(':flatten-t-m-n-s') summand of @(tsee primop-value)):
+     @('tval'), @('m'), @('n'), and @('s') are the instantiation values,
+     and @('val1') is the argument cell.
+     According to the instantiated type of the operation,
+     the argument cell is an array
+     whose dimensions are the dimension @('m') followed by the
+     dimension @('n') followed by the shape @('s'),
+     and the result is the array with the leading two axes
+     merged into a single axis,
+     whose dimensions are the dimension @('m*n')
+     followed by the shape @('s').
+     The guard requires the argument cell to be well-formed;
+     we defensively check that it has the expected dimensions.")
+   (xdoc::p
+    "If the two leading dimensions or the remaining shape
+     include a zero dimension, the result is empty:
+     we build it via @(tsee expr-value-with-empty-dim),
+     which requires an atom type value.
+     Otherwise, we collect the atom values of the argument cell
+     via @(tsee expr-value-atoms),
+     and we arrange them according to the flattened shape
+     via @(tsee expr-value-with-nonempty-dims)."))
+  (b* ((m (lnfix m))
+       (n (lnfix n))
+       (s (nat-list-fix s))
+       ((unless (equal (dims-of-expr-value val1) (list* m n s)))
+        (reserr nil))
+       (s2 (cons (* m n) s))
+       ((when (member-equal 0 s2))
+        (b* (((when (type-value-case tval :array)) (reserr nil)))
+          (expr-value-with-empty-dim s2 tval)))
+       (atoms (expr-value-atoms val1)))
+    (expr-value-with-nonempty-dims s2 atoms))
+  :guard-hints
+  (("Goal" :in-theory (enable nat-list-product nfix)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-flatten
+      (implies (not (reserrp val))
+               (expr-value-wfp val))
+    :hyp (and (nat-listp s)
+              (expr-value-wfp val1))
+    :hints (("Goal" :in-theory (enable nat-list-product nfix)
+                    :use ((:instance expr-value-wfp-of-expr-value-with-nonempty-dims
+                                     (dims (cons (* m n) s))
+                                     (vals (expr-value-atoms val1))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2095,7 +2157,7 @@
                               consp-of-car-list-split)
            :expand ((nat-list-product (dims-of-expr-value val1))
                     (member-equal 0 (dims-of-expr-value val1)))))
-  
+
   ///
 
   (defret expr-value-wfp-of-prim-transpose2d
@@ -2299,6 +2361,11 @@
      :reshape-t (prog2$ (impossible) (reserr nil))
      :reshape-t-s1 (prog2$ (impossible) (reserr nil))
      :reshape-t-s1-s2 (prim-reshape op.tval op.s1val op.s2val arg)
+     :flatten (prog2$ (impossible) (reserr nil))
+     :flatten-t (prog2$ (impossible) (reserr nil))
+     :flatten-t-m (prog2$ (impossible) (reserr nil))
+     :flatten-t-m-n (prog2$ (impossible) (reserr nil))
+     :flatten-t-m-n-s (prim-flatten op.tval op.mval op.nval op.sval arg)
      :transpose2d (prog2$ (impossible) (reserr nil))
      :transpose2d-t (prog2$ (impossible) (reserr nil))
      :transpose2d-t-m (prog2$ (impossible) (reserr nil))
@@ -2379,6 +2446,11 @@
                            (list (type-var-atom "t"))))
                   (reserr nil)))
               (expr-value-primop (primop-value-reshape-t tval)))
+   :flatten (b* (((unless (type-values-match-type-vars-p
+                           (list tval)
+                           (list (type-var-atom "t"))))
+                  (reserr nil)))
+              (expr-value-primop (primop-value-flatten-t tval)))
    :transpose2d (b* (((unless (type-values-match-type-vars-p
                            (list tval)
                            (list (type-var-atom "t"))))
@@ -2429,7 +2501,7 @@
      which stores the ispace values received
      (a dimension and a shape
      for @('head'), @('tail'), @('length'), and @('reverse');
-     two dimensions and a shape for @('append');
+     two dimensions and a shape for @('append') and @('flatten');
      a dimension for @('index');
      two dimensions for @('index2d');
      a shape for @('sum');
@@ -2549,6 +2621,27 @@
                           (make-primop-value-reshape-t-s1-s2 :tval op.tval
                                                              :s1val op.s1val
                                                              :s2val ival.val)))
+   :flatten-t (ispace-value-case
+               ival
+               :dim (expr-value-primop
+                     (make-primop-value-flatten-t-m :tval op.tval
+                                                    :mval ival.val))
+               :shape (reserr nil))
+   :flatten-t-m (ispace-value-case
+                 ival
+                 :dim (expr-value-primop
+                       (make-primop-value-flatten-t-m-n :tval op.tval
+                                                        :mval op.mval
+                                                        :nval ival.val))
+                 :shape (reserr nil))
+   :flatten-t-m-n (ispace-value-case
+                   ival
+                   :dim (reserr nil)
+                   :shape (expr-value-primop
+                           (make-primop-value-flatten-t-m-n-s :tval op.tval
+                                                              :mval op.mval
+                                                              :nval op.nval
+                                                              :sval ival.val)))
    :transpose2d-t (ispace-value-case
                    ival
                    :dim (expr-value-primop
@@ -2561,7 +2654,7 @@
                            (make-primop-value-transpose2d-t-m-n :tval op.tval
                                                                 :mval op.mval
                                                                 :nval ival.val))
-                     :shape (reserr nil)) 
+                     :shape (reserr nil))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp)))
 
