@@ -437,12 +437,6 @@
      (dirabsdeclor :dummy-base (raise "Internal error: ~
                                        dummy base case of ~
                                        direct abstract declarator."))
-     (param-declon (and (decl-spec-list-annop
-                          (param-declon->specs param-declon))
-                        (param-declor-annop (param-declon->declor param-declon))
-                        (attrib-spec-list-annop
-                          (param-declon->attribs param-declon))
-                        (type-option-vinfop (param-declon->info param-declon))))
      (param-declor :nonabstract (and (declor-annop
                                       (param-declor-nonabstract->declor
                                        param-declor))
@@ -617,14 +611,6 @@
                 (desiniter-vinfop info)))
     :expand (desiniter-annop (desiniter designors initer info))
     :enable identity)
-
-  (defruled param-declon-annop-of-param-declon
-    (equal (param-declon-annop (param-declon specs declor attribs info))
-           (and (decl-spec-list-annop specs)
-                (param-declor-annop declor)
-                (attrib-spec-list-annop attribs)
-                (type-option-vinfop info)))
-    :expand (param-declon-annop (param-declon specs declor attribs info)))
 
   (defruled param-declor-annop-of-param-declor-nonabstract
     (equal (param-declor-annop (param-declor-nonabstract declor info))
@@ -893,11 +879,6 @@
              (attrib-spec-list-annop (param-declon->attribs param-declon)))
     :enable param-declon-annop)
 
-  (defruled type-option-vinfop-of-param-declon->info
-    (implies (param-declon-annop param-declon)
-             (type-option-vinfop (param-declon->info param-declon)))
-    :enable param-declon-annop)
-
   (defruled declor-annop-of-param-declor-nonabstract->declor
     (implies (and (param-declor-annop param-declor)
                   (param-declor-case param-declor :nonabstract))
@@ -1048,7 +1029,6 @@
      type-spec-annop-of-type-spec-typedef
      type-spec-annop-of-type-spec-struct-empty
      desiniter-annop-of-desiniter
-     param-declon-annop-of-param-declon
      param-declor-annop-of-param-declor-nonabstract
      param-declor-annop-of-param-declor-abstract
      param-declor-annop-of-param-declor-none
@@ -1093,7 +1073,6 @@
      decl-spec-list-annop-of-param-declon->specs
      param-declor-annop-of-param-declon->declor
      attrib-spec-list-annop-of-param-declon->attribs
-     type-option-vinfop-of-param-declon->info
      declor-annop-of-param-declor-nonabstract->declor
      type+uid-vinfop-of-param-declor-nonabstract->info
      absdeclor-annop-of-param-declor-abstract->declor
