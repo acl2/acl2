@@ -54,8 +54,8 @@
      the operation is not well-defined on the type-correct expression values
      (e.g. division by zero).")
    (xdoc::p
-    "The primitives are defined in [impl], as the Remora `prelude'.
-     This is work in progress.")
+    "The primitives are defined in [impl]:
+     see @(see expression-values-and-environments) for details.")
    (xdoc::p
     "The integer primitives currently implemented are:")
    (xdoc::ul
