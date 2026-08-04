@@ -520,6 +520,20 @@
                                      `(len ,x.xvar))
                                  type.name))))
 
+(define visitor-treeset-body (type x)
+  ;; NYI: a defvisitor over a treeset member would need treeset iteration.
+  ;; (deftreeset *clique membership* is supported; visiting one is not yet.)
+  (declare (ignorable x))
+  (b* (((flextreeset type)))
+    (er hard? 'defvisitor
+        "defvisitor does not yet support treeset members (~x0)." type.name)))
+
+(define visitor-treeset-measure (type x mrec)
+  ;; Unreached (visitor-treeset-body errors first); present only so visitor-def
+  ;; certifies with a :treeset case.
+  (declare (ignorable type x mrec))
+  nil)
+
 (define visitor-set-body (type x)
   (b* (((flexset type))
        ((visitorspec x))

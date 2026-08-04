@@ -808,6 +808,9 @@
     type-spec-struct-vinfop
     type-spec-struct-vinfo->type
 
+    type-spec-union-vinfop
+    type-spec-union-vinfo->type
+
     type-vinfop
     type-vinfo-fix
     type-vinfo->type
@@ -833,6 +836,7 @@
     block-item-types
     block-item-list-types
     fundef-types
+    param-declon-type
 
     valid-ord-info-case
     valid-ord-info-objfun->type

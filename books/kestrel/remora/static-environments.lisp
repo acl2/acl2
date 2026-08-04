@@ -124,7 +124,7 @@
      zero-rank array types of function types between base types.
      The @('head'), @('tail'), @('length'),
      @('append'), @('reverse'), @('index'), @('index2d'),
-     and @('reshape') operations
+     @('reshape'), and @('transpose2d') operations
      have polymorphic types:
      a universal type of a product type of a function type, as in [impl].
      The @('sum') operation is polymorphic only in the shape,
@@ -137,87 +137,83 @@
      need no zero-rank array wrapping,
      because atom types are auto-lifted to array types in those places."))
   (b* ((int-binop-type
-        (t[] (t-> (:int :int) :int) (shp)))
+        (t-> :int :int :int))
        (int-unop-type
-        (t[] (t-> (:int) :int) (shp)))
+        (t-> :int :int))
        (int-relop-type
-        (t[] (t-> (:int :int) :bool) (shp)))
+        (t-> :int :int :bool))
        (int-to-float-type
-        (t[] (t-> (:int) :float) (shp)))
+        (t-> :int :float))
        (int-to-bool-type
-        (t[] (t-> (:int) :bool) (shp)))
+        (t-> :int :bool))
        (float-binop-type
-        (t[] (t-> (:float :float) :float) (shp)))
+        (t-> :float :float :float))
        (float-unop-type
-        (t[] (t-> (:float) :float) (shp)))
+        (t-> :float :float))
        (float-relop-type
-        (t[] (t-> (:float :float) :bool) (shp)))
+        (t-> :float :float :bool))
        (float-to-int-type
-        (t[] (t-> (:float) :int) (shp)))
+        (t-> :float :int))
        (bool-unop-type
-        (t[] (t-> (:bool) :bool) (shp)))
+        (t-> :bool :bool))
        (bool-binop-type
-        (t[] (t-> (:bool :bool) :bool) (shp)))
+        (t-> :bool :bool :bool))
        (bool-to-int-type
-        (t[] (t-> (:bool) :int) (shp)))
+        (t-> :bool :int))
        (bool-to-float-type
-        (t[] (t-> (:bool) :float) (shp)))
+        (t-> :bool :float))
        (head-type
-        (t[] (tforall ("&t")
-                      (tpi ("$d" "@s")
-                           (t-> ((t[] "&t" (shape++ (dim+ 1 "$d") "@s")))
-                                (t[] "&t" "@s"))))
-             (shp)))
+        (tfa "&t"
+             (tpi ("$d" "@s")
+                  (t-> (t[] "&t" (shp[] (dim+ 1 "$d") "@s"))
+                       (t[] "&t" "@s")))))
        (tail-type
-        (t[] (tforall ("&t")
-                      (tpi ("$d" "@s")
-                           (t-> ((t[] "&t" (shape++ (dim+ 1 "$d") "@s")))
-                                (t[] "&t" (shape++ "$d" "@s")))))
-             (shp)))
+        (tfa "&t"
+             (tpi ("$d" "@s")
+                  (t-> (t[] "&t" (shp[] (dim+ 1 "$d") "@s"))
+                       (t[] "&t" (shp[] "$d" "@s"))))))
        (length-type
-        (t[] (tforall ("&t")
-                      (tpi ("$d" "@s")
-                           (t-> ((t[] "&t" (shape++ "$d" "@s")))
-                                :int)))
-             (shp)))
+        (tfa "&t"
+             (tpi ("$d" "@s")
+                  (t-> (t[] "&t" (shp[] "$d" "@s"))
+                       :int))))
        (append-type
-        (t[] (tforall ("&t")
-                      (tpi ("$m" "$n" "@s")
-                           (t-> ((t[] "&t" (shape++ "$m" "@s"))
-                                 (t[] "&t" (shape++ "$n" "@s")))
-                                (t[] "&t" (shape++ (dim+ "$m" "$n") "@s")))))
-             (shp)))
+        (tfa "&t"
+             (tpi ("$m" "$n" "@s")
+                  (t-> (t[] "&t" (shp[] "$m" "@s"))
+                       (t[] "&t" (shp[] "$n" "@s"))
+                       (t[] "&t" (shp[] (dim+ "$m" "$n") "@s"))))))
        (reverse-type
-        (t[] (tforall ("&t")
-                      (tpi ("$d" "@s")
-                           (t-> ((t[] "&t" (shape++ "$d" "@s")))
-                                (t[] "&t" (shape++ "$d" "@s")))))
-             (shp)))
+        (tfa "&t"
+             (tpi ("$d" "@s")
+                  (t-> (t[] "&t" (shp[] "$d" "@s"))
+                       (t[] "&t" (shp[] "$d" "@s"))))))
        (index-type
-        (t[] (tforall ("&t")
-                      (tpi ("$m")
-                           (t-> ((t[] "&t" (shp "$m"))
-                                 :int)
-                                "&t")))
-             (shp)))
+        (tfa "&t"
+             (tpi "$m"
+                  (t-> (t[] "&t" "$m")
+                       :int
+                       "&t"))))
        (index2d-type
-        (t[] (tforall ("&t")
-                      (tpi ("$m" "$n")
-                           (t-> ((t[] "&t" (shape++ "$m" "$n"))
-                                 (t[] :int (shp 2)))
-                                "&t")))
-             (shp)))
+        (tfa "&t"
+             (tpi ("$m" "$n")
+                  (t-> (t[] "&t" (shp[] "$m" "$n"))
+                       (t[] :int (shp 2))
+                       "&t"))))
        (sum-type
-        (t[] (tpi ("@s")
-                  (t-> ((t[] :int "@s"))
-                       :int))
-             (shp)))
+        (tpi "@s"
+             (t-> (t[] :int "@s")
+                  :int)))
        (reshape-type
-        (t[] (tforall ("&t")
-                      (tpi ("@s1" "@s2")
-                           (t-> ((t[] "&t" "@s1"))
-                                (t[] "&t" "@s2"))))
-             (shp))))
+        (tfa "&t"
+             (tpi ("@s1" "@s2")
+                  (t-> (t[] "&t" "@s1")
+                       (t[] "&t" "@s2")))))
+       (transpose2d-type
+        (tfa "&t"
+             (tpi ("$m" "$n")
+                  (t-> (t[] "&t" (shp[] "$m" "$n"))
+                       (t[] "&t" (shp[] "$n" "$m")))))))
     (omap::from-alist
      (list (cons "+" int-binop-type)
            (cons "-" int-binop-type)
@@ -276,7 +272,8 @@
            (cons "index" index-type)
            (cons "index2d" index2d-type)
            (cons "sum" sum-type)
-           (cons "reshape" reshape-type)))))
+           (cons "reshape" reshape-type)
+           (cons "transpose2d" transpose2d-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

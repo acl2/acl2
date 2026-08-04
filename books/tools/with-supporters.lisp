@@ -857,6 +857,16 @@
                                                acc))))))
           (t (event-pairs-after k (cdr wrld) acc)))))
 
+(defun macro-aliases-update-event (old-macro-aliases)
+  `(table macro-aliases-table nil
+          (union-equal
+           (loop$ for pair in ',old-macro-aliases
+                  when (and (getpropc (car pair) 'macro-body nil world)
+                            (not (eq (getpropc (cdr pair) 'formals t world) t)))
+                  collect pair)
+           (macro-aliases world))
+          :clear))
+
 (defun with-supporters-fn (local-event rest)
   (cond
    ((not (and (true-listp local-event)
@@ -918,6 +928,8 @@
                                 '(set-state-ok t)
                                 (append (elide-event-lst extras)
                                         table-evs
+                                        (list (macro-aliases-update-event
+                                               (macro-aliases wrld)))
                                         (and in-theory-event
                                              (list in-theory-event))
                                         (cons '(set-enforce-redundancy nil)

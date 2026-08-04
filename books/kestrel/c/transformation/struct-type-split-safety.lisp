@@ -974,35 +974,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-declor-nonabstract-sts-safep ((declor declorp)
-                                            info
-                                            (spec sts-struct-specp)
-                                            (vtable valid-tablep)
-                                            (completions type-completions-p))
+(define type-spec-struct-sts-safep ((struni struni-specp)
+                                    info
+                                    (spec sts-struct-specp)
+                                    (vtable valid-tablep)
+                                    (completions type-completions-p))
   :returns (yes/no booleanp)
-  :short "Check if a non-abstract parameter declarator
+  :short "Check if the type denoted by a struct type specifier
           is safe for the STS transformation."
-  (and (or (type+uid-vinfop info)
+  (and (or (type-spec-struct-vinfop info)
            (raise "Internal error: malformed ~x0." info))
-       (or (top-type-sts-safep
-            (type+uid-vinfo->type info) spec vtable completions)
-           (sts-reject (param-declor-nonabstract declor info))))
+       (or (top-type-sts-safep (type-spec-struct-vinfo->type info)
+                               spec vtable completions)
+           (sts-reject (type-spec-struct struni info))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-declor-abstract-sts-safep ((declor absdeclorp)
-                                         info
-                                         (spec sts-struct-specp)
-                                         (vtable valid-tablep)
-                                         (completions type-completions-p))
+(define type-spec-union-sts-safep ((struni struni-specp)
+                                   info
+                                   (spec sts-struct-specp)
+                                   (vtable valid-tablep)
+                                   (completions type-completions-p))
   :returns (yes/no booleanp)
-  :short "Check if an abstract parameter declarator
+  :short "Check if the type denoted by a union type specifier
           is safe for the STS transformation."
-  (and (or (type-vinfop info)
+  (and (or (type-spec-union-vinfop info)
            (raise "Internal error: malformed ~x0." info))
-       (or (top-type-sts-safep (type-vinfo->type info) spec vtable completions)
-           (sts-reject (param-declor-abstract declor info))))
+       (or (top-type-sts-safep (type-spec-union-vinfo->type info)
+                               spec vtable completions)
+           (sts-reject (type-spec-union struni info))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define param-declon-info-sts-safep ((pdeclon param-declonp)
+                                     (spec sts-struct-specp)
+                                     (vtable valid-tablep)
+                                     (completions type-completions-p))
+  :returns (yes/no booleanp)
+  :short "Check if the type of a parameter declaration
+          is safe for the STS transformation."
+  (and (or (and (param-declon-unambp pdeclon)
+                (param-declon-annop pdeclon))
+           (raise "Internal error: ambiguous or unannotated ~x0."
+                  (param-declon-fix pdeclon)))
+       (or (top-type-sts-safep (param-declon-type pdeclon)
+                               spec vtable completions)
+           (sts-reject (param-declon-fix pdeclon))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1096,9 +1115,6 @@
     "The predicates end at the @(tsee trans-unit) type,
      because these checks operate on one translation unit at a time.")
    (xdoc::p
-    "Our initial definition of these safety predicates is very conservative.
-     We will relax it gradually.")
-   (xdoc::p
     "The default value of these predicates is @('t'),
      which means that, for example, an expression that is a constant
      is accepted, because it is a leaf in the types for these predicates.
@@ -1120,10 +1136,10 @@
      i.e. we let them be treated in the default way
      by @(tsee fty::deffold-reduce).")
    (xdoc::p
-    "Option and list AST types are safe iff their components are.
+    "ASTs of option and list fixtypes are safe iff their components are.
      This is the default generated definition of the predicates.")
    (xdoc::p
-    "AST types that merely wrap other AST types,
+    "AST values of fixtypes that merely wrap other AST fixtypes,
      like @(tsee const-expr) and @(tsee spec/qual),
      are allowed iff their wrapped ASTs are,
      which is the default definition.")
@@ -1293,7 +1309,19 @@
      We should extend our model of types with an atomic flag,
      which is more generally useful,
      and then we should be able to check atomic type
-     without looking directly at specifiers and qualifiers."))
+     without looking directly at specifiers and qualifiers.")
+   (xdoc::p
+    "Note that we check, via @(tsee top-type-sts-safep),
+     the safety of the type annotations in
+     type names,
+     parameter declarators,
+     initializer declarators,
+     and function definitions:
+     these are constructs that introduce names with associated types,
+     and we check the safety of those types.
+     We do not apply those checks to (the types of) structure declarators
+     because those may occur both in structure and in union types;
+     instead, we check the types denoted by struct and union type specifiers."))
   :types (exprs/decls/stmts
           fundef
           ext-declon
@@ -1341,31 +1369,42 @@
                                              vtable
                                              completions)
                            (type-spec-atomic-sts-safep type-spec.type spec)))
+   (type-spec :struct (and (struni-spec-sts-safep type-spec.spec
+                                                  spec
+                                                  vtable
+                                                  completions)
+                           (type-spec-struct-sts-safep type-spec.spec
+                                                       type-spec.info
+                                                       spec
+                                                       vtable
+                                                       completions)))
+   (type-spec :union (and (struni-spec-sts-safep type-spec.spec
+                                                 spec
+                                                 vtable
+                                                 completions)
+                          (type-spec-union-sts-safep type-spec.spec
+                                                     type-spec.info
+                                                     spec
+                                                     vtable
+                                                     completions)))
    (type-spec :typeof-expr (sts-reject (type-spec-fix type-spec)))
    (type-spec :typeof-type (sts-reject (type-spec-fix type-spec)))
    (type-spec :auto-type (sts-reject (type-spec-fix type-spec)))
    (decl-spec :stdcall (sts-reject (decl-spec-fix decl-spec)))
    (decl-spec :declspec (sts-reject (decl-spec-fix decl-spec)))
-   (param-declor :nonabstract (and (declor-sts-safep param-declor.declor
+   (param-declon (b* (((param-declon param-declon)))
+                   (and (decl-spec-list-sts-safep param-declon.specs
+                                                  spec
+                                                  vtable
+                                                  completions)
+                        (param-declor-sts-safep param-declon.declor
+                                                spec
+                                                vtable
+                                                completions)
+                        (param-declon-info-sts-safep param-declon
                                                      spec
                                                      vtable
-                                                     completions)
-                                   (param-declor-nonabstract-sts-safep
-                                    param-declor.declor
-                                    param-declor.info
-                                    spec
-                                    vtable
-                                    completions)))
-   (param-declor :abstract (and (absdeclor-sts-safep param-declor.declor
-                                                     spec
-                                                     vtable
-                                                     completions)
-                                (param-declor-abstract-sts-safep
-                                 param-declor.declor
-                                 param-declor.info
-                                 spec
-                                 vtable
-                                 completions)))
+                                                     completions))))
    (tyname (b* (((tyname tyname)))
              (and (spec/qual-list-sts-safep tyname.specquals
                                             spec

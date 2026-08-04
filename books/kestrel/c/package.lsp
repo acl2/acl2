@@ -46,6 +46,7 @@
                any-nat-mapp
                any-nat-mfix
                bool
+               char-fix
                character-setp
                character-sfix
                character-any-map
