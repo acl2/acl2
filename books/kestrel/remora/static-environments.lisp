@@ -163,39 +163,39 @@
        (bool-to-float-type
         (t-> :bool :float))
        (head-type
-        (tfa ("&t")
+        (tfa "&t"
              (tpi ("$d" "@s")
                   (t-> (t[] "&t" (shp[] (dim+ 1 "$d") "@s"))
                        (t[] "&t" "@s")))))
        (tail-type
-        (tfa ("&t")
+        (tfa "&t"
              (tpi ("$d" "@s")
                   (t-> (t[] "&t" (shp[] (dim+ 1 "$d") "@s"))
                        (t[] "&t" (shp[] "$d" "@s"))))))
        (length-type
-        (tfa ("&t")
+        (tfa "&t"
              (tpi ("$d" "@s")
                   (t-> (t[] "&t" (shp[] "$d" "@s"))
                        :int))))
        (append-type
-        (tfa ("&t")
+        (tfa "&t"
              (tpi ("$m" "$n" "@s")
                   (t-> (t[] "&t" (shp[] "$m" "@s"))
                        (t[] "&t" (shp[] "$n" "@s"))
                        (t[] "&t" (shp[] (dim+ "$m" "$n") "@s"))))))
        (reverse-type
-        (tfa ("&t")
+        (tfa "&t"
              (tpi ("$d" "@s")
                   (t-> (t[] "&t" (shp[] "$d" "@s"))
                        (t[] "&t" (shp[] "$d" "@s"))))))
        (index-type
-        (tfa ("&t")
+        (tfa "&t"
              (tpi ("$m")
                   (t-> (t[] "&t" "$m")
                        :int
                        "&t"))))
        (index2d-type
-        (tfa ("&t")
+        (tfa "&t"
              (tpi ("$m" "$n")
                   (t-> (t[] "&t" (shp[] "$m" "$n"))
                        (t[] :int (shp 2))
@@ -205,12 +205,12 @@
              (t-> (t[] :int "@s")
                   :int)))
        (reshape-type
-        (tfa ("&t")
+        (tfa "&t"
              (tpi ("@s1" "@s2")
                   (t-> (t[] "&t" "@s1")
                        (t[] "&t" "@s2")))))
        (transpose2d-type
-        (tfa ("&t")
+        (tfa "&t"
              (tpi ("$m" "$n")
                   (t-> (t[] "&t" (shp[] "$m" "$n"))
                        (t[] "&t" (shp[] "$n" "$m")))))))
