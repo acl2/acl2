@@ -155,8 +155,7 @@
            (equal (bv-array-write size 1 index val data)
                   (bv-array-write size 1 0 val '(0))))
   :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
-                                  (;update-nth-becomes-update-nth2-extend-gen
-                                   )))))
+                                  ()))))
 
 (defthm bv-array-write-when-len-is-not-natp
   (implies (not (natp len))
@@ -172,8 +171,7 @@
               (equal (car k) (bvchop size val))))
   :hints (("Goal"
            :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
-                           (;update-nth-becomes-update-nth2-extend-gen
-                            )))))
+                           ()))))
 
 ;move
 (defthm equal-of-bv-array-write-of-1-constant-version
@@ -184,8 +182,7 @@
                        (equal (car k) (bvchop size val)))))
   :hints (("Goal"
            :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
-                           (;update-nth-becomes-update-nth2-extend-gen
-                            )))))
+                           ()))))
 
 ;; width is a free var
 (defthmd update-nth2-becomes-bv-array-write
@@ -229,8 +226,7 @@
                 (integerp size))
            (equal (bv-array-write element-size len index (bvchop size val) data)
                   (bv-array-write element-size len index val data)))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) (;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
-                                                                 )))))
+  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
 
 (defthm nthcdr-of-bv-array-write-is-nil
   (implies (and (<= len n)
@@ -415,8 +411,7 @@
   (("Goal"
     :in-theory (e/d (update-nth2 ;list::update-nth-update-nth-diff
                      bv-array-write)
-                    (;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
-                     ;BV-ARRAY-WRITE-EQUAL-REWRITE-ALT
+                    (;BV-ARRAY-WRITE-EQUAL-REWRITE-ALT
                      ;BV-ARRAY-WRITE-EQUAL-REWRITE
                      )))))
 
@@ -501,7 +496,7 @@
            :in-theory (e/d (update-nth2 bv-array-write-opener
                             ;bv-array-write
                             ) (ceiling-of-lg
-                               update-nth-becomes-update-nth2-extend-gen)))))
+                               )))))
 
 (defthmd bv-array-write-redef-special
   (implies (and (equal len (len data)) ; this case
