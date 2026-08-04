@@ -126,72 +126,70 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines dim-fromJSON
-  :verify-guards nil
-  :hints (("Goal" :in-theory (enable value-count-of-object-member-value)))
 
-  (define dim-fromJSON ((j json::valuep))
-    :returns (mv erp (x dimp))
-    :measure (json::value-count j)
-    :short "Convert a JSON value encoding a @('Dim') to a @(tsee dim)."
-    (b* (((acl2::reterr)
-          (make-dim-const :val 0)))
-      (if (json::value-case j :object)
-          (b* ((tag-j
-                (json::object-member-value "tag" j)))
-            (if (json::value-case tag-j :string)
-                (b* ((tag
-                      (json::value-string->get tag-j)))
-                  (cond
-                    ((equal tag "DimVar")
-                     (b* ((name-j
-                           (json::object-member-value "name" j)))
-                       (if (json::value-case name-j :string)
-                           (b* ((name
-                                 (json::value-string->get name-j)))
-                             (acl2::retok (make-dim-var :name name)))
-                         (acl2::reterr (msg "The \"name\" member of a DimVar object must be a string, but ~x0 is not." name-j)))))
-                    ((equal tag "DimN")
-                     (b* ((val-j
-                           (json::object-member-value "val" j)))
-                       (if (json::value-case val-j :number)
-                           (b* ((val
-                                 (json::value-number->get val-j)))
-                             (acl2::retok (make-dim-const :val (nfix val))))
-                         (acl2::reterr (msg "The \"val\" member of a DimN object must be a number, but ~x0 is not." val-j)))))
-                    ((equal tag "Add")
-                     (b* ((dims-j
-                           (json::object-member-value "dims" j)))
-                       (if (json::value-case dims-j :array)
-                           (b* ((dims-js
-                                 (json::value-array->elements dims-j))
-                                ((acl2::erp dims)
-                                 (dim-list-fromJSON dims-js)))
-                             (acl2::retok (make-dim-add :dims dims)))
-                         (acl2::reterr (msg "The \"dims\" member of an Add object must be a JSON array, but ~x0 is not." dims-j)))))
-                    ((equal tag "Mul")
-                     (b* ((dims-j
-                           (json::object-member-value "dims" j)))
-                       (if (json::value-case dims-j :array)
-                           (b* ((dims-js
-                                 (json::value-array->elements dims-j))
-                                ((acl2::erp dims)
-                                 (dim-list-fromJSON dims-js)))
-                             (acl2::retok (make-dim-mul :dims dims)))
-                         (acl2::reterr (msg "The \"dims\" member of a Mul object must be a JSON array, but ~x0 is not." dims-j)))))
-                    ((equal tag "Sub")
-                     (b* ((dims-j
-                           (json::object-member-value "dims" j)))
-                       (if (json::value-case dims-j :array)
-                           (b* ((dims-js
-                                 (json::value-array->elements dims-j))
-                                ((acl2::erp dims)
-                                 (dim-list-fromJSON dims-js)))
-                             (acl2::retok (make-dim-sub :dims dims)))
-                         (acl2::reterr (msg "The \"dims\" member of a Sub object must be a JSON array, but ~x0 is not." dims-j)))))
-                    (t
-                     (acl2::reterr (msg "~x0 is not a recognized tag for a Dim." tag)))))
-              (acl2::reterr (msg "The \"tag\" member of a Dim object must be a string, but ~x0 is not." tag-j))))
-        (acl2::reterr (msg "A JSON value representing a Dim must be a JSON object, but ~x0 is not." j)))))
+    (define dim-fromJSON ((j json::valuep))
+      :returns (mv erp (x dimp))
+      :measure (json::value-count j)
+      :short "Convert a JSON value encoding a @('Dim') to a @(tsee dim)."
+      (b* (((acl2::reterr)
+            (make-dim-const :val 0)))
+        (if (json::value-case j :object)
+            (b* ((tag-j
+                  (json::object-member-value "tag" j)))
+              (if (json::value-case tag-j :string)
+                  (b* ((tag
+                        (json::value-string->get tag-j)))
+                    (cond
+                      ((equal tag "DimVar")
+                       (b* ((name-j
+                             (json::object-member-value "name" j)))
+                         (if (json::value-case name-j :string)
+                             (b* ((name
+                                   (json::value-string->get name-j)))
+                               (acl2::retok (make-dim-var :name name)))
+                           (acl2::reterr (msg "The \"name\" member of a DimVar object must be a string, but ~x0 is not." name-j)))))
+                      ((equal tag "DimN")
+                       (b* ((val-j
+                             (json::object-member-value "val" j)))
+                         (if (json::value-case val-j :number)
+                             (b* ((val
+                                   (json::value-number->get val-j)))
+                               (acl2::retok (make-dim-const :val (nfix val))))
+                           (acl2::reterr (msg "The \"val\" member of a DimN object must be a number, but ~x0 is not." val-j)))))
+                      ((equal tag "Add")
+                       (b* ((dims-j
+                             (json::object-member-value "dims" j)))
+                         (if (json::value-case dims-j :array)
+                             (b* ((dims-js
+                                   (json::value-array->elements dims-j))
+                                  ((acl2::erp dims)
+                                   (dim-list-fromJSON dims-js)))
+                               (acl2::retok (make-dim-add :dims dims)))
+                           (acl2::reterr (msg "The \"dims\" member of an Add object must be a JSON array, but ~x0 is not." dims-j)))))
+                      ((equal tag "Mul")
+                       (b* ((dims-j
+                             (json::object-member-value "dims" j)))
+                         (if (json::value-case dims-j :array)
+                             (b* ((dims-js
+                                   (json::value-array->elements dims-j))
+                                  ((acl2::erp dims)
+                                   (dim-list-fromJSON dims-js)))
+                               (acl2::retok (make-dim-mul :dims dims)))
+                           (acl2::reterr (msg "The \"dims\" member of a Mul object must be a JSON array, but ~x0 is not." dims-j)))))
+                      ((equal tag "Sub")
+                       (b* ((dims-j
+                             (json::object-member-value "dims" j)))
+                         (if (json::value-case dims-j :array)
+                             (b* ((dims-js
+                                   (json::value-array->elements dims-j))
+                                  ((acl2::erp dims)
+                                   (dim-list-fromJSON dims-js)))
+                               (acl2::retok (make-dim-sub :dims dims)))
+                           (acl2::reterr (msg "The \"dims\" member of a Sub object must be a JSON array, but ~x0 is not." dims-j)))))
+                      (t
+                       (acl2::reterr (msg "~x0 is not a recognized tag for a Dim." tag)))))
+                (acl2::reterr (msg "The \"tag\" member of a Dim object must be a string, but ~x0 is not." tag-j))))
+          (acl2::reterr (msg "A JSON value representing a Dim must be a JSON object, but ~x0 is not." j)))))
 
   (define dim-list-fromJSON ((js json::value-listp))
     :returns (mv erp (x dim-listp))
@@ -204,9 +202,12 @@
                ((acl2::erp tl)
                 (dim-list-fromJSON (cdr js))))
             (acl2::retok (cons hd tl)))
-        (acl2::retok nil)))))
+        (acl2::retok nil))))
 
-(verify-guards dim-fromJSON)
+  :verify-guards nil
+  :hints (("Goal" :in-theory (enable value-count-of-object-member-value)))
+  ///
+  (verify-guards dim-fromJSON))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -215,8 +216,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines shape-fromJSON
-  :verify-guards nil
-  :hints (("Goal" :in-theory (enable value-count-of-object-member-value)))
 
   (define shape-fromJSON ((j json::valuep))
     :returns (mv erp (x shapep))
@@ -271,9 +270,12 @@
                ((acl2::erp tl)
                 (shape-list-fromJSON (cdr js))))
             (acl2::retok (cons hd tl)))
-        (acl2::retok nil)))))
+        (acl2::retok nil))))
 
-(verify-guards shape-fromJSON)
+  :verify-guards nil
+  :hints (("Goal" :in-theory (enable value-count-of-object-member-value)))
+  ///
+  (verify-guards shape-fromJSON))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -436,8 +438,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines type-fromJSON
-  :verify-guards nil
-  :hints (("Goal" :in-theory (enable value-count-of-object-member-value)))
 
   (define type-fromJSON ((j json::valuep))
     :returns (mv erp (x typep))
@@ -567,9 +567,12 @@
                ((acl2::erp tl)
                 (type-list-fromJSON (cdr js))))
             (acl2::retok (cons hd tl)))
-        (acl2::retok nil)))))
+        (acl2::retok nil))))
 
-(verify-guards type-fromJSON)
+  :verify-guards nil
+  :hints (("Goal" :in-theory (enable value-count-of-object-member-value)))
+  ///
+  (verify-guards type-fromJSON))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -687,8 +690,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines expr-fromJSON
-  :verify-guards nil
-  :hints (("Goal" :in-theory (enable value-count-of-object-member-value)))
 
   (define atom-fromJSON ((j json::valuep))
     :returns (mv erp (x atomp))
@@ -1170,9 +1171,12 @@
                     (nat-list-fromJSON (cdr js))))
                 (acl2::retok (cons (nfix hd) tl)))
             (acl2::reterr (msg "Expected a JSON number, but ~x0 is not." (car js))))
-        (acl2::retok nil)))))
+        (acl2::retok nil))))
 
-(verify-guards expr-fromJSON)
+  :verify-guards nil
+  :hints (("Goal" :in-theory (enable value-count-of-object-member-value)))
+  ///
+  (verify-guards expr-fromJSON))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
