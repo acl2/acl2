@@ -53,13 +53,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod type-option-vinfo
-  :short "Fixtype of validator information consisting of an optional type."
-  ((type? type-option))
-  :pred type-option-vinfop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod type+uid-vinfo
   :short "Fixtype of validator information consisting of a type and a UID."
   ((type type)
