@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/bv-lists/bits-to-bytes-little" :dir :system)
+(include-book "bits-to-bytes-little")
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "unsigned-byte-listp-def")
 (local (include-book "unsigned-byte-listp"))
