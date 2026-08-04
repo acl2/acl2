@@ -170,7 +170,18 @@
   :guard (ispace-list-case-shape x)
   :returns (shapes shape-listp)
   :short "Lift @(tsee ispace-shape->shape) to lists."
-  (ispace-shape->shape x))
+  (ispace-shape->shape x)
+
+  ///
+
+  (defrule shape-list-count-of-ispace-shape-list->shape
+    (implies (ispace-list-case-shape x)
+             (<= (shape-list-count (ispace-shape-list->shape x))
+                 (ispace-list-count x)))
+    :rule-classes :linear
+    :induct t
+    :expand ((:free (a b) (shape-list-count (cons a b)))
+             (ispace-list-count x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

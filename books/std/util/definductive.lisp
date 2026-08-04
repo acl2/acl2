@@ -14,7 +14,6 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
-(include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/set-list" :dir :system)
 (include-book "kestrel/fty/symbol-set" :dir :system)
 (include-book "kestrel/fty/symbol-set-list" :dir :system)
@@ -25,8 +24,7 @@
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/basic/symbol-lfix" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
-(include-book "std/omaps/core" :dir :system)
-(include-book "std/system/check-user-term" :dir :system)
+(include-book "std/system/check-user-term-dollar" :dir :system)
 (include-book "std/system/fresh-namep" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
@@ -39,6 +37,7 @@
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/system/all-vars" :dir :system))
 (local (include-book "std/system/pseudo-event-form-listp" :dir :system))
+(local (include-book "std/system/w" :dir :system))
 (local (include-book "std/alists/pairlis" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
@@ -167,35 +166,14 @@
 
   (xdoc::evmac-topic-implementation-item-input "long")
 
-  "@('xdocp') is a flag saying whether XDOC should be generated or not."
-
-  "@('translations') is an omap of type @(tsee defind-translation-omap)
-   from user-supplied terms in the @(':irules') input
-   to the results of running @(tsee check-user-term) on those terms.
-   It is the bridge between phases 2 and 3 of input processing,
-   described below.")
+  "@('xdocp') is a flag saying whether XDOC should be generated or not.")
 
  :additional
 
  ((xdoc::p
    "As also done above, the documentation of the implementation
     refers to the notation used in the user documentation,
-    e.g. the names @('p[i]') of the predicates being defined.")
-  (xdoc::p
-   "To validate the terms in the inference rules,
-    we need to use the program-mode function @(tsee check-user-term),
-    because the logic-mode function @(tsee check-user-term$)
-    has limitations (see its documentation) that make it unsuitable here.
-    To minimize the amount of program-mode code,
-    input processing is divided into three phases:
-    the first phase, in logic mode,
-    validates the @(':preds') input and collects the terms to translate
-    from the @(':irules') inputs;
-    the second phase, in program mode,
-    performs the translation of all the terms, caching the results;
-    the third phase, in logic mode,
-    validates the @(':irules') input,
-    accessing the cached results of the translation.")))
+    e.g. the names @('p[i]') of the predicates being defined.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1283,885 +1261,40 @@
   :no-function nil
   :guard-hints (("Goal" :in-theory (enable set-listp-when-symbol-set-listp))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod defind-translation
-  :short "Fixtype of translations of terms."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the result of running @(tsee check-user-term) on a term:
-     the translated term, or an error message if translation fails,
-     together with the output stobjs of the term.")
-   (xdoc::p
-    "The first component is a @(tsee pseudo-termp) or a @(tsee msgp),
-     but we leave the field untyped
-     because there is currently no fixtype for
-     the union of translated terms and messages;
-     the field is checked by the logic-mode validation code,
-     in @(tsee defind-process-term)."))
-  ((term/msg "The translated term, or an error message.")
-   (stobjs-out symbol-list))
-  :pred defind-translationp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defomap defind-translation-omap
-  :short "Fixtype of omaps from terms to translations of the terms."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These omaps associate untranslated terms,
-     which may be any values,
-     to their translations."))
-  :key-type any
-  :val-type defind-translation
-  :pred defind-translation-omapp)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(xdoc::evmac-topic-input-processing definductive)
+(defxdoc+ definductive-names
+  :parents (definductive-implementation)
+  :short "Names of generated events and their constituents."
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defind-process-name (name (wrld plist-worldp))
-  :returns (mv erp (name symbolp))
-  :short "Process the @('name') input."
+(define defind-pred2-name ((pred-name symbolp) (name symbolp))
+  :returns (pred2-name symbolp)
+  :short "Name of a @('p[i]-2') predicate."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Although currently we do not generate any event with this name
-     (technically, XDOC topics are not ACL2 event names),
-     we check that it is not an existing event name,
-     to reduce possible confusion
-     and the chance that it may shadow another XDOC topic.")
+    "Besides each predicate @('p[i]'), we define a predicate @('p[i]-2'),
+     which denotes the same relation,
+     but whose proofs are represented differently:
+     a proof records the variables of the rule that builds it
+     instead of recording the conclusion.
+     The conclusion arguments are instead
+     passed to the proof validity predicate.
+     We generate the two representations side by side,
+     so that they can be compared;
+     we may eventually drop one in favor of the other.")
    (xdoc::p
-    "We may also check directly that it does not shadow any topic.
-     But all these checks only take the current world into consideration:
-     shadowing may occur when putting different books together,
-     and can be realiably detected only when building the whole manual.
-     We could also omit these checks if no XDOC topic is in fact generated,
-     but it seems conceptually best, even in that case,
-     to ensure some separation between the name supplied here
-     and any existing names in the world."))
-  (b* (((reterr) nil)
-       ((unless (symbolp name))
-        (reterr (msg "The NAME input must be a symbol, ~
-                      but it is ~x0 instead."
-                     name)))
-       ((when (keywordp name))
-        (reterr (msg "The NAME input must not be a keyword, ~
-                      but it is ~x0 instead."
-                     name)))
-       (msg/nil (fresh-namep-msg-weak name nil wrld))
-       ((when msg/nil)
-        ;; No period at the end of the following string
-        ;; because MSG/NIL ends with period already.
-        (reterr (msg "The NAME input must be a fresh name, but ~@0"
-                     msg/nil))))
-    (retok name)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-pred (pred (i posp) (wrld plist-worldp))
-  :returns (mv erp (info defind-pred-infop))
-  :short "Process an element of the @(':preds') input."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('i') input of this function is
-     the index of the predicate @('p[i]')
-     that must be described by the @('pred') of this function.")
-   (xdoc::p
-    "We ensure that the name is a valid fresh one for a function."))
-  (b* (((reterr) (irr-defind-pred-info))
-       ((unless (and (symbol-listp pred)
-                     (consp pred)
-                     (consp (cdr pred))))
-        (reterr (msg "The ~n0 element of the :PREDS input ~
-                      must be a list of at least two symbols, ~
-                      but it is ~x1 instead."
-                     (list (lposfix i)) pred)))
-       (pred-name (car pred))
-       (pred-formals (cdr pred))
-       ((when (keywordp pred-name))
-        (reterr (msg "The name of the predicate in ~
-                      the ~n0 element of the :PREDS input ~
-                      must not be a keyword, ~
-                      but it is ~x1 instead."
-                     (list (lposfix i)) pred-name)))
-       (msg/nil (fresh-namep-msg-weak pred-name 'function wrld))
-       ((when msg/nil)
-        ;; No period at the end of the following string
-        ;; because MSG/NIL ends with period already.
-        (reterr (msg "The name of the predicate in ~
-                      the ~n0 element of the :PREDS input ~
-                      must be fresh, but ~@1"
-                     (list (lposfix i)) msg/nil)))
-       ((unless (legal-variable-listp pred-formals))
-        (reterr (msg "The formals of the predicate in ~
-                      the ~n0 element of the :PREDS input ~
-                      must be legal variable names, ~
-                      but at least one in ~&1 is not."
-                     (list (lposfix i)) pred-formals)))
-       ((unless (no-duplicatesp-eq pred-formals))
-        (reterr (msg "The formals of the predicate in ~
-                      the ~n0 element of the :PREDS input ~
-                      must be all distinct, ~
-                      but there are duplicates among ~&1."
-                     (list (lposfix i)) pred-formals))))
-    (retok (make-defind-pred-info :name pred-name
-                                  :formals pred-formals))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-preds (preds
-                              (preds-suppliedp booleanp)
-                              (wrld plist-worldp))
-  :returns (mv erp (infos defind-pred-info-listp))
-  :short "Process the @(':preds') input."
-  (b* (((reterr) nil)
-       ((unless preds-suppliedp)
-        (reterr (msg "The :PREDS input must be supplied.")))
-       ((unless (and (true-listp preds)
-                     (consp preds)))
-        (reterr (msg "The :PREDS input must be a non-empty list, ~
-                      but it is ~x0 instead."
-                     preds)))
-       ((erp infos) (defind-process-preds-loop preds 1 wrld))
-       (pred-names (defind-pred-info-list->name infos))
-       ((unless (no-duplicatesp-eq pred-names))
-        (reterr (msg "The names of the predicates in the :PREDS input ~
-                      must be all distinct, ~
-                      but there are duplicates among ~&0."
-                     pred-names))))
-    (retok infos))
-
-  :prepwork
-  ((define defind-process-preds-loop ((preds true-listp)
-                                      (i posp)
-                                      (wrld plist-worldp))
-     :returns (mv erp (infos defind-pred-info-listp))
-     :parents nil
-     (b* (((reterr) nil)
-          ((when (endp preds)) (retok nil))
-          ((erp info) (defind-process-pred (car preds) i wrld))
-          ((erp infos)
-           (defind-process-preds-loop (cdr preds) (1+ (lposfix i)) wrld)))
-       (retok (cons info infos)))))
-
-  ///
-
-  (defret no-duplicatesp-equal-of-defind-process-preds
-    (no-duplicatesp-equal (defind-pred-info-list->name infos))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-terms-to-translate-in-premise (prem (pred-names symbol-listp))
-  :returns (terms set::setp)
-  :short "Collect the terms to translate in a premise of a rule."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the premise contains a predicate being defined,
-     the terms to translate are the arguments of the predicate;
-     otherwise, the term to translate is the whole premise.
-     The test for the form of the premise is
-     the same one used in @(tsee defind-process-premise).")
-   (xdoc::p
-    "The collected terms are translated
-     in phase 2 of input processing
-     (see @(tsee defind-process-inputs-2)),
-     ahead of their validation
-     in phase 3 of input processing
-     (see @(tsee defind-process-term)).
-     Collection may over-approximate the terms that are validated
-     (e.g. arguments are collected
-     even if their number does not match the arity of the predicate,
-     in which case validation stops before the arguments),
-     but it must never miss a term that is validated.")
-   (xdoc::p
-    "This function, and the other term collection functions,
-     return sets of terms, so that duplicate terms are collected once,
-     and thus each distinct term is translated only once in phase 2."))
-  (if (and (true-listp prem)
-           (consp prem)
-           (member-equal (car prem) (symbol-list-fix pred-names)))
-      (set::mergesort (cdr prem))
-    (set::insert prem nil)))
+    "All the events for the second representation
+     are named after @('p[i]-2'),
+     via the same naming functions used for @('p[i]');
+     so this is the only naming function specific to that representation."))
+  (packn-pos (list (symbol-lfix pred-name) '-2) (symbol-lfix name)))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(define defind-terms-to-translate-in-premises (prems
-                                               (pred-names symbol-listp))
-  :returns (terms set::setp)
-  :short "Collect the terms to translate in the premises of a rule."
-  (if (consp prems)
-      (set::union
-       (defind-terms-to-translate-in-premise (car prems) pred-names)
-       (defind-terms-to-translate-in-premises (cdr prems) pred-names))
-    nil)
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define defind-terms-to-translate-in-conclusion (concl
-                                                 (pred-names symbol-listp))
-  :returns (terms set::setp)
-  :short "Collect the terms to translate in the conclusion of a rule."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the conclusion contains a predicate being defined,
-     the terms to translate are the arguments of the predicate;
-     otherwise, there are no terms to translate,
-     because validation rejects the conclusion in phase 3."))
-  (if (and (true-listp concl)
-           (consp concl)
-           (member-equal (car concl) (symbol-list-fix pred-names)))
-      (set::mergesort (cdr concl))
-    nil))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define defind-terms-to-translate-in-irule (irule (pred-names symbol-listp))
-  :returns (terms set::setp)
-  :short "Collect the terms to translate in a rule."
-  (if (and (true-listp irule)
-           (= (len irule) 3))
-      (set::union
-       (defind-terms-to-translate-in-premises (cadr irule) pred-names)
-       (defind-terms-to-translate-in-conclusion (caddr irule) pred-names))
-    nil)
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define defind-terms-to-translate-in-irules (irules (pred-names symbol-listp))
-  :returns (terms set::setp)
-  :short "Collect the terms to translate in the @(':irules') input."
-  (if (consp irules)
-      (set::union
-       (defind-terms-to-translate-in-irule (car irules) pred-names)
-       (defind-terms-to-translate-in-irules (cdr irules) pred-names))
-    nil)
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-term (term (desc msgp) (translations defind-translation-omapp))
-  :returns (mv erp (info defind-term-infop))
-  :short "Process a term in a rule."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The input to this function is
-     either a whole premise that does not have the form @('(p[i] ...'))
-     or an argument of a premise or conclusion that has that form.
-     The @(tsee definductive) macro accepts any terms there,
-     so long as they are well-formed,
-     which is checked by this function.
-     The term must be a valid untranslated term:
-     its translation is looked up in the @('translations') omap,
-     built in phase 2 of input processing
-     (see @(tsee defind-process-inputs-2)).
-     If the translation was successful,
-     we return both the untranslated and translated term,
-     packaged in a @(tsee defind-term-info).")
-   (xdoc::p
-    "Note that, before we get here,
-     we have checked, in @(tsee defind-process-pred),
-     that the predicates being defined are new.
-     Thus, the translation of the term fails
-     if the term mentions those predicates.
-     So we automatically check their absence from the term.")
-   (xdoc::p
-    "We ensure that the term is single-valued, not a stobj.")
-   (xdoc::p
-    "The @('desc') input of this function is
-     a description of the term, for error messages.")
-   (xdoc::p
-    "The internal errors are impossible
-     for the terms collected in phase 1 of input processing
-     (see @(tsee defind-process-inputs-1)):
-     they defend against divergence between
-     the collection and validation traversals,
-     and against malformed translation results."))
-  (b* (((reterr) (irr-defind-term-info))
-       (term+translation
-        (omap::assoc term (defind-translation-omap-fix translations)))
-       ((unless (consp term+translation))
-        (raise "Internal error: no translation for ~x0." term)
-        (reterr "irrelevant"))
-       ((defind-translation translation) (cdr term+translation))
-       ((unless (or (pseudo-termp translation.term/msg)
-                    (msgp translation.term/msg)))
-        (raise "Internal error: malformed translation result ~x0 for ~x1."
-               translation.term/msg term)
-        (reterr "irrelevant"))
-       ((unless (pseudo-termp translation.term/msg))
-        ;; No period at the end of the following string
-        ;; because TRANSLATION.TERM/MSG ends with period already.
-        (reterr (msg "~@0 must be a valid untranslated term, but: ~@1"
-                     desc translation.term/msg)))
-       ((unless (equal translation.stobjs-out (list nil)))
-        (reterr (msg "~@0 must return a single non-stobj value, ~
-                      but it returns ~x1 instead."
-                     desc translation.stobjs-out))))
-    (retok (make-defind-term-info :uterm term
-                                  :tterm translation.term/msg)))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-args ((args true-listp)
-                             (prem/concl-desc msgp)
-                             (translations defind-translation-omapp))
-  :returns (mv erp (infos defind-term-info-listp))
-  :short "Process the arguments of a premise or conclusion of a rule
-          that contains a predicate being defined."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('prem/concl-desc') input of this function provides
-     a description of the premise or conclusion
-     that the purported arguments belong to;
-     it is used for error messages."))
-  (defind-process-args-loop args prem/concl-desc 1 translations)
-
-  :prepwork
-  ((define defind-process-args-loop ((args true-listp)
-                                     (prem/concl-desc msgp)
-                                     (q posp)
-                                     (translations defind-translation-omapp))
-     :returns (mv erp (infos defind-term-info-listp))
-     :parents nil
-     (b* (((reterr) nil)
-          ((when (endp args)) (retok nil))
-          (arg-desc (msg "the ~n0 argument of ~@1"
-                         (list (lposfix q))
-                         (msg-downcase-first prem/concl-desc)))
-          ((erp info) (defind-process-term (car args) arg-desc translations))
-          ((erp infos) (defind-process-args-loop
-                         (cdr args) prem/concl-desc (1+ (lposfix q))
-                         translations)))
-       (retok (cons info infos)))
-     :guard-hints (("Goal" :in-theory (enable character-alistp))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-conclusion (concl
-                                   (desc msgp)
-                                   (pred-infos defind-pred-info-listp)
-                                   (translations defind-translation-omapp))
-  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-  :returns (mv erp (info defind-conclusion-infop))
-  :short "Process the conclusion of a rule."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must have the form of a predicate @('p[i]') applied to some terms.")
-   (xdoc::p
-    "The @('desc') input of this function is
-     a description of the conclusion, for error messages."))
-  (b* (((reterr) (irr-defind-conclusion-info))
-       ((unless (and (true-listp concl)
-                     (consp concl)))
-        (reterr (msg "~@0 must be a non-empty list, ~
-                      but it is ~x1 instead."
-                     desc concl)))
-       (pred-name (car concl))
-       ((unless (symbolp pred-name))
-        (reterr (msg "~@0 must start with a symbol, ~
-                      but it starts with ~x1 instead."
-                     desc pred-name)))
-       (args (cdr concl))
-       (pred-info (defind-lookup-pred pred-name pred-infos))
-       ((unless pred-info)
-        (reterr (msg "~@0 must have the form of ~
-                      one of the predicates among ~&1 applied to some terms, ~
-                      but ~x2 is not one of them."
-                     desc (defind-pred-info-list->name pred-infos) pred-name)))
-       (pred-formals (defind-pred-info->formals pred-info))
-       ((unless (= (len args) (len pred-formals)))
-        (reterr (msg "The number of arguments in ~@0 ~
-                      must match the number ~x1 of formals ~
-                      of the predicate ~x2, ~
-                      but it is ~x3 instead."
-                     (msg-downcase-first desc)
-                     (len pred-formals)
-                     pred-name
-                     (len args))))
-       (args-desc (msg "the arguments of ~@0" (msg-downcase-first desc)))
-       ((erp arg-infos) (defind-process-args args args-desc translations)))
-    (retok (make-defind-conclusion-info :name pred-name :args arg-infos)))
-  :guard-hints (("Goal" :in-theory (enable character-alistp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-premise (prem
-                                (desc msgp)
-                                (pred-infos defind-pred-info-listp)
-                                (translations defind-translation-omapp))
-  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-  :returns (mv erp (info defind-premise-infop))
-  :short "Process the premise of a rule."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This may contain a @('p[i]') predicate,
-     as in @(tsee defind-process-conclusion),
-     or it may be some other term not involving
-     the predicates being defined.")
-   (xdoc::p
-    "The @('desc') input of this function is
-     a description of the premise, for error messages."))
-  (b* (((reterr) (irr-defind-premise-info))
-       (pred-names (defind-pred-info-list->name pred-infos)))
-    (if (and (true-listp prem)
-             (consp prem)
-             (member-equal (car prem) pred-names))
-        (b* ((pred-name (car prem))
-             (args (cdr prem))
-             ((unless (symbolp pred-name))
-              (raise "Internal error: ~x0 is not a symbol." pred-name)
-              (reterr "irrelevant"))
-             (pred-info (defind-lookup-pred pred-name pred-infos))
-             ((unless pred-info)
-              (raise "Internal error: no information for ~x0." pred-name)
-              (reterr "irrelevant"))
-             (pred-formals (defind-pred-info->formals pred-info))
-             ((unless (= (len args) (len pred-formals)))
-              (reterr (msg "The number of arguments in ~@0 ~
-                            must match the number ~x1 of formals ~
-                            of the predicate ~x2, ~
-                            but it is ~x3 instead."
-                           (msg-downcase-first desc)
-                           (len pred-formals)
-                           pred-name
-                           (len args))))
-             (args-desc (msg "the arguments of ~@0" (msg-downcase-first desc)))
-             ((erp arg-infos)
-              (defind-process-args args args-desc translations)))
-          (retok (make-defind-premise-info-pred :name pred-name
-                                                :args arg-infos)))
-      (b* ((desc (msg "Since ~@0 does not have the form of ~
-                       one of the predicates among ~&1 applied to some terms, ~
-                       it"
-                      (msg-downcase-first desc) pred-names))
-           ((erp info) (defind-process-term prem desc translations)))
-        (retok (make-defind-premise-info-other :term info)))))
-  :no-function nil
-  :guard-hints (("Goal" :in-theory (enable character-alistp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-premises (prems
-                                 (irule-desc msgp)
-                                 (pred-infos defind-pred-info-listp)
-                                 (translations defind-translation-omapp))
-  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-  :returns (mv erp (infos defind-premise-info-listp))
-  :short "Process the premises of a rule."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('irule-desc') input of this function is
-     a description of the rule that the premises belong to;
-     it is used for error message."))
-  (b* (((reterr) nil)
-       ((unless (true-listp prems))
-        (reterr (msg "The premises of ~@0 must be a list, ~
-                      but they are ~x1 instead."
-                     irule-desc prems))))
-    (defind-process-premises-loop prems 1 irule-desc pred-infos translations))
-
-  :prepwork
-  ((define defind-process-premises-loop ((prems true-listp)
-                                         (q posp)
-                                         (irule-desc msgp)
-                                         (pred-infos defind-pred-info-listp)
-                                         (translations defind-translation-omapp))
-     :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-     :returns (mv erp (infos defind-premise-info-listp))
-     :parents nil
-     (b* (((reterr) nil)
-          ((when (endp prems)) (retok nil))
-          (prem (car prems))
-          (prem-desc
-           (msg "The ~n0 premise of ~@1"
-                (list (lposfix q))
-                (msg-downcase-first irule-desc)))
-          ((erp info)
-           (defind-process-premise prem prem-desc pred-infos translations))
-          ((erp infos) (defind-process-premises-loop
-                         (cdr prems) (1+ (lposfix q))
-                         irule-desc pred-infos translations)))
-       (retok (cons info infos)))
-     :guard-hints (("Goal" :in-theory (enable character-alistp))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-irule (irule
-                              (desc msgp)
-                              (pred-infos defind-pred-info-listp)
-                              (translations defind-translation-omapp))
-  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-  :returns (mv erp (info defind-irule-infop))
-  :short "Process a rule."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('desc') input of this function is
-     a description of the rule, for error messages."))
-  (b* (((reterr) (irr-defind-irule-info))
-       ((unless (and (true-listp irule)
-                     (= (len irule) 3)))
-        (reterr (msg "~@0 must be a list of three elements, ~
-                       but it is ~x1 instead."
-                     desc irule)))
-       ((list name prems concl) irule)
-       ((unless (symbolp name))
-        (reterr (msg "The first element of ~@0 must be a symbol, ~
-                      but it is ~x1 instead."
-                     desc name)))
-       ((erp prem-infos)
-        (defind-process-premises prems desc pred-infos translations))
-       (concl-desc (msg "The conclusion of ~@0" (msg-downcase-first desc)))
-       ((erp concl-info)
-        (defind-process-conclusion concl concl-desc pred-infos translations)))
-    (retok (make-defind-irule-info :name name
-                                   :premises prem-infos
-                                   :conclusion concl-info)))
-  :guard-hints (("Goal" :in-theory (enable character-alistp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-irules (irules
-                               (irules-suppliedp booleanp)
-                               (pred-infos defind-pred-info-listp)
-                               (translations defind-translation-omapp))
-  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-  :returns (mv erp
-               (infos defind-irule-info-listp)
-               (leveled-cliques symbol-set-list-listp))
-  :short "Process the @(':irules') input."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Besides processing the individual rules,
-     we check that the rule names are all distinct.
-     Then we organize the predicates into
-     cliques in dependency order, each organized into levels,
-     and we use the result to enforce the restrictions described next.")
-   (xdoc::p
-    "We check that every predicate is in the conclusion of some rule.
-     A predicate without rules has no proof trees,
-     which is also captured by the check on levels described below,
-     but we check it first, for a more informative error message.")
-   (xdoc::p
-    "The predicates do not have to be all mutually recursive,
-     and they do not have to be recursive at all:
-     they form one or more cliques,
-     which we return in dependency order,
-     so that the events for each clique are generated
-     after the events for the cliques it depends on.
-     A predicate that is not recursive forms a singleton clique,
-     and yields a non-recursive proof validity function.")
-   (xdoc::p
-    "We also check that every predicate is at some level in its clique.
-     A predicate at no level would have no proof trees:
-     the generated fixtype of its proofs would be empty,
-     but fixtypes, like all ACL2 types, must be non-empty;
-     concretely, FTY would reject the generated fixtype,
-     for lack of a base case.
-     For a single predicate,
-     being at some level amounts to being at level 0,
-     i.e. to the existence of a non-recursive rule,
-     which provides a base case for the inductive definition.
-     For multiple predicates, it suffices that some of them are at level 0,
-     with the others reachable from those through the levels.")
-   (xdoc::p
-    "We return the leveled cliques along with the rule information,
-     for use in event generation."))
-  (b* (((reterr) nil nil)
-       ((unless irules-suppliedp)
-        (reterr (msg "The :IRULES input must be supplied.")))
-       ((unless (and (true-listp irules)
-                     (consp irules)))
-        (reterr (msg "The :IRULES input must be a non-empty list, ~
-                      but it is ~x0 instead."
-                     irules)))
-       ((erp infos)
-        (defind-process-irules-loop irules 1 pred-infos translations))
-       (irule-names (defind-irule-info-list->name infos))
-       ((unless (no-duplicatesp-eq irule-names))
-        (reterr (msg "The names of the rules in the :IRULES input ~
-                      must be all distinct, ~
-                      but there are duplicates among ~&0."
-                     irule-names)))
-       (pred-names (defind-pred-info-list->name pred-infos))
-       (ruleless-preds (defind-preds-without-irules pred-names infos))
-       ((when (consp ruleless-preds))
-        (reterr (msg "Every predicate being defined must be ~
-                      in the conclusion of at least one rule ~
-                      in the :IRULES input. ~
-                      This does not hold for ~&0. ~
-                      A predicate without rules would have no proofs, ~
-                      and thus it would be empty."
-                     ruleless-preds)))
-       ((mv leveled-cliques unleveled)
-        (defind-leveled-cliques pred-names infos))
-       ((unless (set::emptyp unleveled))
-        (reterr (msg "Every predicate being defined ~
-                      must be at some level: ~
-                      a predicate is at level 0 if ~
-                      some rule in the :IRULES input ~
-                      has the predicate as its conclusion ~
-                      and no premises that are ~
-                      calls of the predicates being defined; ~
-                      a predicate is at a higher level if ~
-                      some rule has the predicate as its conclusion ~
-                      and all its premises that are ~
-                      calls of the predicates being defined ~
-                      call predicates at lower levels. ~
-                      This does not hold for ~&0. ~
-                      For a predicate at no level, ~
-                      the generated fixtype of its proofs would be empty, ~
-                      but fixtypes must be non-empty."
-                     unleveled))))
-    (retok infos leveled-cliques))
-  :guard-hints
-  (("Goal"
-    :in-theory (enable consp-under-iff-when-true-listp-no-backchain-limit
-                       true-listp-when-symbol-set-list-listp)))
-
-  :prepwork
-  ((define defind-process-irules-loop ((irules true-listp)
-                                       (k posp)
-                                       (pred-infos defind-pred-info-listp)
-                                       (translations defind-translation-omapp))
-     :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-     :returns (mv erp (infos defind-irule-info-listp))
-     :parents nil
-     (b* (((reterr) nil)
-          ((when (endp irules)) (retok nil))
-          (desc (msg "The ~n0 element of the :IRULES input" (list (lposfix k))))
-          ((erp info)
-           (defind-process-irule (car irules) desc pred-infos translations))
-          ((erp infos) (defind-process-irules-loop
-                         (cdr irules) (1+ (lposfix k))
-                         pred-infos translations)))
-       (retok (cons info infos)))
-     :guard-hints (("Goal" :in-theory (enable character-alistp)))))
-
-  ///
-
-  (defret no-duplicatesp-equal-of-defind-process-irules
-    (no-duplicatesp-equal (defind-irule-info-list->name infos))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-parents/short/long (parents
-                                           (parents-suppliedp booleanp)
-                                           short
-                                           (short-suppliedp booleanp)
-                                           long
-                                           (long-suppliedp booleanp))
-  :returns (mv erp (parents symbol-listp) short long (xdocp booleanp))
-  :short "Process the @(':parents'), @(':short'), and @(':long') inputs."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We do not perform any check on the @(':short') and @(':long') inputs,
-     which in general may be terms consisting of XDOC constructors."))
-  (b* (((reterr) nil nil nil nil)
-       ((when (and (not parents-suppliedp)
-                   (not short-suppliedp)
-                   (not long-suppliedp)))
-        (retok nil nil nil nil))
-       ((when (and parents-suppliedp
-                   (not (and (symbol-listp parents)
-                             (consp parents)))))
-        (reterr (msg "The :PARENTS input must be a non-empty list of symbols, ~
-                      but it is ~x0 instead."
-                     parents)))
-       (parents (and parents-suppliedp parents))
-       (short (and short-suppliedp short))
-       (long (and long-suppliedp long)))
-    (retok parents short long t)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-inputs-1 (name
-                                 preds
-                                 (preds-suppliedp booleanp)
-                                 irules
-                                 (wrld plist-worldp))
-  :returns (mv erp
-               (name symbolp)
-               (pred-infos defind-pred-info-listp)
-               (terms set::setp))
-  :short "Process the inputs, phase 1:
-          process the @('name') and @(':preds') inputs,
-          and collect the terms to translate from the @(':irules') input."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Input processing is split into three phases:
-     this phase, in logic mode,
-     which processes the @('name') and @(':preds') inputs
-     and collects the terms to translate from the @(':irules') input;
-     phase 2 (see @(tsee defind-process-inputs-2)), in program mode,
-     which translates the collected terms;
-     and phase 3 (see @(tsee defind-process-inputs-3)), in logic mode,
-     which processes the @(':irules') input,
-     using the translations from phase 2,
-     and the @(':parents'), @(':short'), and @(':long') inputs.")
-   (xdoc::p
-    "The collection of the terms does not depend on
-     the @(':irules') input being well-formed:
-     ill-formed parts contribute no terms,
-     and are rejected in phase 3
-     before their translations are ever needed."))
-  (b* (((reterr) nil nil nil)
-       ((erp name) (defind-process-name name wrld))
-       ((erp pred-infos)
-        (defind-process-preds preds preds-suppliedp wrld))
-       (pred-names (defind-pred-info-list->name pred-infos))
-       (terms (defind-terms-to-translate-in-irules irules pred-names)))
-    (retok name pred-infos terms))
-
-  ///
-
-  (defret no-duplicatesp-equal-of-defind-process-inputs-1
-    (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-inputs-2 ((terms true-listp) state)
-  :returns (translations "A @(tsee defind-translation-omapp)
-                          from the terms to their translation results.")
-  :mode :program
-  :short "Process the inputs, phase 2:
-          translate the terms collected in phase 1."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the only part of input processing in program mode;
-     see @(tsee defind-process-inputs-1) for
-     a description of the three phases of input processing.")
-   (xdoc::p
-    "For each term collected in phase 1,
-     we call @(tsee check-user-term),
-     and we associate to the term the result of the translation,
-     as a @(tsee defind-translation) value with
-     (i) the translated term or error message
-     and (ii) the output stobjs.
-     These results are checked, in logic mode,
-     in @(tsee defind-process-term).")
-   (xdoc::p
-    "This must be in program mode because
-     @(tsee check-user-term) is in program mode,
-     as it calls the ACL2 translator, which is in program mode.
-     Calling it directly, as opposed to via @(tsee magic-ev-fncall)
-     (see @(tsee check-user-term$)),
-     avoids the restrictions of safe mode,
-     which reject terms containing macros with special raw Lisp code
-     (e.g. @('+') and @('1+'))."))
-  (b* (((when (endp terms)) nil)
-       (term (car terms))
-       ((mv term/msg stobjs-out) (check-user-term term (w state))))
-    (omap::update term
-                  (make-defind-translation :term/msg term/msg
-                                           :stobjs-out stobjs-out)
-                  (defind-process-inputs-2 (cdr terms) state)))
-  :hooks nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-inputs-3 (irules
-                                 (irules-suppliedp booleanp)
-                                 parents
-                                 (parents-suppliedp booleanp)
-                                 short
-                                 (short-suppliedp booleanp)
-                                 long
-                                 (long-suppliedp booleanp)
-                                 (pred-infos defind-pred-info-listp)
-                                 (translations defind-translation-omapp))
-  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
-  :returns (mv erp
-               (irule-infos defind-irule-info-listp)
-               (leveled-cliques symbol-set-list-listp)
-               (parents symbol-listp)
-               short
-               long
-               (xdocp booleanp))
-  :short "Process the inputs, phase 3:
-          process the @(':irules') input,
-          using the translations from phase 2,
-          and the @(':parents'), @(':short'), and @(':long') inputs."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "See @(tsee defind-process-inputs-1) for
-     a description of the three phases of input processing."))
-  (b* (((reterr) nil nil nil nil nil nil)
-       ((erp irule-infos leveled-cliques)
-        (defind-process-irules irules irules-suppliedp
-          pred-infos translations))
-       ((erp parents short long xdocp)
-        (defind-process-parents/short/long
-          parents parents-suppliedp
-          short short-suppliedp
-          long long-suppliedp)))
-    (retok irule-infos leveled-cliques parents short long xdocp))
-
-  ///
-
-  (defret no-duplicatesp-equal-of-defind-process-inputs-3
-    (no-duplicatesp-equal (defind-irule-info-list->name irule-infos))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(xdoc::evmac-topic-event-generation definductive)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-gen-conjunction ((conjuncts true-listp))
-  :returns (term "An untranslated term.")
-  :short "Generate a conjunction of zero or more untranslated terms."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If there are no conjuncts, we generate @('t').
-     If there is exactly one conjunct, we generate that conjunct.
-     If there are two or more conjuncts, we generate an @(tsee and) of them.
-     This way, we avoid generating empty and singleton conjunctions."))
-  (cond ((endp conjuncts) t)
-        ((endp (cdr conjuncts)) (car conjuncts))
-        (t `(and ,@(true-list-fix conjuncts)))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define defind-gen-implication ((antecedents true-listp) consequent)
-  :returns (term "An untranslated term.")
-  :short "Generate an implication of a consequent
-          from zero or more antecedents,
-          all untranslated terms."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If there are no antecedents, we generate just the consequent.
-     Otherwise, we generate an @(tsee implies)
-     whose antecedent is the conjunction of the antecedents.
-     This way, we avoid generating implications with trivial antecedents."))
-  (if (consp antecedents)
-      `(implies ,(defind-gen-conjunction antecedents) ,consequent)
-    consequent))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defind-assert-type-name ((pred-name symbolp) (name symbolp))
   :returns (type-name symbolp)
@@ -2253,6 +1386,17 @@
   :short "Name of a premise field of a @('p[i]-proof') fixtype."
   (packn-pos (list 'premise (lposfix num) '-proof) (symbol-lfix name)))
 
+;;;;;;;;;;
+
+(define defind-prem-field-names ((num natp) (name symbolp))
+  :returns (field-names symbol-listp)
+  :short "Name of the premise fields of a @('p[i]-proof') fixtype."
+  (cond ((zp num) nil)
+        (t (append (defind-prem-field-names (1- (lnfix num)) name)
+                   (list (defind-prem-field-name num name)))))
+  :measure (nfix num)
+  :prepwork ((local (in-theory (enable nfix)))))
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (define defind-assert-var-name ((name symbolp))
@@ -2266,6 +1410,27 @@
   :returns (var-name symbolp)
   :short "Name of the proof variable."
   (packn-pos (list 'proof) (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof2-xvar-name ((name symbolp))
+  :returns (var-name symbolp)
+  :short "Name of the @(':xvar') of a @('p[i]-2-proof') fixtype."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The fields of these fixtypes are named after the variables of the rules,
+     so the @(':xvar') must differ from all of those;
+     see @(tsee defind-gen-proof2-deftagsum).")
+   (xdoc::p
+    "This is not the variable that the @('p[i]-2-proof-validp') functions
+     use for their proof argument, which is @(tsee defind-proof-var-name).
+     A variable of a rule may shadow that one without harm,
+     because the case macro binds the fields of the proof
+     before the shadowing takes place;
+     it may not clash with this one,
+     which @(tsee defind-check-proof2-names) enforces."))
+  (packn-pos (list (defind-proof-var-name name) '$) (symbol-lfix name)))
 
 ;;;;;;;;;;
 
@@ -2310,6 +1475,41 @@
 
 ;;;;;;;;;;
 
+(define defind-proof-var-field-var-name ((var symbolp) (name symbolp))
+  :returns (var-name symbolp)
+  :short "Name of the variable bound to a variable field of a proof."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The summands of a @('p[i]-2-proof') fixtype have a field
+     for each variable of the rule, named after the variable.
+     This is the variable that the case macro of the fixtype
+     binds to that field;
+     @(tsee defind-proof-prem-var-name) and
+     @(tsee defind-proof-concl-var-name)
+     are the analogous names for the other kinds of field.")
+   (xdoc::p
+    "The cases of a @('p[i]-2-proof-validp') function use these variables
+     either as the right-hand sides of the bindings of the rule's variables
+     or directly as arguments of the @('p[l[k]]-2-rule[k]-validp') function;
+     see @(tsee defind-gen-proof2-valid-fn-case-bindings)."))
+  (packn-pos (list (defind-proof-var-name name)
+                   #\.
+                   (symbol-lfix var))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-var-field-var-names ((vars symbol-listp) (name symbolp))
+  :returns (var-names symbol-listp)
+  :short "Names of the variables bound to
+          all the variable fields of a proof."
+  (cond ((endp vars) nil)
+        (t (cons (defind-proof-var-field-var-name (car vars) name)
+                 (defind-proof-var-field-var-names (cdr vars) name)))))
+
+;;;;;;;;;;
+
 (define defind-prem-proof-var-name ((num posp) (name symbolp))
   :returns (var-name symbolp)
   :short "Name of a premise proof variable."
@@ -2336,6 +1536,28 @@
   (cond ((endp formals) nil)
         (t (cons (defind-concl-formal-var-name (car formals) name)
                  (defind-concl-formal-var-names (cdr formals) name)))))
+
+;;;;;;;;;;
+
+(define defind-proof2-concl-var-names ((formals symbol-listp) (name symbolp))
+  :returns (var-names symbol-listp)
+  :short "Names of the variables that a @('p[i]-2-proof-validp') function
+          uses for the arguments of the conclusion."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the same names used for the formals of a conclusion assertion.")
+   (xdoc::p
+    "These names must differ from the variables of the rules,
+     which are bound, in each case of the function,
+     to the corresponding fields of the proof:
+     a rule variable with one of these names would shadow the formal,
+     turning the equality for that argument of the conclusion
+     into an equality of the field with itself.
+     This is why @(tsee defind-check-proof2-names) rejects such a rule.
+     All the events that need these names obtain them here,
+     so that the check cannot drift from what is generated."))
+  (defind-concl-formal-var-names formals name))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2396,6 +1618,19 @@
 
 ;;;;;;;;;;
 
+(define defind-proof-var-acc-name ((pred-name symbolp)
+                                   (irule-name symbolp)
+                                   (var symbolp)
+                                   (name symbolp))
+  :returns (acc-name symbolp)
+  :short "Name of a variable accessor of a @('p[i]-2-proof') summand."
+  (packn-pos (list (defind-proof-constr-name pred-name irule-name name)
+                   '->
+                   (symbol-lfix var))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
 (define defind-proof-concl-acc$inline-name ((pred-name symbolp)
                                             (irule-name symbolp)
                                             (name symbolp))
@@ -2403,6 +1638,19 @@
   :short "Name of the @('$inline') form of
           the conclusion accessor of a @('p[i]-proof') summand."
   (packn-pos (list (defind-proof-concl-acc-name pred-name irule-name name)
+                   '$inline)
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-var-acc$inline-name ((pred-name symbolp)
+                                          (irule-name symbolp)
+                                          (var symbolp)
+                                          (name symbolp))
+  :returns (acc-name symbolp)
+  :short "Name of the @('$inline') form of
+          a variable accessor of a @('p[i]-2-proof') summand."
+  (packn-pos (list (defind-proof-var-acc-name pred-name irule-name var name)
                    '$inline)
              (symbol-lfix name)))
 
@@ -2488,6 +1736,25 @@
   :short "Name of the flag function of a @(tsee defines) of
           @('p[i]-proof-validp') functions."
   (packn-pos (list (defind-proof-valid-fn-clique-name pred-name name) '-flag)
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-valid-fn-clique-flag-equivs-name ((pred-name symbolp)
+                                                       (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of the flag equivalence theorem of a @(tsee defines) of
+          @('p[i]-proof-validp') functions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This theorem is generated by the flag machinery,
+     along with the flag function.
+     It provides rewrite rules that turn
+     calls of the flag function on constant flag values
+     into calls of the corresponding functions of the clique."))
+  (packn-pos (list (defind-proof-valid-fn-clique-flag-name pred-name name)
+                   '-equivalences)
              (symbol-lfix name)))
 
 ;;;;;;;;;;
@@ -2660,6 +1927,25 @@
 
 ;;;;;;;;;;
 
+(define defind-proof2-kind-fixing-thm-name ((pred-name symbolp)
+                                            (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of the kind fixing theorem for a @('p[i]-2-proof') fixtype."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This differs from @(tsee defind-proof-kind-fixing-thm-name)
+     only in the variable that ends the name;
+     see @(tsee defind-proof2-prem-fixing-thm-name)."))
+  (packn-pos (list (defind-proof-type-name pred-name name)
+                   '-kind$inline-of-
+                   (defind-proof-fixer-name pred-name name)
+                   '-
+                   (defind-proof2-xvar-name name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
 (define defind-proof-fix-id-thm-name ((pred-name symbolp) (name symbolp))
   :returns (thm-name symbolp)
   :short "Name of the fixing identity theorem for a @('p[i]-proof') fixtype."
@@ -2823,6 +2109,31 @@
 
 ;;;;;;;;;;
 
+(define defind-proof2-prem-fixing-thm-name ((pred-name symbolp)
+                                            (irule-name symbolp)
+                                            (num posp)
+                                            (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of the fixing theorem of a premise accessor of
+          a @('p[i]-2-proof') fixtype."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This differs from @(tsee defind-proof-prem-fixing-thm-name)
+     only in the variable that ends the name,
+     which is the @(':xvar') of the fixtype:
+     the @('p[i]-proof') fixtypes use the default @('x'),
+     while the @('p[i]-2-proof') fixtypes cannot
+     (see @(tsee defind-gen-proof2-deftagsum))."))
+  (packn-pos (list (defind-proof-prem-acc-name pred-name irule-name num name)
+                   '$inline-of-
+                   (defind-proof-fixer-name pred-name name)
+                   '-
+                   (defind-proof2-xvar-name name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
 (define defind-proof-concl-acc-fixing-thm-name ((pred-name symbolp)
                                                 (irule-name symbolp)
                                                 (name symbolp))
@@ -2841,6 +2152,35 @@
 
 ;;;;;;;;;;
 
+(define defind-proof2-var-acc-fixing-thm-names ((pred-name symbolp)
+                                                (irule-name symbolp)
+                                                (vars symbol-listp)
+                                                (name symbolp))
+  :returns (thm-names symbol-listp)
+  :short "Names of the fixing theorems of the variable accessors of
+          a @('p[i]-2-proof') summand."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the counterparts of
+     @(tsee defind-proof-concl-acc-fixing-thm-name),
+     for the fields named after the variables of the rule;
+     see @(tsee defind-proof2-prem-fixing-thm-name)
+     for the variable that ends the names."))
+  (cond ((endp vars) nil)
+        (t (cons (packn-pos
+                  (list (defind-proof-var-acc-name
+                          pred-name irule-name (car vars) name)
+                        '$inline-of-
+                        (defind-proof-fixer-name pred-name name)
+                        '-
+                        (defind-proof2-xvar-name name))
+                  (symbol-lfix name))
+                 (defind-proof2-var-acc-fixing-thm-names
+                   pred-name irule-name (cdr vars) name)))))
+
+;;;;;;;;;;
+
 (define defind-proof-concl-of-constr-thm-name ((pred-name symbolp)
                                                (irule-name symbolp)
                                                (name symbolp))
@@ -2852,6 +2192,32 @@
                    '-of-
                    (defind-proof-constr-name pred-name irule-name name))
              (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-var-of-constr-thm-names ((pred-name symbolp)
+                                              (irule-name symbolp)
+                                              (vars symbol-listp)
+                                              (name symbolp))
+  :returns (thm-names symbol-listp)
+  :short "Names of the theorems about the application of
+          the variable accessors of a @('p[i]-2-proof') fixtype
+          to the constructor of the fixtype."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the counterparts of
+     @(tsee defind-proof-concl-of-constr-thm-name),
+     for the fields named after the variables of the rule."))
+  (cond ((endp vars) nil)
+        (t (cons (packn-pos
+                  (list (defind-proof-var-acc-name
+                          pred-name irule-name (car vars) name)
+                        '-of-
+                        (defind-proof-constr-name pred-name irule-name name))
+                  (symbol-lfix name))
+                 (defind-proof-var-of-constr-thm-names
+                   pred-name irule-name (cdr vars) name)))))
 
 ;;;;;;;;;;
 
@@ -2905,6 +2271,41 @@
   (packn-pos (list 'booleanp-of-
                    (defind-irule-valid-fn-name pred-name irule-name name))
              (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-valid-return-thm-name ((pred-name symbolp)
+                                            (standalonep booleanp)
+                                            (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of the return theorem of a @('p[i]-proof-validp') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A standalone function is introduced by @(tsee define),
+     which names this theorem after the return type and the function.
+     A function of a clique of two or more predicates is introduced by
+     a @(tsee define) inside a @(tsee defines),
+     which names it in its own way instead,
+     ignoring even an explicit @(':name') in the return specifier.
+     So the name depends on
+     whether the predicate forms a singleton clique.")
+   (xdoc::p
+    "The events for the first representation of proofs
+     never refer to this theorem,
+     because the bodies of the @('p[i]') predicates
+     end with an equality, which is a boolean by type reasoning,
+     while the ones of the @('p[i]-2') predicates
+     end with a call of the proof validity predicate."))
+  (if standalonep
+      (packn-pos (list 'booleanp-of-
+                       (defind-proof-valid-fn-name pred-name name))
+                 (symbol-lfix name))
+    (packn-pos (list 'return-type-of-
+                     (defind-proof-valid-fn-name pred-name name)
+                     '|.|
+                     'yes/no)
+               (symbol-lfix name))))
 
 ;;;;;;;;;;
 
@@ -3004,6 +2405,27 @@
 
 ;;;;;;;;;;
 
+(define defind-proof2-pred-alt-when-proof-valid-thm-names ((preds symbol-setp)
+                                                           (name symbolp))
+  :returns (thm-names true-listp)
+  :short "Names of the @('p[i]-2-alt-when-proof-validp') theorems
+          for a set of predicates."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The set consists of predicates as supplied by the user,
+     which we turn into the corresponding @('p[i]-2') predicates."))
+  (b* (((when (set::emptyp (symbol-sfix preds))) nil)
+       (pred (set::head preds))
+       (thm-names (defind-proof2-pred-alt-when-proof-valid-thm-names
+                    (set::tail preds) name)))
+    (cons (defind-pred-alt-when-proof-valid-thm-name
+            (defind-pred2-name pred name) name)
+          thm-names))
+  :prepwork ((local (in-theory (enable emptyp-of-symbol-sfix)))))
+
+;;;;;;;;;;
+
 (define defind-pred-alt-when-pred-thm-name ((pred-name symbolp) (name symbolp))
   :returns (thm-name symbolp)
   :short "Name of a @('p[i]-alt-when-p[i]') theorem."
@@ -3029,12 +2451,809 @@
 
 ;;;;;;;;;;
 
+(define defind-proof2-rule-thm-section-name ((name symbolp))
+  :returns (topic symbolp)
+  :short "Name of the @(tsee defsection) containing
+          the @('p[l[k]]-2-rule[k]') theorems."
+  (packn-pos (list (symbol-lfix name) '-2-rules) (symbol-lfix name)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-pred-alt-irule-witness-fn-name ((pred-name symbolp)
+                                               (irule-name symbolp)
+                                               (name symbolp))
+  :returns (fn-name symbolp)
+  :short "Name of the witness function of
+          a @('p[l[k]]-alt-rule[k]-p') function."
+  (packn-pos (list (defind-pred-alt-irule-fn-name pred-name irule-name name)
+                   '-witness)
+             (symbol-lfix name)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-pred2-when-pred-thm-name ((pred-name symbolp) (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of a @('p[i]-2-when-p[i]') theorem."
+  (packn-pos (list (defind-pred2-name pred-name name)
+                   '-when-
+                   (symbol-lfix pred-name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-pred-when-pred2-thm-name ((pred-name symbolp) (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of a @('p[i]-when-p[i]-2') theorem."
+  (packn-pos (list (symbol-lfix pred-name)
+                   '-when-
+                   (defind-pred2-name pred-name name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-pred2-is-pred-thm-name ((pred-name symbolp) (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of a @('p[i]-2-is-p[i]') theorem."
+  (packn-pos (list (defind-pred2-name pred-name name)
+                   '-is-
+                   (symbol-lfix pred-name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-pred-return-thm-name ((pred-name symbolp) (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of the return theorem of a @('p[i]') predicate."
+  (packn-pos (list 'booleanp-of- (symbol-lfix pred-name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-proof2-equivalence-section-name ((name symbolp))
+  :returns (topic symbolp)
+  :short "Name of the @(tsee defsection) containing
+          the theorems that relate the two representations of proofs."
+  (packn-pos (list (symbol-lfix name) '-2-same) (symbol-lfix name)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-proof2-minimality-section-name ((name symbolp))
+  :returns (topic symbolp)
+  :short "Name of the @(tsee defsection) containing
+          the stubs, propositions, and theorems
+          for the minimality of the @('p[i]-2') predicates."
+  (packn-pos (list (symbol-lfix name) '-2-minimal) (symbol-lfix name)))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define defind-minimality-section-name ((name symbolp))
   :returns (topic symbolp)
   :short "Name of the @(tsee defsection) containing
           the stubs, propositions, and theorems
           for the minimality of the predicates."
   (packn-pos (list (symbol-lfix name) '-minimal) (symbol-lfix name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::evmac-topic-input-processing definductive)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-name (name (wrld plist-worldp))
+  :returns (mv erp (name symbolp))
+  :short "Process the @('name') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Although currently we do not generate any event with this name
+     (technically, XDOC topics are not ACL2 event names),
+     we check that it is not an existing event name,
+     to reduce possible confusion
+     and the chance that it may shadow another XDOC topic.")
+   (xdoc::p
+    "We may also check directly that it does not shadow any topic.
+     But all these checks only take the current world into consideration:
+     shadowing may occur when putting different books together,
+     and can be realiably detected only when building the whole manual.
+     We could also omit these checks if no XDOC topic is in fact generated,
+     but it seems conceptually best, even in that case,
+     to ensure some separation between the name supplied here
+     and any existing names in the world."))
+  (b* (((reterr) nil)
+       ((unless (symbolp name))
+        (reterr (msg "The NAME input must be a symbol, ~
+                      but it is ~x0 instead."
+                     name)))
+       ((when (keywordp name))
+        (reterr (msg "The NAME input must not be a keyword, ~
+                      but it is ~x0 instead."
+                     name)))
+       (msg/nil (fresh-namep-msg-weak name nil wrld))
+       ((when msg/nil)
+        ;; No period at the end of the following string
+        ;; because MSG/NIL ends with period already.
+        (reterr (msg "The NAME input must be a fresh name, but ~@0"
+                     msg/nil))))
+    (retok name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-pred (pred (i posp) (wrld plist-worldp))
+  :returns (mv erp (info defind-pred-infop))
+  :short "Process an element of the @(':preds') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('i') input of this function is
+     the index of the predicate @('p[i]')
+     that must be described by the @('pred') of this function.")
+   (xdoc::p
+    "We ensure that the name is a valid fresh one for a function."))
+  (b* (((reterr) (irr-defind-pred-info))
+       ((unless (and (symbol-listp pred)
+                     (consp pred)
+                     (consp (cdr pred))))
+        (reterr (msg "The ~n0 element of the :PREDS input ~
+                      must be a list of at least two symbols, ~
+                      but it is ~x1 instead."
+                     (list (lposfix i)) pred)))
+       (pred-name (car pred))
+       (pred-formals (cdr pred))
+       ((when (keywordp pred-name))
+        (reterr (msg "The name of the predicate in ~
+                      the ~n0 element of the :PREDS input ~
+                      must not be a keyword, ~
+                      but it is ~x1 instead."
+                     (list (lposfix i)) pred-name)))
+       (msg/nil (fresh-namep-msg-weak pred-name 'function wrld))
+       ((when msg/nil)
+        ;; No period at the end of the following string
+        ;; because MSG/NIL ends with period already.
+        (reterr (msg "The name of the predicate in ~
+                      the ~n0 element of the :PREDS input ~
+                      must be fresh, but ~@1"
+                     (list (lposfix i)) msg/nil)))
+       ((unless (legal-variable-listp pred-formals))
+        (reterr (msg "The formals of the predicate in ~
+                      the ~n0 element of the :PREDS input ~
+                      must be legal variable names, ~
+                      but at least one in ~&1 is not."
+                     (list (lposfix i)) pred-formals)))
+       ((unless (no-duplicatesp-eq pred-formals))
+        (reterr (msg "The formals of the predicate in ~
+                      the ~n0 element of the :PREDS input ~
+                      must be all distinct, ~
+                      but there are duplicates among ~&1."
+                     (list (lposfix i)) pred-formals))))
+    (retok (make-defind-pred-info :name pred-name
+                                  :formals pred-formals))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-preds (preds
+                              (preds-suppliedp booleanp)
+                              (wrld plist-worldp))
+  :returns (mv erp (infos defind-pred-info-listp))
+  :short "Process the @(':preds') input."
+  (b* (((reterr) nil)
+       ((unless preds-suppliedp)
+        (reterr (msg "The :PREDS input must be supplied.")))
+       ((unless (and (true-listp preds)
+                     (consp preds)))
+        (reterr (msg "The :PREDS input must be a non-empty list, ~
+                      but it is ~x0 instead."
+                     preds)))
+       ((erp infos) (defind-process-preds-loop preds 1 wrld))
+       (pred-names (defind-pred-info-list->name infos))
+       ((unless (no-duplicatesp-eq pred-names))
+        (reterr (msg "The names of the predicates in the :PREDS input ~
+                      must be all distinct, ~
+                      but there are duplicates among ~&0."
+                     pred-names))))
+    (retok infos))
+
+  :prepwork
+  ((define defind-process-preds-loop ((preds true-listp)
+                                      (i posp)
+                                      (wrld plist-worldp))
+     :returns (mv erp (infos defind-pred-info-listp))
+     :parents nil
+     (b* (((reterr) nil)
+          ((when (endp preds)) (retok nil))
+          ((erp info) (defind-process-pred (car preds) i wrld))
+          ((erp infos)
+           (defind-process-preds-loop (cdr preds) (1+ (lposfix i)) wrld)))
+       (retok (cons info infos)))))
+
+  ///
+
+  (defret no-duplicatesp-equal-of-defind-process-preds
+    (no-duplicatesp-equal (defind-pred-info-list->name infos))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-term (term (desc msgp) state)
+  :returns (mv erp (info defind-term-infop) state)
+  :short "Process a term in a rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The input to this function is
+     either a whole premise that does not have the form @('(p[i] ...'))
+     or an argument of a premise or conclusion that has that form.
+     The @(tsee definductive) macro accepts any terms there,
+     so long as they are well-formed,
+     which is checked by this function.
+     The term must be a valid untranslated term,
+     which we attempt to translate here.
+     If the translation is successful,
+     we return both the untranslated and translated term,
+     packaged in a @(tsee defind-term-info).")
+   (xdoc::p
+    "Note that, before we get here,
+     we have checked, in @(tsee defind-process-pred),
+     that the predicates being defined are new.
+     Thus, the translation of the term fails
+     if the term mentions those predicates.
+     So this automatically checks their absence from the term.")
+   (xdoc::p
+    "We ensure that the term is single-valued, not a stobj.")
+   (xdoc::p
+    "The @('desc') input of this function is
+     a description of the term, for error messages."))
+  (b* (((reterr) (irr-defind-term-info) state)
+       ((mv term/msg stobjs-out state) (check-user-term$ term state))
+       ((unless (pseudo-termp term/msg))
+        ;; No period at the end of the following string
+        ;; because TERM/MSG ends with period already.
+        (reterr (msg "~@0 must be a valid untranslated term, but: ~@1"
+                     desc term/msg)))
+       ((unless (equal stobjs-out (list nil)))
+        (reterr (msg "~@0 must return a single non-stobj value, ~
+                      but it returns ~x1 instead."
+                     desc stobjs-out))))
+    (retok (make-defind-term-info :uterm term :tterm term/msg) state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-args ((args true-listp)
+                             (prem/concl-desc msgp)
+                             state)
+  :returns (mv erp (infos defind-term-info-listp) state)
+  :short "Process the arguments of a premise or conclusion of a rule
+          that contains a predicate being defined."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('prem/concl-desc') input of this function provides
+     a description of the premise or conclusion
+     that the purported arguments belong to;
+     it is used for error messages."))
+  (defind-process-args-loop args prem/concl-desc 1 state)
+
+  :prepwork
+  ((define defind-process-args-loop ((args true-listp)
+                                     (prem/concl-desc msgp)
+                                     (q posp)
+                                     state)
+     :returns (mv erp (infos defind-term-info-listp) state)
+     :parents nil
+     (b* (((reterr) nil state)
+          ((when (endp args)) (retok nil state))
+          (arg-desc (msg "the ~n0 argument of ~@1"
+                         (list (lposfix q))
+                         (msg-downcase-first prem/concl-desc)))
+          ((erp info state) (defind-process-term (car args) arg-desc state))
+          ((erp infos state) (defind-process-args-loop
+                              (cdr args) prem/concl-desc (1+ (lposfix q))
+                              state)))
+       (retok (cons info infos) state))
+     :guard-hints (("Goal" :in-theory (enable character-alistp))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-conclusion (concl
+                                   (desc msgp)
+                                   (pred-infos defind-pred-info-listp)
+                                   state)
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (mv erp (info defind-conclusion-infop) state)
+  :short "Process the conclusion of a rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must have the form of a predicate @('p[i]') applied to some terms.")
+   (xdoc::p
+    "The @('desc') input of this function is
+     a description of the conclusion, for error messages."))
+  (b* (((reterr) (irr-defind-conclusion-info) state)
+       ((unless (and (true-listp concl)
+                     (consp concl)))
+        (reterr (msg "~@0 must be a non-empty list, ~
+                      but it is ~x1 instead."
+                     desc concl)))
+       (pred-name (car concl))
+       ((unless (symbolp pred-name))
+        (reterr (msg "~@0 must start with a symbol, ~
+                      but it starts with ~x1 instead."
+                     desc pred-name)))
+       (args (cdr concl))
+       (pred-info (defind-lookup-pred pred-name pred-infos))
+       ((unless pred-info)
+        (reterr (msg "~@0 must have the form of ~
+                      one of the predicates among ~&1 applied to some terms, ~
+                      but ~x2 is not one of them."
+                     desc (defind-pred-info-list->name pred-infos) pred-name)))
+       (pred-formals (defind-pred-info->formals pred-info))
+       ((unless (= (len args) (len pred-formals)))
+        (reterr (msg "The number of arguments in ~@0 ~
+                      must match the number ~x1 of formals ~
+                      of the predicate ~x2, ~
+                      but it is ~x3 instead."
+                     (msg-downcase-first desc)
+                     (len pred-formals)
+                     pred-name
+                     (len args))))
+       (args-desc (msg "the arguments of ~@0" (msg-downcase-first desc)))
+       ((erp arg-infos state) (defind-process-args args args-desc state)))
+    (retok (make-defind-conclusion-info :name pred-name :args arg-infos)
+           state))
+  :guard-hints (("Goal" :in-theory (enable character-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-premise (prem
+                                (desc msgp)
+                                (pred-infos defind-pred-info-listp)
+                                state)
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (mv erp (info defind-premise-infop) state)
+  :short "Process the premise of a rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This may contain a @('p[i]') predicate,
+     as in @(tsee defind-process-conclusion),
+     or it may be some other term not involving
+     the predicates being defined.")
+   (xdoc::p
+    "The @('desc') input of this function is
+     a description of the premise, for error messages."))
+  (b* (((reterr) (irr-defind-premise-info) state)
+       (pred-names (defind-pred-info-list->name pred-infos)))
+    (if (and (true-listp prem)
+             (consp prem)
+             (member-equal (car prem) pred-names))
+        (b* ((pred-name (car prem))
+             (args (cdr prem))
+             ((unless (symbolp pred-name))
+              (raise "Internal error: ~x0 is not a symbol." pred-name)
+              (reterr "irrelevant"))
+             (pred-info (defind-lookup-pred pred-name pred-infos))
+             ((unless pred-info)
+              (raise "Internal error: no information for ~x0." pred-name)
+              (reterr "irrelevant"))
+             (pred-formals (defind-pred-info->formals pred-info))
+             ((unless (= (len args) (len pred-formals)))
+              (reterr (msg "The number of arguments in ~@0 ~
+                            must match the number ~x1 of formals ~
+                            of the predicate ~x2, ~
+                            but it is ~x3 instead."
+                           (msg-downcase-first desc)
+                           (len pred-formals)
+                           pred-name
+                           (len args))))
+             (args-desc (msg "the arguments of ~@0" (msg-downcase-first desc)))
+             ((erp arg-infos state)
+              (defind-process-args args args-desc state)))
+          (retok (make-defind-premise-info-pred :name pred-name
+                                                :args arg-infos)
+                 state))
+      (b* ((desc (msg "Since ~@0 does not have the form of ~
+                       one of the predicates among ~&1 applied to some terms, ~
+                       it"
+                      (msg-downcase-first desc) pred-names))
+           ((erp info state) (defind-process-term prem desc state)))
+        (retok (make-defind-premise-info-other :term info) state))))
+  :no-function nil
+  :guard-hints (("Goal" :in-theory (enable character-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-premises (prems
+                                 (irule-desc msgp)
+                                 (pred-infos defind-pred-info-listp)
+                                 state)
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (mv erp (infos defind-premise-info-listp) state)
+  :short "Process the premises of a rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('irule-desc') input of this function is
+     a description of the rule that the premises belong to;
+     it is used for error message."))
+  (b* (((reterr) nil state)
+       ((unless (true-listp prems))
+        (reterr (msg "The premises of ~@0 must be a list, ~
+                      but they are ~x1 instead."
+                     irule-desc prems))))
+    (defind-process-premises-loop prems 1 irule-desc pred-infos state))
+
+  :prepwork
+  ((define defind-process-premises-loop ((prems true-listp)
+                                         (q posp)
+                                         (irule-desc msgp)
+                                         (pred-infos defind-pred-info-listp)
+                                         state)
+     :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+     :returns (mv erp (infos defind-premise-info-listp) state)
+     :parents nil
+     (b* (((reterr) nil state)
+          ((when (endp prems)) (retok nil state))
+          (prem (car prems))
+          (prem-desc
+           (msg "The ~n0 premise of ~@1"
+                (list (lposfix q))
+                (msg-downcase-first irule-desc)))
+          ((erp info state)
+           (defind-process-premise prem prem-desc pred-infos state))
+          ((erp infos state) (defind-process-premises-loop
+                              (cdr prems) (1+ (lposfix q))
+                              irule-desc pred-infos state)))
+       (retok (cons info infos) state))
+     :guard-hints (("Goal" :in-theory (enable character-alistp))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-irule (irule
+                              (desc msgp)
+                              (pred-infos defind-pred-info-listp)
+                              state)
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (mv erp (info defind-irule-infop) state)
+  :short "Process a rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('desc') input of this function is
+     a description of the rule, for error messages."))
+  (b* (((reterr) (irr-defind-irule-info) state)
+       ((unless (and (true-listp irule)
+                     (= (len irule) 3)))
+        (reterr (msg "~@0 must be a list of three elements, ~
+                       but it is ~x1 instead."
+                     desc irule)))
+       ((list name prems concl) irule)
+       ((unless (symbolp name))
+        (reterr (msg "The first element of ~@0 must be a symbol, ~
+                      but it is ~x1 instead."
+                     desc name)))
+       ((erp prem-infos state)
+        (defind-process-premises prems desc pred-infos state))
+       (concl-desc (msg "The conclusion of ~@0" (msg-downcase-first desc)))
+       ((erp concl-info state)
+        (defind-process-conclusion concl concl-desc pred-infos state)))
+    (retok (make-defind-irule-info :name name
+                                   :premises prem-infos
+                                   :conclusion concl-info)
+           state))
+  :guard-hints (("Goal" :in-theory (enable character-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-irules (irules
+                               (irules-suppliedp booleanp)
+                               (pred-infos defind-pred-info-listp)
+                               state)
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (mv erp
+               (infos defind-irule-info-listp)
+               (leveled-cliques symbol-set-list-listp)
+               state)
+  :short "Process the @(':irules') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Besides processing the individual rules,
+     we check that the rule names are all distinct.
+     Then we organize the predicates into
+     cliques in dependency order, each organized into levels,
+     and we use the result to enforce the restrictions described next.")
+   (xdoc::p
+    "We check that every predicate is in the conclusion of some rule.
+     A predicate without rules has no proof trees,
+     which is also captured by the check on levels described below,
+     but we check it first, for a more informative error message.")
+   (xdoc::p
+    "The predicates do not have to be all mutually recursive,
+     and they do not have to be recursive at all:
+     they form one or more cliques,
+     which we return in dependency order,
+     so that the events for each clique are generated
+     after the events for the cliques it depends on.
+     A predicate that is not recursive forms a singleton clique,
+     and yields a non-recursive proof validity function.")
+   (xdoc::p
+    "We also check that every predicate is at some level in its clique.
+     A predicate at no level would have no proof trees:
+     the generated fixtype of its proofs would be empty,
+     but fixtypes, like all ACL2 types, must be non-empty;
+     concretely, FTY would reject the generated fixtype,
+     for lack of a base case.
+     For a single predicate,
+     being at some level amounts to being at level 0,
+     i.e. to the existence of a non-recursive rule,
+     which provides a base case for the inductive definition.
+     For multiple predicates, it suffices that some of them are at level 0,
+     with the others reachable from those through the levels.")
+   (xdoc::p
+    "We return the leveled cliques along with the rule information,
+     for use in event generation."))
+  (b* (((reterr) nil nil state)
+       ((unless irules-suppliedp)
+        (reterr (msg "The :IRULES input must be supplied.")))
+       ((unless (and (true-listp irules)
+                     (consp irules)))
+        (reterr (msg "The :IRULES input must be a non-empty list, ~
+                      but it is ~x0 instead."
+                     irules)))
+       ((erp infos state)
+        (defind-process-irules-loop irules 1 pred-infos state))
+       (irule-names (defind-irule-info-list->name infos))
+       ((unless (no-duplicatesp-eq irule-names))
+        (reterr (msg "The names of the rules in the :IRULES input ~
+                      must be all distinct, ~
+                      but there are duplicates among ~&0."
+                     irule-names)))
+       (pred-names (defind-pred-info-list->name pred-infos))
+       (ruleless-preds (defind-preds-without-irules pred-names infos))
+       ((when (consp ruleless-preds))
+        (reterr (msg "Every predicate being defined must be ~
+                      in the conclusion of at least one rule ~
+                      in the :IRULES input. ~
+                      This does not hold for ~&0. ~
+                      A predicate without rules would have no proofs, ~
+                      and thus it would be empty."
+                     ruleless-preds)))
+       ((mv leveled-cliques unleveled)
+        (defind-leveled-cliques pred-names infos))
+       ((unless (set::emptyp unleveled))
+        (reterr (msg "Every predicate being defined ~
+                      must be at some level: ~
+                      a predicate is at level 0 if ~
+                      some rule in the :IRULES input ~
+                      has the predicate as its conclusion ~
+                      and no premises that are ~
+                      calls of the predicates being defined; ~
+                      a predicate is at a higher level if ~
+                      some rule has the predicate as its conclusion ~
+                      and all its premises that are ~
+                      calls of the predicates being defined ~
+                      call predicates at lower levels. ~
+                      This does not hold for ~&0. ~
+                      For a predicate at no level, ~
+                      the generated fixtype of its proofs would be empty, ~
+                      but fixtypes must be non-empty."
+                     unleveled))))
+    (retok infos leveled-cliques state))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable consp-under-iff-when-true-listp-no-backchain-limit
+                       true-listp-when-symbol-set-list-listp)))
+
+  :prepwork
+  ((define defind-process-irules-loop ((irules true-listp)
+                                       (k posp)
+                                       (pred-infos defind-pred-info-listp)
+                                       state)
+     :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+     :returns (mv erp (infos defind-irule-info-listp) state)
+     :parents nil
+     (b* (((reterr) nil state)
+          ((when (endp irules)) (retok nil state))
+          (desc (msg "The ~n0 element of the :IRULES input" (list (lposfix k))))
+          ((erp info state)
+           (defind-process-irule (car irules) desc pred-infos state))
+          ((erp infos state) (defind-process-irules-loop
+                              (cdr irules) (1+ (lposfix k))
+                              pred-infos state)))
+       (retok (cons info infos) state))
+     :guard-hints (("Goal" :in-theory (enable character-alistp)))))
+
+  ///
+
+  (defret no-duplicatesp-equal-of-defind-process-irules
+    (no-duplicatesp-equal (defind-irule-info-list->name infos))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-parents/short/long (parents
+                                           (parents-suppliedp booleanp)
+                                           short
+                                           (short-suppliedp booleanp)
+                                           long
+                                           (long-suppliedp booleanp))
+  :returns (mv erp (parents symbol-listp) short long (xdocp booleanp))
+  :short "Process the @(':parents'), @(':short'), and @(':long') inputs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We do not perform any check on the @(':short') and @(':long') inputs,
+     which in general may be terms consisting of XDOC constructors."))
+  (b* (((reterr) nil nil nil nil)
+       ((when (and (not parents-suppliedp)
+                   (not short-suppliedp)
+                   (not long-suppliedp)))
+        (retok nil nil nil nil))
+       ((when (and parents-suppliedp
+                   (not (and (symbol-listp parents)
+                             (consp parents)))))
+        (reterr (msg "The :PARENTS input must be a non-empty list of symbols, ~
+                      but it is ~x0 instead."
+                     parents)))
+       (parents (and parents-suppliedp parents))
+       (short (and short-suppliedp short))
+       (long (and long-suppliedp long)))
+    (retok parents short long t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-check-proof2-names ((irule-infos defind-irule-info-listp)
+                                   (pred-infos defind-pred-info-listp)
+                                   (name symbolp))
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (erp "@('nil') or an error message.")
+  :short "Check that the variables of the rules do not clash with
+          the names that the second representation reserves."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A summand of a @('p[i]-2-proof') fixtype has a field
+     for each variable of the rule,
+     so a variable that is also the @(':xvar') of the fixtype,
+     or the name of one of the premise fields,
+     makes FTY reject the fixtype.
+     A variable that is also one of the variables
+     for the arguments of the conclusion is worse:
+     it shadows the formal of the @('p[i]-2-proof-validp') function
+     in the case for the rule,
+     which turns the equality for that argument of the conclusion
+     into an equality of the field with itself,
+     silently defining the wrong relation.")
+   (xdoc::p
+    "We take the names of the premise fields from
+     @(tsee defind-gen-proof2-prem-fields),
+     so that this check cannot drift from what is generated.
+     This is why this check is here,
+     among the event generation code,
+     instead of with the rest of the input processing;
+     it also needs the name of the macro call,
+     which is not available in that phase.")
+   (xdoc::p
+    "These names are reserved only by the second representation of proofs:
+     if that representation is dropped, so is this check.")
+   (xdoc::p
+    "We do not check the proof variable, @(tsee defind-proof-var-name).
+     A rule variable with that name does make the macro fail,
+     but in the events for the first representation,
+     at the theorem about the conclusion of a proof built by a rule.
+     That failure predates the second representation
+     and does not involve it,
+     so it belongs with the first representation;
+     until it is fixed,
+     such a rule is rejected by a proof failure
+     instead of by a message from here."))
+  (b* (((reterr))
+       ((when (endp irule-infos)) (retok))
+       ((defind-irule-info info) (car irule-infos))
+       (pred-name (defind-conclusion-info->name info.conclusion))
+       (pinfo (defind-lookup-pred pred-name pred-infos))
+       ((unless pinfo) (retok)) ; never happens: checked while processing
+       (reserved
+        (cons (defind-proof2-xvar-name name)
+              (append (defind-proof2-concl-var-names
+                        (defind-pred-info->formals pinfo) name)
+                      (defind-prem-field-names (len info.premises) name))))
+       (clashing (intersection-eq (defind-irule-info-free-vars info) reserved))
+       ((when clashing)
+        (reterr (msg "The variables of a rule must differ from ~
+                      the variables and field names that ~
+                      the generated events use for ~
+                      the arguments of the conclusion and the proofs. ~
+                      This does not hold for the rule ~x0, ~
+                      whose variables include ~&1."
+                     info.name clashing))))
+    (defind-check-proof2-names (cdr irule-infos) pred-infos name))
+  :guard-hints (("Goal" :in-theory (enable symbol-listp-when-symbol-setp
+                                           set::sets-are-true-lists))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-inputs (name
+                               preds
+                               (preds-suppliedp booleanp)
+                               irules
+                               (irules-suppliedp booleanp)
+                               parents
+                               (parents-suppliedp booleanp)
+                               short
+                               (short-suppliedp booleanp)
+                               long
+                               (long-suppliedp booleanp)
+                               state)
+  :returns (mv erp
+               (name symbolp)
+               (pred-infos defind-pred-info-listp)
+               (irule-infos defind-irule-info-listp)
+               (leveled-cliques symbol-set-list-listp)
+               (parents symbol-listp)
+               short
+               long
+               (xdocp booleanp)
+               state)
+  :short "Process all the inputs."
+  (b* (((reterr) nil nil nil nil nil nil nil nil state)
+       (wrld (w state))
+       ((erp name) (defind-process-name name wrld))
+       ((erp pred-infos)
+        (defind-process-preds preds preds-suppliedp wrld))
+       ((erp irule-infos leveled-cliques state)
+        (defind-process-irules irules irules-suppliedp pred-infos state))
+       ((erp) (defind-check-proof2-names irule-infos pred-infos name))
+       ((erp parents short long xdocp)
+        (defind-process-parents/short/long
+          parents parents-suppliedp
+          short short-suppliedp
+          long long-suppliedp)))
+    (retok name pred-infos irule-infos leveled-cliques
+           parents short long xdocp state))
+
+  ///
+
+  (defret no-duplicatesp-equal-of-defind-process-inputs-preds
+    (no-duplicatesp-equal (defind-pred-info-list->name pred-infos)))
+
+  (defret no-duplicatesp-equal-of-defind-process-inputs-irules
+    (no-duplicatesp-equal (defind-irule-info-list->name irule-infos))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::evmac-topic-event-generation definductive)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-conjunction ((conjuncts true-listp))
+  :returns (term "An untranslated term.")
+  :short "Generate a conjunction of zero or more untranslated terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there are no conjuncts, we generate @('t').
+     If there is exactly one conjunct, we generate that conjunct.
+     If there are two or more conjuncts, we generate an @(tsee and) of them.
+     This way, we avoid generating empty and singleton conjunctions."))
+  (cond ((endp conjuncts) t)
+        ((endp (cdr conjuncts)) (car conjuncts))
+        (t `(and ,@(true-list-fix conjuncts)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-implication ((antecedents true-listp) consequent)
+  :returns (term "An untranslated term.")
+  :short "Generate an implication of a consequent
+          from zero or more antecedents,
+          all untranslated terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there are no antecedents, we generate just the consequent.
+     Otherwise, we generate an @(tsee implies)
+     whose antecedent is the conjunction of the antecedents.
+     This way, we avoid generating implications with trivial antecedents."))
+  (if (consp antecedents)
+      `(implies ,(defind-gen-conjunction antecedents) ,consequent)
+    consequent))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3369,6 +3588,251 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-gen-proof2-var-fields ((vars symbol-listp))
+  :returns (fields true-list-listp)
+  :short "Generate the variable fields of
+          a summand of a @('p[i]-2-proof') fixtype."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The summand corresponds to an inference rule,
+     and it has one field for each variable of the rule:
+     the field is named after the variable and has no type.
+     These fields, which the @('p[i]-proof') fixtypes do not have,
+     are what lets the conclusion be
+     an argument of the proof validity predicate,
+     instead of a field of the proof."))
+  (if (endp vars)
+      nil
+    (cons (list (symbol-lfix (car vars)))
+          (defind-gen-proof2-var-fields (cdr vars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-prem-fields ((infos defind-premise-info-listp)
+                                       (num posp)
+                                       (name symbolp))
+  :returns (fields (and (true-list-listp fields)
+                        (alistp fields))
+                   :hints (("Goal" :induct t :in-theory (enable alistp))))
+  :short "Generate the premise fields of
+          a summand of a @('p[i]-2-proof') fixtype."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-prem-fields),
+     but the fields have the @('p[j]-2-proof') fixtypes."))
+  (b* (((when (endp infos)) nil)
+       (info (car infos))
+       ((when (defind-premise-info-case info :other))
+        (defind-gen-proof2-prem-fields (cdr infos) (lposfix num) name))
+       (pred-name (defind-premise-info-pred->name info))
+       (field-name (defind-prem-field-name num name))
+       (field-type (defind-proof-type-name
+                    (defind-pred2-name pred-name name) name))
+       (field `(,field-name ,field-type))
+       (fields
+        (defind-gen-proof2-prem-fields (cdr infos) (1+ (lposfix num)) name)))
+    (cons field fields)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-summand ((info defind-irule-infop) (name symbolp))
+  :returns (summand true-listp)
+  :short "Generate a summand of a @('p[i]-2-proof') fixtype."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-proof-summand),
+     but with a field for each variable of the rule
+     instead of a field for the conclusion."))
+  (b* (((defind-irule-info info))
+       (tag (defind-irule-tag info.name))
+       (var-fields
+        (defind-gen-proof2-var-fields (defind-irule-info-free-vars info)))
+       (prem-fields (defind-gen-proof2-prem-fields info.premises 1 name)))
+    `(,tag (,@var-fields ,@prem-fields)))
+  :guard-hints (("Goal" :in-theory (enable symbol-listp-when-symbol-setp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-summands ((pred-name symbolp)
+                                    (infos defind-irule-info-listp)
+                                    (name symbolp))
+  :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
+  :returns (summands true-list-listp)
+  :short "Generate the summands of a @('p[i]-2-proof') fixtype."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-proof-summands).
+     The @('pred-name') input is @('p[i]'), not @('p[i]-2')
+     because it is matched against the conclusions of the rules."))
+  (b* (((when (endp infos)) nil)
+       ((defind-irule-info info) (car infos))
+       ((defind-conclusion-info info.conclusion))
+       ((unless (equal info.conclusion.name (symbol-lfix pred-name)))
+        (defind-gen-proof2-summands pred-name (cdr infos) name))
+       (summand (defind-gen-proof2-summand info name))
+       (summands (defind-gen-proof2-summands pred-name (cdr infos) name)))
+    (cons summand summands)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-deftagsum ((pred-name symbolp)
+                                     (infos defind-irule-info-listp)
+                                     (levels symbol-set-listp)
+                                     (preds-in-previous-cliques symbol-setp)
+                                     (prepworkp booleanp)
+                                     (name symbolp)
+                                     (xdocp booleanp))
+  :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
+  :returns (deftagsum pseudo-event-formp)
+  :short "Generate a @('p[i]-2-proof') fixtype."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-proof-deftagsum);
+     see that function for the treatment of levels.")
+   (xdoc::p
+    "Here the @(':xvar') option is not just advisable but necessary:
+     since the fields are named after the variables of the rules,
+     the default @('x') would clash with a rule variable @('x'),
+     which FTY rejects with a hard error.
+     We use @(tsee defind-proof2-xvar-name),
+     which @(tsee defind-check-proof2-names) establishes to be distinct from
+     the variables of the rules;
+     this is the caveat noted in @(tsee defind-gen-assertion-defprod),
+     discharged here."))
+  (b* ((pred2-name (defind-pred2-name pred-name name))
+       (xvar (defind-proof2-xvar-name name))
+       (summands (defind-gen-proof2-summands pred-name infos name))
+       (measurep (consp (cdr (symbol-set-list-fix levels))))
+       (level (defind-pred-level pred-name levels))
+       (override-rule (and (< 0 level)
+                           (defind-pred-override-rule
+                             pred-name level levels
+                             preds-in-previous-cliques infos))))
+    `(fty::deftagsum ,(defind-proof-type-name pred2-name name)
+       ,@(and xdocp
+              `(:parents (,(symbol-lfix name))
+                :short ,(str::cat
+                         "Fixtype of proofs for predicate @('"
+                         (str::downcase-string (symbol-name pred2-name))
+                         "').")))
+       ,@summands
+       ,@(and override-rule
+              `(:base-case-override ,(defind-irule-tag override-rule)))
+       ,@(and measurep
+              `(:measure (two-nats-measure (acl2-count ,xvar) ,level)))
+       :pred ,(defind-proof-recog-name pred2-name name)
+       :xvar ,xvar
+       ,@(and prepworkp
+              '(:prepwork ((set-induction-depth-limit 1)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-deftagsums ((pred-infos defind-pred-info-listp)
+                                      (irule-infos defind-irule-info-listp)
+                                      (levels symbol-set-listp)
+                                      (preds-in-previous-cliques symbol-setp)
+                                      (prepworkp booleanp)
+                                      (name symbolp)
+                                      (xdocp booleanp))
+  :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+              (no-duplicatesp-equal (defind-irule-info-list->name irule-infos)))
+  :returns (deftagsums pseudo-event-form-listp)
+  :short "Generate the @('p[i]-2-proof') fixtypes."
+  (b* (((when (endp pred-infos)) nil)
+       (pred-name (defind-pred-info->name (car pred-infos)))
+       (event (defind-gen-proof2-deftagsum pred-name irule-infos
+                levels preds-in-previous-cliques prepworkp name xdocp))
+       (events (defind-gen-proof2-deftagsums
+                 (cdr pred-infos) irule-infos
+                 levels preds-in-previous-cliques prepworkp name xdocp)))
+    (cons event events)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-fixtypes ((pred-infos defind-pred-info-listp)
+                                    (irule-infos defind-irule-info-listp)
+                                    (leveled-cliques symbol-set-list-listp)
+                                    (name symbolp)
+                                    (xdocp booleanp))
+  :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+              (no-duplicatesp-equal (defind-irule-info-list->name irule-infos)))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate the fixtypes of proofs for the @('p[i]-2') predicates,
+          for all the cliques."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-proof-fixtypes)."))
+  (defind-gen-proof2-fixtypes-loop
+    leveled-cliques nil pred-infos irule-infos name xdocp)
+
+  :prepwork
+
+  ((define defind-gen-proof2-fixtypes-loop
+     ((leveled-cliques symbol-set-list-listp)
+      (preds-in-previous-cliques symbol-setp)
+      (pred-infos defind-pred-info-listp)
+      (irule-infos defind-irule-info-listp)
+      (name symbolp)
+      (xdocp booleanp))
+     :guard (and (no-duplicatesp-equal
+                  (defind-pred-info-list->name pred-infos))
+                 (no-duplicatesp-equal
+                  (defind-irule-info-list->name irule-infos)))
+     :returns (events pseudo-event-form-listp)
+     :parents nil
+     (b* (((when (endp leveled-cliques)) nil)
+          (levels (symbol-set-list-fix (car leveled-cliques)))
+          (clique-preds (set::set-list-union levels))
+          (clique-pred-infos (defind-lookup-pred-set clique-preds pred-infos))
+          (events (defind-gen-proof2-fixtypes-loop
+                    (cdr leveled-cliques)
+                    (set::union clique-preds
+                                (symbol-sfix preds-in-previous-cliques))
+                    pred-infos irule-infos name xdocp))
+          ((unless (consp clique-pred-infos))
+           (raise "Internal error: no predicates in clique with levels ~x0."
+                  levels)
+           events)
+          (event
+           (if (endp (cdr clique-pred-infos))
+               (defind-gen-proof2-deftagsum
+                 (defind-pred-info->name (car clique-pred-infos))
+                 irule-infos levels preds-in-previous-cliques
+                 t name xdocp)
+             (b* ((deftagsums (defind-gen-proof2-deftagsums
+                                clique-pred-infos irule-infos
+                                levels preds-in-previous-cliques
+                                nil name xdocp))
+                  (deftypes-name
+                    (defind-proof-type-clique-name
+                      (defind-pred2-name
+                        (defind-pred-info->name (car clique-pred-infos))
+                        name)
+                      name)))
+               `(fty::deftypes ,deftypes-name
+                  ,@(and xdocp
+                         `(:parents (,(symbol-lfix name))
+                           :short ,(str::cat
+                                    "Fixtypes of proofs for predicates "
+                                    (defind-preds-doc-string
+                                      (defind-pred-info-list->name
+                                        clique-pred-infos))
+                                    ".")))
+                  ,@deftagsums
+                  :prepwork ((set-induction-depth-limit 1)))))))
+       (cons event events))
+     :no-function nil
+     :guard-hints
+     (("Goal" :in-theory (enable set-listp-when-symbol-set-listp))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-gen-proof-concl-fn-cases+rules ((pred-name symbolp)
                                                (infos defind-irule-info-listp)
                                                (name symbolp))
@@ -3583,6 +4047,143 @@
        (event (defind-gen-irule-valid-fn (car infos) name xdocp))
        (events (defind-gen-irule-valid-fns (cdr infos) name xdocp)))
     (cons event events)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-irule-valid-fn-prems
+  ((infos defind-premise-info-listp))
+  :returns (conjuncts true-listp)
+  :short "Generate the conjuncts for the premises of an inference rule
+          in a @('p[l[k]]-2-rule[k]-validp') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Only the premises that are not calls of the predicates being defined
+     contribute:
+     the other ones are checked
+     against the proofs of those premises
+     in the @('p[i]-2-proof-validp') function.
+     The premises are used as written
+     because the variables of the rule are formals of this function."))
+  (b* (((when (endp infos)) nil)
+       (info (car infos))
+       ((when (defind-premise-info-case info :pred))
+        (defind-gen-proof2-irule-valid-fn-prems (cdr infos)))
+       (conjunct (defind-term-info->uterm
+                  (defind-premise-info-other->term info))))
+    (cons conjunct
+          (defind-gen-proof2-irule-valid-fn-prems (cdr infos)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-irule-valid-fn-concl ((args defind-term-info-listp)
+                                                (concl-vars symbol-listp))
+  :returns (conjuncts true-listp)
+  :short "Generate the conjuncts for the conclusion of an inference rule
+          in a @('p[l[k]]-2-rule[k]-validp') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There is an equality for each argument of the conclusion,
+     between the corresponding formal of the function
+     and the argument as written.
+     The two lists have the same length
+     because the arity of the conclusion is checked during input processing."))
+  (b* (((when (or (endp args) (endp concl-vars))) nil)
+       (conjunct `(equal ,(symbol-lfix (car concl-vars))
+                         ,(defind-term-info->uterm (car args)))))
+    (cons conjunct
+          (defind-gen-proof2-irule-valid-fn-concl
+            (cdr args) (cdr concl-vars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-irule-valid-fn ((info defind-irule-infop)
+                                          (concl-vars symbol-listp)
+                                          (name symbolp)
+                                          (xdocp booleanp))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @('p[l[k]]-2-rule[k]-validp') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the counterpart of @(tsee defind-gen-irule-valid-fn).
+     It checks the conditions of the rule
+     that do not involve the proofs of the premises,
+     i.e. the premises that are not calls of the predicates being defined,
+     and the equalities between the arguments of the conclusion
+     and the ones that the rule derives.")
+   (xdoc::p
+    "Unlike @(tsee defind-gen-irule-valid-fn),
+     this is never a @(tsee std::define-sk):
+     the variables of the rule are formals of the function,
+     which the caller supplies from the fields of the proof,
+     and so there is nothing to quantify.
+     For the same reason,
+     there is no need to distinguish ground rules from non-ground ones.")
+   (xdoc::p
+    "All the variables of the rule are formals,
+     including the ones that occur only in the premises
+     that are calls of the predicates being defined,
+     which therefore do not occur in the body;
+     hence the @(':ignore-ok').
+     Those formals are also irrelevant in the sense of
+     @(see acl2::irrelevant-formals);
+     hence the @(':irrelevant-formals-ok'),
+     which is needed anyway
+     because a premise or an argument of the conclusion
+     could make a formal irrelevant,
+     e.g. a premise @('(or t ...)')."))
+  (b* (((defind-irule-info info))
+       ((defind-conclusion-info cinfo) info.conclusion)
+       (pred2-name (defind-pred2-name cinfo.name name))
+       (fn-name (defind-irule-valid-fn-name pred2-name info.name name))
+       (vars (defind-irule-info-free-vars info))
+       (prem-conjuncts (defind-gen-proof2-irule-valid-fn-prems info.premises))
+       (concl-conjuncts
+        (defind-gen-proof2-irule-valid-fn-concl cinfo.args concl-vars))
+       (body (defind-gen-conjunction
+              (append prem-conjuncts concl-conjuncts))))
+    `(define ,fn-name (,@(symbol-list-fix concl-vars)
+                       ,@(symbol-list-fix vars))
+       :returns (yes/no booleanp
+                        :rule-classes (:rewrite :type-prescription)
+                        :hints (("Goal" :in-theory '(,fn-name booleanp))))
+       ,@(and xdocp
+              `(:parents (,(symbol-lfix name))
+                :short ,(str::cat
+                         "Validity of an instance of the rule @('"
+                         (str::downcase-string (symbol-name info.name))
+                         "'), except for the proofs of its premises.")))
+       ,body
+       :verify-guards nil
+       :ignore-ok t
+       :irrelevant-formals-ok t))
+  :guard-hints (("Goal" :in-theory (enable symbol-listp-when-symbol-setp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-irule-valid-fns ((infos defind-irule-info-listp)
+                                           (pred-infos defind-pred-info-listp)
+                                           (name symbolp)
+                                           (xdocp booleanp))
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate the @('p[l[k]]-2-rule[k]-validp') functions."
+  (b* (((when (endp infos)) nil)
+       ((defind-irule-info info) (car infos))
+       (pred-name (defind-conclusion-info->name info.conclusion))
+       (pinfo (defind-lookup-pred pred-name pred-infos))
+       ((unless pinfo)
+        (raise "Internal error: predicate ~x0 not found." pred-name))
+       (concl-vars (defind-proof2-concl-var-names
+                     (defind-pred-info->formals pinfo) name))
+       (event (defind-gen-proof2-irule-valid-fn
+                (car infos) concl-vars name xdocp))
+       (events (defind-gen-proof2-irule-valid-fns
+                 (cdr infos) pred-infos name xdocp)))
+    (cons event events))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3837,8 +4438,18 @@
      the minimality theorems, generated later,
      are proved by flag induction.
      The fixing equivalence of the functions
-     is proved at the end, all together."))
-  (b* (((mv members expands term-thms fixequiv-thms)
+     is proved at the end, all together.")
+   (xdoc::p
+    "The hints for the fixing equivalence include @(':expand') hints
+     for the calls of the validity functions
+     on the proof variable and on its fixed version.
+     Since the functions of the clique are mutually recursive,
+     ACL2's heuristics do not expand those calls during the flag induction.
+     This is unlike the case of a predicate that forms a singleton clique,
+     where the induction is on the (single) validity function itself,
+     and thus the calls of that function in the fixing equivalence
+     are expanded as part of the induction."))
+  (b* (((mv members expands term-thms fixequiv-expands fixequiv-thms)
         (defind-gen-proof-valid-fn-clique-loop
           clique-pred-infos irule-infos name xdocp))
        ((mv valid-tps prem-acc-thms)
@@ -3876,6 +4487,7 @@
        (fty::deffixequiv-mutual ,defines-name
          :hints (("Goal"
                   :induct (,flag-fn ,(defind-flag-var-name name) ,fn-formal)
+                  :expand ,fixequiv-expands
                   :in-theory '(,flag-fn
                                not
                                (:e equal)
@@ -3897,9 +4509,10 @@
      :returns (mv (events pseudo-event-form-listp)
                   (expands true-listp)
                   (term-thms true-listp)
+                  (fixequiv-expands true-listp)
                   (fixequiv-thms true-listp))
      :parents nil
-     (b* (((when (endp pred-infos)) (mv nil nil nil nil))
+     (b* (((when (endp pred-infos)) (mv nil nil nil nil nil))
           (pred-name (defind-pred-info->name (car pred-infos)))
           (event (defind-gen-proof-valid-fn
                    pred-name irule-infos nil name xdocp))
@@ -3912,19 +4525,25 @@
                  (defind-proof-count-return-thm-name pred-name name)))
           ((mv & & & prem-fixing-thms concl-fixing-thms)
            (defind-gen-proof-valid-fn-cases pred-name irule-infos name))
+          (valid-fn (defind-proof-valid-fn-name pred-name name))
+          (fixer (defind-proof-fixer-name pred-name name))
+          (fixequiv-expands1
+           (list `(,valid-fn ,fn-formal)
+                 `(,valid-fn (,fixer ,fn-formal))))
           (fixequiv-thms1
            (append prem-fixing-thms
                    concl-fixing-thms
-                   (list (defind-proof-valid-fn-name pred-name name)
+                   (list valid-fn
                          (defind-proof-kind-poss-thm-name pred-name name)
                          (defind-proof-kind-fixing-thm-name pred-name name)
                          (defind-proof-fix-id-thm-name pred-name name))))
-          ((mv events expands term-thms fixequiv-thms)
+          ((mv events expands term-thms fixequiv-expands fixequiv-thms)
            (defind-gen-proof-valid-fn-clique-loop
              (cdr pred-infos) irule-infos name xdocp)))
        (mv (cons event events)
            (cons expand expands)
            (append term-thms1 term-thms)
+           (append fixequiv-expands1 fixequiv-expands)
            (append fixequiv-thms1 fixequiv-thms))))
 
    (define defind-gen-proof-valid-fn-clique-rules-loop
@@ -4044,6 +4663,521 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-gen-proof2-valid-fn-case-bindings ((vars symbol-listp)
+                                                  (name symbolp))
+  :returns (bindings true-list-listp)
+  :short "Generate the @(tsee let) bindings for the variables of a rule
+          in a case of a @('p[i]-2-proof-validp') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each variable of the rule is bound to the field of the proof
+     named after it, which the case macro binds in turn.
+     This is what lets the arguments of the premises
+     that are calls of the predicates being defined
+     be used as written with no substitution:
+     we would need to translate the terms before substituting into them
+     because in an untranslated term
+     a variable may also occur inside a quoted constant.")
+   (xdoc::p
+    "These bindings are only needed by a rule
+     that has premises that are calls of the predicates being defined;
+     otherwise the variables are used
+     just as arguments of the @('p[l[k]]-2-rule[k]-validp') function,
+     which the caller passes directly."))
+  (cond ((endp vars) nil)
+        (t (cons (list (symbol-lfix (car vars))
+                       (defind-proof-var-field-var-name (car vars) name))
+                 (defind-gen-proof2-valid-fn-case-bindings (cdr vars) name)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-valid-fn-case-prems ((infos defind-premise-info-listp)
+                                               (pred-name symbolp)
+                                               (irule-name symbolp)
+                                               (num posp)
+                                               (name symbolp))
+  :returns (mv (conjuncts true-listp)
+               (count-thms symbol-listp)
+               (fixing-thms symbol-listp))
+  :short "Generate the conjuncts for the proofs of the premises
+          of an inference rule
+          in a case of a @('p[i]-2-proof-validp') function,
+          along with the names of some relevant theorems."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As in @(tsee defind-gen-proof-valid-fn-case-prems),
+     only the premises that are calls of the predicates being defined
+     contribute.
+     Each becomes a call of @('p[j]-2-proof-validp')
+     on the proof of the premise
+     and on the arguments of the premise as written.")
+   (xdoc::p
+    "As in @(tsee defind-gen-proof-valid-fn-case-prems),
+     two different predicates are involved:
+     the one of the premise, which determines
+     the validity predicate applied to the proof of the premise,
+     and the one of the conclusion of the rule, i.e. @('pred-name'),
+     which determines the fixtype of proofs
+     that has the summand for the rule,
+     and thus the accessors of the proofs of the premises
+     along with the theorems about them.
+     Both are @('p[i]-2') predicates.
+     We return a count theorem only for the premises
+     whose predicate is the one of the conclusion;
+     see that function for why."))
+  (b* (((when (endp infos)) (mv nil nil nil))
+       (info (car infos)))
+    (defind-premise-info-case
+      info
+      :pred (b* ((prem-pred2-name (defind-pred2-name info.name name))
+                 (valid-fn (defind-proof-valid-fn-name prem-pred2-name name))
+                 (prem-proof-var (defind-proof-prem-var-name num name))
+                 (conjunct `(,valid-fn ,prem-proof-var
+                                       ,@(defind-term-info-list->uterm
+                                          info.args)))
+                 (count-thm (and (equal prem-pred2-name
+                                        (symbol-lfix pred-name))
+                                 (defind-proof-prem-count-thm-name
+                                   prem-pred2-name pred-name
+                                   irule-name num name)))
+                 (fixing-thm (defind-proof2-prem-fixing-thm-name
+                              pred-name irule-name num name))
+                 ((mv conjuncts count-thms fixing-thms)
+                  (defind-gen-proof2-valid-fn-case-prems
+                    (cdr infos) pred-name irule-name (1+ (lposfix num)) name)))
+              (mv (cons conjunct conjuncts)
+                  (if count-thm (cons count-thm count-thms) count-thms)
+                  (cons fixing-thm fixing-thms)))
+      :other (defind-gen-proof2-valid-fn-case-prems
+               (cdr infos) pred-name irule-name num name))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-valid-fn-case ((info defind-irule-infop)
+                                         (concl-vars symbol-listp)
+                                         (name symbolp))
+  :returns (mv (keyword+term true-listp)
+               (return-thm symbolp)
+               (count-thms symbol-listp)
+               (prem-fixing-thms symbol-listp)
+               (var-fixing-thms symbol-listp))
+  :short "Generate a case of a @('p[i]-2-proof-validp') function,
+          along with the names of some relevant theorems."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The conjuncts for the proofs of the premises come first,
+     followed by a call of the @('p[l[k]]-2-rule[k]-validp') function
+     on the arguments of the conclusion and on the variables of the rule.
+     If the rule has premises that are calls of the predicates being defined,
+     the variables of the rule are bound around the whole conjunction
+     and passed as such to that call;
+     otherwise there are no bindings,
+     and the fields of the proof are passed directly."))
+  (b* (((defind-irule-info info))
+       ((defind-conclusion-info cinfo) info.conclusion)
+       (pred2-name (defind-pred2-name cinfo.name name))
+       (tag (defind-irule-tag info.name))
+       (vars (defind-irule-info-free-vars info))
+       (recursivep (defind-irule-info-recursivep info))
+       (valid-irule-fn
+        (defind-irule-valid-fn-name pred2-name info.name name))
+       ((mv prem-conjuncts count-thms prem-fixing-thms)
+        (defind-gen-proof2-valid-fn-case-prems
+          info.premises pred2-name info.name 1 name))
+       (var-args (if recursivep
+                     (symbol-list-fix vars)
+                   (defind-proof-var-field-var-names vars name)))
+       (irule-conjunct `(,valid-irule-fn
+                         ,@(symbol-list-fix concl-vars)
+                         ,@var-args))
+       (term (defind-gen-conjunction
+              (append prem-conjuncts (list irule-conjunct))))
+       (bindings (and recursivep
+                      (defind-gen-proof2-valid-fn-case-bindings vars name)))
+       (term (if bindings `(let ,bindings ,term) term))
+       (return-thm
+        (defind-irule-valid-return-thm-name pred2-name info.name name))
+       (var-fixing-thms (defind-proof2-var-acc-fixing-thm-names
+                         pred2-name info.name vars name)))
+    (mv `(,tag ,term)
+        return-thm count-thms prem-fixing-thms var-fixing-thms))
+  :guard-hints (("Goal" :in-theory (enable symbol-listp-when-symbol-setp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-valid-fn-cases ((pred-name symbolp)
+                                          (concl-vars symbol-listp)
+                                          (infos defind-irule-info-listp)
+                                          (name symbolp))
+  :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
+  :returns (mv (keywords+terms true-listp)
+               (return-thms symbol-listp)
+               (count-thms symbol-listp)
+               (prem-fixing-thms symbol-listp)
+               (var-fixing-thms symbol-listp))
+  :short "Generate the cases of a @('p[i]-2-proof-validp') function,
+          along with the names of some relevant theorems."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There is one case for each rule whose conclusion is @('p[i]');
+     the @('pred-name') input is @('p[i]'), not @('p[i]-2')
+     because it is matched against the conclusions of the rules."))
+  (b* (((when (endp infos)) (mv nil nil nil nil nil))
+       ((defind-irule-info info) (car infos))
+       ((unless (equal (defind-conclusion-info->name info.conclusion)
+                       (symbol-lfix pred-name)))
+        (defind-gen-proof2-valid-fn-cases
+          pred-name concl-vars (cdr infos) name))
+       ((mv keyword+term return-thm count-thms prem-fixing-thms var-fixing-thms)
+        (defind-gen-proof2-valid-fn-case info concl-vars name))
+       ((mv keywords+terms
+            more-return-thms
+            more-count-thms
+            more-prem-fixing-thms
+            more-var-fixing-thms)
+        (defind-gen-proof2-valid-fn-cases
+          pred-name concl-vars (cdr infos) name)))
+    (mv (cons keyword+term keywords+terms)
+        (cons return-thm more-return-thms)
+        (append count-thms more-count-thms)
+        (append prem-fixing-thms more-prem-fixing-thms)
+        (append var-fixing-thms more-var-fixing-thms))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-valid-fn ((pred-info defind-pred-infop)
+                                    (infos defind-irule-info-listp)
+                                    (standalonep booleanp)
+                                    (name symbolp)
+                                    (xdocp booleanp))
+  :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @('p[i]-2-proof-validp') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-proof-valid-fn);
+     see that function for the @('standalonep') input
+     and for the treatment of non-recursive predicates.")
+   (xdoc::p
+    "This takes the information about the predicate, not just its name,
+     because the arguments of the conclusion are formals of this function;
+     see @(tsee defind-proof2-concl-var-names).")
+   (xdoc::p
+    "The @(':returns') theorem is also a type prescription rule,
+     which @(tsee defind-gen-proof2-pred) uses."))
+  (b* (((defind-pred-info pred-info))
+       (pred2-name (defind-pred2-name pred-info.name name))
+       (fn-name (defind-proof-valid-fn-name pred2-name name))
+       (fn-formal (defind-proof-var-name name))
+       (proof-recog (defind-proof-recog-name pred2-name name))
+       (proof-case (defind-proof-case-name pred2-name name))
+       (concl-vars (defind-proof2-concl-var-names pred-info.formals name))
+       ((mv keywords+terms
+            return-thms
+            count-thms
+            prem-fixing-thms
+            var-fixing-thms)
+        (defind-gen-proof2-valid-fn-cases
+          pred-info.name concl-vars infos name))
+       (count-fn (defind-proof-count-fn-name pred2-name name))
+       ((unless standalonep)
+        `(define ,fn-name ((,fn-formal ,proof-recog) ,@concl-vars)
+           :returns (yes/no booleanp
+                            :rule-classes (:rewrite :type-prescription))
+           ,@(and xdocp
+                  `(:parents (,(symbol-lfix name))
+                    :short ,(str::cat "Validity of a proof for @('"
+                                      (str::downcase-string
+                                       (symbol-name pred2-name))
+                                      "').")))
+           (,proof-case ,fn-formal ,@keywords+terms)
+           :measure (,count-fn ,fn-formal)))
+       (recursivep (defind-pred-recursivep pred-info.name infos))
+       (poss-thm (defind-proof-kind-poss-thm-name pred2-name name))
+       (kind-fixing-thm (defind-proof2-kind-fixing-thm-name pred2-name name)))
+    `(define ,fn-name ((,fn-formal ,proof-recog) ,@concl-vars)
+       :returns (yes/no booleanp
+                        :rule-classes (:rewrite :type-prescription)
+                        :hints (("Goal"
+                                 ,@(and recursivep '(:induct t))
+                                 :in-theory '(,fn-name
+                                              (:e booleanp)
+                                              ,@return-thms))))
+       ,@(and xdocp
+              `(:parents (,(symbol-lfix name))
+                :short ,(str::cat "Validity of proofs for predicate @('"
+                                  (str::downcase-string
+                                   (symbol-name pred2-name))
+                                  "').")))
+       (,proof-case ,fn-formal ,@keywords+terms)
+       ,@(and recursivep
+              `(:measure (,count-fn ,fn-formal)
+                :hints (("Goal" :in-theory '(o-p
+                                             o-finp
+                                             o<
+                                             (:t ,count-fn)
+                                             (:e tau-system)
+                                             ,poss-thm
+                                             ,@count-thms)))))
+       :verify-guards nil
+       :hooks ((:fix :hints (("Goal"
+                              ,@(and recursivep '(:induct t))
+                              :in-theory '(,fn-name
+                                           ,kind-fixing-thm
+                                           ,@prem-fixing-thms
+                                           ,@var-fixing-thms))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-valid-fn-clique ((clique-pred-infos
+                                            defind-pred-info-listp)
+                                           (irule-infos defind-irule-info-listp)
+                                           (name symbolp)
+                                           (xdocp booleanp))
+  :guard (and (consp clique-pred-infos)
+              (no-duplicatesp-equal
+               (defind-pred-info-list->name clique-pred-infos))
+              (no-duplicatesp-equal
+               (defind-irule-info-list->name irule-infos)))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @(tsee defines) with
+          the @('p[i]-2-proof-validp') functions of
+          a clique of multiple predicates."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-proof-valid-fn-clique),
+     including the quoted theories of
+     the termination hints and of the fixing equivalence,
+     and the @(':expand') hints of the fixing equivalence
+     (with the additional conclusion arguments here).")
+   (xdoc::p
+    "Where that function uses the type prescriptions that ACL2 infers
+     for the count functions and for the rule validity predicates,
+     we use the proved ones instead:
+     the return theorem of the count function,
+     and the @(':returns') theorem of each rule validity predicate,
+     which is also a type prescription rule
+     (see @(tsee defind-gen-proof2-irule-valid-fn)).")
+   (xdoc::p
+    "We do not supply the induction hint of the fixing equivalence,
+     for the reason given in
+     @(tsee defind-gen-proof2-pred-alt-when-proof-valid-thm-clique):
+     the flag function takes the arguments of the conclusions
+     of all the predicates of the clique,
+     and the flag machinery supplies the call on its formals."))
+  (b* (((mv members expands term-thms fixequiv-expands fixequiv-thms)
+        (defind-gen-proof2-valid-fn-clique-loop
+          clique-pred-infos irule-infos name xdocp))
+       ((mv valid-tps prem-acc-thms)
+        (defind-gen-proof2-valid-fn-clique-rules-loop
+          irule-infos
+          (defind-pred-info-list->name clique-pred-infos)
+          name))
+       (first-pred2 (defind-pred2-name
+                      (defind-pred-info->name (car clique-pred-infos))
+                      name))
+       (defines-name (defind-proof-valid-fn-clique-name first-pred2 name))
+       (flag-fn (defind-proof-valid-fn-clique-flag-name first-pred2 name)))
+    `(defines ,defines-name
+       ,@(and xdocp
+              `(:parents (,(symbol-lfix name))
+                :short ,(str::cat
+                         "Validity of proofs for predicates "
+                         (defind-preds-doc-string
+                           (defind-pred-info-list->name clique-pred-infos))
+                         ".")))
+       ,@members
+       :hints (("Goal"
+                :expand ,expands
+                :in-theory '(eql
+                             not
+                             o-p
+                             o-finp
+                             o<
+                             (:e equal)
+                             (:e tau-system)
+                             ,@term-thms
+                             ,@valid-tps)))
+       :verify-guards nil
+       :flag-local nil
+       ///
+       (fty::deffixequiv-mutual ,defines-name
+         :hints (("Goal"
+                  :expand ,fixequiv-expands
+                  :in-theory '(,flag-fn
+                               not
+                               (:e equal)
+                               ,@fixequiv-thms
+                               ,@prem-acc-thms))))))
+
+  :guard-hints
+  (("Goal"
+    :in-theory (enable true-listp-when-pseudo-event-form-listp-rewrite)))
+
+  :prepwork
+
+  ((define defind-gen-proof2-valid-fn-clique-loop
+     ((pred-infos defind-pred-info-listp)
+      (irule-infos defind-irule-info-listp)
+      (name symbolp)
+      (xdocp booleanp))
+     :guard (no-duplicatesp-equal (defind-irule-info-list->name irule-infos))
+     :returns (mv (events pseudo-event-form-listp)
+                  (expands true-listp)
+                  (term-thms true-listp)
+                  (fixequiv-expands true-listp)
+                  (fixequiv-thms true-listp))
+     :parents nil
+     (b* (((when (endp pred-infos)) (mv nil nil nil nil nil))
+          ((defind-pred-info info) (car pred-infos))
+          (pred2-name (defind-pred2-name info.name name))
+          (event (defind-gen-proof2-valid-fn
+                   (car pred-infos) irule-infos nil name xdocp))
+          (count-fn (defind-proof-count-fn-name pred2-name name))
+          (fn-formal (defind-proof-var-name name))
+          (expand `(,count-fn ,fn-formal))
+          (poss-thm (defind-proof-kind-poss-thm-name pred2-name name))
+          (term-thms1
+           (list poss-thm
+                 (defind-proof-count-return-thm-name pred2-name name)))
+          (concl-vars (defind-proof2-concl-var-names info.formals name))
+          ((mv & & & prem-fixing-thms var-fixing-thms)
+           (defind-gen-proof2-valid-fn-cases
+             info.name concl-vars irule-infos name))
+          (valid-fn (defind-proof-valid-fn-name pred2-name name))
+          (fixer (defind-proof-fixer-name pred2-name name))
+          (fixequiv-expands1
+           (list `(,valid-fn ,fn-formal ,@concl-vars)
+                 `(,valid-fn (,fixer ,fn-formal) ,@concl-vars)))
+          (fixequiv-thms1
+           (append prem-fixing-thms
+                   var-fixing-thms
+                   (list valid-fn
+                         poss-thm
+                         (defind-proof2-kind-fixing-thm-name pred2-name name)
+                         (defind-proof-fix-id-thm-name pred2-name name))))
+          ((mv events expands term-thms fixequiv-expands fixequiv-thms)
+           (defind-gen-proof2-valid-fn-clique-loop
+             (cdr pred-infos) irule-infos name xdocp)))
+       (mv (cons event events)
+           (cons expand expands)
+           (append term-thms1 term-thms)
+           (append fixequiv-expands1 fixequiv-expands)
+           (append fixequiv-thms1 fixequiv-thms))))
+
+   (define defind-gen-proof2-valid-fn-clique-rules-loop
+     ((irule-infos defind-irule-info-listp)
+      (clique-pred-names symbol-listp)
+      (name symbolp))
+     :returns (mv (valid-tps true-listp)
+                  (prem-acc-thms true-listp))
+     :parents nil
+     (b* (((when (endp irule-infos)) (mv nil nil))
+          ((mv valid-tps prem-acc-thms)
+           (defind-gen-proof2-valid-fn-clique-rules-loop
+             (cdr irule-infos) clique-pred-names name))
+          ((defind-irule-info info) (car irule-infos))
+          ((defind-conclusion-info cinfo) info.conclusion)
+          ((unless (member-eq cinfo.name
+                              (symbol-list-fix clique-pred-names)))
+           (mv valid-tps prem-acc-thms))
+          (pred2-name (defind-pred2-name cinfo.name name))
+          (valid-tp `(:type-prescription
+                      ,(defind-irule-valid-return-thm-name
+                         pred2-name info.name name)))
+          (prem-acc-thms1
+           (defind-gen-proof2-valid-fn-clique-rules-loop-loop
+             info.premises pred2-name info.name 1 name)))
+       (mv (cons valid-tp valid-tps)
+           (append prem-acc-thms1 prem-acc-thms)))
+
+     :prepwork
+
+     ((define defind-gen-proof2-valid-fn-clique-rules-loop-loop
+        ((prem-infos defind-premise-info-listp)
+         (pred-name symbolp)
+         (irule-name symbolp)
+         (num posp)
+         (name symbolp))
+        :returns (thms true-listp)
+        :parents nil
+        (b* (((when (endp prem-infos)) nil)
+             (info (car prem-infos)))
+          (defind-premise-info-case
+            info
+            :pred
+            (cons (defind-proof-prem-acc-return-thm-name
+                    (defind-pred2-name info.name name)
+                    pred-name irule-name num name)
+                  (defind-gen-proof2-valid-fn-clique-rules-loop-loop
+                    (cdr prem-infos) pred-name irule-name
+                    (1+ (lposfix num)) name))
+            :other
+            (defind-gen-proof2-valid-fn-clique-rules-loop-loop
+              (cdr prem-infos) pred-name irule-name num name))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-valid-fns ((pred-infos defind-pred-info-listp)
+                                     (irule-infos defind-irule-info-listp)
+                                     (leveled-cliques symbol-set-list-listp)
+                                     (name symbolp)
+                                     (xdocp booleanp))
+  :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+              (no-duplicatesp-equal (defind-irule-info-list->name irule-infos)))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate the proof validity functions
+          of the @('p[i]-2') predicates, for all the cliques."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-proof-valid-fns)."))
+  (defind-gen-proof2-valid-fns-loop
+    leveled-cliques pred-infos irule-infos name xdocp)
+
+  :prepwork
+
+  ((define defind-gen-proof2-valid-fns-loop
+     ((leveled-cliques symbol-set-list-listp)
+      (pred-infos defind-pred-info-listp)
+      (irule-infos defind-irule-info-listp)
+      (name symbolp)
+      (xdocp booleanp))
+     :guard (and (no-duplicatesp-equal
+                  (defind-pred-info-list->name pred-infos))
+                 (no-duplicatesp-equal
+                  (defind-irule-info-list->name irule-infos)))
+     :returns (events pseudo-event-form-listp)
+     :parents nil
+     (b* (((when (endp leveled-cliques)) nil)
+          (levels (symbol-set-list-fix (car leveled-cliques)))
+          (clique-preds (set::set-list-union levels))
+          (clique-pred-infos (defind-lookup-pred-set clique-preds pred-infos))
+          (events (defind-gen-proof2-valid-fns-loop
+                    (cdr leveled-cliques) pred-infos irule-infos name xdocp))
+          ((unless (consp clique-pred-infos))
+           (raise "Internal error: no predicates in clique with levels ~x0."
+                  levels)
+           events)
+          (event
+           (if (endp (cdr clique-pred-infos))
+               (defind-gen-proof2-valid-fn
+                 (car clique-pred-infos) irule-infos t name xdocp)
+             (defind-gen-proof2-valid-fn-clique
+               clique-pred-infos irule-infos name xdocp))))
+       (cons event events))
+     :no-function nil
+     :guard-hints
+     (("Goal" :in-theory (enable set-listp-when-symbol-set-listp))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-gen-pred ((pred-info defind-pred-infop)
                          (name symbolp)
                          (xdocp booleanp))
@@ -4076,6 +5210,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-gen-proof2-pred ((pred-info defind-pred-infop)
+                                (standalonep booleanp)
+                                (name symbolp)
+                                (xdocp booleanp))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @('p[i]-2') predicate."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-pred),
+     but the arguments of the conclusion are arguments of
+     the proof validity predicate,
+     instead of being compared with the conclusion of the proof.
+     So this needs neither the @('p[i]-proof->conclusion') function
+     nor the @('p[i]-assertion') fixtype.")
+   (xdoc::p
+    "The @(':returns') proof needs to know that
+     the proof validity predicate returns a boolean.
+     We use the type prescription rule from its @(':returns') theorem,
+     which is proved,
+     rather than the type prescription that ACL2 infers for it.
+     The inferred one is in fact a boolean
+     because every conclusion has at least one argument
+     and so every case of the function ends with an equality;
+     but that is a property of the shape of the generated body,
+     not something established."))
+  (b* (((defind-pred-info pred-info))
+       (pred2-name (defind-pred2-name pred-info.name name))
+       (proof (defind-proof-var-name name))
+       (proofp (defind-proof-recog-name pred2-name name))
+       (proof-validp (defind-proof-valid-fn-name pred2-name name))
+       (valid-return-thm (defind-proof-valid-return-thm-name
+                           pred2-name standalonep name))
+       (witness (defind-proof-witness-fn-name pred2-name name)))
+    `(define-sk ,pred2-name (,@pred-info.formals)
+       :returns (yes/no booleanp
+                        :hints (("Goal"
+                                 :in-theory
+                                 '(,pred2-name
+                                   booleanp
+                                   (:type-prescription ,valid-return-thm)))))
+       ,@(and xdocp
+              `(:parents (,(symbol-lfix name))
+                :short ,(str::cat "Definition of the predicate @('"
+                                  (str::downcase-string
+                                   (symbol-name pred2-name))
+                                  "') via proof existence.")))
+       (exists (,proof)
+               (and (,proofp ,proof)
+                    (,proof-validp ,proof ,@pred-info.formals)))
+       :skolem-name ,witness
+       :verify-guards nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-gen-preds ((pred-infos defind-pred-info-listp)
                           (name symbolp)
                           (xdocp booleanp))
@@ -4084,6 +5273,51 @@
   (cond ((endp pred-infos) nil)
         (t (cons (defind-gen-pred (car pred-infos) name xdocp)
                  (defind-gen-preds (cdr pred-infos) name xdocp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-preds ((pred-infos defind-pred-info-listp)
+                                 (leveled-cliques symbol-set-list-listp)
+                                 (name symbolp)
+                                 (xdocp booleanp))
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate all the @('p[i]-2') predicates."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We go through the cliques, as @(tsee defind-gen-proof2-valid-fns) does,
+     because each predicate needs to know whether
+     its proof validity predicate is standalone
+     or a member of a clique of two or more;
+     see @(tsee defind-proof-valid-return-thm-name)."))
+  (b* (((when (endp leveled-cliques)) nil)
+       (levels (symbol-set-list-fix (car leveled-cliques)))
+       (clique-preds (set::set-list-union levels))
+       (clique-pred-infos (defind-lookup-pred-set clique-preds pred-infos))
+       (standalonep (and (consp clique-pred-infos)
+                         (endp (cdr clique-pred-infos))))
+       (events (defind-gen-proof2-preds
+                 pred-infos (cdr leveled-cliques) name xdocp)))
+    (append (defind-gen-proof2-preds-loop
+              clique-pred-infos standalonep name xdocp)
+            events))
+  :no-function nil
+  :guard-hints
+  (("Goal" :in-theory (enable set-listp-when-symbol-set-listp)))
+
+  :prepwork
+  ((define defind-gen-proof2-preds-loop ((pred-infos defind-pred-info-listp)
+                                         (standalonep booleanp)
+                                         (name symbolp)
+                                         (xdocp booleanp))
+     :returns (events pseudo-event-form-listp)
+     :parents nil
+     (cond ((endp pred-infos) nil)
+           (t (cons (defind-gen-proof2-pred
+                      (car pred-infos) standalonep name xdocp)
+                    (defind-gen-proof2-preds-loop
+                      (cdr pred-infos) standalonep name xdocp)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4408,6 +5642,171 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-gen-proof2-irule-thm-hyps ((infos defind-premise-info-listp)
+                                          (name symbolp))
+  :returns (mv (pred-hyps true-listp)
+               (other-hyps true-listp))
+  :short "Generate the hypotheses of a @('p[l[k]]-2-rule[k]') theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-irule-thm-hyps),
+     but the premises that are calls of the predicates being defined
+     become calls of the @('p[i]-2') predicates."))
+  (b* (((when (endp infos)) (mv nil nil))
+       (info (car infos))
+       ((mv pred-hyps other-hyps)
+        (defind-gen-proof2-irule-thm-hyps (cdr infos) name)))
+    (defind-premise-info-case
+      info
+      :pred (mv (cons `(,(defind-pred2-name info.name name)
+                        ,@(defind-term-info-list->uterm info.args))
+                      pred-hyps)
+                other-hyps)
+      :other (mv pred-hyps
+                 (cons (defind-term-info->uterm info.term)
+                       other-hyps)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-irule-thm-prems ((infos defind-premise-info-listp)
+                                           (pred-name symbolp)
+                                           (irule-name symbolp)
+                                           (num posp)
+                                           (name symbolp))
+  :returns (mv (proofcalls true-listp)
+               (of-constr-thms symbol-listp)
+               (fix-id-thms symbol-listp))
+  :short "Generate the proofs of the premises of a rule
+          in a @('p[l[k]]-2-rule[k]') theorem,
+          along with the names of some relevant theorems."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The proof of a premise that is a call of a predicate being defined
+     is the witness of that call,
+     which the corresponding hypothesis of the theorem provides.")
+   (xdoc::p
+    "The @('pred-name') input is the @('p[i]-2') predicate
+     of the conclusion of the rule,
+     because the accessors belong to the fixtype of its proofs.
+     The fixing identity theorem of each premise is instead
+     the one of the predicate of the premise,
+     because that is the fixtype of the accessed field."))
+  (b* (((when (endp infos)) (mv nil nil nil))
+       (info (car infos)))
+    (defind-premise-info-case
+      info
+      :pred (b* ((prem-pred2-name (defind-pred2-name info.name name))
+                 (witfn (defind-proof-witness-fn-name prem-pred2-name name))
+                 (proofcall
+                  `(,witfn ,@(defind-term-info-list->uterm info.args)))
+                 (of-constr-thm (defind-proof-prem-of-constr-thm-name
+                                  pred-name irule-name num name))
+                 (fix-id-thm (defind-proof-fix-id-thm-name
+                               prem-pred2-name name))
+                 ((mv proofcalls of-constr-thms fix-id-thms)
+                  (defind-gen-proof2-irule-thm-prems
+                    (cdr infos) pred-name irule-name (1+ (lposfix num)) name)))
+              (mv (cons proofcall proofcalls)
+                  (cons of-constr-thm of-constr-thms)
+                  (cons fix-id-thm fix-id-thms)))
+      :other (defind-gen-proof2-irule-thm-prems
+               (cdr infos) pred-name irule-name num name))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-irule-thm ((info defind-irule-infop)
+                                     (pred-infos defind-pred-info-listp)
+                                     (name symbolp))
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @('p[l[k]]-2-rule[k]') theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The statement is the one of @(tsee defind-gen-irule-thm),
+     with @('p[i]-2') in place of @('p[i]').")
+   (xdoc::p
+    "Unlike @(tsee defind-gen-irule-thm),
+     the proof does not go through a function that builds the proof:
+     the constructor of the fixtype of proofs is that proof,
+     so we use the @('p[i]-2-suff') theorem on it directly.
+     Expanding the hypotheses that are calls of the @('p[i]-2') predicates
+     yields the proofs of those premises,
+     which the constructor takes as its subproofs.
+     Then the proof validity predicate opens on the known kind,
+     the accessors of the constructor yield its arguments,
+     and the @('p[l[k]]-2-rule[k]-validp') function
+     closes the equalities for the arguments of the conclusion.")
+   (xdoc::p
+    "The theorem about the return type of the constructor
+     gives both the recognizer and the kind of the constructed proof.
+     For a rule with premises that are calls of the predicates being defined
+     we also need @(tsee defind-proof-fix-id-thm-name);
+     see that function."))
+  (b* (((defind-irule-info info))
+       ((defind-conclusion-info cinfo) info.conclusion)
+       (pred2-name (defind-pred2-name cinfo.name name))
+       (concl-args (defind-term-info-list->uterm cinfo.args))
+       (concl `(,pred2-name ,@concl-args))
+       ((mv pred-hyps other-hyps)
+        (defind-gen-proof2-irule-thm-hyps info.premises name))
+       (thm-name (defind-pred-irule-thm-name pred2-name info.name name))
+       (pred-suff (defind-pred-suff-thm-name pred2-name name))
+       (vars (defind-irule-info-free-vars info))
+       ((mv proofcalls prem-of-constr-thms fix-id-thms)
+        (defind-gen-proof2-irule-thm-prems
+          info.premises pred2-name info.name 1 name))
+       (constr (defind-proof-constr-name pred2-name info.name name))
+       (proofcall `(,constr ,@(symbol-list-fix vars) ,@proofcalls))
+       (pinfo (defind-lookup-pred cinfo.name pred-infos))
+       ((unless pinfo)
+        (raise "Internal error: predicate ~x0 not found." cinfo.name)
+        '(_))
+       (formals (defind-pred-info->formals pinfo))
+       (formals-inst (alist-to-doublets (pairlis$ formals concl-args)))
+       (proof-var (defind-proof-var-name name))
+       (proof-validp (defind-proof-valid-fn-name pred2-name name))
+       (irule-validp (defind-irule-valid-fn-name pred2-name info.name name))
+       (constr-return-thm
+        (defind-proof-constr-return-thm pred2-name info.name name))
+       (var-of-constr-thms
+        (defind-proof-var-of-constr-thm-names pred2-name info.name vars name)))
+    `(defruled ,thm-name
+       ,(defind-gen-implication (append pred-hyps other-hyps) concl)
+       ,@(and pred-hyps
+              (list :expand pred-hyps))
+       :use (:instance ,pred-suff
+                       (,proof-var ,proofcall)
+                       ,@formals-inst)
+       :in-theory '(,proof-validp
+                    ,irule-validp
+                    ,constr-return-thm
+                    ,@var-of-constr-thms
+                    ,@prem-of-constr-thms
+                    ,@fix-id-thms)))
+  :no-function nil
+  :guard-hints (("Goal" :in-theory (enable set::sets-are-true-lists
+                                           symbol-listp-when-symbol-setp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-irule-thms ((irule-infos defind-irule-info-listp)
+                                      (pred-infos defind-pred-info-listp)
+                                      (name symbolp))
+  :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+              (no-duplicatesp-equal (defind-irule-info-list->name irule-infos)))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate all the @('p[l[k]]-2-rule[k]') theorems."
+  (cond ((endp irule-infos) nil)
+        (t (cons (defind-gen-proof2-irule-thm
+                   (car irule-infos) pred-infos name)
+                 (defind-gen-proof2-irule-thms
+                   (cdr irule-infos) pred-infos name)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-gen-irule-defsection ((irule-infos defind-irule-info-listp)
                                      (pred-infos defind-pred-info-listp)
                                      (name symbolp)
@@ -4422,6 +5821,27 @@
     (if xdocp
         `(defsection ,(defind-rule-thm-section-name name)
            :short "Theorems corresponding to the inference rules."
+           ,@thms)
+      `(progn ,@thms))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-irule-defsection
+  ((irule-infos defind-irule-info-listp)
+   (pred-infos defind-pred-info-listp)
+   (name symbolp)
+   (xdocp booleanp))
+  :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+              (no-duplicatesp-equal (defind-irule-info-list->name irule-infos)))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @(tsee defsection) or @(tsee progn) with
+          all the @('p[l[k]]-2-rule[k]') theorems,
+          depending on whether XDOC is to be generated."
+  (b* ((thms (defind-gen-proof2-irule-thms irule-infos pred-infos name)))
+    (if xdocp
+        `(defsection ,(defind-proof2-rule-thm-section-name name)
+           :short "Theorems corresponding to the inference rules,
+                   for the second representation of proofs."
            ,@thms)
       `(progn ,@thms))))
 
@@ -4613,6 +6033,7 @@
                                          (clique-preds symbol-setp)
                                          (first-kind symbolp)
                                          (singlep booleanp)
+                                         (flag-equivs-thm symbolp)
                                          (name symbolp))
   :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
   :returns (mv (hint-branches true-listp)
@@ -4680,7 +6101,33 @@
      which has been already proved at that point:
      it plays the role that,
      for a predicate in the same clique,
-     is played by the induction hypothesis."))
+     is played by the induction hypothesis.")
+   (xdoc::p
+    "For a predicate in a clique with other predicates,
+     the @('flag-equivs-thm') input is
+     the name of the flag equivalence theorem of the clique
+     (see @(tsee defind-proof-valid-fn-clique-flag-equivs-name)),
+     which we include in the theory of each branch;
+     for a predicate that forms a singleton clique,
+     there is no flag function,
+     and that input is @('nil').
+     The theorem is needed because,
+     in the flag induction,
+     a rule with two or more premises
+     that call predicates of the clique
+     gives rise to induction cases in which
+     the recursive call for a premise
+     governs the recursive calls for the subsequent premises:
+     in the cases in which that governing call is false,
+     the hypothesis is phrased in terms of the flag function,
+     and there are no induction hypotheses for the subsequent premises;
+     those cases are vacuous,
+     because the negated call of the flag function
+     contradicts the validity of the proofs of the premises
+     (obtained by expanding the proof validity hypothesis of the theorem),
+     but the contradiction can only be exposed by rewriting
+     the call of the flag function
+     into a call of the corresponding validity function."))
   (b* (((when (endp infos)) (mv nil nil nil nil))
        ((defind-irule-info info) (car infos))
        ((defind-conclusion-info cinfo) info.conclusion)
@@ -4729,10 +6176,12 @@
                          ,irule-valid-fn
                          ,@assert-thms
                          ,@alt-thms
-                         ,irule-acc-thm))))
+                         ,irule-acc-thm
+                         ,@(and (symbol-lfix flag-equivs-thm)
+                                (list (symbol-lfix flag-equivs-thm)))))))
        ((mv hint-branches lemma-instances irule-valid-fns irule-acc-thms)
         (defind-gen-pred-alt-irule-hints
-          (cdr infos) clique-preds first-kind singlep name)))
+          (cdr infos) clique-preds first-kind singlep flag-equivs-thm name)))
     (mv (cons hint-branch hint-branches)
         (cons lemma-instance lemma-instances)
         (cons irule-valid-fn irule-valid-fns)
@@ -4786,7 +6235,7 @@
        (clique-preds (set::insert (symbol-lfix pred-name) nil))
        ((mv hint-branches lemma-instances irule-valid-fns irule-acc-thms)
         (defind-gen-pred-alt-irule-hints
-          irule-infos clique-preds first-kind singlep name))
+          irule-infos clique-preds first-kind singlep nil name))
        ((when recursivep)
         `(defruled ,thm-name
            ,formula
@@ -4840,17 +6289,24 @@
      along with the flag function of the clique.
      Since the induction is on all the proof validity functions,
      the @(tsee cond) hint has a branch for
-     every rule of every predicate of the clique."))
+     every rule of every predicate of the clique.")
+   (xdoc::p
+    "The theory of each branch of the @(tsee cond) hint
+     includes the flag equivalence theorem of the clique;
+     see @(tsee defind-gen-pred-alt-irule-hints) for the reason."))
   (b* ((first-pred (defind-pred-info->name (car clique-pred-infos)))
        (macro (defind-proof-valid-fn-clique-defthm-macro-name first-pred name))
        (flag-fn (defind-proof-valid-fn-clique-flag-name first-pred name))
+       (flag-equivs-thm
+        (defind-proof-valid-fn-clique-flag-equivs-name first-pred name))
        (flag (defind-flag-var-name name))
        (proof (defind-proof-var-name name))
        (clique-preds
         (set::mergesort (defind-pred-info-list->name clique-pred-infos)))
        ((mv thms hint-branches valid-fns)
         (defind-gen-pred-alt-when-proof-valid-thm-clique-loop
-          clique-pred-infos irule-infos clique-preds prop-calls name)))
+          clique-pred-infos irule-infos clique-preds prop-calls
+          flag-equivs-thm name)))
     `(,macro
       ,@thms
       :hints (("Goal"
@@ -4869,6 +6325,7 @@
       (irule-infos defind-irule-info-listp)
       (clique-preds symbol-setp)
       (prop-calls true-listp)
+      (flag-equivs-thm symbolp)
       (name symbolp))
      :guard (and (no-duplicatesp-equal
                   (defind-pred-info-list->name pred-infos))
@@ -4887,7 +6344,8 @@
           (pred-irule-infos (defind-irules-of-pred info.name irule-infos))
           ((mv thms hint-branches valid-fns)
            (defind-gen-pred-alt-when-proof-valid-thm-clique-loop
-             (cdr pred-infos) irule-infos clique-preds prop-calls name))
+             (cdr pred-infos) irule-infos clique-preds prop-calls
+             flag-equivs-thm name))
           ((unless (consp pred-irule-infos))
            (raise "Internal error: no inference rules for predicate ~x0."
                   info.name)
@@ -4897,7 +6355,8 @@
           (singlep (endp (cdr pred-irule-infos)))
           ((mv branches & & &)
            (defind-gen-pred-alt-irule-hints
-             pred-irule-infos clique-preds first-kind singlep name))
+             pred-irule-infos clique-preds first-kind singlep
+             flag-equivs-thm name))
           (thm `(defthmd ,thm-name
                   ,formula
                   :flag ,valid-fn)))
@@ -5043,6 +6502,789 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-gen-proof2-pred-alt-stubs ((infos defind-pred-info-listp)
+                                          (name symbolp))
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name infos))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate the @('p[i]-2-alt') stubs."
+  (b* (((when (endp infos)) nil)
+       ((defind-pred-info info) (car infos))
+       (fn-name (defind-pred-alt-fn-name
+                  (defind-pred2-name info.name name) name))
+       (stub `(defstub ,fn-name ,(repeat (len info.formals) '*) => *))
+       (stubs (defind-gen-proof2-pred-alt-stubs (cdr infos) name)))
+    (cons stub stubs)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-pred-alt-irule-prop-prems
+  ((infos defind-premise-info-listp)
+   (name symbolp))
+  :returns (prems true-listp)
+  :short "Premises of the proposition (nullary function) saying that
+          a @('p[i]-2-alt') stub satisfies an inference rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-pred-alt-irule-prop-prems),
+     with the @('p[i]-2-alt') stubs in place of the @('p[i]-alt') ones."))
+  (b* (((when (endp infos)) nil)
+       (prems (defind-gen-proof2-pred-alt-irule-prop-prems (cdr infos) name))
+       (info (car infos)))
+    (defind-premise-info-case
+      info
+      :pred (cons `(,(defind-pred-alt-fn-name
+                       (defind-pred2-name info.name name) name)
+                    ,@(defind-term-info-list->uterm info.args))
+                  prems)
+      :other (cons (defind-term-info->uterm info.term)
+                   prems))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-pred-alt-irule-prop ((info defind-irule-infop)
+                                               (name symbolp))
+  :returns (mv (event pseudo-event-formp)
+               call)
+  :short "Proposition (nullary function) saying that
+          a @('p[i]-2-alt') stub satisfies an inference rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-pred-alt-irule-prop);
+     in particular, a ground rule yields a @(tsee defun)
+     instead of a @(tsee defun-sk),
+     since there is nothing to quantify."))
+  (b* (((defind-irule-info info))
+       ((defind-conclusion-info cinfo) info.conclusion)
+       (pred2-name (defind-pred2-name cinfo.name name))
+       (fn-name (defind-pred-alt-irule-fn-name pred2-name info.name name))
+       (prems (defind-gen-proof2-pred-alt-irule-prop-prems info.premises name))
+       (concl `(,(defind-pred-alt-fn-name pred2-name name)
+                ,@(defind-term-info-list->uterm cinfo.args)))
+       (vars (defind-irule-info-free-vars info))
+       (body/matrix (defind-gen-implication prems concl))
+       (event (if (defind-irule-groundp info)
+                  `(defun ,fn-name ()
+                     (declare (xargs :verify-guards nil))
+                     ,body/matrix)
+                `(defun-sk ,fn-name ()
+                   (declare (xargs :verify-guards nil))
+                   (forall ,vars ,body/matrix))))
+       (call `(,fn-name)))
+    (mv event call)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-pred-alt-irule-props
+  ((infos defind-irule-info-listp)
+   (name symbolp))
+  :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
+  :returns (mv (events pseudo-event-form-listp)
+               (calls true-listp))
+  :short "Propositions (nullary functions) saying that
+          the @('p[i]-2-alt') stubs satisfy the inference rules."
+  (b* (((when (endp infos)) (mv nil nil))
+       ((mv event call)
+        (defind-gen-proof2-pred-alt-irule-prop (car infos) name))
+       ((mv events calls)
+        (defind-gen-proof2-pred-alt-irule-props (cdr infos) name)))
+    (mv (cons event events) (cons call calls))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-var-acc$inline-calls ((vars symbol-listp)
+                                                (pred-name symbolp)
+                                                (irule-name symbolp)
+                                                (name symbolp))
+  :returns (calls true-listp)
+  :short "Calls of the accessors of the fields of a @('p[i]-2-proof') summand
+          named after the variables of a rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the @('$inline') forms of the accessors,
+     which are the ones that occur in clauses;
+     they are used to recognize the case of a rule
+     when the proof fixtype has a single summand
+     (see @(tsee defind-gen-proof2-pred-alt-irule-hints))."))
+  (b* (((when (endp vars)) nil)
+       (var (symbol-lfix (car vars)))
+       (acc (defind-proof-var-acc$inline-name pred-name irule-name var name))
+       (proof (defind-proof-var-name name)))
+    (cons `(,acc ,proof)
+          (defind-gen-proof2-var-acc$inline-calls
+            (cdr vars) pred-name irule-name name))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-alt-inst-doublets ((vars symbol-listp)
+                                             (pred-name symbolp)
+                                             (irule-name symbolp)
+                                             (name symbolp))
+  :returns (doublets true-list-listp)
+  :short "Bindings of the variables of a rule
+          in the instance of the proposition for that rule,
+          in a @('p[i]-2-alt-when-proof-validp') theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each variable of the rule is bound to
+     the field of the proof named after it.
+     This is where the second representation of proofs pays off
+     in this theorem: the variables of the rule are fields of the proof,
+     so these are plain accessor calls,
+     while @(tsee defind-gen-pred-alt-when-proof-valid-thm) must extract them
+     from the witness of the validity of the rule
+     (see @(tsee defind-gen-irule-mv-nth-doublets))."))
+  (b* (((when (endp vars)) nil)
+       (var (symbol-lfix (car vars)))
+       (acc (defind-proof-var-acc-name pred-name irule-name var name))
+       (proof (defind-proof-var-name name))
+       (doublet `(,var (,acc ,proof))))
+    (cons doublet
+          (defind-gen-proof2-alt-inst-doublets
+            (cdr vars) pred-name irule-name name))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-pred-alt-when-proof-valid-thm-formula
+  ((pred-name symbolp)
+   (pred-formals symbol-listp)
+   (prop-calls true-listp)
+   (name symbolp))
+  :returns (formula true-listp)
+  :short "Formula of a @('p[i]-2-alt-when-proof-validp') theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The conclusion is the @('p[i]-2-alt') stub
+     on the arguments of the conclusion,
+     which are arguments of the proof validity predicate,
+     rather than fields of the proof to be extracted;
+     so, unlike @(tsee defind-gen-pred-alt-when-proof-valid-thm-formula),
+     there is nothing to destructure."))
+  (b* ((pred2-name (defind-pred2-name pred-name name))
+       (valid-fn (defind-proof-valid-fn-name pred2-name name))
+       (proof (defind-proof-var-name name))
+       (pred-alt (defind-pred-alt-fn-name pred2-name name))
+       (concls (defind-proof2-concl-var-names pred-formals name)))
+    `(implies (and ,@prop-calls
+                   (,valid-fn ,proof ,@concls))
+              (,pred-alt ,@concls))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-pred-alt-irule-hints ((infos defind-irule-info-listp)
+                                                (pred-formals symbol-listp)
+                                                (clique-preds symbol-setp)
+                                                (first-kind symbolp)
+                                                (singlep booleanp)
+                                                (flag-equivs-thm symbolp)
+                                                (name symbolp))
+  :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
+  :returns (mv (hint-branches true-listp)
+               (lemma-instances true-listp)
+               (irule-valid-fns symbol-listp))
+  :short "Generate the hints for the inference rules of a predicate,
+          to prove the @('p[i]-2-alt-when-proof-validp') theorem
+          of that predicate."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-pred-alt-irule-hints);
+     see that function for the shape of the computed conditions,
+     including the treatment of the last branch,
+     and for the theorems of the predicates of the premises
+     in preceding cliques.
+     Using a single @(':use') hint with all the instances instead
+     is much slower, as noted there:
+     with eight rules we measured about sixty times as many prover steps.")
+   (xdoc::p
+    "The conclusion of the theorem is
+     the @('p[i]-2-alt') stub on the arguments of the conclusion,
+     which are arguments of the proof validity predicate,
+     rather than fields of the proof to be extracted;
+     so, unlike @(tsee defind-gen-pred-alt-irule-hints),
+     there is nothing to destructure,
+     and each branch needs just the proof validity predicate,
+     the one for the rule,
+     and the theorems of the predicates of the premises
+     in preceding cliques.")
+   (xdoc::p
+    "In the @('singlep') case the condition takes the same form as in
+     @(tsee defind-gen-pred-alt-irule-hints),
+     but with the arguments of the conclusion and
+     the fields of the proof named after the variables of the rule
+     in place of the conclusion of the proof and of those of the premises.
+     The accessors are the @('$inline') ones because
+     those are the ones that occur in the clause.")
+   (xdoc::p
+    "The @('flag-equivs-thm') input is
+     the name of the flag equivalence theorem of the clique,
+     or @('nil') for a predicate that forms a singleton clique;
+     when non-@('nil'), it is included in the theory of each branch,
+     for the reason explained in
+     @(tsee defind-gen-pred-alt-irule-hints)."))
+  (b* (((when (endp infos)) (mv nil nil nil))
+       ((defind-irule-info info) (car infos))
+       ((defind-conclusion-info cinfo) info.conclusion)
+       (pred2-name (defind-pred2-name cinfo.name name))
+       (proof (defind-proof-var-name name))
+       (proof-kind (defind-proof-kind$inline-fn-name pred2-name name))
+       (kind (defind-irule-tag info.name))
+       (lastp (endp (cdr infos)))
+       (vars (defind-irule-info-free-vars info))
+       (irule-valid-fn (defind-irule-valid-fn-name pred2-name info.name name))
+       (literal
+        (if singlep
+            `(not (,irule-valid-fn
+                   ,@(defind-proof2-concl-var-names pred-formals name)
+                   ,@(defind-gen-proof2-var-acc$inline-calls
+                       vars pred2-name info.name name)))
+          (if lastp
+              `(equal (,proof-kind ,proof) ',(symbol-lfix first-kind))
+            `(not (equal (,proof-kind ,proof) ',kind)))))
+       (cond `(member-equal ',literal clause))
+       (necc/def-rule
+        (if (defind-irule-groundp info)
+            (defind-pred-alt-irule-fn-name pred2-name info.name name)
+          (defind-pred-alt-irule-thm-name pred2-name info.name name)))
+       (inst-doublets
+        (defind-gen-proof2-alt-inst-doublets
+          vars pred2-name info.name name))
+       (lemma-instance `(:instance ,necc/def-rule ,@inst-doublets))
+       (valid-fn (defind-proof-valid-fn-name pred2-name name))
+       (prem-preds (defind-preds-in-premises info.premises))
+       (alt-thms (defind-proof2-pred-alt-when-proof-valid-thm-names
+                   (set::difference prem-preds (symbol-sfix clique-preds))
+                   name))
+       (hint-branch
+        `(,cond
+          '(:use ,lemma-instance
+            :in-theory '(,valid-fn
+                         ,irule-valid-fn
+                         ,@alt-thms
+                         ,@(and (symbol-lfix flag-equivs-thm)
+                                (list (symbol-lfix flag-equivs-thm)))))))
+       ((mv hint-branches lemma-instances irule-valid-fns)
+        (defind-gen-proof2-pred-alt-irule-hints
+          (cdr infos) pred-formals clique-preds first-kind singlep
+          flag-equivs-thm name)))
+    (mv (cons hint-branch hint-branches)
+        (cons lemma-instance lemma-instances)
+        (cons irule-valid-fn irule-valid-fns)))
+  :guard-hints (("Goal" :in-theory (enable symbol-listp-when-symbol-setp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-pred-alt-when-proof-valid-thm
+  ((pred-name symbolp)
+   (pred-formals symbol-listp)
+   (irule-infos defind-irule-info-listp)
+   (prop-calls true-listp)
+   (name symbolp))
+  :guard (no-duplicatesp-equal (defind-irule-info-list->name irule-infos))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @('p[i]-2-alt-when-proof-validp') theorem,
+          for a predicate that forms a singleton clique."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-pred-alt-when-proof-valid-thm);
+     see that function for the treatment of non-recursive predicates."))
+  (b* ((recursivep (defind-pred-recursivep pred-name irule-infos))
+       (pred2-name (defind-pred2-name pred-name name))
+       (thm-name (defind-pred-alt-when-proof-valid-thm-name pred2-name name))
+       (valid-fn (defind-proof-valid-fn-name pred2-name name))
+       (formula (defind-gen-proof2-pred-alt-when-proof-valid-thm-formula
+                  pred-name pred-formals prop-calls name))
+       (irule-infos (defind-irules-of-pred pred-name irule-infos))
+       ((unless (consp irule-infos))
+        (raise "Internal error: no inference rules for predicate ~x0."
+               pred-name)
+        '(_))
+       (first-kind
+        (defind-irule-tag (defind-irule-info->name (car irule-infos))))
+       (singlep (endp (cdr irule-infos)))
+       (clique-preds (set::insert (symbol-lfix pred-name) nil))
+       ((mv hint-branches lemma-instances irule-valid-fns)
+        (defind-gen-proof2-pred-alt-irule-hints
+          irule-infos pred-formals clique-preds first-kind singlep nil name))
+       ((when recursivep)
+        `(defruled ,thm-name
+           ,formula
+           :induct t
+           :in-theory '(,valid-fn
+                        eql)
+           :hints ((cond ,@hint-branches))))
+       (poss-thm (defind-proof-kind-poss-thm-name pred2-name name))
+       (prem-preds (defind-preds-in-premises-of-irules irule-infos))
+       (alt-thms (defind-proof2-pred-alt-when-proof-valid-thm-names
+                   (set::difference prem-preds clique-preds)
+                   name)))
+    `(defruled ,thm-name
+       ,formula
+       :use ,lemma-instances
+       :in-theory '(,valid-fn
+                    ,poss-thm
+                    ,@irule-valid-fns
+                    ,@alt-thms)))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-pred-alt-when-proof-valid-thm-clique
+  ((clique-pred-infos defind-pred-info-listp)
+   (irule-infos defind-irule-info-listp)
+   (prop-calls true-listp)
+   (name symbolp))
+  :guard (and (consp clique-pred-infos)
+              (no-duplicatesp-equal
+               (defind-pred-info-list->name clique-pred-infos))
+              (no-duplicatesp-equal
+               (defind-irule-info-list->name irule-infos)))
+  :returns (event pseudo-event-formp)
+  :short "Generate the @('p[i]-2-alt-when-proof-validp') theorems of
+          a clique of multiple predicates."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-pred-alt-when-proof-valid-thm-clique),
+     except that we do not supply the induction hint.
+     The proof validity functions of a clique
+     do not all have the same formals here,
+     since each one takes the arguments of the conclusion of its predicate,
+     so the flag function takes the ones of all of them;
+     the macro generated by the flag machinery
+     supplies the call of the flag function on its formals,
+     which is what we want,
+     so we leave that to it.")
+   (xdoc::p
+    "The theory of each branch of the @(tsee cond) hint
+     includes the flag equivalence theorem of the clique;
+     see @(tsee defind-gen-pred-alt-irule-hints) for the reason."))
+  (b* ((first-pred2 (defind-pred2-name
+                      (defind-pred-info->name (car clique-pred-infos))
+                      name))
+       (macro (defind-proof-valid-fn-clique-defthm-macro-name first-pred2 name))
+       (flag-fn (defind-proof-valid-fn-clique-flag-name first-pred2 name))
+       (flag-equivs-thm
+        (defind-proof-valid-fn-clique-flag-equivs-name first-pred2 name))
+       (clique-preds
+        (set::mergesort (defind-pred-info-list->name clique-pred-infos)))
+       ((mv thms hint-branches valid-fns)
+        (defind-gen-proof2-pred-alt-when-proof-valid-thm-clique-loop
+          clique-pred-infos irule-infos clique-preds prop-calls
+          flag-equivs-thm name)))
+    `(,macro
+      ,@thms
+      :hints (("Goal"
+               :in-theory '(,flag-fn
+                            ,@valid-fns
+                            eql))
+              (cond ,@hint-branches))))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable true-listp-when-pseudo-event-form-listp-rewrite)))
+
+  :prepwork
+  ((define defind-gen-proof2-pred-alt-when-proof-valid-thm-clique-loop
+     ((pred-infos defind-pred-info-listp)
+      (irule-infos defind-irule-info-listp)
+      (clique-preds symbol-setp)
+      (prop-calls true-listp)
+      (flag-equivs-thm symbolp)
+      (name symbolp))
+     :guard (and (no-duplicatesp-equal
+                  (defind-pred-info-list->name pred-infos))
+                 (no-duplicatesp-equal
+                  (defind-irule-info-list->name irule-infos)))
+     :returns (mv (thms pseudo-event-form-listp)
+                  (hint-branches true-listp)
+                  (valid-fns symbol-listp))
+     :parents nil
+     (b* (((when (endp pred-infos)) (mv nil nil nil))
+          ((defind-pred-info info) (car pred-infos))
+          (pred2-name (defind-pred2-name info.name name))
+          (thm-name (defind-pred-alt-when-proof-valid-thm-name pred2-name name))
+          (valid-fn (defind-proof-valid-fn-name pred2-name name))
+          (formula (defind-gen-proof2-pred-alt-when-proof-valid-thm-formula
+                     info.name info.formals prop-calls name))
+          (pred-irule-infos (defind-irules-of-pred info.name irule-infos))
+          ((mv thms hint-branches valid-fns)
+           (defind-gen-proof2-pred-alt-when-proof-valid-thm-clique-loop
+             (cdr pred-infos) irule-infos clique-preds prop-calls
+             flag-equivs-thm name))
+          ((unless (consp pred-irule-infos))
+           (raise "Internal error: no inference rules for predicate ~x0."
+                  info.name)
+           (mv thms hint-branches valid-fns))
+          (first-kind
+           (defind-irule-tag (defind-irule-info->name (car pred-irule-infos))))
+          (singlep (endp (cdr pred-irule-infos)))
+          ((mv branches & &)
+           (defind-gen-proof2-pred-alt-irule-hints
+             pred-irule-infos info.formals clique-preds
+             first-kind singlep flag-equivs-thm name))
+          (thm `(defthmd ,thm-name
+                  ,formula
+                  :flag ,valid-fn)))
+       (mv (cons thm thms)
+           (append branches hint-branches)
+           (cons valid-fn valid-fns)))
+     :no-function nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-pred-alt-when-proof-valid-thms
+  ((pred-infos defind-pred-info-listp)
+   (irule-infos defind-irule-info-listp)
+   (leveled-cliques symbol-set-list-listp)
+   (prop-calls true-listp)
+   (name symbolp))
+  :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+              (no-duplicatesp-equal (defind-irule-info-list->name irule-infos)))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate all the @('p[i]-2-alt-when-proof-validp') theorems."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee defind-gen-pred-alt-when-proof-valid-thms):
+     one event per clique, in dependency order."))
+  (defind-gen-proof2-pred-alt-when-proof-valid-thms-loop
+    leveled-cliques pred-infos irule-infos prop-calls name)
+
+  :prepwork
+
+  ((define defind-gen-proof2-pred-alt-when-proof-valid-thms-loop
+     ((leveled-cliques symbol-set-list-listp)
+      (pred-infos defind-pred-info-listp)
+      (irule-infos defind-irule-info-listp)
+      (prop-calls true-listp)
+      (name symbolp))
+     :guard (and (no-duplicatesp-equal
+                  (defind-pred-info-list->name pred-infos))
+                 (no-duplicatesp-equal
+                  (defind-irule-info-list->name irule-infos)))
+     :returns (events pseudo-event-form-listp)
+     :parents nil
+     (b* (((when (endp leveled-cliques)) nil)
+          (levels (symbol-set-list-fix (car leveled-cliques)))
+          (clique-preds (set::set-list-union levels))
+          (clique-pred-infos (defind-lookup-pred-set clique-preds pred-infos))
+          (events (defind-gen-proof2-pred-alt-when-proof-valid-thms-loop
+                    (cdr leveled-cliques)
+                    pred-infos irule-infos prop-calls name))
+          ((unless (consp clique-pred-infos))
+           (raise "Internal error: no predicates in clique with levels ~x0."
+                  levels)
+           events)
+          (event
+           (if (endp (cdr clique-pred-infos))
+               (b* (((defind-pred-info info) (car clique-pred-infos)))
+                 (defind-gen-proof2-pred-alt-when-proof-valid-thm
+                   info.name info.formals irule-infos prop-calls name))
+             (defind-gen-proof2-pred-alt-when-proof-valid-thm-clique
+               clique-pred-infos irule-infos prop-calls name))))
+       (cons event events))
+     :no-function nil
+     :guard-hints
+     (("Goal" :in-theory (enable set-listp-when-symbol-set-listp))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-pred-alt-when-pred-thm ((pred-name symbolp)
+                                                  (pred-formals symbol-listp)
+                                                  (prop-calls true-listp)
+                                                  (name symbolp))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @('p[i]-2-alt-when-p[i]-2') theorem."
+  (b* ((pred2-name (defind-pred2-name pred-name name))
+       (thm-name (defind-pred-alt-when-pred-thm-name pred2-name name))
+       (pred-alt (defind-pred-alt-fn-name pred2-name name))
+       (valid-thm (defind-pred-alt-when-proof-valid-thm-name pred2-name name))
+       (proof-var (defind-proof-var-name name))
+       (proof-wit (defind-proof-witness-fn-name pred2-name name))
+       (formals (symbol-list-fix pred-formals))
+       (concls (defind-proof2-concl-var-names pred-formals name))
+       (concls-inst (alist-to-doublets (pairlis$ concls formals))))
+    `(defruled ,thm-name
+       (implies (and ,@prop-calls
+                     (,pred2-name ,@formals))
+                (,pred-alt ,@formals))
+       :in-theory '(,pred2-name)
+       :use (:instance ,valid-thm
+                       (,proof-var (,proof-wit ,@formals))
+                       ,@concls-inst))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-pred-alt-when-pred-thms
+  ((pred-infos defind-pred-info-listp)
+   (prop-calls true-listp)
+   (name symbolp))
+  :guard (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate all the @('p[i]-2-alt-when-p[i]-2') theorems."
+  (b* (((when (endp pred-infos)) nil)
+       ((defind-pred-info info) (car pred-infos))
+       (thm (defind-gen-proof2-pred-alt-when-pred-thm
+              info.name info.formals prop-calls name))
+       (thms (defind-gen-proof2-pred-alt-when-pred-thms
+               (cdr pred-infos) prop-calls name)))
+    (cons thm thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-minimality-defsection
+  ((pred-infos defind-pred-info-listp)
+   (irule-infos defind-irule-info-listp)
+   (leveled-cliques symbol-set-list-listp)
+   (name symbolp)
+   (xdocp booleanp))
+  :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+              (no-duplicatesp-equal (defind-irule-info-list->name irule-infos)))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @(tsee defsection) or @(tsee progn) with
+          all the @('p[i]-2-alt') stubs,
+          all the @('p[l[k]]-2-alt-rule[k]-p') propositions,
+          all the @('p[i]-2-alt-when-proof-validp') theorems,
+          and all the @('p[i]-2-alt-when-p[i]-2') theorems."
+  (b* ((stubs (defind-gen-proof2-pred-alt-stubs pred-infos name))
+       ((mv props prop-calls)
+        (defind-gen-proof2-pred-alt-irule-props irule-infos name))
+       (valid-thms (defind-gen-proof2-pred-alt-when-proof-valid-thms
+                     pred-infos irule-infos leveled-cliques prop-calls name))
+       (min-thms (defind-gen-proof2-pred-alt-when-pred-thms
+                   pred-infos prop-calls name))
+       (events (append stubs props valid-thms min-thms)))
+    (if xdocp
+        `(defsection ,(defind-proof2-minimality-section-name name)
+           :short "Minimality of the predicates,
+                   for the second representation of proofs."
+           ,@events)
+      `(progn ,@events)))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable true-listp-when-pseudo-event-form-listp-rewrite))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-same-alt-subst ((pred-names symbol-listp)
+                                          (pred2p booleanp)
+                                          (name symbolp))
+  :returns (subst true-listp)
+  :short "Substitutions for the stubs of the predicates,
+          in a theorem that relates the two representations of proofs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The minimality theorem of one representation mentions the stubs of
+     all the predicates being defined, via the propositions for the rules,
+     so all of them must be replaced with
+     the predicates of the other representation;
+     the propositions are then discharged by the rule theorems of the latter.
+     See @(tsee defind-gen-proof2-same-thm)."))
+  (b* (((when (endp pred-names)) nil)
+       (pred-name (symbol-lfix (car pred-names)))
+       (pred2-name (defind-pred2-name pred-name name))
+       (alt-fn (defind-pred-alt-fn-name
+                 (if pred2p pred2-name pred-name) name))
+       (to (if pred2p pred-name pred2-name)))
+    (cons `(,alt-fn ,to)
+          (defind-gen-proof2-same-alt-subst (cdr pred-names) pred2p name))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-same-subst ((infos defind-irule-info-listp)
+                                      (pred2p booleanp)
+                                      (name symbolp))
+  :guard (no-duplicatesp-equal (defind-irule-info-list->name infos))
+  :returns (mv (subst true-listp)
+               (irule-thms symbol-listp))
+  :short "Substitutions for the propositions of the rules,
+          in a theorem that relates the two representations of proofs,
+          along with the rule theorems that discharge them."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The minimality theorem of one representation is used
+     with the predicate of the other in place of the stub;
+     see @(tsee defind-gen-proof2-same-thm).
+     Each proposition saying that the stub satisfies a rule
+     is replaced by @('t'),
+     which leaves, as proof obligation, that the other predicate
+     satisfies that rule: this is its rule theorem.")
+   (xdoc::p
+    "A proposition for a non-ground rule is a @(tsee defun-sk),
+     so its witness must be replaced as well;
+     any value of the right shape will do,
+     which is a single one for a rule with one variable
+     and an @(tsee mv) of the right length otherwise.
+     A proposition for a ground rule is a @(tsee defun),
+     which has no witness.")
+   (xdoc::p
+    "The @('pred2p') input says which of the two representations
+     the propositions belong to:
+     the ones of the first when it is @('nil'),
+     the ones of the second when it is @('t').
+     The rule theorems returned are the ones of the other representation."))
+  (b* (((when (endp infos)) (mv nil nil))
+       ((defind-irule-info info) (car infos))
+       ((defind-conclusion-info cinfo) info.conclusion)
+       (pred2-name (defind-pred2-name cinfo.name name))
+       (prop-pred (if pred2p pred2-name cinfo.name))
+       (thm-pred (if pred2p cinfo.name pred2-name))
+       (prop (defind-pred-alt-irule-fn-name prop-pred info.name name))
+       (irule-thm (defind-pred-irule-thm-name thm-pred info.name name))
+       (vars (defind-irule-info-free-vars info))
+       (nvars (set::cardinality vars))
+       (prop-subst `(,prop (lambda () t)))
+       (witness-subst
+        (and (not (defind-irule-groundp info))
+             (b* ((witness (defind-pred-alt-irule-witness-fn-name
+                             prop-pred info.name name))
+                  (value (if (= nvars 1)
+                             nil
+                           `(mv ,@(repeat nvars nil)))))
+               (list `(,witness (lambda () ,value))))))
+       ((mv subst irule-thms)
+        (defind-gen-proof2-same-subst (cdr infos) pred2p name)))
+    (mv (cons prop-subst (append witness-subst subst))
+        (cons irule-thm irule-thms)))
+  :guard-hints (("Goal" :in-theory (enable set::cardinality))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-same-thm ((pred-name symbolp)
+                                    (pred-formals symbol-listp)
+                                    (pred-names symbol-listp)
+                                    (irule-infos defind-irule-info-listp)
+                                    (pred2p booleanp)
+                                    (name symbolp))
+  :guard (no-duplicatesp-equal (defind-irule-info-list->name irule-infos))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @('p[i]-2-when-p[i]') or @('p[i]-when-p[i]-2') theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each of these two theorems is one inclusion between
+     the predicate of one representation and the one of the other.
+     It follows from the minimality theorem of the first of the two:
+     the predicate of the second satisfies the rules,
+     by its rule theorems,
+     and so it is no smaller than the predicate of the first.")
+   (xdoc::p
+    "The functional instantiation replaces the stubs of
+     all the predicates being defined, not just the one of this theorem;
+     see @(tsee defind-gen-proof2-same-alt-subst).")
+   (xdoc::p
+    "The @('pred2p') input says which of the two inclusions to generate:
+     @('p[i]-2-when-p[i]') when it is @('nil'),
+     since that one uses the minimality theorem of @('p[i]');
+     @('p[i]-when-p[i]-2') when it is @('t')."))
+  (b* ((pred2-name (defind-pred2-name pred-name name))
+       (formals (symbol-list-fix pred-formals))
+       (from (if pred2p pred2-name (symbol-lfix pred-name)))
+       (to (if pred2p (symbol-lfix pred-name) pred2-name))
+       (thm-name (if pred2p
+                     (defind-pred-when-pred2-thm-name pred-name name)
+                   (defind-pred2-when-pred-thm-name pred-name name)))
+       (min-thm (defind-pred-alt-when-pred-thm-name
+                  (if pred2p pred2-name (symbol-lfix pred-name)) name))
+       (alt-subst (defind-gen-proof2-same-alt-subst pred-names pred2p name))
+       ((mv subst irule-thms)
+        (defind-gen-proof2-same-subst irule-infos pred2p name)))
+    `(defruled ,thm-name
+       (implies (,from ,@formals)
+                (,to ,@formals))
+       :use ((:functional-instance ,min-thm
+                                   ,@alt-subst
+                                   ,@subst))
+       :in-theory '(,@irule-thms))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-is-pred-thm ((pred-name symbolp)
+                                       (pred-formals symbol-listp)
+                                       (name symbolp))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @('p[i]-2-is-p[i]') theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This says that the two representations of proofs
+     define the same predicate.
+     It follows from the two inclusions,
+     since both predicates are booleans."))
+  (b* ((pred2-name (defind-pred2-name pred-name name))
+       (formals (symbol-list-fix pred-formals))
+       (thm-name (defind-pred2-is-pred-thm-name pred-name name))
+       (thm1 (defind-pred2-when-pred-thm-name pred-name name))
+       (thm2 (defind-pred-when-pred2-thm-name pred-name name))
+       (return-thm (defind-pred-return-thm-name pred-name name))
+       (return-thm2 (defind-pred-return-thm-name pred2-name name)))
+    `(defruled ,thm-name
+       (equal (,pred2-name ,@formals)
+              (,(symbol-lfix pred-name) ,@formals))
+       :use (,thm1
+             ,thm2
+             (:instance ,return-thm)
+             (:instance ,return-thm2))
+       :in-theory '(booleanp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof2-same-defsection
+  ((pred-infos defind-pred-info-listp)
+   (irule-infos defind-irule-info-listp)
+   (name symbolp)
+   (xdocp booleanp))
+  :guard (and (no-duplicatesp-equal (defind-pred-info-list->name pred-infos))
+              (no-duplicatesp-equal (defind-irule-info-list->name irule-infos)))
+  :returns (event pseudo-event-formp)
+  :short "Generate a @(tsee defsection) or @(tsee progn) with
+          all the theorems that relate the two representations of proofs."
+  (b* ((pred-names (defind-pred-info-list->name pred-infos))
+       (events (defind-gen-proof2-same-thms
+                 pred-infos pred-names irule-infos name)))
+    (if xdocp
+        `(defsection ,(defind-proof2-equivalence-section-name name)
+           :short "Sameness of the predicates of
+                   the two representations of proofs."
+           ,@events)
+      `(progn ,@events)))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable true-listp-when-pseudo-event-form-listp-rewrite)))
+
+  :prepwork
+  ((define defind-gen-proof2-same-thms
+     ((pred-infos defind-pred-info-listp)
+      (pred-names symbol-listp)
+      (irule-infos defind-irule-info-listp)
+      (name symbolp))
+     :guard (and (no-duplicatesp-equal
+                  (defind-pred-info-list->name pred-infos))
+                 (no-duplicatesp-equal
+                  (defind-irule-info-list->name irule-infos)))
+     :returns (events pseudo-event-form-listp)
+     :parents nil
+     (b* (((when (endp pred-infos)) nil)
+          ((defind-pred-info info) (car pred-infos))
+          (events (defind-gen-proof2-same-thms
+                    (cdr pred-infos) pred-names irule-infos name))
+          (thm1 (defind-gen-proof2-same-thm
+                  info.name info.formals pred-names irule-infos nil name))
+          (thm2 (defind-gen-proof2-same-thm
+                  info.name info.formals pred-names irule-infos t name))
+          (thm3 (defind-gen-proof2-is-pred-thm
+                  info.name info.formals name)))
+       (list* thm1 thm2 thm3 events)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-gen-events ((name symbolp)
                            (pred-infos defind-pred-info-listp)
                            (irule-infos defind-irule-info-listp)
@@ -5066,38 +7308,97 @@
        (proof-type-events
         (defind-gen-proof-fixtypes pred-infos irule-infos
           leveled-cliques name xdocp))
+       (proof2-type-events
+        (defind-gen-proof2-fixtypes pred-infos irule-infos
+          leveled-cliques name xdocp))
        (proof-concl-events
         (defind-gen-proof-concl-fns pred-infos irule-infos name xdocp))
        (irule-valid-events
         (defind-gen-irule-valid-fns irule-infos name xdocp))
+       (proof2-irule-valid-events
+        (defind-gen-proof2-irule-valid-fns irule-infos pred-infos name xdocp))
        (proof-valid-events
         (defind-gen-proof-valid-fns
           pred-infos irule-infos leveled-cliques name xdocp))
+       (proof2-valid-events
+        (defind-gen-proof2-valid-fns
+          pred-infos irule-infos leveled-cliques name xdocp))
        (pred-events
         (defind-gen-preds pred-infos name xdocp))
+       (proof2-pred-events
+        (defind-gen-proof2-preds pred-infos leveled-cliques name xdocp))
        (proof-for-rule-events
         (defind-gen-irule-proof-fns irule-infos pred-infos name xdocp))
        (irules-event
         (defind-gen-irule-defsection irule-infos pred-infos name xdocp))
+       (proof2-irules-event
+        (defind-gen-proof2-irule-defsection
+          irule-infos pred-infos name xdocp))
        (minimality-event
         (defind-gen-minimality-defsection
           pred-infos irule-infos leveled-cliques name xdocp))
+       (proof2-minimality-event
+        (defind-gen-proof2-minimality-defsection
+          pred-infos irule-infos leveled-cliques name xdocp))
+       (proof2-same-event
+        (defind-gen-proof2-same-defsection
+          pred-infos irule-infos name xdocp))
        (all-events (append (list name-doc-event)
                            assert-type-events
                            proof-type-events
+                           proof2-type-events
                            proof-concl-events
                            irule-valid-events
+                           proof2-irule-valid-events
                            proof-valid-events
+                           proof2-valid-events
                            pred-events
+                           proof2-pred-events
                            proof-for-rule-events
                            (list irules-event)
-                           (list minimality-event))))
+                           (list proof2-irules-event)
+                           (list minimality-event)
+                           (list proof2-minimality-event)
+                           (list proof2-same-event))))
     `(encapsulate
        ()
        ,@all-events
        (value-triple :invisible))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-inputs-and-gen-events (name
+                                              preds
+                                              (preds-suppliedp booleanp)
+                                              irules
+                                              (irules-suppliedp booleanp)
+                                              parents
+                                              (parents-suppliedp booleanp)
+                                              short
+                                              (short-suppliedp booleanp)
+                                              long
+                                              (long-suppliedp booleanp)
+                                              state)
+  :returns (mv erp (event pseudo-event-formp) state)
+  :parents (definductive-implementation)
+  :short "Process the inputs and generate all the events."
+  (b* (((reterr) '(_) state)
+       ((erp name pred-infos irule-infos leveled-cliques
+             parents short long xdocp state)
+        (defind-process-inputs
+          name
+          preds preds-suppliedp
+          irules irules-suppliedp
+          parents parents-suppliedp
+          short short-suppliedp
+          long long-suppliedp
+          state))
+       (event (defind-gen-events
+                name pred-infos irule-infos leveled-cliques
+                parents short long xdocp)))
+    (retok event state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define definductive-fn (name
                          preds
@@ -5113,38 +7414,20 @@
                          (ctx ctxp)
                          state)
   :returns (mv erp
-               (event "A @(tsee pseudo-event-formp).")
+               (event pseudo-event-formp)
                state)
-  :mode :program
-  :hooks nil
   :parents (definductive-implementation)
-  :short "Process all the inputs and generate all the events."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This calls the three phases of input processing
-     (see @(tsee defind-process-inputs-1))
-     and then the event generation code.
-     This function is in program mode because
-     phase 2 of input processing is in program mode;
-     the rest of input processing, and all of event generation,
-     are in logic mode, and guard-verified."))
-  (b* ((wrld (w state))
-       ((mv erp name pred-infos terms)
-        (defind-process-inputs-1 name preds preds-suppliedp irules wrld))
-       ((when erp) (er-soft+ ctx t '(_) "~@0" erp))
-       (translations (defind-process-inputs-2 terms state))
-       ((mv erp irule-infos leveled-cliques parents short long xdocp)
-        (defind-process-inputs-3
+  :short "Event expansion of @(tsee definductive) from the inputs."
+  (b* (((mv erp event state)
+        (defind-process-inputs-and-gen-events
+          name
+          preds preds-suppliedp
           irules irules-suppliedp
           parents parents-suppliedp
           short short-suppliedp
           long long-suppliedp
-          pred-infos translations))
-       ((when erp) (er-soft+ ctx t '(_) "~@0" erp))
-       (event (defind-gen-events
-                name pred-infos irule-infos leveled-cliques
-                parents short long xdocp)))
+          state))
+       ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
     (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

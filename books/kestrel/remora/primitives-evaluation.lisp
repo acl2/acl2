@@ -2060,7 +2060,7 @@
      we defensively check that it has the expected dimensions.")
    (xdoc::p
     "If the two leading dimensions or the remaining shape
-     has a zero dimension, the result is empty:
+     include a zero dimension, the result is empty:
      we build it via @(tsee expr-value-with-empty-dim),
      which requires an atom type value.
      Otherwise, we collect the atom values of the argument cell

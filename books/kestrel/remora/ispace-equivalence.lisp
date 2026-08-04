@@ -526,12 +526,13 @@
      :var (shape-append (list (shape-var shape.name)))
      :dims (shape-append (list (shape-dims shape.dims)))
      :append (shape-append (flatten-append-in-shape-list shape.shapes t))
-     :splice (b* ((ispaces (flatten-append-in-ispace-list shape.ispaces))
-                  ((unless (ispace-list-case-shape ispaces))
+     :splice (b* (((unless (ispace-list-case-shape shape.ispaces))
                    (raise "Internal error: ~x0 contains dimension ispaces."
                           shape.ispaces)
                    (shape-append nil))) ; irrelevant
-               (shape-append (ispace-shape-list->shape ispaces))))
+               (shape-append
+                (flatten-append-in-shape-list
+                 (ispace-shape-list->shape shape.ispaces) t))))
     :no-function nil
     :measure (shape-count shape))
 
@@ -569,17 +570,6 @@
      :dim (ispace-dim ispace.dim)
      :shape (ispace-shape (flatten-append-in-shape ispace.shape)))
     :measure (ispace-count ispace))
-
-  ;;;;;;;;;;;;;;;;;;;;
-
-  (define flatten-append-in-ispace-list ((ispaces ispace-listp))
-    :returns (new-ispaces ispace-listp)
-    :parents (ispace-equivalence flatten-append-in-shapes/ispaces)
-    :short "Flatten all the nested concatenations in a list of ispaces."
-    (cond ((endp ispaces) nil)
-          (t (cons (flatten-append-in-ispace (car ispaces))
-                   (flatten-append-in-ispace-list (cdr ispaces)))))
-    :measure (ispace-list-count ispaces))
 
   ;;;;;;;;;;;;;;;;;;;;
 
