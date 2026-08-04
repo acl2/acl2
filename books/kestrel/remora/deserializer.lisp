@@ -515,9 +515,13 @@
                                  (type-var-list-fromJSON params-js))
                                 ((acl2::erp body)
                                  (type-fromJSON body-j)))
-                             (acl2::retok (make-type-foralln
-                                           :params params
-                                           :body body)))
+                             (if (and (consp params) (endp (cdr params)))
+                                 (acl2::retok (make-type-forall
+                                               :param (car params)
+                                               :body body))
+                               (acl2::retok (make-type-foralln
+                                             :params params
+                                             :body body))))
                          (acl2::reterr (msg "The \"params\" member of a TEForall object must be a JSON array, but ~x0 is not." params-j)))))
                     ((equal tag "TEPi")
                      (b* ((params-j
@@ -531,9 +535,13 @@
                                  (ispace-var-list-fromJSON params-js))
                                 ((acl2::erp body)
                                  (type-fromJSON body-j)))
-                             (acl2::retok (make-type-pin
-                                           :params params
-                                           :body body)))
+                             (if (and (consp params) (endp (cdr params)))
+                                 (acl2::retok (make-type-pi
+                                               :param (car params)
+                                               :body body))
+                               (acl2::retok (make-type-pin
+                                             :params params
+                                             :body body))))
                          (acl2::reterr (msg "The \"params\" member of a TEPi object must be a JSON array, but ~x0 is not." params-j)))))
                     ((equal tag "TESigma")
                      (b* ((params-j
@@ -547,9 +555,13 @@
                                  (ispace-var-list-fromJSON params-js))
                                 ((acl2::erp body)
                                  (type-fromJSON body-j)))
-                             (acl2::retok (make-type-sigman
-                                           :params params
-                                           :body body)))
+                             (if (and (consp params) (endp (cdr params)))
+                                 (acl2::retok (make-type-sigma
+                                               :param (car params)
+                                               :body body))
+                               (acl2::retok (make-type-sigman
+                                             :params params
+                                             :body body))))
                          (acl2::reterr (msg "The \"params\" member of a TESigma object must be a JSON array, but ~x0 is not." params-j)))))
                     (t
                      (acl2::reterr (msg "~x0 is not a recognized tag for a TypeExp." tag)))))
@@ -571,8 +583,29 @@
 
   :verify-guards nil
   :hints (("Goal" :in-theory (enable value-count-of-object-member-value)))
+
   ///
-  (verify-guards type-fromJSON))
+
+  ;; These lemmas are needed to discharge the guard of endp
+  ;; in the TEForall, TEPi, and TESigma cases of type-fromJSON above,
+  ;; where we check the length of the params list to decide between the
+  ;; unary and n-ary forms.
+  (defruledl not-cdr-when-not-consp-cdr-and-type-var-listp
+      (implies (and (type-var-listp x)
+                    (not (consp (cdr x))))
+               (not (cdr x)))
+    :enable type-var-listp)
+  (defruledl not-cdr-when-not-consp-cdr-and-ispace-var-listp
+      (implies (and (ispace-var-listp x)
+                    (not (consp (cdr x))))
+               (not (cdr x)))
+    :enable ispace-var-listp)
+
+  ///
+
+  (verify-guards type-fromJSON
+      :hints (("Goal" :in-theory (enable not-cdr-when-not-consp-cdr-and-type-var-listp
+                                         not-cdr-when-not-consp-cdr-and-ispace-var-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
