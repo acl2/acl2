@@ -148,6 +148,8 @@
           or a dimension term starting with a macro
           (@(tsee dim+), @(tsee dim*), or @(tsee dim-)),
           or a dimension term starting with a fixtype constructor,
+          or a shape term starting with a macro
+          (@(tsee shp), @(tsee shp++), or @(tsee shp[])),
           or a shape term starting with a fixtype constructor,
           or some other term that is left unchanged."
   :long
@@ -173,7 +175,10 @@
          `(ispace-dim ,term))
         ((and (consp term)
               (member-eq (car term)
-                         '(shape-var
+                         '(shp
+                           shp++
+                           shp[]
+                           shape-var
                            shape-dims
                            shape-append
                            shape-splice)))
@@ -238,47 +243,71 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-term-from-var/base/other (type)
+(define type-term-from-var/base/other (term)
   :short "Construct a type term from
-          a string denoting an atom type variable,
+          a string denoting a variable,
           or a keyword denoting a base type,
           or some other term that is left unchanged."
   :long
   (xdoc::topstring
    (xdoc::p
     "The string denoting a variable must start with @('&') or @('*')."))
-  (cond ((stringp type) `(type-var ,(type-var-term-from-string type)))
-        ((eq type :bool) '(type-array (type-base (base-type-bool))
-                                      (ispace-shape (shp))))
-        ((eq type :int) '(type-array (type-base (base-type-int))
-                                     (ispace-shape (shp))))
-        ((eq type :float) '(type-array (type-base (base-type-float))
-                                       (ispace-shape (shp))))
-        (t type)))
+  (cond ((stringp term) `(type-var ,(type-var-term-from-string term)))
+        ((eq term :bool) '(type-base (base-type-bool)))
+        ((eq term :int) '(type-base (base-type-int)))
+        ((eq term :float) '(type-base (base-type-float)))
+        (t term)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define type-terms-from-vars/bases/others ((types true-listp))
+(define type-terms-from-vars/bases/others ((terms true-listp))
   :short "Lift @(tsee type-term-from-var/base/other) to lists."
-  (cond ((endp types) nil)
-        (t (cons (type-term-from-var/base/other (car types))
-                 (type-terms-from-vars/bases/others (cdr types))))))
+  (cond ((endp terms) nil)
+        (t (cons (type-term-from-var/base/other (car terms))
+                 (type-terms-from-vars/bases/others (cdr terms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ t[] (type shape)
-  :short "Construct a type term from the element type and the shape."
+(defmacro+ tarr (type-term ispace-term)
+  :short "Construct an array type term from an element type and an ispace term."
+  `(type-array ,(type-term-from-var/base/other type-term)
+               ,(ispace-term-from-var/dim/shape/other ispace-term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ t[] (type-term &rest ispace-terms)
+  :short "Construct a bracket type term from
+          an element type term and ispace terms."
+  `(type-bracket ,(type-term-from-var/base/other type-term)
+                 (list ,@(ispace-terms-from-vars/dims/shapes/others
+                          ispace-terms))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection t->
+  :short "Construct a nest of one or more unary function type terms
+          from two or more type terms."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Strings, natural numbers, and base type keywords
-     are auto-coerced to ispaces and types."))
-  `(type-array ,(type-term-from-var/base/other type)
-               (ispace-shape ,(shape-term-from-var/other shape))))
+    "The last type term in the list is the output,
+     while the other types are curried inputs.")
+   (xdoc::@def "t->"))
+
+  (defun t->-fn (type-terms)
+    (declare (xargs :guard (true-listp type-terms)))
+    (cond ((endp type-terms) nil) ; never happens
+          ((endp (cdr type-terms))
+           (type-term-from-var/base/other (car type-terms)))
+          (t `(type-fun ,(type-term-from-var/base/other (car type-terms))
+                        ,(t->-fn (cdr type-terms))))))
+
+  (defmacro+ t-> (type-term1 type-term2 &rest type-terms) ; two or more
+    (t->-fn (list* type-term1 type-term2 type-terms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ t-> (intypes outtype)
+(defmacro+ tn-> (intypes outtype)
   :short "Construct a function type term from the input and output types."
   :long
   (xdoc::topstring
@@ -297,27 +326,63 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ tforall (params type)
-  :short "Construct a universal type from
-          a parenthesized list of variable strings (parameters)
-          and a type term (body)."
-  `(type-foralln (list ,@(type-var-terms-from-strings params))
-                 ,(type-term-from-var/base/other type)))
+(defmacro+ tfa (param/params type-term)
+  :short "Construct a universal type term from
+          (i) a single variable string (parameter)
+          or a parenthesized list of variable strings (parameters)
+          and (ii) a body type term."
+  (b* (((when (stringp param/params))
+        `(type-forall ,(type-var-term-from-string param/params)
+                      ,(type-term-from-var/base/other type-term)))
+       ((unless (and (string-listp param/params)
+                     (consp param/params)))
+        (hard-error 'tfa
+                    "Malformed parameters ~x0."
+                    (list (cons #\0 param/params))))
+       ((when (= (len param/params) 1))
+        `(type-forall ,(type-var-term-from-string (car param/params))
+                      ,(type-term-from-var/base/other type-term))))
+    `(type-foralln (list ,@(type-var-terms-from-strings param/params))
+                   ,(type-term-from-var/base/other type-term))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ tpi (params type)
+(defmacro+ tpi (param/params type-term)
   :short "Construct a product type term from
-          a parenthesized list of variable strings (parameters)
-          and a type term (body)."
-  `(type-pin (list ,@(ispace-var-terms-from-strings params))
-             ,(type-term-from-var/base/other type)))
+          (i) a single variable string (parameter)
+          or a parenthesized list of variable strings (parameters)
+          and (ii) a body type term."
+  (b* (((when (stringp param/params))
+        `(type-pi ,(ispace-var-term-from-string param/params)
+                  ,(type-term-from-var/base/other type-term)))
+       ((unless (and (string-listp param/params)
+                     (consp param/params)))
+        (hard-error 'tpi
+                    "Malformed parameters ~x0."
+                    (list (cons #\0 param/params))))
+       ((when (= (len param/params) 1))
+        `(type-pi ,(ispace-var-term-from-string (car param/params))
+                  ,(type-term-from-var/base/other type-term))))
+    `(type-pin (list ,@(ispace-var-terms-from-strings param/params))
+               ,(type-term-from-var/base/other type-term))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ tsigma (params type)
+(defmacro+ tsi (param/params type-term)
   :short "Construct a sum type term from
-          a parenthesized list of variable strings (parameters)
-          and a type term (body)."
-  `(type-sigman (list ,@(ispace-var-terms-from-strings params))
-                ,(type-term-from-var/base/other type)))
+          (i) a single variable string (parameter)
+          or a parenthesized list of variable strings (parameters)
+          and (ii) a body type term."
+  (b* (((when (stringp param/params))
+        `(type-sigma ,(ispace-var-term-from-string param/params)
+                     ,(type-term-from-var/base/other type-term)))
+       ((unless (and (string-listp param/params)
+                     (consp param/params)))
+        (hard-error 'tsi
+                    "Malformed parameters ~x0."
+                    (list (cons #\0 param/params))))
+       ((when (= (len param/params) 1))
+        `(type-sigma ,(ispace-var-term-from-string (car param/params))
+                     ,(type-term-from-var/base/other type-term))))
+    `(type-sigman (list ,@(ispace-var-terms-from-strings param/params))
+                  ,(type-term-from-var/base/other type-term))))
