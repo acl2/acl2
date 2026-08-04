@@ -321,7 +321,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ tsigma (params type)
+(defmacro+ tsi (params type)
   :short "Construct a sum type term from
           a parenthesized list of variable strings (parameters)
           and a type term (body)."
