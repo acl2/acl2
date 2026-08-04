@@ -4419,8 +4419,18 @@
      the minimality theorems, generated later,
      are proved by flag induction.
      The fixing equivalence of the functions
-     is proved at the end, all together."))
-  (b* (((mv members expands term-thms fixequiv-thms)
+     is proved at the end, all together.")
+   (xdoc::p
+    "The hints for the fixing equivalence include @(':expand') hints
+     for the calls of the validity functions
+     on the proof variable and on its fixed version.
+     Since the functions of the clique are mutually recursive,
+     ACL2's heuristics do not expand those calls during the flag induction.
+     This is unlike the case of a predicate that forms a singleton clique,
+     where the induction is on the (single) validity function itself,
+     and thus the calls of that function in the fixing equivalence
+     are expanded as part of the induction."))
+  (b* (((mv members expands term-thms fixequiv-expands fixequiv-thms)
         (defind-gen-proof-valid-fn-clique-loop
           clique-pred-infos irule-infos name xdocp))
        ((mv valid-tps prem-acc-thms)
@@ -4458,6 +4468,7 @@
        (fty::deffixequiv-mutual ,defines-name
          :hints (("Goal"
                   :induct (,flag-fn ,(defind-flag-var-name name) ,fn-formal)
+                  :expand ,fixequiv-expands
                   :in-theory '(,flag-fn
                                not
                                (:e equal)
@@ -4479,9 +4490,10 @@
      :returns (mv (events pseudo-event-form-listp)
                   (expands true-listp)
                   (term-thms true-listp)
+                  (fixequiv-expands true-listp)
                   (fixequiv-thms true-listp))
      :parents nil
-     (b* (((when (endp pred-infos)) (mv nil nil nil nil))
+     (b* (((when (endp pred-infos)) (mv nil nil nil nil nil))
           (pred-name (defind-pred-info->name (car pred-infos)))
           (event (defind-gen-proof-valid-fn
                    pred-name irule-infos nil name xdocp))
@@ -4494,19 +4506,25 @@
                  (defind-proof-count-return-thm-name pred-name name)))
           ((mv & & & prem-fixing-thms concl-fixing-thms)
            (defind-gen-proof-valid-fn-cases pred-name irule-infos name))
+          (valid-fn (defind-proof-valid-fn-name pred-name name))
+          (fixer (defind-proof-fixer-name pred-name name))
+          (fixequiv-expands1
+           (list `(,valid-fn ,fn-formal)
+                 `(,valid-fn (,fixer ,fn-formal))))
           (fixequiv-thms1
            (append prem-fixing-thms
                    concl-fixing-thms
-                   (list (defind-proof-valid-fn-name pred-name name)
+                   (list valid-fn
                          (defind-proof-kind-poss-thm-name pred-name name)
                          (defind-proof-kind-fixing-thm-name pred-name name)
                          (defind-proof-fix-id-thm-name pred-name name))))
-          ((mv events expands term-thms fixequiv-thms)
+          ((mv events expands term-thms fixequiv-expands fixequiv-thms)
            (defind-gen-proof-valid-fn-clique-loop
              (cdr pred-infos) irule-infos name xdocp)))
        (mv (cons event events)
            (cons expand expands)
            (append term-thms1 term-thms)
+           (append fixequiv-expands1 fixequiv-expands)
            (append fixequiv-thms1 fixequiv-thms))))
 
    (define defind-gen-proof-valid-fn-clique-rules-loop
