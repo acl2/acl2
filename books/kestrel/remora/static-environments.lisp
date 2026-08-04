@@ -190,7 +190,7 @@
                        (t[] "&t" (shp[] "$d" "@s"))))))
        (index-type
         (tfa "&t"
-             (tpi ("$m")
+             (tpi "$m"
                   (t-> (t[] "&t" "$m")
                        :int
                        "&t"))))
@@ -201,7 +201,7 @@
                        (t[] :int (shp 2))
                        "&t"))))
        (sum-type
-        (tpi ("@s")
+        (tpi "@s"
              (t-> (t[] :int "@s")
                   :int)))
        (reshape-type
