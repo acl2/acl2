@@ -12,11 +12,10 @@
 (in-package "REMORA")
 
 (include-book "expression-values-and-environments")
+
 (include-book "integer-lists")
 
 (include-book "kestrel/fty/integer-result" :dir :system)
-(include-book "kestrel/fty/integer-list-result" :dir :system)
-(include-book "kestrel/fty/boolean-result" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -133,49 +132,6 @@
      Remora boolean values are ACL2 booleans directly."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-expr-value-int ((val expr-valuep))
-  :returns (ival int-value-resultp)
-  :short "Check if an expression value is an integer value, returning it if so."
-  (b* (((unless (expr-value-case val :base)) (reserr nil))
-       (bval (expr-value-base->val val))
-       ((unless (base-value-case bval :int)) (reserr nil))
-       (ival (base-value-int->val bval)))
-    ival))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-expr-value-list-int ((vals expr-value-listp))
-  :returns (ivals integer-list-resultp)
-  :short "Check if an expression value is an integer list value, returning it if so"
-  (b* (((when (endp vals)) nil)
-       ((ok (int-value ival)) (check-expr-value-int (car vals)))
-       ((ok rest) (check-expr-value-list-int (cdr vals))))
-    (cons ival.int rest)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-expr-value-float ((val expr-valuep))
-  :returns (fval float-value-resultp)
-  :short "Check if an expression value is a float value, returning it if so."
-  (b* (((unless (expr-value-case val :base)) (reserr nil))
-       (bval (expr-value-base->val val))
-       ((unless (base-value-case bval :float)) (reserr nil))
-       (fval (base-value-float->val bval)))
-    fval))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-expr-value-bool ((val expr-valuep))
-  :returns (bval boolean-resultp)
-  :short "Check if an expression value is a boolean value, returning it if so."
-  (b* (((unless (expr-value-case val :base)) (reserr nil))
-       (bval (expr-value-base->val val))
-       ((unless (base-value-case bval :bool)) (reserr nil))
-       (b (base-value-bool->val bval)))
-    b))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
