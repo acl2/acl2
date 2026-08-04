@@ -12,6 +12,7 @@
 (in-package "REMORA")
 
 (include-book "primitives-evaluation-on-types")
+(include-book "primitives-evaluation-on-ispaces")
 (include-book "primitives-evaluation-tests")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

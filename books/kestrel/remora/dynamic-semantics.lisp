@@ -16,6 +16,7 @@
 (include-book "values-to-abstract-syntax")
 (include-book "type-value-equivalence")
 (include-book "primitives-evaluation-on-types")
+(include-book "primitives-evaluation-on-ispaces")
 (include-book "primitives-evaluation")
 (include-book "evaluation")
 (include-book "evaluation-rules")
@@ -71,6 +72,7 @@
                     values-to-abstract-syntax
                     type-value-equivalence
                     primitives-evaluation-on-types
+                    primitives-evaluation-on-ispaces
                     primitives-evaluation
                     evaluation
                     evaluation-rules))
