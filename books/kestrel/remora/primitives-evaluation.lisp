@@ -54,12 +54,6 @@
      the operation is not well-defined on the type-correct expression values
      (e.g. division by zero).")
    (xdoc::p
-    "We will connect these with our formalization of @(see evaluation).
-     Most likely, we will extend our ASTs with nodes for the primitives,
-     similar to the Remora publications [thesis] [arxiv] [esop],
-     and we will extend our evaluator to call the functions defined here
-     when evaluating the application of a primitive AST.")
-   (xdoc::p
     "The primitives are defined in [impl], as the Remora `prelude'.
      This is work in progress.")
    (xdoc::p
