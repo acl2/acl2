@@ -268,10 +268,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ t[] (type ispace)
-  :short "Construct a type term from an element type term and an ispace term."
-  `(type-array ,(type-term-from-var/base/other type)
-               ,(ispace-term-from-var/dim/shape/other ispace)))
+(defmacro+ t[] (type-term &rest ispace-terms)
+  :short "Construct a bracket type term from
+          an element type term and ispace terms."
+  `(type-bracket ,(type-term-from-var/base/other type-term)
+                 (list ,@(ispace-terms-from-vars/dims/shapes/others
+                          ispace-terms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
