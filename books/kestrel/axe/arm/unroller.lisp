@@ -35,6 +35,7 @@
 (include-book "kestrel/bv/putbits" :dir :system)
 (include-book "kestrel/bv/ash" :dir :system)
 (include-book "kestrel/bv/bvuminus" :dir :system)
+(include-book "kestrel/bv/bvminus" :dir :system)
 (include-book "kestrel/bv/rotate" :dir :system)
 (include-book "kestrel/bv/if-becomes-bvif-rules" :dir :system)
 (include-book "kestrel/bv-arrays/bv-array-conversions" :dir :system)

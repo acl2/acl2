@@ -53,6 +53,7 @@
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/bv/idioms" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 
 ;; (in-theory (disable acl2::car-to-nth-0))
 ;; (in-theory (disable acl2::nth-of-cdr)) ;new
@@ -103,7 +104,7 @@
            (equal (canonical-address-p x)
                   (acl2::bvlt 64 (acl2::bvminus 64 x -140737488355328) 281474976710656)))
   :hints (("Goal" :cases ((< x 0))
-           :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
+           :in-theory (enable canonical-address-p acl2::bvlt acl2::bvminus signed-byte-p
                               acl2::bvchop-when-negative-lemma))))
 
 ;use more
@@ -121,7 +122,7 @@
          (and (signed-byte-p 64 x)
               (acl2::bvlt 64 (acl2::bvminus 64 x -140737488355328) 281474976710656)))
   :hints (("Goal" :cases ((< x 0))
-           :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
+           :in-theory (enable canonical-address-p acl2::bvlt acl2::bvminus signed-byte-p
                               acl2::bvchop-when-negative-lemma))))
 
 ;use more
@@ -130,7 +131,7 @@
          (and (signed-byte-p 64 x)
               (acl2::bvlt 64 (acl2::bvplus 64 140737488355328 x) 281474976710656)))
   :hints (("Goal" :cases ((< x 0))
-           :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
+           :in-theory (enable canonical-address-p acl2::bvlt acl2::bvminus signed-byte-p
                               acl2::bvchop-when-negative-lemma))))
 
 ;; ;; Just a wrapper that is in the x86isa package instead of the ACL2 package.

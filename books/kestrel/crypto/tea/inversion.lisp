@@ -128,7 +128,8 @@
                                                      (:i tea-encrypt-loop-i2)
                                                      tea-encrypt-loop-opener
                                                      bvmult-convert-arg3-to-bv
-                                                     trim-of-+-becomes-bvplus)
+                                                     trim-of-+-becomes-bvplus
+                                                     acl2::bvminus-becomes-bvplus-of-bvuminus)
                                    ((:d tea-encrypt-loop) tea-decrypt-loop))
                    :induct (tea-encrypt-loop-i2 n y z sum k)
                    :expand ((:free (y z sum k) (tea-decrypt-loop n y z sum k)))))))

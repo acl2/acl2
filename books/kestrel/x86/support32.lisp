@@ -1342,7 +1342,7 @@
                                                           acl2::bvchop-identity)
                                   ( ;acl2::bvchop-+-cancel-seconds
                                    ;x86isa::msri$inline
-                                   acl2::bvminus-becomes-bvplus-of-bvuminus
+                                   ;acl2::bvminus-becomes-bvplus-of-bvuminus
                                    )))))
 
 (defthm read-byte-list-from-segment-of-write-byte-to-segment
@@ -1467,7 +1467,7 @@
                                           ACL2::ASH-0 ; why?
                                           acl2::bvchop-identity
                                           )
-                           (ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                           (;ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                             )))))
 
 (defthm segment-is-32-bitsp-when-stack-segment-assumptions32
@@ -1506,7 +1506,7 @@
                                    bvminus
                                    bvplus
                                    acl2::bvchop-of-sum-cases)
-                                  (acl2::bvminus-becomes-bvplus-of-bvuminus
+                                  (;acl2::bvminus-becomes-bvplus-of-bvuminus
                                    )))))
 
 (defthm <-of-32-bit-segment-size
@@ -1535,7 +1535,7 @@
                                    bvplus
                                    acl2::bvchop-of-sum-cases
                                    esp)
-                                  (acl2::bvminus-becomes-bvplus-of-bvuminus
+                                  (;acl2::bvminus-becomes-bvplus-of-bvuminus
                                    )))))
 
 (defthm segment-max-eff-addr32-bound-when-stack-segment-assumptions32
@@ -1552,7 +1552,7 @@
                                    bvplus
                                    acl2::bvchop-of-sum-cases
                                    esp)
-                                  (acl2::bvminus-becomes-bvplus-of-bvuminus
+                                  (;acl2::bvminus-becomes-bvplus-of-bvuminus
                                    )))))
 
 (local (in-theory (disable esp))) ;prevents loops
@@ -2068,7 +2068,7 @@
 ;;   (or (<= (+ n1 eff-addr1) eff-addr2)
 ;;       (<= (+ n2 eff-addr2) eff-addr1)))
 
-(local (in-theory (disable acl2::bvminus-becomes-bvplus-of-bvuminus)))
+;(local (in-theory (disable acl2::bvminus-becomes-bvplus-of-bvuminus)))
 
 ;; Check whether the ranges of effective addresses (which may wrap around mod 2^32) are disjoint.
 ;uses cyclic ranges
@@ -3813,7 +3813,7 @@
                                        32-bit-segment-start
                                        32-bit-segment-start-and-size
                                      )
-                                  (acl2::bvminus-becomes-bvplus-of-bvuminus)))))
+                                  ()))))
 
 
 ;move, localize!

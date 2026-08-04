@@ -22,6 +22,7 @@
 (include-book "kestrel/lists-light/every-nth" :dir :system)
 (local (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system))
 (local (include-book "kestrel/bv/logapp" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -437,7 +438,7 @@
                                              (ceiling len 2)))
                            (bvuminus (ceiling-of-lg len)
                                      (ceiling len 2)))
-                   :in-theory (e/d (bvuminus bvplus) (;ceiling-when-multiple
+                   :in-theory (e/d (bvuminus bvplus bvminus) (;ceiling-when-multiple
                                                      ))
                   :use (:instance bv-array-read-shorten-when-not-bvlt-gen
                                   (k (ceiling len 2))
