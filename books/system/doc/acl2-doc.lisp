@@ -53168,6 +53168,91 @@ tables in the current Hons Space."
  Instead, you must explicitly list the runic designators constituting the
  theory.</p>")
 
+(defxdoc in-logic-mode
+  :parents (macros acl2-built-ins programming)
+  :short "Permit @(see program)-mode code in @(see logic)-mode definitions"
+  :long "<p>It is generally prohibited for the body of a @(see logic)-mode
+ function to call a @(see program)-mode function.  This prohibition can be
+ overcome, in a sense described below, by wrapping @('in-logic-mode') around
+ code that includes program-mode code.</p>
+
+ <p>See also @(see magic-ev-fncall) for a related utility that is a bit less
+ general (operating only on function calls applied to argument lists; but see
+ also @(see magic-ev)) but has the advantage of having some logical
+ content (see @(see meta-extract)).  Unlike @('magic-ev-fncall') and
+ @('magic-ev'), @('in-logic-mode') does not cause errors that can be caused by
+ @(see safe-mode).  @('In-logic-mode') also has a simpler interface than those
+ utilities, but unlike those utilities, @('in-logic-mode') not only takes
+ @(tsee state) but also returns @('state').</p>
+
+ @({
+ General Form:
+ (in-logic-mode <form> state &optional (quote <variable-list>))
+ })
+
+ <p>where @('<form>') is code that returns a single, non-@(tsee stobj) value,
+ but which may include calls of program-mode functions; and @('state') must be
+ the symbol, @('state'), if the @('in-logic-mode') call is to be executed (as
+ opposed to being in the statement of a theorem).  If @('<form>') is of the
+ form @('(f t1 ... tn)') where each @('ti') is an atom, then, but only then,
+ may the optional argument be omitted.  Otherwise, @('<variable-list>') should
+ be a list of symbols, which usually consists of the variables occurring free
+ in the (@(see translation) of) @('<form>'), as discussed below.</p>
+
+ <p>The following example shows a typical (though very simple) use of
+ @('in-logic-mode'), where we see the @(see logic)-mode function, @('f'),
+ calling the @(see program)-mode function, @('p').</p>
+
+ @({
+ (defun p (x)
+   (declare (xargs :mode :program))
+   (cons x x))
+
+ (defun f (x state)
+   (declare (xargs :stobjs state))
+   (in-logic-mode (p x) state))
+ })
+
+ <p>About the only thing we can prove about @('f') is the following.</p>
+
+ @({
+ (equal (f x state)
+        (read-acl2-oracle state))
+ })
+
+ <p>But when we evaluate with @('f') at the top level, we invoke @('p').</p>
+
+ @({
+ ACL2 !>(f 3 state)
+  (3 . 3)
+ ACL2 !>
+ })
+
+ <p>Notice the space printed in front of the result, @('(3 . 3)').  This space
+ indicates that the return value is actually a multiple-value return,
+ specifically an @(see error-triple), which we may write as @('(mv nil (3 . 3)
+ state)').</p>
+
+ <p>The forms @('(in-logic-mode <form>)') and @('(in-logic-mode <form> (quote
+ <variable-list>))') are logically just @('(read-acl2-oracle state)').  More
+ precisely, their single-step macroexpansions produce</p>
+
+ @({
+ (prog2$ (list v1 ... vk)
+         (read-acl2-oracle state))
+ })
+
+ <p>where @('(v1 ... vk)') is @('<variable-list>') if supplied, else is the
+ list of arguments of @('<form>').  The presence of @('(list v1 ... vk)')
+ avoids the need for an @('ignore') or @('ignorable') @(see declaration).</p>
+
+ <p>Thus, logically, a call of @('in-logic-mode') returns an @(see
+ error-triple), @('(mv erp val state)').  This is of course legitimate code to
+ occur in the body of a @(tsee logic)-mode definition, but nothing can be
+ proved about @('erp') or @('val').  However, in code that is executed, then
+ @('<form>') is evaluated and in the absence of error, @('erp') is @('nil') and
+ @('val') is the result of that evaluation.</p>")
+
 (defxdoc in-package
   :parents (packages acl2-built-ins)
   :short "Select current package"
@@ -71256,6 +71341,9 @@ forms allowed for a @('let') form are  @('ignore'), @('ignorable'), and
 
  <li>A reasonable model for @('(magic-ev-fncall 'fn (list a1 a2 ...) state h
  aokp)') is @('(ec-call (fn a1 a2 ...))').</li>
+
+ <li>See also @(see magic-ev) and @(see in-logic-mode) for related
+ utilities.</li>
 
  </ul>")
 
@@ -109777,6 +109865,11 @@ it."
  <p>For @(tsee defstobj) fields of hash-table type, a new &ldquo;keys&rdquo;
  function returns a sorted list of keys of the hash table.  See @(see
  defstobj).  Thanks to Eric Smith for requesting this enhancement.</p>
+
+ <p>A new macro, @(tsee in-logic-mode), allows @(see program)-mode code to be
+ included, for execution only, in the body of a @(see logic)-mode function.
+ See @(see in-logic-mode).  Thanks to Alessandro Coglio for requesting such a
+ capability and to him and Eric Smith for helpful discussions.</p>
 
  <h3>Heuristic and Efficiency Improvements</h3>
 
@@ -175185,6 +175278,7 @@ expand function call at the current subterm, without simplifying"
 (defpointer translate11 system-utilities)
 (defpointer translate-cmp system-utilities)
 (defpointer translate1-cmp system-utilities)
+(defpointer translation translate)
 (defpointer ttag defttag)
 (defpointer trust-tag defttag)
 (defpointer typespec-check meta-extract)

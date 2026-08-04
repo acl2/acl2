@@ -16,6 +16,7 @@
 (local (include-book "kestrel/bv/rules" :dir :system)) ; for the bvmult-of-bvplus rules
 (local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
 (local (include-book "kestrel/bv-lists/packbv-and-unpackbv" :dir :system))
+(local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))

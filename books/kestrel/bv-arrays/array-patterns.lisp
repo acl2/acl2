@@ -39,6 +39,7 @@
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 
 ;; (defun keep-vals-with-congruent-indices (index vals residue modulus)
 ;;   (declare (xargs :measure (len vals)))
