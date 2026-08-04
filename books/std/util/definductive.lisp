@@ -4934,7 +4934,9 @@
    (xdoc::p
     "This is like @(tsee defind-gen-proof-valid-fn-clique),
      including the quoted theories of
-     the termination hints and of the fixing equivalence.")
+     the termination hints and of the fixing equivalence,
+     and the @(':expand') hints of the fixing equivalence
+     (with the additional conclusion arguments here).")
    (xdoc::p
     "Where that function uses the type prescriptions that ACL2 infers
      for the count functions and for the rule validity predicates,
@@ -4950,7 +4952,7 @@
      the flag function takes the arguments of the conclusions
      of all the predicates of the clique,
      and the flag machinery supplies the call on its formals."))
-  (b* (((mv members expands term-thms fixequiv-thms)
+  (b* (((mv members expands term-thms fixequiv-expands fixequiv-thms)
         (defind-gen-proof2-valid-fn-clique-loop
           clique-pred-infos irule-infos name xdocp))
        ((mv valid-tps prem-acc-thms)
@@ -4988,6 +4990,7 @@
        ///
        (fty::deffixequiv-mutual ,defines-name
          :hints (("Goal"
+                  :expand ,fixequiv-expands
                   :in-theory '(,flag-fn
                                not
                                (:e equal)
@@ -5009,9 +5012,10 @@
      :returns (mv (events pseudo-event-form-listp)
                   (expands true-listp)
                   (term-thms true-listp)
+                  (fixequiv-expands true-listp)
                   (fixequiv-thms true-listp))
      :parents nil
-     (b* (((when (endp pred-infos)) (mv nil nil nil nil))
+     (b* (((when (endp pred-infos)) (mv nil nil nil nil nil))
           ((defind-pred-info info) (car pred-infos))
           (pred2-name (defind-pred2-name info.name name))
           (event (defind-gen-proof2-valid-fn
@@ -5027,19 +5031,25 @@
           ((mv & & & prem-fixing-thms var-fixing-thms)
            (defind-gen-proof2-valid-fn-cases
              info.name concl-vars irule-infos name))
+          (valid-fn (defind-proof-valid-fn-name pred2-name name))
+          (fixer (defind-proof-fixer-name pred2-name name))
+          (fixequiv-expands1
+           (list `(,valid-fn ,fn-formal ,@concl-vars)
+                 `(,valid-fn (,fixer ,fn-formal) ,@concl-vars)))
           (fixequiv-thms1
            (append prem-fixing-thms
                    var-fixing-thms
-                   (list (defind-proof-valid-fn-name pred2-name name)
+                   (list valid-fn
                          poss-thm
                          (defind-proof2-kind-fixing-thm-name pred2-name name)
                          (defind-proof-fix-id-thm-name pred2-name name))))
-          ((mv events expands term-thms fixequiv-thms)
+          ((mv events expands term-thms fixequiv-expands fixequiv-thms)
            (defind-gen-proof2-valid-fn-clique-loop
              (cdr pred-infos) irule-infos name xdocp)))
        (mv (cons event events)
            (cons expand expands)
            (append term-thms1 term-thms)
+           (append fixequiv-expands1 fixequiv-expands)
            (append fixequiv-thms1 fixequiv-thms))))
 
    (define defind-gen-proof2-valid-fn-clique-rules-loop
