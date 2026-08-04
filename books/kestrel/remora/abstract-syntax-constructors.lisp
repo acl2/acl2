@@ -347,12 +347,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ tpi (params type)
+(defmacro+ tpi (param/params type-term)
   :short "Construct a product type term from
-          a parenthesized list of variable strings (parameters)
-          and a type term (body)."
-  `(type-pin (list ,@(ispace-var-terms-from-strings params))
-             ,(type-term-from-var/base/other type)))
+          (i) a single variable string (parameter)
+          or a parenthesized list of variable strings (parameters)
+          and (ii) a body type term."
+  (b* (((when (stringp param/params))
+        `(type-pi ,(ispace-var-term-from-string param/params)
+                  ,(type-term-from-var/base/other type-term)))
+       ((unless (and (string-listp param/params)
+                     (consp param/params)))
+        (hard-error 'tpi
+                    "Malformed parameters ~x0."
+                    (list (cons #\0 param/params))))
+       ((when (= (len param/params) 1))
+        `(type-pi ,(ispace-var-term-from-string (car param/params))
+                  ,(type-term-from-var/base/other type-term))))
+    `(type-pin (list ,@(ispace-var-terms-from-strings param/params))
+               ,(type-term-from-var/base/other type-term))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
