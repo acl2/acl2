@@ -284,7 +284,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ t-> (intypes outtype)
+(defmacro+ tn-> (intypes outtype)
   :short "Construct a function type term from the input and output types."
   :long
   (xdoc::topstring
