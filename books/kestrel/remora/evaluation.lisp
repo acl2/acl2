@@ -2299,10 +2299,23 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is currently essentially the same as @(tsee eval-primop-fun-fo),
-       because we do not have any Remora higher-order primitive yet.
-       So it is not actually mutually recursive with the other functions,
-       but it will be once we add the Remora higher-order primitives."))
+      "This is called by @(tsee eval-app-cell).
+       If the operation is first-order
+       (see @(tsee primop-value-fun-fo-p)),
+       we delegate to @(tsee eval-primop-fun-fo),
+       which is outside the mutual recursion.
+       Otherwise, the operation is higher-order,
+       and its application may involve executing arbitrary Remora code,
+       which is why this function is part of the mutual recursion.
+       Currently the only higher-order case is
+       the last stage of the @('reduce') primitive,
+       which we delegate to @(tsee prim-reduce),
+       passing the stored function value and the argument cell.")
+     (xdoc::p
+      "Since @(tsee prim-reduce) is currently a stub,
+       this function is not actually mutually recursive
+       with the other functions of the clique yet;
+       it will be, once @(tsee prim-reduce) is given its actual definition."))
     (b* (((when (zp limit)) (reserr :limit))
          ((when (primop-value-fun-fo-p op))
           (eval-primop-fun-fo op arg)))
