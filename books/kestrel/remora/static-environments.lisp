@@ -120,9 +120,11 @@
      zero-rank array types of function types between base types.
      The @('head'), @('tail'), @('length'),
      @('append'), @('reverse'), @('index'), @('index2d'),
-     @('reshape'), @('flatten'), and @('transpose2d') operations
+     @('reshape'), @('flatten'), @('transpose2d'), and @('reduce') operations
      have polymorphic types:
      a universal type of a product type of a function type, as in [impl].
+     The first input type of @('reduce') is itself a function type,
+     making @('reduce') a higher-order operation.
      The @('sum') operation is polymorphic only in the shape,
      not in the element type, which is always integer:
      its type is a product type of a function type,
@@ -214,7 +216,15 @@
         (tfa "&t"
              (tpi ("$m" "$n")
                   (t-> (t[] "&t" (shp[] "$m" "$n"))
-                       (t[] "&t" (shp[] "$n" "$m")))))))
+                       (t[] "&t" (shp[] "$n" "$m"))))))
+       (reduce-type
+        (tfa "&t"
+             (tpi ("$d" "@s")
+                  (t-> (t-> (t[] "&t" "@s")
+                            (t[] "&t" "@s")
+                            (t[] "&t" "@s"))
+                       (t[] "&t" (shp[] (dim+ 1 "$d") "@s"))
+                       (t[] "&t" "@s"))))))
     (omap::from-alist
      (list (cons "+" int-binop-type)
            (cons "-" int-binop-type)
@@ -275,7 +285,8 @@
            (cons "sum" sum-type)
            (cons "reshape" reshape-type)
            (cons "flatten" flatten-type)
-           (cons "transpose2d" transpose2d-type)))))
+           (cons "transpose2d" transpose2d-type)
+           (cons "reduce" reduce-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
