@@ -2280,6 +2280,94 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define primop-value-fun-fo-p ((op primop-valuep))
+  :guard (primop-value-funp op)
+  :returns (yes/no booleanp)
+  :short "Check if a primitive operation value applicable to expression values
+          is first-order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By `first-order' we mean that its application (to an expression value)
+     can be defined without having to evaluate arbitrary code.
+     This is the case, for example, for arithmetic addition,
+     but not for a higher-order operation like @('reduce'),
+     which may involve execution of arbitrary Remora code.")
+   (xdoc::p
+    "Consider a curried primitive operation
+     that takes a Remora function value as first input
+     and some other value as second output.
+     The application to the first value is still considered ``first-order'',
+     i.e. the applicable primitive operation value satisfies this predicate,
+     even though the function value is higher-order.
+     The reason is that this particular application
+     just stores that function value
+     into the next-stage primitive operation value;
+     this does not involve executing arbitrary Remora code yet.
+     But then the application of that next-stage primitive operation value
+     to a value (not necessarily a function value)
+     is considered not ``first-order'',
+     because that application must carry out
+     the actual computation of the primitive operation,
+     which may involve running the code
+     coming from the first argument value.
+     So maybe better terms than `first-order' and `higher-order'
+     are something like
+     `not mutually recursive with Remora evaluation'
+     and `mutually recursive with Remora evaluation';
+     but `first-order' and `higher-order' are shorter,
+     and still refer to what's involved in the application,
+     so we stick to these terms for now.")
+   (xdoc::p
+    "Currently this predicate holds for
+     all the primitive operation values applicable to expression values,
+     but this will change when we add higher-order Remora primitives,
+     such as @('reduce').
+     When we do, perhaps we should also concretize/exemplify
+     the discussion in the previous paragraph."))
+  (primop-value-case op
+                     :int-unary t
+                     :int-binary t
+                     :int-binary-x t
+                     :int-rel t
+                     :int-rel-x t
+                     :int-to-float t
+                     :int-to-bool t
+                     :float-unary t
+                     :float-binary t
+                     :float-binary-x t
+                     :float-rel t
+                     :float-rel-x t
+                     :float-truncate t
+                     :float-round t
+                     :float-ceiling t
+                     :float-floor t
+                     :bool-unary t
+                     :bool-binary t
+                     :bool-binary-x t
+                     :bool-rel t
+                     :bool-rel-x t
+                     :bool-to-int t
+                     :bool-to-float t
+                     :head-t-d-s t
+                     :tail-t-d-s t
+                     :length-t-d-s t
+                     :append-t-m-n-s t
+                     :append-t-m-n-s-x t
+                     :reverse-t-d-s t
+                     :index-t-m t
+                     :index-t-m-x t
+                     :index2d-t-m-n t
+                     :index2d-t-m-n-x t
+                     :sum-s t
+                     :reshape-t-s1-s2 t
+                     :flatten-t-m-n-s t
+                     :transpose2d-t-m-n t
+                     :otherwise (impossible))
+  :guard-hints (("Goal" :in-theory (enable primop-value-funp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define primop-value-uninstantiated ((op primop-valuep))
   :returns (uninst primop-valuep)
   :short "Uninstantiated stage of a primitive operation value."
