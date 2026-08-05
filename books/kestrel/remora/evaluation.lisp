@@ -2308,9 +2308,24 @@
           (eval-primop-fun-fo op arg)))
       (primop-value-case
        op
-       :reduce-t-d-s-f (reserr :todo)
+       :reduce-t-d-s-f (prim-reduce op.fval arg (1- limit))
        :otherwise (reserr (impossible))))
     :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define prim-reduce ((fval expr-valuep) (arg expr-valuep) (limit natp))
+    :guard (and (expr-value-wfp fval)
+                (expr-value-wfp arg))
+    :returns (val expr-value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate the last stage of the @('reduce') primitive."
+    (declare (ignore fval arg))
+    (b* (((when (zp limit)) (reserr :limit)))
+      (reserr :todo))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove eventually
 
@@ -2507,6 +2522,12 @@
                     (not (reserrp val)))
                (expr-value-wfp val))
       :fn eval-primop-fun)
+    (defret expr-value-wfp-of-prim-reduce
+      (implies (and (expr-value-wfp fval)
+                    (expr-value-wfp arg)
+                    (not (reserrp val)))
+               (expr-value-wfp val))
+      :fn prim-reduce)
     :mutual-recursion eval-exprs/atoms/binds
     :hints
     (("Goal"
