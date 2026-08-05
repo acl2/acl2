@@ -159,8 +159,7 @@
                       (int-value (+ (int-value->int intval1)
                                     (int-value->int intval2)))))))
     :expand (eval-app-cell funval argval limit)
-    :enable (eval-app-cell
-             eval-primop-fun
+    :enable (eval-primop-fun
              eval-primop-fun-fo
              primop-value-funp
              primop-value-fun-fo-p
