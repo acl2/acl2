@@ -31,7 +31,7 @@
    (xdoc::p
     "Here we define the application of primitives to types;
      more precisely, the application of
-     primitive operation values satisfying @(tsee primop-value-tfunop)
+     primitive operation values satisfying @(tsee primop-value-tfunp)
      to type values."))
   :order-subtopics t
   :default-parent t)
