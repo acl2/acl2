@@ -984,3 +984,17 @@
                       0
                     x)))
   :hints (("Goal" :in-theory (enable power-of-2p))))
+
+(defthm bvchop-of-+-of-unary---of-bvchop-arg1
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (bvchop size (+ (- (bvchop size y)) x))
+                  (bvchop size (+ x (- y)))))
+  :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
+
+(defthm bvchop-of-+-of-unary---of-bvchop-arg2
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (bvchop size (+ x (- (bvchop size y))))
+                  (bvchop size (+ x (- y)))))
+  :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))

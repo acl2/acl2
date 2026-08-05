@@ -295,7 +295,7 @@
      @(':gotoe') statements are re-classified as @(':goto') statements
      (more on this below),
      a (mutable) macro table,
-     an immutable string containing the path of the file,
+     an immutable path of the file being disambiguated,
      and an immutable implementation environment.")
    (xdoc::p
     "The aforementioned set of identifiers is always empty,
@@ -322,7 +322,7 @@
   ((table dimb-table)
    (goto-reclass ident-set)
    (macros macro-table)
-   (file string)
+   (file filepath)
    (ienv ienv))
   :pred dstatep)
 
@@ -331,7 +331,11 @@
 (defirrelevant irr-dstate
   :short "An irrelevant disambiguation state."
   :type dstatep
-  :body (dstate (irr-dimb-table) nil (irr-macro-table) "" (irr-ienv)))
+  :body (dstate (irr-dimb-table)
+                nil
+                (irr-macro-table)
+                (irr-filepath)
+                (irr-ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -486,7 +490,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-dstate ((file stringp) (ienv ienvp))
+(define init-dstate ((file filepathp) (ienv ienvp))
   :returns (dstate dstatep)
   :short "Initial disambiguation state."
   :long
@@ -4213,7 +4217,7 @@
          ;; Look up translation unit through the 3 maps.
          (including (dstate->file dstate))
          (including+inner (omap::assoc
-                           (filepath including)
+                           including
                            (filepath-header-name-filepath-map-map-fix
                             resolved-includes)))
          ((unless including+inner)
@@ -4625,8 +4629,7 @@
            (filepath-header-name-filepath-map-map-fix resolved-includes))
           (path (set::head paths))
           (tunit (omap::lookup path tumap))
-          (file (filepath->string path))
-          (dstate (init-dstate file ienv))
+          (dstate (init-dstate path ienv))
           ((mv erp new-tunit & tumap-dimb)
            (dimb-trans-unit tunit
                             dstate
@@ -4636,14 +4639,14 @@
                             1000000000))
           ((when erp)
            (if keep-going
-               (prog2$ (cw "Error in translation unit ~x0: ~@1~%" file erp)
+               (prog2$ (cw "Error in translation unit ~x0: ~@1~%" path erp)
                        (dimb-filepath-trans-unit-map-loop (set::tail paths)
                                                           tumap
                                                           resolved-includes
                                                           ienv
                                                           keep-going
                                                           tumap-dimb))
-             (retmsg$ "Error in translation unit ~x0: ~@1" file erp)))
+             (retmsg$ "Error in translation unit ~x0: ~@1" path erp)))
           (tumap-dimb (omap::update path new-tunit tumap-dimb)))
        (dimb-filepath-trans-unit-map-loop (set::tail paths)
                                           tumap

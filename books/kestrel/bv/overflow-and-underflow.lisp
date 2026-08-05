@@ -22,6 +22,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "bvuminus"))
+(local (include-book "bvminus"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -55,9 +56,9 @@
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt
                                           getbit-of-+
                                           logext-cases
-                                          bvminus bvuminus
+                                          bvminus
                                           bvchop-when-top-bit-1)
-                                  (bvminus-becomes-bvplus-of-bvuminus
+                                  (bvminus-becomes-bvplus-of-bvuminus ; todo
                                    ;; for speed:
                                    associativity-of-+ bvchop-when-top-bit-1
                                    )))))
@@ -78,7 +79,7 @@
                 (<= (expt 2 (+ -1 size)) (+ (logext size x) (logext size y)))))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt
                                           logext-cases
-                                          bvminus  bvuminus
+                                          bvminus
                                           BVCHOP-WHEN-TOP-BIT-1)
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    bvchop-when-top-bit-1 ; for speed
@@ -126,7 +127,7 @@
   :hints (("Goal" :in-theory (e/d (;bvplus
                                    bvchop-of-sum-cases sbvlt bvlt getbit-of-+
                                    logext-cases
-                                   bvminus bvuminus
+                                   bvminus
                                    bvchop-when-top-bit-1)
                                   (bvminus-becomes-bvplus-of-bvuminus
                                    bvchop-of-sum-cases +-of-expt-and---of-expt-of-one-less-extra ; for speed
@@ -149,7 +150,7 @@
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-+
                                           logext-cases
                                           logext-of-plus
-                                          bvminus bvuminus
+                                          bvminus
                                           bvchop-when-top-bit-1)
                                   (bvminus-becomes-bvplus-of-bvuminus)))))
 

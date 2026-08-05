@@ -158,7 +158,7 @@
   :hints (("Goal" :in-theory (enable bvminus))))
 
 ;; Should we leave this enabled?  Perhaps we should, so we only have to deal with addition and unary negation, not subtraction.
-(defthm bvminus-becomes-bvplus-of-bvuminus
+(defthmd bvminus-becomes-bvplus-of-bvuminus
   (equal (bvminus size x y)
          (bvplus size x (bvuminus size y)))
   :hints (("Goal" :cases ((natp size))
@@ -334,4 +334,10 @@
                   (bvminus size
                            (bvplus size k1 k2) ; gets computed
                            x)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))
+
+(defthm bvminus-of-bvplus-cancel-arg3-arg2
+  (implies (natp size)
+           (equal (bvminus size x (bvplus size x y))
+                  (bvminus size 0 y)))
   :hints (("Goal" :in-theory (enable bvminus bvplus))))

@@ -23,6 +23,7 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system)) ;for UNSIGNED-BYTE-P-INTEGER-LENGTH-ONE-LESS
+(local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 
 ;; Writes VAL, which should be a BV of size ELEMENT-SIZE, at position INDEX of
 ;; DATA, which should be a bv-array of length LEN whose elements are BVs of
