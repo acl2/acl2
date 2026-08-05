@@ -790,7 +790,7 @@
                                     bvminus bvuminus
                                     acl2::BVCHOP-WHEN-TOP-BIT-1
                                     acl2::getbit-of-+)
-                                   (acl2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                   (;acl2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                     acl2::bvchop-when-top-bit-1 ; for speed
                                     ))))))
 
@@ -820,7 +820,7 @@
                                     bvminus bvuminus
                                     acl2::BVCHOP-WHEN-TOP-BIT-1
                                     acl2::getbit-of-+)
-                                   (acl2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                   (;acl2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                     acl2::bvchop-when-top-bit-1 ; for speed
                                     ))))))
 
@@ -872,7 +872,7 @@
                                    bvminus bvuminus
                                    acl2::BVCHOP-WHEN-TOP-BIT-1
                                    acl2::getbit-of-+)
-                                  (acl2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                  (;acl2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    acl2::bvchop-when-top-bit-1 ; for speed
                                    ))))
   ;; todo: get this to work, but need some sbvlt rules

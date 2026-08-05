@@ -106,7 +106,8 @@
   (equal (bvuminus size 1)
          (repeatbit size 1))
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus repeatbit)
-                                  (bvminus-becomes-bvplus-of-bvuminus)))))
+                                  (;bvminus-becomes-bvplus-of-bvuminus
+                                   )))))
 
 ;todo: move
 (defthm equal-of-bvchop-and-constant-when-signed-byte-p

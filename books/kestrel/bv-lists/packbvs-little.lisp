@@ -1,6 +1,6 @@
 ; Packing a list of BVs to create a shorter list of larger BVs (little endian)
 ;
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "packbv-little") ; or just the def
-(include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
+(include-book "all-unsigned-byte-p")
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))

@@ -123,15 +123,18 @@
     (implies (and (expr-value-case funval :primop)
                   (equal opval (expr-value-primop->val funval))
                   (primop-value-case opval :int-binary)
-                  (not (zp limit)))
+                  (integerp limit)
+                  (>= limit 2))
              (equal (eval-app-cell funval argval limit)
                     (expr-value-primop
                      (make-primop-value-int-binary-x
                       :op (primop-value-int-binary->op opval)
                       :xval argval))))
-    :enable (eval-app-cell
-             eval-primop-fun
-             primop-value-funp))
+    :expand (eval-app-cell funval argval limit)
+    :enable (eval-primop-fun
+             eval-primop-fun-fo
+             primop-value-funp
+             primop-value-fun-fo-p))
 
   (defruled eval-app-cell-of-int-binary-x-add
     (implies (and (expr-value-case funval :primop)
@@ -148,15 +151,18 @@
                   (base-value-case baseval2 :int)
                   (equal intval1 (base-value-int->val baseval1))
                   (equal intval2 (base-value-int->val baseval2))
-                  (not (zp limit)))
+                  (integerp limit)
+                  (>= limit 2))
              (equal (eval-app-cell funval argval limit)
                     (expr-value-base
                      (base-value-int
                       (int-value (+ (int-value->int intval1)
                                     (int-value->int intval2)))))))
-    :enable (eval-app-cell
-             eval-primop-fun
+    :expand (eval-app-cell funval argval limit)
+    :enable (eval-primop-fun
+             eval-primop-fun-fo
              primop-value-funp
+             primop-value-fun-fo-p
              prim-int-add
              check-expr-value-int
              not-reserrp-when-int-valuep)))
@@ -213,7 +219,7 @@
                   (equal intval1 (base-value-int->val baseval1))
                   (equal intval2 (base-value-int->val baseval2))
                   (integerp limit)
-                  (>= limit 4))
+                  (>= limit 5))
              (equal (eval-app funval argvals limit)
                     (expr-value-base
                      (base-value-int

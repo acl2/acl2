@@ -1,7 +1,7 @@
 ; sbvmoddown
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -31,7 +31,7 @@
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/rem" :dir :system))
 
-(local (in-theory (disable BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))
+;(local (in-theory (disable BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))
 
 ;todo: move?
 (defund sbvmoddown (n x y)
