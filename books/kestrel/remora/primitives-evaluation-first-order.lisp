@@ -2264,22 +2264,9 @@
                   :neq (prim-bool-neq op.xval arg))
      :bool-to-int (prim-bool-to-int arg)
      :bool-to-float (prim-bool-to-float arg)
-     :head (prog2$ (impossible) (reserr nil))
-     :head-t (prog2$ (impossible) (reserr nil))
-     :head-t-d (prog2$ (impossible) (reserr nil))
      :head-t-d-s (prim-head op.tval op.dval op.sval arg)
-     :tail (prog2$ (impossible) (reserr nil))
-     :tail-t (prog2$ (impossible) (reserr nil))
-     :tail-t-d (prog2$ (impossible) (reserr nil))
      :tail-t-d-s (prim-tail op.tval op.dval op.sval arg)
-     :length (prog2$ (impossible) (reserr nil))
-     :length-t (prog2$ (impossible) (reserr nil))
-     :length-t-d (prog2$ (impossible) (reserr nil))
      :length-t-d-s (prim-length op.tval op.dval op.sval arg)
-     :append (prog2$ (impossible) (reserr nil))
-     :append-t (prog2$ (impossible) (reserr nil))
-     :append-t-m (prog2$ (impossible) (reserr nil))
-     :append-t-m-n (prog2$ (impossible) (reserr nil))
      :append-t-m-n-s (expr-value-primop
                       (make-primop-value-append-t-m-n-s-x :tval op.tval
                                                           :mval op.mval
@@ -2288,41 +2275,23 @@
                                                           :xval arg))
      :append-t-m-n-s-x (prim-append op.tval op.mval op.nval op.sval
                                     op.xval arg)
-     :reverse (prog2$ (impossible) (reserr nil))
-     :reverse-t (prog2$ (impossible) (reserr nil))
-     :reverse-t-d (prog2$ (impossible) (reserr nil))
      :reverse-t-d-s (prim-reverse op.tval op.dval op.sval arg)
-     :index (prog2$ (impossible) (reserr nil))
-     :index-t (prog2$ (impossible) (reserr nil))
      :index-t-m (expr-value-primop
                  (make-primop-value-index-t-m-x :tval op.tval
                                                 :mval op.mval
                                                 :xval arg))
      :index-t-m-x (prim-index op.tval op.mval op.xval arg)
-     :index2d (prog2$ (impossible) (reserr nil))
-     :index2d-t (prog2$ (impossible) (reserr nil))
-     :index2d-t-m (prog2$ (impossible) (reserr nil))
      :index2d-t-m-n (expr-value-primop
                      (make-primop-value-index2d-t-m-n-x :tval op.tval
                                                         :mval op.mval
                                                         :nval op.nval
                                                         :xval arg))
      :index2d-t-m-n-x (prim-index2d op.tval op.mval op.nval op.xval arg)
-     :sum (prog2$ (impossible) (reserr nil))
      :sum-s (prim-sum op.sval arg)
-     :reshape (prog2$ (impossible) (reserr nil))
-     :reshape-t (prog2$ (impossible) (reserr nil))
-     :reshape-t-s1 (prog2$ (impossible) (reserr nil))
      :reshape-t-s1-s2 (prim-reshape op.tval op.s1val op.s2val arg)
-     :flatten (prog2$ (impossible) (reserr nil))
-     :flatten-t (prog2$ (impossible) (reserr nil))
-     :flatten-t-m (prog2$ (impossible) (reserr nil))
-     :flatten-t-m-n (prog2$ (impossible) (reserr nil))
      :flatten-t-m-n-s (prim-flatten op.tval op.mval op.nval op.sval arg)
-     :transpose2d (prog2$ (impossible) (reserr nil))
-     :transpose2d-t (prog2$ (impossible) (reserr nil))
-     :transpose2d-t-m (prog2$ (impossible) (reserr nil))
-     :transpose2d-t-m-n (prim-transpose2d op.tval op.mval op.nval arg)))
+     :transpose2d-t-m-n (prim-transpose2d op.tval op.mval op.nval arg)
+     :otherwise (prog2$ (impossible) (reserr nil))))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///
