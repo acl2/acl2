@@ -2141,7 +2141,7 @@
    (xdoc::p
     "This is the dynamic counterpart, for primitive operations,
      of evaluating the body of a lambda abstraction:
-     it is called by @(tsee eval-app-cell)
+     it is called by @(tsee eval-app-cell) (via @(tsee eval-primop-fun))
      on a scalar primitive operation and a scalar argument cell,
      after the rank-polymorphic lifting.
      Consistently with the curried view of term applications,
