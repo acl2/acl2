@@ -563,6 +563,8 @@
                                              :params params
                                              :body body))))
                          (acl2::reterr (msg "The \"params\" member of a TESigma object must be a JSON array, but ~x0 is not." params-j)))))
+                    ((equal tag "TERecord")
+                     (acl2::reterr (msg "TERecord objects are not yet supported")))
                     (t
                      (acl2::reterr (msg "~x0 is not a recognized tag for a TypeExp." tag)))))
               (acl2::reterr (msg "The \"tag\" member of a TypeExp object must be a string, but ~x0 is not." tag-j))))
@@ -1173,6 +1175,10 @@
                                            :binds binds
                                            :body body)))
                          (acl2::reterr (msg "The \"binds\" member of a Let object must be a JSON array, but ~x0 is not." binds-j)))))
+                    ((equal tag "Struct")
+                     (acl2::reterr (msg "Struct objects are not yet supported")))
+                    ((equal tag "FieldProj")
+                     (acl2::reterr (msg "FieldProj objects are not yet supported")))
                     (t
                      (acl2::reterr (msg "~x0 is not a recognized tag for an ExpBase." tag)))))
               (acl2::reterr (msg "The \"tag\" member of an ExpBase object must be a string, but ~x0 is not." tag-j))))
