@@ -37,25 +37,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ primitives-evaluation
+(defxdoc+ primitives-evaluation-first-order
   :parents (dynamic-semantics)
-  :short "Evaluation of the Remora primitives."
+  :short "Evaluation of Remora primitives on expressions in first-order."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The Remora primitives are built-in functions
-     whose definition is not written in Remora.
-     Here we provide a definition of them in ACL2,
-     as ACL2 functions that take and return Remora expression values.
-     The functions defensively check that
-     the expression values have the correct types,
-     returning an error if they do not;
-     the functions also return errors if
-     the operation is not well-defined on the type-correct expression values
-     (e.g. division by zero).")
+    "Remora primitives, like other Remora functions,
+     may be applied to types, ispaces, or expressions,
+     according to the stages implied by their curried function types.
+     See @(tsee primop-value) for a discussion of the stages.")
    (xdoc::p
-    "The primitives are defined in [impl]:
-     see @(see expression-values-and-environments) for details.")
+    "Here we define the application of primitives to expressions;
+     more precisely, the application of
+     primitive operation values satisfying
+     both @(tsee primop-value-funp) and @(tsee primop-value-fun-fo-p)
+     to expression values.
+     See @(tsee primop-value-fun-fo-p) for background on
+     the meaning of `first-order' in this context.")
+   (xdoc::p
+    "Because this evaluation does not involve
+     the evaluation of arbitrary Remora code,
+     we can define these primitives here as stand-alone.")
    (xdoc::p
     "The integer primitives currently implemented are:")
    (xdoc::ul

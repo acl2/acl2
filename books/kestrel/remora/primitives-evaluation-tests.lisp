@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "primitives-evaluation")
+(include-book "primitives-evaluation-first-order")
 
 (include-book "std/testing/assert-equal" :dir :system)
 

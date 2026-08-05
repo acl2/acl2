@@ -17,7 +17,7 @@
 (include-book "type-value-equivalence")
 (include-book "primitives-evaluation-on-types")
 (include-book "primitives-evaluation-on-ispaces")
-(include-book "primitives-evaluation")
+(include-book "primitives-evaluation-first-order")
 (include-book "evaluation")
 (include-book "evaluation-rules")
 
@@ -73,6 +73,6 @@
                     type-value-equivalence
                     primitives-evaluation-on-types
                     primitives-evaluation-on-ispaces
-                    primitives-evaluation
+                    primitives-evaluation-first-order
                     evaluation
                     evaluation-rules))

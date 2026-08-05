@@ -14,7 +14,7 @@
 (include-book "expression-values-and-environments")
 (include-book "primitives-evaluation-on-types")
 (include-book "primitives-evaluation-on-ispaces")
-(include-book "primitives-evaluation")
+(include-book "primitives-evaluation-first-order")
 (include-book "nat-lists")
 (include-book "integer-lists")
 (include-book "character-literal-codes")
