@@ -2269,7 +2269,8 @@
        a non-empty array of boxes (see @(tsee eval-unbox))."))
     (b* (((when (zp limit)) (reserr :limit))
          ((when (endp targets)) nil)
-         ((ok val) (eval-unbox (car targets) ispaces var body type denv (1- limit)))
+         ((ok val)
+          (eval-unbox (car targets) ispaces var body type denv (1- limit)))
          ((ok vals)
           (eval-unbox-list (cdr targets) ispaces var body type denv (1- limit))))
       (cons val vals))
@@ -2298,7 +2299,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is currently essentialy the same as @(tsee eval-primop-fun-fo),
+      "This is currently essentially the same as @(tsee eval-primop-fun-fo),
        because we do not have any Remora higher-order primitive yet.
        So it is not actually mutually recursive with the other functions,
        but it will be once we add the Remora higher-order primitives."))

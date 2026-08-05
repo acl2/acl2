@@ -2296,7 +2296,7 @@
    (xdoc::p
     "Consider a curried primitive operation
      that takes a Remora function value as first input
-     and some other value as second output.
+     and some other value as second input.
      The application to the first value is still considered ``first-order'',
      i.e. the applicable primitive operation value satisfies this predicate,
      even though the function value is higher-order.
