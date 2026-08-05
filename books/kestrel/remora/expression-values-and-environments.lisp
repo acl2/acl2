@@ -2729,29 +2729,6 @@
     :hints (("Goal" :in-theory (enable primop-value-funp
                                        nest-function-type-values)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define arity-of-primop-value-fun ((op primop-valuep))
-  :guard (primop-value-funp op)
-  :returns (arity natp)
-  :short "Arity of a primitive operation value applicable to expression values."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the number of expression arguments that the operation takes,
-     matching the @('prim-...') function that defines its semantics
-     in @(see primitives-evaluation-first-order):
-     1 for the unary operations, 2 for the binary ones.")
-   (xdoc::p
-    "We define this as the number of inputs
-     of the operation's function type (see @(tsee type-of-primop-value-fun)),
-     so that the arity cannot diverge from the type.
-     Like @(tsee type-of-primop-value-fun),
-     this function is restricted, via the guard,
-     to the values applicable to expression values."))
-  (len (arrow-type-value-inputs
-        (type-value-array->elem (type-of-primop-value-fun op)))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-value-first-fun ((val expr-valuep))
