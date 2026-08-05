@@ -2306,31 +2306,3 @@
              (expr-value-wfp val))
     :hyp (and (primop-value-wfp op)
               (expr-value-wfp arg))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define eval-primop-fun ((op primop-valuep) (arg expr-valuep))
-  :guard (and (primop-value-funp op)
-              (primop-value-wfp op)
-              (expr-value-wfp arg))
-  :returns (val expr-value-resultp)
-  :short "Evaluate the application of a primitive operation
-          to one argument cell."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is currently essentialy the same as @(tsee eval-primop-fun-fo),
-     because we do not have any Remore higher-order primitive yet."))
-  (if (primop-value-fun-fo-p op)
-      (eval-primop-fun-fo op arg)
-    (reserr (impossible)))
-  :guard-hints (("Goal" :in-theory (enable primop-value-funp
-                                           primop-value-fun-fo-p)))
-
-  ///
-
-  (defret expr-value-wfp-of-eval-primop-fun
-    (implies (not (reserrp val))
-             (expr-value-wfp val))
-    :hyp (and (primop-value-wfp op)
-              (expr-value-wfp arg))))

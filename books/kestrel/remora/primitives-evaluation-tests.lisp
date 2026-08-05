@@ -29,21 +29,21 @@
 
 ; Curried application of a primitive operation value
 ; to one or more argument cells:
-; (eval-primop-fun* op a1 a2 ... an) expands to
-; a nest of eval-primop-fun calls,
+; (eval-primop-fun-fo* op a1 a2 ... an) expands to
+; a nest of eval-primop-fun-fo calls,
 ; where the primitive operation value resulting from each application
 ; is extracted from the expression value that wraps it.
 
-(defun eval-primop-fun*-fn (op args)
+(defun eval-primop-fun-fo*-fn (op args)
   (declare (xargs :guard (and (true-listp args) (consp args))))
   (if (endp (cdr args))
-      `(eval-primop-fun ,op ,(car args))
-    (eval-primop-fun*-fn
-     `(expr-value-primop->val (eval-primop-fun ,op ,(car args)))
+      `(eval-primop-fun-fo ,op ,(car args))
+    (eval-primop-fun-fo*-fn
+     `(expr-value-primop->val (eval-primop-fun-fo ,op ,(car args)))
      (cdr args))))
 
-(defmacro eval-primop-fun* (op arg &rest args)
-  (eval-primop-fun*-fn op (cons arg args)))
+(defmacro eval-primop-fun-fo* (op arg &rest args)
+  (eval-primop-fun-fo*-fn op (cons arg args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -426,33 +426,33 @@
 ; whose application to the second argument yields the result.
 
 (acl2::assert-equal
- (eval-primop-fun (primop-value-int-binary (int-binary-primop-add)) (iv 2))
+ (eval-primop-fun-fo (primop-value-int-binary (int-binary-primop-add)) (iv 2))
  (expr-value-primop (make-primop-value-int-binary-x
                      :op (int-binary-primop-add)
                      :xval (iv 2))))
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-int-binary-x :op (int-binary-primop-add)
-                                                  :xval (iv 2))
-                  (iv 3))
+ (eval-primop-fun-fo (make-primop-value-int-binary-x :op (int-binary-primop-add)
+                                                     :xval (iv 2))
+                     (iv 3))
  (iv 5))
 
 (acl2::assert-equal
- (eval-primop-fun* (primop-value-int-binary (int-binary-primop-add))
-                   (iv 2) (iv 3))
+ (eval-primop-fun-fo* (primop-value-int-binary (int-binary-primop-add))
+                      (iv 2) (iv 3))
  (iv 5))
 
 (acl2::assert-equal
- (eval-primop-fun* (primop-value-int-rel (int-rel-primop-lt))
-                   (iv 2) (iv 3))
+ (eval-primop-fun-fo* (primop-value-int-rel (int-rel-primop-lt))
+                      (iv 2) (iv 3))
  (bv t))
 
 (acl2::assert-equal
- (eval-primop-fun* (primop-value-float-binary (float-binary-primop-add))
-                   (fv 1/2) (fv 1/4))
+ (eval-primop-fun-fo* (primop-value-float-binary (float-binary-primop-add))
+                      (fv 1/2) (fv 1/4))
  (fv 3/4))
 
 (acl2::assert-equal
- (eval-primop-fun* (primop-value-bool-binary (bool-binary-primop-and))
-                   (bv t) (bv nil))
+ (eval-primop-fun-fo* (primop-value-bool-binary (bool-binary-primop-and))
+                      (bv t) (bv nil))
  (bv nil))
