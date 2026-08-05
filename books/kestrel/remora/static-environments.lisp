@@ -117,7 +117,7 @@
      more will be added as the formalization grows.")
    (xdoc::p
     "The operations from @('+') to @('bool->f') have monomorphic types:
-     zero-rank array types of function types between base types.
+     function types between base types.
      The @('head'), @('tail'), @('length'),
      @('append'), @('reverse'), @('index'), @('index2d'),
      @('reshape'), @('flatten'), @('transpose2d'), and @('reduce') operations
@@ -129,11 +129,10 @@
      not in the element type, which is always integer:
      its type is a product type of a function type,
      without an enclosing universal type, as in [impl].
-     Like the monomorphic types,
-     the whole type is a zero-rank array type,
-     but the bodies of the universal and product types
-     need no zero-rank array wrapping,
-     because atom types are auto-lifted to array types in those places."))
+     All these types are atom-kinded, without zero-rank array type wrapping:
+     as explained in @(see types),
+     atom-kinded types are allowed wherever array-kinded types are expected,
+     implicitly standing for zero-rank array types of those atom types."))
   (b* ((int-binop-type
         (t-> :int :int :int))
        (int-unop-type
