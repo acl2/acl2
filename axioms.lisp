@@ -14804,6 +14804,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     with-current-package
     ec-call
     swap-stobjs
+    in-logic-mode
     #+acl2-rewrite-meter zero-depthp
     #+acl2-pass2-def-time-info incf-pass2-def-time?
     with-debug
@@ -20319,6 +20320,36 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (mv (null (acl2-oracle state-state))
       (car (acl2-oracle state-state))
       (update-acl2-oracle (cdr (acl2-oracle state-state)) state-state)))
+
+(defmacro in-logic-mode (form state &optional (vars 'nil varsp))
+  `(cond #-acl2-loop-only
+         ((live-state-p ,state)
+          (value ,form))
+         (t ,(let ((syms (cond (varsp
+                                (cond ((and (consp vars)
+                                            (eq (car vars) 'quote)
+                                            (symbol-listp (cadr vars))
+                                            (null (cddr vars)))
+                                       (cadr vars))
+                                      (t
+                                       (er hard? 'in-logic-mode
+                                           "When the optional argument for ~
+                                            ~x0 is supplied, it must be a ~
+                                            quoted list of symbols.  The call ~
+                                            ~x1 is thus illegal.  See :DOC ~
+                                            in-logic-mode."
+                                           'in-logic-mode
+                                           `(in-logic-mode ,form ,state ,vars)))))
+                               ((and (true-listp form)
+                                     (atom-listp (cdr form)))
+                                (cdr form))
+                               (t (er hard? 'in-logic-mode
+                                      "The optional argument of ~x0 is required for ~
+                                       the call, ~x1.  See :DOC in-logic-mode."
+                                      'in-logic-mode
+                                      `(in-logic-mode ,form ,state))))))
+               `(prog2$ (list ,@syms)
+                        (read-acl2-oracle ,state))))))
 
 ; We thank Jared Davis for permission to adapt his function true-list-fix (and
 ; supporting function true-list-fix-exec), below.  See :DOC note-8-2 for

@@ -14,7 +14,7 @@
 (include-book "bvlt-def")
 (include-book "unsigned-byte-p")
 (include-book "bvplus") ;drop!
-(include-book "bvminus") ;drop! but is used below
+(include-book "bvminus-def") ;drop! but is used below
 (include-book "kestrel/arithmetic-light/ceiling-of-lg-def" :dir :system)
 (local (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system))
 (local (include-book "slice")) ; since we open getbit below

@@ -13,6 +13,7 @@
 (include-book "pseudocode")
 (include-book "instructions")
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -103,7 +104,7 @@
                 (unsigned-byte-p 32 y))
            (equal (cmp-zero x y)
                   (bool-to-bit (equal x y))))
-  :hints (("Goal" :in-theory (enable cmp-zero acl2::bvnot-becomes-bvminus-of-bvuminus-and-1 bool-to-bit))))
+  :hints (("Goal" :in-theory (enable cmp-zero acl2::bvnot-becomes-bvminus-of-bvuminus-and-1 acl2::bvminus-becomes-bvplus-of-bvuminus bool-to-bit))))
 
 (defthmd cmn-carry-elim
   (implies (and (unsigned-byte-p 32 x)

@@ -170,7 +170,18 @@
   :guard (ispace-list-case-shape x)
   :returns (shapes shape-listp)
   :short "Lift @(tsee ispace-shape->shape) to lists."
-  (ispace-shape->shape x))
+  (ispace-shape->shape x)
+
+  ///
+
+  (defrule shape-list-count-of-ispace-shape-list->shape
+    (implies (ispace-list-case-shape x)
+             (<= (shape-list-count (ispace-shape-list->shape x))
+                 (ispace-list-count x)))
+    :rule-classes :linear
+    :induct t
+    :expand ((:free (a b) (shape-list-count (cons a b)))
+             (ispace-list-count x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -692,6 +703,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-binders-count ((type typep))
+  :returns (count natp)
+  :short "Number of variables bound by the binder of a type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for the binder of universal, product, and sum types.
+     We return 0 for the other types."))
+  (type-case type
+             :var 0
+             :base 0
+             :array 0
+             :bracket 0
+             :fun 0
+             :funn 0
+             :forall 1
+             :foralln (len type.params)
+             :pi 1
+             :pin (len type.params)
+             :sigma 1
+             :sigman (len type.params)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define fun-curried-out ((in type-listp) (out typep))
   :guard (consp in)
   :returns (new-out typep)
@@ -768,7 +803,20 @@
              (type-count (type-forall (cadr (type-foralln->params type))
                                       (type-foralln->body type)))
              (type-count (type-foralln (cdr (type-foralln->params type))
-                                       (type-foralln->body type))))))
+                                       (type-foralln->body type)))))
+
+  (defrule type-binders-count-of-forall-curried-body
+    (implies
+     (and (type-case type :foralln)
+          (equal (type-count (forall-curried-body (type-foralln->params type)
+                                                  (type-foralln->body type)))
+                 (type-count type)))
+     (< (type-binders-count (forall-curried-body (type-foralln->params type)
+                                                 (type-foralln->body type)))
+        (type-binders-count type)))
+    :rule-classes :linear
+    :enable (forall-curried-body type-binders-count len)
+    :expand ((type-count type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -801,7 +849,20 @@
              (type-count (type-pi (cadr (type-pin->params type))
                                   (type-pin->body type)))
              (type-count (type-pin (cdr (type-pin->params type))
-                                   (type-pin->body type))))))
+                                   (type-pin->body type)))))
+
+  (defrule type-binders-count-of-pi-curried-body
+    (implies
+     (and (type-case type :pin)
+          (equal (type-count (pi-curried-body (type-pin->params type)
+                                              (type-pin->body type)))
+                 (type-count type)))
+     (< (type-binders-count (pi-curried-body (type-pin->params type)
+                                             (type-pin->body type)))
+        (type-binders-count type)))
+    :rule-classes :linear
+    :enable (pi-curried-body type-binders-count len)
+    :expand ((type-count type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -834,7 +895,20 @@
              (type-count (type-sigma (cadr (type-sigman->params type))
                                      (type-sigman->body type)))
              (type-count (type-sigman (cdr (type-sigman->params type))
-                                      (type-sigman->body type))))))
+                                      (type-sigman->body type)))))
+
+  (defrule type-binders-count-of-sigma-curried-body
+    (implies
+     (and (type-case type :sigman)
+          (equal (type-count (sigma-curried-body (type-sigman->params type)
+                                                 (type-sigman->body type)))
+                 (type-count type)))
+     (< (type-binders-count (sigma-curried-body (type-sigman->params type)
+                                                (type-sigman->body type)))
+        (type-binders-count type)))
+    :rule-classes :linear
+    :enable (sigma-curried-body type-binders-count len)
+    :expand ((type-count type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

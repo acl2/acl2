@@ -597,6 +597,20 @@
       (c$::expr-type expr)
     (c$::type-unknown)))
 
+(define sts-param-declon-type ((pdeclon param-declonp))
+  :guard (param-declon-annop pdeclon)
+  :returns (type typep)
+  :short "Best-effort type of a parameter declaration,
+          read from its annotation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar in spirit to @(tsee sts-expr-type);
+     see that function's documentation for motivation."))
+  (if (param-declon-unambp pdeclon)
+      (param-declon-type pdeclon)
+    (type-unknown)))
+
 (define sts-split-member-right-name
   ((arg-type c$::typep)
    (memberp booleanp)
@@ -3235,11 +3249,9 @@
           (param-declon-fix param-declon)
           st)
          ((param-declon param-declon) param-declon)
-         ((type-option-vinfo info) param-declon.info)
+         (type (sts-param-declon-type param-declon))
          ((mv erp splitp)
-          (if info.type?
-              (sts-check-type info.type? st)
-            (mv nil nil)))
+          (sts-check-type type st))
          ((when erp)
           (retmsg$ "~@0~%~@1"
                    erp

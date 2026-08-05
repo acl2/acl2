@@ -761,6 +761,8 @@
     type-count
     type-void
     type-sint
+    type-unknown
+
     type-pointer->to
 
     type-listp
@@ -836,6 +838,7 @@
     block-item-types
     block-item-list-types
     fundef-types
+    param-declon-type
 
     valid-ord-info-case
     valid-ord-info-objfun->type

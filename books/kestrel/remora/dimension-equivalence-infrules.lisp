@@ -26,7 +26,7 @@
    (xdoc::p
     "We formalize the equivalence of dimensions via inference rules.
      Although [thesis], [arxiv], and [esop] do not explicate these rules,
-     there existence is arguably implied;
+     their existence is arguably implied;
      those publications make use of judgements
      asserting the equivalence of ispaces (called `indices' there),
      and describe the equations according to which
@@ -39,17 +39,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (definductive dimeq-infrules
-  :short "Equivalence of dimensions."
+  :short "Equivalence of dimensions and lists of dimensions."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is essentially an equational theory over multivariate polynomials,
      with variadic additions and multiplications,
-     and with a Lisp-like notion of variadic subtraction.")
+     with a Lisp-like notion of variadic subtraction,
+     and with a homomorphic extension to lists.")
    (xdoc::p
     "We start with the obligatory equivalence rules
      (reflexivity, symmetry, and transitivity),
-     and with congruence rules for all the arithmetic operations.")
+     for both dimensions and lists of dimensions,
+     with congruence rules for the arithmetic operations,
+     and with a congruence rule for list constructions.")
    (xdoc::p
     "We reduce all variadic additions to binary ones or to non-additions,
      via the rules @('add0'), @('add1'), and @('add3m').
@@ -75,7 +78,8 @@
      Technically the one for multiplication could be derived via induction,
      but we prefer to have it explicit."))
 
-  :preds ((dimeq dim1 dim2))
+  :preds ((dimeq dim1 dim2)
+          (dimseq dims1 dims2))
 
   :irules
 
@@ -94,29 +98,47 @@
            (dimeq y z))
           (dimeq x z))
 
-   (cong-add ((dimp x)
-              (dimp y)
-              (dim-listp ws)
-              (dim-listp us)
-              (dimeq x y))
-             (dimeq (dim-add (append ws (list x) us))
-                    (dim-add (append ws (list y) us))))
+   (srefl ((dim-listp xs))
+          (dimseq xs xs))
 
-   (cong-sub ((dimp x)
-              (dimp y)
-              (dim-listp ws)
-              (dim-listp us)
-              (dimeq x y))
-             (dimeq (dim-sub (append ws (list x) us))
-                    (dim-sub (append ws (list y) us))))
+   (ssymm ((dim-listp xs)
+           (dim-listp ys)
+           (dimseq xs ys))
+          (dimseq ys xs))
 
-   (cong-mul ((dimp x)
-              (dimp y)
-              (dim-listp ws)
-              (dim-listp us)
-              (dimeq x y))
-             (dimeq (dim-mul (append ws (list x) us))
-                    (dim-mul (append ws (list y) us))))
+   (strans ((dim-listp xs)
+            (dim-listp ys)
+            (dim-listp zs)
+            (dimseq xs ys)
+            (dimseq ys zs))
+           (dimseq xs zs))
+
+   (cong-add ((dim-listp xs)
+              (dim-listp ys)
+              (dimseq xs ys))
+             (dimeq (dim-add xs)
+                    (dim-add ys)))
+
+   (cong-sub ((dim-listp xs)
+              (dim-listp ys)
+              (dimseq xs ys))
+             (dimeq (dim-sub xs)
+                    (dim-sub ys)))
+
+   (cong-mul ((dim-listp xs)
+              (dim-listp ys)
+              (dimseq xs ys))
+             (dimeq (dim-mul xs)
+                    (dim-mul ys)))
+
+   (cong-cons ((dimp x)
+               (dimp y)
+               (dim-listp xs)
+               (dim-listp ys)
+               (dimeq x y)
+               (dimseq xs ys))
+              (dimseq (cons x xs)
+                      (cons y ys)))
 
    (add0 ()
          (dimeq (dim+)

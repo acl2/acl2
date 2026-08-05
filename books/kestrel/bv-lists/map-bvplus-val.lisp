@@ -11,7 +11,8 @@
 (in-package "ACL2")
 
 (include-book "kestrel/bv/bvplus" :dir :system)
-(include-book "unsigned-byte-listp")
+(include-book "unsigned-byte-listp-def")
+(local (include-book "unsigned-byte-listp"))
 
 ;; One value is fixed, the other is a list
 (defund map-bvplus-val (size val lst)

@@ -12,7 +12,9 @@
 
 (include-book "bound-and-free-variable-operations")
 (include-book "expression-values-and-environments")
-(include-book "primitives-evaluation")
+(include-book "primitives-evaluation-on-types")
+(include-book "primitives-evaluation-on-ispaces")
+(include-book "primitives-evaluation-first-order")
 (include-book "nat-lists")
 (include-book "integer-lists")
 (include-book "character-literal-codes")
@@ -2131,8 +2133,7 @@
        it is applied to the argument cell via @(tsee eval-primop-fun),
        which yields either the next stage of the operation
        or, on the operation's last argument, the result of applying it,
-       dispatching to the corresponding ACL2 functions
-       in @(see primitives-evaluation)."))
+       dispatching to the corresponding ACL2 functions."))
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-value-case
        funcell
@@ -2147,7 +2148,7 @@
                    funcell.denv)))
          (eval-expr funcell.body denv (1- limit)))
        :primop (if (primop-value-funp funcell.val)
-                   (eval-primop-fun funcell.val argcell)
+                   (eval-primop-fun funcell.val argcell (1- limit))
                  (reserr nil))
        :otherwise (reserr nil)))
     :measure (nfix limit))
@@ -2268,7 +2269,8 @@
        a non-empty array of boxes (see @(tsee eval-unbox))."))
     (b* (((when (zp limit)) (reserr :limit))
          ((when (endp targets)) nil)
-         ((ok val) (eval-unbox (car targets) ispaces var body type denv (1- limit)))
+         ((ok val)
+          (eval-unbox (car targets) ispaces var body type denv (1- limit)))
          ((ok vals)
           (eval-unbox-list (cdr targets) ispaces var body type denv (1- limit))))
       (cons val vals))
@@ -2283,6 +2285,31 @@
       :hints (("Goal"
                :induct (acl2::cdr-dec-induct targets limit)
                :in-theory (enable len)))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-primop-fun ((op primop-valuep) (arg expr-valuep) (limit natp))
+    :guard (and (primop-value-funp op)
+                (primop-value-wfp op)
+                (expr-value-wfp arg))
+    :returns (val expr-value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate the application of a primitive operation
+            to one argument cell."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is currently essentially the same as @(tsee eval-primop-fun-fo),
+       because we do not have any Remora higher-order primitive yet.
+       So it is not actually mutually recursive with the other functions,
+       but it will be once we add the Remora higher-order primitives."))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (primop-value-fun-fo-p op))
+          (eval-primop-fun-fo op arg)))
+      (reserr :todo))
+    :measure (nfix limit))
+
+  :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove eventually
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2471,6 +2498,12 @@
                     (not (reserrp vals)))
                (expr-value-list-wfp vals))
       :fn eval-unbox-list)
+    (defret expr-value-wfp-of-eval-primop-fun
+      (implies (and (primop-value-wfp op)
+                    (expr-value-wfp arg)
+                    (not (reserrp val)))
+               (expr-value-wfp val))
+      :fn eval-primop-fun)
     :mutual-recursion eval-exprs/atoms/binds
     :hints
     (("Goal"
@@ -2495,7 +2528,8 @@
                (eval-app-list funcells argcells limit)
                (eval-app-cell funcell argcell limit)
                (eval-unbox target ispaces var body type denv limit)
-               (eval-unbox-list targets ispaces var body type denv limit)))))
+               (eval-unbox-list targets ispaces var body type denv limit)
+               (eval-primop-fun op arg limit)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

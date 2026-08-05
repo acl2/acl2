@@ -145,7 +145,24 @@
       and theorems showing that the defined predicates are
       the smallest ones that satisfy the inference rules.
       In order to generate these artifacts,
-      the macro performs sufficient checks for the monotonicity of the rules."))
+      the macro performs sufficient checks for the monotonicity of the rules.")
+
+    (xdoc::p
+     "This macro currently generates two representations of proofs,
+      and thus two versions of each predicate.
+      In the first, each node of a proof carries its own conclusion
+      and the validity of a proof is a predicate of the proof alone.
+      In the second, each node carries instead
+      the variables of the rule that builds it,
+      and the arguments of the conclusion are arguments
+      of the proof validity predicate.
+      The two versions have the same interface:
+      the same introduction rule theorems and the same minimality theorems.
+      Each is therefore a least relation satisfying the rules,
+      and so the two are the same;
+      this macro proves that, as described below.
+      We generate both representations while we compare them;
+      eventually we may keep just one."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -203,12 +220,8 @@
       "For each @('i'),
        the symbols @('x[i,1]'), ..., @('x[i,m[i]]') must be all distinct.")
      (xdoc::p
-      "Currently, this macro only supports one predicate,
-       i.e. @('n') must be 1.
-       We plan to extend the macro soon.")
-     (xdoc::p
-      "We also plan to add support for guards to the predicates,
-       and likely the ability for @('x[i,j]') to be "
+      "In the future we may add support for guards to the predicates,
+       and the ability for @('x[i,j]') to be "
       (xdoc::seetopic "std::extended-formals" "extended formals")
       " as in @(tsee define)."))
 
@@ -234,27 +247,55 @@
        All the rule names @('rule[1]'), ..., @('rule[r]') must be distinct;
        there must be at least one rule, i.e. @('r') must be positive.")
      (xdoc::p
-      "A predicate @('p[i]') is recursive when it depends on itself,
-       directly or indirectly,
-       where a predicate @('p[i]') depends on a predicate @('p[j]') when
-       some rule has @('p[i]') in its conclusion and @('p[j]') in some premise.
-       For a single predicate (the only case currently supported),
-       being recursive amounts to having at least one rule
-       with a premise of the form (i) above.
-       A non-recursive predicate could be more simply defined
-       without using inference rules,
-       but we do not prevent such definitions.
-       Predicates that are not mutually recursive
-       should be defined by separate uses of this macro,
-       in dependency order.")
+      "Each predicate @('p[i]') must be
+       in the conclusion of at least one rule.")
      (xdoc::p
-      "There must be at least one rule
-       whose premises all have the form (ii) above.
-       That is, there must be at least one base case
-       for the recursive definition,
-       otherwise the smallest predicate satisfying the rules is empty.
-       This condition will be generalized when
-       we remove the restriction to one predicate mentioned above."))
+      "A predicate @('p[i]') depends on a predicate @('p[j]') when
+       some rule has @('p[i]') in its conclusion and @('p[j]') in some premise,
+       or, transitively, when @('p[i]') depends on a predicate
+       that depends on @('p[j]').
+       A predicate is singly recursive when it depends on itself.
+       Two or more predicates are mutually recursive when
+       they all depend on each other.")
+     (xdoc::p
+      "The predicates are partitioned into cliques of mutual dependency:
+       two different predicates are in the same clique
+       when each one depends on the other.
+       Thus each clique consists of
+       either two or more mutually recursive predicates,
+       or a single predicate, which may or may not be singly recursive.
+       The cliques are ordered by dependency,
+       which is always possible because
+       the dependencies between different cliques form no cycles;
+       the events generated for each clique come after
+       the ones generated for the cliques it depends on.")
+     (xdoc::p
+      "The predicates of each clique are organized into levels, as follows.
+       A predicate is at level 0 if some rule has it in its conclusion
+       and no premises of the form (i) above
+       that call predicates of the same clique;
+       premises that call predicates of preceding cliques are allowed,
+       since those predicates are already defined.
+       A predicate is at level @('L+1') if some rule has it in its conclusion
+       and all its premises of the form (i)
+       that call predicates of the same clique
+       call predicates at level @('L') or lower.
+       Every predicate must be at some level.
+       For a predicate that forms a singleton clique,
+       being at some level amounts to being at level 0,
+       i.e. to the existence of a rule with no premises
+       that call the predicate itself.")
+     (xdoc::p
+      "The variables of a rule must differ from
+       the variables that the events for the second representation of proofs
+       use for the arguments of the conclusion,
+       which are @('concl.x[i,1]'), ..., @('concl.x[i,m[i]]'),
+       differ from the names of the fields
+       that hold the proofs of the premises,
+       which are @('premise[1]-proof'), @('premise[2]-proof'), and so on,
+       and differ from @('proof$'),
+       which is the variable of the fixtypes of proofs
+       of that representation."))
 
     (xdoc::desc
      (list
@@ -315,10 +356,15 @@
        for each premise of the form @('(p[j] ...)'),
        whose corresponding field has type @('p[j]-proof').")
      (xdoc::p
-      "These fixtypes are mutually recursive in general,
-       in which case they are put inside a @(tsee fty::deftypes);
-       currently, since only one predicate is supported,
-       a single @(tsee fty::deftagsum) is generated."))
+      "One event is generated for each clique of predicates
+       (see the @(':irules') input), in dependency order.
+       For a clique of a single predicate,
+       the event is a @(tsee fty::deftagsum).
+       For a clique of two or more predicates,
+       the fixtypes are mutually recursive,
+       and the event is a @(tsee fty::deftypes)
+       named after the first predicate of the clique,
+       with the suffix @('-proof-clique')."))
 
     (xdoc::desc
      (list
@@ -364,6 +410,17 @@
        every node of the tree must be
        a valid instance of the corresponding inference rule,
        according to the @('p[l[k]]-rule[k]-validp') predicates.")
+     (xdoc::p
+      "As with the fixtypes of proofs,
+       one event is generated for each clique of predicates,
+       in dependency order.
+       For a clique of a single predicate,
+       the event is a @(tsee define).
+       For a clique of two or more predicates,
+       the functions are mutually recursive,
+       and the event is a @(tsee defines)
+       named after the first predicate of the clique,
+       with the suffix @('-proof-validp-clique').")
      (xdoc::p
       "These predicates are currently not guard-verified,
        because they call the non-guard-verified
@@ -479,7 +536,17 @@
        then the validity of each proof tree
        with conclusion @('(p[i] x[i,1] ... x[i,m[i]])')
        implies that @('(p[i]-alt x[i,1] ... x[i,m[i]])') holds.
-       That is, a proof for @('p[i]') is also a proof for @('p[i]-alt')."))
+       That is, a proof for @('p[i]') is also a proof for @('p[i]-alt').")
+     (xdoc::p
+      "As with the fixtypes of proofs and the proof validity predicates,
+       these theorems are generated one clique at a time,
+       in dependency order:
+       the ones of a clique of two or more predicates are proved together,
+       by mutual induction on the @('p[i]-proof-validp') predicates,
+       while the theorems of the preceding cliques
+       play, for the premises that call predicates of those cliques,
+       the role that the induction hypothesis plays
+       for the premises that call predicates of the same clique."))
 
     (xdoc::desc
      (list
@@ -491,4 +558,134 @@
        if the @(tsee defun-sk)s just above hold,
        then the alternate predicates hold whenever the defined ones do.
        That is, the defined predicates are the smallest ones
-       among those that satisfy the inference rules.")))))
+       among those that satisfy the inference rules."))
+
+    (xdoc::p
+     "The following items are the second representation of proofs,
+      described in the Section `Introduction' above.
+      Neither representation is used to define or prove the other;
+      the theorems described last relate the two.")
+
+    (xdoc::desc
+     (list
+      "@('p[1]-2-proof')"
+      "@('...')"
+      "@('p[n]-2-proof')")
+     (xdoc::p
+      "@(tsee fty::deftagsum) fixtypes that reify proofs,
+       as @('p[i]-proof') does, but under a different representation.
+       Each summand has a field for each variable of the rule,
+       named after the variable and having no type.
+       It has the same fields for the proofs of the premises,
+       but it does not have a field for the conclusion,
+       so there is no counterpart of
+       the @('p[i]-assertion') fixtypes
+       or of the @('p[i]-proof->conclusion') functions:
+       the conclusion is not part of a proof."))
+
+    (xdoc::desc
+     (list
+      "@('p[l[1]]-2-rule[1]-validp')"
+      "@('...')"
+      "@('p[l[r]]-2-rule[r]-validp')")
+     (xdoc::p
+      "Predicates saying whether the conditions of each rule hold,
+       except for the ones about the proofs of the premises.
+       Each takes the arguments of the conclusion
+       and the variables of the rule,
+       and says whether the premises that are not
+       calls of the predicates being defined hold,
+       and whether the arguments of the conclusion
+       are the ones that the rule derives.")
+     (xdoc::p
+      "Unlike @('p[l[k]]-rule[k]-validp'),
+       these are never @(tsee std::define-sk)s:
+       the variables of the rule are formals,
+       supplied from the fields of the proof,
+       so there is nothing to quantify."))
+
+    (xdoc::desc
+     (list
+      "@('p[1]-2-proof-validp')"
+      "@('...')"
+      "@('p[n]-2-proof-validp')")
+     (xdoc::p
+      "Predicates expressing the validity of proofs,
+       as @('p[i]-proof-validp') does,
+       but taking the arguments of the conclusion as arguments.
+       Each recurs on the proofs of the premises
+       and calls @('p[l[k]]-2-rule[k]-validp') for the rest.")
+     (xdoc::p
+      "Since these predicates involve no quantifiers,
+       they can be executed on a proof and a conclusion.
+       In general @('p[i]-proof-validp') cannot,
+       because the @('p[l[k]]-rule[k]-validp') predicates that it calls
+       are @(tsee std::define-sk)s, unless every rule is ground.
+       These predicates are currently not guard-verified,
+       because they may involve arbitrary user-supplied terms."))
+
+    (xdoc::desc
+     (list
+      "@('p[1]-2')"
+      "@('...')"
+      "@('p[n]-2')")
+     (xdoc::p
+      "Definitions of the predicates,
+       in terms of the existence of valid proofs,
+       as for @('p[i]'), but with the arguments
+       passed to @('p[i]-2-proof-validp')
+       instead of being compared with the conclusion of the proof."))
+
+    (xdoc::desc
+     (list
+      "@('p[l[1]]-2-rule[1]')"
+      "@('...')"
+      "@('p[l[r]]-2-rule[r]')")
+     (xdoc::p
+      "Theorems showing that the @('p[i]-2') predicates satisfy the rules.
+       These have the same statements as
+       @('p[l[k]]-rule[k]'),
+       with @('p[i]-2') in place of @('p[i]').")
+     (xdoc::p
+      "If XDOC is generated, all these theorems are put
+       in a @(tsee defsection) whose name is obtained by
+       extending the @('name') input with the suffix @('-2-rules')."))
+
+    (xdoc::desc
+     (list
+      "@('p[i]-2-alt')"
+      "@('p[l[k]]-2-alt-rule[k]-p')"
+      "@('p[i]-2-alt-when-proof-validp')"
+      "@('p[i]-2-alt-when-p[i]-2')")
+     (xdoc::p
+      "The counterparts, for the @('p[i]-2') predicates,
+       of the items for minimality described above.
+       They have the same form,
+       and the same statements with @('p[i]-2') in place of @('p[i]'),
+       except for the @('p[i]-2-alt-when-proof-validp') theorems:
+       there the arguments of the conclusion are
+       arguments of the proof validity predicate,
+       so the theorem has no conclusion of the proof to destructure.")
+     (xdoc::p
+      "If XDOC is generated, all these items are put
+       in a @(tsee defsection) whose name is obtained by
+       extending the @('name') input with the suffix @('-2-minimal')."))
+
+    (xdoc::desc
+     (list
+      "@('p[i]-2-when-p[i]')"
+      "@('p[i]-when-p[i]-2')"
+      "@('p[i]-2-is-p[i]')")
+     (xdoc::p
+      "Theorems saying that the two representations of proofs
+       define the same predicates.
+       Each inclusion follows from the minimality theorem of one of the two,
+       used with the predicate of the other in place of the stub:
+       what remains to prove is that the latter satisfies the rules,
+       which its rule theorems say.
+       The equality follows from the two inclusions,
+       since both predicates are booleans.")
+     (xdoc::p
+      "If XDOC is generated, all these theorems are put
+       in a @(tsee defsection) whose name is obtained by
+       extending the @('name') input with the suffix @('-2-same').")))))

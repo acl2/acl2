@@ -42,6 +42,7 @@
 (local (include-book "kestrel/bv/sbvdiv" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
 (local (include-book "kestrel/bv/bvor" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 (local (include-book "kestrel/bv/leftrotate-rules" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -1745,7 +1746,7 @@
            :in-theory (e/d (bvlt
                             bvplus
                             getbit-when-val-is-not-an-integer
-                            bvuminus bvminus
+                            ;bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1 expt-of-+)
@@ -1756,7 +1757,8 @@
                             ;minus-becomes-bv
                             ;bvuminus-of-+
                             ;plus-1-and-bvchop-becomes-bvplus ;fixme
-                            bvminus-becomes-bvplus-of-bvuminus)))))
+                            ;bvminus-becomes-bvplus-of-bvuminus
+                            )))))
 
 ;todo: add axe to the name
 ;shouldn't this just go to bvuminus?
@@ -2024,14 +2026,14 @@
                 (equal :l (car path)))
            (equal (cancel-bvplus-arg path size x (bvplus size y z))
                   (bvplus size (cancel-bvplus-arg (cdr path) size x y) z)))
-  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
 (defthmd cancel-bvplus-arg-right
   (implies (and (consp path)
                 (equal :r (car path)))
            (equal (cancel-bvplus-arg path size x (bvplus size y z))
                   (bvplus size y (cancel-bvplus-arg (cdr path) size x z))))
-  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
 ;; Searches for Y in the nest rooted at X.
 (defthmd bvminus-cancel-axe
