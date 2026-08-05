@@ -2136,12 +2136,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-primop-fun ((op primop-valuep) (arg expr-valuep))
+(define eval-primop-fun-fo ((op primop-valuep) (arg expr-valuep))
   :guard (and (primop-value-funp op)
+              (primop-value-fun-fo-p op)
               (primop-value-wfp op)
               (expr-value-wfp arg))
   :returns (val expr-value-resultp)
-  :short "Evaluate the application of a primitive operation
+  :short "Evaluate the first-order application of a primitive operation
           to one argument cell."
   :long
   (xdoc::topstring
@@ -2182,7 +2183,11 @@
     "The result is well-formed when it is not an error:
      the next-stage results are scalar primitive operation values
      that store well-formed values,
-     and the @('prim-...') functions return well-formed values on success."))
+     and the @('prim-...') functions return well-formed values on success.")
+   (xdoc::p
+    "The guard also requires that the application is first-order,
+     i.e. that it can be defined without
+     mutual recursion with the evaluation of arbitrary Remora code."))
   (b* ((arg (expr-value-fix arg)))
     (primop-value-case
      op
@@ -2293,6 +2298,34 @@
      :transpose2d-t-m-n (prim-transpose2d op.tval op.mval op.nval arg)
      :otherwise (prog2$ (impossible) (reserr nil))))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
+
+  ///
+
+  (defret expr-value-wfp-of-eval-primop-fun-fo
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (and (primop-value-wfp op)
+              (expr-value-wfp arg))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-primop-fun ((op primop-valuep) (arg expr-valuep))
+  :guard (and (primop-value-funp op)
+              (primop-value-wfp op)
+              (expr-value-wfp arg))
+  :returns (val expr-value-resultp)
+  :short "Evaluate the application of a primitive operation
+          to one argument cell."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is currently essentialy the same as @(tsee eval-primop-fun-fo),
+     because we do not have any Remore higher-order primitive yet."))
+  (if (primop-value-fun-fo-p op)
+      (eval-primop-fun-fo op arg)
+    (reserr (impossible)))
+  :guard-hints (("Goal" :in-theory (enable primop-value-funp
+                                           primop-value-fun-fo-p)))
 
   ///
 

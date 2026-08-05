@@ -131,7 +131,9 @@
                       :xval argval))))
     :enable (eval-app-cell
              eval-primop-fun
-             primop-value-funp))
+             eval-primop-fun-fo
+             primop-value-funp
+             primop-value-fun-fo-p))
 
   (defruled eval-app-cell-of-int-binary-x-add
     (implies (and (expr-value-case funval :primop)
@@ -156,7 +158,9 @@
                                     (int-value->int intval2)))))))
     :enable (eval-app-cell
              eval-primop-fun
+             eval-primop-fun-fo
              primop-value-funp
+             primop-value-fun-fo-p
              prim-int-add
              check-expr-value-int
              not-reserrp-when-int-valuep)))
