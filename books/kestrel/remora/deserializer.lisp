@@ -154,7 +154,9 @@
                          (if (json::value-case val-j :number)
                              (b* ((val
                                    (json::value-number->get val-j)))
-                               (acl2::retok (make-dim-const :val (nfix val))))
+                               (if (natp val)
+                                   (acl2::retok (make-dim-const :val val))
+                                 (acl2::reterr (msg "The \"val\" member of a DimN object must be a natural, but ~x0 is not." val))))
                            (acl2::reterr (msg "The \"val\" member of a DimN object must be a number, but ~x0 is not." val-j)))))
                       ((equal tag "Add")
                        (b* ((dims-j
@@ -642,10 +644,12 @@
                          (json::object-member-value "lit" j)))
                      (if (json::value-case lit-j :number)
                          (b* ((lit
-                               (json::value-number->get lit-j))
-                              (ilit
-                               (int-to-int-lit (ifix lit))))
-                           (acl2::retok (make-base-lit-int :lit ilit)))
+                               (json::value-number->get lit-j)))
+                           (if (integerp lit)
+                               (b* ((ilit
+                                     (int-to-int-lit lit)))
+                                 (acl2::retok (make-base-lit-int :lit ilit)))
+                             (acl2::reterr (msg "The \"lit\" member of an IntVal object must be an integer, but ~x0 is not." lit))))
                        (acl2::reterr (msg "The \"lit\" member of an IntVal object must be a number, but ~x0 is not." lit-j)))))
                   ((equal tag "FloatVal")
                    (b* ((lit-j
@@ -1208,7 +1212,9 @@
                     (json::value-number->get (car js)))
                    ((acl2::erp tl)
                     (nat-list-fromJSON (cdr js))))
-                (acl2::retok (cons (nfix hd) tl)))
+                (if (natp hd)
+                    (acl2::retok (cons hd tl))
+                  (acl2::reterr (msg "Expected a natural, but ~x0 is not." hd))))
             (acl2::reterr (msg "Expected a JSON number, but ~x0 is not." (car js))))
         (acl2::retok nil))))
 
