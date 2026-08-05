@@ -13,6 +13,7 @@
 (include-book "std/osets/top" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "std/util/defmacro-plus" :dir :system)
 
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
@@ -24,6 +25,12 @@
   :short "Library extensions for osets."
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ list-to-oset (l)
+  :short "Converts a list to an oset by sorting and removing dupliates."
+  `(set::mergesort ,l))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

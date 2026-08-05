@@ -37,6 +37,7 @@
 (include-book "remove1-equal")
 (include-book "union-equal")
 (include-book "intersection-equal")
+(include-book "intersectp-equal")
 (include-book "add-to-set-equal")
 (include-book "set-difference-equal")
 (include-book "subsequencep")
