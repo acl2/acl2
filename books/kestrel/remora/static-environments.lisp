@@ -111,12 +111,8 @@
     "In Remora, the primitive operations (i.e. built-in functions)
      are syntactically variables of (zero-rank array type of) a function type.
      These variables are implicitly in scope,
-     and thus part of the initial static environment.")
-   (xdoc::p
-    "Each operation's name (the map key) is its surface name
-     in [impl]'s prelude (the file @('RemoraPrelude.hs'));
-     the dynamic semantics of these operations
-     is formalized in @(see primitives-evaluation).
+     and thus part of the initial static environment.
+     Each operation's name (the map key) is its surface name in [impl].
      This is an initial selection of primitive operations;
      more will be added as the formalization grows.")
    (xdoc::p

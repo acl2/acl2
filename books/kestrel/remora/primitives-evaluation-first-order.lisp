@@ -340,8 +340,7 @@
     "Left shift uses ACL2's @(tsee ash)
      with a non-negative shift amount,
      erroring on a negative shift amount.
-     Because integers are modeled as unbounded
-     (see @(see primitives-evaluation)),
+     Because integers are modeled as unbounded,
      the shift never overflows:
      no high-order bits are lost.
      This differs from [impl],
@@ -407,8 +406,7 @@
      of the fixed-width two's-complement representation
      (a finite, width-dependent count),
      whereas @(tsee logcount) counts the bits of the unbounded magnitude.
-     Because integers are modeled as unbounded
-     (see @(see primitives-evaluation)),
+     Because integers are modeled as unbounded,
      there is no fixed width to match,
      so the behavior on negative inputs would differ from [impl];
      we therefore restrict to non-negative inputs for now."))
@@ -557,8 +555,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Finite values are added as exact rationals
-     (see @(see primitives-evaluation) for the float model).
+    "Finite values are added as exact rationals.
      The special cases follow [impl]:")
    (xdoc::ul
     (xdoc::li
@@ -617,8 +614,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Finite values are subtracted as exact rationals
-     (see @(see primitives-evaluation) for the float model).
+    "Finite values are subtracted as exact rationals.
      The special cases follow [impl]:")
    (xdoc::ul
     (xdoc::li
@@ -682,8 +678,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Finite values are multiplied as exact rationals
-     (see @(see primitives-evaluation) for the float model).
+    "Finite values are multiplied as exact rationals.
      The sign of an infinite or zero result is
      the exclusive-or of the operand signs
      (negative zero counts as negative).
@@ -764,8 +759,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Finite values are divided as exact rationals
-     (see @(see primitives-evaluation) for the float model).
+    "Finite values are divided as exact rationals.
      Unlike integer division, division by zero is not an error:
      it follows [impl].
      The sign of an infinite or zero result is
@@ -855,8 +849,7 @@
      and returns an exact rational,
      and a non-integer rational exponent
      would generally yield an irrational result
-     that the rational model (see @(see primitives-evaluation))
-     cannot represent,
+     that the rational model cannot represent,
      so that single case errors.")
    (xdoc::p
     "Every other case, including the special values,
@@ -1045,8 +1038,7 @@
     "Square root is currently a stub that always errors.")
    (xdoc::p
     "The difficulty is that our float model
-     represents finite values as exact rationals
-     (see @(see primitives-evaluation)),
+     represents finite values as exact rationals,
      but the square root of a rational is in general irrational.
      So the exact result is not representable as a @(tsee float-value).")
    (xdoc::p

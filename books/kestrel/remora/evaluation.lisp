@@ -2133,8 +2133,7 @@
        it is applied to the argument cell via @(tsee eval-primop-fun),
        which yields either the next stage of the operation
        or, on the operation's last argument, the result of applying it,
-       dispatching to the corresponding ACL2 functions
-       in @(see primitives-evaluation)."))
+       dispatching to the corresponding ACL2 functions."))
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-value-case
        funcell

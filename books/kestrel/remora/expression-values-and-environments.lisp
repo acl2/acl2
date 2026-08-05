@@ -2739,7 +2739,7 @@
    (xdoc::p
     "This is the number of expression arguments that the operation takes,
      matching the @('prim-...') function that defines its semantics
-     in @(see primitives-evaluation):
+     in @(see primitives-evaluation-first-order):
      1 for the unary operations, 2 for the binary ones.")
    (xdoc::p
     "We define this as the number of inputs
