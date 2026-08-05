@@ -488,8 +488,19 @@
     (:transpose2d-t-m ((tval type-value)
                        (mval nat)))
     (:transpose2d-t-m-n ((tval type-value)
-                       (mval nat)
-                       (nval nat)))
+                         (mval nat)
+                         (nval nat)))
+    (:reduce ())
+    (:reduce-t ((tval type-value)))
+    (:reduce-t-d ((tval type-value)
+                  (dval nat)))
+    (:reduce-t-d-s ((tval type-value)
+                    (dval nat)
+                    (sval nat-list)))
+    (:reduce-t-d-s-f ((tval type-value)
+                      (dval nat)
+                      (sval nat-list)
+                      (fval expr-value)))
     :pred primop-valuep
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -832,6 +843,8 @@
                     :unit)
      :index2d-t-m-n-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
                         :unit)
+     :reduce-t-d-s-f (b* (((ok &) (check-dims-of-expr-value val.fval)))
+                       :unit)
      :otherwise :unit)
     :measure (primop-value-count val))
 
@@ -1022,6 +1035,10 @@
          (implies (primop-value-case op :index2d-t-m-n-x)
                   (equal (expr-value-wfp
                           (primop-value-index2d-t-m-n-x->xval op))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :reduce-t-d-s-f)
+                  (equal (expr-value-wfp
+                          (primop-value-reduce-t-d-s-f->fval op))
                          (primop-value-wfp op))))
     :enable (primop-value-wfp expr-value-wfp)
     :expand ((check-dims-of-primop-value op)))
@@ -1046,7 +1063,10 @@
                 (expr-value-wfp xval))
          (equal (primop-value-wfp
                  (primop-value-index2d-t-m-n-x tval mval nval xval))
-                (expr-value-wfp xval)))
+                (expr-value-wfp xval))
+         (equal (primop-value-wfp
+                 (primop-value-reduce-t-d-s-f tval nval sval fval))
+                (expr-value-wfp fval)))
     :enable (primop-value-wfp expr-value-wfp)
     :expand ((check-dims-of-primop-value (primop-value-int-binary-x op xval))
              (check-dims-of-primop-value (primop-value-int-rel-x op xval))
@@ -1059,7 +1079,9 @@
              (check-dims-of-primop-value
               (primop-value-index-t-m-x tval mval xval))
              (check-dims-of-primop-value
-              (primop-value-index2d-t-m-n-x tval mval nval xval)))))
+              (primop-value-index2d-t-m-n-x tval mval nval xval))
+             (check-dims-of-primop-value
+              (primop-value-reduce-t-d-s-f tval nval sval fval)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2070,7 +2092,12 @@
                      :transpose2d nil
                      :transpose2d-t nil
                      :transpose2d-t-m nil
-                     :transpose2d-t-m-n t))
+                     :transpose2d-t-m-n t
+                     :reduce nil
+                     :reduce-t nil
+                     :reduce-t-d nil
+                     :reduce-t-d-s t
+                     :reduce-t-d-s-f t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2156,7 +2183,12 @@
                      :transpose2d t
                      :transpose2d-t nil
                      :transpose2d-t-m nil
-                     :transpose2d-t-m-n nil))
+                     :transpose2d-t-m-n nil
+                     :reduce t
+                     :reduce-t nil
+                     :reduce-t-d nil
+                     :reduce-t-d-s nil
+                     :reduce-t-d-s-f nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2241,7 +2273,12 @@
                      :transpose2d nil
                      :transpose2d-t t
                      :transpose2d-t-m t
-                     :transpose2d-t-m-n nil))
+                     :transpose2d-t-m-n nil
+                     :reduce nil
+                     :reduce-t t
+                     :reduce-t-d t
+                     :reduce-t-d-s nil
+                     :reduce-t-d-s-f nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2285,7 +2322,7 @@
   :guard (primop-value-funp op)
   :returns (yes/no booleanp)
   :short "Check if a primitive operation value applicable to expression values
-          is first-order."
+          is first-order (in the sense explained below)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2295,37 +2332,31 @@
      but not for a higher-order operation like @('reduce'),
      which may involve execution of arbitrary Remora code.")
    (xdoc::p
-    "Consider a curried primitive operation
-     that takes a Remora function value as first input
-     and some other value as second input.
-     The application to the first value is still considered ``first-order'',
-     i.e. the applicable primitive operation value satisfies this predicate,
-     even though the function value is higher-order.
-     The reason is that this particular application
-     just stores that function value
-     into the next-stage primitive operation value;
-     this does not involve executing arbitrary Remora code yet.
-     But then the application of that next-stage primitive operation value
-     to a value (not necessarily a function value)
-     is considered not ``first-order'',
-     because that application must carry out
-     the actual computation of the primitive operation,
-     which may involve running the code
-     coming from the first argument value.
-     So maybe better terms than `first-order' and `higher-order'
+    "Specifically, consider the @('reduce') Remora primitive.
+     Besides the type and ispace inputs,
+     it takes two expression inputs:
+     a function and a vector.
+     The application of @('reduce') to the function value
+     is still considered ``first-order'',
+     even though the function value is a ``higher-order'' value,
+     because the application just stores that value,
+     transitioning from @(':reduce-t-d-s') to @(':reduce-t-d-s-f').
+     But the application of @('reduce') to the vector input
+     is not considered ``first-order'',
+     even though the vector value is not necessarily ``higher-order'',
+     because this application involves
+     applying the function value to the vector values,
+     where the function value may contain arbitrary Remora expressions.
+     Thus, this application is mutually recursive
+     with the other evaluation functions in Remora.")
+   (xdoc::p
+    "So maybe better terms than `first-order' and `higher-order'
      are something like
      `not mutually recursive with Remora evaluation'
      and `mutually recursive with Remora evaluation';
      but `first-order' and `higher-order' are shorter,
      and still refer to what's involved in the application,
-     so we stick to these terms for now.")
-   (xdoc::p
-    "Currently this predicate holds for
-     all the primitive operation values applicable to expression values,
-     but this will change when we add higher-order Remora primitives,
-     such as @('reduce').
-     When we do, perhaps we should also concretize/exemplify
-     the discussion in the previous paragraph."))
+     so we stick to these terms for now."))
   (primop-value-case op
                      :int-unary t
                      :int-binary t
@@ -2364,6 +2395,8 @@
                      :reshape-t-s1-s2 t
                      :flatten-t-m-n-s t
                      :transpose2d-t-m-n t
+                     :reduce-t-d-s t
+                     :reduce-t-d-s-f nil
                      :otherwise (impossible))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp))))
 
@@ -2418,10 +2451,13 @@
                      :flatten-t-m (primop-value-flatten)
                      :flatten-t-m-n (primop-value-flatten)
                      :flatten-t-m-n-s (primop-value-flatten)
-                     :transpose2d (primop-value-transpose2d)
                      :transpose2d-t (primop-value-transpose2d)
                      :transpose2d-t-m (primop-value-transpose2d)
                      :transpose2d-t-m-n (primop-value-transpose2d)
+                     :reduce-t (primop-value-reduce)
+                     :reduce-t-d (primop-value-reduce)
+                     :reduce-t-d-s (primop-value-reduce)
+                     :reduce-t-d-s-f (primop-value-reduce)
                      :otherwise (primop-value-fix op)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2713,7 +2749,40 @@
                                 (make-type-value-array
                                  :elem op.tval
                                  :dims (list op.nval op.mval)))
-                         :dims nil)))
+                         :dims nil)
+     :reduce (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :reduce-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :reduce-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :reduce-t-d-s (make-type-value-array
+                    :elem (nest-function-type-values
+                           (list (make-type-value-array
+                                  :elem (nest-function-type-values
+                                         (list (make-type-value-array
+                                                :elem op.tval
+                                                :dims op.sval)
+                                               (make-type-value-array
+                                                :elem op.tval
+                                                :dims op.sval))
+                                         (make-type-value-array
+                                          :elem op.tval
+                                          :dims op.sval))
+                                  :dims nil)
+                                 (make-type-value-array
+                                  :elem op.tval
+                                  :dims (cons (1+ op.dval) op.sval)))
+                           (make-type-value-array
+                            :elem op.tval
+                            :dims op.sval))
+                    :dims nil)
+     :reduce-t-d-s-f (make-type-value-array
+                      :elem (nest-function-type-values
+                             (list (make-type-value-array
+                                    :elem op.tval
+                                    :dims (cons (1+ op.dval) op.sval)))
+                             (make-type-value-array
+                              :elem op.tval
+                              :dims op.sval))
+                      :dims nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///
@@ -3407,7 +3476,8 @@
          (cons "sum" (expr-value-primop (primop-value-sum)))
          (cons "reshape" (expr-value-primop (primop-value-reshape)))
          (cons "flatten" (expr-value-primop (primop-value-flatten)))
-         (cons "transpose2d" (expr-value-primop (primop-value-transpose2d))))))
+         (cons "transpose2d" (expr-value-primop (primop-value-transpose2d)))
+         (cons "reduce" (expr-value-primop (primop-value-reduce))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

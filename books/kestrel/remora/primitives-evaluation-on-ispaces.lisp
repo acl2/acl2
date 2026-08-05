@@ -222,6 +222,19 @@
                                                                 :mval op.mval
                                                                 :nval ival.val))
                      :shape (reserr nil))
+   :reduce-t (ispace-value-case
+              ival
+              :dim (expr-value-primop
+                    (make-primop-value-reduce-t-d :tval op.tval
+                                                  :dval ival.val))
+              :shape (reserr nil))
+   :reduce-t-d (ispace-value-case
+                ival
+                :dim (reserr nil)
+                :shape (expr-value-primop
+                        (make-primop-value-reduce-t-d-s :tval op.tval
+                                                        :dval op.dval
+                                                        :sval ival.val)))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp)))
 

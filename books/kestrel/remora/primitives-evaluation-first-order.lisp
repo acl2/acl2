@@ -2289,8 +2289,14 @@
      :reshape-t-s1-s2 (prim-reshape op.tval op.s1val op.s2val arg)
      :flatten-t-m-n-s (prim-flatten op.tval op.mval op.nval op.sval arg)
      :transpose2d-t-m-n (prim-transpose2d op.tval op.mval op.nval arg)
+     :reduce-t-d-s (expr-value-primop
+                    (make-primop-value-reduce-t-d-s-f :tval op.tval
+                                                      :dval op.dval
+                                                      :sval op.sval
+                                                      :fval arg))
      :otherwise (prog2$ (impossible) (reserr nil))))
-  :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
+  :guard-hints (("Goal" :in-theory (enable primop-value-funp
+                                           primop-value-fun-fo-p)))
 
   ///
 

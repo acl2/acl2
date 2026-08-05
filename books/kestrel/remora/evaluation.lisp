@@ -2306,7 +2306,10 @@
     (b* (((when (zp limit)) (reserr :limit))
          ((when (primop-value-fun-fo-p op))
           (eval-primop-fun-fo op arg)))
-      (reserr :todo))
+      (primop-value-case
+       op
+       :reduce-t-d-s-f (reserr :todo)
+       :otherwise (reserr (impossible))))
     :measure (nfix limit))
 
   :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove eventually
@@ -2542,7 +2545,9 @@
                        true-list-listp-when-expr-value-list-listp
                        acl2::nat-listp-of-car-when-nat-list-listp
                        expr-value-wfp-of-expr-value-with-nonempty-dims
-                       list-prefix-join-upper-bound)
+                       list-prefix-join-upper-bound
+                       primop-value-funp
+                       primop-value-fun-fo-p)
                       (len-of-eval-expr-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
