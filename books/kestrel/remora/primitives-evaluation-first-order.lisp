@@ -2111,20 +2111,21 @@
     :hyp (and (natp m)
               (natp n)
               (expr-value-wfp val1))
-    :hints (("Goal" :in-theory (enable car/cdr-when-equal-cons
-                                       nat-list-product
-                                       nfix
-                                       fix
-                                       len-of-car-of-list-split
-                                       len-of-append-all-when-all-of-len-p-of-len-car
-                                       all-of-len-p-of-transpose-list-list
-                                       len-of-car-of-transpose-list-list
-                                       consp-of-car-list-split
-                                       list-split-of-repeat
-                                       transpose-list-list-of-repeat-of-repeat
-                                       append-all-of-repeat-of-repeat)
-                    :expand ((nat-list-product (dims-of-expr-value val1))
-                             (member-equal 0 (dims-of-expr-value val1)))))))
+    :hints (("Goal"
+             :in-theory (enable car/cdr-when-equal-cons
+                                nat-list-product
+                                nfix
+                                fix
+                                len-of-car-of-list-split
+                                len-of-append-all-when-all-of-len-p-of-len-car
+                                all-of-len-p-of-transpose-list-list
+                                len-of-car-of-transpose-list-list
+                                consp-of-car-list-split
+                                list-split-of-repeat
+                                transpose-list-list-of-repeat-of-repeat
+                                append-all-of-repeat-of-repeat)
+             :expand ((nat-list-product (dims-of-expr-value val1))
+                      (member-equal 0 (dims-of-expr-value val1)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
