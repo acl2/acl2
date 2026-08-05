@@ -14,6 +14,9 @@
 
 (include-book "std/basic/ifix" :dir :system)
 
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -48,7 +51,13 @@
                     nil))
     :enable (dims-of-expr-value
              expr-value-wfp)
-    :expand ((check-dims-of-expr-value eval))))
+    :expand ((check-dims-of-expr-value eval)))
+
+  (defruled expr-value-wfp-when-base
+    (implies (expr-value-case val :base)
+             (expr-value-wfp val))
+    :enable (expr-value-wfp
+             check-dims-of-expr-value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -77,7 +86,47 @@
              expr-value-first-fun
              not-reserrp-when-expr-valuep
              type-of-primop-value-fun
-             primop-value-funp)))
+             primop-value-funp))
+
+  (defruled fun-value-param-dims-of-float-binary
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :float-binary))
+             (equal (fun-value-param-dims funval)
+                    (list nil nil)))
+    :enable (fun-value-param-dims
+             expr-value-first-fun
+             not-reserrp-when-expr-valuep
+             type-of-primop-value-fun
+             primop-value-funp))
+
+  (defruled fun-value-param-dims-of-float-binary-x
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :float-binary-x))
+             (equal (fun-value-param-dims funval)
+                    (list nil)))
+    :enable (fun-value-param-dims
+             expr-value-first-fun
+             not-reserrp-when-expr-valuep
+             type-of-primop-value-fun
+             primop-value-funp))
+
+  (defruled fun-value-param-dims-of-reshape
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :reshape-t-s1-s2))
+             (equal (fun-value-param-dims funval)
+                    (list (primop-value-reshape-t-s1-s2->s1val opval))))
+    :enable (fun-value-param-dims
+             expr-value-first-fun
+             not-reserrp-when-expr-valuep
+             type-of-primop-value-fun
+             primop-value-funp
+             nest-function-type-values
+             arrow-type-value-inputs
+             dims-of-type-value-list
+             dims-of-type-value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -165,7 +214,295 @@
              primop-value-fun-fo-p
              prim-int-add
              check-expr-value-int
-             not-reserrp-when-int-valuep)))
+             not-reserrp-when-int-valuep))
+
+  (defruled eval-app-cell-of-float-binary
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :float-binary)
+                  (integerp limit)
+                  (>= limit 2))
+             (equal (eval-app-cell funval argval limit)
+                    (expr-value-primop
+                     (make-primop-value-float-binary-x
+                      :op (primop-value-float-binary->op opval)
+                      :xval argval))))
+    :expand (eval-app-cell funval argval limit)
+    :enable (eval-primop-fun
+             eval-primop-fun-fo
+             primop-value-funp
+             primop-value-fun-fo-p))
+
+  (defruled eval-app-cell-of-float-binary-x-add
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :float-binary-x)
+                  (equal op (primop-value-float-binary-x->op opval))
+                  (float-binary-primop-case op :add)
+                  (equal xval (primop-value-float-binary-x->xval opval))
+                  (expr-value-case xval :base)
+                  (expr-value-case argval :base)
+                  (equal baseval1 (expr-value-base->val xval))
+                  (equal baseval2 (expr-value-base->val argval))
+                  (base-value-case baseval1 :float)
+                  (base-value-case baseval2 :float)
+                  (equal floatval1 (base-value-float->val baseval1))
+                  (equal floatval2 (base-value-float->val baseval2))
+                  (float-value-case floatval1 :ratio)
+                  (float-value-case floatval2 :ratio)
+                  (integerp limit)
+                  (>= limit 2))
+             (equal (eval-app-cell funval argval limit)
+                    (expr-value-base
+                     (base-value-float
+                      (float-value-ratio (+ (float-value-ratio->ratio floatval1)
+                                            (float-value-ratio->ratio floatval2)))))))
+    :expand (eval-app-cell funval argval limit)
+    :enable (eval-primop-fun
+             eval-primop-fun-fo
+             primop-value-funp
+             primop-value-fun-fo-p
+             prim-float-add
+             check-expr-value-float
+             not-reserrp-when-float-valuep))
+
+  (defruled eval-app-cell-of-float-binary-x-sub
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :float-binary-x)
+                  (equal op (primop-value-float-binary-x->op opval))
+                  (float-binary-primop-case op :sub)
+                  (equal xval (primop-value-float-binary-x->xval opval))
+                  (expr-value-case xval :base)
+                  (expr-value-case argval :base)
+                  (equal baseval1 (expr-value-base->val xval))
+                  (equal baseval2 (expr-value-base->val argval))
+                  (base-value-case baseval1 :float)
+                  (base-value-case baseval2 :float)
+                  (equal floatval1 (base-value-float->val baseval1))
+                  (equal floatval2 (base-value-float->val baseval2))
+                  (float-value-case floatval1 :ratio)
+                  (float-value-case floatval2 :ratio)
+                  (integerp limit)
+                  (>= limit 2))
+             (equal (eval-app-cell funval argval limit)
+                    (expr-value-base
+                     (base-value-float
+                      (float-value-ratio (- (float-value-ratio->ratio floatval1)
+                                            (float-value-ratio->ratio floatval2)))))))
+    :expand (eval-app-cell funval argval limit)
+    :enable (eval-primop-fun
+             eval-primop-fun-fo
+             primop-value-funp
+             primop-value-fun-fo-p
+             prim-float-sub
+             check-expr-value-float
+             not-reserrp-when-float-valuep))
+
+  (defruled eval-app-cell-of-float-binary-x-mul
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :float-binary-x)
+                  (equal op (primop-value-float-binary-x->op opval))
+                  (float-binary-primop-case op :mul)
+                  (equal xval (primop-value-float-binary-x->xval opval))
+                  (expr-value-case xval :base)
+                  (expr-value-case argval :base)
+                  (equal baseval1 (expr-value-base->val xval))
+                  (equal baseval2 (expr-value-base->val argval))
+                  (base-value-case baseval1 :float)
+                  (base-value-case baseval2 :float)
+                  (equal floatval1 (base-value-float->val baseval1))
+                  (equal floatval2 (base-value-float->val baseval2))
+                  (float-value-case floatval1 :ratio)
+                  (float-value-case floatval2 :ratio)
+                  (equal rat1 (float-value-ratio->ratio floatval1))
+                  (equal rat2 (float-value-ratio->ratio floatval2))
+                  (integerp limit)
+                  (>= limit 2))
+             (equal (eval-app-cell funval argval limit)
+                    (expr-value-base
+                     (base-value-float
+                      (if (or (and (equal rat1 0) (< rat2 0))
+                              (and (< rat1 0) (equal rat2 0)))
+                          (float-value-neg0)
+                        (float-value-ratio (* rat1 rat2)))))))
+    :expand (eval-app-cell funval argval limit)
+    :enable (eval-primop-fun
+             eval-primop-fun-fo
+             primop-value-funp
+             primop-value-fun-fo-p
+             prim-float-mul
+             check-expr-value-float
+             not-reserrp-when-float-valuep
+             rfix
+             xor
+             fix))
+
+  (defruled eval-app-cell-of-float-binary-x-div
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :float-binary-x)
+                  (equal op (primop-value-float-binary-x->op opval))
+                  (float-binary-primop-case op :div)
+                  (equal xval (primop-value-float-binary-x->xval opval))
+                  (expr-value-case xval :base)
+                  (expr-value-case argval :base)
+                  (equal baseval1 (expr-value-base->val xval))
+                  (equal baseval2 (expr-value-base->val argval))
+                  (base-value-case baseval1 :float)
+                  (base-value-case baseval2 :float)
+                  (equal floatval1 (base-value-float->val baseval1))
+                  (equal floatval2 (base-value-float->val baseval2))
+                  (float-value-case floatval1 :ratio)
+                  (float-value-case floatval2 :ratio)
+                  (equal rat1 (float-value-ratio->ratio floatval1))
+                  (equal rat2 (float-value-ratio->ratio floatval2))
+                  (not (equal rat2 0))
+                  (integerp limit)
+                  (>= limit 2))
+             (equal (eval-app-cell funval argval limit)
+                    (expr-value-base
+                     (base-value-float
+                      (if (and (equal rat1 0) (< rat2 0))
+                          (float-value-neg0)
+                        (float-value-ratio (/ rat1 rat2)))))))
+    :expand (eval-app-cell funval argval limit)
+    :enable (eval-primop-fun
+             eval-primop-fun-fo
+             primop-value-funp
+             primop-value-fun-fo-p
+             prim-float-div
+             check-expr-value-float
+             not-reserrp-when-float-valuep
+             xor
+             rfix))
+
+  (defruled eval-app-cell-of-float-binary-x-expt
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :float-binary-x)
+                  (equal op (primop-value-float-binary-x->op opval))
+                  (float-binary-primop-case op :expt)
+                  (equal xval (primop-value-float-binary-x->xval opval))
+                  (expr-value-case xval :base)
+                  (expr-value-case argval :base)
+                  (equal baseval1 (expr-value-base->val xval))
+                  (equal baseval2 (expr-value-base->val argval))
+                  (base-value-case baseval1 :float)
+                  (base-value-case baseval2 :float)
+                  (equal floatval1 (base-value-float->val baseval1))
+                  (equal floatval2 (base-value-float->val baseval2))
+                  (float-value-case floatval1 :ratio)
+                  (float-value-case floatval2 :ratio)
+                  (equal rat1 (float-value-ratio->ratio floatval1))
+                  (equal rat2 (float-value-ratio->ratio floatval2))
+                  (integerp rat2)
+                  (integerp limit)
+                  (>= limit 2))
+             (equal (eval-app-cell funval argval limit)
+                    (expr-value-base
+                     (base-value-float
+                      (if (and (equal rat1 0) (< rat2 0))
+                          (float-value-posinf)
+                        (float-value-ratio (expt rat1 rat2)))))))
+    :expand (eval-app-cell funval argval limit)
+    :enable (eval-primop-fun
+             eval-primop-fun-fo
+             primop-value-funp
+             primop-value-fun-fo-p
+             prim-float-expt
+             check-expr-value-float
+             not-reserrp-when-float-valuep
+             rfix))
+
+  (defruled eval-app-cell-of-float-binary-x-max
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :float-binary-x)
+                  (equal op (primop-value-float-binary-x->op opval))
+                  (float-binary-primop-case op :max)
+                  (equal xval (primop-value-float-binary-x->xval opval))
+                  (expr-value-case xval :base)
+                  (expr-value-case argval :base)
+                  (equal baseval1 (expr-value-base->val xval))
+                  (equal baseval2 (expr-value-base->val argval))
+                  (base-value-case baseval1 :float)
+                  (base-value-case baseval2 :float)
+                  (equal floatval1 (base-value-float->val baseval1))
+                  (equal floatval2 (base-value-float->val baseval2))
+                  (float-value-case floatval1 :ratio)
+                  (float-value-case floatval2 :ratio)
+                  (integerp limit)
+                  (>= limit 2))
+             (equal (eval-app-cell funval argval limit)
+                    (expr-value-base
+                     (base-value-float
+                      (float-value-ratio (max (float-value-ratio->ratio floatval1)
+                                              (float-value-ratio->ratio floatval2)))))))
+    :expand (eval-app-cell funval argval limit)
+    :enable (eval-primop-fun
+             eval-primop-fun-fo
+             primop-value-funp
+             primop-value-fun-fo-p
+             prim-float-max
+             check-expr-value-float
+             not-reserrp-when-float-valuep
+             max
+             rfix))
+
+  (defruled eval-app-cell-of-float-binary-x-min
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :float-binary-x)
+                  (equal op (primop-value-float-binary-x->op opval))
+                  (float-binary-primop-case op :min)
+                  (equal xval (primop-value-float-binary-x->xval opval))
+                  (expr-value-case xval :base)
+                  (expr-value-case argval :base)
+                  (equal baseval1 (expr-value-base->val xval))
+                  (equal baseval2 (expr-value-base->val argval))
+                  (base-value-case baseval1 :float)
+                  (base-value-case baseval2 :float)
+                  (equal floatval1 (base-value-float->val baseval1))
+                  (equal floatval2 (base-value-float->val baseval2))
+                  (float-value-case floatval1 :ratio)
+                  (float-value-case floatval2 :ratio)
+                  (integerp limit)
+                  (>= limit 2))
+             (equal (eval-app-cell funval argval limit)
+                    (expr-value-base
+                     (base-value-float
+                      (float-value-ratio (min (float-value-ratio->ratio floatval1)
+                                              (float-value-ratio->ratio floatval2)))))))
+    :expand (eval-app-cell funval argval limit)
+    :enable (eval-primop-fun
+             eval-primop-fun-fo
+             primop-value-funp
+             primop-value-fun-fo-p
+             prim-float-min
+             check-expr-value-float
+             not-reserrp-when-float-valuep
+             min
+             rfix))
+
+  (defruled eval-app-cell-of-reshape
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :reshape-t-s1-s2)
+                  (integerp limit)
+                  (>= limit 2))
+             (equal (eval-app-cell funval argval limit)
+                    (prim-reshape
+                     (primop-value-reshape-t-s1-s2->tval opval)
+                     (primop-value-reshape-t-s1-s2->s1val opval)
+                     (primop-value-reshape-t-s1-s2->s2val opval)
+                     argval)))
+    :expand (eval-app-cell funval argval limit)
+    :enable (eval-primop-fun
+             eval-primop-fun-fo
+             primop-value-funp
+             primop-value-fun-fo-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -241,7 +578,396 @@
              expr-value-with-nonempty-dims)
     :expand ((eval-app funval argvals limit)
              (:free (fv lim) (eval-app fv (cdr argvals) lim))
-             (:free (fv lim) (eval-app fv (cddr argvals) lim)))))
+             (:free (fv lim) (eval-app fv (cddr argvals) lim))))
+
+  (defruled eval-app-of-float-add-no-lifting
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :float-binary)
+                  (equal op (primop-value-float-binary->op opval))
+                  (float-binary-primop-case op :add)
+                  (expr-value-list-wfp argvals)
+                  (consp argvals)
+                  (consp (cdr argvals))
+                  (endp (cddr argvals))
+                  (equal argval1 (first argvals))
+                  (equal argval2 (second argvals))
+                  (expr-value-case argval1 :base)
+                  (expr-value-case argval2 :base)
+                  (equal baseval1 (expr-value-base->val argval1))
+                  (equal baseval2 (expr-value-base->val argval2))
+                  (base-value-case baseval1 :float)
+                  (base-value-case baseval2 :float)
+                  (equal floatval1 (base-value-float->val baseval1))
+                  (equal floatval2 (base-value-float->val baseval2))
+                  (float-value-case floatval1 :ratio)
+                  (float-value-case floatval2 :ratio)
+                  (integerp limit)
+                  (>= limit 5))
+             (equal (eval-app funval argvals limit)
+                    (expr-value-base
+                     (base-value-float
+                      (float-value-ratio (+ (float-value-ratio->ratio floatval1)
+                                            (float-value-ratio->ratio floatval2)))))))
+    :enable (fun-value-param-dims-of-float-binary
+             fun-value-param-dims-of-float-binary-x
+             len
+             dims-of-expr-value-list
+             dims-of-expr-value-when-base
+             dims-of-expr-value-when-primop
+             lift-expr-value-to-frame-nil-nil
+             not-reserrp-when-expr-value-listp
+             not-reserrp-when-expr-valuep
+             eval-app-list-when-atom
+             eval-app-list-when-consp
+             eval-app-cell-of-float-binary
+             eval-app-cell-of-float-binary-x-add
+             list-repeatp
+             expr-value-with-nonempty-dims)
+    :expand ((eval-app funval argvals limit)
+             (:free (fv lim) (eval-app fv (cdr argvals) lim))
+             (:free (fv lim) (eval-app fv (cddr argvals) lim))))
+
+  (defruled eval-app-of-float-sub-no-lifting
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :float-binary)
+                  (equal op (primop-value-float-binary->op opval))
+                  (float-binary-primop-case op :sub)
+                  (expr-value-list-wfp argvals)
+                  (consp argvals)
+                  (consp (cdr argvals))
+                  (endp (cddr argvals))
+                  (equal argval1 (first argvals))
+                  (equal argval2 (second argvals))
+                  (expr-value-case argval1 :base)
+                  (expr-value-case argval2 :base)
+                  (equal baseval1 (expr-value-base->val argval1))
+                  (equal baseval2 (expr-value-base->val argval2))
+                  (base-value-case baseval1 :float)
+                  (base-value-case baseval2 :float)
+                  (equal floatval1 (base-value-float->val baseval1))
+                  (equal floatval2 (base-value-float->val baseval2))
+                  (float-value-case floatval1 :ratio)
+                  (float-value-case floatval2 :ratio)
+                  (integerp limit)
+                  (>= limit 5))
+             (equal (eval-app funval argvals limit)
+                    (expr-value-base
+                     (base-value-float
+                      (float-value-ratio (- (float-value-ratio->ratio floatval1)
+                                            (float-value-ratio->ratio floatval2)))))))
+    :enable (fun-value-param-dims-of-float-binary
+             fun-value-param-dims-of-float-binary-x
+             len
+             dims-of-expr-value-list
+             dims-of-expr-value-when-base
+             dims-of-expr-value-when-primop
+             lift-expr-value-to-frame-nil-nil
+             not-reserrp-when-expr-value-listp
+             not-reserrp-when-expr-valuep
+             eval-app-list-when-atom
+             eval-app-list-when-consp
+             eval-app-cell-of-float-binary
+             eval-app-cell-of-float-binary-x-sub
+             list-repeatp
+             expr-value-with-nonempty-dims)
+    :expand ((eval-app funval argvals limit)
+             (:free (fv lim) (eval-app fv (cdr argvals) lim))
+             (:free (fv lim) (eval-app fv (cddr argvals) lim))))
+
+  (defruled eval-app-of-float-mul-no-lifting
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :float-binary)
+                  (equal op (primop-value-float-binary->op opval))
+                  (float-binary-primop-case op :mul)
+                  (expr-value-list-wfp argvals)
+                  (consp argvals)
+                  (consp (cdr argvals))
+                  (endp (cddr argvals))
+                  (equal argval1 (first argvals))
+                  (equal argval2 (second argvals))
+                  (expr-value-case argval1 :base)
+                  (expr-value-case argval2 :base)
+                  (equal baseval1 (expr-value-base->val argval1))
+                  (equal baseval2 (expr-value-base->val argval2))
+                  (base-value-case baseval1 :float)
+                  (base-value-case baseval2 :float)
+                  (equal floatval1 (base-value-float->val baseval1))
+                  (equal floatval2 (base-value-float->val baseval2))
+                  (float-value-case floatval1 :ratio)
+                  (float-value-case floatval2 :ratio)
+                  (equal rat1 (float-value-ratio->ratio floatval1))
+                  (equal rat2 (float-value-ratio->ratio floatval2))
+                  (integerp limit)
+                  (>= limit 5))
+             (equal (eval-app funval argvals limit)
+                    (expr-value-base
+                     (base-value-float
+                      (if (or (and (equal rat1 0) (< rat2 0))
+                              (and (< rat1 0) (equal rat2 0)))
+                          (float-value-neg0)
+                        (float-value-ratio (* rat1 rat2)))))))
+    :enable (fun-value-param-dims-of-float-binary
+             fun-value-param-dims-of-float-binary-x
+             len
+             dims-of-expr-value-list
+             dims-of-expr-value-when-base
+             dims-of-expr-value-when-primop
+             lift-expr-value-to-frame-nil-nil
+             not-reserrp-when-expr-value-listp
+             not-reserrp-when-expr-valuep
+             eval-app-list-when-atom
+             eval-app-list-when-consp
+             eval-app-cell-of-float-binary
+             eval-app-cell-of-float-binary-x-mul
+             list-repeatp
+             expr-value-with-nonempty-dims)
+    :expand ((eval-app funval argvals limit)
+             (:free (fv lim) (eval-app fv (cdr argvals) lim))
+             (:free (fv lim) (eval-app fv (cddr argvals) lim))))
+
+  (defruled eval-app-of-float-div-no-lifting
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :float-binary)
+                  (equal op (primop-value-float-binary->op opval))
+                  (float-binary-primop-case op :div)
+                  (expr-value-list-wfp argvals)
+                  (consp argvals)
+                  (consp (cdr argvals))
+                  (endp (cddr argvals))
+                  (equal argval1 (first argvals))
+                  (equal argval2 (second argvals))
+                  (expr-value-case argval1 :base)
+                  (expr-value-case argval2 :base)
+                  (equal baseval1 (expr-value-base->val argval1))
+                  (equal baseval2 (expr-value-base->val argval2))
+                  (base-value-case baseval1 :float)
+                  (base-value-case baseval2 :float)
+                  (equal floatval1 (base-value-float->val baseval1))
+                  (equal floatval2 (base-value-float->val baseval2))
+                  (float-value-case floatval1 :ratio)
+                  (float-value-case floatval2 :ratio)
+                  (equal rat1 (float-value-ratio->ratio floatval1))
+                  (equal rat2 (float-value-ratio->ratio floatval2))
+                  (not (equal rat2 0))
+                  (integerp limit)
+                  (>= limit 5))
+             (equal (eval-app funval argvals limit)
+                    (expr-value-base
+                     (base-value-float
+                      (if (and (equal rat1 0) (< rat2 0))
+                          (float-value-neg0)
+                        (float-value-ratio (/ rat1 rat2)))))))
+    :enable (fun-value-param-dims-of-float-binary
+             fun-value-param-dims-of-float-binary-x
+             len
+             dims-of-expr-value-list
+             dims-of-expr-value-when-base
+             dims-of-expr-value-when-primop
+             lift-expr-value-to-frame-nil-nil
+             not-reserrp-when-expr-value-listp
+             not-reserrp-when-expr-valuep
+             eval-app-list-when-atom
+             eval-app-list-when-consp
+             eval-app-cell-of-float-binary
+             eval-app-cell-of-float-binary-x-div
+             list-repeatp
+             expr-value-with-nonempty-dims)
+    :expand ((eval-app funval argvals limit)
+             (:free (fv lim) (eval-app fv (cdr argvals) lim))
+             (:free (fv lim) (eval-app fv (cddr argvals) lim))))
+
+  (defruled eval-app-of-float-expt-no-lifting
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :float-binary)
+                  (equal op (primop-value-float-binary->op opval))
+                  (float-binary-primop-case op :expt)
+                  (expr-value-list-wfp argvals)
+                  (consp argvals)
+                  (consp (cdr argvals))
+                  (endp (cddr argvals))
+                  (equal argval1 (first argvals))
+                  (equal argval2 (second argvals))
+                  (expr-value-case argval1 :base)
+                  (expr-value-case argval2 :base)
+                  (equal baseval1 (expr-value-base->val argval1))
+                  (equal baseval2 (expr-value-base->val argval2))
+                  (base-value-case baseval1 :float)
+                  (base-value-case baseval2 :float)
+                  (equal floatval1 (base-value-float->val baseval1))
+                  (equal floatval2 (base-value-float->val baseval2))
+                  (float-value-case floatval1 :ratio)
+                  (float-value-case floatval2 :ratio)
+                  (equal rat1 (float-value-ratio->ratio floatval1))
+                  (equal rat2 (float-value-ratio->ratio floatval2))
+                  (integerp rat2)
+                  (integerp limit)
+                  (>= limit 5))
+             (equal (eval-app funval argvals limit)
+                    (expr-value-base
+                     (base-value-float
+                      (if (and (equal rat1 0) (< rat2 0))
+                          (float-value-posinf)
+                        (float-value-ratio (expt rat1 rat2)))))))
+    :enable (fun-value-param-dims-of-float-binary
+             fun-value-param-dims-of-float-binary-x
+             len
+             dims-of-expr-value-list
+             dims-of-expr-value-when-base
+             dims-of-expr-value-when-primop
+             lift-expr-value-to-frame-nil-nil
+             not-reserrp-when-expr-value-listp
+             not-reserrp-when-expr-valuep
+             eval-app-list-when-atom
+             eval-app-list-when-consp
+             eval-app-cell-of-float-binary
+             eval-app-cell-of-float-binary-x-expt
+             list-repeatp
+             expr-value-with-nonempty-dims)
+    :expand ((eval-app funval argvals limit)
+             (:free (fv lim) (eval-app fv (cdr argvals) lim))
+             (:free (fv lim) (eval-app fv (cddr argvals) lim))))
+
+  (defruled eval-app-of-float-max-no-lifting
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :float-binary)
+                  (equal op (primop-value-float-binary->op opval))
+                  (float-binary-primop-case op :max)
+                  (expr-value-list-wfp argvals)
+                  (consp argvals)
+                  (consp (cdr argvals))
+                  (endp (cddr argvals))
+                  (equal argval1 (first argvals))
+                  (equal argval2 (second argvals))
+                  (expr-value-case argval1 :base)
+                  (expr-value-case argval2 :base)
+                  (equal baseval1 (expr-value-base->val argval1))
+                  (equal baseval2 (expr-value-base->val argval2))
+                  (base-value-case baseval1 :float)
+                  (base-value-case baseval2 :float)
+                  (equal floatval1 (base-value-float->val baseval1))
+                  (equal floatval2 (base-value-float->val baseval2))
+                  (float-value-case floatval1 :ratio)
+                  (float-value-case floatval2 :ratio)
+                  (integerp limit)
+                  (>= limit 5))
+             (equal (eval-app funval argvals limit)
+                    (expr-value-base
+                     (base-value-float
+                      (float-value-ratio (max (float-value-ratio->ratio floatval1)
+                                              (float-value-ratio->ratio floatval2)))))))
+    :enable (fun-value-param-dims-of-float-binary
+             fun-value-param-dims-of-float-binary-x
+             len
+             dims-of-expr-value-list
+             dims-of-expr-value-when-base
+             dims-of-expr-value-when-primop
+             lift-expr-value-to-frame-nil-nil
+             not-reserrp-when-expr-value-listp
+             not-reserrp-when-expr-valuep
+             eval-app-list-when-atom
+             eval-app-list-when-consp
+             eval-app-cell-of-float-binary
+             eval-app-cell-of-float-binary-x-max
+             list-repeatp
+             expr-value-with-nonempty-dims)
+    :expand ((eval-app funval argvals limit)
+             (:free (fv lim) (eval-app fv (cdr argvals) lim))
+             (:free (fv lim) (eval-app fv (cddr argvals) lim))))
+
+  (defruled eval-app-of-float-min-no-lifting
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :float-binary)
+                  (equal op (primop-value-float-binary->op opval))
+                  (float-binary-primop-case op :min)
+                  (expr-value-list-wfp argvals)
+                  (consp argvals)
+                  (consp (cdr argvals))
+                  (endp (cddr argvals))
+                  (equal argval1 (first argvals))
+                  (equal argval2 (second argvals))
+                  (expr-value-case argval1 :base)
+                  (expr-value-case argval2 :base)
+                  (equal baseval1 (expr-value-base->val argval1))
+                  (equal baseval2 (expr-value-base->val argval2))
+                  (base-value-case baseval1 :float)
+                  (base-value-case baseval2 :float)
+                  (equal floatval1 (base-value-float->val baseval1))
+                  (equal floatval2 (base-value-float->val baseval2))
+                  (float-value-case floatval1 :ratio)
+                  (float-value-case floatval2 :ratio)
+                  (integerp limit)
+                  (>= limit 5))
+             (equal (eval-app funval argvals limit)
+                    (expr-value-base
+                     (base-value-float
+                      (float-value-ratio (min (float-value-ratio->ratio floatval1)
+                                              (float-value-ratio->ratio floatval2)))))))
+    :enable (fun-value-param-dims-of-float-binary
+             fun-value-param-dims-of-float-binary-x
+             len
+             dims-of-expr-value-list
+             dims-of-expr-value-when-base
+             dims-of-expr-value-when-primop
+             lift-expr-value-to-frame-nil-nil
+             not-reserrp-when-expr-value-listp
+             not-reserrp-when-expr-valuep
+             eval-app-list-when-atom
+             eval-app-list-when-consp
+             eval-app-cell-of-float-binary
+             eval-app-cell-of-float-binary-x-min
+             list-repeatp
+             expr-value-with-nonempty-dims)
+    :expand ((eval-app funval argvals limit)
+             (:free (fv lim) (eval-app fv (cdr argvals) lim))
+             (:free (fv lim) (eval-app fv (cddr argvals) lim))))
+
+  (defruled check-list-suffix-same
+    (equal (check-list-suffix x x)
+           (mv t nil))
+    :enable check-list-suffix)
+
+  (defruled eval-app-of-reshape-no-lifting
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :reshape-t-s1-s2)
+                  (equal tval (primop-value-reshape-t-s1-s2->tval opval))
+                  (equal s1 (primop-value-reshape-t-s1-s2->s1val opval))
+                  (equal s2 (primop-value-reshape-t-s1-s2->s2val opval))
+                  (expr-value-list-wfp argvals)
+                  (consp argvals)
+                  (endp (cdr argvals))
+                  (equal argval1 (first argvals))
+                  (equal (dims-of-expr-value argval1) s1)
+                  (equal val (prim-reshape tval s1 s2 argval1))
+                  (expr-valuep val)
+                  (expr-value-wfp val)
+                  (integerp limit)
+                  (>= limit 4))
+             (equal (eval-app funval argvals limit)
+                    val))
+    :enable (fun-value-param-dims-of-reshape
+             check-list-suffix-same
+             len
+             dims-of-expr-value-list
+             dims-of-expr-value-when-primop
+             lift-expr-value-to-frame-nil-nil
+             not-reserrp-when-expr-value-listp
+             not-reserrp-when-expr-valuep
+             acl2::not-reserrp-when-nat-list-listp
+             eval-app-list-when-atom
+             eval-app-list-when-consp
+             eval-app-cell-of-reshape
+             list-repeatp
+             expr-value-with-nonempty-dims)
+    :expand ((eval-app funval argvals limit)
+             (:free (fv lim) (eval-app fv (cdr argvals) lim)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -268,6 +994,21 @@
                     (eval-app funval argvals (1- limit))))
     :enable (eval-expr
              not-reserrp-when-expr-valuep
+             not-reserrp-when-expr-value-listp))
+
+  (defruled eval-expr-when-bracket
+    (implies (and (expr-case expr :bracket)
+                  (not (zp limit))
+                  (equal vals
+                         (eval-expr-list (expr-bracket->exprs expr)
+                                         denv
+                                         (1- limit)))
+                  (expr-value-listp vals)
+                  (consp vals)
+                  (list-repeatp (dims-of-expr-value-list vals)))
+             (equal (eval-expr expr denv limit)
+                    (expr-value-vector vals)))
+    :enable (eval-expr
              not-reserrp-when-expr-value-listp))
 
   (defruled eval-expr-list-when-atom
@@ -298,8 +1039,17 @@
   (def-ruleset eval-rules
     '(eval-expr-when-var
       eval-expr-when-appn
+      eval-expr-when-bracket
       eval-expr-list-when-atom
       eval-expr-list-when-consp
       eval-app-of-int-add-no-lifting
+      eval-app-of-float-add-no-lifting
+      eval-app-of-float-sub-no-lifting
+      eval-app-of-float-mul-no-lifting
+      eval-app-of-float-div-no-lifting
+      eval-app-of-float-expt-no-lifting
+      eval-app-of-float-max-no-lifting
+      eval-app-of-float-min-no-lifting
+      eval-app-of-reshape-no-lifting
       not-reserrp-when-expr-valuep
       acl2::ifix-when-integerp)))
