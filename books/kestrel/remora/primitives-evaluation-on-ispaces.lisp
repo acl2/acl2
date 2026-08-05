@@ -278,6 +278,5 @@
   (defret expr-value-wfp-of-eval-primop-ifun
     (implies (not (reserrp val))
              (expr-value-wfp val))
-    :hints (("Goal" :in-theory (enable expr-value-wfp
-                                       check-dims-of-expr-value
+    :hints (("Goal" :in-theory (enable primop-value-wfp
                                        check-dims-of-primop-value)))))
