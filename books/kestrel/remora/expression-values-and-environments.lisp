@@ -648,7 +648,8 @@
 
 (define check-expr-value-list-int ((vals expr-value-listp))
   :returns (ivals integer-list-resultp)
-  :short "Check if an expression value is an integer list value, returning it if so"
+  :short "Check if a list of expression values is
+          a list of integer values, returning them if so."
   (b* (((when (endp vals)) nil)
        ((ok (int-value ival)) (check-expr-value-int (car vals)))
        ((ok rest) (check-expr-value-list-int (cdr vals))))
