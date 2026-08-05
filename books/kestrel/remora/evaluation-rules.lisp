@@ -131,8 +131,7 @@
                       :op (primop-value-int-binary->op opval)
                       :xval argval))))
     :expand (eval-app-cell funval argval limit)
-    :enable (eval-app-cell
-             eval-primop-fun
+    :enable (eval-primop-fun
              eval-primop-fun-fo
              primop-value-funp
              primop-value-fun-fo-p))
