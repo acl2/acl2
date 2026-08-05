@@ -66,6 +66,13 @@
   :ok int-value
   :pred int-value-resultp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection int-value-list ((x integer-listp))
+  :returns (ivals int-value-listp)
+  :short "Lift @(tsee int-value) to lists."
+  (int-value x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum float-value

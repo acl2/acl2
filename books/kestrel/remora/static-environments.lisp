@@ -223,6 +223,10 @@
                       (tpi ("$m" "$n")
                            (t-> ((t[] "&t" (shape++ "$m" "$n")))
                                 (t[] "&t" (shape++ "$n" "$m")))))
+             (shp)))
+       (iota/static-type
+        (t[] (tpi ("$s")
+                  (t[] :int "@s"))
              (shp))))
     (omap::from-alist
      (list (cons "+" int-binop-type)
@@ -283,7 +287,8 @@
            (cons "index2d" index2d-type)
            (cons "sum" sum-type)
            (cons "reshape" reshape-type)
-           (cons "transpose2d" transpose2d-type)))))
+           (cons "transpose2d" transpose2d-type)
+           (cons "iota/static" iota/static-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
