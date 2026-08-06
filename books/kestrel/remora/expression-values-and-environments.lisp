@@ -1065,7 +1065,7 @@
                  (primop-value-index2d-t-m-n-x tval mval nval xval))
                 (expr-value-wfp xval))
          (equal (primop-value-wfp
-                 (primop-value-reduce-t-d-s-f tval nval sval fval))
+                 (primop-value-reduce-t-d-s-f tval dval sval fval))
                 (expr-value-wfp fval)))
     :enable (primop-value-wfp expr-value-wfp)
     :expand ((check-dims-of-primop-value (primop-value-int-binary-x op xval))
@@ -1081,7 +1081,7 @@
              (check-dims-of-primop-value
               (primop-value-index2d-t-m-n-x tval mval nval xval))
              (check-dims-of-primop-value
-              (primop-value-reduce-t-d-s-f tval nval sval fval)))))
+              (primop-value-reduce-t-d-s-f tval dval sval fval)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
