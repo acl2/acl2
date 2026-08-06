@@ -4674,14 +4674,11 @@ and @(tsee include-book)"
  an ACL2 executable built with host Lisp Allegro CL, the use of &ldquo;@('make
  regression')&rdquo; resulted in four books (in the @(see community-books))
  that failed to certify.  We discuss those failures in the
- &ldquo;<b>Details</b>&rdquo; section below.  These failures may suggest that
- Allegro CL, at least for its Version 10.1, does not correctly support the
- Common Lisp language, or at least there is problematic ACL2 code specific to
- Allegro CL.  In practice we don't expect a lot of problems when using ACL2
- built on Allegro CL.  However, since Allegro CL is relatively slow compared to
- several other Common Lisp implementations that can host ACL2 &mdash; SBCL,
- CCL, LispWorks, and GCL &mdash; those failures suggest that Allegro CL might
- not be a good choice for ACL2 users.</p>
+ &ldquo;<b>Details</b>&rdquo; section below.  These failures suggest that you
+ may encounter problems when using ACL2 built on Allegro CL, though we expect
+ them to be rare.  Perhaps more important: Allegro CL has been observed to be
+ slower than several other Common Lisp implementations that can host ACL2
+ &mdash; SBCL, CCL, LispWorks, and GCL.</p>
 
  <h3>Details</h3>
 

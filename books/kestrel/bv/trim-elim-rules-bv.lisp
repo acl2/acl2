@@ -22,7 +22,8 @@
 (include-book "bvnot")
 (include-book "bvplus")
 (include-book "bvmult")
-(include-book "bvminus")
+(include-book "bvuminus-def")
+(include-book "bvminus-def")
 (include-book "bvand-def")
 (include-book "bvor-def")
 (include-book "bvxor-def")
@@ -35,6 +36,7 @@
 (local (include-book "getbit"))
 (local (include-book "slice"))
 (local (include-book "bvuminus"))
+(local (include-book "bvminus"))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 (defthm trim-of-bvchop

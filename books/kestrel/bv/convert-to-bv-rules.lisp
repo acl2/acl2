@@ -31,6 +31,7 @@
 (include-book "bitxor")
 (include-book "trim-elim-rules-non-bv") ; to get rid of the TRIMs introduced by these rules
 (local (include-book "bvand"))
+(local (include-book "bvminus"))
 (local (include-book "bvor"))
 (local (include-book "bvcat"))
 (local (include-book "slice"))

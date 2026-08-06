@@ -14,6 +14,7 @@
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ; for canonical-address-p
 (include-book "kestrel/memory/memory48" :dir :system)
 (include-book "kestrel/memory/memory64" :dir :system)
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 
 ;; ;; Make the machinery for the full 64-bit x86 address space, to support
 ;; ;; reasoning about canonical addresses:
@@ -57,37 +58,37 @@
   (implies (signed-byte-p 48 x)
            (unsigned-canonical-address-p x))
   :hints (("Goal" :cases ((<= 0 x))
-           :in-theory (enable unsigned-canonical-address-p bvlt
+           :in-theory (enable unsigned-canonical-address-p bvlt bvminus
                               acl2::bvchop-when-negative-lemma))))
 
 (defthm unsigned-canonical-address-p-of-bvsx-64-48
   (unsigned-canonical-address-p (bvsx 64 48 x))
   :hints (("Goal" :cases ((equal 0 (getbit 47 x)))
-           :in-theory (enable bvsx unsigned-canonical-address-p bvlt bvcat logapp))))
+           :in-theory (enable bvsx unsigned-canonical-address-p bvlt acl2::bvminus-becomes-bvplus-of-bvuminus bvcat logapp))))
 
 (defthm unsigned-canonical-address-p-of-bvchop
   (equal (unsigned-canonical-address-p (bvchop 64 x))
          (unsigned-canonical-address-p x))
-  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p))))
+  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p bvminus))))
 
 (defthm unsigned-canonical-address-p-of-+-when-small
   (implies (and (unsigned-byte-p 46 x)
                 (unsigned-byte-p 46 y))
            (unsigned-canonical-address-p (+ x y)))
-  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p bvlt))))
+  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p bvlt acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
 (defthm unsigned-canonical-address-p-of-bvplus-when-small
   (implies (and (unsigned-byte-p 46 x)
                 (unsigned-byte-p 46 y))
            (unsigned-canonical-address-p (bvplus 64 x y)))
-  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p bvlt bvplus ifix))))
+  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p bvlt bvplus acl2::bvminus-becomes-bvplus-of-bvuminus ifix))))
 
 ;; also shows that unsigned-canonical-address-p means what we intend it to mean
 (defthmd canonical-address-p-of-logext-64-becomes-unsigned-canonical-address-p
   (implies (unsigned-byte-p 64 ad)
            (equal (canonical-address-p (logext 64 ad))
                   (unsigned-canonical-address-p ad)))
-  :hints (("Goal" :in-theory (e/d (unsigned-canonical-address-p acl2::bvlt signed-byte-p acl2::logext-cases acl2::bvcat logapp)
+  :hints (("Goal" :in-theory (e/d (unsigned-canonical-address-p acl2::bvlt acl2::bvminus-becomes-bvplus-of-bvuminus signed-byte-p acl2::logext-cases acl2::bvcat logapp)
                                   (acl2::bvcat-of-getbit-and-x-adjacent
                                    acl2::bvcat-equal-rewrite
                                    acl2::bvcat-equal-rewrite-alt))
@@ -99,7 +100,8 @@
                   (unsigned-canonical-address-p (bvchop 64 ad))))
   :hints (("Goal" :in-theory (enable unsigned-canonical-address-p
                                      acl2::bvlt signed-byte-p acl2::logext-cases acl2::bvcat logapp
-                                     acl2::bvchop-when-negative-lemma)
+                                     acl2::bvchop-when-negative-lemma
+                                     acl2::bvminus-becomes-bvplus-of-bvuminus)
            :cases ((< ad 0)))))
 
 (defthmd canonical-address-p-becomes-unsigned-canonical-address-p-of-bvchop-strong
@@ -109,7 +111,8 @@
   :hints (("Goal" :in-theory (enable canonical-address-p
                                      unsigned-canonical-address-p
                                      acl2::bvlt signed-byte-p acl2::logext-cases acl2::bvcat logapp
-                                     acl2::bvchop-when-negative-lemma)
+                                     acl2::bvchop-when-negative-lemma
+                                     acl2::bvminus-becomes-bvplus-of-bvuminus)
            :cases ((< ad 0)))))
 
 (local (include-book "kestrel/bv/rules4" :dir :system)) ; reduce? for acl2::<-of-bvcat-alt
@@ -124,7 +127,7 @@
                            (m 48))
            :in-theory (e/d (unsigned-canonical-address-p
                             acl2::bvsx-alt-def-2
-                            bvlt)
+                            bvlt acl2::bvminus-becomes-bvplus-of-bvuminus)
                            (acl2::bvcat-equal-rewrite-alt
                             acl2::bvcat-equal-rewrite
                             bvcat logapp
@@ -190,7 +193,8 @@
                                      canonical-regionp
                                      unsigned-canonical-address-p
                                      bvlt bvuminus bvplus
-                                     acl2::bvchop-of-sum-cases))))
+                                     acl2::bvchop-of-sum-cases
+                                     acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
 (defthm unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus
   (implies (and (canonical-regionp len ad2) ;free vars
