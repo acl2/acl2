@@ -525,6 +525,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-irule-name-clash ((infos defind-irule-info-listp))
+  :returns (mv (foundp booleanp)
+               (irule-name symbolp)
+               (pred-name symbolp))
+  :short "Find the first clash among the names of the given inference rules."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A clash consists of two rules
+     with the same name and the same conclusion predicate.
+     If there is a clash, we return @('t') as the first result,
+     along with the rule name and the predicate name.
+     If there is no clash, we return @('nil') as all the results."))
+  (b* (((when (endp infos)) (mv nil nil nil))
+       ((defind-irule-info info) (car infos))
+       (pred-name (defind-conclusion-info->name info.conclusion))
+       (same-concl-infos (defind-irules-of-pred pred-name (cdr infos)))
+       ((when (member-eq info.name
+                         (defind-irule-info-list->name same-concl-infos)))
+        (mv t info.name pred-name)))
+    (defind-irule-name-clash (cdr infos))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-irule-names-unambp ((infos defind-irule-info-listp))
   :returns (yes/no booleanp)
   :short "Check if the names of the given inference rules are unambiguous."
@@ -532,33 +556,28 @@
   (xdoc::topstring
    (xdoc::p
     "That is, check if the rules with the same conclusion predicate
-     have distinct names.
+     have distinct names, i.e. if there is no clash.
      Rules with different conclusion predicates may have the same name,
      because the names of the generated events
      that relate to rules incorporate the predicate names."))
-  (b* (((when (endp infos)) t)
-       ((defind-irule-info info) (car infos))
-       (same-concl-infos
-        (defind-irules-of-pred (defind-conclusion-info->name info.conclusion)
-                               (cdr infos)))
-       ((when (member-eq info.name
-                         (defind-irule-info-list->name same-concl-infos)))
-        nil))
-    (defind-irule-names-unambp (cdr infos)))
+  (b* (((mv foundp & &) (defind-irule-name-clash infos)))
+    (not foundp))
 
   ///
 
   (defrule defind-irule-names-unambp-of-cdr
     (implies (defind-irule-names-unambp infos)
              (defind-irule-names-unambp (cdr infos)))
-    :induct t)
+    :induct (defind-irule-name-clash infos)
+    :enable defind-irule-name-clash)
 
   (defrule defind-irule-names-unambp-of-defind-irules-of-pred
     (implies (defind-irule-names-unambp infos)
              (defind-irule-names-unambp
               (defind-irules-of-pred pred-name infos)))
-    :induct t
-    :enable defind-irules-of-pred))
+    :induct (defind-irule-name-clash infos)
+    :enable (defind-irule-name-clash
+             defind-irules-of-pred)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3064,11 +3083,13 @@
        ((erp infos state)
         (defind-process-irules-loop irules 1 pred-infos state))
        ((unless (defind-irule-names-unambp infos))
-        (reterr (msg "The rules in the :IRULES input ~
-                      with the same predicate in the conclusion ~
-                      must have distinct names, ~
-                      but there are duplicates among ~&0."
-                     (defind-irule-info-list->name infos))))
+        (b* (((mv & irule-name pred-name) (defind-irule-name-clash infos)))
+          (reterr (msg "The rules in the :IRULES input ~
+                        with the same predicate in the conclusion ~
+                        must have distinct names, ~
+                        but the name ~x0 is used by more than one rule ~
+                        with the predicate ~x1 in the conclusion."
+                       irule-name pred-name))))
        (pred-names (defind-pred-info-list->name pred-infos))
        (ruleless-preds (defind-preds-without-irules pred-names infos))
        ((when (consp ruleless-preds))
