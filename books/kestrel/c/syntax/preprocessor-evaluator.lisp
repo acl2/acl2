@@ -13,7 +13,7 @@
 (include-book "implementation-environments")
 (include-book "preprocessor-messages")
 (include-book "abstract-syntax-irrelevants")
-(include-book "preprocessor-files")
+(include-book "preprocessing-abstract-syntax")
 
 (include-book "std/util/error-value-tuples" :dir :system)
 

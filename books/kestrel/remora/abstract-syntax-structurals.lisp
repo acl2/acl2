@@ -10,7 +10,6 @@
 
 (in-package "REMORA")
 
-(include-book "abstract-syntax-core")
 (include-book "abstract-syntax-derived-fixtypes")
 (include-book "lists")
 
@@ -23,7 +22,7 @@
 
 (acl2::controlled-configuration)
 
-(local (in-theory (enable* ast-corep-rules)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local (in-theory (enable typep-when-result-not-error
                           type-listp-when-result-not-error)))
@@ -94,15 +93,7 @@
 (std::defprojection shape-dims-list ((x dim-list-listp))
   :returns (shapes shape-listp)
   :short "Lift @(tsee shape-dims) to lists."
-  (shape-dims x)
-
-  ///
-
-  (defruled shape-list-corep-of-shape-dims-list-of-list-to-singletons
-    (shape-list-corep (shape-dims-list (list-to-singletons dims)))
-    :induct t
-    :enable (list-to-singletons
-             shape-corep-when-dims-and-singleton)))
+  (shape-dims x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -123,13 +114,7 @@
 (std::defprojection atom-base-list ((x base-lit-listp))
   :returns (atoms atom-listp)
   :short "Lift @(tsee atom-base) to lists."
-  (atom-base x)
-
-  ///
-
-  (defrule atom-list-corep-of-atom-base-list
-    (atom-list-corep (atom-base-list lits))
-    :induct t))
+  (atom-base x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -153,15 +138,7 @@
   :guard (expr-list-case-array x)
   :returns (atomss atom-list-listp)
   :short "Lift @(tsee expr-array->atoms) to lists."
-  (expr-array->atoms x)
-
-  ///
-
-  (defrule atom-list-list-corep-of-expr-array-list->atoms
-    (implies (and (expr-list-corep exprs)
-                  (expr-list-case-array exprs))
-             (atom-list-list-corep (expr-array-list->atoms exprs)))
-    :induct t))
+  (expr-array->atoms x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -177,15 +154,7 @@
   :guard (expr-list-case-frame x)
   :returns (exprss expr-list-listp)
   :short "Lift @(tsee expr-frame->exprs) to lists."
-  (expr-frame->exprs x)
-
-  ///
-
-  (defrule expr-list-list-corep-of-expr-frame-list->exprs
-    (implies (and (expr-list-corep exprs)
-                  (expr-list-case-frame exprs))
-             (expr-list-list-corep (expr-frame-list->exprs exprs)))
-    :induct t))
+  (expr-frame->exprs x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -205,11 +174,14 @@
 
   ///
 
-  (defrule shape-list-corep-of-ispace-shape-list->shape
-    (implies (and (ispace-list-corep ispaces)
-                  (ispace-list-case-shape ispaces))
-             (shape-list-corep (ispace-shape-list->shape ispaces)))
-    :induct t))
+  (defrule shape-list-count-of-ispace-shape-list->shape
+    (implies (ispace-list-case-shape x)
+             (<= (shape-list-count (ispace-shape-list->shape x))
+                 (ispace-list-count x)))
+    :rule-classes :linear
+    :induct t
+    :expand ((:free (a b) (shape-list-count (cons a b)))
+             (ispace-list-count x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -228,14 +200,7 @@
     (type-option-case
      type?
      :none (reserr nil)
-     :some type?.val))
-
-  ///
-
-  (defruled type-corep-of-var+type?->type-or-err
-    (implies (and (var+type?-corep x)
-                  (not (reserrp (var+type?->type-or-err x))))
-             (type-corep (var+type?->type-or-err x)))))
+     :some type?.val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -246,17 +211,7 @@
   (b* (((when (endp x)) nil)
        ((ok type) (var+type?->type-or-err (car x)))
        ((ok types) (var+type?-list->type-list-or-err (cdr x))))
-    (cons type types))
-
-  ///
-
-  (defruled type-list-corep-of-var+type?-list->type-list
-    (implies (and (var+type?-list-corep x)
-                  (not (reserrp (var+type?-list->type-list-or-err x))))
-             (type-list-corep (var+type?-list->type-list-or-err x)))
-    :induct t
-    :enable (var+type?-list->type-list-or-err
-             type-corep-of-var+type?->type-or-err)))
+    (cons type types)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -361,9 +316,13 @@
              :array nil
              :bracket nil
              :fun t
+             :funn t
              :forall t
+             :foralln t
              :pi t
-             :sigma t))
+             :pin t
+             :sigma t
+             :sigman t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -537,3 +496,506 @@
   :returns (shapes shape-listp)
   :short "Lift @(tsee shape-from-ispace) to lists."
   (shape-from-ispace x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-fun-types ((in type-listp) (out typep))
+  :returns (type typep)
+  :short "Nest zero or more unary function types,
+          from zero or more input types and one final output type."
+  (cond ((endp in) (type-fix out))
+        (t (make-type-fun :in (car in)
+                          :out (nest-fun-types (cdr in) out))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-forall-types ((params type-var-listp) (body typep))
+  :returns (type typep)
+  :short "Nest zero or more unary universal types,
+          from zero or more parameters and one final body type."
+  (cond ((endp params) (type-fix body))
+        (t (make-type-forall :param (car params)
+                             :body (nest-forall-types (cdr params) body))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-pi-types ((params ispace-var-listp) (body typep))
+  :returns (type typep)
+  :short "Nest zero or more unary product types,
+          from zero or more parameters and one final body type."
+  (cond ((endp params) (type-fix body))
+        (t (make-type-pi :param (car params)
+                         :body (nest-pi-types (cdr params) body))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-sigma-types ((params ispace-var-listp) (body typep))
+  :returns (type typep)
+  :short "Nest zero or more unary sum types,
+          from zero or more parameters and one final body type."
+  (cond ((endp params) (type-fix body))
+        (t (make-type-sigma :param (car params)
+                            :body (nest-sigma-types (cdr params) body))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-app-exprs ((fun exprp) (args expr-listp))
+  :returns (expr exprp)
+  :short "Nest zero or more unary term applications,
+          from one initial function expression
+          and zero or more argument expressions."
+  (cond ((endp args) (expr-fix fun))
+        (t (nest-app-exprs (make-expr-app :fun fun :arg (car args))
+                           (cdr args)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-tapp-exprs ((fun exprp) (args type-listp))
+  :returns (expr exprp)
+  :short "Nest zero or more unary type applications,
+          from one initial function expression
+          and zero or more argument types."
+  (cond ((endp args) (expr-fix fun))
+        (t (nest-tapp-exprs (make-expr-tapp :fun fun :arg (car args))
+                            (cdr args)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-iapp-exprs ((fun exprp) (args ispace-listp))
+  :returns (expr exprp)
+  :short "Nest zero or more unary ispace applications,
+          from one initial function expression
+          and zero or more argument ispaces."
+  (cond ((endp args) (expr-fix fun))
+        (t (nest-iapp-exprs (make-expr-iapp :fun fun :arg (car args))
+                            (cdr args)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-lambda-exprs ((params var+type?-listp)
+                           (body exprp)
+                           (type? type-optionp))
+  :returns (expr exprp)
+  :short "Nest zero or more unary expression abstractions,
+          from zero or more parameters,
+          one final body expression,
+          and the optional type of that body."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The optional type annotation applies to the body,
+     so it travels with the innermost abstraction,
+     as in @(tsee lambda-curried-body);
+     the outer abstractions carry no annotation."))
+  (cond ((endp params) (expr-fix body))
+        (t (make-expr-array
+            :dims nil
+            :atoms (list (make-atom-lambda
+                          :param (car params)
+                          :body (nest-lambda-exprs (cdr params) body type?)
+                          :type? (if (endp (cdr params)) type? nil))))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-tlambda-exprs ((params type-var-listp) (body exprp))
+  :returns (expr exprp)
+  :short "Nest zero or more unary type abstractions,
+          from zero or more parameters and one final body expression."
+  (cond ((endp params) (expr-fix body))
+        (t (make-expr-array
+            :dims nil
+            :atoms (list (make-atom-tlambda
+                          :param (car params)
+                          :body (nest-tlambda-exprs (cdr params) body))))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-ilambda-exprs ((params ispace-var-listp) (body exprp))
+  :returns (expr exprp)
+  :short "Nest zero or more unary ispace abstractions,
+          from zero or more parameters and one final body expression."
+  (cond ((endp params) (expr-fix body))
+        (t (make-expr-array
+            :dims nil
+            :atoms (list (make-atom-ilambda
+                          :param (car params)
+                          :body (nest-ilambda-exprs (cdr params) body))))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-unbox-exprs ((ispaces ispace-var-listp)
+                          (var stringp)
+                          (target exprp)
+                          (body exprp)
+                          (type? type-optionp))
+  :returns (expr exprp)
+  :short "Nest zero or more unary unboxing expressions,
+          from zero or more ispace variables,
+          one bound variable,
+          one target expression,
+          one final body expression,
+          and the optional type of the whole expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Only the outermost unboxing has the target expression
+     and the optional type,
+     which is the type of the whole unboxing expression;
+     each inner one unboxes the bound variable itself
+     and carries no type.
+     Since a target is outside the scope of the binding,
+     the variable used as target at each inner level
+     refers to the binding of the enclosing level,
+     and the final body sees the fully unboxed value."))
+  (cond ((endp ispaces) (expr-fix body))
+        (t (make-expr-unbox
+            :ispace (car ispaces)
+            :var var
+            :target target
+            :body (nest-unbox-exprs-loop (cdr ispaces) var body)
+            :type? type?)))
+
+  :prepwork
+  ((define nest-unbox-exprs-loop ((ispaces ispace-var-listp)
+                                  (var stringp)
+                                  (body exprp))
+     :returns (expr exprp)
+     :parents nil
+     (cond ((endp ispaces) (expr-fix body))
+           (t (make-expr-unbox
+               :ispace (car ispaces)
+               :var var
+               :target (expr-var var)
+               :body (nest-unbox-exprs-loop (cdr ispaces) var body)
+               :type? nil)))
+     :verify-guards :after-returns)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nest-box-exprs ((ispaces ispace-listp) (body exprp))
+  :returns (expr exprp)
+  :short "Nest zero or more unary boxing atoms without types,
+          from zero or more ispaces and one final body expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each boxing atom is wrapped into a zero-rank array expression.
+     The boxing atoms have no types:
+     this function builds the inner boxes of
+     the nest that an n-ary boxing atom desugars to,
+     whose types can only be computed during type checking
+     (see @(tsee atom))."))
+  (cond ((endp ispaces) (expr-fix body))
+        (t (make-expr-array
+            :dims nil
+            :atoms (list (make-atom-box
+                          :ispace (car ispaces)
+                          :array (nest-box-exprs (cdr ispaces) body)
+                          :type? nil)))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-binders-count ((type typep))
+  :returns (count natp)
+  :short "Number of variables bound by the binder of a type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for the binder of universal, product, and sum types.
+     We return 0 for the other types."))
+  (type-case type
+             :var 0
+             :base 0
+             :array 0
+             :bracket 0
+             :fun 0
+             :funn 0
+             :forall 1
+             :foralln (len type.params)
+             :pi 1
+             :pin (len type.params)
+             :sigma 1
+             :sigman (len type.params)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fun-curried-out ((in type-listp) (out typep))
+  :guard (consp in)
+  :returns (new-out typep)
+  :short "Peel the first input type from an n-ary function type
+          and return the remaining function type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An n-ary function type with one or more input types
+     is sugar for a nested sequence of unary function types.
+     This function treats an n-ary function type
+     with at least one input type as that sequence,
+     and it returns the output of the outermost unary function type.
+     This is the output type of the whole function type
+     when there is just one input type,
+     otherwise it is another function type,
+     without the first input type.
+     This is analogous to @(tsee forall-curried-body),
+     with input types in place of bound variables."))
+  (cond ((endp (cdr in)) (type-fix out))
+        (t (make-type-funn :in (cdr in) :out out)))
+  :hooks ((:fix :hints (("Goal" :in-theory (enable cdr-of-type-list-fix)))))
+
+  ///
+
+  (defrule type-count-of-fun-curried-out
+    (implies (and (type-case type :funn)
+                  (consp (type-funn->in type)))
+             (< (type-count (fun-curried-out (type-funn->in type)
+                                             (type-funn->out type)))
+                (type-count type)))
+    :rule-classes :linear
+    :enable fun-curried-out
+    :expand ((type-count type)
+             (type-list-count (type-funn->in type))
+             (type-count (type-funn (cdr (type-funn->in type))
+                                    (type-funn->out type))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define forall-curried-body ((params type-var-listp) (body typep))
+  :guard (consp params)
+  :returns (new-body typep)
+  :short "Peel the first parameter from a universal type
+          and return the remaining body type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A universal type with two or more parameters
+     is sugar for a nested sequence of one-parameter universal types.
+     This function treats an n-ary universal type with at least one parameter
+     as that sequence, or as itself if there is just one parameter,
+     and it returns the body of the outermost universal type.
+     This is the body of the whole universal type
+     when there is just one parameter,
+     otherwise it is another universal type, without the first parameter."))
+  (cond ((endp (cdr params)) (type-fix body))
+        ((endp (cddr params))
+         (make-type-forall :param (cadr params) :body body))
+        (t (make-type-foralln :params (cdr params) :body body)))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-type-var-list-fix)))))
+
+  ///
+
+  (defrule type-count-of-forall-curried-body
+    (implies (type-case type :foralln)
+             (<= (type-count (forall-curried-body (type-foralln->params type)
+                                                  (type-foralln->body type)))
+                 (type-count type)))
+    :rule-classes :linear
+    :enable forall-curried-body
+    :expand ((type-count type)
+             (type-count (type-forall (cadr (type-foralln->params type))
+                                      (type-foralln->body type)))
+             (type-count (type-foralln (cdr (type-foralln->params type))
+                                       (type-foralln->body type)))))
+
+  (defrule type-binders-count-of-forall-curried-body
+    (implies
+     (and (type-case type :foralln)
+          (equal (type-count (forall-curried-body (type-foralln->params type)
+                                                  (type-foralln->body type)))
+                 (type-count type)))
+     (< (type-binders-count (forall-curried-body (type-foralln->params type)
+                                                 (type-foralln->body type)))
+        (type-binders-count type)))
+    :rule-classes :linear
+    :enable (forall-curried-body type-binders-count len)
+    :expand ((type-count type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pi-curried-body ((params ispace-var-listp) (body typep))
+  :guard (consp params)
+  :returns (new-body typep)
+  :short "Peel the first parameter from a product type
+          and return the remaining body type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee forall-curried-body)."))
+  (cond ((endp (cdr params)) (type-fix body))
+        ((endp (cddr params))
+         (make-type-pi :param (cadr params) :body body))
+        (t (make-type-pin :params (cdr params) :body body)))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-ispace-var-list-fix)))))
+
+  ///
+
+  (defrule type-count-of-pi-curried-body
+    (implies (type-case type :pin)
+             (<= (type-count (pi-curried-body (type-pin->params type)
+                                              (type-pin->body type)))
+                 (type-count type)))
+    :rule-classes :linear
+    :enable pi-curried-body
+    :expand ((type-count type)
+             (type-count (type-pi (cadr (type-pin->params type))
+                                  (type-pin->body type)))
+             (type-count (type-pin (cdr (type-pin->params type))
+                                   (type-pin->body type)))))
+
+  (defrule type-binders-count-of-pi-curried-body
+    (implies
+     (and (type-case type :pin)
+          (equal (type-count (pi-curried-body (type-pin->params type)
+                                              (type-pin->body type)))
+                 (type-count type)))
+     (< (type-binders-count (pi-curried-body (type-pin->params type)
+                                             (type-pin->body type)))
+        (type-binders-count type)))
+    :rule-classes :linear
+    :enable (pi-curried-body type-binders-count len)
+    :expand ((type-count type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sigma-curried-body ((params ispace-var-listp) (body typep))
+  :guard (consp params)
+  :returns (new-body typep)
+  :short "Peel the first parameter from a sum type
+          and return the remaining body type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee pi-curried-body)."))
+  (cond ((endp (cdr params)) (type-fix body))
+        ((endp (cddr params))
+         (make-type-sigma :param (cadr params) :body body))
+        (t (make-type-sigman :params (cdr params) :body body)))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-ispace-var-list-fix)))))
+
+  ///
+
+  (defrule type-count-of-sigma-curried-body
+    (implies (type-case type :sigman)
+             (<= (type-count (sigma-curried-body (type-sigman->params type)
+                                                 (type-sigman->body type)))
+                 (type-count type)))
+    :rule-classes :linear
+    :enable sigma-curried-body
+    :expand ((type-count type)
+             (type-count (type-sigma (cadr (type-sigman->params type))
+                                     (type-sigman->body type)))
+             (type-count (type-sigman (cdr (type-sigman->params type))
+                                      (type-sigman->body type)))))
+
+  (defrule type-binders-count-of-sigma-curried-body
+    (implies
+     (and (type-case type :sigman)
+          (equal (type-count (sigma-curried-body (type-sigman->params type)
+                                                 (type-sigman->body type)))
+                 (type-count type)))
+     (< (type-binders-count (sigma-curried-body (type-sigman->params type)
+                                                (type-sigman->body type)))
+        (type-binders-count type)))
+    :rule-classes :linear
+    :enable (sigma-curried-body type-binders-count len)
+    :expand ((type-count type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lambda-curried-body ((params var+type?-listp)
+                             (body exprp)
+                             (type? type-optionp))
+  :guard (consp params)
+  :returns (new-body exprp)
+  :short "Peel the first parameter from a lambda abstraction
+          and return the remaining body expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee forall-curried-body).")
+   (xdoc::p
+    "The optional body type annotation applies to the body,
+     so it travels with the innermost lambda abstraction:
+     if there are two or more parameters,
+     the returned lambda abstraction carries the annotation;
+     if there is just one parameter,
+     the annotation pertains to the returned body,
+     and it is up to the caller to use it as appropriate."))
+  (cond ((endp (cdr params)) (expr-fix body))
+        ((endp (cddr params))
+         (expr-atom (make-atom-lambda :param (cadr params)
+                                      :body body
+                                      :type? type?)))
+        (t (expr-atom (make-atom-lambdan :params (cdr params)
+                                         :body body
+                                         :type? type?))))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-var+type?-list-fix))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tlambda-curried-body ((params type-var-listp) (body exprp))
+  :guard (consp params)
+  :returns (new-body exprp)
+  :short "Peel the first parameter from a type lambda abstraction
+          and return the remaining body expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee forall-curried-body)."))
+  (cond ((endp (cdr params)) (expr-fix body))
+        ((endp (cddr params))
+         (expr-atom (atom-tlambda (cadr params) body)))
+        (t (expr-atom (atom-tlambdan (cdr params) body))))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-type-var-list-fix))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ilambda-curried-body ((params ispace-var-listp) (body exprp))
+  :guard (consp params)
+  :returns (new-body exprp)
+  :short "Peel the first parameter from an ispace lambda abstraction
+          and return the remaining body expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee forall-curried-body)."))
+  (cond ((endp (cdr params)) (expr-fix body))
+        ((endp (cddr params))
+         (expr-atom (atom-ilambda (cadr params) body)))
+        (t (expr-atom (atom-ilambdan (cdr params) body))))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-ispace-var-list-fix))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule atom-count-when-box-gap
+  :short "The count of a unary boxing atom exceeds
+          the count of its array expression by more than one."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The automatically generated linear rules only provide
+     an excess of one.
+     The larger gap serves to justify measures of the form
+     @('(+ 1 (expr-count ...))') over the array expression,
+     as used by recursive functions that,
+     given the array expression of a boxing atom,
+     may both recursively descend into it
+     and pass it whole to a mutually recursive companion."))
+  (implies (atom-case atom :box)
+           (< (+ 1 (expr-count (atom-box->array atom)))
+              (atom-count atom)))
+  :rule-classes :linear
+  :expand ((atom-count atom)))

@@ -256,14 +256,21 @@
 (test-roundtrip "(let ((ispace $d (+ 5 (- 3)))) 0)")
 (test-roundtrip "(let ((ispace @s [2 3])) 0)")
 
-;; ---- Arrow types: single argument type without parentheses ----
+;; ---- Arrow types: parenthesized or not single argument type ----
 
-;; (-> T R) abbreviates (-> (T) R): both abstract to the same :fun AST
-;; with a singleton input list.
+;; The ASTs record whether the single input type is parenthesized:
+;; (-> T R) abstracts to the unary :fun,
+;; while (-> (T) R) abstracts to :funn with a singleton list.
 (test-parse "(array [0] (-> Int Bool))"
             (make-expr-array-empty
              :dims '(0)
              :type (make-type-fun
+                    :in (make-type-base :type (base-type-int))
+                    :out (make-type-base :type (base-type-bool)))))
+(test-parse "(array [0] (-> (Int) Bool))"
+            (make-expr-array-empty
+             :dims '(0)
+             :type (make-type-funn
                     :in (list (make-type-base :type (base-type-int)))
                     :out (make-type-base :type (base-type-bool)))))
 

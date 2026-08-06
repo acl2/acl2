@@ -17,9 +17,12 @@
 (include-book "kestrel/fty/any-nat-map" :dir :system)
 (include-book "kestrel/fty/character-any-map" :dir :system)
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
+(include-book "std/omaps/identity" :dir :system)
 (include-book "std/omaps/injectivep" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/basic/nfix" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -273,3 +276,104 @@
              exec-charset-wfp
              exec-charset-has-basic-chars-p
              set::expensive-rules)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-charset-ascii ((std standardp))
+  :returns (charset exec-charsetp)
+  :short "The execution character set defined by ASCII."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This consists of the 128 ASCII characters,
+     for which we use the ACL2 characters with the respective codes as values.
+     The mapping from basic characters is the identity.")
+   (xdoc::p
+    "This function depends on the C standard because
+     the set of basic characters depends on it."))
+  (b* ((chars-with-values (exec-charset-ascii-loop 0))
+       (basic-chars (omap::identity (ascii-basic-exec-chars std))))
+    (make-exec-charset :chars-with-values chars-with-values
+                       :basic-chars basic-chars))
+
+  :prepwork
+  ((define exec-charset-ascii-loop ((code natp))
+     :returns (map any-nat-mapp)
+     :parents nil
+     (if (>= (lnfix code) 128)
+         nil
+       (omap::update (code-char code)
+                     (lnfix code)
+                     (exec-charset-ascii-loop (1+ (lnfix code)))))
+     :measure (nfix (- 128 (nfix code)))
+     :prepwork ((local (in-theory (enable nfix))))
+     :verify-guards :after-returns))
+
+  ///
+
+  (defrulel injectivep-lemma1
+    (omap::injectivep (exec-charset-ascii-loop 0)))
+
+  (defrulel injectivep-lemma2
+    (omap::injectivep (omap::identity (ascii-basic-exec-chars std)))
+    :enable omap::injectivep-when-identityp)
+
+  (defrulel has-basic-chars-p-lemma
+    (exec-charset-has-basic-chars-p (exec-charset-ascii-loop 0)
+                                    (omap::identity
+                                     (ascii-basic-exec-chars std))
+                                    std)
+    :enable (exec-charset-has-basic-chars-p
+             omap::values-is-keys-when-identityp
+             ascii-basic-exec-chars
+             ascii-basic-source-chars))
+
+  (defrulel basic-chars-byte-p-lemma
+    (exec-charset-basic-chars-byte-p (exec-charset-ascii-loop 0)
+                                     (omap::identity
+                                      (ascii-basic-exec-chars std))
+                                     uchar-format)
+    :enable (exec-charset-basic-chars-byte-p
+             omap::values-is-keys-when-identityp
+             lemma2)
+    :disable ((:e exec-charset-ascii-loop))
+
+    :prep-lemmas
+
+    ((defruled lemma1
+       (implies (set::in x (omap::values (exec-charset-ascii-loop 0)))
+                (<= x 127))
+       :in-theory '((:e exec-charset-ascii-loop)
+                    (:e omap::values)
+                    (:e set::head)
+                    (:e set::tail)
+                    (:e set::emptyp)
+                    set::in))
+
+     (defruled lemma2
+       (implies (set::in x (omap::lookup* (ascii-basic-exec-chars std)
+                                          (exec-charset-ascii-loop 0)))
+                (<= x (uchar-format->max uchar-format)))
+       :use lemma1
+       :enable set::expensive-rules
+       :disable ((:e exec-charset-ascii-loop)))))
+
+  (defrulel digits-in-order-p-lemma
+    (exec-charset-digits-in-order-p (exec-charset-ascii-loop 0)
+                                    (omap::identity
+                                     (ascii-basic-exec-chars std)))
+    :enable (exec-charset-digits-in-order-p
+             set::in
+             omap::lookup-when-identityp)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (set::in x '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
+                (set::in x (ascii-basic-exec-chars std)))
+       :enable (digits-in-ascii-basic-exec-chars
+                set::expensive-rules))))
+
+  (defrule exec-charset-wfp-of-exec-charset-ascii
+    (exec-charset-wfp (exec-charset-ascii std) std uchar-format)
+    :disable ((:e exec-charset-ascii-loop))
+    :enable (exec-charset-wfp
+             exec-charset-ascii)))

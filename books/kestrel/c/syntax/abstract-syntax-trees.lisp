@@ -1988,7 +1988,8 @@
     (:atomic ((type tyname)))
     (:struct ((spec struni-spec)
               (info any)))
-    (:union ((spec struni-spec)))
+    (:union ((spec struni-spec)
+             (info any)))
     (:enum ((spec enum-spec)))
     (:typedef ((name ident)
                (info any)))
@@ -3790,42 +3791,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap header-name-string-map
-  :short "Fixtype of maps from header names to strings."
+(fty::defomap header-name-filepath-map
+  :short "Fixtype of maps from header names to file paths."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are used to record how header names in @('#include') directives
-     resolve to files identified by strings.
-     A map from header names to strings pertains to one file;
-     see @(tsee string-header-name-string-map-map)."))
+     resolve to files paths.
+     A map from header names to file paths pertains to one file;
+     see @(tsee filepath-header-name-filepath-map-map)."))
   :key-type header-name
-  :val-type string
-  :pred header-name-string-mapp)
+  :val-type filepath
+  :pred header-name-filepath-mapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap string-header-name-string-map-map
-  :short "Fixtype of maps from strings to
-          maps from header names to strings."
+(fty::defomap filepath-header-name-filepath-map-map
+  :short "Fixtype of maps from file paths to
+          maps from header names to file paths."
   :long
   (xdoc::topstring
    (xdoc::p
     "As in other types and recognizers used in the ACL2 community books,
-     the name of this type used a postfix structure, like
-     @('(string (header-name string map) map)').
-     These maps are used to record how header name resolve
+     the name of this type uses a postfix structure, like
+     @('(filepath (header-name filepath map) map)').
+     These maps are used to record how header names resolve
      for all the files in a file set or translation ensemble:
      the keys of the outer map identify the files or translation units,
      and each inner map records the mapping for that file."))
-  :key-type string
-  :val-type header-name-string-map
-  :pred string-header-name-string-map-mapp)
+  :key-type filepath
+  :val-type header-name-filepath-map
+  :pred filepath-header-name-filepath-map-mapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap filepath-trans-unit-map
-  :short "Fixtype of omaps from file paths to translation units."
+  :short "Fixtype of maps from file paths to translation units."
   :key-type filepath
   :val-type trans-unit
   :pred filepath-trans-unit-mapp
@@ -3861,7 +3862,7 @@
      This is temporary, because we plan to put that information
      directly in the ASTs for the @('#include') directives."))
   ((units filepath-trans-unit-map)
-   (resolved-includes string-header-name-string-map-map)
+   (resolved-includes filepath-header-name-filepath-map-map)
    (info any))
   :pred trans-ensemblep
   :layout :fulltree)

@@ -111,69 +111,119 @@
     "In Remora, the primitive operations (i.e. built-in functions)
      are syntactically variables of (zero-rank array type of) a function type.
      These variables are implicitly in scope,
-     and thus part of the initial static environment.")
-   (xdoc::p
-    "Each operation's name (the map key) is its surface name
-     in [impl]'s prelude (the file @('RemoraPrelude.hs'));
-     the dynamic semantics of these operations
-     is formalized in @(see primitives-evaluation).
+     and thus part of the initial static environment.
+     Each operation's name (the map key) is its surface name in [impl].
      This is an initial selection of primitive operations;
      more will be added as the formalization grows.")
    (xdoc::p
     "The operations from @('+') to @('bool->f') have monomorphic types:
-     zero-rank array types of function types between base types.
-     The @('head'), @('tail'), and @('length') operations
+     function types between base types.
+     The @('head'), @('tail'), @('length'),
+     @('append'), @('reverse'), @('index'), @('index2d'),
+     @('reshape'), @('flatten'), @('transpose2d'), and @('reduce') operations
      have polymorphic types:
      a universal type of a product type of a function type, as in [impl].
-     Like the monomorphic types,
-     the whole type is a zero-rank array type,
-     but the bodies of the universal and product types
-     need no zero-rank array wrapping,
-     because atom types are auto-lifted to array types in those places."))
+     The first input type of @('reduce') is itself a function type,
+     making @('reduce') a higher-order operation.
+     The @('sum') operation is polymorphic only in the shape,
+     not in the element type, which is always integer:
+     its type is a product type of a function type,
+     without an enclosing universal type, as in [impl].
+     All these types are atom-kinded, without zero-rank array type wrapping:
+     as explained in @(see types),
+     atom-kinded types are allowed wherever array-kinded types are expected,
+     implicitly standing for zero-rank array types of those atom types."))
   (b* ((int-binop-type
-        (t[] (t-> (:int :int) :int) (shp)))
+        (t-> :int :int :int))
        (int-unop-type
-        (t[] (t-> (:int) :int) (shp)))
+        (t-> :int :int))
        (int-relop-type
-        (t[] (t-> (:int :int) :bool) (shp)))
+        (t-> :int :int :bool))
        (int-to-float-type
-        (t[] (t-> (:int) :float) (shp)))
+        (t-> :int :float))
        (int-to-bool-type
-        (t[] (t-> (:int) :bool) (shp)))
+        (t-> :int :bool))
        (float-binop-type
-        (t[] (t-> (:float :float) :float) (shp)))
+        (t-> :float :float :float))
        (float-unop-type
-        (t[] (t-> (:float) :float) (shp)))
+        (t-> :float :float))
        (float-relop-type
-        (t[] (t-> (:float :float) :bool) (shp)))
+        (t-> :float :float :bool))
        (float-to-int-type
-        (t[] (t-> (:float) :int) (shp)))
+        (t-> :float :int))
        (bool-unop-type
-        (t[] (t-> (:bool) :bool) (shp)))
+        (t-> :bool :bool))
        (bool-binop-type
-        (t[] (t-> (:bool :bool) :bool) (shp)))
+        (t-> :bool :bool :bool))
        (bool-to-int-type
-        (t[] (t-> (:bool) :int) (shp)))
+        (t-> :bool :int))
        (bool-to-float-type
-        (t[] (t-> (:bool) :float) (shp)))
+        (t-> :bool :float))
        (head-type
-        (t[] (tforall ("&t")
-                      (tpi ("$d" "@s")
-                           (t-> ((t[] "&t" (shape++ (dim+ 1 "$d") "@s")))
-                                (t[] "&t" "@s"))))
-             (shp)))
+        (tfa "&t"
+             (tpi ("$d" "@s")
+                  (t-> (t[] "&t" (shp[] (dim+ 1 "$d") "@s"))
+                       (t[] "&t" "@s")))))
        (tail-type
-        (t[] (tforall ("&t")
-                      (tpi ("$d" "@s")
-                           (t-> ((t[] "&t" (shape++ (dim+ 1 "$d") "@s")))
-                                (t[] "&t" (shape++ "$d" "@s")))))
-             (shp)))
+        (tfa "&t"
+             (tpi ("$d" "@s")
+                  (t-> (t[] "&t" (shp[] (dim+ 1 "$d") "@s"))
+                       (t[] "&t" (shp[] "$d" "@s"))))))
        (length-type
-        (t[] (tforall ("&t")
-                      (tpi ("$d" "@s")
-                           (t-> ((t[] "&t" (shape++ "$d" "@s")))
-                                :int)))
-             (shp))))
+        (tfa "&t"
+             (tpi ("$d" "@s")
+                  (t-> (t[] "&t" (shp[] "$d" "@s"))
+                       :int))))
+       (append-type
+        (tfa "&t"
+             (tpi ("$m" "$n" "@s")
+                  (t-> (t[] "&t" (shp[] "$m" "@s"))
+                       (t[] "&t" (shp[] "$n" "@s"))
+                       (t[] "&t" (shp[] (dim+ "$m" "$n") "@s"))))))
+       (reverse-type
+        (tfa "&t"
+             (tpi ("$d" "@s")
+                  (t-> (t[] "&t" (shp[] "$d" "@s"))
+                       (t[] "&t" (shp[] "$d" "@s"))))))
+       (index-type
+        (tfa "&t"
+             (tpi "$m"
+                  (t-> (t[] "&t" "$m")
+                       :int
+                       "&t"))))
+       (index2d-type
+        (tfa "&t"
+             (tpi ("$m" "$n")
+                  (t-> (t[] "&t" (shp[] "$m" "$n"))
+                       (t[] :int (shp 2))
+                       "&t"))))
+       (sum-type
+        (tpi "@s"
+             (t-> (t[] :int "@s")
+                  :int)))
+       (reshape-type
+        (tfa "&t"
+             (tpi ("@s1" "@s2")
+                  (t-> (t[] "&t" "@s1")
+                       (t[] "&t" "@s2")))))
+       (flatten-type
+        (tfa "&t"
+             (tpi ("$m" "$n" "@s")
+                  (t-> (t[] "&t" (shp[] "$m" "$n" "@s"))
+                       (t[] "&t" (shp[] (dim* "$m" "$n") "@s"))))))
+       (transpose2d-type
+        (tfa "&t"
+             (tpi ("$m" "$n")
+                  (t-> (t[] "&t" (shp[] "$m" "$n"))
+                       (t[] "&t" (shp[] "$n" "$m"))))))
+       (reduce-type
+        (tfa "&t"
+             (tpi ("$d" "@s")
+                  (t-> (t-> (t[] "&t" "@s")
+                            (t[] "&t" "@s")
+                            (t[] "&t" "@s"))
+                       (t[] "&t" (shp[] (dim+ 1 "$d") "@s"))
+                       (t[] "&t" "@s"))))))
     (omap::from-alist
      (list (cons "+" int-binop-type)
            (cons "-" int-binop-type)
@@ -226,7 +276,16 @@
            (cons "bool->f" bool-to-float-type)
            (cons "head" head-type)
            (cons "tail" tail-type)
-           (cons "length" length-type)))))
+           (cons "length" length-type)
+           (cons "append" append-type)
+           (cons "reverse" reverse-type)
+           (cons "index" index-type)
+           (cons "index2d" index2d-type)
+           (cons "sum" sum-type)
+           (cons "reshape" reshape-type)
+           (cons "flatten" flatten-type)
+           (cons "transpose2d" transpose2d-type)
+           (cons "reduce" reduce-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -243,25 +302,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define senv-add-ispace-var ((var ispace-varp) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add an ispace variable to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variable is added with an absent associated ispace,
+     because it does not stand for any specific ispace;
+     this is the case for variables bound by abstractions.
+     A variable already present is overwritten,
+     which realizes the intended shadowing."))
+  (change-senv senv
+               :ispace-vars (omap::update (ispace-var-fix var)
+                                          nil
+                                          (senv->ispace-vars senv))))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define senv-add-ispace-vars ((vars ispace-var-listp) (senv senvp))
   :returns (new-senv senvp)
   :short "Add zero or more ispace variables to the static environment."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The variables are added with an absent associated ispace,
-     because they do not stand for any specific ispace;
-     this is the case for variables bound by abstractions.
-     A variable already present is overwritten,
-     which realizes the intended shadowing."))
+    "See @(tsee senv-add-ispace-var),
+     which this function repeats for each variable."))
   (b* (((when (endp vars)) (senv-fix senv))
-       (new-ispace-vars (omap::update (ispace-var-fix (car vars))
-                                      nil
-                                      (senv->ispace-vars senv)))
-       (senv (change-senv senv :ispace-vars new-ispace-vars)))
+       (senv (senv-add-ispace-var (car vars) senv)))
     (senv-add-ispace-vars (cdr vars) senv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-type-var ((var type-varp) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add a type variable to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variable is added with an absent associated type,
+     because it does not stand for any specific type;
+     this is the case for variables bound by abstractions.
+     A variable already present is overwritten,
+     which realizes the intended shadowing."))
+  (change-senv senv
+               :type-vars (omap::update (type-var-fix var)
+                                        nil
+                                        (senv->type-vars senv))))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define senv-add-type-vars ((vars type-var-listp) (senv senvp))
   :returns (new-senv senvp)
@@ -269,16 +358,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The variables are added with an absent associated type,
-     because they do not stand for any specific type;
-     this is the case for variables bound by abstractions.
-     A variable already present is overwritten,
-     which realizes the intended shadowing."))
+    "See @(tsee senv-add-type-var),
+     which this function repeats for each variable."))
   (b* (((when (endp vars)) (senv-fix senv))
-       (new-type-vars (omap::update (type-var-fix (car vars))
-                                    nil
-                                    (senv->type-vars senv)))
-       (senv (change-senv senv :type-vars new-type-vars)))
+       (senv (senv-add-type-var (car vars) senv)))
     (senv-add-type-vars (cdr vars) senv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Quan Luu (quan.luu@kestrel.edu)
+; Contributing Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -111,6 +112,11 @@
     :enable injectivep-to-cardinality-of-keys-and-values
     :use values-is-keys-when-identityp
     :rule-classes :forward-chaining)
+
+  (defruled injectivep-when-identityp
+    (implies (identityp x)
+             (injectivep x))
+    :enable identityp-implies-injectivep)
 
   (defruled rlookup-of-cdr-assoc-when-injectivep
       (implies (and (injectivep x)

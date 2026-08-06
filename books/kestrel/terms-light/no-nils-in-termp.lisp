@@ -1,6 +1,6 @@
 ; Checking that NIL never appears as a variable in a term or list of terms
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "free-vars-in-term")
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
 ;; This is needed due to a deficiency in how defevaluator evaluates NIL, which
@@ -53,6 +54,8 @@
                   t))))
   :hints (("Goal" :expand (no-nils-in-termp (cons fn args))
            :in-theory (enable no-nils-in-termp))))
+
+(local (make-flag free-vars-in-term))
 
 (defthm-flag-free-vars-in-term
   (defthm not-member-equal-of-nil-and-free-vars-in-term
@@ -157,6 +160,7 @@
 ;;            :in-theory (enable free-vars-in-term no-nils-in-termsp))))
 
 (local
+  ;; Sanity check: termp implies no-nils-in-termp
  (defthm-flag-no-nils-in-termp
    (defthm no-nils-in-termp-when-termp
      (implies (termp term w)
@@ -168,17 +172,6 @@
      :flag no-nils-in-termsp)
    :hints (("Goal" :expand (free-vars-in-terms terms)
             :in-theory (enable free-vars-in-term no-nils-in-termp no-nils-in-termsp)))))
-
-;; Sanity check: termp implies no-nils-in-termp
-;; redundant and non-local
-(defthm no-nils-in-termp-when-termp
-  (implies (termp term w)
-           (no-nils-in-termp term)))
-
-;; redundant and non-local
-(defthm no-nils-in-termsp-when-term-listp
-  (implies (term-listp terms w)
-           (no-nils-in-termsp terms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

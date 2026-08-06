@@ -18,30 +18,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ preprocessor-files
+(defxdoc+ preprocessing-abstract-syntax
   :parents (preprocessor)
-  :short "An abstract syntax for preprocessor files."
+  :short "An abstract syntax for preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The C grammar defines a notion of preprocessing files [C17:6.10/1],
+    "The C grammar defines a notion of preprocessing files
+     [C17:6.10/1] [C23:6.10.1],
      which is also captured in our ABNF @(see grammar).
-     To facilitate a planned extension of our approach to "
+     We introduce an abstract syntax for preprocessing files,
+     extended to collections (`ensembles') of preprocessing files.
+     This is what our preprocessor produces, starting from bytes.")
+   (xdoc::p
+    "This abstract syntax is currently mainly concerned
+     with conditionals (i.e. @('#if') etc.) and their nested structure.
+     This supports our preprocessor's ability to "
     (xdoc::seetopic "preservable-inclusions"
                     "preserve @('#include') directives")
-    ", we introduce an abstract syntax for preprocessor files,
-     where we use `preprocessor' instead of `preprocessing'
-     for consistency with the naming of other parts of our preprocessor.")
-   (xdoc::p
-    "This abstract syntax is mainly concerned with conditionals
-     (i.e. @('#if') etc.) and their nested structure."))
+    ". We may also articulate more structure in this abstract syntax,
+     to simplify parsing after preprocessing."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum pexpr
-  :short "Fixtype of preprocessor expressions."
+  :short "Fixtype of preprocessing expressions."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -167,14 +170,14 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-pexpr
-  :short "An irrelevant preprocessor expression."
+  :short "An irrelevant preprocessing expression."
   :type pexprp
   :body (pexpr-number (irr-pnumber)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum pif
-  :short "Fixtype of preprocessor `if' directives."
+  :short "Fixtype of preprocessing `if' directives."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -190,13 +193,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes pparts/conds
-  :short "Fixtypes of preprocessor group parts and related entities."
+  :short "Fixtypes of preprocessing group parts and related entities."
 
 ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum ppart
-    :parents (preprocessor-files pparts/conds)
-    :short "Fixtype of preprocessor group parts."
+    :parents (preprocessing-abstract-syntax pparts/conds)
+    :short "Fixtype of preprocessing group parts."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -218,8 +221,8 @@
 ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist ppart-list
-    :parents (preprocessor-files pparts/conds)
-    :short "Fixtype of lists of preprocessor group parts."
+    :parents (preprocessing-abstract-syntax pparts/conds)
+    :short "Fixtype of lists of preprocessing group parts."
     :elt-type ppart
     :true-listp t
     :elementp-of-nil nil
@@ -237,8 +240,8 @@
 ;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod pelif
-    :parents (preprocessor-files pparts/conds)
-    :short "Fixtype of preprocessor `elif' groups."
+    :parents (preprocessing-abstract-syntax pparts/conds)
+    :short "Fixtype of preprocessing `elif' groups."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -252,8 +255,8 @@
 ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist pelif-list
-    :parents (preprocessor-files pparts/conds)
-    :short "Fixtype of lists of preprocessor `elif' groups."
+    :parents (preprocessing-abstract-syntax pparts/conds)
+    :short "Fixtype of lists of preprocessing `elif' groups."
     :elt-type pelif
     :true-listp t
     :elementp-of-nil nil
@@ -263,7 +266,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod pelse
-    :parents (preprocessor-files pparts/conds)
+    :parents (preprocessing-abstract-syntax pparts/conds)
     :short "Fixtype of `else' groups."
     :long
     (xdoc::topstring
@@ -278,7 +281,7 @@
 
   (fty::defoption pelse-option
     pelse
-    :parents (preprocessor-files pparts/conds)
+    :parents (preprocessing-abstract-syntax pparts/conds)
     :short "Fixtype of optional `else' groups."
     :pred pelse-optionp
     :measure (two-nats-measure (acl2-count x) 2)))
@@ -286,16 +289,48 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod pfile
-  :short "Fixtype of preprocessor files."
+  :short "Fixtype of preprocessing files."
   ((parts ppart-list))
   :pred pfilep)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-pfile
-  :short "An irrelevant preprocessor file."
+  :short "An irrelevant preprocessing file."
   :type pfilep
   :body (pfile nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap filepath-pfile-map
+  :short "Fixtype of maps from file paths to preprocessing files."
+  :key-type filepath
+  :val-type pfile
+  :pred filepath-pfile-mapp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod pensemble
+  :short "Fixtype of preprocessing ensembles."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This notion has no explicit counterpart in [C17] and [C23],
+     but it captures the idea of a collection of preprocessing files,
+     each identified by its distinct name (file path).
+     This is analogous, and named similarly to, "
+    (xdoc::seetopic "trans-ensemble"
+                    "translation unit ensembles")
+    "."))
+  ((pfiles filepath-pfile-map))
+  :pred pensemblep)
+
+;;;;;;;;;;
+
+(defirrelevant irr-pensemble
+  :short "An irrelevant preprocessing ensemble."
+  :type pensemblep
+  :body (pensemble nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

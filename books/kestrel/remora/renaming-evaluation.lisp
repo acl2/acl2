@@ -17,7 +17,13 @@
 
 (include-book "portcullis")
 
-(local (include-book "std/omaps/top" :dir :system))
+(local (include-book "osets"))
+(local (include-book "omaps"))
+
+; The tau system is needed by only one proof in this book (noted below, where
+; it is switched back on); running it on every goal of the rest is pure
+; overhead, so it is off by default here.
+(local (acl2::in-theory (acl2::disable (:e acl2::tau-system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -155,19 +161,18 @@
 
 ; Evaluation of renamed dimensions.
 
-(defret-mutual eval-of-rename-dim-vars
-  (defret eval-dim-of-dim-rename-dim-vars
+(defthm-eval-dims-flag
+  (defthm eval-dim-of-dim-rename-dim-vars
     (implies (denv-ispace-vars-renamed-p new-denv denv dim-renam shape-renam)
              (equal (eval-dim (dim-rename-dim-vars dim dim-renam) new-denv)
-                    int))
-    :fn eval-dim)
-  (defret eval-dim-list-of-dim-list-rename-dim-vars
+                    (eval-dim dim denv)))
+    :flag eval-dim)
+  (defthm eval-dim-list-of-dim-list-rename-dim-vars
     (implies (denv-ispace-vars-renamed-p new-denv denv dim-renam shape-renam)
              (equal (eval-dim-list (dim-list-rename-dim-vars dims dim-renam)
                                    new-denv)
-                    ints))
-    :fn eval-dim-list)
-  :mutual-recursion eval-dims
+                    (eval-dim-list dims denv)))
+    :flag eval-dim-list)
   :hints
   (("Goal"
     :in-theory (enable eval-dim
@@ -185,40 +190,39 @@
 
 ; Evaluation of renamed shapes and ispaces.
 
-(defret-mutual eval-of-rename-ispace-vars
-  (defret eval-shape-of-shape-rename-ispace-vars
+(defthm-eval-shapes/ispaces-flag
+  (defthm eval-shape-of-shape-rename-ispace-vars
     (implies (denv-ispace-vars-renamed-p new-denv denv dim-renam shape-renam)
              (equal (eval-shape (shape-rename-ispace-vars shape
                                                           dim-renam
                                                           shape-renam)
                                 new-denv)
-                    nats))
-    :fn eval-shape)
-  (defret eval-shape-list-of-shape-list-rename-ispace-vars
+                    (eval-shape shape denv)))
+    :flag eval-shape)
+  (defthm eval-shape-list-of-shape-list-rename-ispace-vars
     (implies (denv-ispace-vars-renamed-p new-denv denv dim-renam shape-renam)
              (equal (eval-shape-list (shape-list-rename-ispace-vars shapes
                                                                     dim-renam
                                                                     shape-renam)
                                      new-denv)
-                    natss))
-    :fn eval-shape-list)
-  (defret eval-ispace-of-ispace-rename-ispace-vars
+                    (eval-shape-list shapes denv)))
+    :flag eval-shape-list)
+  (defthm eval-ispace-of-ispace-rename-ispace-vars
     (implies (denv-ispace-vars-renamed-p new-denv denv dim-renam shape-renam)
              (equal (eval-ispace (ispace-rename-ispace-vars ispace
                                                             dim-renam
                                                             shape-renam)
                                  new-denv)
-                    ival))
-    :fn eval-ispace)
-  (defret eval-ispace-list-of-ispace-list-rename-ispace-vars
+                    (eval-ispace ispace denv)))
+    :flag eval-ispace)
+  (defthm eval-ispace-list-of-ispace-list-rename-ispace-vars
     (implies (denv-ispace-vars-renamed-p new-denv denv dim-renam shape-renam)
              (equal (eval-ispace-list (ispace-list-rename-ispace-vars ispaces
                                                                       dim-renam
                                                                       shape-renam)
                                       new-denv)
-                    ivals))
-    :fn eval-ispace-list)
-  :mutual-recursion eval-shapes/ispaces
+                    (eval-ispace-list ispaces denv)))
+    :flag eval-ispace-list)
   :hints
   (("Goal"
     :in-theory (enable eval-shape
@@ -320,24 +324,24 @@
                                                   shape-renam)
              :dims tval.dims)
      :fun (make-type-value-fun
-           :in (type-value-list-rename-ispace-vars tval.in
-                                                   dim-renam
-                                                   shape-renam)
+           :in (type-value-rename-ispace-vars tval.in
+                                              dim-renam
+                                              shape-renam)
            :out (type-value-rename-ispace-vars tval.out
                                                dim-renam
                                                shape-renam))
      :forall (make-type-value-forall
-              :params tval.params
+              :param tval.param
               :body (type-rename-ispace-vars tval.body dim-renam shape-renam)
               :denv (type-denv-rename-ispace-vars tval.denv
                                                   dim-renam
                                                   shape-renam))
      :pi (b* (((mv & & body-dim-renam body-shape-renam)
-               (dim/shape-rename-remove-bound (set::mergesort tval.params)
+               (dim/shape-rename-remove-bound (set::insert tval.param nil)
                                               dim-renam
                                               shape-renam)))
            (make-type-value-pi
-            :params tval.params
+            :param tval.param
             :body (type-rename-ispace-vars tval.body
                                            body-dim-renam
                                            body-shape-renam)
@@ -345,11 +349,11 @@
                                                 dim-renam
                                                 shape-renam)))
      :sigma (b* (((mv & & body-dim-renam body-shape-renam)
-                  (dim/shape-rename-remove-bound (set::mergesort tval.params)
+                  (dim/shape-rename-remove-bound (set::insert tval.param nil)
                                                  dim-renam
                                                  shape-renam)))
               (make-type-value-sigma
-               :params tval.params
+               :param tval.param
                :body (type-rename-ispace-vars tval.body
                                               body-dim-renam
                                               body-shape-renam)
@@ -413,15 +417,35 @@
 
   (fty::deffixequiv-mutual type-value-rename-ispace-vars)
 
-  (defret not-reserrp-of-type-value-rename-ispace-vars
-    (not (reserrp new-tval))
-    :fn type-value-rename-ispace-vars
-    :hints (("Goal" :in-theory (enable not-reserrp-when-type-valuep))))
+  ;; (defret not-reserrp-of-type-value-rename-ispace-vars
+  ;;   (not (reserrp new-tval))
+  ;;   :fn type-value-rename-ispace-vars
+  ;;   :hints (("Goal" :in-theory (enable not-reserrp-when-type-valuep))))
 
-  (defret not-reserrp-of-type-value-list-rename-ispace-vars
-    (not (reserrp new-tvals))
-    :fn type-value-list-rename-ispace-vars
-    :hints (("Goal" :in-theory (enable not-reserrp-when-type-value-listp)))))
+  ;; (defret not-reserrp-of-type-value-list-rename-ispace-vars
+  ;;   (not (reserrp new-tvals))
+  ;;   :fn type-value-list-rename-ispace-vars
+  ;;   :hints (("Goal" :in-theory (enable not-reserrp-when-type-value-listp))))
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Renaming a function type value built from a list of inputs and an output
+; is the same as building it from the renamed inputs and the renamed output.
+; This is needed to evaluate n-ary function types, which curry into nestings.
+
+(local (acl2::defopeners type-value-rename-ispace-vars))
+
+(defrule type-value-rename-ispace-vars-of-nest-function-type-values
+  (equal (type-value-rename-ispace-vars (nest-function-type-values in out)
+                                        dim-renam
+                                        shape-renam)
+         (nest-function-type-values
+          (type-value-list-rename-ispace-vars in dim-renam shape-renam)
+          (type-value-rename-ispace-vars out dim-renam shape-renam)))
+  :induct t
+  :enable (nest-function-type-values
+           type-value-list-rename-ispace-vars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -543,17 +567,15 @@
 
 ; The free ispace variables of dimensions are all dimension variables.
 
-(local
- (defrule setp-of-dim-names-of-ispace-vars
-   (set::setp (mv-nth 0 (dim/shape-names-of-ispace-vars vars)))
-   :use string-setp-of-dim/shape-names-of-ispace-vars.dim-names
-   :disable string-setp-of-dim/shape-names-of-ispace-vars.dim-names))
+(defrulel setp-of-dim-names-of-ispace-vars
+  (set::setp (mv-nth 0 (dim/shape-names-of-ispace-vars vars)))
+  :use string-setp-of-dim/shape-names-of-ispace-vars.dim-names
+  :disable string-setp-of-dim/shape-names-of-ispace-vars.dim-names)
 
-(local
- (defrule setp-of-shape-names-of-ispace-vars
-   (set::setp (mv-nth 1 (dim/shape-names-of-ispace-vars vars)))
-   :use string-setp-of-dim/shape-names-of-ispace-vars.shape-names
-   :disable string-setp-of-dim/shape-names-of-ispace-vars.shape-names))
+(defrulel setp-of-shape-names-of-ispace-vars
+  (set::setp (mv-nth 1 (dim/shape-names-of-ispace-vars vars)))
+  :use string-setp-of-dim/shape-names-of-ispace-vars.shape-names
+  :disable string-setp-of-dim/shape-names-of-ispace-vars.shape-names)
 
 (defrule dim-names-of-ispace-vars-of-union
   (implies (and (ispace-var-setp vars1)
@@ -575,14 +597,45 @@
                    (mv-nth 1 (dim/shape-names-of-ispace-vars vars2)))))
   :enable (set::double-containment set::pick-a-point-subset-strategy))
 
-(defret-mutual shape-names-of-free-ispace-vars-of-dims
-  (defret shape-names-of-dim-free-ispace-vars
-    (equal (mv-nth 1 (dim/shape-names-of-ispace-vars result)) nil)
-    :fn dim-free-ispace-vars)
-  (defret shape-names-of-dim-list-free-ispace-vars
-    (equal (mv-nth 1 (dim/shape-names-of-ispace-vars result)) nil)
-    :fn dim-list-free-ispace-vars)
-  :mutual-recursion dims-free-ispace-vars
+(defrule dim-names-of-ispace-vars-of-insert
+  (implies (and (ispace-varp var)
+                (ispace-var-setp vars))
+           (equal (mv-nth 0 (dim/shape-names-of-ispace-vars
+                             (set::insert var vars)))
+                  (if (ispace-var-case var :dim)
+                      (set::insert (ispace-var-dim->name var)
+                                   (mv-nth 0 (dim/shape-names-of-ispace-vars
+                                              vars)))
+                    (mv-nth 0 (dim/shape-names-of-ispace-vars vars)))))
+  :enable (set::double-containment
+           set::pick-a-point-subset-strategy
+           equal-of-ispace-var-dim))
+
+(defrule shape-names-of-ispace-vars-of-insert
+  (implies (and (ispace-varp var)
+                (ispace-var-setp vars))
+           (equal (mv-nth 1 (dim/shape-names-of-ispace-vars
+                             (set::insert var vars)))
+                  (if (ispace-var-case var :shape)
+                      (set::insert (ispace-var-shape->name var)
+                                   (mv-nth 1 (dim/shape-names-of-ispace-vars
+                                              vars)))
+                    (mv-nth 1 (dim/shape-names-of-ispace-vars vars)))))
+  :enable (set::double-containment
+           set::pick-a-point-subset-strategy
+           equal-of-ispace-var-shape))
+
+(defthm-dims-free-ispace-vars-flag
+  (defthm shape-names-of-dim-free-ispace-vars
+    (equal (mv-nth 1 (dim/shape-names-of-ispace-vars
+                          (dim-free-ispace-vars dim)))
+           nil)
+    :flag dim-free-ispace-vars)
+  (defthm shape-names-of-dim-list-free-ispace-vars
+    (equal (mv-nth 1 (dim/shape-names-of-ispace-vars
+                          (dim-list-free-ispace-vars dim-list)))
+           nil)
+    :flag dim-list-free-ispace-vars)
   :hints (("Goal" :in-theory (enable dim-free-ispace-vars
                                      dim-list-free-ispace-vars
                                      dim/shape-names-of-ispace-vars
@@ -600,7 +653,8 @@
                                                      shape-renam)
                   (ispace-var-set-rename-ispace-vars vars dim-renam nil)))
   :induct (ispace-var-set-rename-ispace-vars vars dim-renam shape-renam)
-  :enable (ispace-var-set-rename-ispace-vars
+  :enable ((:e acl2::tau-system)   ; tau does the ISPACE-VAR-KIND case analysis
+           ispace-var-set-rename-ispace-vars
            dim/shape-names-of-ispace-vars
            rename-ispace-var))
 
@@ -608,21 +662,20 @@
 ; the free ispace variables of the dimension.  (Dimensions have no binders,
 ; so there is no capture to worry about.)
 
-(defret-mutual free-ispace-vars-of-rename-dim-vars
-  (defret free-ispace-vars-of-dim-rename-dim-vars
-    (equal (dim-free-ispace-vars result)
+(defthm-dims-rename-dim-vars-flag
+  (defthm free-ispace-vars-of-dim-rename-dim-vars
+    (equal (dim-free-ispace-vars (dim-rename-dim-vars dim renam))
            (ispace-var-set-rename-ispace-vars (dim-free-ispace-vars dim)
                                               renam
                                               nil))
-    :fn dim-rename-dim-vars)
-  (defret free-ispace-vars-of-dim-list-rename-dim-vars
-    (equal (dim-list-free-ispace-vars result)
+    :flag dim-rename-dim-vars)
+  (defthm free-ispace-vars-of-dim-list-rename-dim-vars
+    (equal (dim-list-free-ispace-vars (dim-list-rename-dim-vars dim-list renam))
            (ispace-var-set-rename-ispace-vars
             (dim-list-free-ispace-vars dim-list)
             renam
             nil))
-    :fn dim-list-rename-dim-vars)
-  :mutual-recursion dims-rename-dim-vars
+    :flag dim-list-rename-dim-vars)
   :hints (("Goal" :in-theory (enable dim-rename-dim-vars
                                      dim-list-rename-dim-vars
                                      dim-free-ispace-vars
@@ -633,34 +686,37 @@
 
 ; The same for shapes and ispaces, which have no binders either.
 
-(defret-mutual free-ispace-vars-of-rename-ispace-vars-structural
-  (defret free-ispace-vars-of-shape-rename-ispace-vars
-    (equal (shape-free-ispace-vars result)
+(defthm-shapes/ispaces-rename-ispace-vars-flag
+  (defthm free-ispace-vars-of-shape-rename-ispace-vars
+    (equal (shape-free-ispace-vars
+            (shape-rename-ispace-vars shape dim-renam shape-renam))
            (ispace-var-set-rename-ispace-vars (shape-free-ispace-vars shape)
                                               dim-renam
                                               shape-renam))
-    :fn shape-rename-ispace-vars)
-  (defret free-ispace-vars-of-shape-list-rename-ispace-vars
-    (equal (shape-list-free-ispace-vars result)
+    :flag shape-rename-ispace-vars)
+  (defthm free-ispace-vars-of-shape-list-rename-ispace-vars
+    (equal (shape-list-free-ispace-vars
+            (shape-list-rename-ispace-vars shape-list dim-renam shape-renam))
            (ispace-var-set-rename-ispace-vars
             (shape-list-free-ispace-vars shape-list)
             dim-renam
             shape-renam))
-    :fn shape-list-rename-ispace-vars)
-  (defret free-ispace-vars-of-ispace-rename-ispace-vars
-    (equal (ispace-free-ispace-vars result)
+    :flag shape-list-rename-ispace-vars)
+  (defthm free-ispace-vars-of-ispace-rename-ispace-vars
+    (equal (ispace-free-ispace-vars
+            (ispace-rename-ispace-vars ispace dim-renam shape-renam))
            (ispace-var-set-rename-ispace-vars (ispace-free-ispace-vars ispace)
                                               dim-renam
                                               shape-renam))
-    :fn ispace-rename-ispace-vars)
-  (defret free-ispace-vars-of-ispace-list-rename-ispace-vars
-    (equal (ispace-list-free-ispace-vars result)
+    :flag ispace-rename-ispace-vars)
+  (defthm free-ispace-vars-of-ispace-list-rename-ispace-vars
+    (equal (ispace-list-free-ispace-vars
+            (ispace-list-rename-ispace-vars ispace-list dim-renam shape-renam))
            (ispace-var-set-rename-ispace-vars
             (ispace-list-free-ispace-vars ispace-list)
             dim-renam
             shape-renam))
-    :fn ispace-list-rename-ispace-vars)
-  :mutual-recursion shapes/ispaces-rename-ispace-vars
+    :flag ispace-list-rename-ispace-vars)
   :hints
   (("Goal" :in-theory (enable shape-rename-ispace-vars
                               shape-list-rename-ispace-vars
@@ -680,84 +736,69 @@
 ; renaming under the full maps, provided the renaming captures none of the
 ; bound variables.  This is the key lemma for the Pi and Sigma binders.
 
-(local
- (defrule not-in-when-emptyp-of-intersect
-   (implies (and (set::emptyp (set::intersect x y))
-                 (set::in a x))
-            (not (set::in a y)))
-   :use ((:instance set::never-in-empty
-                    (set::a a)
-                    (set::x (set::intersect x y))))
-   :enable set::intersect-in
-   :disable set::never-in-empty))
+(defruledl not-in-bound-of-renamed-dim-name
+  (implies (and (ispace-var-setp bound)
+                (set::emptyp
+                 (set::intersect
+                  (mv-nth 0 (dim/shape-names-of-ispace-vars bound))
+                  (omap::values
+                   (omap::delete*
+                    (mv-nth 0 (dim/shape-names-of-ispace-vars bound))
+                    (string-string-map-fix dim-renam)))))
+                (stringp name)
+                (not (set::in (ispace-var-dim name) bound))
+                (omap::assoc name (string-string-map-fix dim-renam)))
+           (not (set::in
+                 (ispace-var-dim
+                  (cdr (omap::assoc name (string-string-map-fix dim-renam))))
+                 bound)))
+  :use ((:instance omap::cdr-assoc-in-values
+                   (omap::key name)
+                   (omap::map (omap::delete*
+                               (mv-nth 0 (dim/shape-names-of-ispace-vars
+                                          bound))
+                               (string-string-map-fix dim-renam))))
+        (:instance set::never-in-empty
+                   (set::a (cdr (omap::assoc name
+                                        (string-string-map-fix dim-renam))))
+                   (set::x (set::intersect (mv-nth 0 (dim/shape-names-of-ispace-vars bound))
+                                           (omap::values
+                       (omap::delete*
+                        (mv-nth 0 (dim/shape-names-of-ispace-vars bound))
+                        (string-string-map-fix dim-renam))))))))
 
-(local
- (defruled not-in-bound-of-renamed-dim-name
-   (implies (and (ispace-var-setp bound)
-                 (set::emptyp
-                  (set::intersect
-                   (mv-nth 0 (dim/shape-names-of-ispace-vars bound))
-                   (omap::values
-                    (omap::delete*
-                     (mv-nth 0 (dim/shape-names-of-ispace-vars bound))
-                     (string-string-map-fix dim-renam)))))
-                 (stringp name)
-                 (not (set::in (ispace-var-dim name) bound))
-                 (omap::assoc name (string-string-map-fix dim-renam)))
-            (not (set::in
-                  (ispace-var-dim
-                   (cdr (omap::assoc name (string-string-map-fix dim-renam))))
-                  bound)))
-   :use ((:instance omap::cdr-assoc-in-values
-                    (omap::key name)
-                    (omap::map (omap::delete*
-                                (mv-nth 0 (dim/shape-names-of-ispace-vars
-                                           bound))
-                                (string-string-map-fix dim-renam))))
-         (:instance not-in-when-emptyp-of-intersect
-                    (a (cdr (omap::assoc name
-                                         (string-string-map-fix dim-renam))))
-                    (x (mv-nth 0 (dim/shape-names-of-ispace-vars bound)))
-                    (y (omap::values
-                        (omap::delete*
-                         (mv-nth 0 (dim/shape-names-of-ispace-vars bound))
-                         (string-string-map-fix dim-renam))))))
-   :disable not-in-when-emptyp-of-intersect))
-
-(local
- (defruled not-in-bound-of-renamed-shape-name
-   (implies (and (ispace-var-setp bound)
-                 (set::emptyp
-                  (set::intersect
-                   (mv-nth 1 (dim/shape-names-of-ispace-vars bound))
-                   (omap::values
-                    (omap::delete*
-                     (mv-nth 1 (dim/shape-names-of-ispace-vars bound))
-                     (string-string-map-fix shape-renam)))))
-                 (stringp name)
-                 (not (set::in (ispace-var-shape name) bound))
-                 (omap::assoc name (string-string-map-fix shape-renam)))
-            (not (set::in
-                  (ispace-var-shape
-                   (cdr (omap::assoc name
-                                     (string-string-map-fix shape-renam))))
-                  bound)))
-   :use ((:instance omap::cdr-assoc-in-values
-                    (omap::key name)
-                    (omap::map (omap::delete*
-                                (mv-nth 1 (dim/shape-names-of-ispace-vars
-                                           bound))
-                                (string-string-map-fix shape-renam))))
-         (:instance not-in-when-emptyp-of-intersect
-                    (a (cdr (omap::assoc name
-                                         (string-string-map-fix
-                                          shape-renam))))
-                    (x (mv-nth 1 (dim/shape-names-of-ispace-vars bound)))
-                    (y (omap::values
-                        (omap::delete*
-                         (mv-nth 1 (dim/shape-names-of-ispace-vars bound))
-                         (string-string-map-fix shape-renam))))))
-   :disable not-in-when-emptyp-of-intersect))
+(defruledl not-in-bound-of-renamed-shape-name
+  (implies (and (ispace-var-setp bound)
+                (set::emptyp
+                 (set::intersect
+                  (mv-nth 1 (dim/shape-names-of-ispace-vars bound))
+                  (omap::values
+                   (omap::delete*
+                    (mv-nth 1 (dim/shape-names-of-ispace-vars bound))
+                    (string-string-map-fix shape-renam)))))
+                (stringp name)
+                (not (set::in (ispace-var-shape name) bound))
+                (omap::assoc name (string-string-map-fix shape-renam)))
+           (not (set::in
+                 (ispace-var-shape
+                  (cdr (omap::assoc name
+                                    (string-string-map-fix shape-renam))))
+                 bound)))
+  :use ((:instance omap::cdr-assoc-in-values
+                   (omap::key name)
+                   (omap::map (omap::delete*
+                               (mv-nth 1 (dim/shape-names-of-ispace-vars
+                                          bound))
+                               (string-string-map-fix shape-renam))))
+        (:instance set::never-in-empty
+                   (set::a (cdr (omap::assoc name
+                                        (string-string-map-fix
+                                         shape-renam))))
+                   (set::x (set::intersect (mv-nth 1 (dim/shape-names-of-ispace-vars bound))
+                                           (omap::values
+                       (omap::delete*
+                        (mv-nth 1 (dim/shape-names-of-ispace-vars bound))
+                        (string-string-map-fix shape-renam))))))))
 
 (defruled ispace-var-set-rename-ispace-vars-of-difference
   (implies
@@ -794,29 +835,78 @@
            set::difference
            set::difference-insert-x))
 
+; The singleton version of the previous theorem, for the unary product types,
+; obtained by instantiating it with the singleton set of the bound variable
+; and by bridging the set difference to a set deletion.
+
+(local
+ (defruled difference-of-insert-nil
+   (equal (set::difference vars (set::insert var nil))
+          (set::delete var vars))
+   :enable (set::double-containment set::pick-a-point-subset-strategy)))
+
+(defruled ispace-var-set-rename-ispace-vars-of-delete
+  (implies
+   (and (ispace-var-setp vars)
+        (ispace-varp var)
+        (renaming-no-capture-p
+         (mv-nth 0 (dim/shape-rename-remove-bound (set::insert var nil)
+                                                  dim-renam
+                                                  shape-renam))
+         (mv-nth 2 (dim/shape-rename-remove-bound (set::insert var nil)
+                                                  dim-renam
+                                                  shape-renam)))
+        (renaming-no-capture-p
+         (mv-nth 1 (dim/shape-rename-remove-bound (set::insert var nil)
+                                                  dim-renam
+                                                  shape-renam))
+         (mv-nth 3 (dim/shape-rename-remove-bound (set::insert var nil)
+                                                  dim-renam
+                                                  shape-renam))))
+   (equal
+    (set::delete
+     var
+     (ispace-var-set-rename-ispace-vars
+      vars
+      (mv-nth 2 (dim/shape-rename-remove-bound (set::insert var nil)
+                                               dim-renam
+                                               shape-renam))
+      (mv-nth 3 (dim/shape-rename-remove-bound (set::insert var nil)
+                                               dim-renam
+                                               shape-renam))))
+    (ispace-var-set-rename-ispace-vars (set::delete var vars)
+                                       dim-renam
+                                       shape-renam)))
+  :use ((:instance ispace-var-set-rename-ispace-vars-of-difference
+                   (bound (set::insert var nil))))
+  :enable difference-of-insert-nil)
+
 ; The free ispace variables of a renamed type are the renamings of the free
 ; ispace variables of the type, provided the renaming captures no variables.
 
-(defret-mutual free-ispace-vars-of-rename-ispace-vars
-  (defret free-ispace-vars-of-type-rename-ispace-vars
+(defthm-types-rename-ispace-vars-flag
+  (defthm free-ispace-vars-of-type-rename-ispace-vars
     (implies (type-rename-ispace-vars-no-capture-p type dim-renam shape-renam)
-             (equal (type-free-ispace-vars result)
+             (equal (type-free-ispace-vars
+                     (type-rename-ispace-vars type dim-renam shape-renam))
                     (ispace-var-set-rename-ispace-vars
                      (type-free-ispace-vars type)
                      dim-renam
                      shape-renam)))
-    :fn type-rename-ispace-vars)
-  (defret free-ispace-vars-of-type-list-rename-ispace-vars
+    :flag type-rename-ispace-vars)
+  (defthm free-ispace-vars-of-type-list-rename-ispace-vars
     (implies (type-list-rename-ispace-vars-no-capture-p type-list
                                                         dim-renam
                                                         shape-renam)
-             (equal (type-list-free-ispace-vars result)
+             (equal (type-list-free-ispace-vars
+                     (type-list-rename-ispace-vars type-list
+                                                   dim-renam
+                                                   shape-renam))
                     (ispace-var-set-rename-ispace-vars
                      (type-list-free-ispace-vars type-list)
                      dim-renam
                      shape-renam)))
-    :fn type-list-rename-ispace-vars)
-  :mutual-recursion types-rename-ispace-vars
+    :flag type-list-rename-ispace-vars)
   :hints
   (("Goal" :in-theory (enable type-rename-ispace-vars
                               type-list-rename-ispace-vars
@@ -825,20 +915,22 @@
                               type-rename-ispace-vars-no-capture-p
                               type-list-rename-ispace-vars-no-capture-p
                               ispace-var-set-rename-ispace-vars-of-difference
+                              ispace-var-set-rename-ispace-vars-of-delete
                               ispace-var-set-rename-ispace-vars))))
 
 ; The free type variables of a type are untouched by an ispace renaming.
 
-(defret-mutual free-type-vars-of-rename-ispace-vars
-  (defret free-type-vars-of-type-rename-ispace-vars
-    (equal (type-free-type-vars result)
+(defthm-types-rename-ispace-vars-flag
+  (defthm free-type-vars-of-type-rename-ispace-vars
+    (equal (type-free-type-vars
+            (type-rename-ispace-vars type dim-renam shape-renam))
            (type-free-type-vars type))
-    :fn type-rename-ispace-vars)
-  (defret free-type-vars-of-type-list-rename-ispace-vars
-    (equal (type-list-free-type-vars result)
+    :flag type-rename-ispace-vars)
+  (defthm free-type-vars-of-type-list-rename-ispace-vars
+    (equal (type-list-free-type-vars
+            (type-list-rename-ispace-vars type-list dim-renam shape-renam))
            (type-list-free-type-vars type-list))
-    :fn type-list-rename-ispace-vars)
-  :mutual-recursion types-rename-ispace-vars
+    :flag type-list-rename-ispace-vars)
   :hints
   (("Goal" :in-theory (enable type-rename-ispace-vars
                               type-list-rename-ispace-vars
@@ -943,14 +1035,151 @@
 (local (acl2::defopeners type-rename-ispace-vars))
 (local (acl2::defopeners eval-type))
 
+; Commutation of ispace-variable renaming with the currying of product
+; types performed by evaluation (see pi-curried-body): renaming the curried
+; body under the maps reduced by the first parameter equals currying the
+; body renamed under the maps reduced by all the parameters.  The crux is
+; that removing the first parameter and then the remaining ones from the
+; renaming maps equals removing all the parameters at once.
+
+(local
+ (defruled mergesort-of-cons
+   (equal (set::mergesort (cons a l))
+          (set::insert a (set::mergesort l)))
+   :enable set::mergesort))
+
+(local
+ (defruled mergesort-when-singleton
+   (implies (and (consp params)
+                 (not (consp (cdr params))))
+            (equal (set::mergesort params)
+                   (set::insert (car params) nil)))
+   :expand ((set::mergesort params)
+            (set::mergesort (cdr params)))))
+
+(local
+ (defruled delete*-of-delete*-fuse
+   (equal (omap::delete* keys1 (omap::delete* keys2 map))
+          (omap::delete* (set::union keys1 keys2) map))
+   :expand ((omap::ext-equal (omap::delete* keys1 (omap::delete* keys2 map))
+                             (omap::delete* (set::union keys1 keys2) map))
+            (omap::ext-equal (omap::delete* (set::union keys1 keys2) map)
+                             (omap::delete* keys1 (omap::delete* keys2 map))))
+   :use ((:instance omap::ext-equal-becomes-equal
+                    (omap::x (omap::delete* keys1 (omap::delete* keys2 map)))
+                    (omap::y (omap::delete* (set::union keys1 keys2) map))))))
+
+(local
+ (defruled dim/shape-rename-remove-bound-of-insert-then-rest
+   (implies (and (ispace-varp var)
+                 (ispace-var-listp rest))
+            (b* (((mv & & dim1 shape1)
+                  (dim/shape-rename-remove-bound (set::insert var nil)
+                                                 dim-renam shape-renam))
+                 ((mv & & dim2 shape2)
+                  (dim/shape-rename-remove-bound (set::mergesort rest)
+                                                 dim1 shape1))
+                 ((mv & & dimc shapec)
+                  (dim/shape-rename-remove-bound (set::mergesort
+                                                  (cons var rest))
+                                                 dim-renam shape-renam)))
+              (and (equal dim2 dimc)
+                   (equal shape2 shapec))))
+   :enable (dim/shape-rename-remove-bound
+            delete*-of-delete*-fuse
+            mergesort-of-cons)))
+
+(defrule type-rename-ispace-vars-of-pi-curried-body
+  (implies (and (ispace-var-listp params)
+                (consp params))
+           (b* (((mv & & dim1 shape1)
+                 (dim/shape-rename-remove-bound (set::insert (car params) nil)
+                                                dim-renam shape-renam))
+                ((mv & & dim-all shape-all)
+                 (dim/shape-rename-remove-bound (set::mergesort params)
+                                                dim-renam shape-renam)))
+             (equal (type-rename-ispace-vars (pi-curried-body params body)
+                                             dim1 shape1)
+                    (pi-curried-body params
+                                     (type-rename-ispace-vars body
+                                                              dim-all
+                                                              shape-all)))))
+  :enable (pi-curried-body
+           mergesort-when-singleton)
+  :use ((:instance dim/shape-rename-remove-bound-of-insert-then-rest
+                   (var (car params))
+                   (rest (cdr params)))))
+
+(defrule type-rename-ispace-vars-of-sigma-curried-body
+  (implies (and (ispace-var-listp params)
+                (consp params))
+           (b* (((mv & & dim1 shape1)
+                 (dim/shape-rename-remove-bound (set::insert (car params) nil)
+                                                dim-renam shape-renam))
+                ((mv & & dim-all shape-all)
+                 (dim/shape-rename-remove-bound (set::mergesort params)
+                                                dim-renam shape-renam)))
+             (equal (type-rename-ispace-vars (sigma-curried-body params body)
+                                             dim1 shape1)
+                    (sigma-curried-body params
+                                        (type-rename-ispace-vars body
+                                                                 dim-all
+                                                                 shape-all)))))
+  :enable (sigma-curried-body
+           mergesort-when-singleton)
+  :use ((:instance dim/shape-rename-remove-bound-of-insert-then-rest
+                   (var (car params))
+                   (rest (cdr params)))))
+
+; The ispace-variable analogue for the currying of universal types:
+; since universal types bind no ispace variables,
+; the renaming maps are not reduced, and the commutation is direct.
+
+(defrule type-rename-ispace-vars-of-forall-curried-body
+  (implies (and (type-var-listp params)
+                (consp params))
+           (equal (type-rename-ispace-vars (forall-curried-body params body)
+                                           dim-renam shape-renam)
+                  (forall-curried-body params
+                                       (type-rename-ispace-vars body
+                                                                dim-renam
+                                                                shape-renam))))
+  :enable forall-curried-body)
+
+; The analogue for the currying of term lambda abstractions
+; (see lambda-curried-body), laid down ahead of that currying:
+; lambda abstractions bind no ispace variables,
+; but their parameter type annotations may contain ispace variables,
+; so all components are renamed and the commutation is direct.
+
+(local (acl2::defopeners expr-rename-ispace-vars))
+(local (acl2::defopeners atom-rename-ispace-vars))
+
+(defrule expr-rename-ispace-vars-of-lambda-curried-body
+  (implies (and (var+type?-listp params)
+                (consp params))
+           (equal (expr-rename-ispace-vars
+                   (lambda-curried-body params body type?)
+                   dim-renam shape-renam)
+                  (lambda-curried-body
+                   (var+type?-list-rename-ispace-vars params
+                                                      dim-renam
+                                                      shape-renam)
+                   (expr-rename-ispace-vars body dim-renam shape-renam)
+                   (type-option-rename-ispace-vars type?
+                                                   dim-renam
+                                                   shape-renam))))
+  :enable (lambda-curried-body
+           var+type?-list-rename-ispace-vars))
+
 ; Phase 1: evaluating a renamed type errs exactly when evaluating the
 ; original type does.  This is proved first, and separately from the value
 ; equality below, so that during the induction for the latter the error
 ; status of the renamed evaluations can be rewritten (by the theorems below)
 ; to the error status of the original ones.
 
-(defret-mutual reserrp-of-eval-of-rename-ispace-vars
-  (defret reserrp-of-eval-type-of-type-rename-ispace-vars
+(defthm-eval-types-flag
+  (defthm reserrp-of-eval-type-of-type-rename-ispace-vars
     (implies (and (denv-ispace-vars-renamed-p (type-denv->ienv new-denv)
                                               (type-denv->ienv denv)
                                               dim-renam shape-renam)
@@ -960,9 +1189,9 @@
                                                                dim-renam
                                                                shape-renam)
                                       new-denv))
-                  (reserrp tval)))
-    :fn eval-type)
-  (defret reserrp-of-eval-type-list-of-type-list-rename-ispace-vars
+                  (reserrp (eval-type type denv))))
+    :flag eval-type)
+  (defthm reserrp-of-eval-type-list-of-type-list-rename-ispace-vars
     (implies (and (denv-ispace-vars-renamed-p (type-denv->ienv new-denv)
                                               (type-denv->ienv denv)
                                               dim-renam shape-renam)
@@ -973,9 +1202,8 @@
                                                           dim-renam
                                                           shape-renam)
                             new-denv))
-                  (reserrp tvals)))
-    :fn eval-type-list)
-  :mutual-recursion eval-types
+                  (reserrp (eval-type-list types denv))))
+    :flag eval-type-list)
   :hints
   (("Goal"
     :in-theory (enable eval-type
@@ -994,8 +1222,8 @@
 ; Phase 2: on success, evaluating a renamed type yields the renaming of the
 ; original type value.
 
-(defret-mutual eval-of-rename-ispace-vars
-  (defret eval-type-of-type-rename-ispace-vars
+(defthm-eval-types-flag
+  (defthm eval-type-of-type-rename-ispace-vars
     (implies (and (denv-ispace-vars-renamed-p (type-denv->ienv new-denv)
                                               (type-denv->ienv denv)
                                               dim-renam shape-renam)
@@ -1004,16 +1232,16 @@
                   (type-rename-ispace-vars-no-capture-p type
                                                         dim-renam
                                                         shape-renam)
-                  (not (reserrp tval)))
+                  (not (reserrp (eval-type type denv))))
              (equal (eval-type (type-rename-ispace-vars type
                                                         dim-renam
                                                         shape-renam)
                                new-denv)
-                    (type-value-rename-ispace-vars tval
+                    (type-value-rename-ispace-vars (eval-type type denv)
                                                    dim-renam
                                                    shape-renam)))
-    :fn eval-type)
-  (defret eval-type-list-of-type-list-rename-ispace-vars
+    :flag eval-type)
+  (defthm eval-type-list-of-type-list-rename-ispace-vars
     (implies (and (denv-ispace-vars-renamed-p (type-denv->ienv new-denv)
                                               (type-denv->ienv denv)
                                               dim-renam shape-renam)
@@ -1022,16 +1250,16 @@
                   (type-list-rename-ispace-vars-no-capture-p types
                                                              dim-renam
                                                              shape-renam)
-                  (not (reserrp tvals)))
+                  (not (reserrp (eval-type-list types denv))))
              (equal (eval-type-list (type-list-rename-ispace-vars types
                                                                   dim-renam
                                                                   shape-renam)
                                     new-denv)
-                    (type-value-list-rename-ispace-vars tvals
-                                                        dim-renam
-                                                        shape-renam)))
-    :fn eval-type-list)
-  :mutual-recursion eval-types
+                    (type-value-list-rename-ispace-vars
+                     (eval-type-list types denv)
+                     dim-renam
+                     shape-renam)))
+    :flag eval-type-list)
   :hints
   (("Goal"
     :in-theory (enable eval-type
@@ -1047,6 +1275,7 @@
                        type-free-ispace-vars
                        type-free-type-vars
                        ispace-var-set-rename-ispace-vars-of-difference
+                       ispace-var-set-rename-ispace-vars-of-delete
                        ispace-denv-restrict-of-rename-when-denv-ispace-vars-renamed-p
                        restrict-of-types-when-denv-type-vars-ispace-renamed-p
                        not-reserrp-when-type-valuep
@@ -1077,44 +1306,42 @@
 
 (in-theory (disable denv-ispace-vars-equal-p))
 
-(defret-mutual eval-dim-when-denv-ispace-vars-equal
-  (defret eval-dim-when-denv-ispace-vars-equal
+(defthm-eval-dims-flag
+  (defthm eval-dim-when-denv-ispace-vars-equal
     (implies (denv-ispace-vars-equal-p new-denv denv)
              (equal (eval-dim dim new-denv)
-                    int))
-    :fn eval-dim)
-  (defret eval-dim-list-when-denv-ispace-vars-equal
+                    (eval-dim dim denv)))
+    :flag eval-dim)
+  (defthm eval-dim-list-when-denv-ispace-vars-equal
     (implies (denv-ispace-vars-equal-p new-denv denv)
              (equal (eval-dim-list dims new-denv)
-                    ints))
-    :fn eval-dim-list)
-  :mutual-recursion eval-dims
+                    (eval-dim-list dims denv)))
+    :flag eval-dim-list)
   :hints
   (("Goal" :in-theory (enable eval-dim eval-dim-list
                               ispace-denv-lookup-ispace))))
 
-(defret-mutual eval-shape-when-denv-ispace-vars-equal
-  (defret eval-shape-when-denv-ispace-vars-equal
+(defthm-eval-shapes/ispaces-flag
+  (defthm eval-shape-when-denv-ispace-vars-equal
     (implies (denv-ispace-vars-equal-p new-denv denv)
              (equal (eval-shape shape new-denv)
-                    nats))
-    :fn eval-shape)
-  (defret eval-shape-list-when-denv-ispace-vars-equal
+                    (eval-shape shape denv)))
+    :flag eval-shape)
+  (defthm eval-shape-list-when-denv-ispace-vars-equal
     (implies (denv-ispace-vars-equal-p new-denv denv)
              (equal (eval-shape-list shapes new-denv)
-                    natss))
-    :fn eval-shape-list)
-  (defret eval-ispace-when-denv-ispace-vars-equal
+                    (eval-shape-list shapes denv)))
+    :flag eval-shape-list)
+  (defthm eval-ispace-when-denv-ispace-vars-equal
     (implies (denv-ispace-vars-equal-p new-denv denv)
              (equal (eval-ispace ispace new-denv)
-                    ival))
-    :fn eval-ispace)
-  (defret eval-ispace-list-when-denv-ispace-vars-equal
+                    (eval-ispace ispace denv)))
+    :flag eval-ispace)
+  (defthm eval-ispace-list-when-denv-ispace-vars-equal
     (implies (denv-ispace-vars-equal-p new-denv denv)
              (equal (eval-ispace-list ispaces new-denv)
-                    ivals))
-    :fn eval-ispace-list)
-  :mutual-recursion eval-shapes/ispaces
+                    (eval-ispace-list ispaces denv)))
+    :flag eval-ispace-list)
   :hints
   (("Goal" :in-theory (enable eval-shape
                               eval-shape-list
@@ -1172,18 +1399,18 @@
                                                 array-renam)
              :dims tval.dims)
      :fun (make-type-value-fun
-           :in (type-value-list-rename-type-vars tval.in
-                                                 atom-renam
-                                                 array-renam)
+           :in (type-value-rename-type-vars tval.in
+                                            atom-renam
+                                            array-renam)
            :out (type-value-rename-type-vars tval.out
                                              atom-renam
                                              array-renam))
      :forall (b* (((mv & & body-atom-renam body-array-renam)
-                   (atom/array-rename-remove-bound (set::mergesort tval.params)
+                   (atom/array-rename-remove-bound (set::insert tval.param nil)
                                                    atom-renam
                                                    array-renam)))
                (make-type-value-forall
-                :params tval.params
+                :param tval.param
                 :body (type-rename-type-vars tval.body
                                              body-atom-renam
                                              body-array-renam)
@@ -1191,11 +1418,11 @@
                                                   atom-renam
                                                   array-renam)))
      :pi (make-type-value-pi
-          :params tval.params
+          :param tval.param
           :body (type-rename-type-vars tval.body atom-renam array-renam)
           :denv (type-denv-rename-type-vars tval.denv atom-renam array-renam))
      :sigma (make-type-value-sigma
-             :params tval.params
+             :param tval.param
              :body (type-rename-type-vars tval.body atom-renam array-renam)
              :denv (type-denv-rename-type-vars tval.denv
                                                atom-renam
@@ -1267,6 +1494,23 @@
     (not (reserrp new-tvals))
     :fn type-value-list-rename-type-vars
     :hints (("Goal" :in-theory (enable not-reserrp-when-type-value-listp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The type-variable counterpart of the lemma about ispace variables above.
+
+(local (acl2::defopeners type-value-rename-type-vars))
+
+(defrule type-value-rename-type-vars-of-nest-function-type-values
+  (equal (type-value-rename-type-vars (nest-function-type-values in out)
+                                      atom-renam
+                                      array-renam)
+         (nest-function-type-values
+          (type-value-list-rename-type-vars in atom-renam array-renam)
+          (type-value-rename-type-vars out atom-renam array-renam)))
+  :induct t
+  :enable (nest-function-type-values
+           type-value-list-rename-type-vars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1380,75 +1624,111 @@
            equal-of-type-var-array
            set::in))
 
+(local
+ (defrule setp-of-atom-names-of-type-vars
+   (set::setp (mv-nth 0 (atom/array-names-of-type-vars vars)))
+   :use string-setp-of-atom/array-names-of-type-vars.atom-names
+   :disable string-setp-of-atom/array-names-of-type-vars.atom-names))
+
+(local
+ (defrule setp-of-array-names-of-type-vars
+   (set::setp (mv-nth 1 (atom/array-names-of-type-vars vars)))
+   :use string-setp-of-atom/array-names-of-type-vars.array-names
+   :disable string-setp-of-atom/array-names-of-type-vars.array-names))
+
+(defrule atom-names-of-type-vars-of-insert
+  (implies (and (type-varp var)
+                (type-var-setp vars))
+           (equal (mv-nth 0 (atom/array-names-of-type-vars
+                             (set::insert var vars)))
+                  (if (type-var-case var :atom)
+                      (set::insert (type-var-atom->name var)
+                                   (mv-nth 0 (atom/array-names-of-type-vars
+                                              vars)))
+                    (mv-nth 0 (atom/array-names-of-type-vars vars)))))
+  :enable (set::double-containment
+           set::pick-a-point-subset-strategy
+           equal-of-type-var-atom))
+
+(defrule array-names-of-type-vars-of-insert
+  (implies (and (type-varp var)
+                (type-var-setp vars))
+           (equal (mv-nth 1 (atom/array-names-of-type-vars
+                             (set::insert var vars)))
+                  (if (type-var-case var :array)
+                      (set::insert (type-var-array->name var)
+                                   (mv-nth 1 (atom/array-names-of-type-vars
+                                              vars)))
+                    (mv-nth 1 (atom/array-names-of-type-vars vars)))))
+  :enable (set::double-containment
+           set::pick-a-point-subset-strategy
+           equal-of-type-var-array))
+
 ; No-capture lemmas for the two type-variable namespaces.
 
-(local
- (defruled not-in-bound-of-renamed-atom-name
-   (implies (and (type-var-setp bound)
-                 (set::emptyp
-                  (set::intersect
-                   (mv-nth 0 (atom/array-names-of-type-vars bound))
-                   (omap::values
-                    (omap::delete*
-                     (mv-nth 0 (atom/array-names-of-type-vars bound))
-                     (string-string-map-fix atom-renam)))))
-                 (stringp name)
-                 (not (set::in (type-var-atom name) bound))
-                 (omap::assoc name (string-string-map-fix atom-renam)))
-            (not (set::in
-                  (type-var-atom
-                   (cdr (omap::assoc name (string-string-map-fix atom-renam))))
-                  bound)))
-   :use ((:instance omap::cdr-assoc-in-values
-                    (omap::key name)
-                    (omap::map (omap::delete*
-                                (mv-nth 0 (atom/array-names-of-type-vars
-                                           bound))
-                                (string-string-map-fix atom-renam))))
-         (:instance not-in-when-emptyp-of-intersect
-                    (a (cdr (omap::assoc name
-                                         (string-string-map-fix atom-renam))))
-                    (x (mv-nth 0 (atom/array-names-of-type-vars bound)))
-                    (y (omap::values
-                        (omap::delete*
-                         (mv-nth 0 (atom/array-names-of-type-vars bound))
-                         (string-string-map-fix atom-renam))))))
-   :disable not-in-when-emptyp-of-intersect))
+(defruledl not-in-bound-of-renamed-atom-name
+  (implies (and (type-var-setp bound)
+                (set::emptyp
+                 (set::intersect
+                  (mv-nth 0 (atom/array-names-of-type-vars bound))
+                  (omap::values
+                   (omap::delete*
+                    (mv-nth 0 (atom/array-names-of-type-vars bound))
+                    (string-string-map-fix atom-renam)))))
+                (stringp name)
+                (not (set::in (type-var-atom name) bound))
+                (omap::assoc name (string-string-map-fix atom-renam)))
+           (not (set::in
+                 (type-var-atom
+                  (cdr (omap::assoc name (string-string-map-fix atom-renam))))
+                 bound)))
+  :use ((:instance omap::cdr-assoc-in-values
+                   (omap::key name)
+                   (omap::map (omap::delete*
+                               (mv-nth 0 (atom/array-names-of-type-vars
+                                          bound))
+                               (string-string-map-fix atom-renam))))
+        (:instance set::never-in-empty
+                   (set::a (cdr (omap::assoc name
+                                        (string-string-map-fix atom-renam))))
+                   (set::x (set::intersect (mv-nth 0 (atom/array-names-of-type-vars bound))
+                                           (omap::values
+                       (omap::delete*
+                        (mv-nth 0 (atom/array-names-of-type-vars bound))
+                        (string-string-map-fix atom-renam))))))))
 
-(local
- (defruled not-in-bound-of-renamed-array-name
-   (implies (and (type-var-setp bound)
-                 (set::emptyp
-                  (set::intersect
-                   (mv-nth 1 (atom/array-names-of-type-vars bound))
-                   (omap::values
-                    (omap::delete*
-                     (mv-nth 1 (atom/array-names-of-type-vars bound))
-                     (string-string-map-fix array-renam)))))
-                 (stringp name)
-                 (not (set::in (type-var-array name) bound))
-                 (omap::assoc name (string-string-map-fix array-renam)))
-            (not (set::in
-                  (type-var-array
-                   (cdr (omap::assoc name
-                                     (string-string-map-fix array-renam))))
-                  bound)))
-   :use ((:instance omap::cdr-assoc-in-values
-                    (omap::key name)
-                    (omap::map (omap::delete*
-                                (mv-nth 1 (atom/array-names-of-type-vars
-                                           bound))
-                                (string-string-map-fix array-renam))))
-         (:instance not-in-when-emptyp-of-intersect
-                    (a (cdr (omap::assoc name
-                                         (string-string-map-fix
-                                          array-renam))))
-                    (x (mv-nth 1 (atom/array-names-of-type-vars bound)))
-                    (y (omap::values
-                        (omap::delete*
-                         (mv-nth 1 (atom/array-names-of-type-vars bound))
-                         (string-string-map-fix array-renam))))))
-   :disable not-in-when-emptyp-of-intersect))
+(defruledl not-in-bound-of-renamed-array-name
+  (implies (and (type-var-setp bound)
+                (set::emptyp
+                 (set::intersect
+                  (mv-nth 1 (atom/array-names-of-type-vars bound))
+                  (omap::values
+                   (omap::delete*
+                    (mv-nth 1 (atom/array-names-of-type-vars bound))
+                    (string-string-map-fix array-renam)))))
+                (stringp name)
+                (not (set::in (type-var-array name) bound))
+                (omap::assoc name (string-string-map-fix array-renam)))
+           (not (set::in
+                 (type-var-array
+                  (cdr (omap::assoc name
+                                    (string-string-map-fix array-renam))))
+                 bound)))
+  :use ((:instance omap::cdr-assoc-in-values
+                   (omap::key name)
+                   (omap::map (omap::delete*
+                               (mv-nth 1 (atom/array-names-of-type-vars
+                                          bound))
+                               (string-string-map-fix array-renam))))
+        (:instance set::never-in-empty
+                   (set::a (cdr (omap::assoc name
+                                        (string-string-map-fix
+                                         array-renam))))
+                   (set::x (set::intersect (mv-nth 1 (atom/array-names-of-type-vars bound))
+                                           (omap::values
+                       (omap::delete*
+                        (mv-nth 1 (atom/array-names-of-type-vars bound))
+                        (string-string-map-fix array-renam))))))))
 
 ; The key lemma for the Forall binder.
 
@@ -1497,30 +1777,74 @@
            set::difference
            set::difference-insert-x))
 
+; The type-variable analogue of the singleton (deletion) version of the
+; preceding theorem (see ispace-var-set-rename-ispace-vars-of-delete):
+; it is needed for the unary universal type, whose free type variables
+; are obtained via a set deletion instead of a set difference.
+
+(defruled type-var-set-rename-type-vars-of-delete
+  (implies
+   (and (type-var-setp vars)
+        (type-varp var)
+        (renaming-no-capture-p
+         (mv-nth 0 (atom/array-rename-remove-bound (set::insert var nil)
+                                                   atom-renam
+                                                   array-renam))
+         (mv-nth 2 (atom/array-rename-remove-bound (set::insert var nil)
+                                                   atom-renam
+                                                   array-renam)))
+        (renaming-no-capture-p
+         (mv-nth 1 (atom/array-rename-remove-bound (set::insert var nil)
+                                                   atom-renam
+                                                   array-renam))
+         (mv-nth 3 (atom/array-rename-remove-bound (set::insert var nil)
+                                                   atom-renam
+                                                   array-renam))))
+   (equal
+    (set::delete
+     var
+     (type-var-set-rename-type-vars
+      vars
+      (mv-nth 2 (atom/array-rename-remove-bound (set::insert var nil)
+                                                atom-renam
+                                                array-renam))
+      (mv-nth 3 (atom/array-rename-remove-bound (set::insert var nil)
+                                                atom-renam
+                                                array-renam))))
+    (type-var-set-rename-type-vars (set::delete var vars)
+                                   atom-renam
+                                   array-renam)))
+  :use ((:instance type-var-set-rename-type-vars-of-difference
+                   (bound (set::insert var nil))))
+  :enable difference-of-insert-nil)
+
 ; The free type variables of a type with renamed type variables are the
 ; renamings of the free type variables of the type, provided the renaming
 ; captures no variables.
 
-(defret-mutual free-type-vars-of-rename-type-vars
-  (defret free-type-vars-of-type-rename-type-vars
+(defthm-types-rename-type-vars-flag
+  (defthm free-type-vars-of-type-rename-type-vars
     (implies (type-rename-type-vars-no-capture-p type atom-renam array-renam)
-             (equal (type-free-type-vars result)
+             (equal (type-free-type-vars
+                     (type-rename-type-vars type atom-renam array-renam))
                     (type-var-set-rename-type-vars
                      (type-free-type-vars type)
                      atom-renam
                      array-renam)))
-    :fn type-rename-type-vars)
-  (defret free-type-vars-of-type-list-rename-type-vars
+    :flag type-rename-type-vars)
+  (defthm free-type-vars-of-type-list-rename-type-vars
     (implies (type-list-rename-type-vars-no-capture-p type-list
                                                       atom-renam
                                                       array-renam)
-             (equal (type-list-free-type-vars result)
+             (equal (type-list-free-type-vars
+                     (type-list-rename-type-vars type-list
+                                                 atom-renam
+                                                 array-renam))
                     (type-var-set-rename-type-vars
                      (type-list-free-type-vars type-list)
                      atom-renam
                      array-renam)))
-    :fn type-list-rename-type-vars)
-  :mutual-recursion types-rename-type-vars
+    :flag type-list-rename-type-vars)
   :hints
   (("Goal" :in-theory (enable type-rename-type-vars
                               type-list-rename-type-vars
@@ -1529,22 +1853,24 @@
                               type-rename-type-vars-no-capture-p
                               type-list-rename-type-vars-no-capture-p
                               type-var-set-rename-type-vars-of-difference
+                              type-var-set-rename-type-vars-of-delete
                               type-var-set-rename-type-vars
                               rename-type-var
                               rename-var-string))))
 
 ; The free ispace variables of a type are untouched by a type renaming.
 
-(defret-mutual free-ispace-vars-of-rename-type-vars
-  (defret free-ispace-vars-of-type-rename-type-vars
-    (equal (type-free-ispace-vars result)
+(defthm-types-rename-type-vars-flag
+  (defthm free-ispace-vars-of-type-rename-type-vars
+    (equal (type-free-ispace-vars
+            (type-rename-type-vars type atom-renam array-renam))
            (type-free-ispace-vars type))
-    :fn type-rename-type-vars)
-  (defret free-ispace-vars-of-type-list-rename-type-vars
-    (equal (type-list-free-ispace-vars result)
+    :flag type-rename-type-vars)
+  (defthm free-ispace-vars-of-type-list-rename-type-vars
+    (equal (type-list-free-ispace-vars
+            (type-list-rename-type-vars type-list atom-renam array-renam))
            (type-list-free-ispace-vars type-list))
-    :fn type-list-rename-type-vars)
-  :mutual-recursion types-rename-type-vars
+    :flag type-list-rename-type-vars)
   :hints
   (("Goal" :in-theory (enable type-rename-type-vars
                               type-list-rename-type-vars
@@ -1593,8 +1919,138 @@
 
 (local (acl2::defopeners type-rename-type-vars))
 
-(defret-mutual reserrp-of-eval-of-rename-type-vars
-  (defret reserrp-of-eval-type-of-type-rename-type-vars
+; The type-variable analogue of the commutation of renaming with the
+; currying of product types: since product types bind no type variables,
+; the renaming maps are not reduced, and the commutation is direct.
+
+(defrule type-rename-type-vars-of-pi-curried-body
+  (implies (and (ispace-var-listp params)
+                (consp params))
+           (equal (type-rename-type-vars (pi-curried-body params body)
+                                         atom-renam array-renam)
+                  (pi-curried-body params
+                                   (type-rename-type-vars body
+                                                          atom-renam
+                                                          array-renam))))
+  :enable pi-curried-body)
+
+(defrule type-rename-type-vars-of-sigma-curried-body
+  (implies (and (ispace-var-listp params)
+                (consp params))
+           (equal (type-rename-type-vars (sigma-curried-body params body)
+                                         atom-renam array-renam)
+                  (sigma-curried-body params
+                                      (type-rename-type-vars body
+                                                             atom-renam
+                                                             array-renam))))
+  :enable sigma-curried-body)
+
+; The type-variable commutation for the currying of universal types
+; mirrors the ispace-variable one for the currying of product types:
+; the crux is again that removing the first parameter and then the
+; remaining ones from the renaming maps equals removing all the
+; parameters at once.
+
+(local
+ (defruled atom/array-rename-remove-bound-of-insert-then-rest
+   (implies (and (type-varp var)
+                 (type-var-listp rest))
+            (b* (((mv & & atom1 array1)
+                  (atom/array-rename-remove-bound (set::insert var nil)
+                                                  atom-renam array-renam))
+                 ((mv & & atom2 array2)
+                  (atom/array-rename-remove-bound (set::mergesort rest)
+                                                  atom1 array1))
+                 ((mv & & atomc arrayc)
+                  (atom/array-rename-remove-bound (set::mergesort
+                                                   (cons var rest))
+                                                  atom-renam array-renam)))
+              (and (equal atom2 atomc)
+                   (equal array2 arrayc))))
+   :enable (atom/array-rename-remove-bound
+            delete*-of-delete*-fuse
+            mergesort-of-cons)))
+
+(defrule type-rename-type-vars-of-forall-curried-body
+  (implies (and (type-var-listp params)
+                (consp params))
+           (b* (((mv & & atom1 array1)
+                 (atom/array-rename-remove-bound (set::insert (car params)
+                                                              nil)
+                                                 atom-renam array-renam))
+                ((mv & & atom-all array-all)
+                 (atom/array-rename-remove-bound (set::mergesort params)
+                                                 atom-renam array-renam)))
+             (equal (type-rename-type-vars (forall-curried-body params body)
+                                           atom1 array1)
+                    (forall-curried-body params
+                                         (type-rename-type-vars body
+                                                                atom-all
+                                                                array-all)))))
+  :enable (forall-curried-body
+           mergesort-when-singleton)
+  :use ((:instance atom/array-rename-remove-bound-of-insert-then-rest
+                   (var (car params))
+                   (rest (cdr params)))))
+
+; The type-variable analogue for the currying of term lambda abstractions
+; (see lambda-curried-body), laid down ahead of that currying:
+; lambda abstractions bind no type variables,
+; but their parameter type annotations may contain type variables,
+; so all components are renamed and the commutation is direct.
+
+(local (acl2::defopeners expr-rename-type-vars))
+(local (acl2::defopeners atom-rename-type-vars))
+
+(defrule expr-rename-type-vars-of-lambda-curried-body
+  (implies (and (var+type?-listp params)
+                (consp params))
+           (equal (expr-rename-type-vars
+                   (lambda-curried-body params body type?)
+                   atom-renam array-renam)
+                  (lambda-curried-body
+                   (var+type?-list-rename-type-vars params
+                                                    atom-renam
+                                                    array-renam)
+                   (expr-rename-type-vars body atom-renam array-renam)
+                   (type-option-rename-type-vars type?
+                                                 atom-renam
+                                                 array-renam))))
+  :enable (lambda-curried-body
+           var+type?-list-rename-type-vars))
+
+; The expression-variable analogue for the currying of
+; term lambda abstractions, which bind expression variables:
+; renaming the curried body under the map reduced by the first parameter
+; equals currying the body renamed under the map reduced by
+; all the parameters.
+
+(local (acl2::defopeners expr-rename-expr-vars))
+(local (acl2::defopeners atom-rename-expr-vars))
+
+(defrule expr-rename-expr-vars-of-lambda-curried-body
+  (implies (and (var+type?-listp params)
+                (consp params))
+           (equal (expr-rename-expr-vars
+                   (lambda-curried-body params body type?)
+                   (omap::delete* (set::insert (var+type?->var (car params))
+                                               nil)
+                                  (string-string-map-fix renam)))
+                  (lambda-curried-body
+                   params
+                   (expr-rename-expr-vars
+                    body
+                    (omap::delete*
+                     (set::mergesort (var+type?-list->var params))
+                     (string-string-map-fix renam)))
+                   type?)))
+  :enable (lambda-curried-body
+           delete*-of-delete*-fuse
+           mergesort-of-cons
+           mergesort-when-singleton))
+
+(defthm-eval-types-flag
+  (defthm reserrp-of-eval-type-of-type-rename-type-vars
     (implies (and (denv-ispace-vars-equal-p (type-denv->ienv new-denv)
                                             (type-denv->ienv denv))
                   (denv-type-vars-renamed-p new-denv denv
@@ -1603,9 +2059,9 @@
                                                              atom-renam
                                                              array-renam)
                                       new-denv))
-                  (reserrp tval)))
-    :fn eval-type)
-  (defret reserrp-of-eval-type-list-of-type-list-rename-type-vars
+                  (reserrp (eval-type type denv))))
+    :flag eval-type)
+  (defthm reserrp-of-eval-type-list-of-type-list-rename-type-vars
     (implies (and (denv-ispace-vars-equal-p (type-denv->ienv new-denv)
                                             (type-denv->ienv denv))
                   (denv-type-vars-renamed-p new-denv denv
@@ -1615,9 +2071,8 @@
                                                         atom-renam
                                                         array-renam)
                             new-denv))
-                  (reserrp tvals)))
-    :fn eval-type-list)
-  :mutual-recursion eval-types
+                  (reserrp (eval-type-list types denv))))
+    :flag eval-type-list)
   :hints
   (("Goal"
     :in-theory (enable eval-type
@@ -1635,8 +2090,8 @@
         '(:use ((:instance denv-type-vars-renamed-p-necc
                            (var (type-var->var type))))))))
 
-(defret-mutual eval-of-rename-type-vars
-  (defret eval-type-of-type-rename-type-vars
+(defthm-eval-types-flag
+  (defthm eval-type-of-type-rename-type-vars
     (implies (and (denv-ispace-vars-equal-p (type-denv->ienv new-denv)
                                             (type-denv->ienv denv))
                   (denv-type-vars-renamed-p new-denv denv
@@ -1644,16 +2099,16 @@
                   (type-rename-type-vars-no-capture-p type
                                                       atom-renam
                                                       array-renam)
-                  (not (reserrp tval)))
+                  (not (reserrp (eval-type type denv))))
              (equal (eval-type (type-rename-type-vars type
                                                       atom-renam
                                                       array-renam)
                                new-denv)
-                    (type-value-rename-type-vars tval
+                    (type-value-rename-type-vars (eval-type type denv)
                                                  atom-renam
                                                  array-renam)))
-    :fn eval-type)
-  (defret eval-type-list-of-type-list-rename-type-vars
+    :flag eval-type)
+  (defthm eval-type-list-of-type-list-rename-type-vars
     (implies (and (denv-ispace-vars-equal-p (type-denv->ienv new-denv)
                                             (type-denv->ienv denv))
                   (denv-type-vars-renamed-p new-denv denv
@@ -1661,16 +2116,16 @@
                   (type-list-rename-type-vars-no-capture-p types
                                                            atom-renam
                                                            array-renam)
-                  (not (reserrp tvals)))
+                  (not (reserrp (eval-type-list types denv))))
              (equal (eval-type-list (type-list-rename-type-vars types
                                                                 atom-renam
                                                                 array-renam)
                                     new-denv)
-                    (type-value-list-rename-type-vars tvals
-                                                      atom-renam
-                                                      array-renam)))
-    :fn eval-type-list)
-  :mutual-recursion eval-types
+                    (type-value-list-rename-type-vars
+                     (eval-type-list types denv)
+                     atom-renam
+                     array-renam)))
+    :flag eval-type-list)
   :hints
   (("Goal"
     :in-theory (enable eval-type
@@ -1686,6 +2141,7 @@
                        type-free-ispace-vars
                        type-free-type-vars
                        type-var-set-rename-type-vars-of-difference
+                       type-var-set-rename-type-vars-of-delete
                        ispace-denv-restrict-when-denv-ispace-vars-equal-p
                        restrict-of-types-when-denv-type-vars-renamed-p
                        rename-var-string
@@ -1745,6 +2201,11 @@
               (equal (check-dims-of-expr-value-list vals)
                      (reserr nil)))
      :flag check-dims-of-expr-value-list)
+   (defthm check-dims-of-primop-value-when-reserrp
+     (implies (reserrp (check-dims-of-primop-value val))
+              (equal (check-dims-of-primop-value val)
+                     (reserr nil)))
+     :flag check-dims-of-primop-value)
    (defthm check-dims-of-string-expr-value-map-two-valued
      (and (implies (reserrp (check-dims-of-string-expr-value-map map))
                    (equal (check-dims-of-string-expr-value-map map)
@@ -1763,6 +2224,7 @@
      :flag check-dims-of-expr-denv)
    :hints (("Goal" :in-theory (enable check-dims-of-expr-value
                                       check-dims-of-expr-value-list
+                                      check-dims-of-primop-value
                                       check-dims-of-string-expr-value-map
                                       check-dims-of-expr-denv
                                       acl2::nat-listp-when-result-not-error
@@ -1824,24 +2286,24 @@
      val
      :base (expr-value-fix val)
      :primop (expr-value-fix val)
-     :lambda (b* ((bound (set::mergesort (var+typevalue-list->var val.params)))
+     :lambda (b* ((bound (set::insert (var+typevalue->var val.param) nil))
                   (body-renam (omap::delete* bound
                                              (string-string-map-fix renam))))
                (make-expr-value-lambda
-                :params val.params
+                :param val.param
                 :body (expr-rename-expr-vars val.body body-renam)
                 :type? val.type?
                 :denv (expr-denv-rename-expr-vars val.denv renam)))
      :tlambda (make-expr-value-tlambda
-               :params val.params
+               :param val.param
                :body (expr-rename-expr-vars val.body renam)
                :denv (expr-denv-rename-expr-vars val.denv renam))
      :ilambda (make-expr-value-ilambda
-               :params val.params
+               :param val.param
                :body (expr-rename-expr-vars val.body renam)
                :denv (expr-denv-rename-expr-vars val.denv renam))
      :box (make-expr-value-box
-           :ispaces val.ispaces
+           :ispace val.ispace
            :array (expr-value-rename-expr-vars val.array renam)
            :type val.type)
      :vector (expr-value-vector
@@ -1949,27 +2411,31 @@
              string-expr-value-map-rename-expr-vars
              omap::keys))
 
-  (defret-mutual check-dims-of-expr-value-rename-expr-vars
-    (defret check-dims-of-expr-value-of-expr-value-rename-expr-vars
+  (defthm-expr-value-rename-expr-vars-flag
+    (defthm check-dims-of-expr-value-of-expr-value-rename-expr-vars
       (implies (rename-var-string-injective-p renam)
-               (equal (check-dims-of-expr-value new-val)
+               (equal (check-dims-of-expr-value
+                       (expr-value-rename-expr-vars val renam))
                       (check-dims-of-expr-value val)))
-      :fn expr-value-rename-expr-vars)
-    (defret check-dims-of-expr-value-list-of-expr-value-list-rename-expr-vars
+      :flag expr-value-rename-expr-vars)
+    (defthm check-dims-of-expr-value-list-of-expr-value-list-rename-expr-vars
       (implies (rename-var-string-injective-p renam)
-               (equal (check-dims-of-expr-value-list new-vals)
+               (equal (check-dims-of-expr-value-list
+                       (expr-value-list-rename-expr-vars vals renam))
                       (check-dims-of-expr-value-list vals)))
-      :fn expr-value-list-rename-expr-vars)
-    (defret check-dims-of-map-of-string-expr-value-map-rename-expr-vars
+      :flag expr-value-list-rename-expr-vars)
+    (defthm check-dims-of-map-of-string-expr-value-map-rename-expr-vars
       (implies (rename-var-string-injective-p renam)
-               (equal (check-dims-of-string-expr-value-map new-map)
+               (equal (check-dims-of-string-expr-value-map
+                       (string-expr-value-map-rename-expr-vars map renam))
                       (check-dims-of-string-expr-value-map map)))
-      :fn string-expr-value-map-rename-expr-vars)
-    (defret check-dims-of-expr-denv-of-expr-denv-rename-expr-vars
+      :flag string-expr-value-map-rename-expr-vars)
+    (defthm check-dims-of-expr-denv-of-expr-denv-rename-expr-vars
       (implies (rename-var-string-injective-p renam)
-               (equal (check-dims-of-expr-denv new-denv)
+               (equal (check-dims-of-expr-denv
+                       (expr-denv-rename-expr-vars denv renam))
                       (check-dims-of-expr-denv denv)))
-      :fn expr-denv-rename-expr-vars)
+      :flag expr-denv-rename-expr-vars)
     :hints
     (("Goal"
       :in-theory
@@ -2025,18 +2491,17 @@
 ; The cells of a renamed value are the renamed cells, in the same two
 ; phases as the evaluation theorems.
 
-(defret-mutual reserrp-of-cells-at-depth-of-rename-expr-vars
-  (defret reserrp-of-cells-at-depth-in-expr-value-of-rename-expr-vars
+(defthm-cells-at-depth-in-expr-values-flag
+  (defthm reserrp-of-cells-at-depth-in-expr-value-of-rename-expr-vars
     (iff (reserrp (cells-at-depth-in-expr-value
                    (expr-value-rename-expr-vars val renam) depth))
-         (reserrp cells))
-    :fn cells-at-depth-in-expr-value)
-  (defret reserrp-of-cells-at-depth-in-expr-value-list-of-rename-expr-vars
+         (reserrp (cells-at-depth-in-expr-value val depth)))
+    :flag cells-at-depth-in-expr-value)
+  (defthm reserrp-of-cells-at-depth-in-expr-value-list-of-rename-expr-vars
     (iff (reserrp (cells-at-depth-in-expr-value-list
                    (expr-value-list-rename-expr-vars vals renam) depth))
-         (reserrp cells))
-    :fn cells-at-depth-in-expr-value-list)
-  :mutual-recursion cells-at-depth-in-expr-values
+         (reserrp (cells-at-depth-in-expr-value-list vals depth)))
+    :flag cells-at-depth-in-expr-value-list)
   :hints
   (("Goal"
     :in-theory (enable cells-at-depth-in-expr-value
@@ -2046,20 +2511,21 @@
                        not-reserrp-when-expr-value-listp
                        expr-value-listp-when-result-not-error))))
 
-(defret-mutual cells-at-depth-of-rename-expr-vars
-  (defret cells-at-depth-in-expr-value-of-rename-expr-vars
-    (implies (not (reserrp cells))
+(defthm-cells-at-depth-in-expr-values-flag
+  (defthm cells-at-depth-in-expr-value-of-rename-expr-vars
+    (implies (not (reserrp (cells-at-depth-in-expr-value val depth)))
              (equal (cells-at-depth-in-expr-value
                      (expr-value-rename-expr-vars val renam) depth)
-                    (expr-value-list-rename-expr-vars cells renam)))
-    :fn cells-at-depth-in-expr-value)
-  (defret cells-at-depth-in-expr-value-list-of-rename-expr-vars
-    (implies (not (reserrp cells))
+                    (expr-value-list-rename-expr-vars
+                     (cells-at-depth-in-expr-value val depth) renam)))
+    :flag cells-at-depth-in-expr-value)
+  (defthm cells-at-depth-in-expr-value-list-of-rename-expr-vars
+    (implies (not (reserrp (cells-at-depth-in-expr-value-list vals depth)))
              (equal (cells-at-depth-in-expr-value-list
                      (expr-value-list-rename-expr-vars vals renam) depth)
-                    (expr-value-list-rename-expr-vars cells renam)))
-    :fn cells-at-depth-in-expr-value-list)
-  :mutual-recursion cells-at-depth-in-expr-values
+                    (expr-value-list-rename-expr-vars
+                     (cells-at-depth-in-expr-value-list vals depth) renam)))
+    :flag cells-at-depth-in-expr-value-list)
   :hints
   (("Goal"
     :in-theory (enable cells-at-depth-in-expr-value
@@ -2076,16 +2542,6 @@
 ; LIST-SPLIT, REPEAT-EACH), the array builders (EXPR-VALUE-WITH-EMPTY-DIM,
 ; EXPR-VALUES-WITH-NONEMPTY-DIMS), and the frame lifting
 ; (LIFT-EXPR-VALUE-TO-FRAME).
-
-; (X - C) / C is an integer when X / C is; needed because the recursion of
-; LIST-SPLIT divides a chunk off the front of the list at each step.
-; This is placed before the ARITHMETIC-3 include below because its
-; ARITHMETIC-5 prep-books (locally scoped to this lemma) would clash with
-; an ARITHMETIC-3 already present in the world.
-(defruledl integerp-of-div-of-diff
-  (implies (integerp (/ x c))
-           (integerp (/ (- x c) c)))
-  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -2141,7 +2597,6 @@
            (expr-value-list-rename-expr-vars cells renam))
   :disable (acl2::equal-of-append-repeat))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2171,26 +2626,20 @@
   ///
   (fty::deffixequiv type-value-option-rename-ispace-vars))
 
-(define var+typevalue-list-rename-ispace-vars ((params var+typevalue-listp)
-                                               (dim-renam string-string-mapp)
-                                               (shape-renam string-string-mapp))
-  :returns (new-params var+typevalue-listp)
-  :short "Rename ispace variables in the type values of a parameter list."
-  (b* (((when (endp params)) nil)
-       ((var+typevalue p) (car params)))
-    (cons (make-var+typevalue
-           :var p.var
-           :type (type-value-rename-ispace-vars p.type dim-renam shape-renam))
-          (var+typevalue-list-rename-ispace-vars (cdr params)
-                                                 dim-renam shape-renam)))
+(define var+typevalue-rename-ispace-vars ((param var+typevalue-p)
+                                          (dim-renam string-string-mapp)
+                                          (shape-renam string-string-mapp))
+  :returns (new-param var+typevalue-p)
+  :short "Rename ispace variables in the type value of a parameter."
+  (b* (((var+typevalue p) param))
+    (make-var+typevalue
+     :var p.var
+     :type (type-value-rename-ispace-vars p.type dim-renam shape-renam)))
   ///
-  (fty::deffixequiv var+typevalue-list-rename-ispace-vars)
-  (defret var+typevalue-list->var-of-var+typevalue-list-rename-ispace-vars
-    (equal (var+typevalue-list->var new-params)
-           (var+typevalue-list->var params))
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable var+typevalue-list->var)))))
+  (fty::deffixequiv var+typevalue-rename-ispace-vars)
+  (defret var+typevalue->var-of-var+typevalue-rename-ispace-vars
+    (equal (var+typevalue->var new-param)
+           (var+typevalue->var param))))
 
 (defines expr-value-rename-ispace-vars
   ;; The flag function is used by theorems in other books
@@ -2209,9 +2658,9 @@
      :base (expr-value-fix val)
      :primop (expr-value-fix val)
      :lambda (make-expr-value-lambda
-              :params (var+typevalue-list-rename-ispace-vars val.params
-                                                             dim-renam
-                                                             shape-renam)
+              :param (var+typevalue-rename-ispace-vars val.param
+                                                       dim-renam
+                                                       shape-renam)
               :body (expr-rename-ispace-vars val.body dim-renam shape-renam)
               :type? (type-value-option-rename-ispace-vars val.type?
                                                            dim-renam
@@ -2220,17 +2669,17 @@
                                                   dim-renam
                                                   shape-renam))
      :tlambda (make-expr-value-tlambda
-               :params val.params
+               :param val.param
                :body (expr-rename-ispace-vars val.body dim-renam shape-renam)
                :denv (expr-denv-rename-ispace-vars val.denv
                                                    dim-renam
                                                    shape-renam))
      :ilambda (b* (((mv & & body-dim-renam body-shape-renam)
-                    (dim/shape-rename-remove-bound (set::mergesort val.params)
+                    (dim/shape-rename-remove-bound (set::insert val.param nil)
                                                    dim-renam
                                                    shape-renam)))
                 (make-expr-value-ilambda
-                 :params val.params
+                 :param val.param
                  :body (expr-rename-ispace-vars val.body
                                                 body-dim-renam
                                                 body-shape-renam)
@@ -2238,7 +2687,7 @@
                                                      dim-renam
                                                      shape-renam)))
      :box (make-expr-value-box
-           :ispaces val.ispaces
+           :ispace val.ispace
            :array (expr-value-rename-ispace-vars val.array
                                                  dim-renam
                                                  shape-renam)
@@ -2425,21 +2874,20 @@
   :induct (len vals1)
   :enable (len expr-value-list-rename-ispace-vars))
 
-(defret-mutual reserrp-of-cells-at-depth-of-rename-ispace-vars
-  (defret reserrp-of-cells-at-depth-in-expr-value-of-rename-ispace-vars
+(defthm-cells-at-depth-in-expr-values-flag
+  (defthm reserrp-of-cells-at-depth-in-expr-value-of-rename-ispace-vars
     (iff (reserrp (cells-at-depth-in-expr-value
                    (expr-value-rename-ispace-vars val dim-renam shape-renam)
                    depth))
-         (reserrp cells))
-    :fn cells-at-depth-in-expr-value)
-  (defret reserrp-of-cells-at-depth-in-expr-value-list-of-rename-ispace-vars
+         (reserrp (cells-at-depth-in-expr-value val depth)))
+    :flag cells-at-depth-in-expr-value)
+  (defthm reserrp-of-cells-at-depth-in-expr-value-list-of-rename-ispace-vars
     (iff (reserrp (cells-at-depth-in-expr-value-list
                    (expr-value-list-rename-ispace-vars vals
                                                        dim-renam shape-renam)
                    depth))
-         (reserrp cells))
-    :fn cells-at-depth-in-expr-value-list)
-  :mutual-recursion cells-at-depth-in-expr-values
+         (reserrp (cells-at-depth-in-expr-value-list vals depth)))
+    :flag cells-at-depth-in-expr-value-list)
   :hints
   (("Goal"
     :in-theory (enable cells-at-depth-in-expr-value
@@ -2449,27 +2897,28 @@
                        not-reserrp-when-expr-value-listp
                        expr-value-listp-when-result-not-error))))
 
-(defret-mutual cells-at-depth-of-rename-ispace-vars
-  (defret cells-at-depth-in-expr-value-of-rename-ispace-vars
-    (implies (not (reserrp cells))
+(defthm-cells-at-depth-in-expr-values-flag
+  (defthm cells-at-depth-in-expr-value-of-rename-ispace-vars
+    (implies (not (reserrp (cells-at-depth-in-expr-value val depth)))
              (equal (cells-at-depth-in-expr-value
                      (expr-value-rename-ispace-vars val dim-renam shape-renam)
                      depth)
-                    (expr-value-list-rename-ispace-vars cells
-                                                        dim-renam
-                                                        shape-renam)))
-    :fn cells-at-depth-in-expr-value)
-  (defret cells-at-depth-in-expr-value-list-of-rename-ispace-vars
-    (implies (not (reserrp cells))
+                    (expr-value-list-rename-ispace-vars
+                     (cells-at-depth-in-expr-value val depth)
+                     dim-renam
+                     shape-renam)))
+    :flag cells-at-depth-in-expr-value)
+  (defthm cells-at-depth-in-expr-value-list-of-rename-ispace-vars
+    (implies (not (reserrp (cells-at-depth-in-expr-value-list vals depth)))
              (equal (cells-at-depth-in-expr-value-list
                      (expr-value-list-rename-ispace-vars vals
                                                          dim-renam shape-renam)
                      depth)
-                    (expr-value-list-rename-ispace-vars cells
-                                                        dim-renam
-                                                        shape-renam)))
-    :fn cells-at-depth-in-expr-value-list)
-  :mutual-recursion cells-at-depth-in-expr-values
+                    (expr-value-list-rename-ispace-vars
+                     (cells-at-depth-in-expr-value-list vals depth)
+                     dim-renam
+                     shape-renam)))
+    :flag cells-at-depth-in-expr-value-list)
   :hints
   (("Goal"
     :in-theory (enable cells-at-depth-in-expr-value
@@ -2533,7 +2982,6 @@
            (expr-value-list-rename-ispace-vars cells dim-renam shape-renam))
   :disable (acl2::equal-of-append-repeat))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2563,26 +3011,20 @@
   ///
   (fty::deffixequiv type-value-option-rename-type-vars))
 
-(define var+typevalue-list-rename-type-vars ((params var+typevalue-listp)
-                                               (atom-renam string-string-mapp)
-                                               (array-renam string-string-mapp))
-  :returns (new-params var+typevalue-listp)
-  :short "Rename type variables in the type values of a parameter list."
-  (b* (((when (endp params)) nil)
-       ((var+typevalue p) (car params)))
-    (cons (make-var+typevalue
-           :var p.var
-           :type (type-value-rename-type-vars p.type atom-renam array-renam))
-          (var+typevalue-list-rename-type-vars (cdr params)
-                                                 atom-renam array-renam)))
+(define var+typevalue-rename-type-vars ((param var+typevalue-p)
+                                        (atom-renam string-string-mapp)
+                                        (array-renam string-string-mapp))
+  :returns (new-param var+typevalue-p)
+  :short "Rename type variables in the type value of a parameter."
+  (b* (((var+typevalue p) param))
+    (make-var+typevalue
+     :var p.var
+     :type (type-value-rename-type-vars p.type atom-renam array-renam)))
   ///
-  (fty::deffixequiv var+typevalue-list-rename-type-vars)
-  (defret var+typevalue-list->var-of-var+typevalue-list-rename-type-vars
-    (equal (var+typevalue-list->var new-params)
-           (var+typevalue-list->var params))
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable var+typevalue-list->var)))))
+  (fty::deffixequiv var+typevalue-rename-type-vars)
+  (defret var+typevalue->var-of-var+typevalue-rename-type-vars
+    (equal (var+typevalue->var new-param)
+           (var+typevalue->var param))))
 
 (defines expr-value-rename-type-vars
   ;; The flag function is used by theorems in other books
@@ -2601,9 +3043,9 @@
      :base (expr-value-fix val)
      :primop (expr-value-fix val)
      :lambda (make-expr-value-lambda
-              :params (var+typevalue-list-rename-type-vars val.params
-                                                           atom-renam
-                                                           array-renam)
+              :param (var+typevalue-rename-type-vars val.param
+                                                     atom-renam
+                                                     array-renam)
               :body (expr-rename-type-vars val.body atom-renam array-renam)
               :type? (type-value-option-rename-type-vars val.type?
                                                          atom-renam
@@ -2612,11 +3054,11 @@
                                                 atom-renam
                                                 array-renam))
      :tlambda (b* (((mv & & body-atom-renam body-array-renam)
-                    (atom/array-rename-remove-bound (set::mergesort val.params)
+                    (atom/array-rename-remove-bound (set::insert val.param nil)
                                                     atom-renam
                                                     array-renam)))
                 (make-expr-value-tlambda
-                 :params val.params
+                 :param val.param
                  :body (expr-rename-type-vars val.body
                                               body-atom-renam
                                               body-array-renam)
@@ -2624,13 +3066,13 @@
                                                    atom-renam
                                                    array-renam)))
      :ilambda (make-expr-value-ilambda
-               :params val.params
+               :param val.param
                :body (expr-rename-type-vars val.body atom-renam array-renam)
                :denv (expr-denv-rename-type-vars val.denv
                                                  atom-renam
                                                  array-renam))
      :box (make-expr-value-box
-           :ispaces val.ispaces
+           :ispace val.ispace
            :array (expr-value-rename-type-vars val.array
                                                atom-renam
                                                array-renam)
@@ -2817,21 +3259,20 @@
   :induct (len vals1)
   :enable (len expr-value-list-rename-type-vars))
 
-(defret-mutual reserrp-of-cells-at-depth-of-rename-type-vars
-  (defret reserrp-of-cells-at-depth-in-expr-value-of-rename-type-vars
+(defthm-cells-at-depth-in-expr-values-flag
+  (defthm reserrp-of-cells-at-depth-in-expr-value-of-rename-type-vars
     (iff (reserrp (cells-at-depth-in-expr-value
                    (expr-value-rename-type-vars val atom-renam array-renam)
                    depth))
-         (reserrp cells))
-    :fn cells-at-depth-in-expr-value)
-  (defret reserrp-of-cells-at-depth-in-expr-value-list-of-rename-type-vars
+         (reserrp (cells-at-depth-in-expr-value val depth)))
+    :flag cells-at-depth-in-expr-value)
+  (defthm reserrp-of-cells-at-depth-in-expr-value-list-of-rename-type-vars
     (iff (reserrp (cells-at-depth-in-expr-value-list
                    (expr-value-list-rename-type-vars vals
                                                        atom-renam array-renam)
                    depth))
-         (reserrp cells))
-    :fn cells-at-depth-in-expr-value-list)
-  :mutual-recursion cells-at-depth-in-expr-values
+         (reserrp (cells-at-depth-in-expr-value-list vals depth)))
+    :flag cells-at-depth-in-expr-value-list)
   :hints
   (("Goal"
     :in-theory (enable cells-at-depth-in-expr-value
@@ -2841,27 +3282,28 @@
                        not-reserrp-when-expr-value-listp
                        expr-value-listp-when-result-not-error))))
 
-(defret-mutual cells-at-depth-of-rename-type-vars
-  (defret cells-at-depth-in-expr-value-of-rename-type-vars
-    (implies (not (reserrp cells))
+(defthm-cells-at-depth-in-expr-values-flag
+  (defthm cells-at-depth-in-expr-value-of-rename-type-vars
+    (implies (not (reserrp (cells-at-depth-in-expr-value val depth)))
              (equal (cells-at-depth-in-expr-value
                      (expr-value-rename-type-vars val atom-renam array-renam)
                      depth)
-                    (expr-value-list-rename-type-vars cells
-                                                        atom-renam
-                                                        array-renam)))
-    :fn cells-at-depth-in-expr-value)
-  (defret cells-at-depth-in-expr-value-list-of-rename-type-vars
-    (implies (not (reserrp cells))
+                    (expr-value-list-rename-type-vars
+                     (cells-at-depth-in-expr-value val depth)
+                     atom-renam
+                     array-renam)))
+    :flag cells-at-depth-in-expr-value)
+  (defthm cells-at-depth-in-expr-value-list-of-rename-type-vars
+    (implies (not (reserrp (cells-at-depth-in-expr-value-list vals depth)))
              (equal (cells-at-depth-in-expr-value-list
                      (expr-value-list-rename-type-vars vals
                                                          atom-renam array-renam)
                      depth)
-                    (expr-value-list-rename-type-vars cells
-                                                        atom-renam
-                                                        array-renam)))
-    :fn cells-at-depth-in-expr-value-list)
-  :mutual-recursion cells-at-depth-in-expr-values
+                    (expr-value-list-rename-type-vars
+                     (cells-at-depth-in-expr-value-list vals depth)
+                     atom-renam
+                     array-renam)))
+    :flag cells-at-depth-in-expr-value-list)
   :hints
   (("Goal"
     :in-theory (enable cells-at-depth-in-expr-value
@@ -2971,10 +3413,6 @@
 ; product of the dimensions, which ensure that the LIST-SPLIT chunking
 ; performed by the builders is exact.
 
-(defruledl consp-when-len-1
-  (implies (equal (len x) 1)
-           (consp x)))
-
 ; The following two lemmas are as in the
 ; CHECK-DIMS-OF-EXPR-VALUES-WITH-NONEMPTY-DIMS proof (see evaluation.lisp).
 
@@ -3001,28 +3439,29 @@
         (:instance expr-value-list-listp-of-list-split
                    (n (/ (len vals) (car dims))))))
 
-(defret-mutual expr-values-with-nonempty-dims-of-rename-expr-vars
-  (defret expr-value-rename-expr-vars-of-expr-value-with-nonempty-dims
+(defthm-expr-values-with-nonempty-dims-flag
+  (defthm expr-value-rename-expr-vars-of-expr-value-with-nonempty-dims
     (implies (and (nat-listp dims)
                   (expr-value-listp vals)
                   (not (member-equal 0 dims))
                   (equal (len vals) (nat-list-product dims)))
-             (equal (expr-value-rename-expr-vars val renam)
+             (equal (expr-value-rename-expr-vars
+                     (expr-value-with-nonempty-dims dims vals) renam)
                     (expr-value-with-nonempty-dims
                      dims
                      (expr-value-list-rename-expr-vars vals renam))))
-    :fn expr-value-with-nonempty-dims)
-  (defret expr-value-list-rename-expr-vars-of-expr-value-list-with-nonempty-dims
+    :flag expr-value-with-nonempty-dims)
+  (defthm expr-value-list-rename-expr-vars-of-expr-value-list-with-nonempty-dims
     (implies (and (nat-listp dims)
                   (expr-value-list-listp valss)
                   (not (member-equal 0 dims))
                   (all-of-len-p valss (nat-list-product dims)))
-             (equal (expr-value-list-rename-expr-vars vals renam)
+             (equal (expr-value-list-rename-expr-vars
+                     (expr-value-list-with-nonempty-dims dims valss) renam)
                     (expr-value-list-with-nonempty-dims
                      dims
                      (expr-value-list-list-rename-expr-vars valss renam))))
-    :fn expr-value-list-with-nonempty-dims)
-  :mutual-recursion expr-values-with-nonempty-dims
+    :flag expr-value-list-with-nonempty-dims)
   :hints (("Goal"
            :in-theory (enable expr-value-with-nonempty-dims
                               expr-value-list-with-nonempty-dims
@@ -3032,7 +3471,6 @@
                               nat-list-product-of-cdr-to-ratio
                               all-of-len-p
                               pos-fix
-                              consp-when-len-1
                               lemma1
                               lemma2))))
 
@@ -3121,33 +3559,35 @@
            expr-value-rename-ispace-vars
            expr-value-list-rename-ispace-vars))
 
-(defret-mutual expr-values-with-nonempty-dims-of-rename-ispace-vars
-  (defret expr-value-rename-ispace-vars-of-expr-value-with-nonempty-dims
+(defthm-expr-values-with-nonempty-dims-flag
+  (defthm expr-value-rename-ispace-vars-of-expr-value-with-nonempty-dims
     (implies (and (nat-listp dims)
                   (expr-value-listp vals)
                   (not (member-equal 0 dims))
                   (equal (len vals) (nat-list-product dims)))
-             (equal (expr-value-rename-ispace-vars val dim-renam shape-renam)
+             (equal (expr-value-rename-ispace-vars
+                     (expr-value-with-nonempty-dims dims vals)
+                     dim-renam shape-renam)
                     (expr-value-with-nonempty-dims
                      dims
                      (expr-value-list-rename-ispace-vars vals
                                                          dim-renam
                                                          shape-renam))))
-    :fn expr-value-with-nonempty-dims)
-  (defret expr-value-list-rename-ispace-vars-of-expr-value-list-with-nonempty-dims
+    :flag expr-value-with-nonempty-dims)
+  (defthm expr-value-list-rename-ispace-vars-of-expr-value-list-with-nonempty-dims
     (implies (and (nat-listp dims)
                   (expr-value-list-listp valss)
                   (not (member-equal 0 dims))
                   (all-of-len-p valss (nat-list-product dims)))
-             (equal (expr-value-list-rename-ispace-vars vals
-                                                        dim-renam shape-renam)
+             (equal (expr-value-list-rename-ispace-vars
+                     (expr-value-list-with-nonempty-dims dims valss)
+                     dim-renam shape-renam)
                     (expr-value-list-with-nonempty-dims
                      dims
                      (expr-value-list-list-rename-ispace-vars valss
                                                               dim-renam
                                                               shape-renam))))
-    :fn expr-value-list-with-nonempty-dims)
-  :mutual-recursion expr-values-with-nonempty-dims
+    :flag expr-value-list-with-nonempty-dims)
   :hints (("Goal"
            :in-theory (enable expr-value-with-nonempty-dims
                               expr-value-list-with-nonempty-dims
@@ -3157,7 +3597,6 @@
                               nat-list-product-of-cdr-to-ratio
                               all-of-len-p
                               pos-fix
-                              consp-when-len-1
                               lemma1
                               lemma2))))
 
@@ -3212,7 +3651,6 @@
            not-reserrp-when-expr-value-list-listp
            expr-value-list-listp-when-result-not-error))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Commutation of the type-variable renaming of values with the remaining
@@ -3247,33 +3685,35 @@
            expr-value-rename-type-vars
            expr-value-list-rename-type-vars))
 
-(defret-mutual expr-values-with-nonempty-dims-of-rename-type-vars
-  (defret expr-value-rename-type-vars-of-expr-value-with-nonempty-dims
+(defthm-expr-values-with-nonempty-dims-flag
+  (defthm expr-value-rename-type-vars-of-expr-value-with-nonempty-dims
     (implies (and (nat-listp dims)
                   (expr-value-listp vals)
                   (not (member-equal 0 dims))
                   (equal (len vals) (nat-list-product dims)))
-             (equal (expr-value-rename-type-vars val atom-renam array-renam)
+             (equal (expr-value-rename-type-vars
+                     (expr-value-with-nonempty-dims dims vals)
+                     atom-renam array-renam)
                     (expr-value-with-nonempty-dims
                      dims
                      (expr-value-list-rename-type-vars vals
                                                          atom-renam
                                                          array-renam))))
-    :fn expr-value-with-nonempty-dims)
-  (defret expr-value-list-rename-type-vars-of-expr-value-list-with-nonempty-dims
+    :flag expr-value-with-nonempty-dims)
+  (defthm expr-value-list-rename-type-vars-of-expr-value-list-with-nonempty-dims
     (implies (and (nat-listp dims)
                   (expr-value-list-listp valss)
                   (not (member-equal 0 dims))
                   (all-of-len-p valss (nat-list-product dims)))
-             (equal (expr-value-list-rename-type-vars vals
-                                                        atom-renam array-renam)
+             (equal (expr-value-list-rename-type-vars
+                     (expr-value-list-with-nonempty-dims dims valss)
+                     atom-renam array-renam)
                     (expr-value-list-with-nonempty-dims
                      dims
                      (expr-value-list-list-rename-type-vars valss
                                                               atom-renam
                                                               array-renam))))
-    :fn expr-value-list-with-nonempty-dims)
-  :mutual-recursion expr-values-with-nonempty-dims
+    :flag expr-value-list-with-nonempty-dims)
   :hints (("Goal"
            :in-theory (enable expr-value-with-nonempty-dims
                               expr-value-list-with-nonempty-dims
@@ -3283,7 +3723,6 @@
                               nat-list-product-of-cdr-to-ratio
                               all-of-len-p
                               pos-fix
-                              consp-when-len-1
                               lemma1
                               lemma2))))
 
@@ -4165,15 +4604,6 @@
 ; and the relation under the full maps applies.
 
 (local
- (defrule car-of-assoc
-   (implies (omap::assoc key map)
-            (equal (car (omap::assoc key map))
-                   key))
-   :rule-classes ((:rewrite :backchain-limit-lst 1))
-   :induct t
-   :enable omap::assoc))
-
-(local
  (defun add-ispaces2-induct (vars ivals denv1 denv2)
    (if (endp vars)
        (list denv1 denv2)
@@ -4240,71 +4670,67 @@
 ; The renaming of a variable under the reduced maps: the identity on the
 ; bound variables, the full renaming off them.
 
-(local
- (defruled rename-ispace-var-of-remove-bound-when-in
-   (b* (((mv & & dim-renam1 shape-renam1)
-         (dim/shape-rename-remove-bound bound dim-renam shape-renam)))
-     (implies (and (ispace-var-setp bound)
-                   (ispace-varp var)
-                   (set::in var bound))
-              (equal (rename-ispace-var var dim-renam1 shape-renam1)
-                     var)))
-   :enable (dim/shape-rename-remove-bound
-            rename-ispace-var
-            rename-var-string
-            equal-of-ispace-var-dim
-            equal-of-ispace-var-shape)))
+(defruledl rename-ispace-var-of-remove-bound-when-in
+  (b* (((mv & & dim-renam1 shape-renam1)
+        (dim/shape-rename-remove-bound bound dim-renam shape-renam)))
+    (implies (and (ispace-var-setp bound)
+                  (ispace-varp var)
+                  (set::in var bound))
+             (equal (rename-ispace-var var dim-renam1 shape-renam1)
+                    var)))
+  :enable (dim/shape-rename-remove-bound
+           rename-ispace-var
+           rename-var-string
+           equal-of-ispace-var-dim
+           equal-of-ispace-var-shape))
 
-(local
- (defruled rename-ispace-var-of-remove-bound-when-not-in
-   (b* (((mv & & dim-renam1 shape-renam1)
-         (dim/shape-rename-remove-bound bound dim-renam shape-renam)))
-     (implies (and (ispace-var-setp bound)
-                   (ispace-varp var)
-                   (not (set::in var bound)))
-              (equal (rename-ispace-var var dim-renam1 shape-renam1)
-                     (rename-ispace-var var dim-renam shape-renam))))
-   :enable (dim/shape-rename-remove-bound
-            rename-ispace-var
-            rename-var-string
-            equal-of-ispace-var-dim
-            equal-of-ispace-var-shape)))
+(defruledl rename-ispace-var-of-remove-bound-when-not-in
+  (b* (((mv & & dim-renam1 shape-renam1)
+        (dim/shape-rename-remove-bound bound dim-renam shape-renam)))
+    (implies (and (ispace-var-setp bound)
+                  (ispace-varp var)
+                  (not (set::in var bound)))
+             (equal (rename-ispace-var var dim-renam1 shape-renam1)
+                    (rename-ispace-var var dim-renam shape-renam))))
+  :enable (dim/shape-rename-remove-bound
+           rename-ispace-var
+           rename-var-string
+           equal-of-ispace-var-dim
+           equal-of-ispace-var-shape))
 
-(local
- (defruled not-in-bound-of-rename-ispace-var-of-remove-bound
-   (b* (((mv bound-dim-vars bound-shape-vars dim-renam1 shape-renam1)
-         (dim/shape-rename-remove-bound bound dim-renam shape-renam)))
-     (implies (and (ispace-var-setp bound)
-                   (ispace-varp var)
-                   (not (set::in var bound))
-                   (renaming-no-capture-p bound-dim-vars dim-renam1)
-                   (renaming-no-capture-p bound-shape-vars shape-renam1))
-              (not (set::in (rename-ispace-var var dim-renam shape-renam)
-                            bound))))
-   :enable (dim/shape-rename-remove-bound
-            renaming-no-capture-p
-            rename-ispace-var
-            rename-var-string
-            not-in-bound-of-renamed-dim-name
-            not-in-bound-of-renamed-shape-name)))
+(defruledl not-in-bound-of-rename-ispace-var-of-remove-bound
+  (b* (((mv bound-dim-vars bound-shape-vars dim-renam1 shape-renam1)
+        (dim/shape-rename-remove-bound bound dim-renam shape-renam)))
+    (implies (and (ispace-var-setp bound)
+                  (ispace-varp var)
+                  (not (set::in var bound))
+                  (renaming-no-capture-p bound-dim-vars dim-renam1)
+                  (renaming-no-capture-p bound-shape-vars shape-renam1))
+             (not (set::in (rename-ispace-var var dim-renam shape-renam)
+                           bound))))
+  :enable (dim/shape-rename-remove-bound
+           renaming-no-capture-p
+           rename-ispace-var
+           rename-var-string
+           not-in-bound-of-renamed-dim-name
+           not-in-bound-of-renamed-shape-name))
 
-(local
- (defruled not-member-of-rename-ispace-var-of-remove-bound
-   (b* (((mv bound-dim-vars bound-shape-vars dim-renam1 shape-renam1)
-         (dim/shape-rename-remove-bound (set::mergesort vars)
-                                        dim-renam
-                                        shape-renam)))
-     (implies (and (ispace-var-listp vars)
-                   (ispace-varp var)
-                   (not (member-equal var vars))
-                   (renaming-no-capture-p bound-dim-vars dim-renam1)
-                   (renaming-no-capture-p bound-shape-vars shape-renam1))
-              (not (member-equal
-                    (rename-ispace-var var dim-renam shape-renam)
-                    vars))))
-   :use ((:instance not-in-bound-of-rename-ispace-var-of-remove-bound
-                    (bound (set::mergesort vars))))
-   :disable not-in-bound-of-rename-ispace-var-of-remove-bound))
+(defruledl not-member-of-rename-ispace-var-of-remove-bound
+  (b* (((mv bound-dim-vars bound-shape-vars dim-renam1 shape-renam1)
+        (dim/shape-rename-remove-bound (set::mergesort vars)
+                                       dim-renam
+                                       shape-renam)))
+    (implies (and (ispace-var-listp vars)
+                  (ispace-varp var)
+                  (not (member-equal var vars))
+                  (renaming-no-capture-p bound-dim-vars dim-renam1)
+                  (renaming-no-capture-p bound-shape-vars shape-renam1))
+             (not (member-equal
+                   (rename-ispace-var var dim-renam shape-renam)
+                   vars))))
+  :use ((:instance not-in-bound-of-rename-ispace-var-of-remove-bound
+                   (bound (set::mergesort vars))))
+  :disable not-in-bound-of-rename-ispace-var-of-remove-bound)
 
 (defrule denv-ispace-vars-renamed-p-of-add-ispaces-remove-bound
   (b* (((mv bound-dim-vars bound-shape-vars dim-renam1 shape-renam1)
@@ -4394,227 +4820,6 @@
 ; disjointness: a binder's names, being fresh, do not occur free in the
 ; values of the enclosing environments.
 
-; Set-level consequences of an empty intersection, in the shapes produced
-; by the free-variable functions (unions at compound constructs, and
-; differences and deletions at binders).
-
-(local
- (defruled emptyp-intersect-of-union-left-1
-   (implies (set::emptyp (set::intersect (set::union a b) c))
-            (set::emptyp (set::intersect a c)))
-   :use ((:instance set::in-head (set::x (set::intersect a c)))
-         (:instance not-in-when-emptyp-of-intersect
-                    (a (set::head (set::intersect a c)))
-                    (x (set::union a b))
-                    (y c)))
-   :disable (set::in-head not-in-when-emptyp-of-intersect)))
-
-(local
- (defruled emptyp-intersect-of-union-left-2
-   (implies (set::emptyp (set::intersect (set::union a b) c))
-            (set::emptyp (set::intersect b c)))
-   :use ((:instance set::in-head (set::x (set::intersect b c)))
-         (:instance not-in-when-emptyp-of-intersect
-                    (a (set::head (set::intersect b c)))
-                    (x (set::union a b))
-                    (y c)))
-   :disable (set::in-head not-in-when-emptyp-of-intersect)))
-
-(local
- (defruled emptyp-intersect-of-difference-shuffle
-   (implies (set::emptyp (set::intersect (set::difference s p) b))
-            (set::emptyp (set::intersect s (set::difference b p))))
-   :use ((:instance set::in-head
-                    (set::x (set::intersect s (set::difference b p))))
-         (:instance not-in-when-emptyp-of-intersect
-                    (a (set::head (set::intersect s (set::difference b p))))
-                    (x (set::difference s p))
-                    (y b)))
-   :disable (set::in-head not-in-when-emptyp-of-intersect)))
-
-(local
- (defruled emptyp-intersect-of-delete-shuffle
-   (implies (set::emptyp (set::intersect (set::delete v s) b))
-            (set::emptyp (set::intersect s (set::delete v b))))
-   :use ((:instance set::in-head
-                    (set::x (set::intersect s (set::delete v b))))
-         (:instance not-in-when-emptyp-of-intersect
-                    (a (set::head (set::intersect s (set::delete v b))))
-                    (x (set::delete v s))
-                    (y b)))
-   :disable (set::in-head not-in-when-emptyp-of-intersect)))
-
-(local
- (defruled not-in-when-emptyp-intersect-of-insert
-   (implies (set::emptyp (set::intersect (set::insert k s) b))
-            (not (set::in k b)))
-   :use ((:instance not-in-when-emptyp-of-intersect
-                    (a k)
-                    (x (set::insert k s))
-                    (y b)))
-   :disable not-in-when-emptyp-of-intersect))
-
-(local
- (defruled emptyp-intersect-of-insert-left
-   (implies (set::emptyp (set::intersect (set::insert k s) b))
-            (set::emptyp (set::intersect s b)))
-   :use ((:instance set::in-head (set::x (set::intersect s b)))
-         (:instance not-in-when-emptyp-of-intersect
-                    (a (set::head (set::intersect s b)))
-                    (x (set::insert k s))
-                    (y b)))
-   :disable (set::in-head not-in-when-emptyp-of-intersect)))
-
-; Commutation and absorption of key deletions on the renaming maps.
-
-(local
- (defruled delete*-of-delete*-commute
-   (equal (omap::delete* keys1 (omap::delete* keys2 map))
-          (omap::delete* keys2 (omap::delete* keys1 map)))
-   :expand ((omap::ext-equal (omap::delete* keys1 (omap::delete* keys2 map))
-                             (omap::delete* keys2 (omap::delete* keys1 map)))
-            (omap::ext-equal (omap::delete* keys2 (omap::delete* keys1 map))
-                             (omap::delete* keys1 (omap::delete* keys2 map))))
-   :use ((:instance omap::ext-equal-becomes-equal
-                    (omap::x (omap::delete* keys1 (omap::delete* keys2 map)))
-                    (omap::y (omap::delete* keys2 (omap::delete* keys1 map)))))))
-
-(local
- (defruled delete*-of-delete-commute
-   (equal (omap::delete v (omap::delete* keys map))
-          (omap::delete* keys (omap::delete v map)))
-   :expand ((omap::ext-equal (omap::delete v (omap::delete* keys map))
-                             (omap::delete* keys (omap::delete v map)))
-            (omap::ext-equal (omap::delete* keys (omap::delete v map))
-                             (omap::delete v (omap::delete* keys map))))
-   :use ((:instance omap::ext-equal-becomes-equal
-                    (omap::x (omap::delete v (omap::delete* keys map)))
-                    (omap::y (omap::delete* keys (omap::delete v map)))))))
-
-(local
- (defruled delete*-of-difference-absorb
-   (equal (omap::delete* (set::difference bound p) (omap::delete* p map))
-          (omap::delete* bound (omap::delete* p map)))
-   :expand ((omap::ext-equal (omap::delete* (set::difference bound p) (omap::delete* p map))
-                             (omap::delete* bound (omap::delete* p map)))
-            (omap::ext-equal (omap::delete* bound (omap::delete* p map))
-                             (omap::delete* (set::difference bound p) (omap::delete* p map))))
-   :use ((:instance omap::ext-equal-becomes-equal
-                    (omap::x (omap::delete* (set::difference bound p) (omap::delete* p map)))
-                    (omap::y (omap::delete* bound (omap::delete* p map)))))))
-
-(local
- (defruled delete*-of-delete-absorb
-   (equal (omap::delete* (set::delete v bound) (omap::delete v map))
-          (omap::delete* bound (omap::delete v map)))
-   :expand ((omap::ext-equal (omap::delete* (set::delete v bound) (omap::delete v map))
-                             (omap::delete* bound (omap::delete v map)))
-            (omap::ext-equal (omap::delete* bound (omap::delete v map))
-                             (omap::delete* (set::delete v bound) (omap::delete v map))))
-   :use ((:instance omap::ext-equal-becomes-equal
-                    (omap::x (omap::delete* (set::delete v bound) (omap::delete v map)))
-                    (omap::y (omap::delete* bound (omap::delete v map)))))))
-
-; Restricted commutation of the deletions, oriented to push a deletion of
-; the (variable) bound set outward past a binder's parameter reduction.
-
-(local
- (defruled delete*-commute-restricted
-   (implies (syntaxp (and (symbolp bound)
-                          (not (symbolp p))))
-            (equal (omap::delete* p (omap::delete* bound map))
-                   (omap::delete* bound (omap::delete* p map))))
-   :use ((:instance delete*-of-delete*-commute (keys1 p) (keys2 bound)))))
-
-(local
- (defruled delete-commute-restricted
-   (implies (syntaxp (symbolp bound))
-            (equal (omap::delete v (omap::delete* bound map))
-                   (omap::delete* bound (omap::delete v map))))
-   :use ((:instance delete*-of-delete-commute (keys bound)))))
-
-; Propagation of the disjointness hypothesis through a binder: the free
-; variables lose the parameters, and the map keys lose them too, in a way
-; that preserves the emptiness of the triple intersection.
-
-(local
- (defruled emptyp-intersect3-binder-union
-   (implies (set::emptyp
-             (set::intersect (set::union other (set::difference fvb p))
-                             (set::intersect bound keys)))
-            (set::emptyp
-             (set::intersect fvb
-                             (set::intersect bound
-                                             (set::difference keys p)))))
-   :use ((:instance set::in-head
-                    (set::x (set::intersect
-                             fvb
-                             (set::intersect bound
-                                             (set::difference keys p)))))
-         (:instance not-in-when-emptyp-of-intersect
-                    (a (set::head
-                        (set::intersect
-                         fvb
-                         (set::intersect bound
-                                         (set::difference keys p)))))
-                    (x (set::union other (set::difference fvb p)))
-                    (y (set::intersect bound keys))))
-   :disable (set::in-head not-in-when-emptyp-of-intersect)))
-
-(local
- (defruled emptyp-intersect3-binder-plain
-   (implies (set::emptyp
-             (set::intersect (set::difference fvb p)
-                             (set::intersect bound keys)))
-            (set::emptyp
-             (set::intersect fvb
-                             (set::intersect bound
-                                             (set::difference keys p)))))
-   :use ((:instance set::in-head
-                    (set::x (set::intersect
-                             fvb
-                             (set::intersect bound
-                                             (set::difference keys p)))))
-         (:instance not-in-when-emptyp-of-intersect
-                    (a (set::head
-                        (set::intersect
-                         fvb
-                         (set::intersect bound
-                                         (set::difference keys p)))))
-                    (x (set::difference fvb p))
-                    (y (set::intersect bound keys))))
-   :disable (set::in-head not-in-when-emptyp-of-intersect)))
-
-(local
- (defruled emptyp-intersect3-binder-delete
-   (implies (set::emptyp
-             (set::intersect (set::union other (set::delete v fvb))
-                             (set::intersect bound keys)))
-            (set::emptyp
-             (set::delete v
-                          (set::intersect fvb
-                                          (set::intersect bound keys)))))
-   :use ((:instance set::in-head
-                    (set::x (set::delete
-                             v
-                             (set::intersect fvb
-                                             (set::intersect bound keys)))))
-         (:instance not-in-when-emptyp-of-intersect
-                    (a (set::head
-                        (set::delete
-                         v
-                         (set::intersect fvb
-                                         (set::intersect bound keys)))))
-                    (x (set::union other (set::delete v fvb)))
-                    (y (set::intersect bound keys))))
-   :disable (set::in-head not-in-when-emptyp-of-intersect)))
-
-(local
- (defruled emptyp-intersect-singleton
-   (equal (set::emptyp (set::intersect (set::insert name nil) c))
-          (not (set::in name c)))
-   :enable (set::intersect)))
-
 ; Removing names that are either not the variable's name or not keys of
 ; the map does not change the variable's renaming.
 
@@ -4640,8 +4845,8 @@
 ; the statement self-strengthening at binders: the parameters leave both
 ; the free variables and the keys of the reduced map.
 
-(defret-mutual rename-expr-vars-of-delete*-when-disjoint
-  (defret expr-rename-expr-vars-of-delete*-when-disjoint
+(defthm-exprs/atoms/binds-rename-expr-vars-flag
+  (defthm expr-rename-expr-vars-of-delete*-when-disjoint
     (implies (and (string-setp bound)
                   (set::emptyp
                    (set::intersect
@@ -4652,9 +4857,9 @@
              (equal (expr-rename-expr-vars
                      expr
                      (omap::delete* bound (string-string-map-fix renam)))
-                    result))
-    :fn expr-rename-expr-vars)
-  (defret expr-list-rename-expr-vars-of-delete*-when-disjoint
+                    (expr-rename-expr-vars expr renam)))
+    :flag expr-rename-expr-vars)
+  (defthm expr-list-rename-expr-vars-of-delete*-when-disjoint
     (implies (and (string-setp bound)
                   (set::emptyp
                    (set::intersect
@@ -4665,9 +4870,9 @@
              (equal (expr-list-rename-expr-vars
                      expr-list
                      (omap::delete* bound (string-string-map-fix renam)))
-                    result))
-    :fn expr-list-rename-expr-vars)
-  (defret atom-rename-expr-vars-of-delete*-when-disjoint
+                    (expr-list-rename-expr-vars expr-list renam)))
+    :flag expr-list-rename-expr-vars)
+  (defthm atom-rename-expr-vars-of-delete*-when-disjoint
     (implies (and (string-setp bound)
                   (set::emptyp
                    (set::intersect
@@ -4678,9 +4883,9 @@
              (equal (atom-rename-expr-vars
                      atom
                      (omap::delete* bound (string-string-map-fix renam)))
-                    result))
-    :fn atom-rename-expr-vars)
-  (defret atom-list-rename-expr-vars-of-delete*-when-disjoint
+                    (atom-rename-expr-vars atom renam)))
+    :flag atom-rename-expr-vars)
+  (defthm atom-list-rename-expr-vars-of-delete*-when-disjoint
     (implies (and (string-setp bound)
                   (set::emptyp
                    (set::intersect
@@ -4691,9 +4896,9 @@
              (equal (atom-list-rename-expr-vars
                      atom-list
                      (omap::delete* bound (string-string-map-fix renam)))
-                    result))
-    :fn atom-list-rename-expr-vars)
-  (defret bind-rename-expr-vars-of-delete*-when-disjoint
+                    (atom-list-rename-expr-vars atom-list renam)))
+    :flag atom-list-rename-expr-vars)
+  (defthm bind-rename-expr-vars-of-delete*-when-disjoint
     (implies (and (string-setp bound)
                   (set::emptyp
                    (set::intersect
@@ -4704,9 +4909,9 @@
              (equal (bind-rename-expr-vars
                      bind
                      (omap::delete* bound (string-string-map-fix renam)))
-                    result))
-    :fn bind-rename-expr-vars)
-  (defret bind-list-rename-expr-vars-of-delete*-when-disjoint
+                    (bind-rename-expr-vars bind renam)))
+    :flag bind-rename-expr-vars)
+  (defthm bind-list-rename-expr-vars-of-delete*-when-disjoint
     (implies (and (string-setp bound)
                   (set::emptyp
                    (set::intersect
@@ -4717,9 +4922,8 @@
              (equal (bind-list-rename-expr-vars
                      bind-list
                      (omap::delete* bound (string-string-map-fix renam)))
-                    result))
-    :fn bind-list-rename-expr-vars)
-  :mutual-recursion exprs/atoms/binds-rename-expr-vars
+                    (bind-list-rename-expr-vars bind-list renam)))
+    :flag bind-list-rename-expr-vars)
   :hints
   (("Goal"
     :expand ((:free (renam) (expr-rename-expr-vars expr renam))
@@ -4767,30 +4971,6 @@
                   (expr-rename-expr-vars expr renam)))
   :use ((:instance expr-rename-expr-vars-of-delete*-when-disjoint)))
 
-(local
- (defruled emptyp-intersect-of-insert-union-1
-   (implies (set::emptyp
-             (set::intersect (set::insert k (set::union a b)) c))
-            (set::emptyp (set::intersect a c)))
-   :use ((:instance set::in-head (set::x (set::intersect a c)))
-         (:instance not-in-when-emptyp-of-intersect
-                    (a (set::head (set::intersect a c)))
-                    (x (set::insert k (set::union a b)))
-                    (y c)))
-   :disable (set::in-head not-in-when-emptyp-of-intersect)))
-
-(local
- (defruled emptyp-intersect-of-insert-union-2
-   (implies (set::emptyp
-             (set::intersect (set::insert k (set::union a b)) c))
-            (set::emptyp (set::intersect b c)))
-   :use ((:instance set::in-head (set::x (set::intersect b c)))
-         (:instance not-in-when-emptyp-of-intersect
-                    (a (set::head (set::intersect b c)))
-                    (x (set::insert k (set::union a b)))
-                    (y c)))
-   :disable (set::in-head not-in-when-emptyp-of-intersect)))
-
 ; Free expression variables of expression values: the free variables of
 ; the lambda bodies outside their parameters, together with the keys and
 ; (recursively) the free expression variables of the captured
@@ -4814,7 +4994,7 @@
               (expr-denv-free-expr-vars val.denv)
               (set::difference
                (expr-free-expr-vars val.body)
-               (set::mergesort (var+typevalue-list->var val.params))))
+               (set::insert (var+typevalue->var val.param) nil)))
      :tlambda (set::union (expr-denv-free-expr-vars val.denv)
                           (expr-free-expr-vars val.body))
      :ilambda (set::union (expr-denv-free-expr-vars val.denv)
@@ -4867,8 +5047,8 @@
 ; expression variables of a value does not change the renaming of the
 ; value.
 
-(defret-mutual expr-value-rename-expr-vars-of-delete*-when-disjoint
-  (defret expr-value-rename-expr-vars-of-delete*-when-disjoint
+(defthm-expr-value-rename-expr-vars-flag
+  (defthm expr-value-rename-expr-vars-of-delete*-when-disjoint
     (implies (and (string-setp bound)
                   (set::emptyp
                    (set::intersect
@@ -4879,9 +5059,9 @@
              (equal (expr-value-rename-expr-vars
                      val
                      (omap::delete* bound (string-string-map-fix renam)))
-                    new-val))
-    :fn expr-value-rename-expr-vars)
-  (defret expr-value-list-rename-expr-vars-of-delete*-when-disjoint
+                    (expr-value-rename-expr-vars val renam)))
+    :flag expr-value-rename-expr-vars)
+  (defthm expr-value-list-rename-expr-vars-of-delete*-when-disjoint
     (implies (and (string-setp bound)
                   (set::emptyp
                    (set::intersect
@@ -4892,9 +5072,9 @@
              (equal (expr-value-list-rename-expr-vars
                      vals
                      (omap::delete* bound (string-string-map-fix renam)))
-                    new-vals))
-    :fn expr-value-list-rename-expr-vars)
-  (defret string-expr-value-map-rename-expr-vars-of-delete*-when-disjoint
+                    (expr-value-list-rename-expr-vars vals renam)))
+    :flag expr-value-list-rename-expr-vars)
+  (defthm string-expr-value-map-rename-expr-vars-of-delete*-when-disjoint
     (implies (and (string-setp bound)
                   (set::emptyp
                    (set::intersect
@@ -4905,9 +5085,9 @@
              (equal (string-expr-value-map-rename-expr-vars
                      map
                      (omap::delete* bound (string-string-map-fix renam)))
-                    new-map))
-    :fn string-expr-value-map-rename-expr-vars)
-  (defret expr-denv-rename-expr-vars-of-delete*-when-disjoint
+                    (string-expr-value-map-rename-expr-vars map renam)))
+    :flag string-expr-value-map-rename-expr-vars)
+  (defthm expr-denv-rename-expr-vars-of-delete*-when-disjoint
     (implies (and (string-setp bound)
                   (set::emptyp
                    (set::intersect
@@ -4918,9 +5098,8 @@
              (equal (expr-denv-rename-expr-vars
                      denv
                      (omap::delete* bound (string-string-map-fix renam)))
-                    new-denv))
-    :fn expr-denv-rename-expr-vars)
-  :mutual-recursion expr-value-rename-expr-vars
+                    (expr-denv-rename-expr-vars denv renam)))
+    :flag expr-denv-rename-expr-vars)
   :hints
   (("Goal"
     :expand ((:free (renam) (expr-value-rename-expr-vars val renam))
@@ -4936,11 +5115,13 @@
     (enable rename-var-string-of-delete*-when-not-relevant
             expr-rename-expr-vars-of-delete*-when-disjoint-typed
             delete*-commute-restricted
+            delete-commute-restricted
             emptyp-intersect3-binder-union
+            emptyp-intersect3-binder-plain
+            emptyp-intersect3-binder-delete
             emptyp-intersect-of-union-left-1
             emptyp-intersect-of-union-left-2
             not-in-when-emptyp-intersect-of-insert
-            emptyp-intersect-of-insert-left
             emptyp-intersect-of-insert-union-1
             emptyp-intersect-of-insert-union-2
             emptyp-intersect-singleton
@@ -4952,19 +5133,6 @@
 ; value --- as the freshness of the uniquified names will guarantee for
 ; the values of the enclosing environments --- then the renaming of the
 ; value under the reduced map is its renaming under the full map.
-
-(local
- (defruled emptyp-intersect-mono-right
-   (implies (set::emptyp (set::intersect s bound))
-            (set::emptyp (set::intersect s (set::intersect bound keys))))
-   :use ((:instance set::in-head
-                    (set::x (set::intersect s (set::intersect bound keys))))
-         (:instance not-in-when-emptyp-of-intersect
-                    (a (set::head
-                        (set::intersect s (set::intersect bound keys))))
-                    (x s)
-                    (y bound)))
-   :disable (set::in-head not-in-when-emptyp-of-intersect)))
 
 (defruled expr-value-rename-expr-vars-stable-under-remove-bound
   (implies (and (string-setp bound)
@@ -5065,54 +5233,50 @@
 ; bound variables, the full renaming off them; and, by no capture, the
 ; renaming of an unbound variable is not among the bound ones.
 
-(local
- (defruled rename-var-string-of-remove-bound-when-member
-   (implies (and (string-listp vars)
-                 (stringp var)
-                 (member-equal var vars))
-            (equal (rename-var-string
-                    var
-                    (omap::delete* (set::mergesort vars)
-                                   (string-string-map-fix renam)))
-                   var))
-   :enable rename-var-string))
+(defruledl rename-var-string-of-remove-bound-when-member
+  (implies (and (string-listp vars)
+                (stringp var)
+                (member-equal var vars))
+           (equal (rename-var-string
+                   var
+                   (omap::delete* (set::mergesort vars)
+                                  (string-string-map-fix renam)))
+                  var))
+  :enable rename-var-string)
 
-(local
- (defruled rename-var-string-of-remove-bound-when-not-member
-   (implies (and (string-listp vars)
-                 (stringp var)
-                 (not (member-equal var vars)))
-            (equal (rename-var-string
-                    var
-                    (omap::delete* (set::mergesort vars)
-                                   (string-string-map-fix renam)))
-                   (rename-var-string var renam)))
-   :enable rename-var-string))
+(defruledl rename-var-string-of-remove-bound-when-not-member
+  (implies (and (string-listp vars)
+                (stringp var)
+                (not (member-equal var vars)))
+           (equal (rename-var-string
+                   var
+                   (omap::delete* (set::mergesort vars)
+                                  (string-string-map-fix renam)))
+                  (rename-var-string var renam)))
+  :enable rename-var-string)
 
-(local
- (defruled not-member-of-rename-var-string-of-remove-bound
-   (implies (and (string-listp vars)
-                 (stringp var)
-                 (not (member-equal var vars))
-                 (renaming-no-capture-p
-                  (set::mergesort vars)
-                  (omap::delete* (set::mergesort vars)
-                                 (string-string-map-fix renam))))
-            (not (member-equal (rename-var-string var renam) vars)))
-   :enable (renaming-no-capture-p
-            rename-var-string)
-   :use ((:instance omap::cdr-assoc-in-values
-                    (omap::key var)
-                    (omap::map (omap::delete*
-                                (set::mergesort vars)
+(defruledl not-member-of-rename-var-string-of-remove-bound
+  (implies (and (string-listp vars)
+                (stringp var)
+                (not (member-equal var vars))
+                (renaming-no-capture-p
+                 (set::mergesort vars)
+                 (omap::delete* (set::mergesort vars)
                                 (string-string-map-fix renam))))
-         (:instance not-in-when-emptyp-of-intersect
-                    (a (cdr (omap::assoc var (string-string-map-fix renam))))
-                    (x (set::mergesort vars))
-                    (y (omap::values
-                        (omap::delete* (set::mergesort vars)
-                                       (string-string-map-fix renam))))))
-   :disable not-in-when-emptyp-of-intersect))
+           (not (member-equal (rename-var-string var renam) vars)))
+  :enable (renaming-no-capture-p
+           rename-var-string)
+  :use ((:instance omap::cdr-assoc-in-values
+                   (omap::key var)
+                   (omap::map (omap::delete*
+                               (set::mergesort vars)
+                               (string-string-map-fix renam))))
+        (:instance set::never-in-empty
+                   (set::a (cdr (omap::assoc var (string-string-map-fix renam))))
+                   (set::x (set::intersect (set::mergesort vars)
+                                           (omap::values
+                       (omap::delete* (set::mergesort vars)
+                                      (string-string-map-fix renam))))))))
 
 (defrule denv-expr-vars-renamed-p-of-add-exprs-remove-bound
   (b* ((bound (set::mergesort vars))

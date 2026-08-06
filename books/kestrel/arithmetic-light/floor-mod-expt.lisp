@@ -82,7 +82,8 @@
            (equal (floor (+ 1 (* 2 i)) (expt 2 n))
                   (floor i (expt 2 (+ -1 n)))))
   :hints (("Goal"
-           :in-theory (enable not-equal-when-even-and-odd))))
+           ;; :in-theory (enable not-equal-when-even-and-odd)
+           )))
 
 ;for splitting off the top bit
 (defthmd mod-of-*-of-2-and-expt

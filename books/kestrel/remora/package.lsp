@@ -37,6 +37,7 @@
                     change-string-string-map-quadruple
                     chars=>nats
                     cons-listp
+                    definductive
                     defmacro+
                     defund-sk
                     defxdoc+

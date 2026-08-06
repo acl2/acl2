@@ -10,10 +10,9 @@
 
 (in-package "REMORA")
 
-(include-book "abstract-syntax-trees")
+(include-book "abstract-syntax-constructors")
 
-(include-book "std/util/define-sk" :dir :system)
-(include-book "std/util/defund-sk" :dir :system)
+(include-book "std/util/definductive" :dir :system)
 
 (acl2::controlled-configuration)
 
@@ -25,161 +24,204 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is work in progress towards
-     a higher-level definition of dimension equivalence
-     than the executable definition in @(see ispace-equivalence).
-     This higher-level definition is an inductive one, via inference rules.
-     This is part of our plan to add
-     higher-level inductive definitions, via inference rules,
-     of the static and dynamic semantics of Remora.")
-   (xdoc::p
-    "We are separately working on a new ACL2 tool
-     to concisely introduce inductive definitions via inference rules,
-     within the first-order logic of ACL2.
-     We plan to use those tools when ready,
-     but we start with some initial manual definitions here,
-     also to provide test cases for that new tool."))
+    "We formalize the equivalence of dimensions via inference rules.
+     Although [thesis], [arxiv], and [esop] do not explicate these rules,
+     their existence is arguably implied;
+     those publications make use of judgements
+     asserting the equivalence of ispaces (called `indices' there),
+     and describe the equations according to which
+     dimensions are considered equivalent.
+     Unlike [impl], those publications only have addition,
+     but our rules also include multiplication and subtraction."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; We provide an inductive definition, via the inference rules below,
-; of a binary predicate DIMEQ on dimensions (i.e. ASTs of fixtype DIM)
-; that says whether the two dimensions are equivalent,
-; i.e. they always denote the same dimension value (i.e. natural number).
+(definductive dimeq-infrules
+  :short "Equivalence of dimensions and lists of dimensions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is essentially an equational theory over multivariate polynomials,
+     with variadic additions and multiplications,
+     with a Lisp-like notion of variadic subtraction,
+     and with a homomorphic extension to lists.")
+   (xdoc::p
+    "We start with the obligatory equivalence rules
+     (reflexivity, symmetry, and transitivity),
+     for both dimensions and lists of dimensions,
+     with congruence rules for the arithmetic operations,
+     and with a congruence rule for list constructions.")
+   (xdoc::p
+    "We reduce all variadic additions to binary ones or to non-additions,
+     via the rules @('add0'), @('add1'), and @('add3m').
+     We do the same for multiplications,
+     via the rules @('mul0'), @('mul1'), and @('mul3m').
+     We reduce all variadic subtractions to unary ones:
+     the nullary one is illegal (only equivalent to itself, via reflexivity);
+     a subtraction of two or more dimensions reduces to
+     the addition of the first one and
+     the unary subtraction of the sum of the remaining ones,
+     via the rule @('sub2m').")
+   (xdoc::p
+    "With the above reductions available,
+     we are in a standard situation with binary addition and multiplication,
+     and with negation (additive inverse).
+     We have rules for:
+     commutativity, associativity, and identity of addition and multiplication;
+     distributivity of multiplication over addition;
+     and inversion of addition.")
+   (xdoc::p
+    "We also have two rules to calculate
+     additions and multiplications of constants.
+     Technically the one for multiplication could be derived via induction,
+     but we prefer to have it explicit."))
 
-; --------------- refl
-; (dimeq dim dim)
+  :preds ((dimeq dim1 dim2)
+          (dimseq dims1 dims2))
 
-; TODO: more rules
+  :irules
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ((refl ((dimp x))
+         (dimeq x x))
 
-; Assertions (DIMEQ DIM1 DIM2).
+   (symm ((dimp x)
+          (dimp y)
+          (dimeq x y))
+         (dimeq y x))
 
-(fty::defprod dimeq-assertion
-  ((dim1 dim)
-   (dim2 dim))
-  :pred dimeq-assertionp)
+   (trans ((dimp x)
+           (dimp y)
+           (dimp z)
+           (dimeq x y)
+           (dimeq y z))
+          (dimeq x z))
 
-;;;;;;;;;;;;;;;;;;;;
+   (srefl ((dim-listp xs))
+          (dimseq xs xs))
 
-; Proofs of assertions (DIMEQ DIM1 DIM2).
+   (ssymm ((dim-listp xs)
+           (dim-listp ys)
+           (dimseq xs ys))
+          (dimseq ys xs))
 
-(fty::deftagsum dimeq-proof
-  (:refl ((conclusion dimeq-assertion)))
-  :pred dimeq-proofp)
+   (strans ((dim-listp xs)
+            (dim-listp ys)
+            (dim-listp zs)
+            (dimseq xs ys)
+            (dimseq ys zs))
+           (dimseq xs zs))
 
-;;;;;;;;;;;;;;;;;;;;
+   (cong-add ((dim-listp xs)
+              (dim-listp ys)
+              (dimseq xs ys))
+             (dimeq (dim-add xs)
+                    (dim-add ys)))
 
-; Conclusion of a proof.
+   (cong-sub ((dim-listp xs)
+              (dim-listp ys)
+              (dimseq xs ys))
+             (dimeq (dim-sub xs)
+                    (dim-sub ys)))
 
-(define dimeq-proof->conclusion ((proof dimeq-proofp))
-  :returns (concl dimeq-assertionp)
-  (dimeq-proof-case
-   proof
-   :refl proof.conclusion))
+   (cong-mul ((dim-listp xs)
+              (dim-listp ys)
+              (dimseq xs ys))
+             (dimeq (dim-mul xs)
+                    (dim-mul ys)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   (cong-cons ((dimp x)
+               (dimp y)
+               (dim-listp xs)
+               (dim-listp ys)
+               (dimeq x y)
+               (dimseq xs ys))
+              (dimseq (cons x xs)
+                      (cons y ys)))
 
-; Validity of the rules.
+   (add0 ()
+         (dimeq (dim+)
+                (dim-const 0)))
 
-(define-sk dimeq-refl-validp ((concl dimeq-assertionp))
-  (exists (dim)
-          (and (dimp dim)
-               (equal (dimeq-assertion-fix concl)
-                      (dimeq-assertion dim dim)))))
+   (add1 ((dimp x))
+         (dimeq (dim+ x)
+                x))
 
-;;;;;;;;;;;;;;;;;;;;
+   (add3m ((dimp x)
+           (dimp y)
+           (dimp z)
+           (dim-listp ws))
+          (dimeq (dim-add (list* x y z ws))
+                 (dim-add (cons (dim+ (dim+ x y) z) ws))))
 
-; Validity of proofs.
+   (mul0 ()
+         (dimeq (dim*)
+                (dim-const 1)))
 
-(define dimeq-proof-validp ((proof dimeq-proofp))
-  (dimeq-proof-case
-   proof
-   :refl (dimeq-refl-validp proof.conclusion)))
+   (mul1 ((dimp x))
+         (dimeq (dim* x)
+                x))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   (mul3m ((dimp x)
+           (dimp y)
+           (dimp z)
+           (dim-listp ws))
+          (dimeq (dim-mul (list* x y z ws))
+                 (dim-mul (cons (dim* (dim* x y) z) ws))))
 
-; Definition via proof existence.
+   (sub2m ((dimp x)
+           (dim-listp ys)
+           (consp ys))
+          (dimeq (dim-sub (cons x ys))
+                 (dim+ x (dim- (dim-add ys)))))
 
-(define-sk dimeq ((dim1 dimp) (dim2 dimp))
-  :returns (yes/no booleanp)
-  (exists (proof)
-          (and (dimeq-proofp proof)
-               (dimeq-proof-validp proof)
-               (equal (dimeq-proof->conclusion proof)
-                      (dimeq-assertion dim1 dim2))))
-  :skolem-name dimeq-proof)
+   (add-comm ((dimp x)
+              (dimp y))
+             (dimeq (dim+ x y)
+                    (dim+ y x)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   (add-assoc ((dimp x)
+               (dimp y)
+               (dimp z))
+              (dimeq (dim+ (dim+ x y) z)
+                     (dim+ x (dim+ y z))))
 
-; Construct proofs for rules.
+   (add-id ((dimp x))
+           (dimeq (dim+ 0 x)
+                  x))
 
-(define dimeq-proof-for-refl ((dim dimp))
-  :returns (proof dimeq-proofp)
-  (make-dimeq-proof-refl :conclusion (dimeq-assertion dim dim))
-  ///
-  (defret dimeq-proof-validp-of-dimeq-proof-for-refl
-    (dimeq-proof-validp proof)
-    :hyp (dimp dim)
-    :hints (("Goal"
-             :use (:instance dimeq-refl-validp-suff
-                             (concl (dimeq-assertion dim dim)))
-             :in-theory (enable dimeq-proof-validp))))
-  (defret dimeq-proof->conclusion-of-dimeq-proof-for-refl
-    (equal (dimeq-proof->conclusion proof)
-           (dimeq-assertion dim dim))
-    :hints (("Goal"
-             :in-theory (enable dimeq-proof->conclusion))))
-  (in-theory (disable dimeq-proof-validp-of-dimeq-proof-for-refl
-                      dimeq-proof->conclusion-of-dimeq-proof-for-refl)))
+   (add-inv ((dimp x))
+            (dimeq (dim+ x (dim- x))
+                   (dim-const 0)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   (add-const ((natp d1)
+               (natp d2))
+              (dimeq (dim+ (dim-const d1) (dim-const d2))
+                     (dim-const (+ d1 d2))))
 
-; Rules as theorems.
+   (mul-comm ((dimp x)
+              (dimp y))
+             (dimeq (dim* x y)
+                    (dim* y x)))
 
-(defruled dimeq-refl
-  (implies (dimp dim)
-           (dimeq dim dim))
-  :use ((:instance dimeq-suff
-                   (proof (dimeq-proof-for-refl dim))
-                   (dim1 dim)
-                   (dim2 dim))
-        (:instance dimeq-proof-validp-of-dimeq-proof-for-refl))
-  :enable (dimeq-proof-for-refl
-           dimeq-proof->conclusion))
+   (mul-assoc ((dimp x)
+               (dimp y)
+               (dimp z))
+              (dimeq (dim* (dim* x y) z)
+                     (dim* x (dim* y z))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   (mul-id ((dimp x))
+           (dimeq (dim* 1 x)
+                  x))
 
-; Proof of minimality.
+   (mul-const ((natp d1)
+               (natp d2))
+              (dimeq (dim* (dim-const d1) (dim-const d2))
+                     (dim-const (* d1 d2))))
 
-(defstub dimeq-alt (* *) => *)
-
-(defund-sk dimeq-alt-refl-p ()
-  (forall (dim)
-          (implies (dimp dim)
-                   (dimeq-alt dim dim))))
-
-(defruled dimeq-alt-when-proof-validp
-  (implies (and (dimeq-alt-refl-p)
-                (dimeq-proof-validp proof))
-           (b* (((dimeq-assertion concl) (dimeq-proof->conclusion proof)))
-             (dimeq-alt concl.dim1 concl.dim2)))
-  :use (:instance dimeq-alt-refl-p-necc
-                  (dim (dimeq-assertion->dim1
-                        (dimeq-proof->conclusion proof))))
-  :enable (dimeq-proof-validp
-           dimeq-refl-validp
-           dimeq-proof->conclusion))
-
-(defruled dimeq-alt-when-dimeq
-  (implies (and (dimp dim1)
-                (dimp dim2)
-                (dimeq-alt-refl-p)
-                (dimeq dim1 dim2))
-           (dimeq-alt dim1 dim2))
-  :enable dimeq
-  :use (:instance dimeq-alt-when-proof-validp
-                  (proof (dimeq-proof dim1 dim2))))
+   (distrib ((dimp x)
+             (dimp y)
+             (dimp z))
+            (dimeq (dim* x (dim+ y z))
+                   (dim+ (dim* x y) (dim* x z))))))

@@ -67,7 +67,7 @@
 
                           ;; Let's treat this as an abbreviation and keep it
                           ;; enabled, to expose things like
-                          ;; c::uchar-array->elements, since we use such functions
+                          ;; uchar-array->elements, since we use such functions
                           ;; (currently) to convert between lists and arrays.
                           ,(pack-c type '-array-length)))
 
@@ -82,12 +82,12 @@
        (defthmd ,(pack-c 'nth-of- c-type-array->elements '-becomes- c-type-array-read)
           (implies (and (,c-type-arrayp array)
                         (natp x)
-                        (c::sint-integerp x)
+                        (sint-integerp x)
                         (> (len (,c-type-array->elements array)) x))
                    (equal (nth x (,c-type-array->elements array))
-                          (,c-type-array-read array (c::sint-from-integer x))))
+                          (,c-type-array-read array (sint-from-integer x))))
           :hints (("Goal" :in-theory (enable ,c-type-array-read
-                                             c::integer-from-cinteger-alt-def))))
+                                             integer-from-cinteger-alt-def))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -127,22 +127,22 @@
        ;;                                 (:definition ,c-type-array-integer-write)))
 
        ;; Turns the UPDATE-NTH into a C array write.  This chooses to make the index a SINT.
-       ;; Could also make a rule for (c::sint-array (c::type-sint) (update-nth ...)) but let's
+       ;; Could also make a rule for (sint-array (type-sint) (update-nth ...)) but let's
        ;; try to always use the "array-of" function.
        (defthmd ,(pack-c c-type-array-of '-of-update-nth-becomes- c-type-array-write)
          (implies (and (,c-type-listp x)
                        (natp n)
                        (< n (len x))
-                       (c::sint-integerp n))
+                       (sint-integerp n))
                   (equal (,c-type-array-of (update-nth n y x))
-                         (,c-type-array-write (,c-type-array-of x) (c::sint-from-integer n) y)))
+                         (,c-type-array-write (,c-type-array-of x) (sint-from-integer n) y)))
          :hints (("Goal" :in-theory (enable ,(pack-c c-type-list-fix '-of-update-nth)
                                             ,c-type-array-integer-index-okp
                                             ,c-type-array-write
                                             ,c-type-array-of
                                             ,c-type-array->elemtype
                                             ;; ,(pack-c 'update-nth-> type '-array-write)
-                                            c::integer-from-cinteger-alt-def
+                                            integer-from-cinteger-alt-def
                                             ,c-type-array-length
                                             ))))
 

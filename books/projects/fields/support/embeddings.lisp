@@ -2,16 +2,6 @@
 
 (include-book "extensions")
 
-;; The theme of the book "extensions" is the reification of the metalogical notion of a field.  Similarly, 
-;; a major theme of this book is the reification of the notion of a field homomomorphism.  That is, given 
-;; extensions e and k of a field f, we shall define the homomorphic embeddings of e in k over f as ACL2 
-;; objects.  In the case e = k, these are the automorphisms of e over k, which form the Galois group of the 
-;; extension.  The culmination of the book is a formal version of the Fundamental Theorem of Galois Theory.  
-;; The proof depends on a variety of previously formalized results in the areas of elementary number theory 
-;; ("../numbers/"), finite group theory ("../groups/"), and linear algrbra ("../linear/").  Several other 
-;; topics are encountered on the path to this result, including the evaluation, factorization, and roots of 
-;; polynomials and the characteristic of a field.
-
 ;;----------------------------------------------------------------------------------------------------------
 ;;                                          Field Homomorphisms
 ;;----------------------------------------------------------------------------------------------------------
@@ -2060,6 +2050,240 @@
 |#
 
 ;;----------------------------------------------------------------------------------------------------------
+;;                                             Matrices over a Field
+;;----------------------------------------------------------------------------------------------------------
+
+;; List of field elements of length n:
+
+(defun elistnp (x n f)
+  (if (zp n)
+      (null x)
+    (and (consp x)
+         (feltp (car x) f)
+	 (elistnp (cdr x) (1- n) f))))
+
+;; List of zeroes:
+
+(defun elist0p (x f)
+  (if (consp x)
+      (and (= (car x) (fzero f))
+           (elist0p (cdr x) f))
+    (null x)))
+
+;; List of n zeroes:
+
+(defun elistn0 (n f)
+  (if (zp n)
+      ()
+      (cons (fzero f) (elistn0 (1- n) f))))
+
+;; Sum of members of a list:
+
+(defun elist-sum (l f)
+  (if (consp l)
+      (fadd (car l) (elist-sum (cdr l) f) f)
+    (fzero f)))
+
+;; List of sums of corresponding members:
+
+(defun elist-add (x y f)
+  (if (consp x)
+      (cons (fadd (car x) (car y) f)
+            (elist-add (cdr x) (cdr y) f))
+    ()))
+
+;; Scalar multiplication:
+
+(defun elist-scalar-mul (c x f)
+  (if (consp x)
+      (cons (fmul c (car x) f)
+            (elist-scalar-mul c (cdr x) f))
+    ()))
+
+;; Dot product:
+
+(defun edot (x y f)
+  (if (consp x)
+      (fadd (fmul (car x) (car y) f)
+            (edot (cdr x) (cdr y) f)
+	    f)
+    (fzero f)))
+
+(defun edot-list (x l f)
+  (if (consp l)
+      (cons (edot x (car l) f)
+            (edot-list x (cdr l) f))
+    ()))
+
+;; Matrix of field elements:
+
+(defun ematp (x m n f)
+  (if (zp m)
+      (null x)
+    (and (consp x)
+         (elistnp (car x) n f)
+	 (ematp (cdr x) (1- m) n f))))
+
+;; Identity matrix:
+
+(defun eunit (j n f)
+  (if (zp n)
+      ()
+    (if (zp j)
+        (cons (fone f) (elistn0 (1- n) f))
+      (cons (fzero f) (eunit (1- j) (1- n) f)))))
+
+(defun id-emat-aux (j n f)
+  (declare (xargs :measure (nfix (- n j))))
+  (if (and (natp j) (natp n) (< j n))
+      (cons (eunit j n f) (id-emat-aux (1+ j) n f))
+    ()))
+
+(defund id-emat (n f)
+  (id-emat-aux 0 n f))
+
+;; Matrix multiplication:
+
+(defun col (j a)
+  (if (consp a)
+      (cons (nth j (car a))
+            (col j (cdr a)))
+    ()))
+
+(defun transpose-mat-aux (a j n)
+  (declare (xargs :measure (nfix (- n j))))
+  (if (and (natp j) (natp n) (< j n))
+      (cons (col j a) (transpose-mat-aux a (1+ j) n))
+    ()))
+
+(defund transpose-mat (a)
+  (transpose-mat-aux a 0 (len (car a))))
+
+(defund emat* (a b f)
+  (if (consp a)
+      (cons (edot-list (car a) (transpose-mat b) f)
+            (emat* (cdr a) b f))
+      ()))
+
+;; Row reduction:
+
+(defun replace-row (a k r)
+  (if (zp k)
+      (cons r (cdr a))
+    (cons (car a) (replace-row (cdr a) (1- k) r))))
+
+(defund emat-ero1 (a c k f)
+  (replace-row a k (elist-scalar-mul c (nth k a) f)))
+
+(defund emat-ero2 (a c j k f)
+  (replace-row a k (elist-add (elist-scalar-mul c (nth j a) f) (nth k a) f)))
+
+(defund emat-ero3 (a j k)
+  (replace-row (replace-row a k (nth j a)) j (nth k a)))
+
+(defun clear-emat-column (a k j m f)
+  (if (zp m)
+      a
+    (if (= (1- m) k)
+	(clear-emat-column a k j (1- m) f)
+      (clear-emat-column (emat-ero2 a (fneg (nth j (nth (1- m) a)) f) k (1- m) f)
+		         k j (1- m) f))))
+
+(defun first-nonzero-elist (r f)
+  (if (consp r)
+      (if (= (car r) (fzero f))
+          (1+ (first-nonzero-elist (cdr r) f))
+	0)	
+    ()))
+
+(defun emat-row-with-nonzero-at-least-index (a m k f)
+  (if (and (natp k) (natp m) (< k m))
+      (let ((i (emat-row-with-nonzero-at-least-index a (1- m) k f)))
+	(if (or (elist0p (nth (1- m) a) f)
+	        (and i (<= (first-nonzero-elist (nth i a) f) (first-nonzero-elist (nth (1- m) a) f))))
+	    i
+	  (1- m)))
+    ()))
+
+(defund row-reduce-emat-step (a m k i j f)
+  (clear-emat-column (emat-ero3 (emat-ero1 a (frecip (nth j (nth i a)) f) i f)
+		                i k)
+		     k j m f))
+
+(defun row-reduce-emat-aux (a m k f)
+  (declare (xargs :measure (nfix (- m k))))
+  (let ((i (emat-row-with-nonzero-at-least-index a m k f)))
+    (if (and (natp k) (natp m) (< k m) i)
+        (row-reduce-emat-aux (row-reduce-emat-step a m k i (first-nonzero-elist (nth i a) f) f)
+		   	     m (1+ k) f)
+      a)))
+
+(defund row-reduce-emat (a f)
+  (row-reduce-emat-aux a (len a) 0 f))
+
+(defun num-nonzero-rows-emat (a f)
+  (if (consp a)
+      (if (elist0p (car a) f)
+          0
+	(1+ (num-nonzero-rows-emat (cdr a) f)))
+    0))
+
+(defun emat-row-rank (a f)
+  (num-nonzero-rows-emat (row-reduce-emat a f) f))
+
+;; Inverse matrix:
+
+(defund apply-emat-row-op (op a f)
+  (case (car op)
+    (1 (emat-ero1 a (cadr op) (caddr op) f))
+    (2 (emat-ero2 a (cadr op) (caddr op) (cadddr op) f))
+    (3 (emat-ero3 a (cadr op) (caddr op)))))
+
+(defun clear-emat-column-ops (a k j m f)
+  (if (zp m)
+      ()
+    (if (= k (1- m))
+        (clear-emat-column-ops a k j (1- m) f)
+      (cons (list 2 (fneg (nth j (nth (1- m) a)) f) k (1- m))
+	    (clear-emat-column-ops (emat-ero2 a (fneg (nth j (nth (1- m) a)) f) k (1- m) f) k j (1- m) f)))))
+
+(defund row-reduce-emat-step-ops (a m k i j f)
+  (cons (list 1 (frecip (nth j (nth i a)) f) i)
+        (cons (list 3 i k)
+	      (clear-emat-column-ops (emat-ero3 (emat-ero1 a (frecip (nth j (nth i a)) f) i f)
+				                i k)
+			             k j m f))))
+
+(defun row-reduce-emat-aux-ops (a m k f)
+  (declare (xargs :measure (nfix (- m k))))
+  (let* ((i (emat-row-with-nonzero-at-least-index a m k f))
+	 (j (and i (first-nonzero-elist (nth i a) f))))
+    (if (and (natp k) (natp m) (< k m) i)
+        (append (row-reduce-emat-step-ops a m k i j f)
+	        (row-reduce-emat-aux-ops (row-reduce-emat-step a m k i j f) m (1+ k) f))                
+      ())))
+
+(defund row-reduce-emat-ops (a f)
+  (row-reduce-emat-aux-ops a (len a) 0 f))
+
+(defund elem-emat (op m f)
+  (apply-emat-row-op op (id-emat m f) f))
+
+(defund row-ops-emat (ops m f)
+  (if (consp ops)
+      (emat* (row-ops-emat (cdr ops) m f)
+             (elem-emat (car ops) m f)
+             f)
+    (id-emat m f)))
+
+(defund row-reduction-emat (a f)
+  (row-ops-emat (row-reduce-emat-ops a f) (len a) f))
+
+(defund inverse-emat (a f)
+  (row-reduction-emat a f))
+
+
+;;----------------------------------------------------------------------------------------------------------
 ;;                                        Field Extensions as Vector Spaces
 ;;----------------------------------------------------------------------------------------------------------
 
@@ -2067,46 +2291,22 @@
 ;; corresponding to the functions that are introduced by the encapsulation of "../linear/vectors" that 
 ;; characterize a vector space and prove the theorems corresponding to the vector space axioms.
 
-;; The first 5 of these functions are easily defined, and their required properties are readily verified:
+;; The first 6 of these functions are easily defined, and their required properties are readily verified:
 
 ;;  vp        (lambda (x) (feltp x e))
 ;;  v+        (lambda (x y) (fadd x y e))
 ;;  v0        (lambda () (fzero e))
 ;;  v-        (lambda (x) (fneg x e))
 ;;  v*        (lambda (c x) (fmul (flift c f e) x e))
-
-;; The remaining 5 functions are defined below:
-
 ;;  vlistnp   (lambda (x n) (elistnp x n e))
+
+;; The remaining 4 functions are defined below:
+
 ;;  vcomb     (lambda (flist elist) (ecomb flist elist e))
 ;;  vdim      (lambda () (edegree e f))
 ;;  vbasis    (lambda () (ebasis0 e f))
 ;;  vcoords   (lambda (x) (ecoords0 x e f))
 
-;; List of vectors of length n:
-
-(defun elistnp (x n e)
-  (if (zp n)
-      (null x)
-    (and (consp x)
-         (feltp (car x) e)
-	 (elistnp (cdr x) (1- n) e))))
-
-;; List of zeroes:
-
-(defun elist0p (x e)
-  (if (consp x)
-      (and (= (car x) (fzero e))
-           (elist0p (cdr x) e))
-    (null x)))
-
-;; List of n zeroes:
-
-(defun elistn0 (n e)
-  (if (zp n)
-      ()
-    (cons (fzero e) (elistn0 (1- n) e))))
-	 
 ;; Linear combination of a list of vectors:
 
 (defun ecomb (flist elist e f)
@@ -2627,23 +2827,6 @@
 	               (equal c (elistn0 (len l) f)))
               (eindepp-sk l e f))))
 
-
-;; Sum of a list of field elements:
-
-(defun fadd-list (l e)
-  (if (consp l)
-      (fadd (car l) (fadd-list (cdr l) e) e)
-    (fzero e)))
-
-;; A list of m lists of field elements, each of length n:
-
-(defun elistn-listp (x n m e)
-  (if (zp m)
-      (null x)
-    (and (consp x)
-         (elistnp (car x) n e)
-	 (elistn-listp (cdr x) n (1- m) e))))
-
 ;; A list of m lists of zeroes, each of length n:
 
 (defun elistn0-list (n m e)
@@ -2692,7 +2875,7 @@
 
 (defthmd split-elistnp
   (implies (and (fieldp f) (natp m) (posp n) (elistnp x (* m n) f))
-           (elistn-listp (split n x) n m f))
+           (ematp (split n x) m n f))
   :hints (("Goal" :induct (split-elistnp-induct m n x))
           ("Subgoal *1/2" :use ((:instance len-elistnp (l x) (k (* m n)) (e f))
 	                        (:instance elistnp-nthcdr (k (* m n)))
@@ -2708,7 +2891,7 @@
 
 (defthmd elistnp-ecomb-list
   (implies (and (extensionp e f)
-                (elistn-listp c n m f)
+                (ematp c m n f)
 		(elistnp b n e))
 	   (elistnp (ecomb-list c b e f) m e)))
 	 
@@ -2753,7 +2936,7 @@
                 (elistnp c (* m n) f)
 		(elistnp b (* m n) e))
 	   (equal (ecomb c b e f)
-	          (fadd-list (ecomb-lists (split n c) (split n b) e f) e)))
+	          (elist-sum (ecomb-lists (split n c) (split n b) e f) e)))
   :hints (("Goal" :induct (ecomb-decomp-induct c b m n))
           ("Subgoal *1/2" :use ((:instance ecomb-decomp-1 (k (* m n)))
 	                        (:instance elistnp-nthcdr (x c) (k (* m n)))
@@ -2779,22 +2962,22 @@
   (implies (consp b)
            (consp (fmul-list a (plift b f e) e))))
 
-(local-defthmd fadd-list-ecomb-1
+(local-defthmd elist-sum-ecomb-1
   (implies (and (extensionp e f) (consp e) (natp m) (natp n)
-                (elistn-listp c n m f)
+                (ematp c m n f)
 		(elistnp b1 m e) (consp b1)
 		(elistnp b2 n (cdr e)) (consp b2))
-	   (equal (fadd-list (ecomb-lists c (split n (fmul-lists b1 (plift b2 (cdr e) e) e)) e f) e)
+	   (equal (elist-sum (ecomb-lists c (split n (fmul-lists b1 (plift b2 (cdr e) e) e)) e f) e)
 	          (fadd (ecomb (car c) (fmul-list (car b1) (plift b2 (cdr e) e) e) e f)
-                        (fadd-list (ecomb-lists (cdr c) (split n (fmul-lists (cdr b1) (plift b2 (cdr e) e) e)) e f) e)
+                        (elist-sum (ecomb-lists (cdr c) (split n (fmul-lists (cdr b1) (plift b2 (cdr e) e) e)) e f) e)
 	                e)))
   :hints (("Goal" :in-theory (enable len-elistnp)
                   :use ((:instance split-append (x (fmul-list (car b1) (plift b2 (cdr e) e) e))
                                                 (y (fmul-lists (cdr b1) (plift b2 (cdr e) e) e)))))))
 
-(local-defthmd fadd-list-ecomb-2
+(local-defthmd elist-sum-ecomb-2
   (implies (and (extensionp e f) (consp e) (not (equal e f)) (natp m) (natp n)
-                (elistn-listp c n m f)
+                (ematp c m n f)
 		(elistnp b1 m e) (consp b1)
 		(elistnp b2 n (cdr e)) (consp b2))
 	   (equal (fadd (fmul (flift (ecomb (car c) b2 (cdr e) f) (cdr e) e) (car b1) e)
@@ -2825,7 +3008,7 @@
 			        (:instance fadd-comm (f e) (x (ECOMB (CDR C) (PLIFT (CDR B2) (CDR E) E) E F))
 				                     (y (FMUL (FLIFT (CAR C) F E) (FLIFT (CAR B2) (CDR E) E) E)))))))
 
-(local-defthmd fadd-list-ecomb-4
+(local-defthmd elist-sum-ecomb-4
   (implies (and (fieldp f) (feltp x f) (feltp b f) (feltp c f) (feltp e f))
            (equal (fadd (fmul c (fmul x b f) f) (fmul e x f) f)
 	          (fmul (fadd (fmul b c f) e f) x f)))
@@ -2844,31 +3027,31 @@
 		(elistnp b n e))
 	   (equal (ecomb c (fmul-list x b e) e f)
 	          (fmul (ecomb c b e f) x e)))		  
-  :hints (("Subgoal *1/5" :use ((:instance fadd-list-ecomb-4 (f e) (b (car b)) (c (flift (car c) f e))
+  :hints (("Subgoal *1/5" :use ((:instance elist-sum-ecomb-4 (f e) (b (car b)) (c (flift (car c) f e))
                                                              (e (ECOMB (CDR C) (CDR B) E F)))
                                 (:instance feltp-ecomb (n (1- n)) (c (cdr c)) (l (cdr b)))))))
 
-(defthmd fadd-list-ecomb-step
+(defthmd elist-sum-ecomb-step
   (implies (and (extensionp e f) (consp e) (not (equal e f)) (natp m) (natp n)
-                (elistn-listp c n m f)
+                (ematp c m n f)
 		(elistnp b1 m e) (consp b1)
 		(elistnp b2 n (cdr e)) (consp b2)
-		(equal (fadd-list (ecomb-lists (cdr c) (split n (fmul-lists (cdr b1) (plift b2 (cdr e) e) e)) e f) e)
+		(equal (elist-sum (ecomb-lists (cdr c) (split n (fmul-lists (cdr b1) (plift b2 (cdr e) e) e)) e f) e)
 		       (ecomb (ecomb-list (cdr c) b2 (cdr e) f) (cdr b1) e (cdr e))))
-	   (equal (fadd-list (ecomb-lists c (split n (fmul-lists b1 (plift b2 (cdr e) e) e)) e f) e)
+	   (equal (elist-sum (ecomb-lists c (split n (fmul-lists b1 (plift b2 (cdr e) e) e)) e f) e)
 	          (ecomb (ecomb-list c b2 (cdr e) f) b1 e (cdr e))))
-  :hints (("Goal" :use (fadd-list-ecomb-1 fadd-list-ecomb-2
+  :hints (("Goal" :use (elist-sum-ecomb-1 elist-sum-ecomb-2
                         (:instance flift-ecomb (c (car c)))
 			(:instance fmul-ecomb (c (car c)) (x (car b1)) (b (plift b2 (cdr e) e)))))))
 			
 ;; Proof:
 
-;; (fadd-list (ecomb-lists c (split n (fmul-lists b1 (plift b2 (cdr e) e) e)) e f) e)
+;; (elist-sum (ecomb-lists c (split n (fmul-lists b1 (plift b2 (cdr e) e) e)) e f) e)
 ;;   = (fadd (ecomb (car c) (firstn n (fmul-lists b1 (plift b2 (cdr e) e) e)) e f)
-;;           (fadd-list (ecomb-lists (cdr c) (split n (nthcdr n (fmul-lists b1 (plift b2 (cdr e) e) e))) e f) e)
+;;           (elist-sum (ecomb-lists (cdr c) (split n (nthcdr n (fmul-lists b1 (plift b2 (cdr e) e) e))) e f) e)
 ;; 	     e)
 ;;   = (fadd (ecomb (car c) (fmul-list (car b1) (plift b2 (cdr e) e) e) e f)
-;;           (fadd-list (ecomb-lists (cdr c) (split n (fmul-lists (cdr b1) (plift b2 (cdr e) e) e)) e f) e)
+;;           (elist-sum (ecomb-lists (cdr c) (split n (fmul-lists (cdr b1) (plift b2 (cdr e) e) e)) e f) e)
 ;; 	     e)
 ;;   = (fadd (ecomb (car c) (fmul-list (car b1) (plift b2 (cdr e) e) e) e f)
 ;;           (ecomb (ecomb-list (cdr c) b2 (cdr e) f) (cdr b1) e (cdr e))
@@ -2881,20 +3064,20 @@
 ;; 	     e)
 ;;   = (ecomb (ecomb-list c b2 (cdr e) f) b1 e (cdr e))
 
-(local-defthmd fadd-list-ecomb
+(local-defthmd elist-sum-ecomb
   (implies (and (extensionp e f) (not (equal e f)) (natp m) (natp n)
-                (elistn-listp c n m f)
+                (ematp c m n f)
 		(elistnp b1 m e) (consp b1)
 		(elistnp b2 n (cdr e)) (consp b2))
-	   (equal (fadd-list (ecomb-lists c (split n (fmul-lists b1 (plift b2 (cdr e) e) e)) e f) e)
+	   (equal (elist-sum (ecomb-lists c (split n (fmul-lists b1 (plift b2 (cdr e) e) e)) e f) e)
 	          (ecomb (ecomb-list c b2 (cdr e) f) b1 e (cdr e))))
-  :hints (("Subgoal *1/1" :use (fadd-list-ecomb-step))))
+  :hints (("Subgoal *1/1" :use (elist-sum-ecomb-step))))
 
 
 (local-defthmd ecomb-list-elistn0-listp-step
   (implies (and (extensionp e f)
                 (elistnp b n e)
-                (elistn-listp c (len b) m f)
+                (ematp c m (len b) f)
 		(eindepp-sk b e f)
 		(equal (ecomb-list c b e f)
 		       (elistn0 m e))
@@ -2907,7 +3090,7 @@
 (defthmd ecomb-list-elistn0-listp
   (implies (and (extensionp e f)
                 (elistnp b n e)
-                (elistn-listp c (len b) m f)
+                (ematp c m (len b) f)
 		(eindepp-sk b e f)
 		(equal (ecomb-list c b e f)
 		       (elistn0 m e)))
@@ -2955,7 +3138,7 @@
                 (elistnp c (edegree e f) f)
 		(equal (ecomb c (ebasis0 e f) e f) (fzero e)))
 	   (equal (fzero e)
-	          (fadd-list (ecomb-lists (split (edegree (cdr e) f) c)
+	          (elist-sum (ecomb-lists (split (edegree (cdr e) f) c)
 		                          (split (edegree (cdr e) f) (ebasis0 e f))
 					  e f)
 			     e)))	          
@@ -2967,7 +3150,7 @@
 (local-defthmd elindepp-ebasis0-2
   (implies (and (extensionp e f) (not (equal e f)) (not (equal (cdr e) f))
                 (elistnp c (edegree e f) f))
-	   (and (elistn-listp (split (edegree (cdr e) f) c) (edegree (cdr e) f) (degree (car e)) f)
+	   (and (ematp (split (edegree (cdr e) f) c) (degree (car e)) (edegree (cdr e) f) f)
 		(elistnp (simple-extension-basis e) (degree (car e)) e) (consp (simple-extension-basis e))
 		(elistnp (ebasis0 (cdr e) f) (edegree (cdr e) f) (cdr e)) (consp (ebasis0 (cdr e) f))))
   :hints (("Goal" :use (elistnp-simple-extension-basis
@@ -2979,14 +3162,14 @@
 (local-defthmd elindepp-ebasis0-3
   (implies (and (extensionp e f) (not (equal e f)) (not (equal (cdr e) f))
                 (elistnp c (edegree e f) f))
-	   (equal (fadd-list (ecomb-lists (split (edegree (cdr e) f) c)
+	   (equal (elist-sum (ecomb-lists (split (edegree (cdr e) f) c)
 		                          (split (edegree (cdr e) f) (ebasis0 e f))
 					  e f)
 			     e)
 		  (ecomb (ecomb-list (split (edegree (cdr e) f) c) (ebasis0 (cdr e) f) (cdr e) f) (simple-extension-basis e) e (cdr e))))
   :hints (("Goal" :expand ((ebasis0 e f))
                   :use (elindepp-ebasis0-2
-		        (:instance fadd-list-ecomb (n (edegree (cdr e) f)) (m (degree (car e)))
+		        (:instance elist-sum-ecomb (n (edegree (cdr e) f)) (m (degree (car e)))
 		                                   (b1 (simple-extension-basis e)) (b2 (ebasis0 (cdr e) f))
 		                                   (c (split (edegree (cdr e) f) c)))))))
 
@@ -3045,12 +3228,12 @@
 ;; Let m = (degree (car e), n = (edegree (cdr e) f), b1 = (simple-extension-basis e), b2 = (ebasis0 (cdr e) f).
 
 ;; (fzero e) = (ecomb c (ebasis0 e f) e f)                                                [hypothesis]
-;;           = (fadd-list (ecomb-lists (split n c) (split n (ebasis0 e f)) e f) e)        [ecomb-decomp]
-;;           = (fadd-list (ecomb-lists (split n c)                                        [definition of ebasis0]
+;;           = (elist-sum (ecomb-lists (split n c) (split n (ebasis0 e f)) e f) e)        [ecomb-decomp]
+;;           = (elist-sum (ecomb-lists (split n c)                                        [definition of ebasis0]
 ;; 	                            (split n (fmul-lists b1 (plift b2 (cdr e) e) e))
 ;; 				    e f)
 ;; 		       e)
-;;           = (ecomb (ecomb-list (split n c) b2 (cdr e) f) b1 e (cdr e))                 [fadd-list-ecomb]               [
+;;           = (ecomb (ecomb-list (split n c) b2 (cdr e) f) b1 e (cdr e))                 [elist-sum-ecomb]
 
 ;; => (ecomb-list (split n c) b2 (cdr e) f) = (elist0n m (cdr e))                         [simple-extension-basis-lin-indep]
 
@@ -3495,20 +3678,38 @@
 ;; of e is a root of (the fifting of) some polynomial over f, and consequently of a unique irreducible
 ;; polynomial, over f.  The degree of this irreducible polynomial is at most the degree of the extension.
 
-;; We have proved that in a vector space of degree d, any list l of vectors with (len l) > d is linearly
-;; dependent:
+;; We have proved that in a vector space of dimension d, given a list l of vectors with (len l) > d, we can
+;; construct a linear dependence of l:
 
 (include-book "projects/linear/vectors" :dir :system)
 
-(defthmd not-vindepp-sk-if->-dim
-  (implies (and (natp m) (> m (vdim))
-		(vlistnp l m))
-	   (not (vindepp-sk l))))
+(defun vcoord-mat (l)
+  (if (consp l)
+      (cons (vcoords0 (car l))
+	    (vcoord-mat (cdr l)))
+    ()))
+
+(defun vdep-coeffs (l)
+  (nth (1- (len l)) (row-reduce-mat (vcoord-mat l))))
+
+(defthmd vcomb-v0-if->-dim
+  (implies (and (posp m) (vlistnp l m) (> m (vdim)))
+	   (let ((c (vdep-coeffs l)))
+	     (and (flistnp c m)
+		  (not (equal c (flistn0 m)))
+		  (equal (vcomb c l) (v0))))))
 
 ;; Let d = (edegree e f).  Since e is a vector space over f of dimension d, functional instantiation of the 
 ;; above result yields the following:
 
-(in-theory (disable vindepp-sk eindepp-sk))
+(defun ecoord-mat (l e f)
+  (if (consp l)
+      (cons (ecoords0 (car l) e f)
+	    (ecoord-mat (cdr l) e f))
+    ()))
+
+(defun edep-coeffs (l e f)
+  (nth (1- (len l)) (row-reduction-emat (ecoord-mat l e f) f)))
 
 (in-theory (disable len-ebasis0))
 
@@ -3518,61 +3719,85 @@
   :hints (("Goal" :expand ((fieldp e) (extends e f))))
   :rule-classes (:type-prescription :rewrite))
 
-(defmacro eindepp-mac ()
+(defmacro vdep-mac ()
   '(and (extensionp e f) (not (equal e f))))
 
-(defthmd not-eindepp-sk-if->-edegree
+(defthmd ecomb-fzero-if->-dim
   (implies (and (extensionp e f) (not (equal e f))
-                (natp m) (> m (edegree e f))
-		(elistnp l m e))
-	   (not (eindepp-sk l e f)))
-  :hints (("Goal" :in-theory (enable vindepp-sk-lemma eindepp-sk-lemma fmul-assoc f*assoc fadd-assoc f+assoc fmul-comm
-                                     fadd-comm ebasis0-lin-indep ebasis0-spans elistnp-ecoords0 elistnp-ebasis0 vdistv fdistrib-comm
-				     vdistv fdistrib-comm vdistf v*assoc fmul-assoc v+assoc fadd-assoc fadd-comm)
-                  :use ((:functional-instance not-vindepp-sk-if->-dim
-                          (f0 (lambda () (if (eindepp-mac) (fzero f) (f0))))
-                          (f1 (lambda () (if (eindepp-mac) (fone f) (f1))))
-                          (fp (lambda (x) (if (eindepp-mac) (feltp x f) (fp x))))
-                          (f+ (lambda (x y) (if (eindepp-mac) (fadd x y f) (f+ x y))))
-                          (f* (lambda (x y) (if (eindepp-mac) (fmul x y f) (f* x y))))
-                          (f- (lambda (x) (if (eindepp-mac) (fneg x f) (f- x))))
-                          (f/ (lambda (x) (if (eindepp-mac) (frecip x f) (f/ x))))
-                          (vp (lambda (x) (if (eindepp-mac) (feltp x e) (vp x))))
-			  (v+ (lambda (x y) (if (eindepp-mac) (fadd x y e) (v+ x y))))
-			  (v0 (lambda () (if (eindepp-mac) (fzero e) (v0))))
-			  (v- (lambda (x) (if (eindepp-mac) (fneg x e) (v- x))))
-			  (v* (lambda (c x) (if (eindepp-mac) (fmul (flift c f e) x e) (v* c x))))
-			  (vlistnp (lambda (x n) (if (eindepp-mac) (elistnp x n e) (vlistnp x n))))
-			  (vcomb (lambda (flist elist) (if (eindepp-mac) (ecomb flist elist e f) (vcomb flist elist))))
-			  (vdim (lambda () (if (eindepp-mac) (edegree e f) (vdim))))
-			  (vbasis0 (lambda () (if (eindepp-mac) (ebasis0 e f) (vbasis0))))
-			  (vcoords0 (lambda (x) (if (eindepp-mac) (ecoords0 x e f) (vcoords0 x))))
-			  (flistnp (lambda (x n) (if (eindepp-mac) (elistnp x n f) (flistnp x n))))
-			  (flistn0 (lambda (n) (if (eindepp-mac) (elistn0 n f) (flistn0 n))))
-			  (vindepp-sk (lambda (l) (if (eindepp-mac) (eindepp-sk l e f) (vindepp-sk l))))
-			  (vindepp-sk-witness (lambda (l) (if (eindepp-mac) (eindepp-sk-witness l e f) (vindepp-sk-witness l)))))))			  
-	  ("Subgoal 39" :in-theory (enable vindepp-sk eindepp-sk))	  
-	  ("Subgoal 25" :in-theory (enable f*comm))
-	  ("Subgoal 24" :in-theory (enable f+comm))
-	  ("Subgoal 19" :use ((:instance vindepp-vcomb-v0 (m (vdim)) (l (vbasis0)))))
-	  ("Subgoal 15" :use (posp-edegree))
-	  ("Subgoal 6" :in-theory (enable v+comm))
-	  ("Subgoal 2" :in-theory (enable vdim) :use (len-ebasis0))))
-
-
-;; According to the definition of eindepp-sk, this may be restated as follows:
-
-(defthmd ecomb-eindepp-sk-witness
-  (implies (and (extensionp e f) (not (equal e f))
-                (natp m) (> m (edegree e f))
-		(elistnp l m e))
-           (let ((c (eindepp-sk-witness l e f)))
+                (posp m) (elistnp l m e) (> m (edegree e f)))
+	   (let ((c (edep-coeffs l e f)))
 	     (and (elistnp c m f)
-	          (not (equal c (elistn0 m f)))
+		  (not (equal c (elistn0 m f)))
 		  (equal (ecomb c l e f) (fzero e)))))
-  :hints (("Goal" :use (eindepp-sk not-eindepp-sk-if->-edegree (:instance len-elistnp (k m))))))
+  :hints (("Goal" :in-theory (enable fmul-assoc f*assoc fadd-assoc f+assoc fmul-comm
+                                     fadd-comm ebasis0-lin-indep ebasis0-spans elistnp-ecoords0 elistnp-ebasis0 vdistv fdistrib-comm
+				     vdistv fdistrib-comm vdistf v*assoc fmul-assoc v+assoc fadd-assoc fadd-comm row-reduce-mat
+				     row-reduction-emat row-reduce-ops row-reduce-emat-ops row-reduce-step row-reduce-emat-step
+				     ero1 ero2 ero3 emat-ero1 emat-ero2 emat-ero3 clear-column-ops clear-emat-column-ops row-reduce-step-ops
+				     row-reduce-emat-step-ops row-ops-emat row-ops-mat elem-mat elem-emat apply-row-op apply-emat-row-op
+				     fmat* emat*)
+                  :use ((:functional-instance vcomb-v0-if->-dim
+                          (f0 (lambda () (if (vdep-mac) (fzero f) (f0))))
+                          (f1 (lambda () (if (vdep-mac) (fone f) (f1))))
+                          (fp (lambda (x) (if (vdep-mac) (feltp x f) (fp x))))
+                          (f+ (lambda (x y) (if (vdep-mac) (fadd x y f) (f+ x y))))
+                          (f* (lambda (x y) (if (vdep-mac) (fmul x y f) (f* x y))))
+                          (f- (lambda (x) (if (vdep-mac) (fneg x f) (f- x))))
+                          (f/ (lambda (x) (if (vdep-mac) (frecip x f) (f/ x))))
+                          (vp (lambda (x) (if (vdep-mac) (feltp x e) (vp x))))
+			  (v+ (lambda (x y) (if (vdep-mac) (fadd x y e) (v+ x y))))
+			  (v0 (lambda () (if (vdep-mac) (fzero e) (v0))))
+			  (v- (lambda (x) (if (vdep-mac) (fneg x e) (v- x))))
+			  (v* (lambda (c x) (if (vdep-mac) (fmul (flift c f e) x e) (v* c x))))
+			  (vlistnp (lambda (x n) (if (vdep-mac) (elistnp x n e) (vlistnp x n))))
+			  (vcomb (lambda (flist elist) (if (vdep-mac) (ecomb flist elist e f) (vcomb flist elist))))
+			  (vdim (lambda () (if (vdep-mac) (edegree e f) (vdim))))
+			  (vbasis0 (lambda () (if (vdep-mac) (ebasis0 e f) (vbasis0))))
+			  (vcoords0 (lambda (x) (if (vdep-mac) (ecoords0 x e f) (vcoords0 x))))
+			  (flist-add (lambda (x y) (if (vdep-mac) (elist-add x y f) (flist-add x y))))
+			  (flist-scalar-mul (lambda (c x) (if (vdep-mac) (elist-scalar-mul c x f) (flist-scalar-mul c x))))
+			  (flistnp (lambda (x n) (if (vdep-mac) (elistnp x n f) (flistnp x n))))
+			  (flist0p (lambda (x) (if (vdep-mac) (elist0p x f) (flist0p x))))
+			  (flistn0 (lambda (n) (if (vdep-mac) (elistn0 n f) (flistn0 n))))
+			  (funit (lambda (j n) (if (vdep-mac) (eunit j n f) (funit j n))))
+			  (id-fmat-aux (lambda (j n) (if (vdep-mac) (id-emat-aux j n f) (id-fmat-aux j n))))
+			  (id-fmat (lambda (n) (if (vdep-mac) (id-emat n f) (id-fmat n))))
+			  (fdot (lambda (x y) (if (vdep-mac) (edot x y f) (fdot x y))))
+			  (fdot-list (lambda (x l) (if (vdep-mac) (edot-list x l f) (fdot-list x l))))
+			  (fmat* (lambda (a b) (if (vdep-mac) (emat* a b f) (fmat* a b))))
+			  (ero1 (lambda (a c k) (if (vdep-mac) (emat-ero1 a c k f) (ero1 a c k))))
+			  (ero2 (lambda (a c j k) (if (vdep-mac) (emat-ero2 a c j k f) (ero2 a c j k))))
+			  (ero3 (lambda (a j k) (if (vdep-mac) (emat-ero3 a j k) (ero3 a j k))))
+			  (first-nonzero (lambda (r) (if (vdep-mac) (first-nonzero-elist r f) (first-nonzero r))))
+			  (row-with-nonzero-at-least-index (lambda (a m k) (if (vdep-mac)
+									       (emat-row-with-nonzero-at-least-index a m k f)
+									      (row-with-nonzero-at-least-index a m k))))
+			  (apply-row-op (lambda (op a) (if (vdep-mac) (apply-emat-row-op op a f) (apply-row-op op a))))
+			  (clear-column (lambda (a k j m) (if (vdep-mac) (clear-emat-column a k j m f) (clear-column a k j m))))
+			  (clear-column-ops (lambda (a k j m) (if (vdep-mac) (clear-emat-column-ops a k j m f) (clear-column-ops a k j m))))
+			  (row-reduce-step (lambda (a m k i j) (if (vdep-mac) (row-reduce-emat-step a m k i j f) (row-reduce-step a m k i j))))
+			  (row-reduce-step-ops (lambda (a m k i j) (if (vdep-mac) (row-reduce-emat-step-ops a m k i j f) (row-reduce-step-ops a m k i j))))
+			  (row-reduce-aux-ops (lambda (a m k) (if (vdep-mac) (row-reduce-emat-aux-ops a m k f) (row-reduce-aux-ops a m k))))
+			  (row-reduce-ops (lambda (a) (if (vdep-mac) (row-reduce-emat-ops a f) (row-reduce-ops a))))
+			  (elem-mat (lambda (op m) (if (vdep-mac) (elem-emat op m f) (elem-mat op m))))
+			  (row-ops-mat (lambda (ops m) (if (vdep-mac) (row-ops-emat ops m f) (row-ops-mat ops m))))
+			  (row-reduce-mat (lambda (a) (if (vdep-mac) (row-reduction-emat a f) (row-reduce-mat a))))
+			  (vcoord-mat (lambda (l) (if (vdep-mac) (ecoord-mat l e f) (vcoord-mat l))))
+			  (vdep-coeffs (lambda (l) (if (vdep-mac) (edep-coeffs l e f) (vdep-coeffs l)))))))			  
+	  ("Subgoal 49" :in-theory (enable f*comm))
+	  ("Subgoal 48" :in-theory (enable f+comm))
+	  ("Subgoal 43" :use (vbasis0-lin-indep ebasis0-lin-indep))
+	  ("Subgoal 41" :use (elistnp-ecoords0))
+	  ("Subgoal 40" :use (elistnp-ebasis0))
+	  ("Subgoal 39" :use (posp-edegree))
+	  ("Subgoal 30" :in-theory (enable v+comm))
+	  ("Subgoal 26" :in-theory (enable vdim) :use (len-ebasis0))
+	  ("Subgoal 8" :in-theory (enable id-fmat id-emat))))
 
-;; In particular, the first d + 1 powers of x are linearly dependent over f:
+(in-theory (disable edep-coeffs))
+
+;; Thus, any list of elements of e of length exceeding d is linearly dependent over f.
+;; In particular, the first d + 1 powers of any element x of e are linearly dependent over f:
 
 (defun fpowers (x n e)
   (if (zp n)
@@ -3627,7 +3852,7 @@
 (local-defthmd prootp-zero-poly-1
   (implies (and (extensionp e f) (not (equal e f)) (feltp x e))
            (let* ((l (fpowers x (1+ (edegree e f)) e))
-	          (c (eindepp-sk-witness l e f))
+	          (c (edep-coeffs l e f))
 	          (p (pstrip c f)))
 	     (and (polyp p f)
 	          (<= (degree p) (edegree e f))
@@ -3637,13 +3862,13 @@
   :hints (("Goal" :in-theory (e/d (len-elistnp) (posp-edegree))
                   :use (posp-edegree
 		        (:instance ecomb-peval (n (1+ (edegree e f)))
-                                               (c (eindepp-sk-witness (fpowers x (1+ (edegree e f)) e) e f)))
-			(:instance ecomb-eindepp-sk-witness (m (1+ (edegree e f)))
-			                                    (l (fpowers x (1+ (edegree e f)) e)))
+                                               (c (edep-coeffs (fpowers x (1+ (edegree e f)) e) e f)))
+			(:instance ecomb-fzero-if->-dim (m (1+ (edegree e f)))
+			                                   (l (fpowers x (1+ (edegree e f)) e)))
 			(:instance elistnp-fpowers (n (1+ (edegree e f))))
-			(:instance len-pstrip (x (eindepp-sk-witness (fpowers x (1+ (edegree e f)) e) e f)))
+			(:instance len-pstrip (x (edep-coeffs (fpowers x (1+ (edegree e f)) e) e f)))
 			(:instance pstrip-nonzero (n (1+ (edegree e f)))
-			                          (x (eindepp-sk-witness (fpowers x (1+ (edegree e f)) e) e f)))))))
+			                          (x (edep-coeffs (fpowers x (1+ (edegree e f)) e) e f)))))))
 
 (local-defthmd prootp-zero-poly-2
   (implies (and (fieldp f) (polyp p f) (not (equal p (pzero f))))
@@ -3671,7 +3896,7 @@
 (defund zero-poly (x e f)
   (if (equal e f)
       (root-poly x f)
-    (let ((p (pstrip (eindepp-sk-witness (fpowers x (1+ (edegree e f)) e) e f) f)))
+    (let ((p (pstrip (edep-coeffs (fpowers x (1+ (edegree e f)) e) e f) f)))
       (cmul (frecip (car p) f) p f))))
 
 (defthmd prootp-zero-poly
@@ -3684,8 +3909,8 @@
   :hints (("Goal" :in-theory (enable prootp zero-poly)
                   :use (prootp-zero-poly-1 prootp-root-poly monicp-irreduciblep-root-poly
                         (:instance frecip-not-fzero (x (car p)))
-		        (:instance len-cmul (c (frecip (car p) f)) (x (pstrip (eindepp-sk-witness (fpowers x (1+ (edegree e f)) e) e f) f)))
-		        (:instance prootp-zero-poly-3 (p (pstrip (eindepp-sk-witness (fpowers x (1+ (edegree e f)) e) e f) f)))))))
+		        (:instance len-cmul (c (frecip (car p) f)) (x (pstrip (edep-coeffs (fpowers x (1+ (edegree e f)) e) e f) f)))
+		        (:instance prootp-zero-poly-3 (p (pstrip (edep-coeffs (fpowers x (1+ (edegree e f)) e) e f) f)))))))
 
 (defthmd zero-poly-not-pconstp
   (implies (and (extensionp e f) (feltp x e))
@@ -7364,7 +7589,7 @@
 ;; over f is defined as follows:
 
 (defun trivial-embedding (e k f)
-  (if (and (extensionp e f) (not (equal e f)))
+  (if (and (extends e f) (not (equal e f)))
       (cons (flift (primitive e) e k)
             (trivial-embedding (cdr e) k f))
     ()))
@@ -7382,7 +7607,7 @@
     ()))
 
 (defthmd trivial-embedding-aux-rewrite
-  (implies (extensionp e d)
+  (implies (and (extensionp e d) (extensionp d f))
            (equal (trivial-embedding-aux e d k f)
                   (trivial-embedding d k f))))
 
@@ -7448,7 +7673,7 @@
 ;; If phi embeds e in g and psi embeds g in k, then the composition embeds e in k:
 
 (defun comp-embedding (psi phi e k f)
-  (if (and (extensionp e f) (not (equal e f)))
+  (if (and (extends e f) (not (equal e f)))
       (cons (embed (car phi) psi k f)
             (comp-embedding psi (cdr phi) (cdr e) k f))
     ()))
@@ -7887,66 +8112,281 @@
   (and (embeddingp phi e k f)
        (equal (edegree e f) (edegree k f))))
 
-(defthm embed-preembed
+
+
+
+
+(defun embedding-mat (phi e k f)
+  (ecoord-mat (pembed (ebasis0 e f) phi k f) k f))
+
+(defun embedding-inv (y phi e k f)
+  (ecomb (car (emat* (list (ecoords0 y k f)) (inverse-emat (embedding-mat phi e k f) f) f))
+	 (ebasis0 e f)
+	 e
+	 f))
+
+(local (defmacro embed-mac ()
+  '(and (extensionp e* f*) (extensionp k* f*) (not (equal e* f*)) (not (equal k* f*))
+        (equal (edegree e* f*) (edegree k* f*))
+        (embeddingp phi* e* k* f*))))
+
+(local-defthmd embed-embedding-inv-1
+  (implies (and (extensionp e* f*) (extensionp k* f*) (not (equal e* f*)) (not (equal k* f*))
+                (equal (edegree e* f*) (edegree k* f*))
+		(embeddingp phi* e* k* f*)
+		(feltp z k*))
+           (let ((x (embedding-inv z phi* e* k* f*)))
+             (and (feltp x e*)
+                  (equal (embed x phi* k* f*) z))))
+  :hints (("Goal" :in-theory (enable fmul-assoc f*assoc fadd-assoc f+assoc fmul-comm
+                                     fadd-comm ebasis0-lin-indep ebasis0-spans elistnp-ecoords0 elistnp-ebasis0 fdistrib-comm
+				     vdistv fdistrib-comm vdistf v*assoc fmul-assoc v+assoc fadd-assoc fadd-comm wdistw wdistf w+assoc w*assoc
+				     row-reduce-mat row-reduction-emat row-reduce-ops row-reduce-emat-ops row-reduce-step row-reduce-emat-step
+				     ero1 ero2 ero3 emat-ero1 emat-ero2 emat-ero3 clear-column-ops clear-emat-column-ops row-reduce-step-ops
+				     row-reduce-emat-step-ops row-ops-emat row-ops-mat elem-mat elem-emat apply-row-op apply-emat-row-op
+				     fmat* emat* lin-inv)
+                  :use ((:functional-instance (:instance lin-lin-inv (y z))
+                          (f0 (lambda () (if (embed-mac) (fzero f*) (f0))))
+                          (f1 (lambda () (if (embed-mac) (fone f*) (f1))))
+                          (fp (lambda (x) (if (embed-mac) (feltp x f*) (fp x))))
+                          (f+ (lambda (x y) (if (embed-mac) (fadd x y f*) (f+ x y))))
+                          (f* (lambda (x y) (if (embed-mac) (fmul x y f*) (f* x y))))
+                          (f- (lambda (x) (if (embed-mac) (fneg x f*) (f- x))))
+                          (f/ (lambda (x) (if (embed-mac) (frecip x f*) (f/ x))))
+                          (vp (lambda (x) (if (embed-mac) (feltp x e*) (vp x))))
+			  (v+ (lambda (x y) (if (embed-mac) (fadd x y e*) (v+ x y))))
+			  (v0 (lambda () (if (embed-mac) (fzero e*) (v0))))
+			  (v- (lambda (x) (if (embed-mac) (fneg x e*) (v- x))))
+			  (v* (lambda (c x) (if (embed-mac) (fmul (flift c f* e*) x e*) (v* c x))))
+			  (vlistnp (lambda (x n) (if (embed-mac) (elistnp x n e*) (vlistnp x n))))
+			  (vcomb (lambda (flist elist) (if (embed-mac) (ecomb flist elist e* f*) (vcomb flist elist))))
+			  (vdim (lambda () (if (embed-mac) (edegree e* f*) (vdim))))
+			  (vbasis0 (lambda () (if (embed-mac) (ebasis0 e* f*) (vbasis0))))
+			  (vcoords0 (lambda (x) (if (embed-mac) (ecoords0 x e* f*) (vcoords0 x))))
+                          (wp (lambda (x) (if (embed-mac) (feltp x k*) (wp x))))
+			  (w+ (lambda (x y) (if (embed-mac) (fadd x y k*) (w+ x y))))
+			  (w0 (lambda () (if (embed-mac) (fzero k*) (w0))))
+			  (w- (lambda (x) (if (embed-mac) (fneg x k*) (w- x))))
+			  (w* (lambda (c x) (if (embed-mac) (fmul (flift c f* k*) x k*) (w* c x))))
+			  (wlistnp (lambda (x n) (if (embed-mac) (elistnp x n k*) (wlistnp x n))))
+			  (wcomb (lambda (flist elist) (if (embed-mac) (ecomb flist elist k* f*) (wcomb flist elist))))
+			  (wdim (lambda () (if (embed-mac) (edegree k* f*) (wdim))))
+			  (wbasis0 (lambda () (if (embed-mac) (ebasis0 k* f*) (wbasis0))))
+			  (wcoords0 (lambda (x) (if (embed-mac) (ecoords0 x k* f*) (wcoords0 x))))			  
+			  (lin (lambda (x) (if (embed-mac) (embed x phi* k* f*) (lin x))))
+			  (lin-injective-p (lambda () (if (embed-mac) (embeddingp phi* e* k* f*) (lin-injective-p))))
+			  (lin-surjective-p (lambda () (if (embed-mac) (surjective-embedding-p phi* e* k* f*) (lin-surjective-p))))
+			  (lin-injective-p-witness (lambda () (if (embed-mac) (fzero e*) (lin-injective-p-witness))))
+			  (lin-surjective-p-witness (lambda () (if (embed-mac) (surjective-embedding-p-witness phi* e* k* f*) (lin-surjective-p-witness))))
+			  (lin-mat (lambda () (if (embed-mac) (embedding-mat phi* e* k* f*) (lin-mat))))
+			  (lin-list (lambda (l) (if (embed-mac) (pembed l phi* k* f*) (lin-list l))))
+			  (lin-preimage (lambda (y) (if (embed-mac) (preembed y phi* e* k* f*) (lin-preimage y))))
+			  (lin-inv (lambda (y) (if (embed-mac) (embedding-inv y phi* e* k* f*) (lin-inv y))))
+			  (flist-add (lambda (x y) (if (embed-mac) (elist-add x y f*) (flist-add x y))))
+			  (flist-scalar-mul (lambda (c x) (if (embed-mac) (elist-scalar-mul c x f*) (flist-scalar-mul c x))))
+			  (flistnp (lambda (x n) (if (embed-mac) (elistnp x n f*) (flistnp x n))))
+			  (flist0p (lambda (x) (if (embed-mac) (elist0p x f*) (flist0p x))))
+			  (flistn0 (lambda (n) (if (embed-mac) (elistn0 n f*) (flistn0 n))))
+			  (funit (lambda (j n) (if (embed-mac) (eunit j n f*) (funit j n))))
+			  (id-fmat-aux (lambda (j n) (if (embed-mac) (id-emat-aux j n f*) (id-fmat-aux j n))))
+			  (id-fmat (lambda (n) (if (embed-mac) (id-emat n f*) (id-fmat n))))
+			  (fdot (lambda (x y) (if (embed-mac) (edot x y f*) (fdot x y))))
+			  (fdot-list (lambda (x l) (if (embed-mac) (edot-list x l f*) (fdot-list x l))))
+			  (fmat* (lambda (a b) (if (embed-mac) (emat* a b f*) (fmat* a b))))
+			  (ero1 (lambda (a c k) (if (embed-mac) (emat-ero1 a c k f*) (ero1 a c k))))
+			  (ero2 (lambda (a c j k) (if (embed-mac) (emat-ero2 a c j k f*) (ero2 a c j k))))
+			  (ero3 (lambda (a j k) (if (embed-mac) (emat-ero3 a j k) (ero3 a j k))))
+			  (first-nonzero (lambda (r) (if (embed-mac) (first-nonzero-elist r f*) (first-nonzero r))))
+			  (row-with-nonzero-at-least-index (lambda (a m k) (if (embed-mac)
+									       (emat-row-with-nonzero-at-least-index a m k f*)
+									      (row-with-nonzero-at-least-index a m k))))
+			  (apply-row-op (lambda (op a) (if (embed-mac) (apply-emat-row-op op a f*) (apply-row-op op a))))
+			  (clear-column (lambda (a k j m) (if (embed-mac) (clear-emat-column a k j m f*) (clear-column a k j m))))
+			  (clear-column-ops (lambda (a k j m) (if (embed-mac) (clear-emat-column-ops a k j m f*) (clear-column-ops a k j m))))
+			  (row-reduce-step (lambda (a m k i j) (if (embed-mac) (row-reduce-emat-step a m k i j f*) (row-reduce-step a m k i j))))
+			  (row-reduce-step-ops (lambda (a m k i j) (if (embed-mac) (row-reduce-emat-step-ops a m k i j f*) (row-reduce-step-ops a m k i j))))
+			  (row-reduce-aux-ops (lambda (a m k) (if (embed-mac) (row-reduce-emat-aux-ops a m k f*) (row-reduce-aux-ops a m k))))
+			  (row-reduce-ops (lambda (a) (if (embed-mac) (row-reduce-emat-ops a f*) (row-reduce-ops a))))
+			  (elem-mat (lambda (op m) (if (embed-mac) (elem-emat op m f*) (elem-mat op m))))
+			  (row-ops-mat (lambda (ops m) (if (embed-mac) (row-ops-emat ops m f*) (row-ops-mat ops m))))
+			  (row-reduce-mat (lambda (a) (if (embed-mac) (row-reduction-emat a f*) (row-reduce-mat a))))
+			  (inverse-mat (lambda (a) (if (embed-mac) (inverse-emat a f*) (inverse-mat a))))
+			  (vcoord-mat (lambda (l) (if (embed-mac) (ecoord-mat l e* f*) (vcoord-mat l))))
+			  (wcoord-mat (lambda (l) (if (embed-mac) (ecoord-mat l k* f*) (wcoord-mat l))))
+			  (vdep-coeffs (lambda (l) (if (embed-mac) (edep-coeffs l e* f*) (vdep-coeffs l)))))))
+          ("Subgoal 82" :use (f*comm))
+          ("Subgoal 81" :use (f+comm))
+	  ("Subgoal 76" :use (vbasis0-lin-indep))
+	  ("Subgoal 72" :use ((:instance posp-edegree (e k*) (f f*))))
+	  ("Subgoal 63" :use (v+comm))
+	  ("Subgoal 59" :use (vdim (:instance len-ebasis0 (e e*) (f f*))))
+	  ("Subgoal 57" :use (lin-mat))
+	  ("Subgoal 50" :use (wbasis0-lin-indep (:instance ebasis0-lin-indep (e k*) (f f*))))
+	  ("Subgoal 48" :use ((:instance elistnp-ecoords0 (e k*) (f f*))))
+	  ("Subgoal 47" :use ((:instance elistnp-ebasis0 (e k*) (f f*))))
+	  ("Subgoal 46" :use ((:instance posp-edegree (e k*) (f f*))))
+	  ("Subgoal 37" :use (w+comm))
+	  ("Subgoal 33" :use (wdim (:instance len-ebasis0 (e k*) (f f*))))
+	  ("Subgoal 30" :in-theory (enable inverse-mat inverse-emat))
+	  ("Subgoal 13" :in-theory (enable id-fmat id-emat))
+	  ("Subgoal 5" :use (lin-surjective-p-lemma))
+	  ("Subgoal 4" :in-theory (enable lin-surjective-p))
+	  ("Subgoal 3" :use ((:instance lin-preimage (y (lin x)))))
+	  ("Subgoal 2" :use (lin-injective-p-lemma (:instance embed-fzero (e e*) (f f*) (k k*) (phi phi*))))
+	  ("Subgoal 1" :use (lin-injective-p-witness-lemma (:instance lin-injective-p-lemma (x (LIN-INJECTIVE-P-WITNESS)))))))
+
+(local-defthmd embed-embedding-inv-2
+  (implies (and (extensionp e f) (extensionp k f) (not (equal e f)) (not (equal k f))
+                (equal (edegree e f) (edegree k f))
+		(embeddingp phi e k f)
+		(feltp y k))
+           (let ((x (embedding-inv y phi e k f)))
+             (and (feltp x e)
+                  (equal (embed x phi k f) y))))
+  :hints (("Goal" :use ((:instance embed-embedding-inv-1 (z y) (e* e) (f* f) (k* k) (phi* phi))))))
+
+(defthmd extensionp-len
+  (implies (extensionp e f)
+           (>= (len e) (len f))))
+
+(defthmd edegree-1
+  (implies (extensionp e f)
+           (iff (= (edegree e f) 1)
+	        (equal e f)))
+  :hints (("Goal" :in-theory (enable edegree)
+                  :expand ((EXTENDS E F))
+                  :use (edegree-lower-bound (:instance extensionp-len (e (cdr e)))))))
+
+(local-defthm embed-embedding-inv-3
+  (implies (and (extensionp e f) (extensionp k f) (or (equal e f) (equal k f))
+                (equal (edegree e f) (edegree k f)))
+	   (and (equal e f) (equal k f)))
+  :rule-classes ()
+  :hints (("Goal" :use (edegree-1 (:instance edegree-1 (e k))))))
+
+(local-defthm frecip-fone
+  (implies (fieldp f)
+           (equal (frecip (fone f) f)
+	          (fone f)))
+  :hints (("Goal" :use ((:instance frecip-unique (x (fone f)) (y (fone f)))))))
+
+(local-defthm embed-embedding-inv-4
+  (implies (and (fieldp f) (embeddingp phi f f f))
+           (equal (inverse-emat (embedding-mat phi f f f) f)
+	          (list (list (fone f)))))
+  :hints (("Goal" :in-theory (enable edot-list transpose-mat emat* emat-ero3 emat-ero1 apply-emat-row-op id-emat id-emat-aux
+                              elem-emat inverse-emat row-reduction-emat row-ops-emat row-reduce-emat-ops embeddingp embedding-mat
+			      ecoord-mat ebasis0)  
+                  :expand ((row-reduce-emat-aux-ops (list (list (fone f))) 1 0 f)
+		           (row-reduce-emat-step-ops (list (list (fone f))) 1 0 0 0 f)))))
+
+(local-defthm embed-embedding-inv-5
+  (implies (and (fieldp f) (embeddingp phi f f f) (feltp y f))
+           (equal (car (emat* (list (ecoords0 y f f)) (list (list (fone f))) f))
+	          (list y)))
+  :hints (("Goal" :in-theory (enable TRANSPOSE-MAT ecoords0 emat* edot-list))))
+
+(local-defthm embed-embedding-inv-6
+  (implies (and (fieldp f) (feltp y f))
+           (equal (ecomb (list y) (ebasis0 f f) f f)
+	          y))
+  :hints (("Goal" :in-theory (enable ecomb ebasis0))))
+
+(local-defthm embed-embedding-inv-7
+  (implies (and (fieldp f) (embeddingp phi f f f) (feltp y f))
+           (equal (embedding-inv y phi f f f)
+	          y))
+  :hints (("Goal" :in-theory '(embedding-inv)
+                  :use (embed-embedding-inv-4 embed-embedding-inv-5 embed-embedding-inv-6))))
+
+(local-defthm embed-embedding-inv-8
+  (implies (and (fieldp f) (embeddingp phi f f f) (feltp y f))
+           (equal (embed y phi f f)
+	          y))
+  :hints (("Goal" :in-theory (enable embeddingp embed pembed))))
+
+(local-defthmd embed-embedding-inv-9
+  (implies (and (fieldp f) (embeddingp phi f f f) (feltp y f))
+           (let ((x (embedding-inv y phi f f f)))
+             (and (feltp x f)
+                  (equal (embed x phi f f) y))))
+  :hints (("Goal" :use (embed-embedding-inv-7 embed-embedding-inv-8))))
+
+(defthm embed-embedding-inv
   (implies (and (extensionp e f) (extensionp k f)
-		(iso-embeddingp phi e k f)
-                (feltp y k))
-	   (let ((x (preembed y phi e k f)))
-	     (and (feltp x e)
-	          (equal (embed x phi k f) y))))
-  :hints (("Goal" :use (embedding-surjective surjective-embedding-p-lemma))))
+                (iso-embeddingp phi e k f)
+		(feltp y k))
+           (let ((x (embedding-inv y phi e k f)))
+             (and (feltp x e)
+                  (equal (embed x phi k f) y))))
+  :hints (("Goal" :use (embed-embedding-inv-2 embed-embedding-inv-3 embed-embedding-inv-9))))
 
 
-(defthm preembed-embed
+(in-theory (disable embedding-inv))
+
+(defthm embedding-inv-embed
   (implies (and (extensionp e f) (extensionp k f)
 		(iso-embeddingp phi e k f)
                 (feltp x e))
 	   (let ((y (embed x phi k f)))
 	     (and (feltp y k)
-	          (equal (preembed y phi e k f) x))))
-  :hints (("Goal" :use ((:instance embed-preembed (y (embed x phi k f)))
-                        (:instance embedding-1-1 (y (preembed (embed x phi k f) phi e k f)))))))
+	          (equal (embedding-inv y phi e k f) x))))
+  :hints (("Goal" :use ((:instance embed-embedding-inv (y (embed x phi k f)))
+                        (:instance embedding-1-1 (y (embedding-inv (embed x phi k f) phi e k f)))))))
 
-(defthm preembed-fzero-fone
+(defthm embedding-inv-fzero-fone
   (Implies (and (extensionp e f) (extensionp k f)
 		(iso-embeddingp phi e k f))
-	   (and (equal (preembed (fzero k) phi e k f)
+	   (and (equal (embedding-inv (fzero k) phi e k f)
 	               (fzero e))
-	        (equal (preembed (fone k) phi e k f)
+	        (equal (embedding-inv (fone k) phi e k f)
 	               (fone e))))
-  :hints (("Goal" :use ((:instance embedding-1-1 (x (fzero e)) (y (preembed (fzero k) phi e k f)))
-                        (:instance embedding-1-1 (x (fone e)) (y (preembed (fone k) phi e k f)))))))
+  :hints (("Goal" :use ((:instance embedding-1-1 (x (fzero e)) (y (embedding-inv (fzero k) phi e k f)))
+                        (:instance embedding-1-1 (x (fone e)) (y (embedding-inv (fone k) phi e k f)))))))
 
-(defthm preembed-fadd-fmul
+(defthm embedding-inv-fadd-fmul
   (implies (and (extensionp e f) (extensionp k f)
 		(iso-embeddingp phi e k f)
 		(feltp x k) (feltp y k))
-	   (and (equal (preembed (fadd x y k) phi e k f)
-	               (fadd (preembed x phi e k f) (preembed y phi e k f) e))
-		(equal (preembed (fmul x y k) phi e k f)
-	               (fmul (preembed x phi e k f) (preembed y phi e k f) e))))
-  :hints (("Goal" :use ((:instance embedding-1-1 (x (fadd (preembed x phi e k f) (preembed y phi e k f) e))
-                                                 (y (preembed (fadd x y k) phi e k f)))
-                        (:instance embedding-1-1 (x (fmul (preembed x phi e k f) (preembed y phi e k f) e))
-                                                 (y (preembed (fmul x y k) phi e k f)))))))
+	   (and (equal (embedding-inv (fadd x y k) phi e k f)
+	               (fadd (embedding-inv x phi e k f) (embedding-inv y phi e k f) e))
+		(equal (embedding-inv (fmul x y k) phi e k f)
+	               (fmul (embedding-inv x phi e k f) (embedding-inv y phi e k f) e))))
+  :hints (("Goal" :use ((:instance embedding-1-1 (x (fadd (embedding-inv x phi e k f) (embedding-inv y phi e k f) e))
+                                                 (y (embedding-inv (fadd x y k) phi e k f)))
+                        (:instance embedding-1-1 (x (fmul (embedding-inv x phi e k f) (embedding-inv y phi e k f) e))
+                                                 (y (embedding-inv (fmul x y k) phi e k f)))))))
 
-(defthm preembed-fixes
+(defthm embedding-inv-fixes
   (implies (and (extensionp e f) (extensionp k f)
 		(iso-embeddingp phi e k f)
 		(feltp x f))
-	   (equal (preembed (flift x f k) phi e k f)
+	   (equal (embedding-inv (flift x f k) phi e k f)
 	          (flift x f e)))
-  :hints (("Goal" :use ((:instance embedding-1-1 (x (flift x f e)) (y (preembed (flift x f k) phi e k f)))))))
+  :hints (("Goal" :use ((:instance embedding-1-1 (x (flift x f e)) (y (embedding-inv (flift x f k) phi e k f)))))))
 
 ;; We define the inverse of an embedding phi of e in k over f:
           
 (defun inv-embedding-aux (phi e k d f)
-  (and (extensionp k d) (extensionp d f) (not (equal d f))
-       (cons (preembed (flift (primitive d) d k) phi e k f)
+  (and (extends k d) (extends d f) (not (equal d f))
+       (cons (embedding-inv (flift (primitive d) d k) phi e k f)
              (inv-embedding-aux phi e k (cdr d) f))))
 
 (defun inv-embedding (phi e k f)
   (inv-embedding-aux phi e k k f))
+
+(defun inv-embedding-aux-alt (phi e k d f)
+  (and (extensionp k d) (extensionp d f) (not (equal d f))
+       (cons (embedding-inv (flift (primitive d) d k) phi e k f)
+             (inv-embedding-aux-alt phi e k (cdr d) f))))
+
+(defun inv-embedding-alt (phi e k f)
+  (inv-embedding-aux-alt phi e k k f))
+
+(defthm inv-embedding-aux-aux-alt
+  (implies (and (extensionp k d) (extensionp d f))
+           (equal (inv-embedding-aux-alt phi e k d f)
+	          (inv-embedding-aux phi e k d f))))
 
 ;; The following is proved by functional instantiantion of phi1-phi0:
 
@@ -7954,22 +8394,32 @@
   '(and (extensionp e f) (extensionp k f)
         (iso-embeddingp phi e k f)))
 
+(defthmd embeddingp-inv-embedding-aux-alt
+  (implies (and (extensionp e f) (extensionp k f)
+		(iso-embeddingp phi e k f))
+           (and (embeddingp (inv-embedding-aux-alt phi e k k f) k e f)
+	        (implies (feltp x k)
+                         (equal (embed x (inv-embedding-aux-alt phi e k k f) e f)
+	                        (embedding-inv x phi e k f)))))
+  :hints (("Goal" :use ((:functional-instance phi1-phi0
+                          (e0 (lambda () (if (inv-embedding-mac) k (e0))))
+                          (k0 (lambda () (if (inv-embedding-mac) e (k0))))
+                          (b0 (lambda () (if (inv-embedding-mac) f (b0))))
+                          (phi0 (lambda (x) (if (inv-embedding-mac) (embedding-inv x phi e k f) (phi0 x))))
+			  (phi1-aux (lambda (d) (if (inv-embedding-mac) (inv-embedding-aux-alt phi e k d f) (phi1-aux d))))
+			  (phi1 (lambda () (if (inv-embedding-mac) (inv-embedding-aux-alt phi e k k f) (phi1)))))))))
+
 (defthmd embeddingp-inv-embedding-aux
   (implies (and (extensionp e f) (extensionp k f)
 		(iso-embeddingp phi e k f))
            (and (embeddingp (inv-embedding-aux phi e k k f) k e f)
 	        (implies (feltp x k)
                          (equal (embed x (inv-embedding-aux phi e k k f) e f)
-	                        (preembed x phi e k f)))))
-  :hints (("Goal" :use ((:functional-instance phi1-phi0
-                          (e0 (lambda () (if (inv-embedding-mac) k (e0))))
-                          (k0 (lambda () (if (inv-embedding-mac) e (k0))))
-                          (b0 (lambda () (if (inv-embedding-mac) f (b0))))
-                          (phi0 (lambda (x) (if (inv-embedding-mac) (preembed x phi e k f) (phi0 x))))
-			  (phi1-aux (lambda (d) (if (inv-embedding-mac) (inv-embedding-aux phi e k d f) (phi1-aux d))))
-			  (phi1 (lambda () (if (inv-embedding-mac) (inv-embedding-aux phi e k k f) (phi1)))))))))
+	                        (embedding-inv x phi e k f)))))
+  :hints (("Goal" :use (embeddingp-inv-embedding-aux-alt))))
 
-;; Instantiate embeddingp-inv-embedding-aux:
+
+;; Instantiate embeddingp-inv-embedding-aux-alt:
 
 (defthmd embeddingp-inv-embedding
   (implies (and (extensionp e f) (extensionp k f)
@@ -7977,9 +8427,9 @@
            (and (embeddingp (inv-embedding phi e k f) k e f)
 	        (implies (feltp x k)
                          (equal (embed x (inv-embedding phi e k f) e f)
-	                        (preembed x phi e k f)))))
+	                        (embedding-inv x phi e k f)))))
   :hints (("Goal" :in-theory (enable inv-embedding)
-                  :use (embeddingp-inv-embedding-aux))))
+                  :use (embeddingp-inv-embedding-aux-alt))))
 
 (local-defthmd comp-inv-embedding-1
   (implies (and (extensionp e f) (extensionp k f) (iso-embeddingp phi e k f)
@@ -8046,7 +8496,7 @@
 		         (id-embedding k f)))))
   :hints (("Goal" :use (embeddingp-inv-embedding comp-inv-embedding-2 comp-inv-embedding-4))))
 
-(defthmd embed-embedding-inv
+(defthmd inv-embed-embedding
   (implies (and (extensionp e f) (extensionp k f) (iso-embeddingp phi e k f)
 		(feltp x e))
 	   (equal (embed (embed x phi k f) (inv-embedding phi e k f) e f)
@@ -8081,7 +8531,6 @@
   :hints (("Goal" :in-theory (enable id-embedding-id)
                   :use (comp-inv-embedding
                         (:instance pembed-comp-embedding (phi (inv-embedding phi e k f)) (psi phi) (e k) (g e))))))
-
 
 ;;-------------------------------------------------------
 

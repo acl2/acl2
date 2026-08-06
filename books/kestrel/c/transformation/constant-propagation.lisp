@@ -988,7 +988,9 @@
                       env))
         :union (b* (((mv spec env)
                      (const-prop-struni-spec tyspec.spec env)))
-                 (mv (type-spec-union spec) env))
+                 (mv (c$::make-type-spec-union :spec spec
+                                               :info nil)
+                     env))
         :enum (b* (((mv spec env)
                     (const-prop-enum-spec tyspec.spec env)))
                 (mv (type-spec-enum spec) env))

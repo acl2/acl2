@@ -11,7 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-trees")
-(include-book "abstract-syntax-well-formed")
+(include-book "abstract-syntax-well-formedness")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 (include-book "kestrel/fty/defresult" :dir :system)
@@ -545,7 +545,7 @@
 (define pdoc-head-only-form ((head pdocp))
   :returns (out pdocp)
   :short "A parenthesized form with no body: just @('(head)').
-          Used by @(tsee expr-app) and friends when the argument list
+          Used by @(tsee expr-appn) and friends when the argument list
           is empty."
   (pdoc-paren head))
 
@@ -876,24 +876,44 @@
                                            (ispace-list-to-pdoc ty.ispaces)))))
       :fun (pdoc-prefix-form
             "->"
-            (pdoc-concat (pdoc-paren (type-list-to-pdoc ty.in))
+            (pdoc-concat (type-to-pdoc ty.in)
                          (pdoc-concat (pdoc-line)
                                       (type-to-pdoc ty.out))))
+      :funn (pdoc-prefix-form
+             "->"
+             (pdoc-concat (pdoc-paren (type-list-to-pdoc ty.in))
+                          (pdoc-concat (pdoc-line)
+                                       (type-to-pdoc ty.out))))
       :forall (pdoc-prefix-form
                "Forall"
-               (pdoc-concat (pdoc-paren (type-var-list-to-pdoc ty.params))
+               (pdoc-concat (pdoc-paren (type-var-to-pdoc ty.param))
                             (pdoc-concat (pdoc-line)
                                          (type-to-pdoc ty.body))))
+      :foralln (pdoc-prefix-form
+                "Forall"
+                (pdoc-concat (pdoc-paren (type-var-list-to-pdoc ty.params))
+                             (pdoc-concat (pdoc-line)
+                                          (type-to-pdoc ty.body))))
       :pi (pdoc-prefix-form
            "Pi"
-           (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc ty.params))
+           (pdoc-concat (pdoc-paren (ispace-var-to-pdoc ty.param))
                         (pdoc-concat (pdoc-line)
                                      (type-to-pdoc ty.body))))
+      :pin (pdoc-prefix-form
+            "Pi"
+            (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc ty.params))
+                         (pdoc-concat (pdoc-line)
+                                      (type-to-pdoc ty.body))))
       :sigma (pdoc-prefix-form
               "Sigma"
-              (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc ty.params))
+              (pdoc-concat (pdoc-paren (ispace-var-to-pdoc ty.param))
                            (pdoc-concat (pdoc-line)
-                                        (type-to-pdoc ty.body)))))
+                                        (type-to-pdoc ty.body))))
+      :sigman (pdoc-prefix-form
+               "Sigma"
+               (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc ty.params))
+                            (pdoc-concat (pdoc-line)
+                                         (type-to-pdoc ty.body)))))
     :measure (type-count ty))
 
   (define type-list-to-pdoc ((tys type-listp))
@@ -934,7 +954,7 @@
   (xdoc::topstring
    (xdoc::p
     "The AST @(tsee var+type?) fixtype is used by both
-     @(tsee atom-lambda)/@(tsee bind-fun)/@(tsee bind-cfun) parameter
+     @(tsee atom-lambdan)/@(tsee bind-fun)/@(tsee bind-cfun) parameter
      lists and (potentially) other binders.  In every case where it
      appears in our AST, the corresponding concrete syntax is the
      @('pat') rule of @('grammar.abnf'), namely @('\"(\" ws identifier
@@ -1210,27 +1230,42 @@
                                  (pdoc-concat (pdoc-line)
                                               (type-to-pdoc e.type))))
       :string (pdoc-text (string-lit-to-codepoints e.chars))
-      :app (b* (((ok fun) (expr-to-pdoc e.fun)))
-             (if (consp e.args)
-                 (b* (((ok args) (expr-list-to-pdoc e.args)))
-                   (pdoc-call-form fun args))
-               (pdoc-head-only-form fun)))
+      :app (b* (((ok fun) (expr-to-pdoc e.fun))
+                ((ok arg) (expr-to-pdoc e.arg)))
+             (pdoc-call-form fun arg))
+      :appn (b* (((ok fun) (expr-to-pdoc e.fun)))
+              (if (consp e.args)
+                  (b* (((ok args) (expr-list-to-pdoc e.args)))
+                    (pdoc-call-form fun args))
+                (pdoc-head-only-form fun)))
       :tapp (b* (((ok fun) (expr-to-pdoc e.fun)))
               (pdoc-prefix-form
                "t-app"
                (pdoc-concat fun
-                            (if (consp e.args)
-                                (pdoc-concat (pdoc-line)
-                                             (type-list-to-pdoc e.args))
-                              (pdoc-empty)))))
+                            (pdoc-concat (pdoc-line)
+                                         (type-to-pdoc e.arg)))))
+      :tappn (b* (((ok fun) (expr-to-pdoc e.fun)))
+               (pdoc-prefix-form
+                "t-app"
+                (pdoc-concat fun
+                             (if (consp e.args)
+                                 (pdoc-concat (pdoc-line)
+                                              (type-list-to-pdoc e.args))
+                               (pdoc-empty)))))
       :iapp (b* (((ok fun) (expr-to-pdoc e.fun)))
               (pdoc-prefix-form
                "i-app"
                (pdoc-concat fun
-                            (if (consp e.args)
-                                (pdoc-concat (pdoc-line)
-                                             (ispace-list-to-pdoc e.args))
-                              (pdoc-empty)))))
+                            (pdoc-concat (pdoc-line)
+                                         (ispace-to-pdoc e.arg)))))
+      :iappn (b* (((ok fun) (expr-to-pdoc e.fun)))
+               (pdoc-prefix-form
+                "i-app"
+                (pdoc-concat fun
+                             (if (consp e.args)
+                                 (pdoc-concat (pdoc-line)
+                                              (ispace-list-to-pdoc e.args))
+                               (pdoc-empty)))))
       :capp (b* (((ok fun) (expr-to-pdoc e.fun))
                  ((ok args-doc)
                   (if (consp e.args)
@@ -1251,6 +1286,25 @@
                     (ispace-list-option-to-pdoc e.iargs)
                     args-doc)))))))
       :unbox
+      ;; Surface form (grammar unbox-spec):
+      ;;   *( ispace-var ws ) identifier ws exp
+      ;; The optional result type (e.type?) has no concrete syntax,
+      ;; so it is not printed.
+      ;; A unary unbox always has exactly one ispace var.
+      (b* ((ispaces-prefix (pdoc-concat (ispace-var-list-to-pdoc
+                                         (list e.ispace))
+                                        (pdoc-line)))
+           ((ok target) (expr-to-pdoc e.target))
+           ((ok body) (expr-to-pdoc e.body)))
+        (pdoc-prefix-form
+         "unbox"
+         (pdoc-concat
+          (pdoc-paren
+           (pdoc-concat ispaces-prefix
+                        (pdoc-concat (pdoc-text (utf8-string=>codepoints e.var))
+                                     (pdoc-concat (pdoc-line) target))))
+          (pdoc-concat (pdoc-line) body))))
+      :unboxn
       ;; Surface form (grammar unbox-spec):
       ;;   *( ispace-var ws ) identifier ws exp
       ;; The optional result type (e.type?) has no concrete syntax,
@@ -1298,33 +1352,66 @@
       :base (base-lit-to-pdoc a.lit)
       ;; We do not print the optional body type (a.type?):
       ;; it has no concrete syntax (it is computed by type checking).
-      :lambda (b* (((ok params) (pat-list-to-pdoc a.params))
+      :lambda (b* (((ok pat) (pat-to-pdoc a.param))
                    ((ok body) (expr-to-pdoc a.body)))
                 (pdoc-prefix-form
                  "fn"
-                 (pdoc-concat (pdoc-paren params)
+                 (pdoc-concat (pdoc-paren pat)
                               (pdoc-concat (pdoc-line) body))))
+      :lambdan (b* (((ok params) (pat-list-to-pdoc a.params))
+                    ((ok body) (expr-to-pdoc a.body)))
+                 (pdoc-prefix-form
+                  "fn"
+                  (pdoc-concat (pdoc-paren params)
+                               (pdoc-concat (pdoc-line) body))))
       :tlambda (b* (((ok body) (expr-to-pdoc a.body)))
                  (pdoc-prefix-form
                   "t-fn"
-                  (pdoc-concat (pdoc-paren (type-var-list-to-pdoc a.params))
+                  (pdoc-concat (pdoc-paren (type-var-to-pdoc a.param))
                                (pdoc-concat (pdoc-line) body))))
+      :tlambdan (b* (((ok body) (expr-to-pdoc a.body)))
+                  (pdoc-prefix-form
+                   "t-fn"
+                   (pdoc-concat (pdoc-paren (type-var-list-to-pdoc a.params))
+                                (pdoc-concat (pdoc-line) body))))
       :ilambda (b* (((ok body) (expr-to-pdoc a.body)))
                  (pdoc-prefix-form
                   "i-fn"
-                  (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc a.params))
+                  (pdoc-concat (pdoc-paren (ispace-var-to-pdoc a.param))
                                (pdoc-concat (pdoc-line) body))))
-      :box (b* (((ok array) (expr-to-pdoc a.array)))
-             (pdoc-prefix-form
-              "box"
-              (pdoc-concat
-               (pdoc-paren (ispace-list-to-pdoc a.ispaces))
+      :ilambdan (b* (((ok body) (expr-to-pdoc a.body)))
+                  (pdoc-prefix-form
+                   "i-fn"
+                   (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc a.params))
+                                (pdoc-concat (pdoc-line) body))))
+      ;; The box-expr grammar rule requires the type,
+      ;; so we fail when the optional type is absent:
+      ;; there is no concrete syntax that renders it.
+      :box (type-option-case
+            a.type?
+            :none (reserr (list :box-without-type (atom-fix a)))
+            :some (b* (((ok array) (expr-to-pdoc a.array)))
+                    (pdoc-prefix-form
+                     "box"
+                     (pdoc-concat
+                      (pdoc-paren (ispace-to-pdoc a.ispace))
+                      (pdoc-concat
+                       (pdoc-line)
+                       (pdoc-concat
+                        array
+                        (pdoc-concat (pdoc-line)
+                                     (type-to-pdoc a.type?.val))))))))
+      :boxn (b* (((ok array) (expr-to-pdoc a.array)))
+              (pdoc-prefix-form
+               "box"
                (pdoc-concat
-                (pdoc-line)
+                (pdoc-paren (ispace-list-to-pdoc a.ispaces))
                 (pdoc-concat
-                 array
-                 (pdoc-concat (pdoc-line)
-                              (type-to-pdoc a.type))))))))
+                 (pdoc-line)
+                 (pdoc-concat
+                  array
+                  (pdoc-concat (pdoc-line)
+                               (type-to-pdoc a.type))))))))
     :measure (atom-count a))
 
   (define atom-list-to-pdoc ((as atom-listp))

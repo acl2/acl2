@@ -3673,6 +3673,9 @@ Subtopics
   [Improper-consp]
       Recognizer for improper (non-[30m[47mnil[0m[0m-terminated) non-empty lists
 
+  [In-logic-mode]
+      Permit [program]-mode code in [logic]-mode definitions
+
   [In-package]
       Select current package
 
@@ -7245,15 +7248,12 @@ Subtopics
   September 2025, for an ACL2 executable built with host Lisp Allegro
   CL, the use of ``[30m[47mmake regression[0m[0m'' resulted in four books (in the
   [community-books]) that failed to certify.  We discuss those
-  failures in the ``[31;1mDetails[0m'' section below.  These failures may
-  suggest that Allegro CL, at least for its Version 10.1, does not
-  correctly support the Common Lisp language, or at least there is
-  problematic ACL2 code specific to Allegro CL.  In practice we don't
-  expect a lot of problems when using ACL2 built on Allegro CL.
-  However, since Allegro CL is relatively slow compared to several
-  other Common Lisp implementations that can host ACL2 --- SBCL, CCL,
-  LispWorks, and GCL --- those failures suggest that Allegro CL might
-  not be a good choice for ACL2 users.
+  failures in the ``[31;1mDetails[0m'' section below.  These failures suggest
+  that you may encounter problems when using ACL2 built on Allegro
+  CL, though we expect them to be rare.  Perhaps more important:
+  Allegro CL has been observed to be slower than several other Common
+  Lisp implementations that can host ACL2 --- SBCL, CCL, LispWorks,
+  and GCL.
 
 
 Details
@@ -29318,11 +29318,12 @@ Subtopics
   essence, want to build extensions of ACL2.  The typical intended
   use is to create [books] that extend the functionality of ACL2 in
   ways not allowed without a so-called ``active trust tag''.  A trust
-  tag thus represents a contract: The writer of such a book is
-  guaranteeing that the book extends ACL2 in a ``correct'' way as
-  defined by the writer of the book.  The writer of the book will
-  often have a small section of the book in the scope of an active
-  trust tag that can be inspected by potential users of that book:
+  tag (or ``ttag'') thus represents a contract: The writer of such a
+  book is guaranteeing that the book extends ACL2 in a ``correct''
+  way as defined by the writer of the book.  The writer of the book
+  will often have a small section of the book in the scope of an
+  active trust tag that can be inspected by potential users of that
+  book:
 
     <initial part of book, which does not use trust tags>
     (defttag :some-ttag) ; install :some-ttag as an active trust tag
@@ -29344,7 +29345,7 @@ Subtopics
     ACL2 Error in TOP-LEVEL:  The SYS-CALL function cannot be called unless
     a trust tag is in effect.  See :DOC defttag.
 
-    ACL2 !>(defttag t) ; Install :T as an active trust tag.
+    ACL2 !>(defttag t) ; Install :T as the active trust tag.
 
     TTAG NOTE: Adding ttag :T from the top level loop.
      T
@@ -29402,16 +29403,18 @@ Subtopics
   ``ttag'', pronounced ``tee tag'').  An active ttag is a [keyword]
   symbol that is associated with potentially unsafe evaluation.  For
   example, calls of [30m[47m[sys-call][0m[0m are illegal unless there is an active
-  trust tag.  An active trust tag can be installed using a [30m[47mdefttag[0m[0m
-  event.  If one introduces an active ttag and then writes
-  definitions that contain calls of [30m[47m[sys-call][0m[0m, presumably in a
-  defensibly ``safe'' way, then responsibility for those calls is
-  attributed to that ttag.  This attribution (or blame!) is at the
-  level of [books]; a book's [certificate] contains a list of ttags
-  that are active in that book, or in a book that is included
-  (possibly [local]ly), or in a book included in a book that is
-  included (either inclusion being potentially [local]), and so on.
-  We explain all this in more detail below.
+  trust tag.  The event [30m[47m(defttag SYM)[0m[0m where [30m[47mSYM[0m[0m is not [30m[47mnil[0m[0m installs,
+  as the unique active trust tag, the keyword whose [30m[47m[symbol-name][0m[0m is
+  that of [30m[47mSYM[0m[0m; this keyword could reasonably be denoted as [30m[47m:SYM[0m[0m.  If
+  one introduces an active ttag and then writes definitions that
+  contain calls of [30m[47m[sys-call][0m[0m, presumably in a defensibly ``safe''
+  way, then responsibility for those calls is attributed to that
+  ttag.  This attribution (or blame!) is at the level of [books]; a
+  book's [certificate] contains a list of ttags that are active in
+  that book, or in a book that is included (possibly [local]ly), or
+  in a book included in a book that is included (either inclusion
+  being potentially [local]), and so on.  We explain all this in more
+  detail below.
 
   [30m[47m(Defttag :tag-name)[0m[0m is essentially equivalent to
 
@@ -34902,7 +34905,6 @@ Subtopics
     * [31;1mThe [ACL2-doc] Emacs browser.[0m This tool, authored by Matt Kaufmann
       and J Strother Moore, is distributed with ACL2 and is licensed
       under the terms of the [30m[47mLICENSE[0m[0m file distributed with ACL2.")
- (DOUBLE-FLOAT (POINTERS) "See [df].")
  (DOUBLE-FLOAT (POINTERS) "See [df].")
  (DOUBLE-REWRITE
   (REWRITE)
@@ -56756,6 +56758,82 @@ Frequent Contributors
   cannot construct it with the usual [theory-functions] or by
   reference to previously named theories.  Instead, you must
   explicitly list the runic designators constituting the theory.")
+ (IN-LOGIC-MODE
+  (MACROS ACL2-BUILT-INS PROGRAMMING)
+  "Permit [program]-mode code in [logic]-mode definitions
+
+  It is generally prohibited for the body of a [logic]-mode function to
+  call a [program]-mode function.  This prohibition can be overcome,
+  in a sense described below, by wrapping [30m[47min-logic-mode[0m[0m around code
+  that includes program-mode code.
+
+  See also [magic-ev-fncall] for a related utility that is a bit less
+  general (operating only on function calls applied to argument
+  lists; but see also magic-ev) but has the advantage of having some
+  logical content (see [meta-extract]).  Unlike [30m[47mmagic-ev-fncall[0m[0m and
+  [30m[47mmagic-ev[0m[0m, [30m[47min-logic-mode[0m[0m does not cause errors that can be caused by
+  [safe-mode].  [30m[47mIn-logic-mode[0m[0m also has a simpler interface than those
+  utilities, but unlike those utilities, [30m[47min-logic-mode[0m[0m not only takes
+  [30m[47m[state][0m[0m but also returns [30m[47mstate[0m[0m.
+
+    General Form:
+    (in-logic-mode <form> state &optional (quote <variable-list>))
+
+  where [30m[47m<form>[0m[0m is code that returns a single, non-[30m[47m[stobj][0m[0m value, but
+  which may include calls of program-mode functions; and [30m[47mstate[0m[0m must
+  be the symbol, [30m[47mstate[0m[0m, if the [30m[47min-logic-mode[0m[0m call is to be executed
+  (as opposed to being in the statement of a theorem).  If [30m[47m<form>[0m[0m is
+  of the form [30m[47m(f t1 ... tn)[0m[0m where each [30m[47mti[0m[0m is an atom, then, but only
+  then, may the optional argument be omitted.  Otherwise,
+  [30m[47m<variable-list>[0m[0m should be a list of symbols, which usually consists
+  of the variables occurring free in the ([translation] of) [30m[47m<form>[0m[0m,
+  as discussed below.
+
+  The following example shows a typical (though very simple) use of
+  [30m[47min-logic-mode[0m[0m, where we see the [logic]-mode function, [30m[47mf[0m[0m, calling
+  the [program]-mode function, [30m[47mp[0m[0m.
+
+    (defun p (x)
+      (declare (xargs :mode :program))
+      (cons x x))
+
+    (defun f (x state)
+      (declare (xargs :stobjs state))
+      (in-logic-mode (p x) state))
+
+  About the only thing we can prove about [30m[47mf[0m[0m is the following.
+
+    (equal (f x state)
+           (read-acl2-oracle state))
+
+  But when we evaluate with [30m[47mf[0m[0m at the top level, we invoke [30m[47mp[0m[0m.
+
+    ACL2 !>(f 3 state)
+     (3 . 3)
+    ACL2 !>
+
+  Notice the space printed in front of the result, [30m[47m(3 . 3)[0m[0m.  This space
+  indicates that the return value is actually a multiple-value
+  return, specifically an [error-triple], which we may write as [30m[47m(mv
+  nil (3 . 3) state)[0m[0m.
+
+  The forms [30m[47m(in-logic-mode <form>)[0m[0m and [30m[47m(in-logic-mode <form> (quote
+  <variable-list>))[0m[0m are logically just [30m[47m(read-acl2-oracle state)[0m[0m.
+  More precisely, their single-step macroexpansions produce
+
+    (prog2$ (list v1 ... vk)
+            (read-acl2-oracle state))
+
+  where [30m[47m(v1 ... vk)[0m[0m is [30m[47m<variable-list>[0m[0m if supplied, else is the list of
+  arguments of [30m[47m<form>[0m[0m.  The presence of [30m[47m(list v1 ... vk)[0m[0m avoids the
+  need for an [30m[47mignore[0m[0m or [30m[47mignorable[0m[0m [declaration].
+
+  Thus, logically, a call of [30m[47min-logic-mode[0m[0m returns an [error-triple],
+  [30m[47m(mv erp val state)[0m[0m.  This is of course legitimate code to occur in
+  the body of a [30m[47m[logic][0m[0m-mode definition, but nothing can be proved
+  about [30m[47merp[0m[0m or [30m[47mval[0m[0m.  However, in code that is executed, then [30m[47m<form>[0m[0m
+  is evaluated and in the absence of error, [30m[47merp[0m[0m is [30m[47mnil[0m[0m and [30m[47mval[0m[0m is the
+  result of that evaluation.")
  (IN-PACKAGE
   (PACKAGES ACL2-BUILT-INS)
   "Select current package
@@ -74897,6 +74975,9 @@ Subtopics
   [Defmacro-untouchable]
       Define an ``untouchable'' macro
 
+  [In-logic-mode]
+      Permit [program]-mode code in [logic]-mode definitions
+
   [Macro-aliases-table]
       A [table] used to associate function names with macro names
 
@@ -75047,7 +75128,9 @@ Subtopics
       the resulting value will be the corresponding list [30m[47m(v1 v2 ...)[0m[0m.
 
     * A reasonable model for [30m[47m(magic-ev-fncall 'fn (list a1 a2 ...) state h
-      aokp)[0m[0m is [30m[47m(ec-call (fn a1 a2 ...))[0m[0m.")
+      aokp)[0m[0m is [30m[47m(ec-call (fn a1 a2 ...))[0m[0m.
+
+    * See also magic-ev and [in-logic-mode] for related utilities.")
  (MAILING-LISTS
   (ACL2 ABOUT-ACL2 COMMUNITY)
   "Mailing lists for ACL2 users
@@ -106839,12 +106922,22 @@ Changes to Existing Features
   misleading but has been fixed.  Thanks to Eric Smith for noticing
   this problem.
 
+  The macro [30m[47munion-theories[0m[0m now takes any number of arguments.  See
+  [union-theories].  Thanks to Eric Smith for suggesting this
+  enhancement.
+
 
 New Features
 
   For [30m[47m[defstobj][0m[0m fields of hash-table type, a new ``keys'' function
   returns a sorted list of keys of the hash table.  See [defstobj].
   Thanks to Eric Smith for requesting this enhancement.
+
+  A new macro, [30m[47m[in-logic-mode][0m[0m, allows [program]-mode code to be
+  included, for execution only, in the body of a [logic]-mode
+  function.  See [in-logic-mode].  Thanks to Alessandro Coglio for
+  requesting such a capability and to him and Eric Smith for helpful
+  discussions.
 
 
 Heuristic and Efficiency Improvements
@@ -106859,6 +106952,23 @@ Bug Fixes
   Thanks to Eric McCarthy for {pointing out this bug as well as code
   relevant to a fix |
   https://acl2.zulip.kestrel.institute/#narrow/channel/19-general/topic/Non-ASCII.20characters.20in.20ACL2.20source.20files/near/40162}.
+
+  Fixed a soundness bug in the macro [30m[47mchannel-to-string[0m[0m, which is used
+  in functions like [30m[47m[fms-to-string][0m[0m (see [printing-to-strings]).
+  Thanks to Grant Jurgensen for reporting this bug and providing a
+  helpful analysis of it.  The fix is to the constant
+  [30m[47m*default-state*[0m[0m.  In particular, the following is no longer
+  provable by ACL2.
+
+    (equal (car (open-output-channel :string :character *default-state*))
+           nil)
+
+  Moreover, our fix required modifying several functions related to
+  I/O, often to add an [30m[47moutput-p[0m[0m argument that is true when
+  considering output (which allows for a channel of type [30m[47m:character[0m[0m
+  with ``filename'' [30m[47m:string[0m[0m) but false when considering input.
+  Thanks to Aakash Koneru for pointing us in the direction of these
+  changes.
 
   Checks were improved to avoid raw Lisp errors in the following
   situations:
@@ -106902,6 +107012,10 @@ Bug Fixes
   item.  The key idea is to avoid saving code for [local] definitions
   but to save code for most [redundant] definitions.
 
+  The constant [30m[47m*default-state*[0m[0m was defined incorrectly.  Thanks to
+  Aakash Koneru and Grant Jurgensen for pointing this out and
+  providing a fix.
+
 
 Changes at the System Level
 
@@ -106925,6 +107039,33 @@ Changes at the System Level
   (GCL only) Added code for proper handling of floating-point
   exceptions on arm and riscv64 platforms.  Thanks to Camm Maguire
   for major help with this.
+
+  It is now possible to make it impossible (we believe) to interact
+  directly with raw Lisp, at least for ACL2 built on CCL and SBCL.
+
+    * A new argument, [30m[47mnever![0m[0m, is available for [30m[47m[set-debugger-enable][0m[0m.  When
+      [30m[47m(set-debugger-enable :never!)[0m[0m is evaluated, the effect is the
+      same as evaluating [30m[47m(set-debugger-enable :never)[0m[0m --- in
+      particular, [30m[47m[break$][0m[0m does not enter the Lisp debugger ---
+      except that in addition, you cannot exit the ACL2 loop.  This
+      effectively disables [30m[47m:q[0m[0m as a means for going into raw Lisp (and
+      also [30m[47m(value :q)[0m[0m, etc.; see [q].
+
+    * Formerly, interrupts in SBCL could, on rare occasions, cause the Lisp
+      debugger to be entered.  That has (we believe) been fixed for
+      SBCL, and it was already handled for CCL.
+
+    * So to avoid the possibility of interaction with raw Lisp for ACL2
+      built on CCL or SBCL, you can do the following, provided trust
+      tags are avoided (see [defttag]).
+
+          ; Disable entering the debugger and disable existing the ACL2 loop:
+          (set-debugger-enable :never!)
+          (push-untouchable set-debugger-enable-fn t)
+          (push-untouchable debugger-enable nil)
+
+          ; Disable entering raw-mode:
+          (push-untouchable set-raw-mode-on t)
 
 
 EMACS Support
@@ -115783,6 +115924,9 @@ Subtopics
   [Translate11]
       See [system-utilities].
 
+  [Translation]
+      See [translate].
+
   [Trust-tag]
       See [defttag].
 
@@ -118477,6 +118621,9 @@ Subtopics
 
   [Hons]
       [30m[47m(hons x y)[0m[0m returns a [normed] object equal to [30m[47m(cons x y)[0m[0m.
+
+  [In-logic-mode]
+      Permit [program]-mode code in [logic]-mode definitions
 
   [Introduction-to-programming-in-ACL2-for-those-who-know-lisp]
       Introduction to programming in ACL2 for Lisp users
@@ -134149,9 +134296,9 @@ Subtopics
 
   To understand how safe-mode works we refer to the notion of
   ``executable-counterpart''; see [evaluation] for relevant
-  background.  ACL2 arranges for that for the executable-counterpart
-  of any program mode function, [30m[47mF[0m[0m, then for every called subroutine [30m[47mG[0m[0m
-  of [30m[47mF[0m[0m that is in program mode, the executable-counterpart of [30m[47mG[0m[0m is
+  background.  ACL2 arranges that for the executable-counterpart of
+  any program mode function, [30m[47mF[0m[0m, then for every called subroutine [30m[47mG[0m[0m of
+  [30m[47mF[0m[0m that is in program mode, the executable-counterpart of [30m[47mG[0m[0m is
   called rather than the raw Lisp function for [30m[47mG[0m[0m.  This may result in
   an attempt to evaluate a so-called ``[program-only]'' function in
   safe-mode, which is illegal.  See [safe-mode-cheat-sheet] for
@@ -136227,6 +136374,7 @@ Subtopics
     (set-debugger-enable :bt-break) ; as above, but print a backtrace first
     (set-debugger-enable :bt)       ; print a backtrace but do not enter debugger
     (set-debugger-enable :never)    ; disable all breaks into the debugger
+    (set-debugger-enable :never!)   ; disable entering raw Lisp entirely
     (set-debugger-enable nil)       ; disable debugger except when calling break$
 
   [3mIntroduction.[0m Suppose we define [30m[47mfoo[0m[0m in [30m[47m:[0m[0m[30m[47m[program][0m[0m mode to take the
@@ -136306,11 +136454,15 @@ Subtopics
   not only for Lisp errors but also when executing [30m[47m(break$)[0m[0m.
 
     (set-debugger-enable :never)
+    (set-debugger-enable :never!)
 
-  The discussion above also applies to interrupts (from [30m[47mControl-C[0m[0m) in
-  some, but not all, host Common Lisps --- perhaps all except for
-  non-ANSI GCL, where interrupts will likely always put you into the
-  debugger.
+  Furthermore, when the argument is [30m[47m:never![0m[0m then exits from the ACL2
+  top-level-loop are disabled as well.  We believe that, at least for
+  ACL2 built on CCL or SBCL, this prevents all direct interaction
+  with raw Lisp unless [30m[47m[set-raw-mode][0m[0m is invoked, which requires a
+  trust tag.
+
+  The discussion above applies to interrupts (from [30m[47mControl-C[0m[0m) as well.
 
   It remains to discuss options [30m[47m:break[0m[0m, [30m[47m:bt[0m[0m, [30m[47m:break-bt[0m[0m, and [30m[47m:bt-break[0m[0m.
   Option [30m[47m:break[0m[0m is synonymous with option [30m[47mt[0m[0m, while option [30m[47m:bt[0m[0m prints
@@ -155382,6 +155534,8 @@ Subtopics
                  "See [system-utilities].")
  (TRANSLATE11 (POINTERS)
               "See [system-utilities].")
+ (TRANSLATION (POINTERS)
+              "See [translate].")
  (TRANSPARENT-FUNCTIONS
   (META)
   "Working around restrictions on the use of evaluators in meta-level
@@ -158471,11 +158625,11 @@ Subtopics
                     (theory 'arith-patch))
 
     General Form:
-    (union-theories th1 th2)
+    (union-theories th1 th2 ... thn)
 
-  where [30m[47mth1[0m[0m and [30m[47mth2[0m[0m are theories (see [theories]).  To each of the
+  where each [30m[47mthi[0m[0m is a theory (see [theories]).  To each of the
   arguments there corresponds a runic theory.  This function returns
-  the union of those two runic [theories], represented as a list and
+  the union of those runic [theories], represented as a list and
   ordered chronologically.
 
   This ``function'' is actually a macro that expands to a term

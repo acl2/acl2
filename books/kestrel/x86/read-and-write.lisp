@@ -43,6 +43,7 @@
 (local (include-book "kestrel/bv/ash" :dir :system))
 (local (include-book "kestrel/bv/rules3" :dir :system))
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
@@ -2098,7 +2099,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :induct t
            :in-theory (e/d (read write bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus)
-                           (acl2::bvminus-becomes-bvplus-of-bvuminus
+                           (;;acl2::bvminus-becomes-bvplus-of-bvuminus
                             acl2::bvcat-of-+-high
                             ;; for speed:
                             acl2::bvchop-identity)))))
@@ -2175,7 +2176,7 @@
                          val)))
   :hints (("Goal" :induct t
            :in-theory (enable read write posp
-                              bvuminus
+                              bvuminus bvminus
                               bvplus
                               acl2::bvchop-of-sum-cases))))
 
@@ -2205,7 +2206,8 @@
           ("Goal" :do-not '(generalize eliminate-destructors)
            :induct (read n1 addr1 x86)
            :in-theory (e/d (read bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus read-when-bvchops-agree ifix)
-                           (acl2::bvminus-becomes-bvplus-of-bvuminus ACL2::BVCAT-OF-+-HIGH)))))
+                           (;;acl2::bvminus-becomes-bvplus-of-bvuminus
+                            ACL2::BVCAT-OF-+-HIGH)))))
 
 ;todo: improve
 ;; (defthm read-of-write-irrel
@@ -2416,7 +2418,7 @@
           ("Goal" :do-not '(generalize eliminate-destructors)
            :induct t
            :in-theory (e/d (read write bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus read-when-bvchops-agree ifix)
-                           (acl2::bvminus-becomes-bvplus-of-bvuminus
+                           (;;acl2::bvminus-becomes-bvplus-of-bvuminus
                             acl2::bvcat-of-+-high
                             ;; for speed:
                             acl2::bvchop-identity)))))
@@ -2452,7 +2454,7 @@
                             write-of-1-becomes-write-byte
                             ;bvminus
                             bvplus
-                            bvuminus
+                            bvuminus bvminus
                             acl2::bvchop-of-sum-cases
                             bvlt
                             acl2::expt-becomes-expt-limited
@@ -3306,7 +3308,7 @@
   ;;                          X86))))
   :hints (("Goal" :use (write-of-write-combine-constants-1
                          (:instance write-of-write-diff-bv))
-           :in-theory (e/d (helper helper2)
+           :in-theory (e/d (helper helper2 acl2::bvminus-becomes-bvplus-of-bvuminus)
                            (write-of-write-combine-constants-1
                             write-of-write-diff-bv)))))
 
@@ -3420,7 +3422,7 @@
                     (slice (+ -1 (* 8 (+ n1 (bvminus 48 ad1 ad2))))
                            (* 8 (bvminus 48 ad1 ad2))
                            val)))
-    :hints (("Goal" :in-theory (e/d (acl2::bvminus-becomes-bvplus-of-bvuminus
+    :hints (("Goal" :in-theory (e/d (;;acl2::bvminus-becomes-bvplus-of-bvuminus
                                      bvlt bvplus bvminus bvuminus acl2::bvchop-of-sum-cases
                                      )
                                     (acl2::logcar-logcdr-elim ; disable !

@@ -16,44 +16,44 @@
 ;(local (include-book "sint")) ; for things like integer-from-sint-of-sub-sint-sint
 
 (defthm <=-of-sshort-fix-linear
-  (<= -32768 (c::sshort-integer-fix value))
+  (<= -32768 (sshort-integer-fix value))
   :rule-classes :linear
-  :hints (("Goal" :in-theory (enable c::sshort-integer-fix c::sshort-integerp c::short-bits))))
+  :hints (("Goal" :in-theory (enable sshort-integer-fix sshort-integerp short-bits))))
 
 (defthm <-of-sshort-fix-linear
-  (<= (c::sshort-integer-fix value) 32767)
+  (<= (sshort-integer-fix value) 32767)
   :rule-classes :linear
-  :hints (("Goal" :in-theory (enable c::sshort-integer-fix c::sshort-integerp c::short-bits))))
+  :hints (("Goal" :in-theory (enable sshort-integer-fix sshort-integerp short-bits))))
 
 (defthm <=-of-integer-from-sshort-linear
-  (<= -32768 (c::integer-from-sshort value))
+  (<= -32768 (integer-from-sshort value))
   :rule-classes :linear
-  :hints (("Goal" :in-theory (enable c::integer-from-sshort))))
+  :hints (("Goal" :in-theory (enable integer-from-sshort))))
 
 (defthm <-of-integer-from-sshort-linear
-  (<= (c::integer-from-sshort value) 32767)
+  (<= (integer-from-sshort value) 32767)
   :rule-classes :linear
-  :hints (("Goal" :in-theory (enable c::integer-from-sshort))))
+  :hints (("Goal" :in-theory (enable integer-from-sshort))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; These can sometimes save us from having to enable sshort-removal-rules.
 
 (defthm sshortp-of-declar
-  (equal (c::sshortp (c::declar x))
-         (c::sshortp x))
-  :hints (("Goal" :in-theory (enable c::declar))))
+  (equal (sshortp (declar x))
+         (sshortp x))
+  :hints (("Goal" :in-theory (enable declar))))
 
 (defthm sshortp-of-assign
-  (equal (c::sshortp (c::assign x))
-         (c::sshortp x))
-  :hints (("Goal" :in-theory (enable c::assign))))
+  (equal (sshortp (assign x))
+         (sshortp x))
+  :hints (("Goal" :in-theory (enable assign))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (deftheory sshort-removal-rules
-    '(c::assign
-      c::declar
+    '(assign
+      declar
       ;; ;; these are triggered by conversion functions on the outside.  if needed we could be more aggressive
       ;; ;; and rewrite/open functions like add-uint-uint without conversion wrappers outside of them:
       ;; integer-from-uint-of-add-uint-uint ; or we could introduce bvplus
@@ -70,18 +70,25 @@
       ;; boolean-from-sint-of-ge-uint-uint
       ;; boolean-from-sint-of-eq-uint-uint
       ;; boolean-from-sint-of-ne-uint-uint
-      ;; c::add-uchar-uchar-okp
-      ;; c::div-uchar-uchar-okp
-      ;; c::minus-uchar-okp
-      ;; c::mul-uchar-uchar-okp
-      ;; c::rem-uchar-uchar-okp
-      ;; c::shl-uchar-okp
-      ;; c::shl-uchar-uchar-okp
-      ;; c::shr-uchar-okp
-      ;; c::shr-uchar-uchar-okp
-      ;; c::sub-uchar-uchar-okp
-;;      c::sshort-integerp ; exposes signed-byte-p
-;;      c::char-bits
-      ;; c::sshort-dec-const ; does not exist
+      ;; add-uchar-uchar-okp
+      ;; div-uchar-uchar-okp
+      ;; minus-uchar-okp
+      ;; mul-uchar-uchar-okp
+      ;; rem-uchar-uchar-okp
+      ;; shl-uchar-okp
+      ;; shl-uchar-uchar-okp
+      ;; shr-uchar-okp
+      ;; shr-uchar-uchar-okp
+      ;; sub-uchar-uchar-okp
+;;      sshort-integerp ; exposes signed-byte-p
+;;      char-bits
+      ;; sshort-dec-const ; does not exist
+      )
+  :redundant-okp t)
+
+;; This theory introduces C operators
+(deftheory sshort-intro-rules
+    '(;;ushort-from-integer-of-+-of---arg1
+      ;;ushort-from-integer-of-+-of---arg2
       )
   :redundant-okp t)

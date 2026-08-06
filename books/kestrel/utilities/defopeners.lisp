@@ -48,6 +48,7 @@
 (include-book "defthm-forms")
 (include-book "kestrel/alists-light/keep-pairs" :dir :system)
 (include-book "remove-guard-holders")
+(include-book "std/util/bstar" :dir :system)
 (local (include-book "w"))
 ;(local (include-book "state"))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))

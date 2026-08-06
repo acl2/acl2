@@ -47,19 +47,32 @@
              (equal (dims-of-expr-value eval)
                     nil))
     :enable (dims-of-expr-value
-             check-dims-of-expr-value)))
+             expr-value-wfp)
+    :expand ((check-dims-of-expr-value eval))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection fun-value-param-dims-rules
   :short "Rules about the dimensions of functions."
 
-  (defruled fun-value-param-dims-of-int-add
+  (defruled fun-value-param-dims-of-int-binary
     (implies (and (expr-value-case funval :primop)
                   (equal opval (expr-value-primop->val funval))
-                  (primop-value-case opval :int-add))
+                  (primop-value-case opval :int-binary))
              (equal (fun-value-param-dims funval)
                     (list nil nil)))
+    :enable (fun-value-param-dims
+             expr-value-first-fun
+             not-reserrp-when-expr-valuep
+             type-of-primop-value-fun
+             primop-value-funp))
+
+  (defruled fun-value-param-dims-of-int-binary-x
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :int-binary-x))
+             (equal (fun-value-param-dims funval)
+                    (list nil)))
     :enable (fun-value-param-dims
              expr-value-first-fun
              not-reserrp-when-expr-valuep
@@ -106,36 +119,51 @@
 (defsection eval-app-cell-rules
   :short "Rules about @(tsee eval-app-cell)."
 
-  (defruled eval-app-cell-of-int-add
+  (defruled eval-app-cell-of-int-binary
     (implies (and (expr-value-case funval :primop)
                   (equal opval (expr-value-primop->val funval))
-                  (primop-value-case opval :int-add)
-                  (consp argvals)
-                  (consp (cdr argvals))
-                  (endp (cddr argvals))
-                  (equal argval1 (first argvals))
-                  (equal argval2 (second argvals))
-                  (expr-value-case argval1 :base)
-                  (expr-value-case argval2 :base)
-                  (equal baseval1 (expr-value-base->val argval1))
-                  (equal baseval2 (expr-value-base->val argval2))
+                  (primop-value-case opval :int-binary)
+                  (integerp limit)
+                  (>= limit 2))
+             (equal (eval-app-cell funval argval limit)
+                    (expr-value-primop
+                     (make-primop-value-int-binary-x
+                      :op (primop-value-int-binary->op opval)
+                      :xval argval))))
+    :expand (eval-app-cell funval argval limit)
+    :enable (eval-primop-fun
+             eval-primop-fun-fo
+             primop-value-funp
+             primop-value-fun-fo-p))
+
+  (defruled eval-app-cell-of-int-binary-x-add
+    (implies (and (expr-value-case funval :primop)
+                  (equal opval (expr-value-primop->val funval))
+                  (primop-value-case opval :int-binary-x)
+                  (equal op (primop-value-int-binary-x->op opval))
+                  (int-binary-primop-case op :add)
+                  (equal xval (primop-value-int-binary-x->xval opval))
+                  (expr-value-case xval :base)
+                  (expr-value-case argval :base)
+                  (equal baseval1 (expr-value-base->val xval))
+                  (equal baseval2 (expr-value-base->val argval))
                   (base-value-case baseval1 :int)
                   (base-value-case baseval2 :int)
                   (equal intval1 (base-value-int->val baseval1))
                   (equal intval2 (base-value-int->val baseval2))
-                  (not (zp limit)))
-             (equal (eval-app-cell funval argvals limit)
+                  (integerp limit)
+                  (>= limit 2))
+             (equal (eval-app-cell funval argval limit)
                     (expr-value-base
                      (base-value-int
                       (int-value (+ (int-value->int intval1)
                                     (int-value->int intval2)))))))
-    :enable (eval-app-cell
-             eval-primop-fun
+    :expand (eval-app-cell funval argval limit)
+    :enable (eval-primop-fun
+             eval-primop-fun-fo
              primop-value-funp
+             primop-value-fun-fo-p
              prim-int-add
-             arity-of-primop-value-fun
-             type-of-primop-value-fun
-             len
              check-expr-value-int
              not-reserrp-when-int-valuep)))
 
@@ -147,27 +175,24 @@
   (defruled eval-app-list-when-atom
     (implies (and (acl2::atom funvals)
                   (not (zp limit)))
-             (equal (eval-app-list funvals argvalss limit)
+             (equal (eval-app-list funvals argvals limit)
                     nil))
     :enable eval-app-list)
 
   (defruled eval-app-list-when-consp
     (implies (and (consp funvals)
                   (not (zp limit))
-                  (expr-value-list-listp argvalss)
-                  (expr-value-list-list-wfp argvalss)
-                  (cons-listp argvalss)
-                  (equal argvals (car-list argvalss))
-                  (expr-value-list-wfp argvals)
+                  (consp argvals)
+                  (expr-value-wfp (car argvals))
                   (equal val (eval-app-cell (car funvals)
-                                            argvals
+                                            (car argvals)
                                             (1- limit)))
                   (expr-valuep val)
                   (equal vals (eval-app-list (cdr funvals)
-                                             (cdr-list argvalss)
+                                             (cdr argvals)
                                              (1- limit)))
                   (expr-value-listp vals))
-             (equal (eval-app-list funvals argvalss limit)
+             (equal (eval-app-list funvals argvals limit)
                     (cons val vals)))
     :enable (eval-app-list
              not-reserrp-when-expr-valuep
@@ -176,7 +201,9 @@
   (defruled eval-app-of-int-add-no-lifting
     (implies (and (expr-value-case funval :primop)
                   (equal opval (expr-value-primop->val funval))
-                  (primop-value-case opval :int-add)
+                  (primop-value-case opval :int-binary)
+                  (equal op (primop-value-int-binary->op opval))
+                  (int-binary-primop-case op :add)
                   (expr-value-list-wfp argvals)
                   (consp argvals)
                   (consp (cdr argvals))
@@ -192,28 +219,29 @@
                   (equal intval1 (base-value-int->val baseval1))
                   (equal intval2 (base-value-int->val baseval2))
                   (integerp limit)
-                  (>= limit 3))
+                  (>= limit 5))
              (equal (eval-app funval argvals limit)
                     (expr-value-base
                      (base-value-int
                       (int-value (+ (int-value->int intval1)
                                     (int-value->int intval2)))))))
-    :enable (eval-app
-             fun-value-param-dims-of-int-add
+    :enable (fun-value-param-dims-of-int-binary
+             fun-value-param-dims-of-int-binary-x
              len
              dims-of-expr-value-list
              dims-of-expr-value-when-base
              dims-of-expr-value-when-primop
              lift-expr-value-to-frame-nil-nil
-             lift-expr-value-list-to-frame-when-atom
-             lift-expr-value-list-to-frame-when-consp
              not-reserrp-when-expr-value-listp
-             not-reserrp-when-expr-value-list-listp
+             not-reserrp-when-expr-valuep
              eval-app-list-when-atom
              eval-app-list-when-consp
-             car-list
-             eval-app-cell-of-int-add
-             expr-value-with-nonempty-dims)))
+             eval-app-cell-of-int-binary
+             eval-app-cell-of-int-binary-x-add
+             expr-value-with-nonempty-dims)
+    :expand ((eval-app funval argvals limit)
+             (:free (fv lim) (eval-app fv (cdr argvals) lim))
+             (:free (fv lim) (eval-app fv (cddr argvals) lim)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -227,14 +255,14 @@
                     (expr-denv-lookup-expr (expr-var->name expr) denv)))
     :enable eval-expr)
 
-  (defruled eval-expr-when-app
-    (implies (and (expr-case expr :app)
+  (defruled eval-expr-when-appn
+    (implies (and (expr-case expr :appn)
                   (not (zp limit))
                   (equal funval
-                         (eval-expr (expr-app->fun expr) denv (1- limit)))
+                         (eval-expr (expr-appn->fun expr) denv (1- limit)))
                   (expr-valuep funval)
                   (equal argvals
-                         (eval-expr-list (expr-app->args expr) denv (1- limit)))
+                         (eval-expr-list (expr-appn->args expr) denv (1- limit)))
                   (expr-value-listp argvals))
              (equal (eval-expr expr denv limit)
                     (eval-app funval argvals (1- limit))))
@@ -269,7 +297,7 @@
 
   (def-ruleset eval-rules
     '(eval-expr-when-var
-      eval-expr-when-app
+      eval-expr-when-appn
       eval-expr-list-when-atom
       eval-expr-list-when-consp
       eval-app-of-int-add-no-lifting

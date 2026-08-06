@@ -116,7 +116,12 @@
   :hints (("Goal" :in-theory (enable update-open-input-channels state-p1))))
 
 (defthm len-of-update-open-output-channels
-  (implies (state-p1 state)
+; Matt K. I wrapped the hypothesis in case-split on 7/28/2026, to support the
+; proof of state-p1-of-close-output-channel in
+; kestrel/file-io-light/close-output-channel.lisp.  I initially tried force
+; instead, but the :in-theory hint on that lemma was on "Goal" and hence didn't
+; apply to the forcing round, which was unfortunate.
+  (implies (case-split (state-p1 state))
            (equal (len (update-open-output-channels x state))
                   (len state)))
   :hints (("Goal" :in-theory (enable update-open-output-channels state-p1))))
@@ -168,12 +173,12 @@
 
 (defthm open-channels-p-of-open-input-channels
   (implies (state-p1 state)
-           (open-channels-p (open-input-channels state)))
+           (open-channels-p (open-input-channels state) nil))
   :hints (("Goal" :in-theory (enable state-p1))))
 
 (defthm open-channels-p-of-open-output-channels
   (implies (state-p1 state)
-           (open-channels-p (open-output-channels state)))
+           (open-channels-p (open-output-channels state) t))
   :hints (("Goal" :in-theory (enable state-p1))))
 
 ; Matt K. addition:
@@ -509,24 +514,26 @@
 ;; implied by open-channels-p
 (defthm ordered-symbol-alistp-of-open-input-channels
   (implies (state-p1 state)
-           (ordered-symbol-alistp (open-input-channels state))))
+           (ordered-symbol-alistp (open-input-channels state)))
+  :hints (("Goal" :in-theory (enable open-input-channels))))
 
 ;; implied by open-channels-p
 (defthm open-channel-listp-of-open-input-channels
   (implies (state-p1 state)
-           (open-channel-listp (open-input-channels state)))
-  :hints (("Goal" :in-theory (enable state-p1))))
+           (open-channel-listp (open-input-channels state) nil))
+  :hints (("Goal" :in-theory (enable state-p1 open-channels-p))))
 
 ;; implied by open-channels-p
 (defthm ordered-symbol-alistp-of-open-output-channels
   (implies (state-p1 state)
-           (ordered-symbol-alistp (open-output-channels state))))
+           (ordered-symbol-alistp (open-output-channels state)))
+  :hints (("Goal" :in-theory (enable open-output-channels))))
 
 ;; implied by open-channels-p
 (defthm open-channel-listp-of-open-output-channels
   (implies (state-p1 state)
-           (open-channel-listp (open-output-channels state)))
-  :hints (("Goal" :in-theory (enable state-p1))))
+           (open-channel-listp (open-output-channels state) t))
+  :hints (("Goal" :in-theory (enable state-p1 open-channels-p))))
 
 ;; Stuff about readable-files:
 
@@ -547,26 +554,26 @@
 (defthm state-p1-of-update-open-input-channels
   (implies (state-p1 state)
            (equal (state-p1 (update-open-input-channels x state))
-                  (open-channels-p x)))
+                  (open-channels-p x nil)))
   :hints (("Goal" :in-theory (enable state-p1))))
 
 (defthm state-p-of-update-open-input-channels
   (implies (state-p state)
            (equal (state-p (update-open-input-channels x state))
-                  (open-channels-p x)))
+                  (open-channels-p x nil)))
   :hints (("Goal" :in-theory (enable state-p))))
 
 (defthm state-p1-of-update-open-output-channels
   (implies (state-p1 state)
            (equal (state-p1 (update-open-output-channels x state))
-                  (open-channels-p x)))
+                  (open-channels-p x t)))
   :hints (("Goal" :in-theory (enable state-p1 ;UPDATE-OPEN-OUTPUT-CHANNELS
                                    ))))
 
 (defthm state-p-of-update-open-output-channels
   (implies (state-p state)
            (equal (state-p (update-open-output-channels x state))
-                  (open-channels-p x)))
+                  (open-channels-p x t)))
   :hints (("Goal" :in-theory (enable state-p))))
 
 (defthm state-p1-of-update-read-files

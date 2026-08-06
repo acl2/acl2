@@ -30,6 +30,8 @@
 (local (in-theory (disable acl2::<-of-integer-length-arg1
                            acl2::<-of-integer-length-arg2)))
 
+(set-waterfall-parallelism nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Library extensions

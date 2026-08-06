@@ -64,6 +64,7 @@
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
 (local (include-book "bvuminus"))
+(local (include-book "bvminus"))
 (local (include-book "bvand"))
 (local (include-book "bvor"))
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
@@ -118,7 +119,7 @@
   (implies (and (syntaxp (quotep k))
                 (power-of-2p k)
                 (integerp x)
-                (natp n))
+                (integerp n))
            (equal (bvchop n (* k x))
                   (* k (bvchop (- n (+ -1 (integer-length k))) x))))
   :hints (("Goal" ;:use (:instance bvchop-shift-gen (m (+ -1 (integer-length k))))
@@ -557,7 +558,7 @@
                 (natp size)
                 (natp low)
                 (<= low high)
-                (natp high)
+                (integerp high)
                 (integerp y)
                 (integerp z))
            (equal (slice high low (+ (bvchop size y) z))
@@ -569,7 +570,7 @@
                 (natp size)
                 (natp low)
                 (<= low high)
-                (natp high)
+                (integerp high)
                 (integerp y)
                 (integerp z))
            (equal (slice high low (+ z (bvchop size y)))
@@ -4381,7 +4382,8 @@
  (implies (integerp x)
           (equal (GETBIT 31 (+ 4294967296 x))
                  (GETBIT 31 x)))
- :hints (("Goal" :in-theory (enable getbit))))
+; :hints (("Goal" :in-theory (enable getbit)))
+ )
 
 ;move
 ; not safe, can loop when rewriting the binding hyp
@@ -6059,3 +6061,27 @@
                                      slice-of-bvplus-cases-helper
                                      bvchop-when-i-is-not-an-integer
                                      slice-when-val-is-not-an-integer))))
+
+;expensive?
+(defthmd bvplus-tighten-when-no-overflow
+  (implies (and (bvlt bigsize (bvplus bigsize k y) (expt 2 smallsize))
+                (< smallsize bigsize)
+                (natp smallsize)
+                (natp bigsize))
+           (equal (bvplus bigsize k y)
+                  (bvplus smallsize k y)))
+  :hints (("Goal" :in-theory (e/d (bvlt) (bvlt-tighten-when-getbit-0)))))
+
+;disable?
+(defthmd bvplus-commutative-2-sizes-differ
+  (implies (and (syntaxp (quotep k)) ;gen?
+                (bvlt bigsize (bvplus bigsize k y) (expt 2 smallsize)) ;can this loop or be expensive?
+                (< smallsize bigsize)
+                (natp smallsize)
+                (natp bigsize))
+           (equal (bvplus bigsize x (bvplus smallsize k y))
+                  (bvplus bigsize k (bvplus bigsize x y))))
+  :hints (("Goal" :use (:instance bvplus-commutative-2 (size bigsize) (z y) (y k))
+           :in-theory (e/d (bvplus-tighten-when-no-overflow)
+                           (bvplus-commutative-2
+                            equal-of-bvplus-and-bvplus-cancel-arg3-and-arg3)))))

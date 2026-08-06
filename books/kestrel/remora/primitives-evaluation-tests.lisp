@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "primitives-evaluation")
+(include-book "primitives-evaluation-first-order")
 
 (include-book "std/testing/assert-equal" :dir :system)
 
@@ -26,6 +26,24 @@
 
 (defconst *int-max* 9223372036854775807)  ; Haskell 64-bit Int maxBound, 2^63 - 1
 (defconst *int-min* -9223372036854775808) ; Haskell 64-bit Int minBound, -2^63
+
+; Curried application of a primitive operation value
+; to one or more argument cells:
+; (eval-primop-fun-fo* op a1 a2 ... an) expands to
+; a nest of eval-primop-fun-fo calls,
+; where the primitive operation value resulting from each application
+; is extracted from the expression value that wraps it.
+
+(defun eval-primop-fun-fo*-fn (op args)
+  (declare (xargs :guard (and (true-listp args) (consp args))))
+  (if (endp (cdr args))
+      `(eval-primop-fun-fo ,op ,(car args))
+    (eval-primop-fun-fo*-fn
+     `(expr-value-primop->val (eval-primop-fun-fo ,op ,(car args)))
+     (cdr args))))
+
+(defmacro eval-primop-fun-fo* (op arg &rest args)
+  (eval-primop-fun-fo*-fn op (cons arg args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -400,3 +418,41 @@
 (acl2::assert-equal (prim-float-floor (f-n0)) (iv 0))
 (acl2::assert-event (reserrp (prim-float-floor (f-ninf))))
 (acl2::assert-event (reserrp (prim-float-floor (f-nan))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Unary (curried) application of primitive operation values:
+; applying a binary operation to its first argument yields the next stage,
+; whose application to the second argument yields the result.
+
+(acl2::assert-equal
+ (eval-primop-fun-fo (primop-value-int-binary (int-binary-primop-add)) (iv 2))
+ (expr-value-primop (make-primop-value-int-binary-x
+                     :op (int-binary-primop-add)
+                     :xval (iv 2))))
+
+(acl2::assert-equal
+ (eval-primop-fun-fo (make-primop-value-int-binary-x :op (int-binary-primop-add)
+                                                     :xval (iv 2))
+                     (iv 3))
+ (iv 5))
+
+(acl2::assert-equal
+ (eval-primop-fun-fo* (primop-value-int-binary (int-binary-primop-add))
+                      (iv 2) (iv 3))
+ (iv 5))
+
+(acl2::assert-equal
+ (eval-primop-fun-fo* (primop-value-int-rel (int-rel-primop-lt))
+                      (iv 2) (iv 3))
+ (bv t))
+
+(acl2::assert-equal
+ (eval-primop-fun-fo* (primop-value-float-binary (float-binary-primop-add))
+                      (fv 1/2) (fv 1/4))
+ (fv 3/4))
+
+(acl2::assert-equal
+ (eval-primop-fun-fo* (primop-value-bool-binary (bool-binary-primop-and))
+                      (bv t) (bv nil))
+ (bv nil))
