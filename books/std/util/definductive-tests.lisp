@@ -259,6 +259,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(must-fail
+ (definductive duplicate-pred-names
+   :preds ((p x)
+           (p x y))
+   :irules ((ax ()
+                (p 0))
+            (ax2 ()
+                 (p 0 0)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; A non-recursive predicate is allowed:
 ; the generated proof validity function is not recursive,
 ; so it carries no measure and its theorems avoid induction.
