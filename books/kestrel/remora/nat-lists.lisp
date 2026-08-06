@@ -119,13 +119,13 @@
 (define nat-list-from-to ((i natp) (n natp))
   :returns (nats nat-listp)
   :short "List of the naturals from @('i') (inclusive) to @('n') (exclusive)."
-  :measure (nfix (- (nfix n) (nfix i)))
-  :hints (("Goal" :in-theory (enable nfix fix)))
   (b* ((i (nfix i))
      (n (nfix n)))
   (if (>= i n)
       nil
     (cons i (nat-list-from-to (1+ i) n))))
+  :measure (nfix (- (nfix n) (nfix i)))
+  :hints (("Goal" :in-theory (enable nfix fix)))
 
   ///
 

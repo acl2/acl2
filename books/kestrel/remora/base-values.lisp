@@ -68,7 +68,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection int-value-list ((x integer-listp))
+(std::defprojection int-value-list-of ((x integer-listp))
   :returns (ivals int-value-listp)
   :short "Lift @(tsee int-value) to lists."
   (int-value x))

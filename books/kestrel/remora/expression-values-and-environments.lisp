@@ -1198,8 +1198,7 @@
     (equal (dims-of-expr-value-list (expr-value-base-list bvals))
            (repeat (len bvals) nil))
     :induct (expr-value-base-list bvals)
-    :enable (
-             expr-value-base-list
+    :enable (expr-value-base-list
              dims-of-expr-value
              check-dims-of-expr-value
              repeat)

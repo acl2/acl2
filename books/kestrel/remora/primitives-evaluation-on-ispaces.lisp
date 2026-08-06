@@ -53,15 +53,13 @@
      the ispace application directly yields the final array.")
    (xdoc::p
     "If the shape has a zero dimension, the result is empty;
-     the element type is always the integer atom type,
-     so, unlike @(tsee prim-transpose2d),
-     no defensive check on the type value is needed."))
+     the element type is always the integer atom type."))
   (b* ((s (nat-list-fix s))
        ((when (member-equal 0 s))
         (expr-value-with-empty-dim s (type-value-base (base-type-int))))
        (atoms (expr-value-base-list
                (base-value-int-list
-                (int-value-list (nat-list-from-to 0 (nat-list-product s)))))))
+                (int-value-list-of (nat-list-from-to 0 (nat-list-product s)))))))
     (expr-value-with-nonempty-dims s atoms))
   :guard-hints (("Goal" :in-theory (enable nfix
                                            fix
