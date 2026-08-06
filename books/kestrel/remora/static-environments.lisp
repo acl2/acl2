@@ -117,21 +117,22 @@
      more will be added as the formalization grows.")
    (xdoc::p
     "The operations from @('+') to @('bool->f') have monomorphic types:
-     zero-rank array types of function types between base types.
+     function types between base types.
      The @('head'), @('tail'), @('length'),
      @('append'), @('reverse'), @('index'), @('index2d'),
-     @('reshape'), @('flatten'), and @('transpose2d') operations
+     @('reshape'), @('flatten'), @('transpose2d'), and @('reduce') operations
      have polymorphic types:
      a universal type of a product type of a function type, as in [impl].
+     The first input type of @('reduce') is itself a function type,
+     making @('reduce') a higher-order operation.
      The @('sum') operation is polymorphic only in the shape,
      not in the element type, which is always integer:
      its type is a product type of a function type,
      without an enclosing universal type, as in [impl].
-     Like the monomorphic types,
-     the whole type is a zero-rank array type,
-     but the bodies of the universal and product types
-     need no zero-rank array wrapping,
-     because atom types are auto-lifted to array types in those places."))
+     All these types are atom-kinded, without zero-rank array type wrapping:
+     as explained in @(see types),
+     atom-kinded types are allowed wherever array-kinded types are expected,
+     implicitly standing for zero-rank array types of those atom types."))
   (b* ((int-binop-type
         (t-> :int :int :int))
        (int-unop-type
@@ -217,7 +218,15 @@
                        (t[] "&t" (shp[] "$n" "$m"))))))
        (iota/static-type
         (tpi "@s"
-             (t[] :int "@s"))))
+             (t[] :int "@s")))
+       (reduce-type
+        (tfa "&t"
+             (tpi ("$d" "@s")
+                  (t-> (t-> (t[] "&t" "@s")
+                            (t[] "&t" "@s")
+                            (t[] "&t" "@s"))
+                       (t[] "&t" (shp[] (dim+ 1 "$d") "@s"))
+                       (t[] "&t" "@s"))))))
     (omap::from-alist
      (list (cons "+" int-binop-type)
            (cons "-" int-binop-type)
@@ -279,7 +288,8 @@
            (cons "reshape" reshape-type)
            (cons "flatten" flatten-type)
            (cons "transpose2d" transpose2d-type)
-           (cons "iota/static" iota/static-type)))))
+           (cons "iota/static" iota/static-type)
+           (cons "reduce" reduce-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

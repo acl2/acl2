@@ -111,7 +111,7 @@
      then we construct the next instantiation stage of the operation,
      which stores the ispace values received
      (a dimension and a shape
-     for @('head'), @('tail'), @('length'), and @('reverse');
+     for @('head'), @('tail'), @('length'), @('reverse'), and @('reduce');
      two dimensions and a shape for @('append') and @('flatten');
      a dimension for @('index');
      two dimensions for @('index2d');
@@ -267,9 +267,22 @@
                                                                 :nval ival.val))
                      :shape (reserr nil))
    :iota/static (ispace-value-case
+                 ival
+                 :dim (reserr nil)
+                 :shape (prim-iota/static ival.val))
+   :reduce-t (ispace-value-case
               ival
-              :dim (reserr nil)
-              :shape (prim-iota/static ival.val))
+              :dim (expr-value-primop
+                    (make-primop-value-reduce-t-d :tval op.tval
+                                                  :dval ival.val))
+              :shape (reserr nil))
+   :reduce-t-d (ispace-value-case
+                ival
+                :dim (reserr nil)
+                :shape (expr-value-primop
+                        (make-primop-value-reduce-t-d-s :tval op.tval
+                                                        :dval op.dval
+                                                        :sval ival.val)))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp)))
 
