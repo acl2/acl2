@@ -7750,52 +7750,28 @@
        ((mv proof2-same-event proof2-same-print-events)
         (defind-gen-proof2-same-defsection
           pred-infos irule-infos name xdocp print))
-       ;; The following is very slow...
-       ;; (all-events (append name-doc-events
-       ;;                     assert-type-events
-       ;;                     proof-type-events
-       ;;                     proof2-type-events
-       ;;                     proof-concl-events
-       ;;                     irule-valid-events
-       ;;                     proof2-irule-valid-events
-       ;;                     proof-valid-events
-       ;;                     proof2-valid-events
-       ;;                     pred-events
-       ;;                     proof2-pred-events
-       ;;                     proof-for-rule-events
-       ;;                     (list irules-event)
-       ;;                     irules-print-events
-       ;;                     (list proof2-irules-event)
-       ;;                     proof2-irules-print-events
-       ;;                     (list minimality-event)
-       ;;                     minimality-print-events
-       ;;                     (list proof2-minimality-event)
-       ;;                     proof2-minimality-print-events
-       ;;                     (list proof2-same-event)
-       ;;                     proof2-same-print-events))
-       ;; ... so we use the following instead.
-       (all-events (defind-append-all (list name-doc-events
-                                            assert-type-events
-                                            proof-type-events
-                                            proof2-type-events
-                                            proof-concl-events
-                                            irule-valid-events
-                                            proof2-irule-valid-events
-                                            proof-valid-events
-                                            proof2-valid-events
-                                            pred-events
-                                            proof2-pred-events
-                                            proof-for-rule-events
-                                            (list irules-event)
-                                            irules-print-events
-                                            (list proof2-irules-event)
-                                            proof2-irules-print-events
-                                            (list minimality-event)
-                                            minimality-print-events
-                                            (list proof2-minimality-event)
-                                            proof2-minimality-print-events
-                                            (list proof2-same-event)
-                                            proof2-same-print-events)))
+       (all-events (append name-doc-events
+                           assert-type-events
+                           proof-type-events
+                           proof2-type-events
+                           proof-concl-events
+                           irule-valid-events
+                           proof2-irule-valid-events
+                           proof-valid-events
+                           proof2-valid-events
+                           pred-events
+                           proof2-pred-events
+                           proof-for-rule-events
+                           (list irules-event)
+                           irules-print-events
+                           (list proof2-irules-event)
+                           proof2-irules-print-events
+                           (list minimality-event)
+                           minimality-print-events
+                           (list proof2-minimality-event)
+                           proof2-minimality-print-events
+                           (list proof2-same-event)
+                           proof2-same-print-events))
        (event `(progn
                  ,@all-events
                  (value-triple :invisible)))
@@ -7803,11 +7779,21 @@
                                event)))
     event)
 
-  :prepwork
-  ((define defind-append-all ((lists true-list-listp))
-     :returns (list true-listp)
-     (cond ((endp lists) nil)
-           (t (append (car lists) (defind-append-all (cdr lists))))))))
+  ;; Without disabling the following rules,
+  ;; ACL2's type prescription inference takes a long time,
+  ;; without printing anything,
+  ;; due to an exponential behavior in the (APPEND ...) above.
+
+  :prepwork ((in-theory (disable (:type-prescription binary-append)
+                                 (:type-prescription true-listp-append))))
+
+  ///
+
+  ;; But we want to re-enable the rules going forward.
+  ;; A local disabling of the above rules does not work, for some reason.
+
+  (in-theory (enable (:type-prescription binary-append)
+                     (:type-prescription true-listp-append))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
