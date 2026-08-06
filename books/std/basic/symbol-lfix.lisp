@@ -25,8 +25,11 @@
   (xdoc::topstring
    (xdoc::p
     "This is logically @(tsee symbol-fix),
-     but the @(tsee symbolp) guard allows execution as a no-op."))
+     but the @(tsee symbolp) guard allows execution as a no-op.")
+   (xdoc::p
+    "We leave it enabled, so it reduces to @(tsee symbol-fix)."))
   (mbe :logic (symbol-fix x)
        :exec x)
   :no-function t
+  :enabled t
   :hooks (:fix))
