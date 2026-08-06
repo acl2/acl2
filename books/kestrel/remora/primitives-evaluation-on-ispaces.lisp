@@ -38,6 +38,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define prim-iota/static ((s nat-listp))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of the static index enumeration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the instantiated @('iota/static') operation:
+     the single ispace application supplies the shape @('s'),
+     and the result is the array of that shape
+     whose atoms are the naturals below the number of elements,
+     in row-major order.
+     Unlike all other operations, no argument cell is involved:
+     the ispace application directly yields the final array.")
+   (xdoc::p
+    "If the shape has a zero dimension, the result is empty;
+     the element type is always the integer atom type."))
+  (b* ((s (nat-list-fix s))
+       ((when (member-equal 0 s))
+        (expr-value-with-empty-dim s (type-value-base (base-type-int))))
+       (atoms (expr-value-base-list
+               (base-value-int-list
+                (int-value-list-of (nat-list-from-to 0 (nat-list-product s)))))))
+    (expr-value-with-nonempty-dims s atoms))
+  :guard-hints (("Goal" :in-theory (enable nfix
+                                           fix
+                                           integer-listp-when-nat-listp
+                                           expr-value-list-wfp-of-expr-value-base-list
+                                           dims-of-expr-value-list-of-expr-value-base-list)))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-iota/static
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (nat-listp s)
+    :hints (("Goal" :in-theory (enable expr-value-list-wfp-of-expr-value-base-list
+                                       dims-of-expr-value-list-of-expr-value-base-list
+                                       nfix
+                                       fix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define eval-primop-ifun ((op primop-valuep) (ival ispace-valuep))
   :guard (primop-value-ifunp op)
   :returns (val expr-value-resultp)
@@ -222,6 +264,10 @@
                                                                 :mval op.mval
                                                                 :nval ival.val))
                      :shape (reserr nil))
+   :iota/static (ispace-value-case
+                 ival
+                 :dim (reserr nil)
+                 :shape (prim-iota/static ival.val))
    :reduce-t (ispace-value-case
               ival
               :dim (expr-value-primop
@@ -243,6 +289,5 @@
   (defret expr-value-wfp-of-eval-primop-ifun
     (implies (not (reserrp val))
              (expr-value-wfp val))
-    :hints (("Goal" :in-theory (enable expr-value-wfp
-                                       check-dims-of-expr-value
+    :hints (("Goal" :in-theory (enable primop-value-wfp
                                        check-dims-of-primop-value)))))
