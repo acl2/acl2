@@ -343,6 +343,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define vstate-update-ext-type ((ident identp)
+                                (type typep)
+                                (vstate vstatep))
+  :returns (new-vstate vstatep)
+  :short "Update the type of an identifier in the @('externals') map."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The identifier must already have external information.
+     We replace its type with the supplied type,
+     preserving its UID and the set of translation units
+     in which it has been declared."))
+  (b* (((vstate vstate) vstate)
+       (info? (vstate-lookup-ext ident vstate))
+       ((unless info?)
+        (raise "Internal error: no external information for ~x0."
+               (ident-fix ident))
+        (vstate-fix vstate))
+       (new-info (change-valid-ext-info info? :type type))
+       (new-externals
+        (omap::update (ident-fix ident) new-info vstate.externals)))
+    (change-vstate vstate :externals new-externals))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define vstate-add-ord ((ident identp)
                         (info valid-ord-infop)
                         (vstate vstatep))
@@ -1049,8 +1075,12 @@
      @('wchar_t') or @('char16_t') or @('char32_t').
      Since we do not yet model the values of these type definitions,
      we return an array type with
-     an unknown arithmetic element type in these cases."))
-  (b* (((reterr) (make-type-array :of (irr-type) :size nil))
+     an unknown arithmetic element type in these cases.
+     For now, we record the array as complete
+     but leave its length form unknown."))
+  (b* (((reterr) (make-type-array
+                   :of (irr-type)
+                   :kind (type-array-kind-unknown-complete)))
        ((stringlit strlit) strlit)
        ((erp &) (valid-s-char-list strlit.schars strlit.prefix? ienv)))
     (retok (make-type-array
@@ -1058,7 +1088,7 @@
                         (eprefix-case strlit.prefix? :locase-u8))
                     (type-char)
                   (type-unknown-arithmetic))
-            :size nil))) ; TODO: size
+            :kind (type-array-kind-unknown-complete))))
 
   ///
 
@@ -1105,8 +1135,12 @@
      Otherwise, it is an array type with an unknown arithmetic element type.
      This covers both the case of well-defined wide string literals
      (whose types we do not yet model),
-     and the implementation-defined mixed string encoding."))
-  (b* (((reterr) (make-type-array :of (irr-type) :size nil))
+     and the implementation-defined mixed string encoding.
+     For now, we record the array as complete
+     but leave its length form unknown."))
+  (b* (((reterr) (make-type-array
+                   :of (irr-type)
+                   :kind (type-array-kind-unknown-complete)))
        ((unless (consp strlits))
         (retmsg$ "There must be at least one string literal."))
        ((erp prefix? conflictp) (valid-stringlit-list-loop strlits ienv))
@@ -1122,7 +1156,7 @@
                         (and prefix? (not (eprefix-case prefix? :locase-u8))))
                     (type-unknown-arithmetic)
                   (type-char))
-            :size nil))) ; TODO: size
+            :kind (type-array-kind-unknown-complete))))
   :prepwork
   ((define valid-stringlit-list-loop ((strlits stringlit-listp) (ienv ienvp))
      :returns (mv (erp maybe-msgp)
@@ -5309,6 +5343,10 @@
        and we recursively validate the enclosed direct declarator.
        Then we validate the index expression (if present),
        ensuring that it has integer type.
+       An array without a size is recorded as incomplete.
+       For now, all the other array kinds are recorded as complete
+       with unknown length form;
+       we plan to classify their length forms more precisely later.
        For now we do not check that, if these expressions are constant,
        their values are greater than 0 [C17:6.7.6.2/1].
        Currently we do not need to do anything
@@ -5412,7 +5450,11 @@
                 types
                 vstate))
        :array
-       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
+       (b* ((type (make-type-array
+                    :of type
+                    :kind (if dirdeclor.size?
+                              (type-array-kind-unknown-complete)
+                            (type-array-kind-incomplete))))
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type vstate))
             ((erp new-expr? index-type? more-types vstate)
@@ -5436,7 +5478,9 @@
                 (set::union types more-types)
                 vstate))
        :array-static1
-       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
+       (b* ((type (make-type-array
+                    :of type
+                    :kind (type-array-kind-unknown-complete)))
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type vstate))
             ((erp new-expr index-type more-types vstate)
@@ -5459,7 +5503,9 @@
                 (set::union types more-types)
                 vstate))
        :array-static2
-       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
+       (b* ((type (make-type-array
+                    :of type
+                    :kind (type-array-kind-unknown-complete)))
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type vstate))
             ((erp new-expr index-type more-types vstate)
@@ -5482,7 +5528,9 @@
                 (set::union types more-types)
                 vstate))
        :array-star
-       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
+       (b* ((type (make-type-array
+                    :of type
+                    :kind (type-array-kind-unknown-complete)))
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor
               dirdeclor.declor fundef-params-p type vstate)))
@@ -5690,7 +5738,20 @@
                 types
                 vstate))
        :array
-       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
+       (b* ((type (make-type-array
+                    :of type
+                    :kind (if dirabsdeclor.size?
+                              (type-array-kind-unknown-complete)
+                            (type-array-kind-incomplete))))
+            ((when (and (not dirabsdeclor.declor?)
+                        (not dirabsdeclor.size?)))
+             (retok (make-dirabsdeclor-array
+                     :declor? nil
+                     :qualspecs dirabsdeclor.qualspecs
+                     :size? nil)
+                    type
+                    nil
+                    (vstate-fix vstate)))
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate))
             ((erp new-size? index-type? more-types vstate)
@@ -5714,7 +5775,9 @@
                 (set::union types more-types)
                 vstate))
        :array-static1
-       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
+       (b* ((type (make-type-array
+                    :of type
+                    :kind (type-array-kind-unknown-complete)))
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate))
             ((erp new-size index-type more-types vstate)
@@ -5737,7 +5800,9 @@
                 (set::union types more-types)
                 vstate))
        :array-static2
-       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
+       (b* ((type (make-type-array
+                    :of type
+                    :kind (type-array-kind-unknown-complete)))
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate))
             ((erp new-size index-type more-types vstate)
@@ -5760,7 +5825,9 @@
                 (set::union types more-types)
                 vstate))
        :array-star
-       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
+       (b* ((type (make-type-array
+                    :of type
+                    :kind (type-array-kind-unknown-complete)))
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate)))
          (retok (dirabsdeclor-array-star new-declor?)
@@ -6617,6 +6684,13 @@
        The initializer is validated after
        the declared identifier is added to the table [C17:6.2.1/7].")
      (xdoc::p
+      "An array of unknown size has incomplete type while its initializer is
+       being validated.  After successful validation, the initializer
+       completes the array type [C17:6.7.9/22].
+       For now, we leave the length form of the completed type unknown,
+       and replace the incomplete type in the validation table and in the
+       initializer declarator annotation.")
+     (xdoc::p
       "We calculate the definition status for the declaration.
        If we are declaring a function, the status is undefined,
        because we do not have a function body here.
@@ -6660,7 +6734,8 @@
        if the checks pass, we add the identifier to the table.
        If instead both have internal or external linkage,
        they must refer to the same entity,
-       and so we ensure that the types are the same.
+       and so we ensure that the types are compatible
+       [C17:6.2.7/2] [C17:6.7/4].
        We also need to check that the linkages are the same,
        in which case we still add the identifier to the table,
        to record that it is also declared in the current scope;
@@ -6728,6 +6803,10 @@
                     which disallows the initializer, ~
                     but the initializer ~x2 is present."
                    ident type initdeclor.initer?))
+         (complete-array-after-initer-p
+          (and initdeclor.initer?
+               (type-case type :array)
+               (type-array-kind-case (type-array->kind type) :incomplete)))
          ((mv info? currentp) (vstate-lookup-ord ident vstate))
          (defstatus (if (type-case type :function)
                         (valid-defstatus-undefined)
@@ -6751,11 +6830,34 @@
                     :defstatus defstatus
                     :uid uid))
          (vstate (vstate-add-ord ident new-info vstate))
+         ((erp new-initer? more-types vstate)
+          (valid-initer-option initdeclor.initer? type lifetime? vstate))
+         ((mv type vstate)
+          (if complete-array-after-initer-p
+              (b* ((type
+                    (change-type-array
+                     type
+                     :kind (type-array-kind-unknown-complete)))
+                   (new-info
+                    (change-valid-ord-info-objfun new-info :type type))
+                   (vstate (vstate-add-ord ident new-info vstate))
+                   (ext-info? (vstate-lookup-ext ident vstate))
+                   (vstate
+                    (if (and (linkage-case linkage :external)
+                             ext-info?
+                             (type-case (valid-ext-info->type ext-info?)
+                                        :array)
+                             (type-array-kind-case
+                               (type-array->kind
+                                (valid-ext-info->type ext-info?))
+                               :incomplete))
+                        (vstate-update-ext-type ident type vstate)
+                      vstate)))
+                (mv type vstate))
+            (mv type vstate)))
          (anno-info (make-init-declor-vinfo :type type
                                             :typedefp nil
                                             :uid uid))
-         ((erp new-initer? more-types vstate)
-          (valid-initer-option initdeclor.initer? type lifetime? vstate))
          ((when (and (linkage-case linkage :external)
                      (let ((ext-info? (vstate-lookup-ext ident vstate)))
                        (and ext-info?
@@ -6822,15 +6924,10 @@
                                      :info anno-info)
                    (set::union types more-types)
                    vstate)))
-         ((unless (or (equal type info.type)
-                      (type-case type '(:unknown
-                                        :unknown-builtin
-                                        :unknown-scalar
-                                        :unknown-arithmetic))
-                      (type-case info.type '(:unknown
-                                             :unknown-builtin
-                                             :unknown-scalar
-                                             :unknown-arithmetic))))
+         ((unless (type-compatible-p type
+                                     info.type
+                                     (vstate->completions vstate)
+                                     ienv))
           (retmsg$ "The identifier ~x0 ~
                     is declared with type ~x1 ~
                     after being declared with type ~x2."
@@ -7461,6 +7558,20 @@
      :rule-classes :linear
      :expand (dirdeclor-count dirdeclor))
 
+   (defrulel dirdeclor-count-when-array-linear
+     (implies (equal (dirdeclor-kind dirdeclor) :array)
+              (<= 2 (dirdeclor-count dirdeclor)))
+     :rule-classes :linear
+     :expand (dirdeclor-count dirdeclor))
+
+   (defrulel dirabsdeclor-count-when-array-not-base-linear
+     (implies (and (equal (dirabsdeclor-kind dirabsdeclor) :array)
+                   (or (dirabsdeclor-array->declor? dirabsdeclor)
+                       (dirabsdeclor-array->size? dirabsdeclor)))
+              (<= 2 (dirabsdeclor-count dirabsdeclor)))
+     :rule-classes :linear
+     :expand (dirabsdeclor-count dirabsdeclor))
+
    (defrulel dirabsdeclor-count-when-function-linear
      (implies (equal (dirabsdeclor-kind dirabsdeclor) :function)
               (<= 4 (dirabsdeclor-count dirabsdeclor)))
@@ -7946,8 +8057,9 @@
        ((mv uid vstate) (vstate-get-fresh-uid ident (linkage-none) vstate))
        (vstate (vstate-add-ord (ident "__func__")
                                (make-valid-ord-info-objfun
-                                :type (make-type-array :of (type-char)
-                                                       :size nil) ; TODO: size
+                                :type (make-type-array
+                                       :of (type-char)
+                                       :kind (type-array-kind-unknown-complete))
                                 :linkage (linkage-none)
                                 :defstatus (valid-defstatus-defined)
                                 :uid uid)
@@ -7956,8 +8068,10 @@
        (vstate (if (ienv->gcc/clang ienv)
                    (vstate-add-ord (ident "__FUNCTION__")
                                    (make-valid-ord-info-objfun
-                                    :type (make-type-array :of (type-char)
-                                                           :size nil) ; TODO: size
+                                    :type (make-type-array
+                                           :of (type-char)
+                                           :kind
+                                           (type-array-kind-unknown-complete))
                                     :linkage (linkage-none)
                                     :defstatus (valid-defstatus-defined)
                                     :uid uid)
@@ -7967,8 +8081,10 @@
        (vstate (if (ienv->gcc/clang ienv)
                    (vstate-add-ord (ident "__PRETTY_FUNCTION__")
                                    (make-valid-ord-info-objfun
-                                    :type (make-type-array :of (type-char)
-                                                           :size nil) ; TODO: size
+                                    :type (make-type-array
+                                           :of (type-char)
+                                           :kind
+                                           (type-array-kind-unknown-complete))
                                     :linkage (linkage-none)
                                     :defstatus (valid-defstatus-defined)
                                     :uid uid)
