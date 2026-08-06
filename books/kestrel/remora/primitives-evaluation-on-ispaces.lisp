@@ -67,7 +67,7 @@
      then we construct the next instantiation stage of the operation,
      which stores the ispace values received
      (a dimension and a shape
-     for @('head'), @('tail'), @('length'), and @('reverse');
+     for @('head'), @('tail'), @('length'), @('reverse'), and @('reduce');
      two dimensions and a shape for @('append') and @('flatten');
      a dimension for @('index');
      two dimensions for @('index2d');
