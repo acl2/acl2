@@ -942,8 +942,7 @@
     :returns (translated
               paragraphp
               :hints (("Goal"
-                       :in-theory (enable translate-symbol translate-type
-                                          paragraphp wordp))))
+                       :in-theory (enable translate-symbol paragraphp wordp))))
     (b* ((name (symbol-fix name))
          (type (symbol-fix type))
          (translated-name (translate-symbol name))
@@ -1010,8 +1009,7 @@
                                              (fty-info fty-info-alist-p)
                                              (int-to-rat booleanp))
     :returns (translated paragraphp
-                         :hints (("Goal" :in-theory (e/d (wordp
-                                                          paragraphp translate-type)
+                         :hints (("Goal" :in-theory (e/d (wordp paragraphp)
                                                          (true-listp)))))
     :measure (len args)
     (b* ((type (symbol-fix type))
@@ -1033,8 +1031,7 @@
                                         (int-to-rat booleanp))
     :returns (translated
               paragraphp
-              :hints (("Goal" :in-theory (e/d (wordp
-                                               paragraphp translate-type)
+              :hints (("Goal" :in-theory (e/d (wordp paragraphp)
                                               (true-listp)))))
     (b* ((fn (func-fix fn))
          ;; Bind everything needed from fn

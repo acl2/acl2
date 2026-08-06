@@ -486,7 +486,7 @@
                   (prog2$
                    (er hard? 'SMT-goal-generator=>expand "Should be a function call: ~q0" fn-call)
                    (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst)))
-                 (basic-function (member-equal fn-call *SMT-basics*))
+                 (basic-function (SMT-basic-function-p fn-call))
                  (flex? (fncall-of-flextype fn-call fty-info))
                  (abs? (member-equal fn-call abs))
                  (lvl-item (assoc-equal fn-call a.fn-lvls))
