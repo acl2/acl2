@@ -11,7 +11,6 @@
 (in-package "ACL2")
 
 (include-book "centaur/fty/basetypes" :dir :system)
-(include-book "centaur/fty/fixequiv" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
@@ -31,5 +30,4 @@
   (mbe :logic (symbol-fix x)
        :exec x)
   :no-function t
-  :enabled t
-  :hooks (:fix))
+  :enabled t)
