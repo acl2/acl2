@@ -245,8 +245,11 @@
        or (ii) a term in which none of @('p[1]'), ..., @('p[n]') occurs.
        For a @('conclusion[k]'), the term must have form (i);
        for a @('premise[k,h]'), the term may have either form.
-       All the rule names @('rule[1]'), ..., @('rule[r]') must be distinct;
-       there must be at least one rule, i.e. @('r') must be positive.")
+       The names of the rules with the same predicate in the conclusion
+       must be distinct;
+       rules with different predicates in the conclusions
+       may have the same name.
+       There must be at least one rule, i.e. @('r') must be positive.")
      (xdoc::p
       "Each predicate @('p[i]') must be
        in the conclusion of at least one rule.")

@@ -493,23 +493,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defind-irule-names-unambp ((infos defind-irule-info-listp))
-  :returns (yes/no booleanp)
-  :short "Check if the names of the given inference rules are unambiguous."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "That is, check if the names are all distinct."))
-  (no-duplicatesp-equal (defind-irule-info-list->name infos))
-
-  ///
-
-  (defrule defind-irule-names-unambp-of-cdr
-    (implies (defind-irule-names-unambp infos)
-             (defind-irule-names-unambp (cdr infos)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define defind-irules-of-pred ((pred-name symbolp)
                                (infos defind-irule-info-listp))
   :returns (selected-infos defind-irule-info-listp)
@@ -535,12 +518,48 @@
                    (defind-irule-info-list->name infos))
     :hints (("Goal" :induct t)))
 
-  (defret defind-irule-names-unambp-of-defind-irules-of-pred
+  (defret defind-irules-of-pred-of-defind-irules-of-pred
+    (equal (defind-irules-of-pred pred-name selected-infos)
+           selected-infos)
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-irule-names-unambp ((infos defind-irule-info-listp))
+  :returns (yes/no booleanp)
+  :short "Check if the names of the given inference rules are unambiguous."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check if the rules with the same conclusion predicate
+     have distinct names.
+     Rules with different conclusion predicates may have the same name,
+     because the names of the generated events
+     that relate to rules incorporate the predicate names."))
+  (b* (((when (endp infos)) t)
+       ((defind-irule-info info) (car infos))
+       (same-concl-infos
+        (defind-irules-of-pred (defind-conclusion-info->name info.conclusion)
+                               (cdr infos)))
+       ((when (member-eq info.name
+                         (defind-irule-info-list->name same-concl-infos)))
+        nil))
+    (defind-irule-names-unambp (cdr infos)))
+
+  ///
+
+  (defrule defind-irule-names-unambp-of-cdr
     (implies (defind-irule-names-unambp infos)
-             (defind-irule-names-unambp selected-infos))
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable defind-irule-names-unambp)))))
+             (defind-irule-names-unambp (cdr infos)))
+    :induct t)
+
+  (defrule defind-irule-names-unambp-of-defind-irules-of-pred
+    (implies (defind-irule-names-unambp infos)
+             (defind-irule-names-unambp
+              (defind-irules-of-pred pred-name infos)))
+    :induct t
+    :enable (defind-irules-of-pred
+              symbol-lfix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3001,7 +3020,7 @@
   (xdoc::topstring
    (xdoc::p
     "Besides processing the individual rules,
-     we check that the rule names are all distinct.
+     we check that the rule names are unambiguous.
      Then we organize the predicates into
      cliques in dependency order, each organized into levels,
      and we use the result to enforce the restrictions described next.")
@@ -3046,8 +3065,9 @@
        ((erp infos state)
         (defind-process-irules-loop irules 1 pred-infos state))
        ((unless (defind-irule-names-unambp infos))
-        (reterr (msg "The names of the rules in the :IRULES input ~
-                      must be all distinct, ~
+        (reterr (msg "The rules in the :IRULES input ~
+                      with the same predicate in the conclusion ~
+                      must have distinct names, ~
                       but there are duplicates among ~&0."
                      (defind-irule-info-list->name infos))))
        (pred-names (defind-pred-info-list->name pred-infos))
