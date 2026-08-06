@@ -52,7 +52,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (enable true-listp-when-pseudo-event-form-listp-rewrite)))
+(local (in-theory (enable true-listp-when-pseudo-event-form-listp-rewrite
+                          symbol-lfix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -558,8 +559,7 @@
              (defind-irule-names-unambp
               (defind-irules-of-pred pred-name infos)))
     :induct t
-    :enable (defind-irules-of-pred
-              symbol-lfix)))
+    :enable defind-irules-of-pred))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
