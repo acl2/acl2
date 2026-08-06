@@ -42,7 +42,7 @@
     :verify-guards nil
     (b* (((mv exit-status lines state) (SMT-run fname smt-conf state))
          ((unless (equal exit-status 0))
-          (mv (er hard? 'SMT-run=>SMT-interpret "Z3 failure: ~q0" lines) state))
+          (mv (er hard? 'SMT-run=>SMT-interpret "SMT solver failure: ~q0" lines) state))
          ((if (equal lines nil))
           (mv (er hard? 'SMT-run=>SMT-interpret "Nothing returned from SMT solver.") state))
          ((if (equal (car lines) "proved"))
@@ -100,4 +100,3 @@ the check for (true-listp str) and (consp (car str)) failed: ~q0" str)
                      (:instance stringp-of-consp-of-string-listp (x (mv-nth 1 (smt-run fname smt-conf state))))))))
     )
 )
-

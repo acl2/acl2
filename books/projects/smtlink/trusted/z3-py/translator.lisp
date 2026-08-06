@@ -951,7 +951,7 @@
          (type (if fty-item (fty-info->name (cdr fty-item)) type))
          (translated-type
           (translate-type type int-to-rat 'common-type)))
-      `(,translated-name = "z3.Const" #\( #\' ,translated-name #\' #\, #\Space
+      `(,translated-name = "_SMT_.Const" #\( #\' ,translated-name #\' #\, #\Space
                          ,translated-type #\) #\Newline)))
 
   (encapsulate ()
@@ -1049,7 +1049,7 @@
          (translated-returns
           (translate-uninterpreted-arguments 'returns f.returns
                                              fty-info int-to-rat)))
-      `(,(translate-symbol name) "= z3.Function("
+      `(,(translate-symbol name) "= _SMT_.Function("
         #\' ,name #\' ,translated-formals ,translated-returns
         ")" #\Newline)))
 
