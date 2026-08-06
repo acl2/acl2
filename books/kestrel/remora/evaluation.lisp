@@ -2310,7 +2310,7 @@
        Currently the only higher-order case is
        the last stage of the @('reduce') primitive,
        which we delegate to @(tsee prim-reduce),
-       passing the stored function value and the argument cell.")
+       passing the stored values and the argument cell.")
      (xdoc::p
       "Since @(tsee prim-reduce) is currently a stub,
        this function is not actually mutually recursive
@@ -2321,19 +2321,38 @@
           (eval-primop-fun-fo op arg)))
       (primop-value-case
        op
-       :reduce-t-d-s-f (prim-reduce op.fval arg (1- limit))
+       :reduce-t-d-s-f (prim-reduce op.tval op.dval op.sval op.fval
+                                    arg (1- limit))
        :otherwise (reserr (impossible))))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define prim-reduce ((fval expr-valuep) (arg expr-valuep) (limit natp))
+  (define prim-reduce ((tval type-valuep)
+                       (d natp)
+                       (s nat-listp)
+                       (fval expr-valuep)
+                       (arg expr-valuep)
+                       (limit natp))
     :guard (and (expr-value-wfp fval)
                 (expr-value-wfp arg))
     :returns (val expr-value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
     :short "Evaluate the last stage of the @('reduce') primitive."
-    (declare (ignore fval arg))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is the semantics of the fully instantiated @('reduce') operation,
+       applied to its last argument
+       (see the @(':reduce-t-d-s-f') summand of @(tsee primop-value)):
+       @('tval'), @('d'), and @('s') are the instantiation values,
+       @('fval') is the previously received function value,
+       and @('arg') is the argument cell.
+       This is currently a stub that always returns an error;
+       the actual definition will use the instantiation values
+       (e.g. to check the argument cell's dimensions),
+       analogously to the first-order @('prim-...') functions."))
+    (declare (ignore tval d s fval arg))
     (b* (((when (zp limit)) (reserr :limit)))
       (reserr :todo))
     :measure (nfix limit))
