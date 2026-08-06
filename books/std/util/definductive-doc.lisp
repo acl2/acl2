@@ -66,7 +66,7 @@
       These rules are logical implications,
       but a critical unwritten additional requirement is that
       @($R^\\ast$) be the smallest relation satisfying them.
-      For the above rules, @($R^\\ast$) exists and is unique.")
+      For the above rules, @($R^\\ast$) exists.")
 
     (xdoc::p
      "Inductive definitions via inference rules are commonly used
