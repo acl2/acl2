@@ -1136,8 +1136,7 @@
 ; the renaming maps are not reduced, and the commutation is direct.
 
 (defrule type-rename-ispace-vars-of-forall-curried-body
-  (implies (and (type-var-listp params)
-                (consp params))
+  (implies (type-var-listp params)
            (equal (type-rename-ispace-vars (forall-curried-body params body)
                                            dim-renam shape-renam)
                   (forall-curried-body params
@@ -1972,8 +1971,7 @@
             mergesort-of-cons)))
 
 (defrule type-rename-type-vars-of-forall-curried-body
-  (implies (and (type-var-listp params)
-                (consp params))
+  (implies (type-var-listp params)
            (b* (((mv & & atom1 array1)
                  (atom/array-rename-remove-bound (set::insert (car params)
                                                               nil)
