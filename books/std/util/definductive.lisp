@@ -545,7 +545,14 @@
        ((when (member-eq info.name
                          (defind-irule-info-list->name same-concl-infos)))
         (mv t info.name pred-name)))
-    (defind-irule-name-clash (cdr infos))))
+    (defind-irule-name-clash (cdr infos)))
+
+  ///
+
+  (defrule defind-irule-name-clash-of-cdr
+    (implies (not (mv-nth 0 (defind-irule-name-clash infos)))
+             (not (mv-nth 0 (defind-irule-name-clash (cdr infos)))))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -567,9 +574,7 @@
 
   (defrule defind-irule-names-unambp-of-cdr
     (implies (defind-irule-names-unambp infos)
-             (defind-irule-names-unambp (cdr infos)))
-    :induct (defind-irule-name-clash infos)
-    :enable defind-irule-name-clash)
+             (defind-irule-names-unambp (cdr infos))))
 
   (defrule defind-irule-names-unambp-of-defind-irules-of-pred
     (implies (defind-irule-names-unambp infos)
