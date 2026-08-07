@@ -1387,7 +1387,12 @@
        Note that we cannot just evaluate the type in the bindings,
        but we need to form the universal type
        (or, equivalently, extend the dynamic environment)
-       because that type may reference the type parameters.")
+       because that type may reference the type parameters.
+       A type function binding with no parameters
+       is treated as a plain value binding,
+       consistently with the type checker and with [impl],
+       whose parser turns such a binding
+       directly into a value binding.")
      (xdoc::p
       "For an ispace function binding,
        we extend the dynamic environment
@@ -1455,7 +1460,14 @@
                                            (expr-denv->tenv denv))
                           :none nil)))
               (expr-denv-add-expr bind.var val denv))
-       :tfun (b* (((unless (consp bind.params)) (reserr nil))
+       :tfun (b* (((when (endp bind.params))
+                   (b* (((ok val) (eval-expr bind.expr denv (1- limit)))
+                        ((ok &) (type-option-case
+                                 bind.type?
+                                 :some (eval-type bind.type?.val
+                                                  (expr-denv->tenv denv))
+                                 :none nil)))
+                     (expr-denv-add-expr bind.var val denv)))
                   (val (make-expr-value-tlambda
                         :param (car bind.params)
                         :body (tlambda-curried-body bind.params bind.expr)
@@ -1469,13 +1481,8 @@
                   ((ok &) (type-option-case
                            bind.type?
                            :some (eval-type
-                                  (if (endp (cdr bind.params))
-                                      (make-type-forall
-                                       :param (car bind.params)
-                                       :body bind.type?.val)
-                                    (make-type-foralln
-                                     :params bind.params
-                                     :body bind.type?.val))
+                                  (make-type-forall/foralln bind.params
+                                                            bind.type?.val)
                                   (expr-denv->tenv denv))
                            :none nil)))
                (expr-denv-add-expr bind.var val denv))

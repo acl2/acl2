@@ -214,6 +214,12 @@
  "(let ((t-fun (f (&t)) (i-fn ($d) (fn ((x (A &t $d))) x))))
   (t-app f Int))")
 
+; A type function binding with no parameters
+; is treated as a plain value binding,
+; as in [impl], whose parser turns it directly into a value binding.
+(test-check-top-expr
+ "(let ((t-fun (f () : Int) 7)) (+ f 1))")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Full application of a two-parameter term lambda abstraction,

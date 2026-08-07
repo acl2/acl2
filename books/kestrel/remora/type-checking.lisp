@@ -1969,7 +1969,14 @@
        are treated similarly to a function binding,
        but as syntactic sugar for binding the variable
        to a type abstraction or an ispace abstraction,
-       so their types are a universal type or a product type.")
+       so their types are a universal type or a product type.
+       A type function binding with no parameters
+       is treated as a plain value binding:
+       the variable is bound to the type of the body,
+       not wrapped in any universal type.
+       This is consistent with [impl],
+       whose parser turns such a binding
+       directly into a value binding.")
      (xdoc::p
       "A combined function binding
        is syntactic sugar for binding the variable
@@ -2061,17 +2068,13 @@
           ((ok (type+expr ee)) (check-expr bind.expr senv-body))
           ((unless (check-bind-type-annotation bind.type? ee.type senv-body))
            (reserr nil))
-          (fun-type (if (and (consp bind.params) (endp (cdr bind.params)))
-                        (make-type-forall :param (car bind.params)
-                                          :body ee.type)
-                      (make-type-foralln :params bind.params
-                                         :body ee.type))))
+          (type (if (consp bind.params)
+                    (make-type-array
+                     :elem (make-type-forall/foralln bind.params ee.type)
+                     :ispace (ispace-shape (shape-dims nil)))
+                  ee.type)))
        (make-senv+bind
-        :senv (senv-add-var+type bind.var
-                                 (make-type-array
-                                  :elem fun-type
-                                  :ispace (ispace-shape (shape-dims nil)))
-                                 senv)
+        :senv (senv-add-var+type bind.var type senv)
         :bind (make-bind-tfun :var bind.var
                               :params bind.params
                               :type? bind.type?
