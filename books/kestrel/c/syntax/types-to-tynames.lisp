@@ -317,12 +317,17 @@
                        (type-to-spec/qual+declor type.to ienv)))
                    (retok specquals (push-pointer declor?)))
         :array (b* (((erp specquals declor?)
-                     (type-to-spec/qual+declor type.of ienv))
-                    ((erp size?)
-                     (if type.size
-                         (pos-to-size-expr type.size ienv)
-                       (mv nil nil))))
-                 (retok specquals (push-array declor? size?)))
+                     (type-to-spec/qual+declor type.of ienv)))
+                 (type-array-kind-case
+                   type.kind
+                   :const-len
+                   (b* ((len? (type-array-kind-const-len->len type.kind))
+                        ((unless len?) (reterr t))
+                        ((erp size) (pos-to-size-expr len? ienv)))
+                     (retok specquals (push-array declor? size)))
+                   :incomplete
+                   (retok specquals (push-array declor? nil))
+                   :otherwise (reterr t)))
         :function (b* (((erp specquals declor?)
                         (type-to-spec/qual+declor type.ret ienv))
                        ((erp params ellipsis)
@@ -484,6 +489,9 @@
      (i.e. it is an enumeration type or one of the unknown types,
      possibly nested inside a derived or aggregate type),
      this returns an error.
+     This includes complete array types whose size expression
+     is not represented by the @(tsee type),
+     as well as constant-length array types whose length is unknown.
      An error is also returned if an array size is too large
      to be represented by any integer type."))
   (b* (((reterr) (irr-tyname))
