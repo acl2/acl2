@@ -18,7 +18,7 @@
 ;; cert_param: (uses-stp)
 
 (include-book "kestrel/axe/x86/unroller" :dir :system)
-(include-book "kestrel/x86/register-readers-and-writers-8-16" :dir :system)
+
 
 ;; Lifts the subroutine into logic: Creates the function sal_mem16_imm8, which
 ;; represents the effect of the program on the x86 state.
