@@ -1340,6 +1340,12 @@
               (param-declor-annop pdeclor))
   :returns (type typep)
   :short "Type of a parameter declarator, from the validation information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the original type of the declarator,
+     without the adjustment in [C17:6.7.6.3/7] [C23:6.7.7.4].
+     So this could be an array type."))
   (param-declor-case
    pdeclor
    :nonabstract (type+uid-vinfo->type pdeclor.info)
@@ -1355,5 +1361,11 @@
               (param-declon-annop pdeclon))
   :returns (type typep)
   :short "Type of a parameter declaration, from the validation information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the original type of the declaration,
+     without the adjustment in [C17:6.7.6.3/7] [C23:6.7.7.4].
+     So this could be an array type."))
   (param-declor-type (param-declon->declor pdeclon))
   :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules))))
