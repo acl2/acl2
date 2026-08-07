@@ -98,20 +98,20 @@
            (dimeq y z))
           (dimeq x z))
 
-   (srefl ((dim-listp xs))
-          (dimseq xs xs))
+   (refl ((dim-listp xs))
+         (dimseq xs xs))
 
-   (ssymm ((dim-listp xs)
+   (symm ((dim-listp xs)
+          (dim-listp ys)
+          (dimseq xs ys))
+         (dimseq ys xs))
+
+   (trans ((dim-listp xs)
            (dim-listp ys)
-           (dimseq xs ys))
-          (dimseq ys xs))
-
-   (strans ((dim-listp xs)
-            (dim-listp ys)
-            (dim-listp zs)
-            (dimseq xs ys)
-            (dimseq ys zs))
-           (dimseq xs zs))
+           (dim-listp zs)
+           (dimseq xs ys)
+           (dimseq ys zs))
+          (dimseq xs zs))
 
    (cong-add ((dim-listp xs)
               (dim-listp ys)
