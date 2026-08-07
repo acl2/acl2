@@ -728,7 +728,6 @@
      see @(tsee type-rename-ispace-vars-alpha)."))
   (atom-rename-ispace-vars-alpha-aux atom dim-renam shape-renam nil))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map rename-type-vars-alpha-aux
@@ -966,7 +965,6 @@
     "This is the top-level entry point for atoms;
      see @(tsee type-rename-type-vars-alpha)."))
   (atom-rename-type-vars-alpha-aux atom atom-renam array-renam nil))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
