@@ -7538,6 +7538,11 @@
 
   :ruler-extenders :all
 
+  :hints
+  (("Goal"
+    :expand ((dirdeclor-count dirdeclor)
+             (dirabsdeclor-count dirabsdeclor))))
+
   :verify-guards nil ; done below
 
   :prepwork
@@ -7557,20 +7562,6 @@
               (<= 4 (dirdeclor-count dirdeclor)))
      :rule-classes :linear
      :expand (dirdeclor-count dirdeclor))
-
-   (defrulel dirdeclor-count-when-array-linear
-     (implies (equal (dirdeclor-kind dirdeclor) :array)
-              (<= 2 (dirdeclor-count dirdeclor)))
-     :rule-classes :linear
-     :expand (dirdeclor-count dirdeclor))
-
-   (defrulel dirabsdeclor-count-when-array-not-base-linear
-     (implies (and (equal (dirabsdeclor-kind dirabsdeclor) :array)
-                   (or (dirabsdeclor-array->declor? dirabsdeclor)
-                       (dirabsdeclor-array->size? dirabsdeclor)))
-              (<= 2 (dirabsdeclor-count dirabsdeclor)))
-     :rule-classes :linear
-     :expand (dirabsdeclor-count dirabsdeclor))
 
    (defrulel dirabsdeclor-count-when-function-linear
      (implies (equal (dirabsdeclor-kind dirabsdeclor) :function)
