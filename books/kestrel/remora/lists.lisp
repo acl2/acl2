@@ -610,7 +610,11 @@
 
   (theory-invariant
    (incompatible (:definition check-list-suffix)
-                 (:rewrite check-list-suffix-alt-def))))
+                 (:rewrite check-list-suffix-alt-def)))
+
+  (defrule check-list-suffix-same
+    (equal (check-list-suffix x x)
+           (mv t nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
