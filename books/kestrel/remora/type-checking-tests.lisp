@@ -220,6 +220,10 @@
 (test-check-top-expr
  "(let ((t-fun (f () : Int) 7)) (+ f 1))")
 
+; Similarly for an ispace function binding with no parameters.
+(test-check-top-expr
+ "(let ((i-fun (f () : Int) 7)) (+ f 1))")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Full application of a two-parameter term lambda abstraction,

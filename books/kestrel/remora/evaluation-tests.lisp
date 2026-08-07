@@ -144,6 +144,10 @@
 (test-eval-top-expr
  "(let ((t-fun (f () : Int) 7)) (+ f 1))")
 
+; Similarly for an ispace function binding with no parameters.
+(test-eval-top-expr
+ "(let ((i-fun (f () : Int) 7)) (+ f 1))")
+
 ; A let-bound ispace function with one parameter and a result type annotation:
 ; the annotation is wrapped into a unary product type for evaluation.
 (test-eval-top-expr

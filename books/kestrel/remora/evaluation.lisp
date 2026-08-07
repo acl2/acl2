@@ -1404,7 +1404,12 @@
        over the ispace parameters with the result type as body,
        and we evaluate it, ignoring the resulting type value for now;
        we form the product type, instead of evaluating the result type directly,
-       because the result type may reference the ispace parameters.")
+       because the result type may reference the ispace parameters.
+       An ispace function binding with no parameters
+       is treated as a plain value binding,
+       consistently with the type checker and with [impl],
+       whose parser turns such a binding
+       directly into a value binding.")
      (xdoc::p
       "For a combined function binding,
        we form the nested abstraction expression
@@ -1486,7 +1491,14 @@
                                   (expr-denv->tenv denv))
                            :none nil)))
                (expr-denv-add-expr bind.var val denv))
-       :ifun (b* (((unless (consp bind.params)) (reserr nil))
+       :ifun (b* (((when (endp bind.params))
+                   (b* (((ok val) (eval-expr bind.expr denv (1- limit)))
+                        ((ok &) (type-option-case
+                                 bind.type?
+                                 :some (eval-type bind.type?.val
+                                                  (expr-denv->tenv denv))
+                                 :none nil)))
+                     (expr-denv-add-expr bind.var val denv)))
                   (val (make-expr-value-ilambda
                         :param (car bind.params)
                         :body (ilambda-curried-body bind.params bind.expr)
