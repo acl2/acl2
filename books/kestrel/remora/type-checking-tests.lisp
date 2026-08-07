@@ -251,3 +251,13 @@
       (val g (f 2)))
   (g 3))
 ")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Application of a let-bound combined function
+; with one type parameter and one ispace parameter:
+; its recorded type is a unary universal type over a unary product type,
+; matched by the type and ispace applications.
+(test-check-top-expr
+ "(let ((fun (@f (&t) ($d) (x (A &t $d)) : (A &t $d)) x))
+  (@f (Int) (3) [1 2 3]))")

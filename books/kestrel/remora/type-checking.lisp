@@ -2118,13 +2118,19 @@
                       (make-type-funn :in types :out btype)))
           (fun-type (ispace-var-list-option-case
                      bind.iparams?
-                     :some (make-type-pin :params bind.iparams?.val
-                                          :body fun-type)
+                     :some (if (and (consp iparams) (endp (cdr iparams)))
+                               (make-type-pi :param (car iparams)
+                                             :body fun-type)
+                             (make-type-pin :params iparams
+                                            :body fun-type))
                      :none fun-type))
           (fun-type (type-var-list-option-case
                      bind.tparams?
-                     :some (make-type-foralln :params bind.tparams?.val
-                                              :body fun-type)
+                     :some (if (and (consp tparams) (endp (cdr tparams)))
+                               (make-type-forall :param (car tparams)
+                                                 :body fun-type)
+                             (make-type-foralln :params tparams
+                                                :body fun-type))
                      :none fun-type)))
        (make-senv+bind
         :senv (senv-add-var+type bind.var
