@@ -768,7 +768,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define forall-curried-body ((params type-var-listp) (body typep))
-  :guard (consp params)
+  :guard (>= (len params) 2)
   :returns (new-body typep)
   :short "Peel the first parameter from a universal type
           and return the remaining body type."
@@ -777,16 +777,14 @@
    (xdoc::p
     "A universal type with two or more parameters
      is sugar for a nested sequence of one-parameter universal types.
-     This function treats an n-ary universal type with at least one parameter
-     as that sequence, or as itself if there is just one parameter,
-     and it returns the body of the outermost universal type.
-     This is the body of the whole universal type
-     when there is just one parameter,
-     otherwise it is another universal type, without the first parameter."))
-  (cond ((endp (cdr params)) (type-fix body))
+     This function treats an n-ary universal type with at least two parameters
+     as that sequence,
+     and it returns the body of the outermost universal type."))
+  (cond ((endp (cdr params)) (prog2$ (impossible) (type-fix body)))
         ((endp (cddr params))
          (make-type-forall :param (cadr params) :body body))
         (t (make-type-foralln :params (cdr params) :body body)))
+  :guard-hints (("Goal" :in-theory (enable len)))
   :hooks ((:fix :hints (("Goal"
                          :in-theory (enable cdr-of-type-var-list-fix)))))
 
