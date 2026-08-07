@@ -2060,13 +2060,16 @@
           (senv-body (senv-add-type-vars bind.params senv))
           ((ok (type+expr ee)) (check-expr bind.expr senv-body))
           ((unless (check-bind-type-annotation bind.type? ee.type senv-body))
-           (reserr nil)))
+           (reserr nil))
+          (fun-type (if (and (consp bind.params) (endp (cdr bind.params)))
+                        (make-type-forall :param (car bind.params)
+                                          :body ee.type)
+                      (make-type-foralln :params bind.params
+                                         :body ee.type))))
        (make-senv+bind
         :senv (senv-add-var+type bind.var
                                  (make-type-array
-                                  :elem (make-type-foralln
-                                         :params bind.params
-                                         :body ee.type)
+                                  :elem fun-type
                                   :ispace (ispace-shape (shape-dims nil)))
                                  senv)
         :bind (make-bind-tfun :var bind.var

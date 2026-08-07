@@ -208,6 +208,12 @@
 (test-check-top-expr
  "(t-app (t-fn (&t) (i-fn ($d) (fn ((x (A &t $d))) x))) Int)")
 
+; Application of a let-bound type function with one parameter:
+; its recorded type is a unary universal type, matched by the application.
+(test-check-top-expr
+ "(let ((t-fun (f (&t)) (i-fn ($d) (fn ((x (A &t $d))) x))))
+  (t-app f Int))")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Full application of a two-parameter term lambda abstraction,
