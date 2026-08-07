@@ -552,7 +552,14 @@
   (defrule defind-irule-name-clash-of-cdr
     (implies (not (mv-nth 0 (defind-irule-name-clash infos)))
              (not (mv-nth 0 (defind-irule-name-clash (cdr infos)))))
-    :induct t))
+    :induct t)
+
+  (defrule defind-irule-name-clash-of-defind-irules-of-pred
+    (implies (not (mv-nth 0 (defind-irule-name-clash infos)))
+             (not (mv-nth 0 (defind-irule-name-clash
+                             (defind-irules-of-pred pred-name infos)))))
+    :induct t
+    :enable defind-irules-of-pred))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -579,10 +586,7 @@
   (defrule defind-irule-names-unambp-of-defind-irules-of-pred
     (implies (defind-irule-names-unambp infos)
              (defind-irule-names-unambp
-              (defind-irules-of-pred pred-name infos)))
-    :induct (defind-irule-name-clash infos)
-    :enable (defind-irule-name-clash
-             defind-irules-of-pred)))
+              (defind-irules-of-pred pred-name infos)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
