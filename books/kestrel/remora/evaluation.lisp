@@ -1469,8 +1469,13 @@
                   ((ok &) (type-option-case
                            bind.type?
                            :some (eval-type
-                                  (make-type-foralln :params bind.params
-                                                     :body bind.type?.val)
+                                  (if (endp (cdr bind.params))
+                                      (make-type-forall
+                                       :param (car bind.params)
+                                       :body bind.type?.val)
+                                    (make-type-foralln
+                                     :params bind.params
+                                     :body bind.type?.val))
                                   (expr-denv->tenv denv))
                            :none nil)))
                (expr-denv-add-expr bind.var val denv))
@@ -1488,17 +1493,29 @@
                   ((ok &) (type-option-case
                            bind.type?
                            :some (eval-type
-                                  (make-type-pin :params bind.params
-                                                 :body bind.type?.val)
+                                  (if (endp (cdr bind.params))
+                                      (make-type-pi
+                                       :param (car bind.params)
+                                       :body bind.type?.val)
+                                    (make-type-pin
+                                     :params bind.params
+                                     :body bind.type?.val))
                                   (expr-denv->tenv denv))
                            :none nil)))
                (expr-denv-add-expr bind.var val denv))
-       :cfun (b* ((lambda-expr (make-expr-array
+       :cfun (b* ((lambda-atom (if (and (consp bind.params)
+                                        (endp (cdr bind.params)))
+                                   (make-atom-lambda
+                                    :param (car bind.params)
+                                    :body bind.expr
+                                    :type? bind.type)
+                                 (make-atom-lambdan
+                                  :params bind.params
+                                  :body bind.expr
+                                  :type? bind.type)))
+                  (lambda-expr (make-expr-array
                                 :dims nil
-                                :atoms (list (make-atom-lambdan
-                                              :params bind.params
-                                              :body bind.expr
-                                              :type? bind.type))))
+                                :atoms (list lambda-atom)))
                   ((ok in) (var+type?-list->type-list-or-err bind.params))
                   (lambda-type (if (and (consp in) (endp (cdr in)))
                                    (make-type-fun :in (car in)
@@ -1507,24 +1524,44 @@
                   ((mv iexpr itype)
                    (ispace-var-list-option-case
                     bind.iparams?
-                    :some (mv (make-expr-array
-                               :dims nil
-                               :atoms (list (make-atom-ilambdan
-                                             :params bind.iparams?.val
-                                             :body lambda-expr)))
-                              (make-type-pin :params bind.iparams?.val
-                                             :body lambda-type))
+                    :some
+                    (if (and (consp bind.iparams?.val)
+                             (endp (cdr bind.iparams?.val)))
+                        (mv (make-expr-array
+                             :dims nil
+                             :atoms (list (make-atom-ilambda
+                                           :param (car bind.iparams?.val)
+                                           :body lambda-expr)))
+                            (make-type-pi :param (car bind.iparams?.val)
+                                          :body lambda-type))
+                      (mv (make-expr-array
+                           :dims nil
+                           :atoms (list (make-atom-ilambdan
+                                         :params bind.iparams?.val
+                                         :body lambda-expr)))
+                          (make-type-pin :params bind.iparams?.val
+                                         :body lambda-type)))
                     :none (mv lambda-expr lambda-type)))
                   ((mv cfun-expr cfun-type)
                    (type-var-list-option-case
                     bind.tparams?
-                    :some (mv (make-expr-array
-                               :dims nil
-                               :atoms (list (make-atom-tlambdan
-                                             :params bind.tparams?.val
-                                             :body iexpr)))
-                              (make-type-foralln :params bind.tparams?.val
-                                                 :body itype))
+                    :some
+                    (if (and (consp bind.tparams?.val)
+                             (endp (cdr bind.tparams?.val)))
+                        (mv (make-expr-array
+                             :dims nil
+                             :atoms (list (make-atom-tlambda
+                                           :param (car bind.tparams?.val)
+                                           :body iexpr)))
+                            (make-type-forall :param (car bind.tparams?.val)
+                                              :body itype))
+                      (mv (make-expr-array
+                           :dims nil
+                           :atoms (list (make-atom-tlambdan
+                                         :params bind.tparams?.val
+                                         :body iexpr)))
+                          (make-type-foralln :params bind.tparams?.val
+                                             :body itype)))
                     :none (mv iexpr itype)))
                   ((ok val) (eval-expr cfun-expr denv (1- limit)))
                   ((ok &) (eval-type cfun-type (expr-denv->tenv denv))))

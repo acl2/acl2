@@ -131,3 +131,22 @@
 ; to which the second argument array is applied element-wise.
 (test-eval-top-expr
  "((fn ((x Int) (y Int)) (+ x y)) [1 2 3] [4 5 6])")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A let-bound type function with one parameter and a result type annotation:
+; the annotation is wrapped into a unary universal type for evaluation.
+(test-eval-top-expr
+ "(let ((t-fun (f (&t) : Int) 7)) (t-app f Int))")
+
+; A let-bound ispace function with one parameter and a result type annotation:
+; the annotation is wrapped into a unary product type for evaluation.
+(test-eval-top-expr
+ "(let ((i-fun (f ($d) : Int) 7)) (i-app f 3))")
+
+; A let-bound combined function
+; with one type parameter, one ispace parameter, and one value parameter:
+; it desugars to a nest of unary abstractions, with a nested unary type.
+(test-eval-top-expr
+ "(let ((fun (@f (&t) ($d) (x (A &t $d)) : (A &t $d)) x))
+  (@f (Int) (3) [1 2 3]))")
