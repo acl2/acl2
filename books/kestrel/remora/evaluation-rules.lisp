@@ -51,13 +51,7 @@
                     nil))
     :enable (dims-of-expr-value
              expr-value-wfp)
-    :expand ((check-dims-of-expr-value eval)))
-
-  (defruled expr-value-wfp-when-base
-    (implies (expr-value-case val :base)
-             (expr-value-wfp val))
-    :enable (expr-value-wfp
-             check-dims-of-expr-value)))
+    :expand ((check-dims-of-expr-value eval))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -927,11 +921,6 @@
     :expand ((eval-app funval argvals limit)
              (:free (fv lim) (eval-app fv (cdr argvals) lim))
              (:free (fv lim) (eval-app fv (cddr argvals) lim))))
-
-  (defruled check-list-suffix-same
-    (equal (check-list-suffix x x)
-           (mv t nil))
-    :enable check-list-suffix)
 
   (defruled eval-app-of-reshape-no-lifting
     (implies (and (expr-value-case funval :primop)

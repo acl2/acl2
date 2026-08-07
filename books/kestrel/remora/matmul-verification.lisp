@@ -15,6 +15,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;; This file verifies that a ACL2 Remora program computing 2x2 matrix
+;;; multiplication is correct.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define float-ratio-value ((x rationalp))
   :returns (value expr-valuep)
   (expr-value-base

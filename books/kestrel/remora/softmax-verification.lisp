@@ -15,6 +15,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;; This file verifies that a ACL2 Remora program computing softmax on 4
+;;; integer inputs is correct.
+;;; To learn more about the softmax function:
+;;; https://en.wikipedia.org/wiki/Softmax_function.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define float-ratio-value ((x rationalp))
   :returns (value expr-valuep)
   (expr-value-base
