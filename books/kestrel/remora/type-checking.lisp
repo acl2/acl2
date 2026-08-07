@@ -1990,7 +1990,16 @@
        a function type, a product type, and a universal type.
        We check the body in the static environment
        extended with all the parameters,
-       and we check that its type is equivalent to the declared result type.")
+       and we check that its type is equivalent to the declared result type.
+       Each layer is present only if
+       the corresponding parameters are present;
+       an absent parameter list and an empty one are treated alike,
+       consistently with [impl].
+       In particular, with no value parameters
+       there is no function type layer,
+       and with no parameters at all
+       the binding is treated as a plain value binding,
+       with the variable bound to the type of the body.")
      (xdoc::p
       "For an ispace binding,
        we check that the bound ispace is valid,
@@ -2121,31 +2130,31 @@
           ((ok senv-body) (senv-add-vars+types bind.params senv-iparams))
           ((ok (type+expr ee)) (check-expr bind.expr senv-body))
           ((unless (type-equivp ee.type btype)) (reserr nil))
-          (fun-type (if (and (consp types) (endp (cdr types)))
-                        (make-type-fun :in (car types) :out btype)
-                      (make-type-funn :in types :out btype)))
-          (fun-type (ispace-var-list-option-case
-                     bind.iparams?
-                     :some (if (and (consp iparams) (endp (cdr iparams)))
-                               (make-type-pi :param (car iparams)
-                                             :body fun-type)
-                             (make-type-pin :params iparams
-                                            :body fun-type))
-                     :none fun-type))
-          (fun-type (type-var-list-option-case
-                     bind.tparams?
-                     :some (if (and (consp tparams) (endp (cdr tparams)))
-                               (make-type-forall :param (car tparams)
-                                                 :body fun-type)
-                             (make-type-foralln :params tparams
-                                                :body fun-type))
-                     :none fun-type)))
+          (fun-type (if (consp types)
+                        (if (endp (cdr types))
+                            (make-type-fun :in (car types) :out btype)
+                          (make-type-funn :in types :out btype))
+                      ee.type))
+          (fun-type (if (consp iparams)
+                        (if (endp (cdr iparams))
+                            (make-type-pi :param (car iparams)
+                                          :body fun-type)
+                          (make-type-pin :params iparams :body fun-type))
+                      fun-type))
+          (fun-type (if (consp tparams)
+                        (if (endp (cdr tparams))
+                            (make-type-forall :param (car tparams)
+                                              :body fun-type)
+                          (make-type-foralln :params tparams
+                                             :body fun-type))
+                      fun-type))
+          (type (if (or (consp types) (consp iparams) (consp tparams))
+                    (make-type-array
+                     :elem fun-type
+                     :ispace (ispace-shape (shape-dims nil)))
+                  ee.type)))
        (make-senv+bind
-        :senv (senv-add-var+type bind.var
-                                 (make-type-array
-                                  :elem fun-type
-                                  :ispace (ispace-shape (shape-dims nil)))
-                                 senv)
+        :senv (senv-add-var+type bind.var type senv)
         :bind (make-bind-cfun :var bind.var
                               :tparams? bind.tparams?
                               :iparams? bind.iparams?

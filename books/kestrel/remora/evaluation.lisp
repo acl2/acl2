@@ -1422,7 +1422,13 @@
        after being desugared to a value binding.
        As for the other bindings,
        we also form the corresponding nested type and evaluate it,
-       ignoring the resulting type value for now.")
+       ignoring the resulting type value for now.
+       Each layer is formed only if
+       the corresponding parameters are present;
+       an absent parameter list and an empty one are treated alike,
+       consistently with the type checker and with [impl].
+       With no parameters at all,
+       the binding is treated as a plain value binding.")
      (xdoc::p
       "The lambda values formed for the function bindings
        are closures with restricted dynamic environments,
@@ -1530,66 +1536,67 @@
                                   (expr-denv->tenv denv))
                            :none nil)))
                (expr-denv-add-expr bind.var val denv))
-       :cfun (b* ((lambda-atom (if (and (consp bind.params)
-                                        (endp (cdr bind.params)))
-                                   (make-atom-lambda
-                                    :param (car bind.params)
-                                    :body bind.expr
-                                    :type? bind.type)
-                                 (make-atom-lambdan
-                                  :params bind.params
-                                  :body bind.expr
-                                  :type? bind.type)))
-                  (lambda-expr (make-expr-array
-                                :dims nil
-                                :atoms (list lambda-atom)))
+       :cfun (b* ((tparams (type-var-list-option-case
+                            bind.tparams? :some bind.tparams?.val :none nil))
+                  (iparams (ispace-var-list-option-case
+                            bind.iparams? :some bind.iparams?.val :none nil))
+                  (cfun-expr (if (consp bind.params)
+                                 (make-expr-array
+                                  :dims nil
+                                  :atoms (list
+                                          (if (endp (cdr bind.params))
+                                              (make-atom-lambda
+                                               :param (car bind.params)
+                                               :body bind.expr
+                                               :type? bind.type)
+                                            (make-atom-lambdan
+                                             :params bind.params
+                                             :body bind.expr
+                                             :type? bind.type))))
+                               bind.expr))
                   ((ok in) (var+type?-list->type-list-or-err bind.params))
-                  (lambda-type (if (and (consp in) (endp (cdr in)))
-                                   (make-type-fun :in (car in)
-                                                  :out bind.type)
-                                 (make-type-funn :in in :out bind.type)))
-                  ((mv iexpr itype)
-                   (ispace-var-list-option-case
-                    bind.iparams?
-                    :some
-                    (if (and (consp bind.iparams?.val)
-                             (endp (cdr bind.iparams?.val)))
-                        (mv (make-expr-array
-                             :dims nil
-                             :atoms (list (make-atom-ilambda
-                                           :param (car bind.iparams?.val)
-                                           :body lambda-expr)))
-                            (make-type-pi :param (car bind.iparams?.val)
-                                          :body lambda-type))
-                      (mv (make-expr-array
-                           :dims nil
-                           :atoms (list (make-atom-ilambdan
-                                         :params bind.iparams?.val
-                                         :body lambda-expr)))
-                          (make-type-pin :params bind.iparams?.val
-                                         :body lambda-type)))
-                    :none (mv lambda-expr lambda-type)))
+                  (cfun-type (if (consp in)
+                                 (if (endp (cdr in))
+                                     (make-type-fun :in (car in)
+                                                    :out bind.type)
+                                   (make-type-funn :in in :out bind.type))
+                               bind.type))
                   ((mv cfun-expr cfun-type)
-                   (type-var-list-option-case
-                    bind.tparams?
-                    :some
-                    (if (and (consp bind.tparams?.val)
-                             (endp (cdr bind.tparams?.val)))
-                        (mv (make-expr-array
-                             :dims nil
-                             :atoms (list (make-atom-tlambda
-                                           :param (car bind.tparams?.val)
-                                           :body iexpr)))
-                            (make-type-forall :param (car bind.tparams?.val)
-                                              :body itype))
-                      (mv (make-expr-array
-                           :dims nil
-                           :atoms (list (make-atom-tlambdan
-                                         :params bind.tparams?.val
-                                         :body iexpr)))
-                          (make-type-foralln :params bind.tparams?.val
-                                             :body itype)))
-                    :none (mv iexpr itype)))
+                   (if (consp iparams)
+                       (mv (make-expr-array
+                            :dims nil
+                            :atoms (list
+                                    (if (endp (cdr iparams))
+                                        (make-atom-ilambda
+                                         :param (car iparams)
+                                         :body cfun-expr)
+                                      (make-atom-ilambdan
+                                       :params iparams
+                                       :body cfun-expr))))
+                           (if (endp (cdr iparams))
+                               (make-type-pi :param (car iparams)
+                                             :body cfun-type)
+                             (make-type-pin :params iparams
+                                            :body cfun-type)))
+                     (mv cfun-expr cfun-type)))
+                  ((mv cfun-expr cfun-type)
+                   (if (consp tparams)
+                       (mv (make-expr-array
+                            :dims nil
+                            :atoms (list
+                                    (if (endp (cdr tparams))
+                                        (make-atom-tlambda
+                                         :param (car tparams)
+                                         :body cfun-expr)
+                                      (make-atom-tlambdan
+                                       :params tparams
+                                       :body cfun-expr))))
+                           (if (endp (cdr tparams))
+                               (make-type-forall :param (car tparams)
+                                                 :body cfun-type)
+                             (make-type-foralln :params tparams
+                                                :body cfun-type)))
+                     (mv cfun-expr cfun-type)))
                   ((ok val) (eval-expr cfun-expr denv (1- limit)))
                   ((ok &) (eval-type cfun-type (expr-denv->tenv denv))))
                (expr-denv-add-expr bind.var val denv))))

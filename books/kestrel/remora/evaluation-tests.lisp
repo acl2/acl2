@@ -152,6 +152,19 @@
 (test-eval-top-expr
  "(let ((fun (f : Int) 7)) (+ f 1))")
 
+; Similarly for a combined function binding with no parameters at all,
+; whether the type and ispace parameter lists are empty or absent.
+(test-eval-top-expr
+ "(let ((fun (@f () () : Int) 7)) (+ f 1))")
+(test-eval-top-expr
+ "(let ((fun (@f _ _ : Int) 7)) (+ f 1))")
+
+; In a combined function binding, only the layers with parameters
+; are present: here the type and function layers but no ispace layer.
+(test-eval-top-expr
+ "(let ((fun (@f (&t) () (x Int) : Int) x))
+  (@f (Int) () 7))")
+
 ; A let-bound ispace function with one parameter and a result type annotation:
 ; the annotation is wrapped into a unary product type for evaluation.
 (test-eval-top-expr
