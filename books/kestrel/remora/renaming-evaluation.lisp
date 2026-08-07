@@ -20,6 +20,8 @@
 (local (include-book "osets"))
 (local (include-book "omaps"))
 
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
+
 ; The tau system is needed by only one proof in this book (noted below, where
 ; it is switched back on); running it on every goal of the rest is pure
 ; overhead, so it is off by default here.
@@ -2148,7 +2150,8 @@
                        not-reserrp-when-type-value-listp
                        type-valuep-when-result-not-error
                        type-value-listp-when-result-not-error
-                       type-denv-lookup-type))
+                       type-denv-lookup-type
+                       acl2::lt-len-const))
    (and acl2::stable-under-simplificationp
         '(:use ((:instance denv-type-vars-renamed-p-necc
                            (var (type-var->var type))))))))
