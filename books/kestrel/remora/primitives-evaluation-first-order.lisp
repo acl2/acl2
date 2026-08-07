@@ -1967,7 +1967,7 @@
           (expr-value-with-empty-dim s2 tval)))
        (atoms (expr-value-atoms val1)))
     (expr-value-with-nonempty-dims s2 atoms))
-
+  
   ///
 
   (defret expr-value-wfp-of-prim-reshape

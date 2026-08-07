@@ -4244,7 +4244,7 @@
          ;; Dismbiguate the included translation unit in context.
          ;; This must not fail; if it does,
          ;; the disambiguation of the including translation unit fails.
-         (dstate (change-dstate dstate :file included))
+         (dstate (change-dstate dstate :file (filepath->string included)))
          ((erp new-tunit-in-context dstate tumap-dimb)
           (dimb-trans-unit tunit
                            dstate
@@ -4263,7 +4263,8 @@
                              (filepath-trans-unit-map-fix tumap-dimb)))
                ((when included+tunit)
                 (retok (cdr included+tunit) tumap-dimb))
-               (dstate-fresh (init-dstate included (dstate->ienv dstate)))
+               (dstate-fresh (init-dstate (filepath->string included)
+                                          (dstate->ienv dstate)))
                ((erp new-tunit-stand-alone & tumap-dimb)
                 (dimb-trans-unit tunit
                                  dstate-fresh
