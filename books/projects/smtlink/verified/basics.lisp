@@ -26,6 +26,13 @@
               implies if not
               lambda)))
 
+;; Recognize the functions that Smtlink translates directly,
+;; with this wrapper so that the list stays closed during proofs.
+;; This becomes important when *SMT-basics* gets larger.
+(defund SMT-basic-function-p (fn)
+  (declare (xargs :guard (symbolp fn)))
+  (if (member-equal fn *SMT-basics*) t nil))
+
 (defval *SMT-functions*
   :parents (SMT-functions)
   :short "ACL2 functions and their corresponding Z3 functions."

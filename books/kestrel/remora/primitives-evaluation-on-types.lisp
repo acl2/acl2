@@ -88,9 +88,9 @@
                   (reserr nil)))
               (expr-value-primop (primop-value-reverse-t tval)))
    :index (b* (((unless (type-values-match-type-vars-p
-                           (list tval)
-                           (list (type-var-atom "t"))))
-                  (reserr nil)))
+                         (list tval)
+                         (list (type-var-atom "t"))))
+                (reserr nil)))
             (expr-value-primop (primop-value-index-t tval)))
    :index2d (b* (((unless (type-values-match-type-vars-p
                            (list tval)
@@ -108,10 +108,15 @@
                   (reserr nil)))
               (expr-value-primop (primop-value-flatten-t tval)))
    :transpose2d (b* (((unless (type-values-match-type-vars-p
-                           (list tval)
-                           (list (type-var-atom "t"))))
-                  (reserr nil)))
-              (expr-value-primop (primop-value-transpose2d-t tval)))
+                               (list tval)
+                               (list (type-var-atom "t"))))
+                      (reserr nil)))
+                  (expr-value-primop (primop-value-transpose2d-t tval)))
+   :reduce (b* (((unless (type-values-match-type-vars-p
+                          (list tval)
+                          (list (type-var-atom "t"))))
+                 (reserr nil)))
+             (expr-value-primop (primop-value-reduce-t tval)))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-tfunp
                                            type-values-match-type-vars-p)))

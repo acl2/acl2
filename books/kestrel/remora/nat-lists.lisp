@@ -17,6 +17,7 @@
 
 (local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
@@ -35,6 +36,15 @@
   :short "A list of naturals is a true list."
   (implies (nat-listp x)
            (true-listp x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled integer-listp-when-nat-listp
+  :short "A list of naturals is a list of integers."
+  (implies (nat-listp x)
+           (integer-listp x))
+  :induct t
+  :enable (nat-listp integer-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -103,6 +113,32 @@
   (cond ((endp nats) (prog2$ (impossible) 0))
         ((endp (cdr nats)) (- (lnfix (car nats))))
         (t (- (lnfix (car nats)) (nat-list-sum (cdr nats))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nat-list-from-to ((i natp) (n natp))
+  :returns (nats nat-listp)
+  :short "List of the naturals from @('i') (inclusive) to @('n') (exclusive)."
+  (b* ((i (nfix i))
+     (n (nfix n)))
+  (if (>= i n)
+      nil
+    (cons i (nat-list-from-to (1+ i) n))))
+  :measure (nfix (- (nfix n) (nfix i)))
+  :hints (("Goal" :in-theory (enable nfix fix)))
+
+  ///
+
+  (defret len-of-nat-list-from-to
+    (equal (len nats)
+           (nfix (- (nfix n) (nfix i))))
+    :hints (("Goal" :induct t
+                    :in-theory (enable nfix fix len))))
+
+  (defret consp-of-nat-list-from-to
+    (equal (consp nats)
+           (< (nfix i) (nfix n)))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
