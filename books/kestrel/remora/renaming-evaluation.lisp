@@ -20,6 +20,11 @@
 (local (include-book "osets"))
 (local (include-book "omaps"))
 
+; The tau system is needed by only one proof in this book (noted below, where
+; it is switched back on); running it on every goal of the rest is pure
+; overhead, so it is off by default here.
+(local (acl2::in-theory (acl2::disable (:e acl2::tau-system))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ renaming-evaluation
@@ -648,7 +653,8 @@
                                                      shape-renam)
                   (ispace-var-set-rename-ispace-vars vars dim-renam nil)))
   :induct (ispace-var-set-rename-ispace-vars vars dim-renam shape-renam)
-  :enable (ispace-var-set-rename-ispace-vars
+  :enable ((:e acl2::tau-system)   ; tau does the ISPACE-VAR-KIND case analysis
+           ispace-var-set-rename-ispace-vars
            dim/shape-names-of-ispace-vars
            rename-ispace-var))
 

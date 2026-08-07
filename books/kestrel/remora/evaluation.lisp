@@ -2299,15 +2299,65 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is currently essentially the same as @(tsee eval-primop-fun-fo),
-       because we do not have any Remora higher-order primitive yet.
-       So it is not actually mutually recursive with the other functions,
-       but it will be once we add the Remora higher-order primitives."))
+      "This is called by @(tsee eval-app-cell).
+       If the operation is first-order
+       (see @(tsee primop-value-fun-fo-p)),
+       we delegate to @(tsee eval-primop-fun-fo),
+       which is outside the mutual recursion.
+       Otherwise, the operation is higher-order,
+       and its application may involve executing arbitrary Remora code,
+       which is why this function is part of the mutual recursion.
+       Currently the only higher-order case is
+       the last stage of the @('reduce') primitive,
+       which we delegate to @(tsee prim-reduce),
+       passing the stored values and the argument cell.")
+     (xdoc::p
+      "Since @(tsee prim-reduce) is currently a stub,
+       this function is not actually mutually recursive
+       with the other functions of the clique yet;
+       it will be, once @(tsee prim-reduce) is given its actual definition."))
     (b* (((when (zp limit)) (reserr :limit))
          ((when (primop-value-fun-fo-p op))
           (eval-primop-fun-fo op arg)))
+      (primop-value-case
+       op
+       :reduce-t-d-s-f (prim-reduce op.tval op.dval op.sval op.fval
+                                    arg (1- limit))
+       :otherwise (reserr (impossible))))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define prim-reduce ((tval type-valuep)
+                       (d natp)
+                       (s nat-listp)
+                       (fval expr-valuep)
+                       (arg expr-valuep)
+                       (limit natp))
+    :guard (and (expr-value-wfp fval)
+                (expr-value-wfp arg))
+    :returns (val expr-value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate the last stage of the @('reduce') primitive."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is the semantics of the fully instantiated @('reduce') operation,
+       applied to its last argument
+       (see the @(':reduce-t-d-s-f') summand of @(tsee primop-value)):
+       @('tval'), @('d'), and @('s') are the instantiation values,
+       @('fval') is the previously received function value,
+       and @('arg') is the argument cell.
+       This is currently a stub that always returns an error;
+       the actual definition will use the instantiation values
+       (e.g. to check the argument cell's dimensions),
+       analogously to the first-order @('prim-...') functions."))
+    (declare (ignore tval d s fval arg))
+    (b* (((when (zp limit)) (reserr :limit)))
       (reserr :todo))
     :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove eventually
 
@@ -2504,6 +2554,12 @@
                     (not (reserrp val)))
                (expr-value-wfp val))
       :fn eval-primop-fun)
+    (defret expr-value-wfp-of-prim-reduce
+      (implies (and (expr-value-wfp fval)
+                    (expr-value-wfp arg)
+                    (not (reserrp val)))
+               (expr-value-wfp val))
+      :fn prim-reduce)
     :mutual-recursion eval-exprs/atoms/binds
     :hints
     (("Goal"
@@ -2542,7 +2598,9 @@
                        true-list-listp-when-expr-value-list-listp
                        acl2::nat-listp-of-car-when-nat-list-listp
                        expr-value-wfp-of-expr-value-with-nonempty-dims
-                       list-prefix-join-upper-bound)
+                       list-prefix-join-upper-bound
+                       primop-value-funp
+                       primop-value-fun-fo-p)
                       (len-of-eval-expr-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

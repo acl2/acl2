@@ -66,7 +66,7 @@
       These rules are logical implications,
       but a critical unwritten additional requirement is that
       @($R^\\ast$) be the smallest relation satisfying them.
-      For the above rules, @($R^\\ast$) exists and is unique.")
+      For the above rules, @($R^\\ast$) exists.")
 
     (xdoc::p
      "Inductive definitions via inference rules are commonly used
@@ -175,6 +175,7 @@
      "              :parents ...  ; no default"
      "              :short   ...  ; no default"
      "              :long    ...  ; no default"
+     "              :print   ...  ; default :result"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -244,8 +245,11 @@
        or (ii) a term in which none of @('p[1]'), ..., @('p[n]') occurs.
        For a @('conclusion[k]'), the term must have form (i);
        for a @('premise[k,h]'), the term may have either form.
-       All the rule names @('rule[1]'), ..., @('rule[r]') must be distinct;
-       there must be at least one rule, i.e. @('r') must be positive.")
+       The names of the rules with the same predicate in the conclusion
+       must be distinct;
+       rules with different predicates in the conclusions
+       may have the same name.
+       There must be at least one rule, i.e. @('r') must be positive.")
      (xdoc::p
       "Each predicate @('p[i]') must be
        in the conclusion of at least one rule.")
@@ -305,7 +309,63 @@
      (xdoc::p
       "These, if present, are put into the generated XDOC topic
        described in the Section `Generated Events' below.
-       If @(':parents') is supplied, it must not be @('nil').")))
+       If @(':parents') is supplied, it must not be @('nil')."))
+
+    (xdoc::desc
+     "@(':print') &mdash; default @(':result')"
+     (xdoc::p
+      "Specifies what is printed on the screen.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':error'), to print only error output (if any).")
+      (xdoc::li
+       "@(':result'), to print, besides any error output,
+        also the "
+       (xdoc::seetopic "event-macro-results" "results")
+       " of @('definductive').
+        This is the default value of the @(':print') input.
+        Since the results may consist of a relatively large number of events,
+        only their names are printed;
+        the event themselves can be inspected via
+        ACL2's facilities, e.g. "
+       (xdoc::seetopic "pe" "@(':pe')")
+       ".")
+      (xdoc::li
+       "@(':info'), to print,
+        besides any error output and the results,
+        also some additional information about
+        the internal operation of @('definductive').
+        (Currently there is no difference between
+        the @(':info') and the @(':result') outputs,
+        but we plan to add @(':info') outputs.).")
+      (xdoc::li
+       "@(':all'), to print,
+        besides any error output,
+        the results,
+        and the additional information,
+        also ACL2's output in response to all the submitted events.
+        This could be a lot of output."))
+     (xdoc::p
+      "The errors are printed as "
+      (xdoc::seetopic "set-inhibit-output-lst" "error output")
+      ". The results and the additional information are printed as "
+      (xdoc::seetopic "set-inhibit-output-lst" "comment output")
+      ". The ACL2 output enabled by @(':print :all') may consist of "
+      (xdoc::seetopic "set-inhibit-output-lst" "output of various kinds")
+      ".")
+     (xdoc::p
+      "If @(':print') is @(':error') or @(':result') or @(':info'),
+       @('definductive') suppresses
+       all kinds of outputs (via @(tsee with-output))
+       except for error and comment output
+       (the latter is used for the @(':result') and @(':info') output).
+       Otherwise, @('definductive') does not suppress any output.
+       However, the actual output depends on
+       which outputs are enabled or not prior to the call of @('definductive'),
+       including any @(tsee with-output) with which
+       the user may wrap the call of @('definductive').")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

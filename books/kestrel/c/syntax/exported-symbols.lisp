@@ -761,6 +761,8 @@
     type-count
     type-void
     type-sint
+    type-unknown
+
     type-pointer->to
 
     type-listp

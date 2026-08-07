@@ -7248,15 +7248,12 @@ Subtopics
   September 2025, for an ACL2 executable built with host Lisp Allegro
   CL, the use of ``[30m[47mmake regression[0m[0m'' resulted in four books (in the
   [community-books]) that failed to certify.  We discuss those
-  failures in the ``[31;1mDetails[0m'' section below.  These failures may
-  suggest that Allegro CL, at least for its Version 10.1, does not
-  correctly support the Common Lisp language, or at least there is
-  problematic ACL2 code specific to Allegro CL.  In practice we don't
-  expect a lot of problems when using ACL2 built on Allegro CL.
-  However, since Allegro CL is relatively slow compared to several
-  other Common Lisp implementations that can host ACL2 --- SBCL, CCL,
-  LispWorks, and GCL --- those failures suggest that Allegro CL might
-  not be a good choice for ACL2 users.
+  failures in the ``[31;1mDetails[0m'' section below.  These failures suggest
+  that you may encounter problems when using ACL2 built on Allegro
+  CL, though we expect them to be rare.  Perhaps more important:
+  Allegro CL has been observed to be slower than several other Common
+  Lisp implementations that can host ACL2 --- SBCL, CCL, LispWorks,
+  and GCL.
 
 
 Details
