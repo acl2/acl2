@@ -30,4 +30,5 @@
   (mbe :logic (symbol-fix x)
        :exec x)
   :no-function t
+  :inline t
   :enabled t)
