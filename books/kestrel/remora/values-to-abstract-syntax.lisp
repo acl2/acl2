@@ -934,6 +934,7 @@
                                                  pval.tval))
                                      :arg (ispace-dim (dim-const pval.mval)))
                                :arg (ispace-dim (dim-const pval.nval))))
+       :iota/static (mv nil opvar)
        :reduce (mv nil opvar)
        :reduce-t (mv nil
                      (make-expr-tapp
@@ -1071,4 +1072,5 @@
                                  primop-value-fix-when-reshape
                                  primop-value-fix-when-flatten
                                  primop-value-fix-when-transpose2d
+                                 primop-value-fix-when-iota/static
                                  primop-value-fix-when-reduce)))))
