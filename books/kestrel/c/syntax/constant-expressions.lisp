@@ -109,12 +109,25 @@
     the standard ICE rules: its result is not the integer constant
     admitted for a @('sizeof') operand of an ICE
     [C17:6.6/6] [C23:6.6/8].
-    Since our type annotations do not currently distinguish
-    fixed-length arrays from VLAs, we return @(':unknown') for every array;
-    the general unknown types may also conceal an array.")
-  (cond ((type-case type :array) :unknown)
-        ((type-case type '(:unknown :unknown-builtin)) :unknown)
-        (t t)))
+    For an array type with @(':const-len') kind,
+    VLA status is inherited from its element type,
+    so we recursively check that type.
+    An array with @(':nonconst-len') kind is known to be a VLA.
+    The @(':unknown-complete') kind produces @(':unknown').
+    The @(':incomplete') kind also produces @(':unknown'),
+    although an incomplete type is not a valid @('sizeof') operand.
+    The general unknown types may conceal an array as well.")
+  (type-case
+    type
+    :array (type-array-kind-case
+             type.kind
+             :const-len (type-sizeof-result-const-3p type.of)
+             :nonconst-len nil
+             :otherwise :unknown)
+    :unknown :unknown
+    :unknown-builtin :unknown
+    :otherwise t)
+  :measure (type-count type))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -275,10 +288,10 @@
         which excludes an operand of variable length array type
         [C17:6.5.3.4/2] [C17:6.6/6] [C23:6.5.4.4/2] [C23:6.6/8].
         The type-directed result check produces @('t')
-        for a known non-array operand
-        and, for now, conservatively produces @(':unknown')
-        for every array operand rather than attempting
-        a partial VLA classification.
+        for a known non-array operand and recursively classifies array kinds.
+        A @(':nonconst-len') array produces @('nil'),
+        a @(':const-len') array inherits the classification of its element,
+        and the other array kinds produce @(':unknown').
         Other insufficient type information also produces @(':unknown').
         An expression operand is checked recursively,
         as required for unevaluated ICE operands
