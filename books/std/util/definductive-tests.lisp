@@ -259,6 +259,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(must-fail
+ (definductive duplicate-pred-names
+   :preds ((p x)
+           (p x y))
+   :irules ((ax ()
+                (p 0))
+            (ax2 ()
+                 (p 0 0)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (definductive duplicate-irule-names
+   :preds ((p x))
+   :irules ((ax ()
+                (p 0))
+            (ax ()
+                (p 1)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Rules with different conclusion predicates may have the same name.
+
+(must-succeed*
+
+ (definductive same-irule-names
+   :preds ((p x)
+           (q x))
+   :irules ((ax ()
+                (p 0))
+            (ax ()
+                (q 0))))
+
+ (must-be-redundant
+  (defthm p-ax
+    (p 0)))
+
+ (must-be-redundant
+  (defthm q-ax
+    (q 0))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; A non-recursive predicate is allowed:
 ; the generated proof validity function is not recursive,
 ; so it carries no measure and its theorems avoid induction.
