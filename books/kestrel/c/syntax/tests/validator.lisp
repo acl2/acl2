@@ -1909,3 +1909,90 @@ void g(void) {
   f(3);
 }
 ")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Array size expressions.
+
+;; An integer constant gives a known constant length.
+(test-valid
+  "int a[5];
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (item (first (trans-unit->items tunit)))
+             (declon (ext-declon-declon->declon
+                      (trans-item-declon->declon item)))
+             (initdeclor (first (declon-declon->declors declon)))
+             (type (init-declor-vinfo->type
+                    (init-declor->info initdeclor))))
+          (equal type
+                 (make-type-array
+                  :of (type-sint)
+                  :kind (make-type-array-kind-const-len :len 5)))))
+
+;; The current ICE check is conservative about evaluated arithmetic, so the
+;; length form remains unknown when that check returns :unknown.
+(test-valid
+  "int a[2 + 3];
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (item (first (trans-unit->items tunit)))
+             (declon (ext-declon-declon->declon
+                      (trans-item-declon->declon item)))
+             (initdeclor (first (declon-declon->declors declon)))
+             (type (init-declor-vinfo->type
+                    (init-declor->info initdeclor))))
+          (equal type
+                 (make-type-array
+                  :of (type-sint)
+                  :kind (type-array-kind-unknown-complete)))))
+
+;; An ordinary identifier expression gives a nonconstant length in C17.
+(test-valid
+  "void f(int n) {
+  int a[n];
+}
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (item (first (trans-unit->items tunit)))
+             (fundef (ext-declon-fundef->fundef
+                      (trans-item-declon->declon item)))
+             (block-item (first (comp-stmt->items (fundef->body fundef))))
+             (declon (block-item-declon->declon block-item))
+             (initdeclor (first (declon-declon->declors declon)))
+             (type (init-declor-vinfo->type
+                    (init-declor->info initdeclor))))
+          (equal type
+                 (make-type-array
+                  :of (type-sint)
+                  :kind (type-array-kind-nonconst-len)))))
+
+;; Different constant lengths make declarations incompatible.
+(test-valid-fail
+  "int a[10];
+int a[20];
+")
+
+;; The precise kind is propagated to inner array layers.
+(test-valid-fail
+  "int a[2][3];
+int a[2][4];
+")
+
+;; It is also propagated through abstract declarators.
+(test-valid-fail
+  "void f(int (*)[10]);
+void f(int (*)[20]);
+")
+
+;; The precise kind is propagated through function and pointer types.
+(test-valid-fail
+  "int (*f(int))[10];
+int (*f(int))[20];
+")
+
+;; Exercise the direct and abstract static array forms.
+(test-valid
+  "void g(int a[static 10], int b[const static 20]);
+void h(int [static 10], int [const static 20]);
+")
