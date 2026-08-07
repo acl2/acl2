@@ -1076,11 +1076,11 @@
      Since we do not yet model the values of these type definitions,
      we return an array type with
      an unknown arithmetic element type in these cases.
-     For now, we record the array as complete
-     but leave its length form unknown."))
+     The array has constant length [C17:6.4.5/6],
+     but for now we leave the length itself unknown."))
   (b* (((reterr) (make-type-array
                    :of (irr-type)
-                   :kind (type-array-kind-unknown-complete)))
+                   :kind (make-type-array-kind-const-len :len nil)))
        ((stringlit strlit) strlit)
        ((erp &) (valid-s-char-list strlit.schars strlit.prefix? ienv)))
     (retok (make-type-array
@@ -1088,7 +1088,7 @@
                         (eprefix-case strlit.prefix? :locase-u8))
                     (type-char)
                   (type-unknown-arithmetic))
-            :kind (type-array-kind-unknown-complete))))
+            :kind (make-type-array-kind-const-len :len nil))))
 
   ///
 
@@ -1136,11 +1136,11 @@
      This covers both the case of well-defined wide string literals
      (whose types we do not yet model),
      and the implementation-defined mixed string encoding.
-     For now, we record the array as complete
-     but leave its length form unknown."))
+     The array has constant length [C17:6.4.5/6],
+     but for now we leave the length itself unknown."))
   (b* (((reterr) (make-type-array
                    :of (irr-type)
-                   :kind (type-array-kind-unknown-complete)))
+                   :kind (make-type-array-kind-const-len :len nil)))
        ((unless (consp strlits))
         (retmsg$ "There must be at least one string literal."))
        ((erp prefix? conflictp) (valid-stringlit-list-loop strlits ienv))
@@ -1156,7 +1156,7 @@
                         (and prefix? (not (eprefix-case prefix? :locase-u8))))
                     (type-unknown-arithmetic)
                   (type-char))
-            :kind (type-array-kind-unknown-complete))))
+            :kind (make-type-array-kind-const-len :len nil))))
   :prepwork
   ((define valid-stringlit-list-loop ((strlits stringlit-listp) (ienv ienvp))
      :returns (mv (erp maybe-msgp)
@@ -7915,14 +7915,15 @@
    (xdoc::p
     "We extend the validation table with the identifier @('__func__')
      [C17:6.4.2.2].
-     In our currently approximate type system, this has @('char') array type
+     In our currently approximate type system, this has constant-length
+     @('char') array type with unknown length
      (the @('const') type qualifier is ignored).
      If the GCC/Clang flag is enabled (i.e. GCC/Clang extensions are allowed),
      we further extend the table with the identifiers @('__FUNCTION__') and
      @('__PRETTY_FUNCTION__') "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Function-Names.html"
                  "[GCCM:6.12.24]")
-    ".")
+    ", which have the same approximate array type.")
    (xdoc::p
     "We ensure that the body is a compound statement,
      and we validate directly the block items;
@@ -8048,12 +8049,14 @@
         (retmsg$ "The declarations of the function definition ~x0 ~
                   contain return statements."
                  (fundef-fix fundef)))
+       (function-name-type
+        (make-type-array
+         :of (type-char)
+         :kind (make-type-array-kind-const-len :len nil)))
        ((mv uid vstate) (vstate-get-fresh-uid ident (linkage-none) vstate))
        (vstate (vstate-add-ord (ident "__func__")
                                (make-valid-ord-info-objfun
-                                :type (make-type-array
-                                       :of (type-char)
-                                       :kind (type-array-kind-unknown-complete))
+                                :type function-name-type
                                 :linkage (linkage-none)
                                 :defstatus (valid-defstatus-defined)
                                 :uid uid)
@@ -8062,10 +8065,7 @@
        (vstate (if (ienv->gcc/clang ienv)
                    (vstate-add-ord (ident "__FUNCTION__")
                                    (make-valid-ord-info-objfun
-                                    :type (make-type-array
-                                           :of (type-char)
-                                           :kind
-                                           (type-array-kind-unknown-complete))
+                                    :type function-name-type
                                     :linkage (linkage-none)
                                     :defstatus (valid-defstatus-defined)
                                     :uid uid)
@@ -8075,10 +8075,7 @@
        (vstate (if (ienv->gcc/clang ienv)
                    (vstate-add-ord (ident "__PRETTY_FUNCTION__")
                                    (make-valid-ord-info-objfun
-                                    :type (make-type-array
-                                           :of (type-char)
-                                           :kind
-                                           (type-array-kind-unknown-complete))
+                                    :type function-name-type
                                     :linkage (linkage-none)
                                     :defstatus (valid-defstatus-defined)
                                     :uid uid)
