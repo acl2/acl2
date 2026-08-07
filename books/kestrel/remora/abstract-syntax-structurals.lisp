@@ -18,6 +18,7 @@
 (include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
 
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration)
@@ -784,7 +785,6 @@
         ((endp (cddr params))
          (make-type-forall :param (cadr params) :body body))
         (t (make-type-foralln :params (cdr params) :body body)))
-  :guard-hints (("Goal" :in-theory (enable len)))
   :hooks ((:fix :hints (("Goal"
                          :in-theory (enable cdr-of-type-var-list-fix)))))
 
