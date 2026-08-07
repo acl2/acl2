@@ -1489,7 +1489,7 @@
            :in-theory (e/d (BV-ARRAY-CLEAR bv-array-write BV-ARRAY-READ update-nth2
                                            UPDATE-NTH-WHEN-EQUAL-OF-NTH
                                            equal-of-update-nth-new)
-                           (UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
+                           ()))))
 
 ;; (defthm bv-array-write-equal-rewrite
 ;;   (implies (and (natp esize)
@@ -1533,7 +1533,7 @@
 ;;                                            LIST::NTH-OF-CONS
 ;;                                            bv-array-clear)
 ;;                            (EQUAL-CONS-CASES2-ALT-BETTER ;new
-;;                             UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
+;;
 ;;                             BVCHOP-LIST-OF-TAKE)))))
 
 (defthm bv-array-write-equal-rewrite-alt
@@ -1682,7 +1682,7 @@
                             NTHCDR-OF-BVCHOP-LIST-better
 
                             ;CDR-OF-TAKE-BECOMES-SUBRANGE-BETtER ;bozo ;also bozo on the non better
-                            UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
+                            )))))
 
 (defthm subrange-of-bv-array-write-irrel-2
   (implies (and (< high index) ;this case
@@ -1701,7 +1701,7 @@
                             subrange ;bozo?
                             )
                            (;anti-subrange
-                            UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
+                            )))))
 
 
 
@@ -1812,7 +1812,7 @@
     :IN-THEORY (E/d (BV-ARRAY-READ BV-ARRAY-WRITE update-nth2
                      BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
                     (;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
-                     UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
+
                      )))))
 
 ;move a bunch of this stuff
@@ -1858,7 +1858,7 @@
 (defthm bv-array-write-of-firstn
   (equal (bv-array-write element-size len index val (firstn len data))
          (bv-array-write element-size len index val data))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) (update-nth-becomes-update-nth2-extend-gen)))))
+  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
 
 (defthm bv-array-clear-of-firstn
   (equal (bv-array-clear element-size len index (firstn len data))
@@ -1962,7 +1962,7 @@
                       (bv-array-write element-size n key val (take n lst))
                     (bvchop-list element-size (take n lst)))))
   :hints (("Goal" :in-theory (e/d (update-nth2 bv-array-write-opener)
-                                  (update-nth-becomes-update-nth2-extend-gen)))))
+                                  ()))))
 
 ;todo -add hyps
 ;Thu Mar  4 15:41:42 2010
@@ -1993,7 +1993,7 @@
                                   key
                                   val
                                   lst)))
-  :hints (("Goal" :in-theory (e/d (bv-array-write-opener UPDATE-NTH2) (UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
+  :hints (("Goal" :in-theory (e/d (bv-array-write-opener UPDATE-NTH2) ()))))
 
 ;special case for bv-array-write:
 ;move
