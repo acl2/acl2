@@ -5344,7 +5344,9 @@
        Then we validate the index expression (if present),
        ensuring that it has integer type.
        An array without a size is recorded as incomplete.
-       For now, all the other array kinds are recorded as complete
+       An array whose size is specified by @('*') is recorded as complete
+       with nonconstant length [C17:6.7.6.2/4].
+       For now, the array kinds with size expressions are recorded as complete
        with unknown length form;
        we plan to classify their length forms more precisely later.
        For now we do not check that, if these expressions are constant,
@@ -5530,7 +5532,7 @@
        :array-star
        (b* ((type (make-type-array
                     :of type
-                    :kind (type-array-kind-unknown-complete)))
+                    :kind (type-array-kind-nonconst-len)))
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor
               dirdeclor.declor fundef-params-p type vstate)))
@@ -5827,7 +5829,7 @@
        :array-star
        (b* ((type (make-type-array
                     :of type
-                    :kind (type-array-kind-unknown-complete)))
+                    :kind (type-array-kind-nonconst-len)))
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate)))
          (retok (dirabsdeclor-array-star new-declor?)
@@ -6686,8 +6688,9 @@
       "An array of unknown size has incomplete type while its initializer is
        being validated.  After successful validation, the initializer
        completes the array type [C17:6.7.9/22].
-       For now, we leave the length form of the completed type unknown,
-       and replace the incomplete type in the validation table and in the
+       We record the completed type as having constant length,
+       but for now we leave the length itself unknown.
+       We replace the incomplete type in the validation table and in the
        initializer declarator annotation.")
      (xdoc::p
       "We calculate the definition status for the declaration.
@@ -6836,7 +6839,7 @@
               (b* ((type
                     (change-type-array
                      type
-                     :kind (type-array-kind-unknown-complete)))
+                     :kind (make-type-array-kind-const-len :len nil)))
                    (new-info
                     (change-valid-ord-info-objfun new-info :type type))
                    (vstate (vstate-add-ord ident new-info vstate))
