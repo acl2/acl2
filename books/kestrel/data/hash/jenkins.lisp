@@ -13,6 +13,10 @@
 (include-book "xdoc/constructors" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(include-book "to-bytes")
+
+(include-book "kestrel/bv-lists/byte-listp-def" :dir :system)
+
 (include-book "kestrel/data/utilities/fixed-size-words/fixnum" :dir :system)
 (include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
 
@@ -21,10 +25,15 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
+(local (include-book "generic-fold"))
+
+(local (include-book "kestrel/bv-lists/byte-listp" :dir :system))
+
 (local (include-book "kestrel/data/utilities/fixed-size-words/u32" :dir :system))
 (local (include-book "kestrel/data/utilities/bit-vectors/bitops" :dir :system))
 
 (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
+(local (include-book "kestrel/arithmetic-light/fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
@@ -32,6 +41,8 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 
 (local (include-book "kestrel/strings-light/char" :dir :system))
 
@@ -145,6 +156,68 @@
   (natp (jenkins-acc-byte byte acc))
   :rule-classes :type-prescription
   :enable jenkins-acc-byte)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The accumulator folded over an explicit byte list. This is the reference
+;; against which the fused jenkins-acc-* functions below are specified: each
+;; is intended to be equal to jenkins-acc-bytes of the corresponding
+;; serialization (see the serialization topic).
+(define jenkins-acc-bytes
+  ((bytes acl2::byte-listp)
+   (acc (unsigned-byte-p 32 acc)))
+  (declare (xargs :split-types t)
+           (type (unsigned-byte 32) acc))
+  :returns (acc$ (unsigned-byte-p 32 acc$)
+                 :hints (("Goal" :induct t)))
+  (if (endp bytes)
+      (mbe :logic (if (unsigned-byte-p 32 acc)
+                      acc
+                    0)
+           :exec acc)
+    (jenkins-acc-bytes
+      (cdr bytes)
+      (jenkins-acc-byte (the (unsigned-byte 8) (car bytes)) acc))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t jenkins-acc-bytes)))
+
+(defrule jenkins-acc-bytes-type-prescription
+  (natp (jenkins-acc-bytes bytes acc))
+  :rule-classes :type-prescription
+  :induct t
+  :enable jenkins-acc-bytes)
+
+;; The step function does not distinguish a non-u32 accumulator from its
+;; coercion to 0. This discharges the state-fix constraint when functionally
+;; instantiating the generic fold theorems (see generic-fold).
+(defruledl jenkins-acc-byte-when-not-unsigned-byte-p-32
+  (implies (not (unsigned-byte-p 32 acc))
+           (equal (jenkins-acc-byte byte acc)
+                  (jenkins-acc-byte byte 0)))
+  :enable (jenkins-acc-byte
+           data::u32-plus$inline
+           data::u32-fix$inline))
+
+(defrule jenkins-acc-bytes-of-append
+  (equal (jenkins-acc-bytes (append x y) acc)
+         (jenkins-acc-bytes y (jenkins-acc-bytes x acc)))
+  :use (:instance
+         (:functional-instance update-bytes-of-append
+                               (statep (lambda (st)
+                                         (unsigned-byte-p 32 st)))
+                               (state-fix (lambda (st)
+                                            (if (unsigned-byte-p 32 st)
+                                                st
+                                              0)))
+                               (update-byte (lambda (st byte)
+                                              (jenkins-acc-byte byte st)))
+                               (update-bytes (lambda (st bytes)
+                                               (jenkins-acc-bytes bytes st))))
+         (st acc))
+  :enable (jenkins-acc-bytes
+           jenkins-acc-byte-when-not-unsigned-byte-p-32))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -543,8 +616,7 @@
                   :exec len)))
     ;; TODO: redundant?
     (declare (type #.data::*u-fixnum-type* i len))
-    (if (and (mbt (and (<= i len)
-                       (<= len #.data::*u-fixnum-max*)))
+    (if (and (mbt (<= i len))
              (< i len))
         (jenkins-acc-string-index
           str
@@ -719,17 +791,266 @@
   :induct t
   :enable jenkins-acc)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Each fused accumulator above equals jenkins-acc-bytes of the corresponding
+;; serialization (see the serialization topic). These lemmas culminate in
+;; jenkins-acc-becomes-jenkins-acc-bytes, which justifies the mbe in jenkins
+;; below: the fused single-pass walk is logically the composition of the
+;; serialization and the byte fold.
+
+(defruled jenkins-acc-varint-small-becomes-jenkins-acc-bytes
+  (equal (jenkins-acc-varint-small n acc)
+         (jenkins-acc-bytes (nat-to-bytes n) acc))
+  :induct (jenkins-acc-varint-small n acc)
+  :enable (jenkins-acc-varint-small
+           jenkins-acc-bytes
+           nat-to-bytes))
+
+(defruled jenkins-acc-varint-groups-small-becomes-jenkins-acc-bytes
+  (implies (natp x)
+           (equal (jenkins-acc-varint-groups-small x m acc)
+                  (jenkins-acc-bytes (nat-to-varint-groups x m) acc)))
+  :induct (jenkins-acc-varint-groups-small x m acc)
+  :expand ((nat-to-varint-groups x m))
+  :enable (jenkins-acc-varint-groups-small
+           jenkins-acc-bytes
+           acl2::right-shift-to-logtail))
+
+(defruled jenkins-acc-varint-groups-becomes-jenkins-acc-bytes
+  (implies (natp x)
+           (equal (jenkins-acc-varint-groups x m acc)
+                  (jenkins-acc-bytes (nat-to-varint-groups x m) acc)))
+  :induct (jenkins-acc-varint-groups x m acc)
+  :enable (jenkins-acc-varint-groups
+           jenkins-acc-varint-groups-small-becomes-jenkins-acc-bytes
+           acl2::<-of-floor-and-0
+           acl2::right-shift-to-logtail)
+  :hints (("Subgoal *1/2" :use (:instance nat-to-varint-groups-split
+                                          (n x)
+                                          (m (nfix m))
+                                          (m1 (floor (nfix m) 2))))))
+
+(defruled jenkins-acc-nat-becomes-jenkins-acc-bytes
+  (implies (natp n)
+           (equal (jenkins-acc-nat n acc)
+                  (jenkins-acc-bytes (nat-to-bytes n) acc)))
+  :induct (jenkins-acc-nat n acc)
+  :enable (jenkins-acc-nat
+           jenkins-acc-varint-small-becomes-jenkins-acc-bytes
+           jenkins-acc-varint-groups-becomes-jenkins-acc-bytes
+           acl2::right-shift-to-logtail)
+  :hints (("Subgoal *1/2"
+           :use (:instance nat-to-bytes-split
+                           (m1 (floor (integer-length n) 14))))))
+
+(defruled jenkins-acc-integer-contents-becomes-jenkins-acc-bytes
+  (implies (integerp n)
+           (equal (jenkins-acc-integer-contents n acc)
+                  (jenkins-acc-bytes (integer-contents-to-bytes n) acc)))
+  :enable (jenkins-acc-integer-contents
+           integer-contents-to-bytes
+           jenkins-acc-nat-becomes-jenkins-acc-bytes))
+
+(defruled jenkins-acc-integer-becomes-jenkins-acc-bytes
+  (implies (integerp n)
+           (equal (jenkins-acc-integer n acc)
+                  (jenkins-acc-bytes (integer-to-bytes n) acc)))
+  :enable (jenkins-acc-integer
+           integer-to-bytes
+           jenkins-acc-integer-contents-becomes-jenkins-acc-bytes
+           jenkins-acc-bytes))
+
+(defruled jenkins-acc-rational-contents-becomes-jenkins-acc-bytes
+  (implies (rationalp n)
+           (equal (jenkins-acc-rational-contents n acc)
+                  (jenkins-acc-bytes (rational-contents-to-bytes n) acc)))
+  :enable (jenkins-acc-rational-contents
+           rational-contents-to-bytes
+           jenkins-acc-integer-contents-becomes-jenkins-acc-bytes
+           jenkins-acc-nat-becomes-jenkins-acc-bytes))
+
+(defruled jenkins-acc-rational-becomes-jenkins-acc-bytes
+  (implies (rationalp n)
+           (equal (jenkins-acc-rational n acc)
+                  (jenkins-acc-bytes (rational-to-bytes n) acc)))
+  :enable (jenkins-acc-rational
+           rational-to-bytes
+           jenkins-acc-rational-contents-becomes-jenkins-acc-bytes
+           jenkins-acc-bytes))
+
+(defruled jenkins-acc-complex-rational-becomes-jenkins-acc-bytes
+  (implies (complex-rationalp n)
+           (equal (jenkins-acc-complex-rational n acc)
+                  (jenkins-acc-bytes (complex-rational-to-bytes n) acc)))
+  :enable (jenkins-acc-complex-rational
+           complex-rational-to-bytes
+           jenkins-acc-rational-contents-becomes-jenkins-acc-bytes
+           jenkins-acc-bytes))
+
+(defruled jenkins-acc-acl2-number-becomes-jenkins-acc-bytes
+  (implies (acl2-numberp n)
+           (equal (jenkins-acc-acl2-number n acc)
+                  (jenkins-acc-bytes (acl2-number-to-bytes n) acc)))
+  :enable (jenkins-acc-acl2-number
+           acl2-number-to-bytes
+           jenkins-acc-integer-becomes-jenkins-acc-bytes
+           jenkins-acc-rational-becomes-jenkins-acc-bytes
+           jenkins-acc-complex-rational-becomes-jenkins-acc-bytes))
+
+(defruled jenkins-acc-character-contents-becomes-jenkins-acc-bytes
+  (equal (jenkins-acc-character-contents c acc)
+         (jenkins-acc-bytes (character-contents-to-bytes c) acc))
+  :enable (jenkins-acc-character-contents
+           character-contents-to-bytes
+           jenkins-acc-bytes))
+
+(defruled jenkins-acc-character-becomes-jenkins-acc-bytes
+  (equal (jenkins-acc-character c acc)
+         (jenkins-acc-bytes (character-to-bytes c) acc))
+  :enable (jenkins-acc-character
+           character-to-bytes
+           jenkins-acc-character-contents-becomes-jenkins-acc-bytes
+           jenkins-acc-bytes))
+
+(defruled jenkins-acc-string-index-becomes-jenkins-acc-bytes
+  (implies (and (stringp str)
+                (natp i)
+                (equal len (length str))
+                (<= i len))
+           (equal (jenkins-acc-string-index str i len acc)
+                  (jenkins-acc-bytes
+                    (characters-to-bytes (nthcdr i (coerce str 'list)))
+                    acc)))
+  :induct (jenkins-acc-string-index str i len acc)
+  :expand ((characters-to-bytes (nthcdr i (coerce str 'list))))
+  :enable (jenkins-acc-string-index
+           characters-to-bytes
+           jenkins-acc-bytes
+           jenkins-acc-character-contents-becomes-jenkins-acc-bytes
+           character-contents-to-bytes
+           acl2::cdr-of-nthcdr
+           char
+           length))
+
+(defruled jenkins-acc-string-contents-becomes-jenkins-acc-bytes
+  (implies (stringp str)
+           (equal (jenkins-acc-string-contents str acc)
+                  (jenkins-acc-bytes (string-contents-to-bytes str) acc)))
+  :enable (jenkins-acc-string-contents
+           string-contents-to-bytes
+           jenkins-acc-nat-becomes-jenkins-acc-bytes
+           jenkins-acc-string-index-becomes-jenkins-acc-bytes
+           length))
+
+(defruled jenkins-acc-string-becomes-jenkins-acc-bytes
+  (implies (stringp str)
+           (equal (jenkins-acc-string str acc)
+                  (jenkins-acc-bytes (string-to-bytes str) acc)))
+  :enable (jenkins-acc-string
+           string-to-bytes
+           jenkins-acc-string-contents-becomes-jenkins-acc-bytes
+           jenkins-acc-bytes))
+
+(defruled jenkins-acc-symbol-becomes-jenkins-acc-bytes
+  (implies (symbolp symbol)
+           (equal (jenkins-acc-symbol symbol acc)
+                  (jenkins-acc-bytes (symbol-to-bytes symbol) acc)))
+  :enable (jenkins-acc-symbol
+           symbol-to-bytes
+           jenkins-acc-string-contents-becomes-jenkins-acc-bytes
+           jenkins-acc-bytes))
+
+(defruled jenkins-acc-atom-becomes-jenkins-acc-bytes
+  (implies (not (consp x))
+           (equal (jenkins-acc-atom x acc)
+                  (jenkins-acc-bytes (atom-to-bytes x) acc)))
+  :enable (jenkins-acc-atom
+           atom-to-bytes
+           jenkins-acc-symbol-becomes-jenkins-acc-bytes
+           jenkins-acc-acl2-number-becomes-jenkins-acc-bytes
+           jenkins-acc-string-becomes-jenkins-acc-bytes
+           jenkins-acc-character-becomes-jenkins-acc-bytes
+           jenkins-acc-bytes))
+
+;; Like the step function, the byte fold does not distinguish a non-u32
+;; accumulator from its coercion to 0.
+(defruledl jenkins-acc-bytes-when-not-unsigned-byte-p-32
+  (implies (not (unsigned-byte-p 32 acc))
+           (equal (jenkins-acc-bytes bytes acc)
+                  (jenkins-acc-bytes bytes 0)))
+  :expand ((jenkins-acc-bytes bytes acc)
+           (jenkins-acc-bytes bytes 0))
+  :enable jenkins-acc-byte-when-not-unsigned-byte-p-32)
+
+(defruled jenkins-acc-becomes-jenkins-acc-bytes
+  (equal (jenkins-acc x acc)
+         (jenkins-acc-bytes (to-bytes x) acc))
+  :induct (jenkins-acc x acc)
+  :expand ((to-bytes x))
+  :enable (jenkins-acc
+           jenkins-acc-atom-becomes-jenkins-acc-bytes
+           jenkins-acc-bytes
+           jenkins-acc-bytes-when-not-unsigned-byte-p-32))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The final avalanche, applied to the accumulator after all bytes have been
+;; incorporated.
+(define jenkins-finalize
+  ((acc (unsigned-byte-p 32 acc)))
+  (declare (xargs :split-types t)
+           (type (unsigned-byte 32) acc))
+  :returns (hash (unsigned-byte-p 32 hash))
+  (the (unsigned-byte 32)
+    (let* ((acc (data::u32-plus acc (data::u32-shl acc 3)))
+           (acc (data::u32-xor acc (data::u32-shr acc 11))))
+      (data::u32-plus acc (data::u32-shl acc 15))))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t jenkins-finalize)))
+
+(defrule jenkins-finalize-type-prescription
+  (natp (jenkins-finalize acc))
+  :rule-classes :type-prescription
+  :enable jenkins-finalize)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The Jenkins one-at-a-time hash of an explicit byte list.
+(define jenkins-bytes
+  ((bytes acl2::byte-listp))
+  :returns (hash (unsigned-byte-p 32 hash))
+  (jenkins-finalize (jenkins-acc-bytes bytes 0)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t jenkins-bytes)))
+
+(defrule jenkins-bytes-type-prescription
+  (natp (jenkins-bytes bytes))
+  :rule-classes :type-prescription
+  :enable jenkins-bytes)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define jenkins (x)
   :parents (jenkins-one-at-a-time)
   :returns (hash (unsigned-byte-p 32 hash))
-  (the (unsigned-byte 32)
-    (let* ((acc (the (unsigned-byte 32)
-                  (jenkins-acc x 0)))
-           (acc (data::u32-plus acc (data::u32-shl acc 3)))
-           (acc (data::u32-xor acc (data::u32-shr acc 11))))
-      (data::u32-plus acc (data::u32-shl acc 15)))))
+  (mbe :logic (jenkins-bytes (to-bytes x))
+       :exec (the (unsigned-byte 32)
+               (let* ((acc (the (unsigned-byte 32)
+                             (jenkins-acc x 0)))
+                      (acc (data::u32-plus acc (data::u32-shl acc 3)))
+                      (acc (data::u32-xor acc (data::u32-shr acc 11))))
+                 (data::u32-plus acc (data::u32-shl acc 15)))))
+  :guard-hints (("Goal" :in-theory (enable jenkins-bytes
+                                           jenkins-finalize
+                                           jenkins-acc-becomes-jenkins-acc-bytes))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -752,9 +1073,14 @@
                       (acc (data::u32-xor acc (data::u32-shr acc 11))))
                  (data::u32-plus acc (data::u32-shl acc 15)))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable jenkins
-                                           jenkins-acc
-                                           jenkins-acc-atom))))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable jenkins
+                       jenkins-bytes
+                       jenkins-finalize
+                       to-bytes
+                       atom-to-bytes
+                       jenkins-acc-acl2-number-becomes-jenkins-acc-bytes))))
 
 (define symbol-jenkins
   ((x symbolp))
@@ -766,9 +1092,14 @@
                       (acc (data::u32-xor acc (data::u32-shr acc 11))))
                  (data::u32-plus acc (data::u32-shl acc 15)))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable jenkins
-                                           jenkins-acc
-                                           jenkins-acc-atom))))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable jenkins
+                       jenkins-bytes
+                       jenkins-finalize
+                       to-bytes
+                       atom-to-bytes
+                       jenkins-acc-symbol-becomes-jenkins-acc-bytes))))
 
 (define eqlable-jenkins
   ((x eqlablep))
@@ -785,6 +1116,13 @@
                       (acc (data::u32-xor acc (data::u32-shr acc 11))))
                  (data::u32-plus acc (data::u32-shl acc 15)))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable jenkins
-                                           jenkins-acc
-                                           jenkins-acc-atom))))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable jenkins
+                       jenkins-bytes
+                       jenkins-finalize
+                       to-bytes
+                       atom-to-bytes
+                       jenkins-acc-symbol-becomes-jenkins-acc-bytes
+                       jenkins-acc-acl2-number-becomes-jenkins-acc-bytes
+                       jenkins-acc-character-becomes-jenkins-acc-bytes))))

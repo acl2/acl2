@@ -8,6 +8,10 @@
 
 (in-package "HASH")
 
+(include-book "to-bytes-defs")
+
+(include-book "kestrel/bv-lists/byte-listp-def" :dir :system)
+
 (include-book "kestrel/data/utilities/fixed-size-words/fixnum" :dir :system)
 (include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
 
@@ -21,6 +25,7 @@
 
 (std::defredundant
   :names (jenkins-acc-byte
+          jenkins-acc-bytes
           jenkins-acc-varint-small
           jenkins-acc-varint-groups-small
           jenkins-acc-varint-groups
@@ -39,6 +44,8 @@
           jenkins-acc-symbol
           jenkins-acc-atom
           jenkins-acc
+          jenkins-finalize
+          jenkins-bytes
           jenkins
           acl2-number-jenkins
           symbol-jenkins
