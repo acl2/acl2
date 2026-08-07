@@ -490,6 +490,7 @@
     (:transpose2d-t-m-n ((tval type-value)
                          (mval nat)
                          (nval nat)))
+    (:iota/static ())
     (:reduce ())
     (:reduce-t ((tval type-value)))
     (:reduce-t-d ((tval type-value)
@@ -1193,6 +1194,16 @@
     :induct t
     :enable repeat)
 
+  (defruled dims-of-expr-value-list-of-expr-value-base-list
+    (equal (dims-of-expr-value-list (expr-value-base-list bvals))
+           (repeat (len bvals) nil))
+    :induct (expr-value-base-list bvals)
+    :enable (expr-value-base-list
+             dims-of-expr-value
+             check-dims-of-expr-value
+             repeat)
+    :prep-books ((local (include-book "arithmetic-3/top" :dir :system))))
+
   (defruled dims-of-expr-value-list-when-expr-value-list-wfp
     (implies (expr-value-list-wfp vals)
              (equal (dims-of-expr-value-list vals)
@@ -1393,6 +1404,12 @@
     :enable (expr-value-wfp
              check-dims-of-expr-value
              acl2::not-reserrp-when-nat-listp))
+
+  (defruled expr-value-list-wfp-of-expr-value-base-list
+    (expr-value-list-wfp (expr-value-base-list bvals))
+    :enable (expr-value-list-wfp-alt-def
+             check-dims-of-expr-value-list-of-expr-value-base-list
+             acl2::not-reserrp-when-nat-list-listp))
 
   (defrule expr-value-wfp-of-expr-value-vector-of-expr-value-base-list
     (implies (consp bvals)
@@ -2093,6 +2110,7 @@
                      :transpose2d-t nil
                      :transpose2d-t-m nil
                      :transpose2d-t-m-n t
+                     :iota/static nil
                      :reduce nil
                      :reduce-t nil
                      :reduce-t-d nil
@@ -2184,6 +2202,7 @@
                      :transpose2d-t nil
                      :transpose2d-t-m nil
                      :transpose2d-t-m-n nil
+                     :iota/static nil
                      :reduce t
                      :reduce-t nil
                      :reduce-t-d nil
@@ -2274,6 +2293,7 @@
                      :transpose2d-t t
                      :transpose2d-t-m t
                      :transpose2d-t-m-n nil
+                     :iota/static t
                      :reduce nil
                      :reduce-t t
                      :reduce-t-d t
@@ -2454,6 +2474,7 @@
                      :transpose2d-t (primop-value-transpose2d)
                      :transpose2d-t-m (primop-value-transpose2d)
                      :transpose2d-t-m-n (primop-value-transpose2d)
+                     :iota/static (primop-value-iota/static)
                      :reduce-t (primop-value-reduce)
                      :reduce-t-d (primop-value-reduce)
                      :reduce-t-d-s (primop-value-reduce)
@@ -2750,6 +2771,7 @@
                                  :elem op.tval
                                  :dims (list op.nval op.mval)))
                          :dims nil)
+     :iota/static (prog2$ (impossible) (type-value-base (base-type-bool)))
      :reduce (prog2$ (impossible) (type-value-base (base-type-bool)))
      :reduce-t (prog2$ (impossible) (type-value-base (base-type-bool)))
      :reduce-t-d (prog2$ (impossible) (type-value-base (base-type-bool)))
@@ -3477,6 +3499,7 @@
          (cons "reshape" (expr-value-primop (primop-value-reshape)))
          (cons "flatten" (expr-value-primop (primop-value-flatten)))
          (cons "transpose2d" (expr-value-primop (primop-value-transpose2d)))
+         (cons "iota/static" (expr-value-primop (primop-value-iota/static)))
          (cons "reduce" (expr-value-primop (primop-value-reduce))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

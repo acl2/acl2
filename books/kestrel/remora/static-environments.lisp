@@ -216,6 +216,9 @@
              (tpi ("$m" "$n")
                   (t-> (t[] "&t" (shp[] "$m" "$n"))
                        (t[] "&t" (shp[] "$n" "$m"))))))
+       (iota/static-type
+        (tpi "@s"
+             (t[] :int "@s")))
        (reduce-type
         (tfa "&t"
              (tpi ("$d" "@s")
@@ -285,6 +288,7 @@
            (cons "reshape" reshape-type)
            (cons "flatten" flatten-type)
            (cons "transpose2d" transpose2d-type)
+           (cons "iota/static" iota/static-type)
            (cons "reduce" reduce-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
