@@ -18,7 +18,7 @@
 ;; cert_param: (uses-stp)
 
 (include-book "kestrel/axe/x86/unroller" :dir :system)
-(include-book "kestrel/x86/register-readers-and-writers-8-16" :dir :system)
+
 
 (local (defthm bl-rewrite
   (equal (bl x86) (bvchop 8 (rbx x86)))
