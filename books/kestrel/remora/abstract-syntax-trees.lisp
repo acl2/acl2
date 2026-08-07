@@ -94,8 +94,6 @@
    (xdoc::p
     "The fixtypes for our ASTs do not enforce certain restrictions,
      such as the non-emptiness of certain lists.
-     The FTY @(':require') feature does not seem to work for that,
-     when there are mutually recursive types.
      We can enforce these restrictions via separate predicates,
      but we state them in the documentation of the AST fixtypes."))
   :order-subtopics t
