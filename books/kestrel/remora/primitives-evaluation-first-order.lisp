@@ -12,11 +12,10 @@
 (in-package "REMORA")
 
 (include-book "expression-values-and-environments")
+
 (include-book "integer-lists")
 
 (include-book "kestrel/fty/integer-result" :dir :system)
-(include-book "kestrel/fty/integer-list-result" :dir :system)
-(include-book "kestrel/fty/boolean-result" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -38,31 +37,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ primitives-evaluation
+(defxdoc+ primitives-evaluation-first-order
   :parents (dynamic-semantics)
-  :short "Evaluation of the Remora primitives."
+  :short "First-order evaluation of Remora primitives on expressions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The Remora primitives are built-in functions
-     whose definition is not written in Remora.
-     Here we provide a definition of them in ACL2,
-     as ACL2 functions that take and return Remora expression values.
-     The functions defensively check that
-     the expression values have the correct types,
-     returning an error if they do not;
-     the functions also return errors if
-     the operation is not well-defined on the type-correct expression values
-     (e.g. division by zero).")
+    "Remora primitives, like other Remora functions,
+     may be applied to types, ispaces, or expressions,
+     according to the stages implied by their curried function types.
+     See @(tsee primop-value) for a discussion of the stages.")
    (xdoc::p
-    "We will connect these with our formalization of @(see evaluation).
-     Most likely, we will extend our ASTs with nodes for the primitives,
-     similar to the Remora publications [thesis] [arxiv] [esop],
-     and we will extend our evaluator to call the functions defined here
-     when evaluating the application of a primitive AST.")
+    "Here we define the application of primitives to expressions;
+     more precisely, the application of
+     primitive operation values satisfying
+     both @(tsee primop-value-funp) and @(tsee primop-value-fun-fo-p)
+     to expression values.
+     See @(tsee primop-value-fun-fo-p) for background on
+     the meaning of `first-order' in this context.")
    (xdoc::p
-    "The primitives are defined in [impl], as the Remora `prelude'.
-     This is work in progress.")
+    "Because this evaluation does not involve
+     the evaluation of arbitrary Remora code,
+     we can define these primitives here as stand-alone.")
    (xdoc::p
     "The integer primitives currently implemented are:")
    (xdoc::ul
@@ -133,49 +129,6 @@
      Remora boolean values are ACL2 booleans directly."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-expr-value-int ((val expr-valuep))
-  :returns (ival int-value-resultp)
-  :short "Check if an expression value is an integer value, returning it if so."
-  (b* (((unless (expr-value-case val :base)) (reserr nil))
-       (bval (expr-value-base->val val))
-       ((unless (base-value-case bval :int)) (reserr nil))
-       (ival (base-value-int->val bval)))
-    ival))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-expr-value-list-int ((vals expr-value-listp))
-  :returns (ivals integer-list-resultp)
-  :short "Check if an expression value is an integer list value, returning it if so"
-  (b* (((when (endp vals)) nil)
-       ((ok (int-value ival)) (check-expr-value-int (car vals)))
-       ((ok rest) (check-expr-value-list-int (cdr vals))))
-    (cons ival.int rest)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-expr-value-float ((val expr-valuep))
-  :returns (fval float-value-resultp)
-  :short "Check if an expression value is a float value, returning it if so."
-  (b* (((unless (expr-value-case val :base)) (reserr nil))
-       (bval (expr-value-base->val val))
-       ((unless (base-value-case bval :float)) (reserr nil))
-       (fval (base-value-float->val bval)))
-    fval))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-expr-value-bool ((val expr-valuep))
-  :returns (bval boolean-resultp)
-  :short "Check if an expression value is a boolean value, returning it if so."
-  (b* (((unless (expr-value-case val :base)) (reserr nil))
-       (bval (expr-value-base->val val))
-       ((unless (base-value-case bval :bool)) (reserr nil))
-       (b (base-value-bool->val bval)))
-    b))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -387,8 +340,7 @@
     "Left shift uses ACL2's @(tsee ash)
      with a non-negative shift amount,
      erroring on a negative shift amount.
-     Because integers are modeled as unbounded
-     (see @(see primitives-evaluation)),
+     Because integers are modeled as unbounded,
      the shift never overflows:
      no high-order bits are lost.
      This differs from [impl],
@@ -454,8 +406,7 @@
      of the fixed-width two's-complement representation
      (a finite, width-dependent count),
      whereas @(tsee logcount) counts the bits of the unbounded magnitude.
-     Because integers are modeled as unbounded
-     (see @(see primitives-evaluation)),
+     Because integers are modeled as unbounded,
      there is no fixed width to match,
      so the behavior on negative inputs would differ from [impl];
      we therefore restrict to non-negative inputs for now."))
@@ -604,8 +555,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Finite values are added as exact rationals
-     (see @(see primitives-evaluation) for the float model).
+    "Finite values are added as exact rationals.
      The special cases follow [impl]:")
    (xdoc::ul
     (xdoc::li
@@ -664,8 +614,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Finite values are subtracted as exact rationals
-     (see @(see primitives-evaluation) for the float model).
+    "Finite values are subtracted as exact rationals.
      The special cases follow [impl]:")
    (xdoc::ul
     (xdoc::li
@@ -729,8 +678,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Finite values are multiplied as exact rationals
-     (see @(see primitives-evaluation) for the float model).
+    "Finite values are multiplied as exact rationals.
      The sign of an infinite or zero result is
      the exclusive-or of the operand signs
      (negative zero counts as negative).
@@ -811,8 +759,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Finite values are divided as exact rationals
-     (see @(see primitives-evaluation) for the float model).
+    "Finite values are divided as exact rationals.
      Unlike integer division, division by zero is not an error:
      it follows [impl].
      The sign of an infinite or zero result is
@@ -902,8 +849,7 @@
      and returns an exact rational,
      and a non-integer rational exponent
      would generally yield an irrational result
-     that the rational model (see @(see primitives-evaluation))
-     cannot represent,
+     that the rational model cannot represent,
      so that single case errors.")
    (xdoc::p
     "Every other case, including the special values,
@@ -1092,8 +1038,7 @@
     "Square root is currently a stub that always errors.")
    (xdoc::p
     "The difficulty is that our float model
-     represents finite values as exact rationals
-     (see @(see primitives-evaluation)),
+     represents finite values as exact rationals,
      but the square root of a rational is in general irrational.
      So the exact result is not representable as a @(tsee float-value).")
    (xdoc::p
@@ -2166,36 +2111,38 @@
     :hyp (and (natp m)
               (natp n)
               (expr-value-wfp val1))
-    :hints (("Goal" :in-theory (enable car/cdr-when-equal-cons
-                                       nat-list-product
-                                       nfix
-                                       fix
-                                       len-of-car-of-list-split
-                                       len-of-append-all-when-all-of-len-p-of-len-car
-                                       all-of-len-p-of-transpose-list-list
-                                       len-of-car-of-transpose-list-list
-                                       consp-of-car-list-split
-                                       list-split-of-repeat
-                                       transpose-list-list-of-repeat-of-repeat
-                                       append-all-of-repeat-of-repeat)
-                    :expand ((nat-list-product (dims-of-expr-value val1))
-                             (member-equal 0 (dims-of-expr-value val1)))))))
+    :hints (("Goal"
+             :in-theory (enable car/cdr-when-equal-cons
+                                nat-list-product
+                                nfix
+                                fix
+                                len-of-car-of-list-split
+                                len-of-append-all-when-all-of-len-p-of-len-car
+                                all-of-len-p-of-transpose-list-list
+                                len-of-car-of-transpose-list-list
+                                consp-of-car-list-split
+                                list-split-of-repeat
+                                transpose-list-list-of-repeat-of-repeat
+                                append-all-of-repeat-of-repeat)
+             :expand ((nat-list-product (dims-of-expr-value val1))
+                      (member-equal 0 (dims-of-expr-value val1)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-primop-fun ((op primop-valuep) (arg expr-valuep))
+(define eval-primop-fun-fo ((op primop-valuep) (arg expr-valuep))
   :guard (and (primop-value-funp op)
+              (primop-value-fun-fo-p op)
               (primop-value-wfp op)
               (expr-value-wfp arg))
   :returns (val expr-value-resultp)
-  :short "Evaluate the application of a primitive operation
+  :short "Evaluate the first-order application of a primitive operation
           to one argument cell."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the dynamic counterpart, for primitive operations,
      of evaluating the body of a lambda abstraction:
-     it is called by @(tsee eval-app-cell)
+     it is called by @(tsee eval-app-cell) (via @(tsee eval-primop-fun))
      on a scalar primitive operation and a scalar argument cell,
      after the rank-polymorphic lifting.
      Consistently with the curried view of term applications,
@@ -2229,7 +2176,11 @@
     "The result is well-formed when it is not an error:
      the next-stage results are scalar primitive operation values
      that store well-formed values,
-     and the @('prim-...') functions return well-formed values on success."))
+     and the @('prim-...') functions return well-formed values on success.")
+   (xdoc::p
+    "The guard also requires that the application is first-order,
+     i.e. that it can be defined without
+     mutual recursion with the evaluation of arbitrary Remora code."))
   (b* ((arg (expr-value-fix arg)))
     (primop-value-case
      op
@@ -2311,22 +2262,9 @@
                   :neq (prim-bool-neq op.xval arg))
      :bool-to-int (prim-bool-to-int arg)
      :bool-to-float (prim-bool-to-float arg)
-     :head (prog2$ (impossible) (reserr nil))
-     :head-t (prog2$ (impossible) (reserr nil))
-     :head-t-d (prog2$ (impossible) (reserr nil))
      :head-t-d-s (prim-head op.tval op.dval op.sval arg)
-     :tail (prog2$ (impossible) (reserr nil))
-     :tail-t (prog2$ (impossible) (reserr nil))
-     :tail-t-d (prog2$ (impossible) (reserr nil))
      :tail-t-d-s (prim-tail op.tval op.dval op.sval arg)
-     :length (prog2$ (impossible) (reserr nil))
-     :length-t (prog2$ (impossible) (reserr nil))
-     :length-t-d (prog2$ (impossible) (reserr nil))
      :length-t-d-s (prim-length op.tval op.dval op.sval arg)
-     :append (prog2$ (impossible) (reserr nil))
-     :append-t (prog2$ (impossible) (reserr nil))
-     :append-t-m (prog2$ (impossible) (reserr nil))
-     :append-t-m-n (prog2$ (impossible) (reserr nil))
      :append-t-m-n-s (expr-value-primop
                       (make-primop-value-append-t-m-n-s-x :tval op.tval
                                                           :mval op.mval
@@ -2335,334 +2273,35 @@
                                                           :xval arg))
      :append-t-m-n-s-x (prim-append op.tval op.mval op.nval op.sval
                                     op.xval arg)
-     :reverse (prog2$ (impossible) (reserr nil))
-     :reverse-t (prog2$ (impossible) (reserr nil))
-     :reverse-t-d (prog2$ (impossible) (reserr nil))
      :reverse-t-d-s (prim-reverse op.tval op.dval op.sval arg)
-     :index (prog2$ (impossible) (reserr nil))
-     :index-t (prog2$ (impossible) (reserr nil))
      :index-t-m (expr-value-primop
                  (make-primop-value-index-t-m-x :tval op.tval
                                                 :mval op.mval
                                                 :xval arg))
      :index-t-m-x (prim-index op.tval op.mval op.xval arg)
-     :index2d (prog2$ (impossible) (reserr nil))
-     :index2d-t (prog2$ (impossible) (reserr nil))
-     :index2d-t-m (prog2$ (impossible) (reserr nil))
      :index2d-t-m-n (expr-value-primop
                      (make-primop-value-index2d-t-m-n-x :tval op.tval
                                                         :mval op.mval
                                                         :nval op.nval
                                                         :xval arg))
      :index2d-t-m-n-x (prim-index2d op.tval op.mval op.nval op.xval arg)
-     :sum (prog2$ (impossible) (reserr nil))
      :sum-s (prim-sum op.sval arg)
-     :reshape (prog2$ (impossible) (reserr nil))
-     :reshape-t (prog2$ (impossible) (reserr nil))
-     :reshape-t-s1 (prog2$ (impossible) (reserr nil))
      :reshape-t-s1-s2 (prim-reshape op.tval op.s1val op.s2val arg)
-     :flatten (prog2$ (impossible) (reserr nil))
-     :flatten-t (prog2$ (impossible) (reserr nil))
-     :flatten-t-m (prog2$ (impossible) (reserr nil))
-     :flatten-t-m-n (prog2$ (impossible) (reserr nil))
      :flatten-t-m-n-s (prim-flatten op.tval op.mval op.nval op.sval arg)
-     :transpose2d (prog2$ (impossible) (reserr nil))
-     :transpose2d-t (prog2$ (impossible) (reserr nil))
-     :transpose2d-t-m (prog2$ (impossible) (reserr nil))
-     :transpose2d-t-m-n (prim-transpose2d op.tval op.mval op.nval arg)))
-  :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
+     :transpose2d-t-m-n (prim-transpose2d op.tval op.mval op.nval arg)
+     :reduce-t-d-s (expr-value-primop
+                    (make-primop-value-reduce-t-d-s-f :tval op.tval
+                                                      :dval op.dval
+                                                      :sval op.sval
+                                                      :fval arg))
+     :otherwise (prog2$ (impossible) (reserr nil))))
+  :guard-hints (("Goal" :in-theory (enable primop-value-funp
+                                           primop-value-fun-fo-p)))
 
   ///
 
-  (defret expr-value-wfp-of-eval-primop-fun
+  (defret expr-value-wfp-of-eval-primop-fun-fo
     (implies (not (reserrp val))
              (expr-value-wfp val))
     :hyp (and (primop-value-wfp op)
               (expr-value-wfp arg))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define eval-primop-tfun ((op primop-valuep) (tval type-valuep))
-  :guard (primop-value-tfunp op)
-  :returns (val expr-value-resultp)
-  :short "Evaluate the application of a primitive operation value
-          to a type value."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the dynamic counterpart, for primitive operations,
-     of applying a type lambda abstraction to a type value:
-     it is called by @(tsee eval-tapp)
-     on a scalar primitive operation value
-     and the type argument value.")
-   (xdoc::p
-    "The guard requires the value to be applicable to type values
-     (see @(tsee primop-value-tfunp)).
-     We check that the type value matches, in kind,
-     the type parameter of the operation,
-     i.e. the one in the operation's type in @(tsee primop-types);
-     then we construct the next instantiation stage of the operation,
-     which stores the type value received.
-     Anything else is an error."))
-  (primop-value-case
-   op
-   :head (b* (((unless (type-values-match-type-vars-p
-                        (list tval)
-                        (list (type-var-atom "t"))))
-               (reserr nil)))
-           (expr-value-primop (primop-value-head-t tval)))
-   :tail (b* (((unless (type-values-match-type-vars-p
-                        (list tval)
-                        (list (type-var-atom "t"))))
-               (reserr nil)))
-           (expr-value-primop (primop-value-tail-t tval)))
-   :length (b* (((unless (type-values-match-type-vars-p
-                          (list tval)
-                          (list (type-var-atom "t"))))
-                 (reserr nil)))
-             (expr-value-primop (primop-value-length-t tval)))
-   :append (b* (((unless (type-values-match-type-vars-p
-                          (list tval)
-                          (list (type-var-atom "t"))))
-                 (reserr nil)))
-             (expr-value-primop (primop-value-append-t tval)))
-   :reverse (b* (((unless (type-values-match-type-vars-p
-                           (list tval)
-                           (list (type-var-atom "t"))))
-                  (reserr nil)))
-              (expr-value-primop (primop-value-reverse-t tval)))
-   :index (b* (((unless (type-values-match-type-vars-p
-                           (list tval)
-                           (list (type-var-atom "t"))))
-                  (reserr nil)))
-            (expr-value-primop (primop-value-index-t tval)))
-   :index2d (b* (((unless (type-values-match-type-vars-p
-                           (list tval)
-                           (list (type-var-atom "t"))))
-                  (reserr nil)))
-              (expr-value-primop (primop-value-index2d-t tval)))
-   :reshape (b* (((unless (type-values-match-type-vars-p
-                           (list tval)
-                           (list (type-var-atom "t"))))
-                  (reserr nil)))
-              (expr-value-primop (primop-value-reshape-t tval)))
-   :flatten (b* (((unless (type-values-match-type-vars-p
-                           (list tval)
-                           (list (type-var-atom "t"))))
-                  (reserr nil)))
-              (expr-value-primop (primop-value-flatten-t tval)))
-   :transpose2d (b* (((unless (type-values-match-type-vars-p
-                           (list tval)
-                           (list (type-var-atom "t"))))
-                  (reserr nil)))
-              (expr-value-primop (primop-value-transpose2d-t tval)))
-   :otherwise (prog2$ (impossible) (reserr nil)))
-  :guard-hints (("Goal" :in-theory (enable primop-value-tfunp
-                                           type-values-match-type-vars-p)))
-
-  ///
-
-  (defret expr-value-wfp-of-eval-primop-tfun
-    (implies (not (reserrp val))
-             (expr-value-wfp val))
-    :hints (("Goal" :in-theory (enable expr-value-wfp
-                                       check-dims-of-expr-value
-                                       check-dims-of-primop-value)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define eval-primop-ifun ((op primop-valuep) (ival ispace-valuep))
-  :guard (primop-value-ifunp op)
-  :returns (val expr-value-resultp)
-  :short "Evaluate the application of a primitive operation value
-          to an ispace value."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the dynamic counterpart, for primitive operations,
-     of applying an ispace lambda abstraction to an ispace value:
-     it is called by @(tsee eval-iapp)
-     on a scalar primitive operation value
-     and the ispace argument value.")
-   (xdoc::p
-    "The guard requires the value to be applicable to ispace values
-     (see @(tsee primop-value-ifunp)).
-     Each stage applicable to ispace values expects
-     an ispace value of a specific sort,
-     namely the sort of the next ispace parameter
-     in the operation's type in @(tsee primop-types):
-     a dimension for the stages that store just a type value
-     (except @(':reshape-t'), which expects the first of two shapes),
-     a shape for the stages that also store a dimension or a shape;
-     the uninstantiated stage of @('sum'), which has no type parameter,
-     stores nothing and expects a shape directly.
-     We check that the ispace value has the expected sort;
-     then we construct the next instantiation stage of the operation,
-     which stores the ispace values received
-     (a dimension and a shape
-     for @('head'), @('tail'), @('length'), and @('reverse');
-     two dimensions and a shape for @('append') and @('flatten');
-     a dimension for @('index');
-     two dimensions for @('index2d');
-     a shape for @('sum');
-     two shapes for @('reshape');
-     two dimensions for @('transpose2d')),
-     along with the previously received type values (if any).
-     Anything else is an error."))
-  (primop-value-case
-   op
-   :head-t (ispace-value-case
-            ival
-            :dim (expr-value-primop
-                  (make-primop-value-head-t-d :tval op.tval
-                                              :dval ival.val))
-            :shape (reserr nil))
-   :head-t-d (ispace-value-case
-              ival
-              :dim (reserr nil)
-              :shape (expr-value-primop
-                      (make-primop-value-head-t-d-s :tval op.tval
-                                                    :dval op.dval
-                                                    :sval ival.val)))
-   :tail-t (ispace-value-case
-            ival
-            :dim (expr-value-primop
-                  (make-primop-value-tail-t-d :tval op.tval
-                                              :dval ival.val))
-            :shape (reserr nil))
-   :tail-t-d (ispace-value-case
-              ival
-              :dim (reserr nil)
-              :shape (expr-value-primop
-                      (make-primop-value-tail-t-d-s :tval op.tval
-                                                    :dval op.dval
-                                                    :sval ival.val)))
-   :length-t (ispace-value-case
-              ival
-              :dim (expr-value-primop
-                    (make-primop-value-length-t-d :tval op.tval
-                                                  :dval ival.val))
-              :shape (reserr nil))
-   :length-t-d (ispace-value-case
-                ival
-                :dim (reserr nil)
-                :shape (expr-value-primop
-                        (make-primop-value-length-t-d-s :tval op.tval
-                                                        :dval op.dval
-                                                        :sval ival.val)))
-   :append-t (ispace-value-case
-              ival
-              :dim (expr-value-primop
-                    (make-primop-value-append-t-m :tval op.tval
-                                                  :mval ival.val))
-              :shape (reserr nil))
-   :append-t-m (ispace-value-case
-                ival
-                :dim (expr-value-primop
-                      (make-primop-value-append-t-m-n :tval op.tval
-                                                      :mval op.mval
-                                                      :nval ival.val))
-                :shape (reserr nil))
-   :append-t-m-n (ispace-value-case
-                  ival
-                  :dim (reserr nil)
-                  :shape (expr-value-primop
-                          (make-primop-value-append-t-m-n-s :tval op.tval
-                                                            :mval op.mval
-                                                            :nval op.nval
-                                                            :sval ival.val)))
-   :reverse-t (ispace-value-case
-               ival
-               :dim (expr-value-primop
-                     (make-primop-value-reverse-t-d :tval op.tval
-                                                    :dval ival.val))
-               :shape (reserr nil))
-   :reverse-t-d (ispace-value-case
-                 ival
-                 :dim (reserr nil)
-                 :shape (expr-value-primop
-                         (make-primop-value-reverse-t-d-s :tval op.tval
-                                                          :dval op.dval
-                                                          :sval ival.val)))
-   :index-t (ispace-value-case
-             ival
-             :dim (expr-value-primop
-                   (make-primop-value-index-t-m :tval op.tval
-                                                :mval ival.val))
-             :shape (reserr nil))
-   :index2d-t (ispace-value-case
-               ival
-               :dim (expr-value-primop
-                     (make-primop-value-index2d-t-m :tval op.tval
-                                                    :mval ival.val))
-               :shape (reserr nil))
-   :index2d-t-m (ispace-value-case
-                 ival
-                 :dim (expr-value-primop
-                       (make-primop-value-index2d-t-m-n :tval op.tval
-                                                        :mval op.mval
-                                                        :nval ival.val))
-                 :shape (reserr nil))
-   :sum (ispace-value-case
-         ival
-         :dim (reserr nil)
-         :shape (expr-value-primop
-                 (make-primop-value-sum-s :sval ival.val)))
-   :reshape-t (ispace-value-case
-               ival
-               :dim (reserr nil)
-               :shape (expr-value-primop
-                       (make-primop-value-reshape-t-s1 :tval op.tval
-                                                       :s1val ival.val)))
-   :reshape-t-s1 (ispace-value-case
-                  ival
-                  :dim (reserr nil)
-                  :shape (expr-value-primop
-                          (make-primop-value-reshape-t-s1-s2 :tval op.tval
-                                                             :s1val op.s1val
-                                                             :s2val ival.val)))
-   :flatten-t (ispace-value-case
-               ival
-               :dim (expr-value-primop
-                     (make-primop-value-flatten-t-m :tval op.tval
-                                                    :mval ival.val))
-               :shape (reserr nil))
-   :flatten-t-m (ispace-value-case
-                 ival
-                 :dim (expr-value-primop
-                       (make-primop-value-flatten-t-m-n :tval op.tval
-                                                        :mval op.mval
-                                                        :nval ival.val))
-                 :shape (reserr nil))
-   :flatten-t-m-n (ispace-value-case
-                   ival
-                   :dim (reserr nil)
-                   :shape (expr-value-primop
-                           (make-primop-value-flatten-t-m-n-s :tval op.tval
-                                                              :mval op.mval
-                                                              :nval op.nval
-                                                              :sval ival.val)))
-   :transpose2d-t (ispace-value-case
-                   ival
-                   :dim (expr-value-primop
-                         (make-primop-value-transpose2d-t-m :tval op.tval
-                                                            :mval ival.val))
-                   :shape (reserr nil))
-   :transpose2d-t-m (ispace-value-case
-                     ival
-                     :dim (expr-value-primop
-                           (make-primop-value-transpose2d-t-m-n :tval op.tval
-                                                                :mval op.mval
-                                                                :nval ival.val))
-                     :shape (reserr nil))
-   :otherwise (prog2$ (impossible) (reserr nil)))
-  :guard-hints (("Goal" :in-theory (enable primop-value-ifunp)))
-
-  ///
-
-  (defret expr-value-wfp-of-eval-primop-ifun
-    (implies (not (reserrp val))
-             (expr-value-wfp val))
-    :hints (("Goal" :in-theory (enable expr-value-wfp
-                                       check-dims-of-expr-value
-                                       check-dims-of-primop-value)))))

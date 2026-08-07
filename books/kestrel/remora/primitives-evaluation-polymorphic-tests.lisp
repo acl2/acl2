@@ -11,6 +11,8 @@
 
 (in-package "REMORA")
 
+(include-book "primitives-evaluation-on-types")
+(include-book "primitives-evaluation-on-ispaces")
 (include-book "primitives-evaluation-tests")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -90,13 +92,13 @@
 (acl2::assert-event (reserrp (prim-length *tv-int* 2 nil *vec3*)))
 (acl2::assert-event (reserrp (prim-length *tv-int* 0 nil (iv 5))))
 
-; Via eval-primop-fun.
+; Via eval-primop-fun-fo.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-length-t-d-s :tval *tv-int*
-                                                  :dval 3
-                                                  :sval nil)
-                  *vec3*)
+ (eval-primop-fun-fo (make-primop-value-length-t-d-s :tval *tv-int*
+                                                     :dval 3
+                                                     :sval nil)
+                     *vec3*)
  (iv 3))
 
 ; Wrong number of argument cells:
@@ -104,10 +106,10 @@
 ; not an operation applicable to another cell.
 (acl2::assert-event
  (not (expr-value-case
-       (eval-primop-fun (make-primop-value-length-t-d-s :tval *tv-int*
-                                                        :dval 3
-                                                        :sval nil)
-                        *vec3*)
+       (eval-primop-fun-fo (make-primop-value-length-t-d-s :tval *tv-int*
+                                                           :dval 3
+                                                           :sval nil)
+                           *vec3*)
        :primop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -178,13 +180,13 @@
 (acl2::assert-event (reserrp (prim-head *tv-int* 1 nil *vec3*)))
 (acl2::assert-event (reserrp (prim-head *tv-int* 0 nil (iv 5))))
 
-; Via eval-primop-fun.
+; Via eval-primop-fun-fo.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-head-t-d-s :tval *tv-int*
-                                                :dval 2
-                                                :sval nil)
-                  *vec3*)
+ (eval-primop-fun-fo (make-primop-value-head-t-d-s :tval *tv-int*
+                                                   :dval 2
+                                                   :sval nil)
+                     *vec3*)
  (iv 1))
 
 ; Wrong number of argument cells:
@@ -192,10 +194,10 @@
 ; not an operation applicable to another cell.
 (acl2::assert-event
  (not (expr-value-case
-       (eval-primop-fun (make-primop-value-head-t-d-s :tval *tv-int*
-                                                      :dval 2
-                                                      :sval nil)
-                        *vec3*)
+       (eval-primop-fun-fo (make-primop-value-head-t-d-s :tval *tv-int*
+                                                         :dval 2
+                                                         :sval nil)
+                           *vec3*)
        :primop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -268,13 +270,13 @@
 (acl2::assert-event (reserrp (prim-tail *tv-int* 1 nil *vec3*)))
 (acl2::assert-event (reserrp (prim-tail *tv-int* 0 nil (iv 5))))
 
-; Via eval-primop-fun.
+; Via eval-primop-fun-fo.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-tail-t-d-s :tval *tv-int*
-                                                :dval 2
-                                                :sval nil)
-                  *vec3*)
+ (eval-primop-fun-fo (make-primop-value-tail-t-d-s :tval *tv-int*
+                                                   :dval 2
+                                                   :sval nil)
+                     *vec3*)
  (expr-value-vector (list (iv 2) (iv 3))))
 
 ; Wrong number of argument cells:
@@ -282,10 +284,10 @@
 ; not an operation applicable to another cell.
 (acl2::assert-event
  (not (expr-value-case
-       (eval-primop-fun (make-primop-value-tail-t-d-s :tval *tv-int*
-                                                      :dval 2
-                                                      :sval nil)
-                        *vec3*)
+       (eval-primop-fun-fo (make-primop-value-tail-t-d-s :tval *tv-int*
+                                                         :dval 2
+                                                         :sval nil)
+                           *vec3*)
        :primop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -377,23 +379,23 @@
 (acl2::assert-event (reserrp (prim-append *tv-int* 3 3 nil *vec3* *mat23*)))
 (acl2::assert-event (reserrp (prim-append *tv-int* 0 0 nil (iv 5) (iv 5))))
 
-; Via eval-primop-fun* and eval-primop-fun.
+; Via eval-primop-fun-fo* and eval-primop-fun-fo.
 
 (acl2::assert-equal
- (eval-primop-fun* (make-primop-value-append-t-m-n-s :tval *tv-int*
-                                                     :mval 3
-                                                     :nval 1
-                                                     :sval nil)
-                   *vec3* *vec1*)
+ (eval-primop-fun-fo* (make-primop-value-append-t-m-n-s :tval *tv-int*
+                                                        :mval 3
+                                                        :nval 1
+                                                        :sval nil)
+                      *vec3* *vec1*)
  (expr-value-vector (list (iv 1) (iv 2) (iv 3) (iv 1))))
 
 ; One argument cell yields the next stage (partial application).
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-append-t-m-n-s :tval *tv-int*
-                                                    :mval 3
-                                                    :nval 1
-                                                    :sval nil)
-                  *vec3*)
+ (eval-primop-fun-fo (make-primop-value-append-t-m-n-s :tval *tv-int*
+                                                       :mval 3
+                                                       :nval 1
+                                                       :sval nil)
+                     *vec3*)
  (expr-value-primop (make-primop-value-append-t-m-n-s-x :tval *tv-int*
                                                         :mval 3
                                                         :nval 1
@@ -473,13 +475,13 @@
 (acl2::assert-event (reserrp (prim-reverse *tv-int* 3 nil *mat23*)))
 (acl2::assert-event (reserrp (prim-reverse *tv-int* 0 nil (iv 5))))
 
-; Via eval-primop-fun.
+; Via eval-primop-fun-fo.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-reverse-t-d-s :tval *tv-int*
-                                                   :dval 3
-                                                   :sval nil)
-                  *vec3*)
+ (eval-primop-fun-fo (make-primop-value-reverse-t-d-s :tval *tv-int*
+                                                      :dval 3
+                                                      :sval nil)
+                     *vec3*)
  (expr-value-vector (list (iv 3) (iv 2) (iv 1))))
 
 ; Wrong number of argument cells:
@@ -487,10 +489,10 @@
 ; not an operation applicable to another cell.
 (acl2::assert-event
  (not (expr-value-case
-       (eval-primop-fun (make-primop-value-reverse-t-d-s :tval *tv-int*
-                                                         :dval 3
-                                                         :sval nil)
-                        *vec3*)
+       (eval-primop-fun-fo (make-primop-value-reverse-t-d-s :tval *tv-int*
+                                                            :dval 3
+                                                            :sval nil)
+                           *vec3*)
        :primop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -533,12 +535,12 @@
 ; Non-integer index.
 (acl2::assert-event (reserrp (prim-index *tv-int* 3 *vec3* (bv t))))
 
-; Via eval-primop-fun*.
+; Via eval-primop-fun-fo*.
 
 (acl2::assert-equal
- (eval-primop-fun* (make-primop-value-index-t-m :tval *tv-int*
-                                                :mval 3)
-                   *vec3* (iv 1))
+ (eval-primop-fun-fo* (make-primop-value-index-t-m :tval *tv-int*
+                                                   :mval 3)
+                      *vec3* (iv 1))
  (iv 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -604,14 +606,14 @@
  (reserrp (prim-index2d *tv-int* 2 3 *vec3*
                         (expr-value-vector (list (iv 0) (iv 0))))))
 
-; Via eval-primop-fun*.
+; Via eval-primop-fun-fo*.
 
 (acl2::assert-equal
- (eval-primop-fun* (make-primop-value-index2d-t-m-n :tval *tv-int*
-                                                    :mval 2
-                                                    :nval 3)
-                   *mat23*
-                   (expr-value-vector (list (iv 1) (iv 0))))
+ (eval-primop-fun-fo* (make-primop-value-index2d-t-m-n :tval *tv-int*
+                                                       :mval 2
+                                                       :nval 3)
+                      *mat23*
+                      (expr-value-vector (list (iv 1) (iv 0))))
  (iv 4))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -655,10 +657,10 @@
 (acl2::assert-event
  (reserrp (prim-sum (list 2) (expr-value-vector (list (bv t) (bv nil))))))
 
-; Via eval-primop-fun.
+; Via eval-primop-fun-fo.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-sum-s :sval (list 3)) *vec3*)
+ (eval-primop-fun-fo (make-primop-value-sum-s :sval (list 3)) *vec3*)
  (iv 6))
 
 ; Wrong number of argument cells:
@@ -666,8 +668,8 @@
 ; not an operation applicable to another cell.
 (acl2::assert-event
  (not (expr-value-case
-       (eval-primop-fun (make-primop-value-sum-s :sval (list 3))
-                        *vec3*)
+       (eval-primop-fun-fo (make-primop-value-sum-s :sval (list 3))
+                           *vec3*)
        :primop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -745,13 +747,13 @@
 (acl2::assert-event
  (reserrp (prim-reshape *tv-int* (list 6) (list 2 3) *mat23*)))
 
-; Via eval-primop-fun.
+; Via eval-primop-fun-fo.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-reshape-t-s1-s2 :tval *tv-int*
-                                                     :s1val (list 2 3)
-                                                     :s2val (list 6))
-                  *mat23*)
+ (eval-primop-fun-fo (make-primop-value-reshape-t-s1-s2 :tval *tv-int*
+                                                        :s1val (list 2 3)
+                                                        :s2val (list 6))
+                     *mat23*)
  (expr-value-vector
   (list (iv 1) (iv 2) (iv 3) (iv 4) (iv 5) (iv 6))))
 
@@ -760,10 +762,10 @@
 ; not an operation applicable to another cell.
 (acl2::assert-event
  (not (expr-value-case
-       (eval-primop-fun (make-primop-value-reshape-t-s1-s2 :tval *tv-int*
-                                                           :s1val (list 2 3)
-                                                           :s2val (list 6))
-                        *mat23*)
+       (eval-primop-fun-fo (make-primop-value-reshape-t-s1-s2 :tval *tv-int*
+                                                              :s1val (list 2 3)
+                                                              :s2val (list 6))
+                           *mat23*)
        :primop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -801,8 +803,8 @@
                                                   :mval 2)
                    (ispace-value-dim 3))
  (expr-value-primop (make-primop-value-flatten-t-m-n :tval *tv-int*
-                                                      :mval 2
-                                                      :nval 3)))
+                                                     :mval 2
+                                                     :nval 3)))
 
 (acl2::assert-equal
  (eval-primop-ifun (make-primop-value-flatten-t-m-n :tval *tv-int*
@@ -863,14 +865,14 @@
 (acl2::assert-event (reserrp (prim-flatten *tv-int* 3 2 nil *mat23*)))
 (acl2::assert-event (reserrp (prim-flatten *tv-int* 2 3 (list 1) *mat23*)))
 
-; Via eval-primop-fun.
+; Via eval-primop-fun-fo.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-flatten-t-m-n-s :tval *tv-int*
-                                                     :mval 2
-                                                     :nval 3
-                                                     :sval nil)
-                  *mat23*)
+ (eval-primop-fun-fo (make-primop-value-flatten-t-m-n-s :tval *tv-int*
+                                                        :mval 2
+                                                        :nval 3
+                                                        :sval nil)
+                     *mat23*)
  (expr-value-vector
   (list (iv 1) (iv 2) (iv 3) (iv 4) (iv 5) (iv 6))))
 
@@ -879,11 +881,11 @@
 ; not an operation applicable to another cell.
 (acl2::assert-event
  (not (expr-value-case
-       (eval-primop-fun (make-primop-value-flatten-t-m-n-s :tval *tv-int*
-                                                            :mval 2
-                                                            :nval 3
-                                                            :sval nil)
-                        *mat23*)
+       (eval-primop-fun-fo (make-primop-value-flatten-t-m-n-s :tval *tv-int*
+                                                              :mval 2
+                                                              :nval 3
+                                                              :sval nil)
+                           *mat23*)
        :primop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -979,13 +981,13 @@
 (acl2::assert-event (reserrp (prim-transpose2d *tv-int* 3 2 *mat23*)))
 (acl2::assert-event (reserrp (prim-transpose2d *tv-int* 2 3 *vec3*)))
 
-; Via eval-primop-fun.
+; Via eval-primop-fun-fo.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-transpose2d-t-m-n :tval *tv-int*
-                                                       :mval 2
-                                                       :nval 3)
-                  *mat23*)
+ (eval-primop-fun-fo (make-primop-value-transpose2d-t-m-n :tval *tv-int*
+                                                          :mval 2
+                                                          :nval 3)
+                     *mat23*)
  (expr-value-vector
   (list (expr-value-vector (list (iv 1) (iv 4)))
         (expr-value-vector (list (iv 2) (iv 5)))
@@ -996,8 +998,8 @@
 ; not an operation applicable to another cell.
 (acl2::assert-event
  (not (expr-value-case
-       (eval-primop-fun (make-primop-value-transpose2d-t-m-n :tval *tv-int*
-                                                             :mval 2
-                                                             :nval 3)
-                        *mat23*)
+       (eval-primop-fun-fo (make-primop-value-transpose2d-t-m-n :tval *tv-int*
+                                                                :mval 2
+                                                                :nval 3)
+                           *mat23*)
        :primop)))
