@@ -31,13 +31,13 @@
 ;;                            string-listp
 ;;                            )))
 
-;; todo: slow
-;; todo: This function is very slow to compile in SBCL.
+;; Without the optimize declare, this function is very slow to compile in SBCL.
 ;; todo: allow the package to be an option
 (defun make-memory-region-machinery-fn (num-address-bits pkg)
   (declare (xargs :guard (and (natp num-address-bits)
                               (stringp pkg)
-                              (not (equal "" pkg)))))
+                              (not (equal "" pkg))))
+           (optimize (speed 0) (debug 0) (compilation-speed 3)))
   (let* ((in-regionp-name (acl2::pack-in-package pkg 'in-region num-address-bits 'p))
          (subregionp-name (acl2::pack-in-package pkg 'subregion num-address-bits 'p))
          (subregionp-spec-name (acl2::pack-in-package pkg subregionp-name '-spec))
