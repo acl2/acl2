@@ -1963,21 +1963,23 @@
        to associate that function type to the bound variable.
        If the optional result type is present,
        we check that it is valid and equivalent to
-       the type of the body of the abstraction.")
+       the type of the body of the abstraction.
+       A function binding with no parameters
+       is treated as a plain value binding:
+       the variable is bound to the type of the body,
+       not wrapped in any function type.
+       This is consistent with [impl],
+       whose parser turns such a binding
+       directly into a value binding.")
      (xdoc::p
       "A type function binding and an ispace function binding
        are treated similarly to a function binding,
        but as syntactic sugar for binding the variable
        to a type abstraction or an ispace abstraction,
        so their types are a universal type or a product type.
-       A type function binding or an ispace function binding
-       with no parameters
-       is treated as a plain value binding:
-       the variable is bound to the type of the body,
-       not wrapped in any universal or product type.
-       This is consistent with [impl],
-       whose parser turns such bindings
-       directly into value bindings.")
+       A type function binding or an ispace function binding with no parameters
+       is treated as a plain value binding,
+       as done for a function binding.")
      (xdoc::p
       "A combined function binding
        is syntactic sugar for binding the variable
@@ -2050,15 +2052,15 @@
           ((ok (type+expr ee)) (check-expr bind.expr senv-body))
           ((unless (check-bind-type-annotation bind.type? ee.type senv))
            (reserr nil))
-          (fun-type (if (and (consp types) (endp (cdr types)))
-                        (make-type-fun :in (car types) :out ee.type)
-                      (make-type-funn :in types :out ee.type))))
+          (type (if (consp types)
+                    (make-type-array
+                     :elem (if (endp (cdr types))
+                               (make-type-fun :in (car types) :out ee.type)
+                             (make-type-funn :in types :out ee.type))
+                     :ispace (ispace-shape (shape-dims nil)))
+                  ee.type)))
        (make-senv+bind
-        :senv (senv-add-var+type bind.var
-                                 (make-type-array
-                                  :elem fun-type
-                                  :ispace (ispace-shape (shape-dims nil)))
-                                 senv)
+        :senv (senv-add-var+type bind.var type senv)
         :bind (make-bind-fun :var bind.var
                              :params bind.params
                              :type? bind.type?

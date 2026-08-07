@@ -1373,7 +1373,12 @@
        we evaluate it, ignoring the resulting type value for now.
        Since the parameter types are already evaluated for the lambda value,
        the function type value can be assembled from these pieces
-       when we need to check it against the lambda value.")
+       when we need to check it against the lambda value.
+       A function binding with no parameters
+       is treated as a plain value binding,
+       consistently with the type checker and with [impl],
+       whose parser turns such a binding
+       directly into a value binding.")
      (xdoc::p
       "For a type function binding,
        we extend the dynamic environment
@@ -1390,9 +1395,7 @@
        because that type may reference the type parameters.
        A type function binding with no parameters
        is treated as a plain value binding,
-       consistently with the type checker and with [impl],
-       whose parser turns such a binding
-       directly into a value binding.")
+       similarly to a nullary function bindings.")
      (xdoc::p
       "For an ispace function binding,
        we extend the dynamic environment
@@ -1407,9 +1410,7 @@
        because the result type may reference the ispace parameters.
        An ispace function binding with no parameters
        is treated as a plain value binding,
-       consistently with the type checker and with [impl],
-       whose parser turns such a binding
-       directly into a value binding.")
+       similarly to a nullary function bindings.")
      (xdoc::p
       "For a combined function binding,
        we form the nested abstraction expression
@@ -1442,7 +1443,14 @@
                                            (expr-denv->tenv denv))
                           :none nil)))
               (expr-denv-add-expr bind.var val denv))
-       :fun (b* (((unless (consp bind.params)) (reserr nil))
+       :fun (b* (((when (endp bind.params))
+                  (b* (((ok val) (eval-expr bind.expr denv (1- limit)))
+                       ((ok &) (type-option-case
+                                bind.type?
+                                :some (eval-type bind.type?.val
+                                                 (expr-denv->tenv denv))
+                                :none nil)))
+                    (expr-denv-add-expr bind.var val denv)))
                  ((ok param) (eval-var+type? (car bind.params)
                                              (expr-denv->tenv denv)))
                  (val (make-expr-value-lambda

@@ -224,6 +224,10 @@
 (test-check-top-expr
  "(let ((i-fun (f () : Int) 7)) (+ f 1))")
 
+; Similarly for a function binding with no value parameters.
+(test-check-top-expr
+ "(let ((fun (f : Int) 7)) (+ f 1))")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Full application of a two-parameter term lambda abstraction,
