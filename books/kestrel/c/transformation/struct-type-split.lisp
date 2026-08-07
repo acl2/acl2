@@ -605,7 +605,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is similar in spirit to @(tsee sts-param-declon-type);
+    "This is similar in spirit to @(tsee sts-expr-type);
      see that function's documentation for motivation."))
   (if (param-declon-unambp pdeclon)
       (param-declon-type pdeclon)

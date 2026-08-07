@@ -18,6 +18,10 @@
 
 (include-book "portcullis")
 
+; The tau system contributes to no proof in this book; running it on every
+; goal is pure overhead here, so we turn it off.
+(local (acl2::in-theory (acl2::disable (:e acl2::tau-system))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ unique-names-validation

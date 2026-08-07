@@ -163,8 +163,7 @@
   (implies (unsigned-byte-p 8 a)
            (equal (cons a nil)
                   (bv-array-write 8 1 0 a (list 0))))
-  :hints (("Goal" :in-theory (e/d (update-nth2 bv-array-write) (;update-nth-becomes-update-nth2-extend-gen
-                                                                )))))
+  :hints (("Goal" :in-theory (e/d (update-nth2 bv-array-write) ()))))
 
 ;gen and use this more
 ;yikes! this lets data be a quotep
@@ -175,8 +174,7 @@
            (equal (cons a data)
                   (bv-array-write 8 (+ 1 (len data)) 0 a (cons 0 data ))))
   :hints
-  (("Goal" :in-theory (e/d (update-nth2 bv-array-write) (;update-nth-becomes-update-nth2-extend-gen
-                                                         )))))
+  (("Goal" :in-theory (e/d (update-nth2 bv-array-write) ()))))
 
 ;; ;move
 ;; (defthmd bvchop-of-nth2-becomes-bv-array-read

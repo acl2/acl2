@@ -14,6 +14,7 @@
 (include-book "fresh-variable-operations")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration)
@@ -134,13 +135,22 @@
      (defret consp-of-fresh-vars-of-dim/shape-rename-alpha-bound-loop
        (equal (consp fresh-vars)
               (consp bound-vars))
+       :hints (("Goal" :induct t)))
+
+     (defret len-of-fresh-vars-of-dim/shape-rename-alpha-bound-loop
+       (equal (len fresh-vars)
+              (len bound-vars))
        :hints (("Goal" :induct t)))))
 
   ///
 
   (defret consp-of-fresh-vars-of-dim/shape-rename-alpha-bound
     (equal (consp fresh-vars)
-           (consp bound-vars))))
+           (consp bound-vars)))
+
+  (defret len-of-fresh-vars-of-dim/shape-rename-alpha-bound
+    (equal (len fresh-vars)
+           (len bound-vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -221,13 +231,22 @@
      (defret consp-of-fresh-vars-of-atom/array-rename-alpha-bound-loop
        (equal (consp fresh-vars)
               (consp bound-vars))
+       :hints (("Goal" :induct t)))
+
+     (defret len-of-fresh-vars-of-atom/array-rename-alpha-bound-loop
+       (equal (len fresh-vars)
+              (len bound-vars))
        :hints (("Goal" :induct t)))))
 
   ///
 
   (defret consp-of-fresh-vars-of-atom/array-rename-alpha-bound
     (equal (consp fresh-vars)
-           (consp bound-vars))))
+           (consp bound-vars)))
+
+  (defret len-of-fresh-vars-of-atom/array-rename-alpha-bound
+    (equal (len fresh-vars)
+           (len bound-vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -282,13 +301,22 @@
      (defret consp-of-fresh-vars-of-expr-rename-alpha-bound-loop
        (equal (consp fresh-vars)
               (consp bound-vars))
+       :hints (("Goal" :induct t)))
+
+     (defret len-of-fresh-vars-of-expr-rename-alpha-bound-loop
+       (equal (len fresh-vars)
+              (len bound-vars))
        :hints (("Goal" :induct t)))))
 
   ///
 
   (defret consp-of-fresh-vars-of-expr-rename-alpha-bound
     (equal (consp fresh-vars)
-           (consp bound-vars))))
+           (consp bound-vars)))
+
+  (defret len-of-fresh-vars-of-expr-rename-alpha-bound
+    (equal (len fresh-vars)
+           (len bound-vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -700,7 +728,6 @@
      see @(tsee type-rename-ispace-vars-alpha)."))
   (atom-rename-ispace-vars-alpha-aux atom dim-renam shape-renam nil))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map rename-type-vars-alpha-aux
@@ -938,7 +965,6 @@
     "This is the top-level entry point for atoms;
      see @(tsee type-rename-type-vars-alpha)."))
   (atom-rename-type-vars-alpha-aux atom atom-renam array-renam nil))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -111,31 +111,28 @@
     "In Remora, the primitive operations (i.e. built-in functions)
      are syntactically variables of (zero-rank array type of) a function type.
      These variables are implicitly in scope,
-     and thus part of the initial static environment.")
-   (xdoc::p
-    "Each operation's name (the map key) is its surface name
-     in [impl]'s prelude (the file @('RemoraPrelude.hs'));
-     the dynamic semantics of these operations
-     is formalized in @(see primitives-evaluation).
+     and thus part of the initial static environment.
+     Each operation's name (the map key) is its surface name in [impl].
      This is an initial selection of primitive operations;
      more will be added as the formalization grows.")
    (xdoc::p
     "The operations from @('+') to @('bool->f') have monomorphic types:
-     zero-rank array types of function types between base types.
+     function types between base types.
      The @('head'), @('tail'), @('length'),
      @('append'), @('reverse'), @('index'), @('index2d'),
-     @('reshape'), and @('transpose2d') operations
+     @('reshape'), @('flatten'), @('transpose2d'), and @('reduce') operations
      have polymorphic types:
      a universal type of a product type of a function type, as in [impl].
+     The first input type of @('reduce') is itself a function type,
+     making @('reduce') a higher-order operation.
      The @('sum') operation is polymorphic only in the shape,
      not in the element type, which is always integer:
      its type is a product type of a function type,
      without an enclosing universal type, as in [impl].
-     Like the monomorphic types,
-     the whole type is a zero-rank array type,
-     but the bodies of the universal and product types
-     need no zero-rank array wrapping,
-     because atom types are auto-lifted to array types in those places."))
+     All these types are atom-kinded, without zero-rank array type wrapping:
+     as explained in @(see types),
+     atom-kinded types are allowed wherever array-kinded types are expected,
+     implicitly standing for zero-rank array types of those atom types."))
   (b* ((int-binop-type
         (t-> :int :int :int))
        (int-unop-type
@@ -209,11 +206,27 @@
              (tpi ("@s1" "@s2")
                   (t-> (t[] "&t" "@s1")
                        (t[] "&t" "@s2")))))
+       (flatten-type
+        (tfa "&t"
+             (tpi ("$m" "$n" "@s")
+                  (t-> (t[] "&t" (shp[] "$m" "$n" "@s"))
+                       (t[] "&t" (shp[] (dim* "$m" "$n") "@s"))))))
        (transpose2d-type
         (tfa "&t"
              (tpi ("$m" "$n")
                   (t-> (t[] "&t" (shp[] "$m" "$n"))
-                       (t[] "&t" (shp[] "$n" "$m")))))))
+                       (t[] "&t" (shp[] "$n" "$m"))))))
+       (iota/static-type
+        (tpi "@s"
+             (t[] :int "@s")))
+       (reduce-type
+        (tfa "&t"
+             (tpi ("$d" "@s")
+                  (t-> (t-> (t[] "&t" "@s")
+                            (t[] "&t" "@s")
+                            (t[] "&t" "@s"))
+                       (t[] "&t" (shp[] (dim+ 1 "$d") "@s"))
+                       (t[] "&t" "@s"))))))
     (omap::from-alist
      (list (cons "+" int-binop-type)
            (cons "-" int-binop-type)
@@ -273,7 +286,10 @@
            (cons "index2d" index2d-type)
            (cons "sum" sum-type)
            (cons "reshape" reshape-type)
-           (cons "transpose2d" transpose2d-type)))))
+           (cons "flatten" flatten-type)
+           (cons "transpose2d" transpose2d-type)
+           (cons "iota/static" iota/static-type)
+           (cons "reduce" reduce-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

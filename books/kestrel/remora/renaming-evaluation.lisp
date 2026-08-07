@@ -20,6 +20,13 @@
 (local (include-book "osets"))
 (local (include-book "omaps"))
 
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
+
+; The tau system is needed by only one proof in this book (noted below, where
+; it is switched back on); running it on every goal of the rest is pure
+; overhead, so it is off by default here.
+(local (acl2::in-theory (acl2::disable (:e acl2::tau-system))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ renaming-evaluation
@@ -648,7 +655,8 @@
                                                      shape-renam)
                   (ispace-var-set-rename-ispace-vars vars dim-renam nil)))
   :induct (ispace-var-set-rename-ispace-vars vars dim-renam shape-renam)
-  :enable (ispace-var-set-rename-ispace-vars
+  :enable ((:e acl2::tau-system)   ; tau does the ISPACE-VAR-KIND case analysis
+           ispace-var-set-rename-ispace-vars
            dim/shape-names-of-ispace-vars
            rename-ispace-var))
 
@@ -1130,8 +1138,7 @@
 ; the renaming maps are not reduced, and the commutation is direct.
 
 (defrule type-rename-ispace-vars-of-forall-curried-body
-  (implies (and (type-var-listp params)
-                (consp params))
+  (implies (type-var-listp params)
            (equal (type-rename-ispace-vars (forall-curried-body params body)
                                            dim-renam shape-renam)
                   (forall-curried-body params
@@ -1966,8 +1973,7 @@
             mergesort-of-cons)))
 
 (defrule type-rename-type-vars-of-forall-curried-body
-  (implies (and (type-var-listp params)
-                (consp params))
+  (implies (type-var-listp params)
            (b* (((mv & & atom1 array1)
                  (atom/array-rename-remove-bound (set::insert (car params)
                                                               nil)
@@ -2144,7 +2150,8 @@
                        not-reserrp-when-type-value-listp
                        type-valuep-when-result-not-error
                        type-value-listp-when-result-not-error
-                       type-denv-lookup-type))
+                       type-denv-lookup-type
+                       acl2::lt-len-const))
    (and acl2::stable-under-simplificationp
         '(:use ((:instance denv-type-vars-renamed-p-necc
                            (var (type-var->var type))))))))

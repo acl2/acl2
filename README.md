@@ -23,8 +23,8 @@ System.  As the name suggests, they are updated by the ACL2 community.
 - The [Combined ACL2 + Books Manual][dev-manual] is updated frequently
   to track the latest changes to this repository.
 
-- If you are instead using official, released Version 8.6 of ACL2, see
-  the [Version 8.6 Manual][release-manual] instead.
+- If you are instead using official, released Version 8.7 of ACL2, see
+  the [Version 8.7 Manual][release-manual] instead.
 
 Each of these manuals can be downloaded for offline use by clicking the
 download button on the right hand side of the upper toolbar while
@@ -50,16 +50,16 @@ Alternatively you can obtain a copy of the latest release using
 (note the "." at the end).
 
 ```
-git clone -b 8.6 https://github.com/acl2-devel/acl2-devel .
+git clone -b 8.7 https://github.com/acl2-devel/acl2-devel .
 ```
 
 The new directory `/path/to/somewhere/acl2/` will now contain a copy of
-ACL2 Version 8.6.  Please see the [ACL2 home page][ACL2], specifically
+ACL2 Version 8.7.  Please see the [ACL2 home page][ACL2], specifically
 its [installation instructions][installation], for how to build an
 executable and certify books in your new directory.
 
-[ACL2]:            http://www.cs.utexas.edu/users/moore/acl2 "ACL2 Home Page"
-[installation]:    http://www.cs.utexas.edu/users/moore/acl2/current/HTML/installation/installation.html
+[ACL2]:            https://www.cs.utexas.edu/users/moore/acl2 "ACL2 Home Page"
+[installation]:    https://acl2.org/doc/index.html?topic=ACL2____INSTALLATION-INSTRUCTIONS
 [releases]:        https://github.com/acl2-devel/acl2-devel/releases/
 [git]:             http://git-scm.com
 [community books]: https://www.acl2.org/doc/index.html?topic=ACL2____COMMUNITY-BOOKS
