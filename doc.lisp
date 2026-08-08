@@ -106939,6 +106939,12 @@ New Features
   requesting such a capability and to him and Eric Smith for helpful
   discussions.
 
+  The [30m[47m[xargs][0m[0m keyword [30m[47m:type-prescription[0m[0m for a [30m[47m[defun][0m[0m form may now
+  have the value [30m[47m:none[0m[0m, which specifies that no built-in
+  [30m[47m:[0m[0m[30m[47m[type-prescription][0m[0m rule is to be computed for the new function
+  symbol.  Thanks to Alessandro Coglio, Grant Jurgensen, and Eric
+  Smith for a discussion on Zulip leading to this enhancement.
+
 
 Heuristic and Efficiency Improvements
 
@@ -168606,22 +168612,25 @@ Subtopics
   [df].
 
   [30m[47m:type-prescription[0m[0m
-  [30m[47mValue[0m[0m is either [30m[47mnil[0m[0m (the default) or a formula that is suitable for
-  a hypothesis-free [30m[47m:[0m[0m[30m[47m[type-prescription][0m[0m rule.  That rule must be
-  appropriate for the [30m[47m:typed-term[0m[0m that is the application of the
-  defined function symbol to its formal parameters.  For example, a
-  legal value for [30m[47m:type-prescription[0m[0m in [30m[47m(defun f (x y) ...)[0m[0m could be
-  [30m[47m(or (consp (f x y)) (equal (f x y) y))[0m[0m, but not [30m[47m(or (consp (f u v))
-  (equal (f u v) v))[0m[0m.  The specified formula must provide a type that
-  is implied by the built-in type that is computed for the defined
-  function.  Normally these will be equal, but if the value of
-  [30m[47m:type-prescription[0m[0m specifies a strictly weaker type than the
-  computed built-in type then a warning will be printed (unless of
-  course such warnings have been suppressed; see
+  [30m[47mValue[0m[0m is either [30m[47mnil[0m[0m, which is the default; [30m[47m:none[0m[0m, which specifies
+  that no built-in [30m[47m:[0m[0m[30m[47m[type-prescription][0m[0m rule is to be computed for
+  the new function symbol; or a formula, which we now discuss.  That
+  formula should be suitable for a hypothesis-free
+  [30m[47m:[0m[0m[30m[47m[type-prescription][0m[0m rule, appropriate for the [30m[47m:typed-term[0m[0m that is
+  the application of the defined function symbol to its formal
+  parameters.  For example, consider the definition: [30m[47m(defun f (x y)
+  ...)[0m[0m.  A legal value for [30m[47m:type-prescription[0m[0m could thus be the
+  formula [30m[47m(or (consp (f x y)) (equal (f x y) y))[0m[0m, but not the formula
+  [30m[47m(or (consp (f u v)) (equal (f u v) v))[0m[0m.  The specified formula must
+  provide a type that is implied by the built-in type that is
+  computed for the defined function.  Normally these will be equal,
+  but if the value of [30m[47m:type-prescription[0m[0m specifies a strictly weaker
+  type than the computed built-in type then a warning will be printed
+  (unless of course such warnings have been suppressed; see
   [set-inhibit-output-lst] and [set-inhibit-warnings]).  It is an
-  error to supply a non-[30m[47mnil[0m[0m value for [30m[47m:type-prescription[0m[0m if there is
-  no built-in type computed for the function.  See also
-  [type-prescription].
+  error to supply a value other than [30m[47mnil[0m[0m or [30m[47m:none[0m[0m for
+  [30m[47m:type-prescription[0m[0m if there is no built-in type computed for the
+  function.  See also [type-prescription].
 
   [30m[47m:[0m[0m[30m[47m[verify-guards][0m[0m
   [30m[47mValue[0m[0m is [30m[47mt[0m[0m or [30m[47mnil[0m[0m, indicating whether or not [guard]s are to be

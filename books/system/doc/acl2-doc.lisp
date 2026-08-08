@@ -109868,6 +109868,12 @@ it."
  See @(see in-logic-mode).  Thanks to Alessandro Coglio for requesting such a
  capability and to him and Eric Smith for helpful discussions.</p>
 
+ <p>The @(tsee xargs) keyword @(':type-prescription') for a @(tsee defun) form
+ may now have the value @(':none'), which specifies that no built-in
+ @(':')@(tsee type-prescription) rule is to be computed for the new function
+ symbol.  Thanks to Alessandro Coglio, Grant Jurgensen, and Eric Smith for a
+ discussion on Zulip leading to this enhancement.</p>
+
  <h3>Heuristic and Efficiency Improvements</h3>
 
  <h3>Bug Fixes</h3>
@@ -169180,20 +169186,23 @@ created from the original fast alist during @('form') must be manually freed."
 
  <p>@(':type-prescription')<br></br>
 
- @('Value') is either @('nil') (the default) or a formula that is suitable for
- a hypothesis-free @(':')@(tsee type-prescription) rule.  That rule must be
- appropriate for the @(':typed-term') that is the application of the defined
- function symbol to its formal parameters.  For example, a legal value for
- @(':type-prescription') in @('(defun f (x y) ...)') could be @('(or (consp (f
- x y)) (equal (f x y) y))'), but not @('(or (consp (f u v)) (equal (f u v)
- v))').  The specified formula must provide a type that is implied by the
+ @('Value') is either @('nil'), which is the default; @(':none'), which
+ specifies that no built-in @(':')@(tsee type-prescription) rule is to be
+ computed for the new function symbol; or a formula, which we now discuss.
+ That formula should be suitable for a hypothesis-free @(':')@(tsee
+ type-prescription) rule, appropriate for the @(':typed-term') that is the
+ application of the defined function symbol to its formal parameters.  For
+ example, consider the definition: @('(defun f (x y) ...)').  A legal value for
+ @(':type-prescription') could thus be the formula @('(or (consp (f x
+ y)) (equal (f x y) y))'), but not the formula @('(or (consp (f u v)) (equal (f
+ u v) v))').  The specified formula must provide a type that is implied by the
  built-in type that is computed for the defined function.  Normally these will
  be equal, but if the value of @(':type-prescription') specifies a strictly
- weaker type than the computed built-in type then a warning will be printed
- (unless of course such warnings have been suppressed; see @(see
+ weaker type than the computed built-in type then a warning will be
+ printed (unless of course such warnings have been suppressed; see @(see
  set-inhibit-output-lst) and @(see set-inhibit-warnings)).  It is an error to
- supply a non-@('nil') value for @(':type-prescription') if there is no
- built-in type computed for the function.  See also @(see
+ supply a value other than @('nil') or @(':none') for @(':type-prescription')
+ if there is no built-in type computed for the function.  See also @(see
  type-prescription).</p>
 
  <p>@(':')@(tsee verify-guards)<br></br>
