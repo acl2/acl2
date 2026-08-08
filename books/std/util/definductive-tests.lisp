@@ -83,11 +83,23 @@
              (r*-2 x z))))
 
  (must-be-redundant
+  (defthm r*-2-alt-base
+    (implies (r x y)
+             (r*-2-alt x y))))
+
+ (must-be-redundant
+  (defthm r*-2-alt-refl
+    (r*-2-alt x x)))
+
+ (must-be-redundant
+  (defthm r*-2-alt-trans
+    (implies (and (r*-2-alt x y)
+                  (r*-2-alt y z))
+             (r*-2-alt x z))))
+
+ (must-be-redundant
   (defthm r*-2-alt-when-r*-2
-    (implies (and (r*-2-alt-base-p)
-                  (r*-2-alt-refl-p)
-                  (r*-2-alt-trans-p)
-                  (r*-2 a b))
+    (implies (r*-2 a b)
              (r*-2-alt a b))))
 
  (must-be-redundant
@@ -143,10 +155,18 @@
              (p-2 (cons x y)))))
 
  (must-be-redundant
+  (defthm p-2-alt-base
+    (p-2-alt nil)))
+
+ (must-be-redundant
+  (defthm p-2-alt-step
+    (implies (and (p-2-alt x)
+                  (p-2-alt y))
+             (p-2-alt (cons x y)))))
+
+ (must-be-redundant
   (defthm p-2-alt-when-p-2
-    (implies (and (p-2-alt-base-p)
-                  (p-2-alt-step-p)
-                  (p-2 a))
+    (implies (p-2 a)
              (p-2-alt a))))
 
  (must-be-redundant
@@ -217,11 +237,22 @@
              (gnd-2 2))))
 
  (must-be-redundant
+  (defthm gnd-2-alt-ax
+    (gnd-2-alt 0)))
+
+ (must-be-redundant
+  (defthm gnd-2-alt-step
+    (implies (gnd-2-alt 0)
+             (gnd-2-alt 1))))
+
+ (must-be-redundant
+  (defthm gnd-2-alt-ax2
+    (implies (gstub)
+             (gnd-2-alt 2))))
+
+ (must-be-redundant
   (defthm gnd-2-alt-when-gnd-2
-    (implies (and (gnd-2-alt-ax-p)
-                  (gnd-2-alt-step-p)
-                  (gnd-2-alt-ax2-p)
-                  (gnd-2 a))
+    (implies (gnd-2 a)
              (gnd-2-alt a))))
 
  (must-be-redundant
@@ -277,10 +308,18 @@
              (bn-2 (1+ x)))))
 
  (must-be-redundant
+  (defthm bn-2-alt-base
+    (bn-2-alt 0)))
+
+ (must-be-redundant
+  (defthm bn-2-alt-step
+    (implies (and (bn-2-alt x)
+                  (<= x 5))
+             (bn-2-alt (1+ x)))))
+
+ (must-be-redundant
   (defthm bn-2-alt-when-bn-2
-    (implies (and (bn-2-alt-base-p)
-                  (bn-2-alt-step-p)
-                  (bn-2 x))
+    (implies (bn-2 x)
              (bn-2-alt x))))
 
  (must-be-redundant
@@ -345,7 +384,15 @@
 
  (must-be-redundant
   (defthm q-alt-ax
-    (q-alt 0))))
+    (q-alt 0)))
+
+ (must-be-redundant
+  (defthm p-2-alt-ax
+    (p-2-alt 0)))
+
+ (must-be-redundant
+  (defthm q-2-alt-ax
+    (q-2-alt 0))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -378,9 +425,12 @@
     (p-2 0)))
 
  (must-be-redundant
+  (defthm p-2-alt-ax
+    (p-2-alt 0)))
+
+ (must-be-redundant
   (defthm p-2-alt-when-p-2
-    (implies (and (p-2-alt-ax-p)
-                  (p-2 x))
+    (implies (p-2 x)
              (p-2-alt x))))
 
  (must-be-redundant
@@ -418,9 +468,13 @@
              (p-2 x))))
 
  (must-be-redundant
+  (defthm p-2-alt-ax
+    (implies (natp x)
+             (p-2-alt x))))
+
+ (must-be-redundant
   (defthm p-2-alt-when-p-2
-    (implies (and (p-2-alt-ax-p)
-                  (p-2 x))
+    (implies (p-2 x)
              (p-2-alt x))))
 
  (must-be-redundant
@@ -482,10 +536,18 @@
              (m-2 x))))
 
  (must-be-redundant
+  (defthm m-2-alt-pair
+    (implies (r x y)
+             (m-2-alt (cons x y)))))
+
+ (must-be-redundant
+  (defthm m-2-alt-proj
+    (implies (r x y)
+             (m-2-alt x))))
+
+ (must-be-redundant
   (defthm m-2-alt-when-m-2
-    (implies (and (m-2-alt-pair-p)
-                  (m-2-alt-proj-p)
-                  (m-2 a))
+    (implies (m-2 a)
              (m-2-alt a))))
 
  (must-be-redundant
@@ -590,19 +652,29 @@
              (odd-2 (1+ n)))))
 
  (must-be-redundant
+  (defthm even-2-alt-even-0
+    (even-2-alt 0)))
+
+ (must-be-redundant
+  (defthm even-2-alt-even-step
+    (implies (and (natp n)
+                  (odd-2-alt n))
+             (even-2-alt (1+ n)))))
+
+ (must-be-redundant
+  (defthm odd-2-alt-odd-step
+    (implies (and (natp n)
+                  (even-2-alt n))
+             (odd-2-alt (1+ n)))))
+
+ (must-be-redundant
   (defthm even-2-alt-when-even-2
-    (implies (and (even-2-alt-even-0-p)
-                  (even-2-alt-even-step-p)
-                  (odd-2-alt-odd-step-p)
-                  (even-2 n))
+    (implies (even-2 n)
              (even-2-alt n))))
 
  (must-be-redundant
   (defthm odd-2-alt-when-odd-2
-    (implies (and (even-2-alt-even-0-p)
-                  (even-2-alt-even-step-p)
-                  (odd-2-alt-odd-step-p)
-                  (odd-2 n))
+    (implies (odd-2 n)
              (odd-2-alt n))))
 
  (must-be-redundant
@@ -756,6 +828,38 @@
              (odn-2 (+ n m)))))
 
  (must-be-redundant
+  (defthm evn-2-alt-zero
+    (evn-2-alt 0)))
+
+ (must-be-redundant
+  (defthm evn-2-alt-even-step
+    (implies (and (natp n)
+                  (odn-2-alt n))
+             (evn-2-alt (1+ n)))))
+
+ (must-be-redundant
+  (defthm odn-2-alt-odd-step
+    (implies (and (natp n)
+                  (evn-2-alt n))
+             (odn-2-alt (1+ n)))))
+
+ (must-be-redundant
+  (defthm evn-2-alt-even-sum
+    (implies (and (natp n)
+                  (natp m)
+                  (evn-2-alt n)
+                  (evn-2-alt m))
+             (evn-2-alt (+ n m)))))
+
+ (must-be-redundant
+  (defthm odn-2-alt-mixed-sum
+    (implies (and (natp n)
+                  (natp m)
+                  (evn-2-alt n)
+                  (odn-2-alt m))
+             (odn-2-alt (+ n m)))))
+
+ (must-be-redundant
   (defthm evn-2-is-evn
     (equal (evn-2 n)
            (evn n))))
@@ -865,21 +969,31 @@
              (q-2 x x))))
 
  (must-be-redundant
+  (defthm p-2-alt-p0
+    (p-2-alt 0)))
+
+ (must-be-redundant
+  (defthm q-2-alt-q0
+    (q-2-alt 0 0)))
+
+ (must-be-redundant
+  (defthm p-2-alt-pq
+    (implies (q-2-alt x x)
+             (p-2-alt x))))
+
+ (must-be-redundant
+  (defthm q-2-alt-qp
+    (implies (p-2-alt x)
+             (q-2-alt x x))))
+
+ (must-be-redundant
   (defthm p-2-alt-when-p-2
-    (implies (and (p-2-alt-p0-p)
-                  (q-2-alt-q0-p)
-                  (p-2-alt-pq-p)
-                  (q-2-alt-qp-p)
-                  (p-2 x))
+    (implies (p-2 x)
              (p-2-alt x))))
 
  (must-be-redundant
   (defthm q-2-alt-when-q-2
-    (implies (and (p-2-alt-p0-p)
-                  (q-2-alt-q0-p)
-                  (p-2-alt-pq-p)
-                  (q-2-alt-qp-p)
-                  (q-2 x y))
+    (implies (q-2 x y)
              (q-2-alt x y))))
 
  (must-be-redundant
@@ -992,21 +1106,32 @@
              (q-2 (cons x x)))))
 
  (must-be-redundant
+  (defthm p-2-alt-p0
+    (p-2-alt nil)))
+
+ (must-be-redundant
+  (defthm p-2-alt-pstep
+    (implies (p-2-alt x)
+             (p-2-alt (cons x x)))))
+
+ (must-be-redundant
+  (defthm q-2-alt-q0
+    (implies (p-2-alt x)
+             (q-2-alt x))))
+
+ (must-be-redundant
+  (defthm q-2-alt-qstep
+    (implies (q-2-alt x)
+             (q-2-alt (cons x x)))))
+
+ (must-be-redundant
   (defthm p-2-alt-when-p-2
-    (implies (and (p-2-alt-p0-p)
-                  (p-2-alt-pstep-p)
-                  (q-2-alt-q0-p)
-                  (q-2-alt-qstep-p)
-                  (p-2 x))
+    (implies (p-2 x)
              (p-2-alt x))))
 
  (must-be-redundant
   (defthm q-2-alt-when-q-2
-    (implies (and (p-2-alt-p0-p)
-                  (p-2-alt-pstep-p)
-                  (q-2-alt-q0-p)
-                  (q-2-alt-qstep-p)
-                  (q-2 x))
+    (implies (q-2 x)
              (q-2-alt x))))
 
  (must-be-redundant
@@ -1096,19 +1221,27 @@
              (b-2 (cons x x)))))
 
  (must-be-redundant
+  (defthm a-2-alt-a0
+    (a-2-alt 0)))
+
+ (must-be-redundant
+  (defthm b-2-alt-b0
+    (implies (a-2-alt x)
+             (b-2-alt x))))
+
+ (must-be-redundant
+  (defthm b-2-alt-bstep
+    (implies (b-2-alt x)
+             (b-2-alt (cons x x)))))
+
+ (must-be-redundant
   (defthm a-2-alt-when-a-2
-    (implies (and (a-2-alt-a0-p)
-                  (b-2-alt-b0-p)
-                  (b-2-alt-bstep-p)
-                  (a-2 x))
+    (implies (a-2 x)
              (a-2-alt x))))
 
  (must-be-redundant
   (defthm b-2-alt-when-b-2
-    (implies (and (a-2-alt-a0-p)
-                  (b-2-alt-b0-p)
-                  (b-2-alt-bstep-p)
-                  (b-2 x))
+    (implies (b-2 x)
              (b-2-alt x))))
 
  (must-be-redundant
@@ -1170,17 +1303,21 @@
     (d-2 1)))
 
  (must-be-redundant
+  (defthm c-2-alt-c0
+    (c-2-alt 0)))
+
+ (must-be-redundant
+  (defthm d-2-alt-d0
+    (d-2-alt 1)))
+
+ (must-be-redundant
   (defthm c-2-alt-when-c-2
-    (implies (and (c-2-alt-c0-p)
-                  (d-2-alt-d0-p)
-                  (c-2 x))
+    (implies (c-2 x)
              (c-2-alt x))))
 
  (must-be-redundant
   (defthm d-2-alt-when-d-2
-    (implies (and (c-2-alt-c0-p)
-                  (d-2-alt-d0-p)
-                  (d-2 x))
+    (implies (d-2 x)
              (d-2-alt x))))
 
  (must-be-redundant
@@ -1311,33 +1448,44 @@
              (odn-2 (1+ x)))))
 
  (must-be-redundant
+  (defthm nt-2-alt-nt0
+    (nt-2-alt 0)))
+
+ (must-be-redundant
+  (defthm nt-2-alt-ntstep
+    (implies (nt-2-alt x)
+             (nt-2-alt (1+ x)))))
+
+ (must-be-redundant
+  (defthm evn-2-alt-evn0
+    (implies (nt-2-alt x)
+             (evn-2-alt 0))))
+
+ (must-be-redundant
+  (defthm evn-2-alt-evnstep
+    (implies (and (natp x)
+                  (odn-2-alt x))
+             (evn-2-alt (1+ x)))))
+
+ (must-be-redundant
+  (defthm odn-2-alt-odnstep
+    (implies (and (natp x)
+                  (evn-2-alt x))
+             (odn-2-alt (1+ x)))))
+
+ (must-be-redundant
   (defthm nt-2-alt-when-nt-2
-    (implies (and (nt-2-alt-nt0-p)
-                  (nt-2-alt-ntstep-p)
-                  (evn-2-alt-evn0-p)
-                  (evn-2-alt-evnstep-p)
-                  (odn-2-alt-odnstep-p)
-                  (nt-2 x))
+    (implies (nt-2 x)
              (nt-2-alt x))))
 
  (must-be-redundant
   (defthm evn-2-alt-when-evn-2
-    (implies (and (nt-2-alt-nt0-p)
-                  (nt-2-alt-ntstep-p)
-                  (evn-2-alt-evn0-p)
-                  (evn-2-alt-evnstep-p)
-                  (odn-2-alt-odnstep-p)
-                  (evn-2 x))
+    (implies (evn-2 x)
              (evn-2-alt x))))
 
  (must-be-redundant
   (defthm odn-2-alt-when-odn-2
-    (implies (and (nt-2-alt-nt0-p)
-                  (nt-2-alt-ntstep-p)
-                  (evn-2-alt-evn0-p)
-                  (evn-2-alt-evnstep-p)
-                  (odn-2-alt-odnstep-p)
-                  (odn-2 x))
+    (implies (odn-2 x)
              (odn-2-alt x))))
 
  (must-be-redundant

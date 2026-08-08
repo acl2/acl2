@@ -707,7 +707,7 @@
     (xdoc::desc
      (list
       "@('p[i]-2-alt')"
-      "@('p[l[k]]-2-alt-rule[k]-p')"
+      "@('p[l[k]]-2-alt-rule[k]')"
       "@('p[i]-2-alt-when-proof-validp')"
       "@('p[i]-2-alt-when-p[i]-2')")
      (xdoc::p
@@ -733,7 +733,8 @@
       "Theorems saying that the two representations of proofs
        define the same predicates.
        Each inclusion follows from the minimality theorem of one of the two,
-       used with the predicate of the other in place of the stub:
+       used with the predicate of the other
+       in place of the constrained function:
        what remains to prove is that the latter satisfies the rules,
        which its rule theorems say.
        The equality follows from the two inclusions,
