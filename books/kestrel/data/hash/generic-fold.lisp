@@ -95,9 +95,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define update-bytes (st (bytes acl2::byte-listp))
+(define update-bytes (st (bytes byte-listp))
   :short "Fold the constrained step function over a byte list."
-  :returns (st$ statep :hints (("Goal" :induct t)))
+  :returns (st$ statep)
   (if (endp bytes)
       (state-fix st)
     (update-bytes (update-byte st (car bytes))

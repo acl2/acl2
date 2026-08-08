@@ -26,9 +26,9 @@
 (std::defredundant
   :names (jenkins-acc-byte
           jenkins-acc-bytes
-          jenkins-acc-varint-small
-          jenkins-acc-varint-groups-small
-          jenkins-acc-varint-groups
+          jenkins-acc-leb128-small
+          jenkins-acc-leb128-groups-small
+          jenkins-acc-leb128-groups
           jenkins-acc-nat
           jenkins-acc-integer-contents
           jenkins-acc-integer

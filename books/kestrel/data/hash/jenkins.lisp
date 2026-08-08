@@ -71,33 +71,14 @@
     (xdoc::p
       "This is a non-cryptographic hash function.")
     (xdoc::p
-      "The hash is computed by folding a byte serialization of the ACL2 object
-       through the Jenkins one-at-a-time accumulator. The map from objects to
-       byte streams is designed to be injective (except that all bad atoms
-       share one encoding), so that hash collisions arise only from the final
-       32-bit compression:")
-    (xdoc::ul
-      (xdoc::li
-        "Each object is prefixed with a byte identifying its type (cons,
-         symbol, string, character, integer, rational, complex, or
-         bad-atom).")
-      (xdoc::li
-        "Natural numbers are serialized as base-128 varints: little-endian
-         groups of 7 bits, where the high bit of each byte indicates whether
-         another byte follows. This form is self-delimiting. Integers are
-         first mapped to naturals by interleaving the nonnegative and negative
-         integers (0, -1, 1, -2, 2, ... map to 0, 1, 2, 3, 4, ...), the
-         so-called ``zigzag'' encoding.")
-      (xdoc::li
-        "Strings are length-prefixed (the length as a varint) followed by
-         their character codes.")
-      (xdoc::li
-        "Compound atoms serialize their parts in sequence: symbols as their
-         package name and symbol name (each length-prefixed), rationals as
-         numerator and denominator (self-delimiting varints), and complex
-         numbers as their real and imaginary parts."))
+      "The hash is logically @(tsee jenkins-bytes) applied to the byte @(see
+       serialization) of the ACL2 object; see that topic for the encoding.
+       Since the serialization is injective (except that all bad atoms share
+       one encoding), hash collisions arise only from the final 32-bit
+       compression. In execution, a single fused pass walks the object
+       directly, without constructing the byte list.")
     (xdoc::p
-      "For large integers, the varint serialization is computed by recursively
+      "For large integers, the LEB128 serialization is computed by recursively
        splitting the integer roughly in half (at a multiple of 7 bits), so
        that the work is @($O(k\\log(k))$) in the bit-length @($k$), rather
        than the @($O(k^2)$) which would result from extracting one group at a
@@ -118,20 +99,6 @@
             "https://burtleburtle.net/bob/hash/doobs.html")))))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; The type tag bytes used by the serialization. Every atom (and cons)
-;; contributes exactly one of these bytes before its contents, so that objects
-;; of different types never share a byte stream.
-;;   cons:     #x70
-;;   symbol:   #x71
-;;   string:   #x72
-;;   char:     #x73
-;;   integer:  #x74
-;;   rational: #x75
-;;   complex:  #x76
-;;   bad-atom: #x77
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -164,7 +131,7 @@
 ;; is intended to be equal to jenkins-acc-bytes of the corresponding
 ;; serialization (see the serialization topic).
 (define jenkins-acc-bytes
-  ((bytes acl2::byte-listp)
+  ((bytes byte-listp)
    (acc (unsigned-byte-p 32 acc)))
   (declare (xargs :split-types t)
            (type (unsigned-byte 32) acc))
@@ -221,13 +188,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Natural numbers are serialized as little-endian base-128 varints: each byte
+;; Natural numbers are serialized as unsigned LEB128: little-endian, each byte
 ;; carries 7 bits of the number, and the high bit indicates whether another
 ;; byte follows. This encoding is self-delimiting, which makes the
 ;; serialization of compound atoms (rationals, symbols, etc.) injective.
 
 (defrulel <-of-loghead-7-and-128-linear
-  (< (acl2::loghead 7 x) 128)
+  (< (loghead 7 x) 128)
   :rule-classes :linear
   :use (:instance acl2::unsigned-byte-p-of-loghead
                   (acl2::size1 7)
@@ -236,8 +203,14 @@
   :enable unsigned-byte-p
   :disable acl2::unsigned-byte-p-of-loghead)
 
-;; Serialize a "small" (fixnum-sized) natural as a varint.
-(define jenkins-acc-varint-small
+;; Serialize a "small" (fixnum-sized) natural in LEB128 form.
+;;
+;; The width 56 = 7 * 8 is the largest whole number of 7-bit groups that fits
+;; within data::*fixnum-bits* (61) on all supported hosts. Keeping the small
+;; cases to whole groups lets the divide-and-conquer split only at group
+;; boundaries, and keeping them within fixnum range makes the shifts in these
+;; leaf loops register operations.
+(define jenkins-acc-leb128-small
   ((n (unsigned-byte-p 56 n))
    (acc (unsigned-byte-p 32 acc)))
   (declare (xargs :split-types t)
@@ -248,23 +221,23 @@
                 :exec (the (unsigned-byte 56) n))))
     (if (< n 128)
         (jenkins-acc-byte (the (unsigned-byte 8) n) acc)
-      (jenkins-acc-varint-small
+      (jenkins-acc-leb128-small
         (the (unsigned-byte 56) (ash n -7))
         (jenkins-acc-byte (the (unsigned-byte 8)
                             (+ 128 (the (unsigned-byte 7)
-                                     (acl2::loghead 7 n))))
+                                     (loghead 7 n))))
                           acc))))
   :measure (nfix n))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t jenkins-acc-varint-small)))
+(in-theory (disable (:t jenkins-acc-leb128-small)))
 
-(defrule jenkins-acc-varint-small-type-prescription
-  (natp (jenkins-acc-varint-small n acc))
+(defrule jenkins-acc-leb128-small-type-prescription
+  (natp (jenkins-acc-leb128-small n acc))
   :rule-classes :type-prescription
   :induct t
-  :enable jenkins-acc-varint-small)
+  :enable jenkins-acc-leb128-small)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -272,7 +245,7 @@
 ;; with the continuation bit set. This is used for the low portion of a large
 ;; number, whose continuation bits are all set because more significant groups
 ;; always follow.
-(define jenkins-acc-varint-groups-small
+(define jenkins-acc-leb128-groups-small
   ((x (unsigned-byte-p 56 x))
    (m natp)
    (acc (unsigned-byte-p 32 acc)))
@@ -288,24 +261,24 @@
                         acc
                       0)
              :exec acc)
-      (jenkins-acc-varint-groups-small
+      (jenkins-acc-leb128-groups-small
         (the (unsigned-byte 56) (ash x -7))
         (1- m)
         (jenkins-acc-byte (the (unsigned-byte 8)
                             (+ 128 (the (unsigned-byte 7)
-                                     (acl2::loghead 7 x))))
+                                     (loghead 7 x))))
                           acc))))
   :measure (nfix m))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t jenkins-acc-varint-groups-small)))
+(in-theory (disable (:t jenkins-acc-leb128-groups-small)))
 
-(defrule jenkins-acc-varint-groups-small-type-prescription
-  (natp (jenkins-acc-varint-groups-small x m acc))
+(defrule jenkins-acc-leb128-groups-small-type-prescription
+  (natp (jenkins-acc-leb128-groups-small x m acc))
   :rule-classes :type-prescription
   :induct t
-  :enable jenkins-acc-varint-groups-small)
+  :enable jenkins-acc-leb128-groups-small)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -313,7 +286,7 @@
 ;; Large inputs are split roughly in half (at a multiple of 7 bits) so that
 ;; bignums are processed in O(k log(k)) time rather than the O(k^2) which
 ;; would result from shifting the entire bignum for each group.
-(define jenkins-acc-varint-groups
+(define jenkins-acc-leb128-groups
   ((x natp)
    (m natp)
    (acc (unsigned-byte-p 32 acc)))
@@ -327,14 +300,14 @@
                 :exec (the unsigned-byte x)))
         (m (mbe :logic (lnfix m)
                 :exec (the unsigned-byte m))))
-    (if (<= m 8)
-        (jenkins-acc-varint-groups-small x m acc)
+    (if (<= m 8) ;; 8 groups = 56 bits; see jenkins-acc-leb128-small
+        (jenkins-acc-leb128-groups-small x m acc)
       (let* ((m1 (floor m 2))
              (bits1 (* 7 m1)))
-        (jenkins-acc-varint-groups
+        (jenkins-acc-leb128-groups
           (ash x (- bits1))
           (- m m1)
-          (jenkins-acc-varint-groups (acl2::loghead bits1 x) m1 acc)))))
+          (jenkins-acc-leb128-groups (loghead bits1 x) m1 acc)))))
   :measure (nfix m)
   :verify-guards :after-returns
   :guard-hints (("Goal" :in-theory (enable acl2::right-shift-to-logtail
@@ -342,20 +315,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t jenkins-acc-varint-groups)))
+(in-theory (disable (:t jenkins-acc-leb128-groups)))
 
-(defrule jenkins-acc-varint-groups-type-prescription
-  (natp (jenkins-acc-varint-groups x m acc))
+(defrule jenkins-acc-leb128-groups-type-prescription
+  (natp (jenkins-acc-leb128-groups x m acc))
   :rule-classes :type-prescription
   :induct t
-  :enable jenkins-acc-varint-groups)
+  :enable jenkins-acc-leb128-groups)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Serialize a natural number as a varint. Small numbers are handled directly;
+;; Serialize a natural number in LEB128 form. Small numbers are handled
+;; directly;
 ;; large numbers are split roughly in half (at a multiple of 7 bits), the low
 ;; groups (whose continuation bits are all set) are serialized with
-;; jenkins-acc-varint-groups, and the process recurs on the high part.
+;; jenkins-acc-leb128-groups, and the process recurs on the high part.
 (define jenkins-acc-nat
   ((n natp)
    (acc (unsigned-byte-p 32 acc)))
@@ -366,12 +340,12 @@
   (let ((n (mbe :logic (lnfix n)
                 :exec (the unsigned-byte n))))
     (if (< n 72057594037927936) ;; (expt 2 56)
-        (jenkins-acc-varint-small n acc)
+        (jenkins-acc-leb128-small n acc)
       (let* ((m1 (floor (integer-length n) 14))
              (bits1 (* 7 m1)))
         (jenkins-acc-nat
           (ash n (- bits1))
-          (jenkins-acc-varint-groups (acl2::loghead bits1 n) m1 acc)))))
+          (jenkins-acc-leb128-groups (loghead bits1 n) m1 acc)))))
   :measure (nfix (integer-length n))
   :hints (("Goal" :in-theory (e/d (acl2::right-shift-to-logtail
                                    fix
@@ -393,7 +367,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Serialize an integer as a varint via the zigzag encoding
+;; Serialize an integer in LEB128 form via the zigzag encoding
 ;; (0, -1, 1, -2, 2, ... maps to 0, 1, 2, 3, 4, ...).
 (define jenkins-acc-integer-contents
   ((n integerp)
@@ -443,8 +417,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Serialize a rational as its numerator (zigzag varint) followed by its
-;; denominator (varint). Both parts are self-delimiting, so the pair is
+;; Serialize a rational as its numerator (zigzag LEB128) followed by its
+;; denominator (LEB128). Both parts are self-delimiting, so the pair is
 ;; unambiguous.
 (define jenkins-acc-rational-contents
   ((n rationalp)
@@ -593,7 +567,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: use loop$
 (define jenkins-acc-string-index
   ((str stringp)
    (i (unsigned-byte-p data::*fixnum-bits* i))
@@ -614,7 +587,6 @@
                 :exec i))
         (len (mbe :logic (nfix len)
                   :exec len)))
-    ;; TODO: redundant?
     (declare (type #.data::*u-fixnum-type* i len))
     (if (and (mbt (<= i len))
              (< i len))
@@ -642,7 +614,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The string's length (as a varint) followed by its character codes, without
+;; The string's length (in LEB128 form) followed by its character codes,
+;; without
 ;; a type tag. Used for the package and name strings of a symbol.
 (define jenkins-acc-string-contents
   ((str stringp)
@@ -800,34 +773,34 @@
 ;; below: the fused single-pass walk is logically the composition of the
 ;; serialization and the byte fold.
 
-(defruled jenkins-acc-varint-small-becomes-jenkins-acc-bytes
-  (equal (jenkins-acc-varint-small n acc)
+(defruled jenkins-acc-leb128-small-becomes-jenkins-acc-bytes
+  (equal (jenkins-acc-leb128-small n acc)
          (jenkins-acc-bytes (nat-to-bytes n) acc))
-  :induct (jenkins-acc-varint-small n acc)
-  :enable (jenkins-acc-varint-small
+  :induct (jenkins-acc-leb128-small n acc)
+  :enable (jenkins-acc-leb128-small
            jenkins-acc-bytes
            nat-to-bytes))
 
-(defruled jenkins-acc-varint-groups-small-becomes-jenkins-acc-bytes
+(defruled jenkins-acc-leb128-groups-small-becomes-jenkins-acc-bytes
   (implies (natp x)
-           (equal (jenkins-acc-varint-groups-small x m acc)
-                  (jenkins-acc-bytes (nat-to-varint-groups x m) acc)))
-  :induct (jenkins-acc-varint-groups-small x m acc)
-  :expand ((nat-to-varint-groups x m))
-  :enable (jenkins-acc-varint-groups-small
+           (equal (jenkins-acc-leb128-groups-small x m acc)
+                  (jenkins-acc-bytes (nat-to-leb128-groups x m) acc)))
+  :induct (jenkins-acc-leb128-groups-small x m acc)
+  :expand ((nat-to-leb128-groups x m))
+  :enable (jenkins-acc-leb128-groups-small
            jenkins-acc-bytes
            acl2::right-shift-to-logtail))
 
-(defruled jenkins-acc-varint-groups-becomes-jenkins-acc-bytes
+(defruled jenkins-acc-leb128-groups-becomes-jenkins-acc-bytes
   (implies (natp x)
-           (equal (jenkins-acc-varint-groups x m acc)
-                  (jenkins-acc-bytes (nat-to-varint-groups x m) acc)))
-  :induct (jenkins-acc-varint-groups x m acc)
-  :enable (jenkins-acc-varint-groups
-           jenkins-acc-varint-groups-small-becomes-jenkins-acc-bytes
+           (equal (jenkins-acc-leb128-groups x m acc)
+                  (jenkins-acc-bytes (nat-to-leb128-groups x m) acc)))
+  :induct (jenkins-acc-leb128-groups x m acc)
+  :enable (jenkins-acc-leb128-groups
+           jenkins-acc-leb128-groups-small-becomes-jenkins-acc-bytes
            acl2::<-of-floor-and-0
            acl2::right-shift-to-logtail)
-  :hints (("Subgoal *1/2" :use (:instance nat-to-varint-groups-split
+  :hints (("Subgoal *1/2" :use (:instance nat-to-leb128-groups-split
                                           (n x)
                                           (m (nfix m))
                                           (m1 (floor (nfix m) 2))))))
@@ -838,8 +811,8 @@
                   (jenkins-acc-bytes (nat-to-bytes n) acc)))
   :induct (jenkins-acc-nat n acc)
   :enable (jenkins-acc-nat
-           jenkins-acc-varint-small-becomes-jenkins-acc-bytes
-           jenkins-acc-varint-groups-becomes-jenkins-acc-bytes
+           jenkins-acc-leb128-small-becomes-jenkins-acc-bytes
+           jenkins-acc-leb128-groups-becomes-jenkins-acc-bytes
            acl2::right-shift-to-logtail)
   :hints (("Subgoal *1/2"
            :use (:instance nat-to-bytes-split
@@ -1023,7 +996,7 @@
 
 ;; The Jenkins one-at-a-time hash of an explicit byte list.
 (define jenkins-bytes
-  ((bytes acl2::byte-listp))
+  ((bytes byte-listp))
   :returns (hash (unsigned-byte-p 32 hash))
   (jenkins-finalize (jenkins-acc-bytes bytes 0)))
 
@@ -1042,15 +1015,10 @@
   :parents (jenkins-one-at-a-time)
   :returns (hash (unsigned-byte-p 32 hash))
   (mbe :logic (jenkins-bytes (to-bytes x))
-       :exec (the (unsigned-byte 32)
-               (let* ((acc (the (unsigned-byte 32)
-                             (jenkins-acc x 0)))
-                      (acc (data::u32-plus acc (data::u32-shl acc 3)))
-                      (acc (data::u32-xor acc (data::u32-shr acc 11))))
-                 (data::u32-plus acc (data::u32-shl acc 15)))))
-  :guard-hints (("Goal" :in-theory (enable jenkins-bytes
-                                           jenkins-finalize
-                                           jenkins-acc-becomes-jenkins-acc-bytes))))
+       :exec (jenkins-finalize (jenkins-acc x 0)))
+  :guard-hints
+  (("Goal" :in-theory (enable jenkins-bytes
+                              jenkins-acc-becomes-jenkins-acc-bytes))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1066,18 +1034,12 @@
 (define acl2-number-jenkins
   ((x acl2-numberp))
   (mbe :logic (jenkins x)
-       :exec (the (unsigned-byte 32)
-               (let* ((acc (the (unsigned-byte 32)
-                             (jenkins-acc-acl2-number x 0)))
-                      (acc (data::u32-plus acc (data::u32-shl acc 3)))
-                      (acc (data::u32-xor acc (data::u32-shr acc 11))))
-                 (data::u32-plus acc (data::u32-shl acc 15)))))
+       :exec (jenkins-finalize (jenkins-acc-acl2-number x 0)))
   :enabled t
   :guard-hints
   (("Goal"
     :in-theory (enable jenkins
                        jenkins-bytes
-                       jenkins-finalize
                        to-bytes
                        atom-to-bytes
                        jenkins-acc-acl2-number-becomes-jenkins-acc-bytes))))
@@ -1085,18 +1047,12 @@
 (define symbol-jenkins
   ((x symbolp))
   (mbe :logic (jenkins x)
-       :exec (the (unsigned-byte 32)
-               (let* ((acc (the (unsigned-byte 32)
-                             (jenkins-acc-symbol x 0)))
-                      (acc (data::u32-plus acc (data::u32-shl acc 3)))
-                      (acc (data::u32-xor acc (data::u32-shr acc 11))))
-                 (data::u32-plus acc (data::u32-shl acc 15)))))
+       :exec (jenkins-finalize (jenkins-acc-symbol x 0)))
   :enabled t
   :guard-hints
   (("Goal"
     :in-theory (enable jenkins
                        jenkins-bytes
-                       jenkins-finalize
                        to-bytes
                        atom-to-bytes
                        jenkins-acc-symbol-becomes-jenkins-acc-bytes))))
@@ -1104,23 +1060,17 @@
 (define eqlable-jenkins
   ((x eqlablep))
   (mbe :logic (jenkins x)
-       :exec (the (unsigned-byte 32)
-               (let* ((acc (the (unsigned-byte 32)
-                             (cond ((symbolp x)
-                                    (jenkins-acc-symbol x 0))
-                                   ((acl2-numberp x)
-                                    (jenkins-acc-acl2-number x 0))
-                                   (t
-                                    (jenkins-acc-character x 0)))))
-                      (acc (data::u32-plus acc (data::u32-shl acc 3)))
-                      (acc (data::u32-xor acc (data::u32-shr acc 11))))
-                 (data::u32-plus acc (data::u32-shl acc 15)))))
+       :exec (jenkins-finalize (cond ((symbolp x)
+                                      (jenkins-acc-symbol x 0))
+                                     ((acl2-numberp x)
+                                      (jenkins-acc-acl2-number x 0))
+                                     (t
+                                      (jenkins-acc-character x 0)))))
   :enabled t
   :guard-hints
   (("Goal"
     :in-theory (enable jenkins
                        jenkins-bytes
-                       jenkins-finalize
                        to-bytes
                        atom-to-bytes
                        jenkins-acc-symbol-becomes-jenkins-acc-bytes

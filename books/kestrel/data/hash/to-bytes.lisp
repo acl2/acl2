@@ -36,6 +36,8 @@
 
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
+(local (include-book "std/basic/inductions" :dir :system))
+
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
@@ -72,25 +74,29 @@
          symbol, string, character, integer, rational, complex, or
          bad-atom).")
       (xdoc::li
-        "Natural numbers are serialized as base-128 varints: little-endian
-         groups of 7 bits, where the high bit of each byte indicates whether
-         another byte follows. This form is self-delimiting. Integers are
-         first mapped to naturals by interleaving the nonnegative and negative
-         integers (0, -1, 1, -2, 2, ... map to 0, 1, 2, 3, 4, ...), the
-         so-called ``zigzag'' encoding.")
+        "Natural numbers are serialized in unsigned LEB128 form: little-endian
+         groups of 7 bits (base-128 digits), where the high bit of each byte
+         indicates whether another byte follows. This form is self-delimiting.
+         Integers are first mapped to naturals by interleaving the nonnegative
+         and negative integers (0, -1, 1, -2, 2, ... map to 0, 1, 2, 3, 4,
+         ...), the so-called ``zigzag'' encoding.")
       (xdoc::li
-        "Strings are length-prefixed (the length as a varint) followed by
+        "Strings are length-prefixed (the length in LEB128 form) followed by
          their character codes.")
       (xdoc::li
         "Compound atoms serialize their parts in sequence: symbols as their
          package name and symbol name (each length-prefixed), rationals as
-         numerator and denominator (self-delimiting varints), and complex
+         numerator and denominator (self-delimiting LEB128 encodings), and
          numbers as their real and imaginary parts."))
     (xdoc::p
       "These functions are specifications. They are executable, but no attempt
        is made to execute them efficiently; a hash function is expected to fuse
        the serialization into its own walk over the object, and to appeal to
-       these definitions only in its logical story."))
+       these definitions only in its logical story.")
+    (xdoc::p
+      "Finally, we note that the length of the produced byte list corresponds
+       with the size of the object, <i>without</i> optimization for
+       shared substructure."))
   :order-subtopics t
   :default-parent t)
 
@@ -99,6 +105,10 @@
 ;; The type tag bytes used by the serialization. Every atom (and cons)
 ;; contributes exactly one of these bytes before its contents, so that objects
 ;; of different types never share a byte list.
+;;
+;; The particular values are arbitrary; injectivity requires only that they
+;; be distinct (checked below), and the hash algorithms are insensitive to
+;; the choice. Note that changing them changes every hash value.
 
 (defconst *tag-cons* #x70)
 (defconst *tag-symbol* #x71)
@@ -109,34 +119,57 @@
 (defconst *tag-complex* #x76)
 (defconst *tag-bad-atom* #x77)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *type-tags*
+  (list *tag-cons*
+        *tag-symbol*
+        *tag-string*
+        *tag-character*
+        *tag-integer*
+        *tag-rational*
+        *tag-complex*
+        *tag-bad-atom*))
+
+;; Sanity check
+(rule
+  (no-duplicatesp *type-tags*))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrulel <-of-loghead-7-and-128-linear
-  (< (acl2::loghead 7 x) 128)
+  (< (loghead 7 x) 128)
   :rule-classes :linear
   :use (:instance acl2::unsigned-byte-p-of-loghead
                   (acl2::size1 7)
                   (acl2::size 7)
                   (acl2::i x))
-  :enable unsigned-byte-p
   :disable acl2::unsigned-byte-p-of-loghead)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define nat-to-bytes ((n natp))
-  :short "Serialize a natural number as a base-128 varint."
+  :short "Serialize a natural number in unsigned LEB128 form."
   :long
   (xdoc::topstring
     (xdoc::p
-      "Each byte carries 7 bits of the number, least significant group first.
-       The high bit is set on every byte but the last, so the encoding is
-       self-delimiting. No redundant high-order group is ever emitted, so the
-       encoding is canonical."))
-  :returns (bytes acl2::byte-listp)
+      "The number is split into 7-bit groups &mdash; its base-128 digits
+       &mdash; and each byte carries one group, least significant first. The
+       high bit is set on every byte but the last, so the encoding is
+       self-delimiting. No redundant zero high-order group (the base-128
+       analogue of a leading zero) is ever emitted, so the encoding is
+       canonical.")
+    (xdoc::p
+      "This is the unsigned "
+      (xdoc::a :href "https://en.wikipedia.org/wiki/LEB128" "LEB128")
+      " encoding (as in DWARF and WebAssembly), also known as the base-128
+       ``varint'' encoding of Protocol Buffers. VLQ is the analogous
+       big-endian (most significant group first) encoding."))
+  :returns (bytes byte-listp)
   (let ((n (lnfix n)))
     (if (< n 128)
         (list n)
-      (cons (+ 128 (acl2::loghead 7 n))
+      (cons (+ 128 (loghead 7 n))
             (nat-to-bytes (ash n -7)))))
   :measure (nfix n))
 
@@ -152,52 +185,51 @@
   :enable nat-to-bytes)
 
 (defrule nat-to-bytes-when-nat-equiv-congruence
-  (implies (acl2::nat-equiv n0 n1)
+  (implies (nat-equiv n0 n1)
            (equal (nat-to-bytes n0)
                   (nat-to-bytes n1)))
   :rule-classes :congruence
-  :expand ((nat-to-bytes n0) (nat-to-bytes n1)))
+  :expand ((nat-to-bytes n0)
+           (nat-to-bytes n1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define nat-to-varint-groups ((n natp) (m natp))
-  :short "Serialize exactly @('m') 7-bit groups of a natural number, each with
-          the continuation bit set."
+(define nat-to-leb128-groups ((n natp) (m natp))
+  :short "Serialize exactly @('m') 7-bit groups (base-128 digits) of a
+          natural number, each with the continuation bit set."
   :long
   (xdoc::topstring
     (xdoc::p
-      "This describes the low portion of the varint serialization of a large
+      "This describes the low portion of the LEB128 serialization of a large
        number, whose continuation bits are all set because more significant
        groups always follow. It is the specification for hash implementations
        which serialize a large number by splitting it into portions, rather
        than extracting one group at a time (see @(tsee nat-to-bytes-split)
        and, e.g., @(see jenkins-one-at-a-time))."))
-  :returns (bytes acl2::byte-listp)
+  :returns (bytes byte-listp)
   (if (zp m)
       nil
-    (cons (+ 128 (acl2::loghead 7 n))
-          (nat-to-varint-groups (ash (lnfix n) -7) (1- m))))
+    (cons (+ 128 (loghead 7 n))
+          (nat-to-leb128-groups (ash (lnfix n) -7) (1- m))))
   :measure (nfix m))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t nat-to-varint-groups)))
+(in-theory (disable (:t nat-to-leb128-groups)))
 
-(defrule nat-to-varint-groups-type-prescription
-  (true-listp (nat-to-varint-groups n m))
-  :rule-classes ((:type-prescription :typed-term (nat-to-varint-groups n m)))
+(defrule nat-to-leb128-groups-type-prescription
+  (true-listp (nat-to-leb128-groups n m))
+  :rule-classes ((:type-prescription :typed-term (nat-to-leb128-groups n m)))
   :induct t
-  :enable nat-to-varint-groups)
+  :enable nat-to-leb128-groups)
 
-(defrule nat-to-varint-groups-when-nat-equiv-congruence
-  (implies (acl2::nat-equiv m0 m1)
-           (equal (nat-to-varint-groups n m0)
-                  (nat-to-varint-groups n m1)))
+(defrule nat-to-leb128-groups-when-nat-equiv-congruence
+  (implies (nat-equiv m0 m1)
+           (equal (nat-to-leb128-groups n m0)
+                  (nat-to-leb128-groups n m1)))
   :rule-classes :congruence
-  :cases ((zp m0))
-  :expand ((nat-to-varint-groups n m0)
-           (nat-to-varint-groups n m1))
-  :enable acl2::nat-equiv)
+  :expand ((nat-to-leb128-groups n m0)
+           (nat-to-leb128-groups n m1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -210,39 +242,46 @@
   (implies (natp n)
            (equal (< n 128)
                   (< (integer-length n) 8)))
-  :cases ((equal n 0))
-  :use (:instance acl2::<-of-integer-length-arg2
-                  (acl2::x n)
-                  (acl2::n 7)))
+  :cases ((equal n 0)))
 
 ;; This rule inverts acl2::<-of-integer-length-arg1/arg2; enabling it together
 ;; with either loops.
 (local (theory-invariant
-         (incompatible (:rewrite <-of-128-becomes-integer-length)
-                       (:rewrite acl2::<-of-integer-length-arg1))))
+         (incompatible! (:rewrite <-of-128-becomes-integer-length)
+                        (:rewrite acl2::<-of-integer-length-arg1))))
 (local (theory-invariant
-         (incompatible (:rewrite <-of-128-becomes-integer-length)
-                       (:rewrite acl2::<-of-integer-length-arg2))))
+         (incompatible! (:rewrite <-of-128-becomes-integer-length)
+                        (:rewrite acl2::<-of-integer-length-arg2))))
 
-(local (defun groups-split-induct (n m m1)
-         (declare (xargs :measure (nfix m1)))
-         (if (zp m1)
-             (list n m)
-           (groups-split-induct (acl2::logtail 7 n) (1- m) (1- m1)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled nat-to-varint-groups-split
+(local
+  (define groups-split-induct (n m m1)
+    (if (zp m1)
+        (list n m)
+      (groups-split-induct (logtail 7 n) (1- m) (1- m1)))
+    :measure (nfix m1)
+    :verify-guards nil))
+
+(local (in-theory (enable (:i groups-split-induct))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled nat-to-leb128-groups-split
+  ;; The (natp n) hypothesis cannot be dropped: for negative n the first group
+  ;; takes loghead of n's two's-complement bits while the recursion nfixes n
+  ;; to 0 (e.g. n = -5, m = 2, m1 = 1 falsifies the unconditional statement).
   (implies (and (natp n)
                 (natp m)
                 (natp m1)
                 (<= m1 m))
-           (equal (nat-to-varint-groups n m)
+           (equal (nat-to-leb128-groups n m)
                   (append
-                    (nat-to-varint-groups (acl2::loghead (* 7 m1) n) m1)
-                    (nat-to-varint-groups (acl2::logtail (* 7 m1) n)
+                    (nat-to-leb128-groups (loghead (* 7 m1) n) m1)
+                    (nat-to-leb128-groups (logtail (* 7 m1) n)
                                           (- m m1)))))
   :induct (groups-split-induct n m m1)
-  :expand ((nat-to-varint-groups n m))
-  :enable (nat-to-varint-groups
+  :enable (nat-to-leb128-groups
            acl2::right-shift-to-logtail))
 
 (defruled nat-to-bytes-split
@@ -251,11 +290,11 @@
                 (< (* 7 m1) (integer-length n)))
            (equal (nat-to-bytes n)
                   (append
-                    (nat-to-varint-groups (acl2::loghead (* 7 m1) n) m1)
-                    (nat-to-bytes (acl2::logtail (* 7 m1) n)))))
+                    (nat-to-leb128-groups (loghead (* 7 m1) n) m1)
+                    (nat-to-bytes (logtail (* 7 m1) n)))))
   :induct (groups-split-induct n nil m1)
   :expand ((nat-to-bytes n))
-  :enable (nat-to-varint-groups
+  :enable (nat-to-leb128-groups
            <-of-128-becomes-integer-length
            acl2::right-shift-to-logtail)
   :disable (acl2::<-of-integer-length-arg1
@@ -264,13 +303,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-contents-to-bytes ((n integerp))
-  :short "Serialize an integer as a varint, without a type tag."
+  :short "Serialize an integer in LEB128 form, without a type tag."
   :long
   (xdoc::topstring
     (xdoc::p
       "The integer is first mapped to a natural number by the ``zigzag''
-       encoding, which interleaves the nonnegative and negative integers."))
-  :returns (bytes acl2::byte-listp)
+       encoding, which interleaves the nonnegative and negative integers.")
+    (xdoc::p
+      "Zigzag is preferred over a sign prefix because this function is also
+       used in tagless positions (e.g. the numerator of a rational), where a
+       sign would cost a full byte; folded into the LEB128 encoding it costs
+       one bit.
+       This is also the encoding of the signed varints of Protocol
+       Buffers."))
+  :returns (bytes byte-listp)
   (nat-to-bytes (if (< n 0)
                     (+ -1 (* -2 n))
                   (* 2 n))))
@@ -289,7 +335,7 @@
 
 (define integer-to-bytes ((n integerp))
   :short "Serialize an integer."
-  :returns (bytes acl2::byte-listp)
+  :returns (bytes byte-listp)
   (cons *tag-integer* (integer-contents-to-bytes n)))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -309,9 +355,10 @@
   :long
   (xdoc::topstring
     (xdoc::p
-      "The numerator (as a zigzag varint) followed by the denominator (as a
-       varint). Both parts are self-delimiting, so the pair is unambiguous."))
-  :returns (bytes acl2::byte-listp)
+      "The numerator (as a zigzag LEB128 encoding) followed by the denominator
+       (in LEB128 form). Both parts are self-delimiting, so the pair is
+       unambiguous."))
+  :returns (bytes byte-listp)
   (append (integer-contents-to-bytes (numerator n))
           (nat-to-bytes (denominator n))))
 
@@ -330,7 +377,7 @@
 
 (define rational-to-bytes ((n rationalp))
   :short "Serialize a rational number."
-  :returns (bytes acl2::byte-listp)
+  :returns (bytes byte-listp)
   (cons *tag-rational* (rational-contents-to-bytes n)))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -347,7 +394,7 @@
 
 (define complex-rational-to-bytes ((n complex-rationalp))
   :short "Serialize a complex rational number."
-  :returns (bytes acl2::byte-listp)
+  :returns (bytes byte-listp)
   (cons *tag-complex*
         (append (rational-contents-to-bytes (realpart n))
                 (rational-contents-to-bytes (imagpart n)))))
@@ -366,7 +413,7 @@
 
 (define acl2-number-to-bytes ((n acl2-numberp))
   :short "Serialize an ACL2 number."
-  :returns (bytes acl2::byte-listp)
+  :returns (bytes byte-listp)
   (cond ((integerp n)
          (integer-to-bytes n))
         ((rationalp n)
@@ -392,7 +439,7 @@
     (xdoc::p
       "The character code alone. Used for the characters of a string, which are
        delimited by the string's length prefix."))
-  :returns (bytes acl2::byte-listp
+  :returns (bytes byte-listp
                   :hints (("Goal" :in-theory (enable unsigned-byte-p
                                                      integer-range-p))))
   (list (char-code c)))
@@ -412,7 +459,7 @@
 
 (define character-to-bytes ((c characterp))
   :short "Serialize a character."
-  :returns (bytes acl2::byte-listp)
+  :returns (bytes byte-listp)
   (cons *tag-character* (character-contents-to-bytes c)))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -429,7 +476,7 @@
 
 (define characters-to-bytes ((chars character-listp))
   :short "Serialize a list of characters as their character codes."
-  :returns (bytes acl2::byte-listp
+  :returns (bytes byte-listp
                   :hints (("Goal" :induct t
                                   :in-theory (enable unsigned-byte-p
                                                      integer-range-p))))
@@ -455,9 +502,10 @@
   :long
   (xdoc::topstring
     (xdoc::p
-      "The string's length (as a varint) followed by its character codes. Used
+      "The string's length (in LEB128 form) followed by its character codes.
+       Used
        for the package and name strings of a symbol."))
-  :returns (bytes acl2::byte-listp)
+  :returns (bytes byte-listp)
   (append (nat-to-bytes (length str))
           (characters-to-bytes (coerce str 'list))))
 
@@ -476,7 +524,7 @@
 
 (define string-to-bytes ((str stringp))
   :short "Serialize a string."
-  :returns (bytes acl2::byte-listp)
+  :returns (bytes byte-listp)
   (cons *tag-string* (string-contents-to-bytes str)))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -498,7 +546,7 @@
     (xdoc::p
       "The package name followed by the symbol name, each length-prefixed. By
        @('acl2::symbol-equality'), these two strings determine the symbol."))
-  :returns (bytes acl2::byte-listp)
+  :returns (bytes byte-listp)
   (cons *tag-symbol*
         (append (string-contents-to-bytes (symbol-package-name symbol))
                 (string-contents-to-bytes (symbol-name symbol)))))
@@ -518,7 +566,7 @@
 (define atom-to-bytes (x)
   :short "Serialize an atom."
   :guard (not (consp x))
-  :returns (bytes acl2::byte-listp)
+  :returns (bytes byte-listp)
   (cond ((symbolp x)
          (symbol-to-bytes x))
         ((acl2-numberp x)
@@ -528,7 +576,7 @@
         ((characterp x)
          (character-to-bytes x))
         (t ;; bad-atom
-          (list *tag-bad-atom*))))
+         (list *tag-bad-atom*))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -547,13 +595,13 @@
   :long
   (xdoc::topstring
     (xdoc::p
-      "A cons contributes its tag byte followed by the serializations of its
-       car and its cdr, in that order. An atom is serialized by @(tsee
+      "A @('cons') contributes its tag byte followed by the serializations of
+       its car and its cdr, in that order. An atom is serialized by @(tsee
        atom-to-bytes).")
     (xdoc::p
       "This map is injective on objects free of bad atoms. See @(tsee
        to-bytes-injective)."))
-  :returns (bytes acl2::byte-listp
+  :returns (bytes byte-listp
                   :hints (("Goal" :induct t)))
   (if (consp x)
       (cons *tag-cons*
@@ -574,6 +622,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Eventually, this should be moved to a more neutral location.
+;; It does not need to be part of this book.
+
 (define no-bad-atoms-p (x)
   :short "Recognize objects built entirely from good atoms."
   :long
@@ -587,21 +638,16 @@
   (if (consp x)
       (and (no-bad-atoms-p (car x))
            (no-bad-atoms-p (cdr x)))
-    (not (acl2::bad-atom x))))
+    (not (bad-atom x))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (in-theory (disable (:t no-bad-atoms-p)))
 
 (defrule no-bad-atoms-p-type-prescription
-  (or (equal (no-bad-atoms-p x) t)
-      (equal (no-bad-atoms-p x) nil))
-  :rule-classes ((:type-prescription :typed-term (no-bad-atoms-p x)))
-  :use booleanp-of-no-bad-atoms-p
-  :enable booleanp
-  :disable booleanp-of-no-bad-atoms-p)
+  (booleanp (no-bad-atoms-p x))
+  :rule-classes ((:type-prescription :typed-term (no-bad-atoms-p x))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Injectivity.
@@ -619,41 +665,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Natural numbers. Rather than reason about two varints at once, we define a
+;; Natural numbers. Rather than reason about two LEB128 encodings at once,
+;; we define a
 ;; decoder and show that it recovers the number and leaves the remainder of the
 ;; byte list untouched. This needs only an induction on the number.
 
 (defrulel +-of-loghead-7-and-*-of-128-and-ash
   (implies (natp n)
-           (equal (+ (acl2::loghead 7 n) (* 128 (ash n -7)))
+           (equal (+ (loghead 7 n) (* 128 (ash n -7)))
                   n))
   :enable (acl2::right-shift-to-logtail
-           acl2::loghead
-           acl2::logtail
+           loghead
+           logtail
            acl2::ifloor
-           acl2::imod)
-  :disable (acl2::<-of-integer-length-arg1
-            acl2::<-of-integer-length-arg2))
+           acl2::imod))
 
 (local
-  (define parse-varint (bytes)
-    :returns (mv (n natp :rule-classes :type-prescription) rest)
-    :verify-guards nil
+  (define parse-leb128 (bytes)
+    :returns (mv (n natp :rule-classes :type-prescription)
+                 rest)
     (if (atom bytes)
         (mv 0 nil)
       (let ((b (nfix (car bytes))))
         (if (< b 128)
             (mv b (cdr bytes))
           (mv-let (hi rest)
-                  (parse-varint (cdr bytes))
-            (mv (+ (- b 128) (* 128 hi)) rest)))))))
+                  (parse-leb128 (cdr bytes))
+            (mv (+ (- b 128) (* 128 hi)) rest)))))
+    :verify-guards nil))
 
 (local
-  (defrule parse-varint-of-append-of-nat-to-bytes
-    (equal (parse-varint (append (nat-to-bytes n) rest))
+  (defrule parse-leb128-of-append-of-nat-to-bytes
+    (equal (parse-leb128 (append (nat-to-bytes n) rest))
            (mv (nfix n) rest))
     :induct (nat-to-bytes n)
-    :enable (nat-to-bytes parse-varint fix)))
+    :enable (nat-to-bytes parse-leb128)))
 
 (defruled append-of-nat-to-bytes-equal
   (implies (and (natp n)
@@ -662,15 +708,15 @@
                          (append (nat-to-bytes m) r2))
                   (and (equal n m)
                        (equal r1 r2))))
-  :use ((:instance parse-varint-of-append-of-nat-to-bytes (rest r1))
-        (:instance parse-varint-of-append-of-nat-to-bytes (n m) (rest r2)))
-  :disable parse-varint-of-append-of-nat-to-bytes)
+  :use ((:instance parse-leb128-of-append-of-nat-to-bytes (rest r1))
+        (:instance parse-leb128-of-append-of-nat-to-bytes (n m) (rest r2)))
+  :disable parse-leb128-of-append-of-nat-to-bytes)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Characters. Character codes are fixed-width, so the encodings of two
 ;; character lists of equal length are comparable position by position. The
-;; length is supplied by the caller's varint prefix.
+;; length is supplied by the caller's LEB128 length prefix.
 
 (defrulel equal-of-char-codes
   (implies (and (characterp x)
@@ -681,12 +727,6 @@
         (:instance acl2::code-char-char-code-is-identity (acl2::c y)))
   :disable acl2::code-char-char-code-is-identity)
 
-(local (defun characters-to-bytes-induct (c1 c2)
-         (declare (xargs :measure (acl2-count c1)))
-         (if (or (atom c1) (atom c2))
-             (list c1 c2)
-           (characters-to-bytes-induct (cdr c1) (cdr c2)))))
-
 (defruled append-of-characters-to-bytes-equal
   (implies (and (character-listp c1)
                 (character-listp c2)
@@ -695,13 +735,13 @@
                          (append (characters-to-bytes c2) r2))
                   (and (equal c1 c2)
                        (equal r1 r2))))
-  :induct (characters-to-bytes-induct c1 c2)
+  :induct (acl2::cdr-cdr-induct c1 c2)
   :enable characters-to-bytes)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Strings. The varint length prefix is self-delimiting and pins down how many
-;; character codes follow.
+;; Strings. The LEB128 length prefix is self-delimiting and pins down how
+;; many character codes follow.
 
 (defrulel equal-of-coerce-lists
   (implies (and (stringp s1)
@@ -806,8 +846,8 @@
 (defruled append-of-atom-to-bytes-equal
   (implies (and (not (consp x))
                 (not (consp y))
-                (not (acl2::bad-atom x))
-                (not (acl2::bad-atom y)))
+                (not (bad-atom x))
+                (not (bad-atom y)))
            (equal (equal (append (atom-to-bytes x) r1)
                          (append (atom-to-bytes y) r2))
                   (and (equal x y)

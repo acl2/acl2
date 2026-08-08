@@ -30,7 +30,7 @@
           *tag-complex*
           *tag-bad-atom*
           nat-to-bytes
-          nat-to-varint-groups
+          nat-to-leb128-groups
           integer-contents-to-bytes
           integer-to-bytes
           rational-contents-to-bytes

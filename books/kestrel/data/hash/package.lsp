@@ -13,6 +13,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "HASH"
-  (union-eq '(defxdoc+
-              lnfix)
-            *std-pkg-symbols*))
+  (union-eq *std-pkg-symbols*
+            '(bad-atom
+              byte-listp
+              defxdoc+
+              lnfix
+              loghead
+              logtail
+              nat-equiv)))
