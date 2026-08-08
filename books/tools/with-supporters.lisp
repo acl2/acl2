@@ -14,9 +14,6 @@
 ;   were processed, and some rules might have been local -- or at least improve
 ;   the error message when they fail.
 
-; - Perhaps support keyword arguments in with-supporters-after that are
-;   supported in with-supporters.
-
 ; - Potential loose ends include loop$ expressions, picking up symbols inside
 ;   quoted lambdas and lambda$ objects, flet calls (in
 ;   collect-constants-and-macros-1), guards for non-trivial encapsulates
@@ -59,7 +56,12 @@
 
 ; Return a list of all symbols in names that either have a local event or have
 ; an absolute-event-number property with value greater than min and at most
-; max.
+; max.  To see why we include local events, suppose that (local (defun f1 ...))
+; occurs before the with-supporters call, f1 is defined non-locally in the book
+; being locally included, and f1 supports a name f2 that is to be introduced by
+; the with-supporters call.  Then f1 will have an absolute-event-number less
+; than min, but f1 needs to be included in the returned names because its
+; definition is needed for the definition of f2.
 
   (cond
    ((endp names) acc)
@@ -74,19 +76,21 @@
                 (cons (car names) acc))
                (t acc)))))))
 
-(defun instantiable-ancestors-with-guards/measures (fns wrld ans seen)
+(defun instantiable-ancestors-with-guards/measures (fns wrld ans fns-fal)
 
 ; See ACL2 source function instantiable-ancestors, from which this is derived.
 ; However, in this case we also include function symbols from guards and
-; measures in the result.
+; measures in the result.  Fns-fal is a fast-alist whose values are irrelevant
+; and whose keys are not to be collected into the result, into which function
+; symbols are accumulated that have already been processed as we recur.
 
   (cond
-   ((null fns) (mv ans seen))
-   ((hons-get (car fns) seen)
-    (instantiable-ancestors-with-guards/measures (cdr fns) wrld ans seen))
+   ((null fns) (mv ans fns-fal))
+   ((hons-get (car fns) fns-fal)
+    (instantiable-ancestors-with-guards/measures (cdr fns) wrld ans fns-fal))
    (t
     (let* ((ans1 (cons (car fns) ans))
-           (seen (hons-acons (car fns) t seen))
+           (fns-fal (hons-acons (car fns) t fns-fal))
            (imm (immediate-instantiable-ancestors (car fns) wrld ans1))
            (guard (getpropc (car fns) 'guard nil wrld))
            (just (getpropc (car fns) 'justification nil wrld))
@@ -98,10 +102,10 @@
                           (not (eq (car measure) :?)))
                      (all-fnnames1 nil measure imm1)
                    imm1)))
-      (mv-let (ans2 seen)
-        (instantiable-ancestors-with-guards/measures imm2 wrld ans1 seen)
+      (mv-let (ans2 fns-fal)
+        (instantiable-ancestors-with-guards/measures imm2 wrld ans1 fns-fal)
         (instantiable-ancestors-with-guards/measures (cdr fns) wrld ans2
-                                                     seen))))))
+                                                     fns-fal))))))
 
 (defun accumulate-macro-names-from-aliases (names macro-aliases acc)
   (cond ((endp names) acc)
@@ -112,18 +116,18 @@
               (cond (pair (cons (car pair) acc))
                     (t acc)))))))
 
-(defun get-event+ (name fal wrld)
+(defun get-event+ (name evs-fal wrld)
 
 ; This variant of get-event (defined in the ACL2 sources) can return (mv n ev)
 ; where ev is the event and n is its absolute-event-number.  However, if the
 ; absolute-event-number is nil then an error is indicated by returning (mv
-; :failed nil); and if otherwise n is already a key of fal then we return (mv
-; nil nil).
+; :failed nil); and if otherwise n is already a key of evs-fal then we return
+; (mv nil nil).
 
   (let ((index (getpropc name 'absolute-event-number nil wrld)))
     (cond ((null index)
            (mv :failed nil))
-          ((hons-get index fal)
+          ((hons-get index evs-fal)
            (mv nil nil))
           (t (let ((ev (access-event-tuple-form
                         (cddr (car (lookup-world-index 'event index wrld))))))
@@ -153,9 +157,10 @@
 ; calls of the ACL2 evaluator, ev-w.
 
 ; When this function returns (mv t lst), then form is a macro call, and lst is
-; a list of forms that contains the same non-built-in function symbols, macros,
-; and constant symbols as the single-step macroexpansion of form.  Otherwise
-; (mv nil nil) is returned.
+; a list of forms, such that the set of non-built-in function symbols, macros,
+; and constant symbols occurring in that list is the same set of such symbols
+; as occurring the single-step macroexpansion of form.  Otherwise (mv nil nil)
+; is returned.
 
   (declare (xargs :guard (true-listp form)))
   (cond ((eq (car form) 'mbe)
@@ -303,22 +308,23 @@
        wrld state-vars))))
 )
 
-(defun supporters-extend-seen (fns seen)
-  (cond ((endp fns) seen)
-        (t (supporters-extend-seen (cdr fns)
-                                   (hons-acons (car fns) t seen)))))
+(defun supporters-extend-fns-fal (fns fns-fal)
+  (cond ((endp fns) fns-fal)
+        (t (supporters-extend-fns-fal (cdr fns)
+                                      (hons-acons (car fns) t fns-fal)))))
 
-(defun filter-out-seen (lst seen)
+(defun diff-with-fal (lst fns-fal)
   (cond ((endp lst) nil)
-        ((hons-get (car lst) seen)
-         (filter-out-seen (cdr lst) seen))
+        ((hons-get (car lst) fns-fal)
+         (diff-with-fal (cdr lst) fns-fal))
         (t
          (cons (car lst)
-               (filter-out-seen (cdr lst) seen)))))
+               (diff-with-fal (cdr lst) fns-fal)))))
 
 (defun absstobj-supporters (absstobj-tuples)
 
-; Absstobj-tuples is a list of tuples (name logic exec . updater).
+; Absstobj-tuples is a list of tuples (name logic exec . updater).  We return
+; the list of all such logic, exec, and updater function symbols.
 
   (cond ((endp absstobj-tuples) nil)
         (t (let ((tuple (car absstobj-tuples)))
@@ -331,27 +337,29 @@
 
 (mutual-recursion
 
-(defun supporters-of-1-lst (defs min max macro-aliases wrld state-vars seen)
+(defun supporters-of-1-lst (defs min max macro-aliases wrld state-vars fns-fal)
+
+; See supporters-of-1, which is supported by the present function.
+
   (cond
-   ((endp defs) (mv nil seen))
-   (t (mv-let (lst1 seen)
-        (supporters-of-1 (car defs) min max macro-aliases wrld state-vars seen)
-        (mv-let (lst2 seen)
+   ((endp defs) (mv nil fns-fal))
+   (t (mv-let (lst1 fns-fal)
+        (supporters-of-1 (car defs) min max macro-aliases wrld state-vars fns-fal)
+        (mv-let (lst2 fns-fal)
           (supporters-of-1-lst (cdr defs) min max macro-aliases wrld state-vars
-                               seen)
-          (mv (append lst1 lst2) seen))))))
+                               fns-fal)
+          (mv (append lst1 lst2) fns-fal))))))
 
-(defun supporters-of-1 (ev min max macro-aliases wrld state-vars seen)
+(defun supporters-of-1 (ev min max macro-aliases wrld state-vars fns-fal)
 
-; See supporters-of-rec, in particular for discussion of seen.  Here we
-; make a reasonable attempt to return all function, macro, and constant
-; symbols that support ev, also returning a suitable extension of the
-; fast-alist, seen.
+; See supporters-of-rec, in particular for discussion of fns-fal.  Here we make
+; a reasonable attempt to return all function, macro, and constant symbols that
+; support ev, also returning a suitable extension of the fast-alist, fns-fal.
 
   (cond
    ((and (consp ev) ; always true?
          (eq (car ev) 'mutual-recursion))
-    (supporters-of-1-lst (cdr ev) min max macro-aliases wrld state-vars seen))
+    (supporters-of-1-lst (cdr ev) min max macro-aliases wrld state-vars fns-fal))
    (t
     (let* ((non-trivial-encapsulate-p
 
@@ -371,7 +379,7 @@
                         (symbolp (cadr ev))
                         (cadr ev)))))
       (cond
-       ((null name) (mv nil seen))
+       ((null name) (mv nil fns-fal))
        (t
         (let* ((formula
                 (if non-trivial-encapsulate-p
@@ -411,11 +419,11 @@
                             (append absstobj-supporters
                                     (strip-cars attachment-alist)
                                     (strip-cdrs attachment-alist)))))))
-               (new-fns (filter-out-seen new-fns seen)))
-          (mv-let (new-fns seen)
+               (new-fns (diff-with-fal new-fns fns-fal)))
+          (mv-let (new-fns fns-fal)
             (instantiable-ancestors-with-guards/measures
              (fns-with-abs-ev-between-or-local new-fns min max wrld nil)
-             wrld nil seen)
+             wrld nil fns-fal)
             (let* ((new-fns (fns-with-abs-ev-between-or-local new-fns min max
                                                               wrld nil))
                    (new-names
@@ -426,26 +434,28 @@
                                                        state-vars))))
               (mv (accumulate-macro-names-from-aliases
                    new-fns macro-aliases new-names)
-                  seen))))))))))
+                  (supporters-extend-fns-fal new-fns fns-fal)))))))))))
 )
 
-(defun supporters-of-rec (lst fal min max macro-aliases ctx wrld state-vars
-                              seen)
+(defun supporters-of-rec (lst evs-fal min max macro-aliases ctx wrld state-vars
+                              fns-fal)
 
 ; Each element of lst is either a symbol or a pair (n . ev) where ev is an
-; event and n is its absolute-event-number.  The accumulator fal is a
-; fast-alist that is nil at the top level.  We extend fal with pairs (n . ev)
-; where ev is an event with absolute event number n.  We make that extension
-; for each event ev that supports events based on lst (either events in lst or
-; definitions of names in lst).  Seen is a fast alist whose keys are defined
-; symbols, each of which has the following property: every macro or constant
-; name occurring during translation for admitting its event is represented
-; either in lst or in fal (by being defined by the event represented there).
-; We use seen to avoid collecting such macro and constant names more than once
-; for a given function symbol.
+; event and n is its absolute-event-number.  The accumulator evs-fal is a
+; fast-alist that is nil at the top level.  We extend evs-fal with pairs (n
+; . ev) where ev is an event with absolute event number n.  We make that
+; extension for each event ev that is in lst or (recursively) supports an
+; event, or name of an event, in lst.  Fns-fal is a fast alist whose keys are
+; defined symbols, each of which has the following property: every macro or
+; constant name occurring during translation for admitting its event is
+; represented either in lst or in evs-fal (by being defined by the event
+; represented there).  We use fns-fal to avoid, for the times that
+; supporters-of-1 is called below, collecting names more than once; but also,
+; fns-fal should ultimately contain all function symbols that support lst or
+; evs-fal.
 
   (cond
-   ((endp lst) (mv fal seen))
+   ((endp lst) (mv evs-fal fns-fal))
    (t
     (let ((constraint-lst
            (and (symbolp (car lst))
@@ -461,32 +471,32 @@
 ; that have a later absolute-event-number.  So, we simply replace the current
 ; function symbol with the one it references.
 
-        (supporters-of-rec (cons constraint-lst (cdr lst)) fal min max
-                           macro-aliases ctx wrld state-vars seen))
+        (supporters-of-rec (cons constraint-lst (cdr lst)) evs-fal min max
+                           macro-aliases ctx wrld state-vars fns-fal))
        (t
         (mv-let (n ev)
           (cond ((symbolp (car lst))
-                 (get-event+ (car lst) fal wrld))
-                ((hons-get (caar lst) fal)
+                 (get-event+ (car lst) evs-fal wrld))
+                ((hons-get (caar lst) evs-fal)
                  (mv nil nil))
                 (t
                  (mv (caar lst) (cdar lst))))
           (cond
            ((null n) ; already processed
-            (supporters-of-rec (cdr lst) fal min max macro-aliases ctx wrld
-                               state-vars seen))
+            (supporters-of-rec (cdr lst) evs-fal min max macro-aliases ctx wrld
+                               state-vars fns-fal))
            ((eq n :failed) ; hence (symbolp (car lst))
             (mv (er hard ctx
                     "The name ~x0 is not defined, yet it was expected to be."
                     (car lst))
                 nil))
            (t
-            (mv-let (fns seen)
-              (supporters-of-1 ev min max macro-aliases wrld state-vars seen)
+            (mv-let (fns fns-fal)
+              (supporters-of-1 ev min max macro-aliases wrld state-vars fns-fal)
               (supporters-of-rec (append fns (cdr lst))
-                                 (hons-acons n ev fal)
+                                 (hons-acons n ev evs-fal)
                                  min max macro-aliases ctx wrld state-vars
-                                 seen)))))))))))
+                                 fns-fal)))))))))))
 
 (defun adjust-defun-for-symbol-class (ev wrld)
 
@@ -548,11 +558,12 @@
 (defun adjust-ev-for-symbol-class (ev wrld)
 
 ; Ev is an event, as returned by get-event, that may come from a
-; locally-included book.  We will be evaluating ev without including that book,
-; after evaluating events that support ev.  We want to ensure that its
-; symbol-class in that future world will be the same as it was when we locally
-; included the book.  We return a possibly modified event that provides that
-; guarantee.  So we return an event that is a version of ev with that property.
+; locally-included book to be introduced by with-supporters.  We will be
+; evaluating ev without including that book, after evaluating events that
+; support ev.  We want to ensure that its symbol-class in that future world
+; will be the same as it was when we locally included the book.  We return a
+; possibly modified event that provides that guarantee.  So we return an event
+; that is a version of ev with that property.
 
   (case (car ev)
     (defchoose
@@ -574,11 +585,13 @@
      (adjust-encapsulate-for-symbol-class ev wrld))
     (otherwise ev)))
 
-(defun events-from-supporters-fal (pairs min max wrld acc)
+(defun events-from-supporters (pairs min max wrld acc)
 
 ; Each element of pairs is of the form (n . ev) where ev is an event, and pairs
-; is sorted by car in increasing order.  We collect suitably-adjusted cdrs from
-; pairs until a car exceeds max.
+; is sorted by car in increasing order.  We collect suitably-adjusted events
+; ev, including all local events (for reasons discussed in a comment in
+; fns-with-abs-ev-between-or-local) and otherwise starting with the first n
+; that exceeds min, until a car exceeds max.
 
   (cond
    ((or (endp pairs)
@@ -586,9 +599,9 @@
     (reverse acc))
    ((and (<= (car (car pairs)) min)
          (not (get-event-local-p (car (car pairs)) wrld)))
-    (events-from-supporters-fal (cdr pairs) min max wrld acc))
+    (events-from-supporters (cdr pairs) min max wrld acc))
    (t
-    (events-from-supporters-fal
+    (events-from-supporters
      (cdr pairs) min max wrld
      (cons (adjust-ev-for-symbol-class (cdr (car pairs)) wrld)
            acc)))))
@@ -642,7 +655,8 @@
 (defun supporter-fns-in-range-or-local (alist min max wrld acc)
 
 ; We restrict (strip-cars alist) to function symbols whose absolute event
-; number is in the interval (min,max] or whose definition is local.
+; number is in the interval (min,max] or whose definition is local (for the
+; reason discussed in a comment in fns-with-abs-ev-between-or-local).
 
   (cond
    ((endp alist) acc)
@@ -663,17 +677,16 @@
 ; Each element of lst is either a symbol or a pair (n . ev) where ev is an
 ; event and n is its absolute-event-number.  We return a pair (evs . fns) where
 ; evs contains all such events except that some are suitably adjusted (see
-; adjust-ev-for-symbol-class), and fns is a list containing those names
-; that support these events including function symbols, constant symbols, and
-; macro names.
+; adjust-ev-for-symbol-class), and fns is a list containing those function
+; symbols that support these events.
 
-  (mv-let (fal seen)
+  (mv-let (evs-fal fns-fal)
     (supporters-of-rec lst nil min max (macro-aliases wrld) ctx wrld state-vars
                        nil)
-    (let* ((x (merge-sort-car-< (fast-alist-free fal)))
-           (fns (supporter-fns-in-range-or-local (fast-alist-free seen)
+    (let* ((x (merge-sort-car-< (fast-alist-free evs-fal)))
+           (fns (supporter-fns-in-range-or-local (fast-alist-free fns-fal)
                                                  min max wrld nil)))
-      (cons (append? (events-from-supporters-fal x min max wrld nil)
+      (cons (append? (events-from-supporters x min max wrld nil)
                      (defattach-event-lst wrld fns min max nil nil))
             fns))))
 
@@ -740,22 +753,21 @@
                           (all-fnnames1 nil (cddr trip) table-guard-fns)))
      (t (table-info-after-k names (cdr wrld) k evs table-guard-fns)))))
 
-(defun supporters-in-theory-event (names ens wrld min disables)
+(defun supporters-in-theory-event (names ens wrld disables)
+
+; We include supporter function that were locally defined before the call of
+; with-supporters, since they will be defined non-locally by the
+; with-supporters call and we want to be sure to incorporate disables from the
+; first argument of that call, even if we might also incorporate disables that
+; precede the call.
+
   (cond ((endp names)
          (and disables
               `(in-theory (disable ,@disables))))
         (t (supporters-in-theory-event
-            (cdr names) ens wrld min
-            (if (and min
-                     (<= (getpropc (car names) 'absolute-event-number nil wrld)
-                         min))
-
-; We don't mess with the enabled status of functions that were brought in
-; before the call of with-supporters due to being local.
-
-                disables
-              (append (disabledp-fn (car names) ens wrld)
-                      disables))))))
+            (cdr names) ens wrld
+            (append (disabledp-fn (car names) ens wrld)
+                    disables)))))
 
 (defmacro wsa-er (str &rest args)
   `(mv (er hard 'with-supporters ,str ,@args)
@@ -862,7 +874,7 @@
           (union-equal
            (loop$ for pair in ',old-macro-aliases
                   when (and (getpropc (car pair) 'macro-body nil world)
-                            (not (eq (getpropc (cdr pair) 'formals t world) t)))
+                            (function-symbolp (cdr pair) world))
                   collect pair)
            (macro-aliases world))
           :clear))
@@ -915,7 +927,7 @@
                               (fns (cdr extras/fns))
                               (in-theory-event
                                (supporters-in-theory-event
-                                (union-eq fns ',names) (ens state) wrld min nil))
+                                (union-eq fns ',names) (ens state) wrld nil))
                               (ev
                                (list*
                                 'progn
@@ -969,6 +981,17 @@
 (defmacro with-supporters (local-event &rest rest)
   (with-supporters-fn local-event rest))
 
+; As of 8/5/2026, there were no uses of with-supporters-after in the community
+; books.  Since it takes extra effort to maintain that utility, I'm commenting
+; out its definition below.  But it may be easy to restore it in the future in
+; case that seems worthwhile.  Before doing so, it may be worthwhile to read
+; the commented-out :DOC for with-supporters-after in with-supporters-doc.lisp
+; and also to consider the commented-out test for with-supporters-after in
+; with-supporters-test-top.lisp.  Also, if with-supporters-after is restored,
+; it may be worthwhile to consider having it support the keyword arguments that
+; are supported by with-supporters.
+
+#|
 (defun with-supporters-after-fn (name events)
   `(make-event
     (let ((min (getprop ',name 'absolute-event-number nil
@@ -1006,3 +1029,4 @@
 (defmacro with-supporters-after (name &rest events)
   (declare (xargs :guard (symbolp name)))
   (with-supporters-after-fn name events))
+|#
