@@ -107052,8 +107052,15 @@ Changes at the System Level
       also [30m[47m(value :q)[0m[0m, etc.; see [q].
 
     * So to avoid the possibility of interaction with raw Lisp for ACL2
-      built on CCL or SBCL, you can do the following, provided trust
-      tags are avoided (see [defttag]).
+      built on CCL or SBCL, provided trust tags are avoided (see
+      [defttag]), you can do the following.
+
+          ; The following seems to be necessary in order to avoid the rare occasions that
+          ; an interrupt in SBCL causes the Lisp debugger to be entered.
+          ; This is for SBCL only:
+          #+sbcl :q
+          #+sbcl (setq sb-ext:*invoke-debugger-hook* 'our-abort)
+          #+sbcl (lp)
 
           ; Disable entering the debugger and disable existing the ACL2 loop:
           (set-debugger-enable :never!)
@@ -107062,13 +107069,6 @@ Changes at the System Level
 
           ; Disable entering raw-mode:
           (push-untouchable set-raw-mode-on t)
-
-          ; The following seems to be necessary in order to avoid the rare occasions that
-          ; an interrupt in SBCL causes the Lisp debugger to be entered.
-          ; This is for SBCL only:
-          #+sbcl :q
-          #+sbcl (setq sb-ext:*invoke-debugger-hook* 'our-abort)
-          #+sbcl (lp)
 
 
 EMACS Support
