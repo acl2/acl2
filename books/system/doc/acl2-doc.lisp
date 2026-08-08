@@ -109976,10 +109976,6 @@ it."
  cannot exit the ACL2 loop.  This effectively disables @(':q') as a means for
  going into raw Lisp (and also @('(value :q)'), etc.; see @(see q).</li>
 
- <li>Formerly, interrupts in SBCL could, on rare occasions, cause the Lisp
- debugger to be entered.  That has (we believe) been fixed for SBCL, and it was
- already handled for CCL.</li>
-
  <li>So to avoid the possibility of interaction with raw Lisp for ACL2 built on
  CCL or SBCL, you can do the following, provided trust tags are avoided (see
  @(see defttag)).
@@ -109992,6 +109988,13 @@ it."
 
  ; Disable entering raw-mode:
  (push-untouchable set-raw-mode-on t)
+
+ ; The following seems to be necessary in order to avoid the rare occasions that
+ ; an interrupt in SBCL causes the Lisp debugger to be entered.
+ ; This is for SBCL only:
+ #+sbcl :q
+ #+sbcl (setq sb-ext:*invoke-debugger-hook* 'our-abort)
+ #+sbcl (lp)
  })</li>
 
  </ul>

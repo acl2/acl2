@@ -107051,10 +107051,6 @@ Changes at the System Level
       effectively disables [30m[47m:q[0m[0m as a means for going into raw Lisp (and
       also [30m[47m(value :q)[0m[0m, etc.; see [q].
 
-    * Formerly, interrupts in SBCL could, on rare occasions, cause the Lisp
-      debugger to be entered.  That has (we believe) been fixed for
-      SBCL, and it was already handled for CCL.
-
     * So to avoid the possibility of interaction with raw Lisp for ACL2
       built on CCL or SBCL, you can do the following, provided trust
       tags are avoided (see [defttag]).
@@ -107066,6 +107062,13 @@ Changes at the System Level
 
           ; Disable entering raw-mode:
           (push-untouchable set-raw-mode-on t)
+
+          ; The following seems to be necessary in order to avoid the rare occasions that
+          ; an interrupt in SBCL causes the Lisp debugger to be entered.
+          ; This is for SBCL only:
+          #+sbcl :q
+          #+sbcl (setq sb-ext:*invoke-debugger-hook* 'our-abort)
+          #+sbcl (lp)
 
 
 EMACS Support
