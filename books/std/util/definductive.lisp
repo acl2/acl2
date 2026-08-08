@@ -7875,22 +7875,10 @@
        (event (restore-output? (eq (evmac-input-print-fix print) :all)
                                event)))
     event)
-
-  ;; Without disabling the following rules,
-  ;; ACL2's type prescription inference takes a long time,
-  ;; without printing anything,
-  ;; due to an exponential behavior in the (APPEND ...) above.
-
-  :prepwork ((in-theory (disable (:type-prescription binary-append)
-                                 (:type-prescription true-listp-append))))
-
-  ///
-
-  ;; But we want to re-enable the rules going forward.
-  ;; A local disabling of the above rules does not work, for some reason.
-
-  (in-theory (enable (:type-prescription binary-append)
-                     (:type-prescription true-listp-append))))
+  :type-prescription :none ; for speed
+  :normalize nil ; for speed
+  :guard-simplify :limited ; for speed
+  :guard-hints (("Goal" :in-theory (disable (:t append))))) ; for speed
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
