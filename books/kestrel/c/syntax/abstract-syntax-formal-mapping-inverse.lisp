@@ -118,7 +118,10 @@
               (:e c::iconst-base-oct)
               (:e c::iconst-length-none)
               (:e c::iconst-length-llong)
-              (:e c::iconst-length-long))))
+              (:e c::iconst-length-long)
+              (:e ldm-isuffix)
+              (:e ldm-isuffix-option)
+              (:e ldm-lsuffix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
