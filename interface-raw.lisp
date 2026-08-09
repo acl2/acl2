@@ -10017,19 +10017,21 @@
 ; We formerly set *debugger-hook* here, but now we set it in lp; see the
 ; comment there.
 
-; The following two forms can avoid entering the debugger.  It would probably
-; be good to add similar forms, where feasible, for other host Lisps.  In
-; particular: Allegro CL may similarly use excl:*break-hook*; LispWorks may
-; rather similarly use dbg:with-debugger-wrapper; GCL may not need any such
-; attention; and CMUCL might have no such capability.
+; The following form can avoid entering the debugger.  It might be good to add
+; similar forms, where feasible, for other host Lisps.  In particular: Allegro
+; CL may similarly use excl:*break-hook*; LispWorks may rather similarly use
+; dbg:with-debugger-wrapper; GCL may not need any such attention; and CMUCL
+; might have no such capability.  See below for a comment pertaining to SBCL.
 
 #+ccl ; for CCL revisions starting with 12090
 (when (boundp 'ccl::*break-hook*)
   (setq ccl::*break-hook* 'our-abort))
 
-#+sbcl
-(setq sb-ext:*invoke-debugger-hook*
-      'our-abort)
+; The following, for SBCL, will avoid entering the debugger even for calls of
+; break$ or break-on-error.
+; #+sbcl
+; (setq sb-ext:*invoke-debugger-hook*
+;       'our-abort)
 
 (defun initial-customization-filename ()
 
