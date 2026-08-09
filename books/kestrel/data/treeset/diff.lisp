@@ -146,7 +146,6 @@
            (equal (diff x y)
                   (fix x)))
   :enable (diff
-           emptyp
            fix
            setp
            empty))
@@ -212,8 +211,7 @@
 (defruled diff-when-emptyp-of-arg2
   (implies (emptyp y)
            (equal (diff x y)
-                  (fix x)))
-  :enable extensionality)
+                  (fix x))))
 
 (defrule diff-when-emptyp-of-arg2-cheap
   (implies (emptyp y)
@@ -224,8 +222,7 @@
 
 (defrule diff-of-arg1-and-empty
   (equal (diff x (empty))
-         (fix x))
-  :enable diff-when-emptyp-of-arg2)
+         (fix x)))
 
 (defrule diff-of-union
   (equal (diff (union x y) z)
@@ -395,8 +392,7 @@
 (defruled oset-difference-becomes-diff
   (equal (set::difference x y)
          (to-oset (diff (from-oset x)
-                        (from-oset y))))
-  :enable set::expensive-rules)
+                        (from-oset y)))))
 
 (add-to-ruleset from-oset-theory '(oset-difference-becomes-diff))
 
@@ -456,7 +452,7 @@
   :enable (equal-of-min-becomes-sk
            not-<<-all-l-sk
            data::<<-rules)
-  :use ((:instance in-of-value)
+  :use (
         (:instance in-when-emptyp
                    (x (value iter))
                    (set (diff (from-iter iter) (before iter))))
@@ -474,7 +470,7 @@
   :enable (equal-of-max-becomes-sk
            not-<<-all-r-sk
            data::<<-rules)
-  :use ((:instance in-of-value)
+  :use (
         (:instance in-when-emptyp
                    (x (value iter))
                    (set (diff (from-iter iter) (after iter))))

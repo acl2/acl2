@@ -71,18 +71,12 @@
     (xdoc::p
       "This is a non-cryptographic hash function.")
     (xdoc::p
-      "The hash is logically @(tsee jenkins-bytes) applied to the byte @(see
+      "The hash is logically @(tsee jenkins-bytes) applied to the @(see
        serialization) of the ACL2 object; see that topic for the encoding.
        Since the serialization is injective (except that all bad atoms share
        one encoding), hash collisions arise only from the final 32-bit
        compression. In execution, a single fused pass walks the object
        directly, without constructing the byte list.")
-    (xdoc::p
-      "For large integers, the LEB128 serialization is computed by recursively
-       splitting the integer roughly in half (at a multiple of 7 bits), so
-       that the work is @($O(k\\log(k))$) in the bit-length @($k$), rather
-       than the @($O(k^2)$) which would result from extracting one group at a
-       time.")
     (xdoc::@def "jenkins")
     (xdoc::section
       "References"
@@ -164,8 +158,7 @@
            (equal (jenkins-acc-byte byte acc)
                   (jenkins-acc-byte byte 0)))
   :enable (jenkins-acc-byte
-           data::u32-plus$inline
-           data::u32-fix$inline))
+           data::u32-plus$inline))
 
 (defrule jenkins-acc-bytes-of-append
   (equal (jenkins-acc-bytes (append x y) acc)
@@ -200,7 +193,6 @@
                   (acl2::size1 7)
                   (acl2::size 7)
                   (acl2::i x))
-  :enable unsigned-byte-p
   :disable acl2::unsigned-byte-p-of-loghead)
 
 ;; Serialize a "small" (fixnum-sized) natural in LEB128 form.
@@ -765,7 +757,6 @@
   :enable jenkins-acc)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Each fused accumulator above equals jenkins-acc-bytes of the corresponding
 ;; serialization (see the serialization topic). These lemmas culminate in
@@ -788,8 +779,42 @@
   :induct (jenkins-acc-leb128-groups-small x m acc)
   :expand ((nat-to-leb128-groups x m))
   :enable (jenkins-acc-leb128-groups-small
-           jenkins-acc-bytes
-           acl2::right-shift-to-logtail))
+           jenkins-acc-bytes))
+
+;; The next two rules are the split lemmas from the serialization book,
+;; instantiated at the implementation's own split points and guarded by
+;; syntaxp to fire only on the induction variables (not on the halves they
+;; introduce). This lets the inductive proofs below rewrite the
+;; specification into alignment with the implementation without hints.
+
+(defruledl nat-to-leb128-groups-split-in-half
+  (implies (and (syntaxp (and (atom x) (atom m)))
+                (natp x)
+                (< 8 (nfix m)))
+           (equal (nat-to-leb128-groups x m)
+                  (append
+                    (nat-to-leb128-groups (loghead (* 7 (floor (nfix m) 2)) x)
+                                          (floor (nfix m) 2))
+                    (nat-to-leb128-groups (logtail (* 7 (floor (nfix m) 2)) x)
+                                          (- (nfix m) (floor (nfix m) 2))))))
+  :use (:instance nat-to-leb128-groups-split
+                  (n x)
+                  (m (nfix m))
+                  (m1 (floor (nfix m) 2))))
+
+(defruledl nat-to-bytes-split-when-large
+  (implies (and (syntaxp (atom n))
+                (natp n)
+                (<= 72057594037927936 n) ;; (expt 2 56); see jenkins-acc-nat
+                (< (* 7 (floor (integer-length n) 14)) (integer-length n)))
+           (equal (nat-to-bytes n)
+                  (append
+                    (nat-to-leb128-groups
+                      (loghead (* 7 (floor (integer-length n) 14)) n)
+                      (floor (integer-length n) 14))
+                    (nat-to-bytes
+                      (logtail (* 7 (floor (integer-length n) 14)) n)))))
+  :use (:instance nat-to-bytes-split (m1 (floor (integer-length n) 14))))
 
 (defruled jenkins-acc-leb128-groups-becomes-jenkins-acc-bytes
   (implies (natp x)
@@ -798,12 +823,8 @@
   :induct (jenkins-acc-leb128-groups x m acc)
   :enable (jenkins-acc-leb128-groups
            jenkins-acc-leb128-groups-small-becomes-jenkins-acc-bytes
-           acl2::<-of-floor-and-0
-           acl2::right-shift-to-logtail)
-  :hints (("Subgoal *1/2" :use (:instance nat-to-leb128-groups-split
-                                          (n x)
-                                          (m (nfix m))
-                                          (m1 (floor (nfix m) 2))))))
+           nat-to-leb128-groups-split-in-half
+           acl2::right-shift-to-logtail))
 
 (defruled jenkins-acc-nat-becomes-jenkins-acc-bytes
   (implies (natp n)
@@ -813,10 +834,8 @@
   :enable (jenkins-acc-nat
            jenkins-acc-leb128-small-becomes-jenkins-acc-bytes
            jenkins-acc-leb128-groups-becomes-jenkins-acc-bytes
-           acl2::right-shift-to-logtail)
-  :hints (("Subgoal *1/2"
-           :use (:instance nat-to-bytes-split
-                           (m1 (floor (integer-length n) 14))))))
+           nat-to-bytes-split-when-large
+           acl2::right-shift-to-logtail))
 
 (defruled jenkins-acc-integer-contents-becomes-jenkins-acc-bytes
   (implies (integerp n)
@@ -897,11 +916,10 @@
                     (characters-to-bytes (nthcdr i (coerce str 'list)))
                     acc)))
   :induct (jenkins-acc-string-index str i len acc)
-  :expand ((characters-to-bytes (nthcdr i (coerce str 'list))))
   :enable (jenkins-acc-string-index
-           characters-to-bytes
            jenkins-acc-bytes
            jenkins-acc-character-contents-becomes-jenkins-acc-bytes
+           characters-to-bytes
            character-contents-to-bytes
            acl2::cdr-of-nthcdr
            char
@@ -914,8 +932,7 @@
   :enable (jenkins-acc-string-contents
            string-contents-to-bytes
            jenkins-acc-nat-becomes-jenkins-acc-bytes
-           jenkins-acc-string-index-becomes-jenkins-acc-bytes
-           length))
+           jenkins-acc-string-index-becomes-jenkins-acc-bytes))
 
 (defruled jenkins-acc-string-becomes-jenkins-acc-bytes
   (implies (stringp str)
@@ -967,7 +984,6 @@
            jenkins-acc-bytes
            jenkins-acc-bytes-when-not-unsigned-byte-p-32))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The final avalanche, applied to the accumulator after all bytes have been

@@ -71,8 +71,7 @@
            (setp y))
   :induct (append x y)
   :enable (setp
-           append
-           setp-of-cdr-when-osetp))
+           append))
 
 ;; An oset is strictly increasing, so its head is below every later element,
 ;; and every element of a prefix is below the head of what follows.
@@ -85,7 +84,6 @@
   :enable (setp
            member-equal
            set::not-member-when-smaller
-           setp-of-cdr-when-osetp
            <<-rules))
 
 (defruled <<-of-cars-when-osetp-of-append
@@ -96,7 +94,6 @@
   :induct (append a b)
   :enable (setp
            append
-           setp-of-cdr-when-osetp
            <<-rules))
 
 (defruled <<-across-append-when-osetp
@@ -107,10 +104,7 @@
   :induct (append a b)
   :enable (setp
            append
-           member-equal
-           setp-of-cdr-when-osetp
-           <<-of-cars-when-osetp-of-append
-           <<-rules))
+           <<-of-cars-when-osetp-of-append))
 
 ;; An oset has no duplicates, so membership in the tail is membership anywhere
 ;; but at the head.
@@ -120,7 +114,6 @@
            (iff (member-equal x (cdr l))
                 (and (not (equal x (car l)))
                      (member-equal x l))))
-  :induct t
   :enable (setp
            set::not-member-when-smaller
            <<-rules))

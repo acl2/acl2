@@ -94,6 +94,13 @@
        the serialization into its own walk over the object, and to appeal to
        these definitions only in its logical story.")
     (xdoc::p
+      "In particular, a fused pass can produce the LEB128 form of a large
+       integer by recursively splitting the integer roughly in half (at a
+       multiple of 7 bits), so that the work is @($O(k\\log(k))$) in the bit
+       length @($k$), rather than the @($O(k^2)$) which would result from
+       extracting one group at a time. The split lemmas justifying this
+       computation are proved in this book.")
+    (xdoc::p
       "Finally, we note that the length of the produced byte list corresponds
        with the size of the object, <i>without</i> optimization for
        shared substructure."))
@@ -676,9 +683,7 @@
                   n))
   :enable (acl2::right-shift-to-logtail
            loghead
-           logtail
-           acl2::ifloor
-           acl2::imod))
+           logtail))
 
 (local
   (define parse-leb128 (bytes)
@@ -723,9 +728,7 @@
                 (characterp y))
            (equal (equal (char-code x) (char-code y))
                   (equal x y)))
-  :use ((:instance acl2::code-char-char-code-is-identity (acl2::c x))
-        (:instance acl2::code-char-char-code-is-identity (acl2::c y)))
-  :disable acl2::code-char-char-code-is-identity)
+  :use (:instance acl2::equal-char-code (acl2::x x) (acl2::y y)))
 
 (defruled append-of-characters-to-bytes-equal
   (implies (and (character-listp c1)
@@ -884,8 +887,7 @@
            rational-to-bytes
            complex-rational-to-bytes
            string-to-bytes
-           character-to-bytes
-           character-contents-to-bytes))
+           character-to-bytes))
 
 (local (defun to-bytes-induct (x y r1 r2)
          (declare (xargs :measure (acl2-count x)))

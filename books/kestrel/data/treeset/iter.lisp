@@ -58,8 +58,9 @@
   (xdoc::topstring
    (xdoc::p
      "Walking a @(see treeset) with @(tsee min) and @(tsee tail) is
-      inefficient. An iterator walks it in order instead, one element at a
-      time, at an amortized cost of @($O(1)$) per step.")
+      inefficient. For this and other reasons, we provide iterator objects,
+      which may be used to walk over the set in-order,
+      one element at a time, at an amortized cost of @($O(1)$) per step.")
    (xdoc::p
      "An iterator sits at one of @($n+2$) positions: at one of the @($n$)
       elements, before the first, or after the last. @(tsee iter-min) starts at
@@ -100,9 +101,6 @@
 
 (add-to-ruleset break-abstraction '(iterp-compound-recognizer))
 
-;; Left disabled and registered, like the rule below: it fires from a purely
-;; public hypothesis and concludes something about the representation.
-
 (defruled tree-iter-p-when-iterp-forward-chaining
   (implies (iterp iter)
            (tree-iter-p iter))
@@ -110,10 +108,6 @@
   :enable iterp)
 
 (add-to-ruleset break-abstraction '(tree-iter-p-when-iterp-forward-chaining))
-
-;; Left disabled and registered: this fires from a purely public hypothesis and
-;; concludes something about the representation, so enabled it would introduce
-;; internal terms into a caller's proof unbidden.
 
 (defruled setp-of-tree-iter-plug-when-iterp-forward-chaining
   (implies (iterp iter)
@@ -200,33 +194,56 @@
 
 (in-theory (disable (:t iter-fix)))
 
-(defrule tree-iter-p-of-iter-fix
+;; Rules mentioning an internal function are disabled and registered in
+;; break-abstraction, so that internal terms do not enter a caller's proof
+;; unbidden.
+
+(defruled tree-iter-p-of-iter-fix
   (tree-iter-p (iter-fix iter))
   :enable iterp
   :use iterp-of-iter-fix
   :disable iterp-of-iter-fix)
 
-(defrule tree-iter-fix-of-iter-fix
-  (equal (tree-iter-fix (iter-fix iter))
-         (iter-fix iter)))
+(add-to-ruleset break-abstraction '(tree-iter-p-of-iter-fix))
 
-;; Rules like this that mention an internal function (tree-iter-next) should
-;; not be imported from the book enabled. It should either be local or disabled
-;; and added to break-abstraction.
-(defrule iter-fix-of-tree-iter-next-of-iter-fix
+(defruled setp-of-tree-iter-plug-of-iter-fix
+  (setp (tree-iter-plug (iter-fix iter)))
+  :use (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
+                  (iter (iter-fix iter))))
+
+(add-to-ruleset break-abstraction '(setp-of-tree-iter-plug-of-iter-fix))
+
+(defruled tree-iter-fix-of-iter-fix
+  (equal (tree-iter-fix (iter-fix iter))
+         (iter-fix iter))
+  :enable tree-iter-p-of-iter-fix)
+
+(add-to-ruleset break-abstraction '(tree-iter-fix-of-iter-fix))
+
+(defruled iter-fix-of-tree-iter-next-of-iter-fix
   (equal (iter-fix (tree-iter-next (iter-fix iter)))
          (tree-iter-next (iter-fix iter)))
   :enable (iterp iter-fix)
-  :use ((:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
-                   (iter (iter-fix iter)))
-        (:instance tree-in-of-tree-iter-value (iter (iter-fix iter)))))
+  :use (setp-of-tree-iter-plug-of-iter-fix))
 
-(defrule iter-fix-of-tree-iter-prev-of-iter-fix
+(add-to-ruleset break-abstraction '(iter-fix-of-tree-iter-next-of-iter-fix))
+
+(defruled iter-fix-of-tree-iter-prev-of-iter-fix
   (equal (iter-fix (tree-iter-prev (iter-fix iter)))
          (tree-iter-prev (iter-fix iter)))
   :enable (iterp iter-fix)
-  :use (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
-                  (iter (iter-fix iter))))
+  :use setp-of-tree-iter-plug-of-iter-fix)
+
+(add-to-ruleset break-abstraction '(iter-fix-of-tree-iter-prev-of-iter-fix))
+
+;; Locally these five stay enabled: the proofs in this book constantly cross
+;; the boundary the rules police, and each is the identity the fixer needs.
+
+(local (in-theory (enable tree-iter-p-of-iter-fix
+                          setp-of-tree-iter-plug-of-iter-fix
+                          tree-iter-fix-of-iter-fix
+                          iter-fix-of-tree-iter-next-of-iter-fix
+                          iter-fix-of-tree-iter-prev-of-iter-fix)))
 
 (defrule iter-fix-when-iterp
   (implies (iterp iter)
@@ -307,16 +324,14 @@
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (iterator)
   :short "Check whether an @(see iterator) has a value to read."
-  ;; Should the logical value be
-  ;; (and (not (before-first iter) (after-lastp iter)))
-  ;; ?
+  ;; The logical value could instead be defined as the conjunction of (not
+  ;; (before-firstp iter)) and (not (after-lastp iter)). We keep the direct
+  ;; form: the trichotomy is available as rewrite rules below, and the direct
+  ;; form keeps this definition independent of the other two.
   (tree-iter-has-value-p (iter-fix iter))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-;; The returns theorems above are the type prescriptions, so the automatic
-;; rules add nothing.
 
 (in-theory (disable (:t after-lastp) (:t before-firstp) (:t has-valuep)))
 
@@ -347,6 +362,7 @@
   (implies (and (not (after-lastp iter))
                 (not (before-firstp iter)))
            (has-valuep iter))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
   :enable (after-lastp
            before-firstp
            has-valuep))
@@ -354,12 +370,14 @@
 (defrule not-after-lastp-when-has-valuep
   (implies (has-valuep iter)
            (not (after-lastp iter)))
+  :rule-classes (:rewrite :forward-chaining)
   :enable (after-lastp
            has-valuep))
 
 (defrule not-before-firstp-when-has-valuep
   (implies (has-valuep iter)
            (not (before-firstp iter)))
+  :rule-classes (:rewrite :forward-chaining)
   :enable (before-firstp
            has-valuep))
 
@@ -368,10 +386,8 @@
 (define from-iter ((iter iterp))
   :returns (set setp
                 :hints (("Goal"
-                         :use
-                         (:instance
-                          setp-of-tree-iter-plug-when-iterp-forward-chaining
-                          (iter (iter-fix iter))))))
+                         :in-theory
+                         (enable setp-of-tree-iter-plug-of-iter-fix))))
   :parents (iterator)
   :short "The @(see treeset) an @(see iterator) walks."
   :long
@@ -395,28 +411,26 @@
   :rule-classes :congruence
   :enable from-iter)
 
-;; The fixer drops on the unfolded constructors: their internal cores build
-;; proper iterators. These are what let the laws below unfold @(tsee iter-min)
-;; and @(tsee iter-max) and still reach the internal rules.
-
 (defruledl iter-fix-of-tree-iter-min-of-fix
   (equal (iter-fix (tree-iter-min (fix set)))
          (tree-iter-min (fix set)))
-  :hints (("Goal" :in-theory (enable* iter-fix iterp break-abstraction))))
+  :enable ( iterp break-abstraction))
 
 (defruledl iter-fix-of-tree-iter-max-of-fix
   (equal (iter-fix (tree-iter-max (fix set)))
          (tree-iter-max (fix set)))
-  :hints (("Goal" :in-theory (enable* iter-fix iterp break-abstraction))))
+  :enable ( iterp break-abstraction))
 
 (defrule from-iter-of-iter-min
   (equal (from-iter (iter-min set))
          (fix set))
-  :hints (("Goal" :in-theory (enable* from-iter iter-min
-                                      iter-fix-of-tree-iter-min-of-fix
-                                      break-abstraction))))
+  :enable (from-iter
+           iter-min
+           iter-fix-of-tree-iter-min-of-fix
+           break-abstraction))
 
-;; A fresh iterator is at the end exactly when there is nothing to walk.
+;; An @(tsee iter-min) iterator is past the end exactly when the set is empty:
+;; with nothing to walk, a forward walk is over before it begins.
 
 (defrule after-lastp-of-iter-min
   (equal (after-lastp (iter-min set))
@@ -426,8 +440,8 @@
            iter-min
            iter-fix-of-tree-iter-min-of-fix))
 
-;; A fresh iterator is never rewound: it is built by stepping forward from the
-;; rewound position, and a step never lands there.
+;; An @(tsee iter-min) iterator is never rewound: it is built by stepping
+;; forward from the rewound position, and a step never lands there.
 
 (defrule not-before-firstp-of-iter-min
   (not (before-firstp (iter-min set)))
@@ -435,15 +449,15 @@
            iter-min
            iter-fix-of-tree-iter-min-of-fix))
 
-;; So a fresh iterator is at a value exactly when there is one to be at.
+;; So an @(tsee iter-min) iterator is at a value exactly when there is one to
+;; be at.
 
 (defrule has-valuep-of-iter-min
   (equal (has-valuep (iter-min set))
          (not (emptyp set)))
   :use ((:instance has-valuep-when-neither-end (iter (iter-min set)))
         (:instance not-after-lastp-when-has-valuep (iter (iter-min set))))
-  :disable (has-valuep-when-neither-end
-            not-after-lastp-when-has-valuep))
+  :disable has-valuep-when-neither-end)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -452,9 +466,10 @@
 (defrule from-iter-of-iter-max
   (equal (from-iter (iter-max set))
          (fix set))
-  :hints (("Goal" :in-theory (enable* from-iter iter-max
-                                      iter-fix-of-tree-iter-max-of-fix
-                                      break-abstraction))))
+  :enable (from-iter
+           iter-max
+           iter-fix-of-tree-iter-max-of-fix
+           break-abstraction))
 
 (defrule before-firstp-of-iter-max
   (equal (before-firstp (iter-max set))
@@ -475,8 +490,7 @@
          (not (emptyp set)))
   :use ((:instance has-valuep-when-neither-end (iter (iter-max set)))
         (:instance not-before-firstp-when-has-valuep (iter (iter-max set))))
-  :disable (has-valuep-when-neither-end
-            not-before-firstp-when-has-valuep))
+  :disable has-valuep-when-neither-end)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -498,8 +512,7 @@
                   (from-oset (tree-iter-oset-before iter))))
   :enable (extensionality
            setp
-           in
-           fix-when-setp))
+           in))
 
 (defruledl tree-iter-tree-after-becomes-from-oset
   (implies (setp (tree-iter-plug iter))
@@ -507,8 +520,7 @@
                   (from-oset (tree-iter-oset-after iter))))
   :enable (extensionality
            setp
-           in
-           fix-when-setp))
+           in))
 
 (define before ((iter iterp))
   :returns (set setp)
@@ -527,9 +539,8 @@
        :exec (tree-iter-tree-before (iter-fix iter)))
   :guard-hints
   (("Goal"
-    :in-theory (enable tree-iter-tree-before-becomes-from-oset)
-    :use (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
-                    (iter (iter-fix iter))))))
+    :in-theory (enable* tree-iter-tree-before-becomes-from-oset
+                        break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -561,9 +572,8 @@
        :exec (tree-iter-tree-after (iter-fix iter)))
   :guard-hints
   (("Goal"
-    :in-theory (enable tree-iter-tree-after-becomes-from-oset)
-    :use (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
-                    (iter (iter-fix iter))))))
+    :in-theory (enable* tree-iter-tree-after-becomes-from-oset
+                        break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -586,11 +596,12 @@
   (implies (before-firstp iter)
            (equal (before iter)
                   (empty)))
+  ;; Enabling (:e empty) follows the precedent in set.lisp, which keeps it out
+  ;; of break-abstraction and enables it pointwise where (empty) must compute.
   :enable (before
            before-firstp
            tree-iter-oset-before
            tree-iter-tree-before
-           tree-oset
            (:e empty)))
 
 (defrule after-when-after-lastp
@@ -601,7 +612,6 @@
            after-lastp
            tree-iter-oset-after
            tree-iter-tree-after
-           tree-oset
            (:e empty)))
 
 ;; At the constructors the same holds with no hypothesis, including over the
@@ -654,12 +664,9 @@
   (implies (not (emptyp set))
            (equal (value (iter-min set))
                   (min set)))
-  :hints (("Goal"
-           :in-theory (enable* value min emptyp setp iter-min
-                               iter-fix-of-tree-iter-min-of-fix
-                               break-abstraction)
-           :use ((:instance tree-leftmost-when-bstp (tree (fix set)))
-                 (:instance setp-of-fix (set set))))))
+  :enable (value min iter-min
+           iter-fix-of-tree-iter-min-of-fix
+           break-abstraction))
 
 ;; And symmetrically, what a backward walk yields first: the maximum.
 
@@ -667,12 +674,9 @@
   (implies (not (emptyp set))
            (equal (value (iter-max set))
                   (max set)))
-  :hints (("Goal"
-           :in-theory (enable* value max emptyp setp iter-max
-                               iter-fix-of-tree-iter-max-of-fix
-                               break-abstraction)
-           :use ((:instance tree-rightmost-when-bstp (tree (fix set)))
-                 (:instance setp-of-fix (set set))))))
+  :enable (value max iter-max
+           iter-fix-of-tree-iter-max-of-fix
+           break-abstraction))
 
 ;; The value an @(see iterator) is at is an element of the @(see treeset) it
 ;; walks. With @(tsee value-of-iter-min) this is what connects a walk to the
@@ -688,47 +692,56 @@
   :enable (value
            from-iter
            has-valuep
-           in)
-  :use ((:instance tree-in-of-tree-iter-value (iter (iter-fix iter)))
-        (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
-                   (iter (iter-fix iter))))
-  :disable (tree-iter-plug
-            tree-iter-value))
+           in))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 ;; The tree an iterator is a position in is a search tree. This is what makes
-;; the two sequences ordered, and so makes them osets.
+;; the two sequences ordered, and so makes them osets. The rule cannot live in
+;; an internal book because @(tsee iter-fix) is a public function; it is the
+;; bst half of setp-of-tree-iter-plug-of-iter-fix, projected out because the
+;; internal ordering lemmas hypothesize @(tsee bstp) alone.
 
 (defruledl bstp-of-tree-iter-plug-of-iter-fix
   (bstp (tree-iter-plug (iter-fix iter)))
-  :enable setp
-  :use (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
-                  (iter (iter-fix iter))))
+  :use setp-of-tree-iter-plug-of-iter-fix
+  :enable bstp-when-setp-forward-chaining)
 
-;; Membership on each side, as membership in the sequence it is built from.
-;; Left disabled: these cross from sets back to the underlying lists, which is
-;; only what a proof about the order of a walk wants.
+;; Membership on each side, at each level of representation: the oset the side
+;; is defined from, and the ordered element list that oset is read off of. The
+;; walk's step laws are proved by extensionality over those element lists,
+;; whose membership is @(tsee member-equal); the -member-equal rules carry a
+;; set membership question all the way down to that level. Left disabled:
+;; crossing from sets back to the underlying sequences is only what a proof
+;; about the order of a walk wants.
 
 (defruled in-of-before-becomes-set-in
   (equal (in x (before iter))
          (set::in x (tree-iter-oset-before (iter-fix iter))))
   :enable before)
 
+(add-to-ruleset break-abstraction '(in-of-before-becomes-set-in))
+
 (defruled in-of-after-becomes-set-in
   (equal (in x (after iter))
          (set::in x (tree-iter-oset-after (iter-fix iter))))
   :enable after)
+
+(add-to-ruleset break-abstraction '(in-of-after-becomes-set-in))
 
 (defruled in-of-before-becomes-member-equal
   (equal (in x (before iter))
          (and (member-equal x (tree-iter-before (iter-fix iter))) t))
   :enable in-of-before-becomes-set-in)
 
+(add-to-ruleset break-abstraction '(in-of-before-becomes-member-equal))
+
 (defruled in-of-after-becomes-member-equal
   (equal (in x (after iter))
          (and (member-equal x (tree-iter-after (iter-fix iter))) t))
   :enable in-of-after-becomes-set-in)
+
+(add-to-ruleset break-abstraction '(in-of-after-becomes-member-equal))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -748,7 +761,6 @@
   :enable (value
            has-valuep
            in-of-after-becomes-set-in
-           in-of-tree-iter-oset-after-when-bstp
            bstp-of-tree-iter-plug-of-iter-fix)
   :disable in-of-tree-iter-oset-after)
 
@@ -759,7 +771,6 @@
   :enable (value
            has-valuep
            in-of-before-becomes-set-in
-           in-of-tree-iter-oset-before-when-bstp
            bstp-of-tree-iter-plug-of-iter-fix)
   :disable in-of-tree-iter-oset-before)
 
@@ -789,35 +800,23 @@
             <<-of-arg1-and-value-when-in-of-before)
   :enable data::<<-rules)
 
-(add-to-ruleset break-abstraction
-                '(in-of-before-becomes-set-in
-                  in-of-after-becomes-set-in
-                  in-of-before-becomes-member-equal
-                  in-of-after-becomes-member-equal))
-
-;; The whole sequence is the two sides with the value between them, so an
-;; element of the tree is on one side, on the other, or is the value itself.
-;; Stated over @(tsee tree-iter-plug), where every function is still folded.
-
 ;; The same split at the public layer: the two sides and the value account for
 ;; the set, and since the sides exclude the value they do so without overlap.
 ;;
 ;; Both rules which rewrite @(tsee tree-iter-plug) to a zipper's plug are held
 ;; off, so that the term still matches the lemma above.
 
-;; Membership in the whole set, in the same folded form. Having this as its own
-;; rule is what lets the split below leave @(tsee in) alone, so that the two
-;; rules above are the only thing rewriting the sides.
+;; Membership in the whole set, in the same folded form. Like the -becomes-
+;; rules above, this carries the public membership question down to the level
+;; where the internal split lemma is stated; having it as its own rule is what
+;; lets the split below leave @(tsee in) alone, so that the two rules above
+;; are the only thing rewriting the sides.
 
 (defruledl in-of-from-iter-becomes-tree-in
   (equal (in x (from-iter iter))
          (and (tree-in x (tree-iter-plug (iter-fix iter))) t))
   :enable (in
-           from-iter
-           fix-when-setp)
-  :use (:instance setp-of-tree-iter-plug-when-iterp-forward-chaining
-                  (iter (iter-fix iter)))
-  :disable tree-iter-plug)
+           from-iter))
 
 (defrule in-of-from-iter-when-has-valuep
   (implies (has-valuep iter)
@@ -830,8 +829,7 @@
            in-of-from-iter-becomes-tree-in
            tree-in-of-tree-iter-plug-split
            value
-           has-valuep)
-  :disable tree-iter-plug)
+           has-valuep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -839,11 +837,9 @@
   :guard (not (after-lastp iter))
   :returns (iter$ iterp
                   :hints (("Goal"
-                           :in-theory (enable iterp)
-                           :use
-                           (:instance
-                            setp-of-tree-iter-plug-when-iterp-forward-chaining
-                            (iter (iter-fix iter))))))
+                           :in-theory
+                           (enable iterp
+                                   setp-of-tree-iter-plug-of-iter-fix))))
   :parents (iterator)
   :short "Advance an @(see iterator)."
   :long
@@ -873,11 +869,9 @@
   :guard (not (before-firstp iter))
   :returns (iter$ iterp
                   :hints (("Goal"
-                           :in-theory (enable iterp)
-                           :use
-                           (:instance
-                            setp-of-tree-iter-plug-when-iterp-forward-chaining
-                            (iter (iter-fix iter))))))
+                           :in-theory
+                           (enable iterp
+                                   setp-of-tree-iter-plug-of-iter-fix))))
   :parents (iterator)
   :short "Retreat an @(see iterator)."
   :long
@@ -1009,11 +1003,13 @@
                   (insert (value (prev iter)) (before (prev iter)))))
   :enable (extensionality
            in-of-before-becomes-member-equal
-           tree-iter-before-of-tree-iter-prev
            prev
            value
            has-valuep))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; A step forward has a value to land on exactly when something lies ahead,
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A step forward has a value to land on exactly when something lies ahead,
 ;; and the value it lands on is the least of what lay ahead. So a forward walk
 ;; visits the elements in @(tsee <<) order, from the least on up.
 
@@ -1023,9 +1019,11 @@
   :enable (not
            after
            has-valuep
-           next
-           tree-iter-has-value-p-of-tree-iter-next))
+           next))
 
+;; The proof characterizes the minimum through its defchoose witness (the
+;; equal-of-min-becomes-sk machinery); the two instances place the witness in
+;; the sequence and rule out the empty side.
 (defrule value-of-next
   (implies (has-valuep (next iter))
            (equal (value (next iter))
@@ -1037,8 +1035,6 @@
            value
            next
            has-valuep
-           tree-iter-value-of-tree-iter-next
-           tree-iter-has-value-p-of-tree-iter-next
            data::<<-rules)
   :use ((:instance data::<<-of-car-when-member-equal-of-cdr
                    (data::l (tree-iter-after (iter-fix iter)))
@@ -1059,10 +1055,8 @@
            (equal (after (next iter))
                   (delete (min (after iter)) (after iter))))
   :cases ((has-valuep (next iter)))
-  :enable (value-of-next
-           has-valuep-of-next
-           extensionality
-           in-when-emptyp)
+  :enable (
+           extensionality)
   :use ((:instance has-valuep-when-neither-end (iter (next iter))))
   :disable has-valuep-when-neither-end)
 
@@ -1089,8 +1083,7 @@
   :enable (not
            before
            has-valuep
-           prev
-           tree-iter-has-value-p-of-tree-iter-prev))
+           prev))
 
 ;; Left disabled: with @(tsee before-becomes-insert-of-before-of-prev) it
 ;; loops, since that rule introduces the very @(tsee value) term this one
@@ -1108,18 +1101,21 @@
   :disable <<-of-arg1-and-value-when-in-of-before)
 
 (theory-invariant
-  (incompatible (:rewrite value-of-prev)
-                (:rewrite before-becomes-insert-of-before-of-prev)))
+  (incompatible! (:rewrite value-of-prev)
+                 (:rewrite before-becomes-insert-of-before-of-prev)))
 
 (defrule before-of-prev-when-has-valuep
   (implies (has-valuep iter)
            (equal (before (prev iter))
                   (delete (max (before iter)) (before iter))))
   :cases ((has-valuep (prev iter)))
-  :enable (delete-when-not-in
-           delete-of-insert-same
-           extensionality
-           in-when-emptyp)
+  ;; The hint load is forced by the rewrite loop between value-of-prev and
+  ;; before-becomes-insert-of-before-of-prev: the proof needs both, so one
+  ;; must arrive by :use. The other instances each carry one case: the
+  ;; trichotomy puts a valueless prev at the rewound end, and the
+  ;; disjointness instance discharges the delete of the absent maximum.
+  :enable (
+           extensionality)
   :use ((:instance value-of-prev)
         (:instance not-in-of-value-and-before (iter (prev iter)))
         (:instance has-valuep-when-neither-end (iter (prev iter)))
@@ -1237,4 +1233,3 @@
            data::cardinality-becomes-len-when-osetp
            tree-iter-oset-before-becomes-tree-iter-before
            bstp-of-tree-iter-plug-of-iter-fix))
-

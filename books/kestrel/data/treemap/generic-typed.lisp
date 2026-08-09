@@ -83,16 +83,24 @@
                 (in k map))
            (treeset::genericp k)))
 
+;; The peel step of a min/delete recursion over the map, keys side, for an
+;; arbitrary bound key.
+(defruled set-all-genericp-of-keys-of-delete-when-in
+  (implies (treeset::in k (keys map))
+           (equal (treeset::set-all-genericp (keys map))
+                  (and (treeset::genericp k)
+                       (treeset::set-all-genericp (keys (delete k map))))))
+  :use ((:instance treeset::set-all-genericp-of-delete-when-in
+                   (treeset::x k)
+                   (treeset::set (keys map)))))
+
 (defrule set-all-genericp-of-keys-of-update
   (equal (treeset::set-all-genericp (keys (update k v map)))
          (and (treeset::genericp k)
               (treeset::set-all-genericp (keys (delete k map)))))
-  :cases ((treeset::in k (keys map)))
-  :use (:instance treeset::set-all-genericp-of-insert
-                  (treeset::x k)
-                  (treeset::set (treeset::delete k (keys map))))
-  :enable acl2::equal-of-booleans-cheap
-  :disable treeset::set-all-genericp-of-insert)
+  :use (:instance set-all-genericp-of-keys-of-delete-when-in
+                  (map (update k v map)))
+  :enable treeset::in-of-insert)
 
 (defrule set-all-genericp-of-keys-of-delete
   (implies (treeset::set-all-genericp (keys map))
@@ -107,17 +115,6 @@
   (equal (treeset::set-all-genericp (keys (update* m1 m2)))
          (and (treeset::set-all-genericp (keys m1))
               (treeset::set-all-genericp (keys m2)))))
-
-;; The peel step of a min/delete recursion over the map, keys side, for an
-;; arbitrary bound key.
-(defruled set-all-genericp-of-keys-of-delete-when-in
-  (implies (treeset::in k (keys map))
-           (equal (treeset::set-all-genericp (keys map))
-                  (and (treeset::genericp k)
-                       (treeset::set-all-genericp (keys (delete k map))))))
-  :use ((:instance treeset::set-all-genericp-of-delete-when-in
-                   (treeset::x k)
-                   (treeset::set (keys map)))))
 
 (defrule genericp-of-min-key-when-set-all-genericp-of-keys
   (implies (and (treeset::set-all-genericp (keys map))
@@ -213,22 +210,22 @@
 (defrule subset-of-values-of-delete
   (treeset::subset (values (delete k map))
                    (values map))
-  :hints (("Goal" :in-theory (enable* treeset::pick-a-point))))
+  :enable treeset::pick-a-point)
 
 (defrule subset-of-values-of-restrict
   (treeset::subset (values (restrict s map))
                    (values map))
-  :hints (("Goal" :in-theory (enable* treeset::pick-a-point))))
+  :enable treeset::pick-a-point)
 
 (defrule subset-of-values-of-update
   (treeset::subset (values (update k v map))
                    (treeset::insert v (values map)))
-  :hints (("Goal" :in-theory (enable* treeset::pick-a-point))))
+  :enable treeset::pick-a-point)
 
 (defrule subset-of-values-of-update*
   (treeset::subset (values (update* m1 m2))
                    (treeset::union (values m1) (values m2)))
-  :hints (("Goal" :in-theory (enable* treeset::pick-a-point))))
+  :enable treeset::pick-a-point)
 
 ;;;;;;;;;;;;;;;;;;;;
 

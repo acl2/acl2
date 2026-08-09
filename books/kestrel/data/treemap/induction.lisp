@@ -59,6 +59,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (define head-delete-bi-induction (x y)
+  :parents (inductions)
   (or (emptyp x)
       (emptyp y)
       (head-delete-bi-induction (delete (head-key x) x)

@@ -98,8 +98,7 @@
   (equal (equal (tree-generic-count tree) 0)
          (tree-empty-p tree))
   :induct t
-  :enable (tree-generic-count
-           tree-empty-p))
+  :enable (tree-generic-count))
 
 (defrule tree-generic-count-when-tree-empty-p-forward-chaining
   (implies (tree-empty-p tree)
@@ -117,15 +116,13 @@
   (implies (not (tree-empty-p (tree->right tree)))
            (equal (tree-generic-count (rotate-left tree))
                   (tree-generic-count tree)))
-  :enable (tree-generic-count
-           rotate-left))
+  :enable (tree-generic-count))
 
 (defrule tree-generic-count-of-rotate-right
   (implies (not (tree-empty-p (tree->left tree)))
            (equal (tree-generic-count (rotate-right tree))
                   (tree-generic-count tree)))
-  :enable (tree-generic-count
-           rotate-right))
+  :enable (tree-generic-count))
 
 (defrule tree-generic-count-of-tree-join
   (equal (tree-generic-count (tree-join left right))
@@ -139,7 +136,7 @@
   (equal (tree-generic-count (tree-join-at split left right))
          (+ (tree-generic-count left)
             (tree-generic-count right)))
-  :enable (tree-generic-count
+  :enable (
            tree-join-at))
 
 ;; The induction is tree-delete's own. The default merged scheme also draws
@@ -154,9 +151,7 @@
                     (tree-generic-count tree))))
   :induct (tree-delete key tree)
   :enable (tree-delete
-           tree-generic-count
-           tree-lookup
-           data::<<-rules))
+           tree-generic-count))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -212,8 +207,7 @@
             (map-generic-count (delete key map))))
   :use ((:instance map-generic-count-of-delete-when-in
                    (map (update key val map))))
-  :disable map-generic-count-of-delete-when-in
-  :enable treeset::in-of-insert)
+  :disable map-generic-count-of-delete-when-in)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -248,8 +242,6 @@
            (< (map-generic-count (delete (treeset::min (keys map)) map))
               (map-generic-count map)))
   :rule-classes :linear
-  :use (:instance map-generic-count-of-delete-<-map-generic-count-when-in
-                  (key (treeset::min (keys map))))
   :disable map-generic-count-of-delete-<-map-generic-count-when-in)
 
 (defrule generic-count-of-head-<-map-generic-count
@@ -267,6 +259,4 @@
            (< (map-generic-count (delete (head-key map) map))
               (map-generic-count map)))
   :rule-classes :linear
-  :use (:instance map-generic-count-of-delete-<-map-generic-count-when-in
-                  (key (head-key map)))
   :disable map-generic-count-of-delete-<-map-generic-count-when-in)

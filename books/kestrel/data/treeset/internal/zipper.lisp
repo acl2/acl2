@@ -201,8 +201,7 @@
            (equal (zip-frame->from-left frame0)
                   (zip-frame->from-left frame1)))
   :rule-classes :congruence
-  :enable (zip-frame->from-left
-           zip-frame-equiv))
+  :enable (zip-frame->from-left))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -223,8 +222,7 @@
            (equal (zip-frame->elem frame0)
                   (zip-frame->elem frame1)))
   :rule-classes :congruence
-  :enable (zip-frame->elem
-           zip-frame-equiv))
+  :enable (zip-frame->elem))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -245,8 +243,7 @@
            (equal (zip-frame->sibling frame0)
                   (zip-frame->sibling frame1)))
   :rule-classes :congruence
-  :enable (zip-frame->sibling
-           zip-frame-equiv))
+  :enable (zip-frame->sibling))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -290,7 +287,6 @@
          (and from-left t))
   :enable (zip-frame
            zip-frame->from-left
-           zip-frame-fix
            zip-frame-p))
 
 (defrule zip-frame->elem-of-zip-frame
@@ -298,7 +294,6 @@
          (tree-element-fix elem))
   :enable (zip-frame
            zip-frame->elem
-           zip-frame-fix
            zip-frame-p))
 
 (defrule zip-frame->sibling-of-zip-frame
@@ -306,7 +301,6 @@
          (tree-fix sibling))
   :enable (zip-frame
            zip-frame->sibling
-           zip-frame-fix
            zip-frame-p))
 
 (defrule zip-frame-elim
@@ -320,7 +314,6 @@
            zip-frame->from-left
            zip-frame->elem
            zip-frame->sibling
-           zip-frame-fix
            zip-frame-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -595,8 +588,7 @@
            (equal (zip->focus zip0)
                   (zip->focus zip1)))
   :rule-classes :congruence
-  :enable (zip->focus
-           zip-equiv))
+  :enable (zip->focus))
 
 ;; A zipper is always at an element. This holds of any object, since the fixer
 ;; sends a non-zipper to one which is also at an element, so it discharges the
@@ -628,8 +620,7 @@
            (equal (zip->path zip0)
                   (zip->path zip1)))
   :rule-classes :congruence
-  :enable (zip->path
-           zip-equiv))
+  :enable (zip->path))
 
 ;; The frame-list compound recognizer cannot fire on a compound term, so the
 ;; iterated ascents, whose base case tests @(tsee endp) of a path, need this.
@@ -660,8 +651,7 @@
            (equal (zip->nlefts zip0)
                   (zip->nlefts zip1)))
   :rule-classes :congruence
-  :enable (zip->nlefts
-           zip-equiv))
+  :enable (zip->nlefts))
 
 ;; The cached count always agrees with the path, even for ill-formed input,
 ;; since the fixer supplies the empty zipper. We normalize the cache away, so
@@ -695,8 +685,7 @@
            (equal (zip->nrights zip0)
                   (zip->nrights zip1)))
   :rule-classes :congruence
-  :enable (zip->nrights
-           zip-equiv))
+  :enable (zip->nrights))
 
 (defrule zip->nrights-becomes-zip-count-rights
   (equal (zip->nrights zip)
@@ -790,7 +779,6 @@
                   (tree-fix focus)))
   :enable (zip
            zip->focus
-           zip-fix
            zipp))
 
 (defrule zip->path-of-zip
@@ -798,7 +786,6 @@
          (zip-frame-list-fix path))
   :enable (zip
            zip->path
-           zip-fix
            zipp))
 
 ;; These follow from the normalization of the cached counts into counts of the
@@ -822,9 +809,6 @@
   :enable (zip
            zip->focus
            zip->path
-           zip->nlefts
-           zip->nrights
-           zip-fix
            zipp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -968,10 +952,9 @@
          (tree-node (irr-tree-element) nil nil))
   :enable (zip-plug
            irr-zip
-           zip->path
-           zip->focus
            zip-fix
-           zipp))
+           zip->path
+           zip->focus))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -999,8 +982,6 @@
   :enable (zip
            zip->focus
            zip->path
-           zip->nlefts
-           zip->nrights
            zip-fix
            zipp
            irr-zip))
@@ -1013,10 +994,8 @@
                              (zip-frame->sibling frame))
                   frame))
   :enable (zip-frame
-           zip-frame->from-left
            zip-frame->elem
            zip-frame->sibling
-           zip-frame-fix
            zip-frame-p))
 
 (defrulel zip-frame-of-nil-and-accessors-when-not-from-left
@@ -1027,10 +1006,8 @@
                              (zip-frame->sibling frame))
                   frame))
   :enable (zip-frame
-           zip-frame->from-left
            zip-frame->elem
            zip-frame->sibling
-           zip-frame-fix
            zip-frame-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1201,7 +1178,6 @@
            (equal (zip-ascend-one (zip-descend-left zip))
                   (zip-fix zip)))
   :enable (zip-ascend-one
-           zip-descend-left
            zip-frame-plug))
 
 (defrule zip-ascend-one-of-zip-descend-right
@@ -1209,7 +1185,6 @@
            (equal (zip-ascend-one (zip-descend-right zip))
                   (zip-fix zip)))
   :enable (zip-ascend-one
-           zip-descend-right
            zip-frame-plug))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1237,8 +1212,7 @@
                   (zip-descend-leftmost zip1)))
   :rule-classes :congruence
   :expand ((zip-descend-leftmost zip0)
-           (zip-descend-leftmost zip1))
-  :enable zip-descend-left)
+           (zip-descend-leftmost zip1)))
 
 (defrule zip-plug-of-zip-descend-leftmost
   (equal (zip-plug (zip-descend-leftmost zip))
@@ -1271,8 +1245,7 @@
                   (zip-descend-rightmost zip1)))
   :rule-classes :congruence
   :expand ((zip-descend-rightmost zip0)
-           (zip-descend-rightmost zip1))
-  :enable zip-descend-right)
+           (zip-descend-rightmost zip1)))
 
 (defrule zip-plug-of-zip-descend-rightmost
   (equal (zip-plug (zip-descend-rightmost zip))
@@ -1313,8 +1286,7 @@
                   (zip-ascend-to-left-frame zip1)))
   :rule-classes :congruence
   :expand ((zip-ascend-to-left-frame zip0)
-           (zip-ascend-to-left-frame zip1))
-  :enable zip-ascend-one)
+           (zip-ascend-to-left-frame zip1)))
 
 (defrule zip-plug-of-zip-ascend-to-left-frame
   (equal (zip-plug (zip-ascend-to-left-frame zip))
@@ -1349,8 +1321,7 @@
                   (zip-ascend-to-right-frame zip1)))
   :rule-classes :congruence
   :expand ((zip-ascend-to-right-frame zip0)
-           (zip-ascend-to-right-frame zip1))
-  :enable zip-ascend-one)
+           (zip-ascend-to-right-frame zip1)))
 
 (defrule zip-plug-of-zip-ascend-to-right-frame
   (equal (zip-plug (zip-ascend-to-right-frame zip))
@@ -1447,8 +1418,7 @@
 (defrule zip-plug-of-zip-next
   (equal (zip-plug (zip-next zip))
          (zip-plug zip))
-  :enable (zip-next
-           zip-at-last-p))
+  :enable (zip-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1487,8 +1457,7 @@
 (defrule zip-plug-of-zip-prev
   (equal (zip-plug (zip-prev zip))
          (zip-plug zip))
-  :enable (zip-prev
-           zip-at-first-p))
+  :enable (zip-prev))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1562,8 +1531,7 @@
                 (zip-frame->from-left (car (zip->path zip))))
            (equal (zip-descend-left (zip-ascend-one zip))
                   (zip-fix zip)))
-  :enable (zip-ascend-one
-           zip-descend-left
+  :enable (zip-descend-left
            zip-frame-plug))
 
 (defruledl zip-descend-right-of-zip-ascend-one-when-not-from-left
@@ -1571,8 +1539,7 @@
                 (not (zip-frame->from-left (car (zip->path zip)))))
            (equal (zip-descend-right (zip-ascend-one zip))
                   (zip-fix zip)))
-  :enable (zip-ascend-one
-           zip-descend-right
+  :enable (zip-descend-right
            zip-frame-plug))
 
 ;; Popping a frame the focus hung to the right of does not move the rightmost
@@ -1776,13 +1743,11 @@
 
 (defrule zip->nlefts-of-zip-root
   (equal (zip->nlefts (zip-root tree))
-         0)
-  :enable zip-root)
+         0))
 
 (defrule zip->nrights-of-zip-root
   (equal (zip->nrights (zip-root tree))
-         0)
-  :enable zip-root)
+         0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1857,8 +1822,7 @@
 (defrulel zip->path-when-not-consp
   (implies (not (consp (zip->path zip)))
            (equal (zip->path zip)
-                  nil))
-  :use (:instance true-listp-of-zip->path))
+                  nil)))
 
 (defrulel zip-of-focus-and-nil-when-path-not-consp
   (implies (not (consp (zip->path zip)))
@@ -2165,11 +2129,15 @@
 ;; definition unfolds back into a read of the fold. Enabling either
 ;; definition together with its rule loops, so proofs pick one.
 
-(theory-invariant (incompatible (:rewrite tree-in-order-of-zip-path-tree-before)
-                                (:definition zip-path-before)))
+(local
+  (theory-invariant
+    (incompatible! (:rewrite tree-in-order-of-zip-path-tree-before)
+                   (:definition zip-path-before))))
 
-(theory-invariant (incompatible (:rewrite tree-in-order-of-zip-path-tree-after)
-                                (:definition zip-path-after)))
+(local
+  (theory-invariant
+    (incompatible! (:rewrite tree-in-order-of-zip-path-tree-after)
+                   (:definition zip-path-after))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2218,18 +2186,14 @@
            (equal (zip-path-after path)
                   nil))
   :induct (zip-path-after-rec path)
-  :enable (zip-path-after-becomes-rec
-           zip-path-after-rec
-           zip-count-lefts))
+  :enable (zip-path-after-rec))
 
 (defrule zip-path-before-when-zip-count-rights-zero
   (implies (equal (zip-count-rights path) 0)
            (equal (zip-path-before path)
                   nil))
   :induct (zip-path-before-rec path)
-  :enable (zip-path-before-becomes-rec
-           zip-path-before-rec
-           zip-count-rights))
+  :enable (zip-path-before-rec))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2240,8 +2204,6 @@
                  (zip-path-after path)))
   :induct (zip-path-plug path tree)
   :enable (zip-path-plug
-           zip-path-before-becomes-rec
-           zip-path-after-becomes-rec
            zip-path-before-rec
            zip-path-after-rec
            zip-frame-plug
@@ -2297,11 +2259,7 @@
   :enable (not
            zip-before
            zip-tree-before)
-  :use (:instance consp-of-tree-in-order
-                  (tree (zip-path-tree-before (zip->path zip)
-                                              (tree->left (zip->focus zip)))))
-  :disable (consp-of-tree-in-order
-            tree-in-order-of-zip-path-tree-before))
+  :disable tree-in-order-of-zip-path-tree-before)
 
 (defrule tree-empty-p-of-zip-tree-after
   (equal (tree-empty-p (zip-tree-after zip))
@@ -2309,35 +2267,21 @@
   :enable (not
            zip-after
            zip-tree-after)
-  :use (:instance consp-of-tree-in-order
-                  (tree (zip-path-tree-after (zip->path zip)
-                                             (tree->right (zip->focus zip)))))
-  :disable (consp-of-tree-in-order
-            tree-in-order-of-zip-path-tree-after))
+  :disable tree-in-order-of-zip-path-tree-after)
 
 (defrule tree-nodes-count-of-zip-tree-before
   (equal (tree-nodes-count (zip-tree-before zip))
          (len (zip-before zip)))
-  :enable (not
-           zip-before
+  :enable (zip-before
            zip-tree-before)
-  :use (:instance len-of-tree-in-order
-                  (tree (zip-path-tree-before (zip->path zip)
-                                              (tree->left (zip->focus zip)))))
-  :disable (len-of-tree-in-order
-            tree-in-order-of-zip-path-tree-before))
+  :disable tree-in-order-of-zip-path-tree-before)
 
 (defrule tree-nodes-count-of-zip-tree-after
   (equal (tree-nodes-count (zip-tree-after zip))
          (len (zip-after zip)))
-  :enable (not
-           zip-after
+  :enable (zip-after
            zip-tree-after)
-  :use (:instance len-of-tree-in-order
-                  (tree (zip-path-tree-after (zip->path zip)
-                                             (tree->right (zip->focus zip)))))
-  :disable (len-of-tree-in-order
-            tree-in-order-of-zip-path-tree-after))
+  :disable tree-in-order-of-zip-path-tree-after)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2467,20 +2411,14 @@
        (member-equal x (zip-before zip)))
   :enable (zip-oset-before
            zip-before)
-  :use (:instance member-equal-of-tree-in-order-under-iff
-                  (tree (zip-path-tree-before (zip->path zip)
-                                              (tree->left (zip->focus zip)))))
-  :disable member-equal-of-tree-in-order-under-iff)
+  :disable tree-in-order-of-zip-path-tree-before)
 
 (defrule in-of-zip-oset-after
   (iff (set::in x (zip-oset-after zip))
        (member-equal x (zip-after zip)))
   :enable (zip-oset-after
            zip-after)
-  :use (:instance member-equal-of-tree-in-order-under-iff
-                  (tree (zip-path-tree-after (zip->path zip)
-                                             (tree->right (zip->focus zip)))))
-  :disable member-equal-of-tree-in-order-under-iff)
+  :disable tree-in-order-of-zip-path-tree-after)
 
 ;; Each oset is empty exactly when its sequence is: a member of one is a
 ;; member of the other, and an oset with no members is nil.
@@ -2516,26 +2454,24 @@
 (defrule osetp-of-zip-before-when-bstp
   (implies (bstp (zip-plug zip))
            (set::setp (zip-before zip)))
-  :use ((:instance tree-in-order-of-zip-plug-split-at-cursor)
-        (:instance osetp-of-tree-in-order-when-bstp (tree (zip-plug zip)))
+  :enable tree-in-order-of-zip-plug-split-at-cursor
+  :use ((:instance osetp-of-tree-in-order-when-bstp (tree (zip-plug zip)))
         (:instance data::setp-of-prefix-when-osetp-of-append
                    (data::x (zip-before zip))
                    (data::y (cons (zip-value zip) (zip-after zip)))))
-  :disable (osetp-of-tree-in-order-when-bstp
-            tree-in-order-of-zip-plug))
+  :disable (osetp-of-tree-in-order-when-bstp))
 
 (defrule osetp-of-zip-after-when-bstp
   (implies (bstp (zip-plug zip))
            (set::setp (zip-after zip)))
-  :use ((:instance tree-in-order-of-zip-plug-split-at-cursor)
-        (:instance osetp-of-tree-in-order-when-bstp (tree (zip-plug zip)))
+  :enable tree-in-order-of-zip-plug-split-at-cursor
+  :use ((:instance osetp-of-tree-in-order-when-bstp (tree (zip-plug zip)))
         (:instance data::setp-of-suffix-when-osetp-of-append
                    (data::x (zip-before zip))
                    (data::y (cons (zip-value zip) (zip-after zip))))
         (:instance data::setp-of-cdr-when-osetp
                    (data::l (cons (zip-value zip) (zip-after zip)))))
-  :disable (osetp-of-tree-in-order-when-bstp
-            tree-in-order-of-zip-plug))
+  :disable (osetp-of-tree-in-order-when-bstp))
 
 ;; So over a search tree the two versions are not merely equivalent but the
 ;; same object: both are osets, and they have the same members. This is the
@@ -2585,8 +2521,7 @@
                    (data::x (zip-before zip))
                    (data::y (cons (zip-value zip) (zip-after zip)))))
   :disable (member-equal-of-tree-in-order-under-iff
-            osetp-of-tree-in-order-when-bstp
-            tree-in-order-of-zip-plug))
+            osetp-of-tree-in-order-when-bstp))
 
 (defrule in-of-zip-oset-after-when-bstp
   (implies (bstp (zip-plug zip))
@@ -2610,8 +2545,7 @@
                    (data::x (zip-before zip))
                    (data::y (cons (zip-value zip) (zip-after zip)))))
   :disable (member-equal-of-tree-in-order-under-iff
-            osetp-of-tree-in-order-when-bstp
-            tree-in-order-of-zip-plug))
+            osetp-of-tree-in-order-when-bstp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2649,7 +2583,6 @@
   :expand ((zip-count-lefts (zip->path zip))
            (zip-path-before-rec (zip->path zip)))
   :enable (zip-ascend-to-left-frame
-           zip-ascend-one
            zip-before
            zip-path-before-becomes-rec
            zip-frame-plug
@@ -2668,7 +2601,6 @@
            zip-before
            zip-value
            zip-before-of-zip-descend-leftmost
-           zip-path-before-of-path-of-zip-descend-right
            zip-before-of-zip-ascend-to-left-frame))
 
 ;; What follows the cursor loses its first value, which is the one the move
@@ -2679,19 +2611,17 @@
   (implies (not (zip-at-last-p zip))
            (equal (zip-after (zip-next zip))
                   (cdr (zip-after zip))))
-  :use ((:instance tree-in-order-of-zip-plug-split-at-cursor)
+  :use (tree-in-order-of-zip-plug-split-at-cursor
         (:instance tree-in-order-of-zip-plug-split-at-cursor
-                   (zip (zip-next zip))))
-  :enable zip-before-of-zip-next)
+                   (zip (zip-next zip)))))
 
 (defrule zip-value-of-zip-next
   (implies (not (zip-at-last-p zip))
            (equal (zip-value (zip-next zip))
                   (car (zip-after zip))))
-  :use ((:instance tree-in-order-of-zip-plug-split-at-cursor)
+  :use (tree-in-order-of-zip-plug-split-at-cursor
         (:instance tree-in-order-of-zip-plug-split-at-cursor
-                   (zip (zip-next zip))))
-  :enable zip-before-of-zip-next)
+                   (zip (zip-next zip)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2704,17 +2634,13 @@
   (implies (not (consp (zip-path-before path)))
            (equal (zip-count-rights path) 0))
   :induct (zip-path-before-rec path)
-  :enable (zip-path-before-becomes-rec
-           zip-path-before-rec
-           zip-count-rights))
+  :enable (zip-path-before-rec))
 
 (defruledl zip-count-lefts-when-not-consp-of-zip-path-after
   (implies (not (consp (zip-path-after path)))
            (equal (zip-count-lefts path) 0))
   :induct (zip-path-after-rec path)
-  :enable (zip-path-after-becomes-rec
-           zip-path-after-rec
-           zip-count-lefts))
+  :enable (zip-path-after-rec))
 
 (defrule zip-before-when-zip-at-first-p
   (implies (zip-at-first-p zip)
@@ -2805,8 +2731,7 @@
   :use ((:instance zip-after-of-zip-next (zip (zip-prev zip)))
         (:instance zip-value-of-zip-next (zip (zip-prev zip)))
         (:instance zip-at-last-p-when-not-consp-of-zip-after
-                   (zip (zip-prev zip)))
-        (:instance acl2::cons-car-cdr (acl2::x (zip-after (zip-prev zip)))))
+                   (zip (zip-prev zip))))
   :disable (zip-after-of-zip-next
             zip-value-of-zip-next
             zip-at-last-p-when-not-consp-of-zip-after
@@ -2870,7 +2795,6 @@
 (defruledl not-equal-of-cdr-when-consp
   (implies (consp x)
            (not (equal x (cdr x))))
-  :use (:instance acl2::len-of-cdr (acl2::x x))
   :disable acl2::len-of-cdr)
 
 (defruledl not-equal-of-append-of-singleton
@@ -2881,18 +2805,15 @@
 (defrule zip-next-identity-iff-zip-at-last-p
   (equal (equal (zip-next zip) (zip-fix zip))
          (zip-at-last-p zip))
-  :use (:instance zip-after-of-zip-next)
+  :use zip-after-of-zip-next
   :disable zip-after-of-zip-next
-  :cases ((consp (zip-after zip)))
-  :enable not-equal-of-cdr-when-consp)
+  :cases ((consp (zip-after zip))))
 
 (defrule zip-prev-identity-iff-zip-at-first-p
   (equal (equal (zip-prev zip) (zip-fix zip))
          (zip-at-first-p zip))
-  :use (:instance zip-before-of-zip-prev)
-  :disable zip-before-of-zip-prev
-  :cases ((consp (zip-before zip)))
-  :enable not-equal-of-append-of-singleton)
+  :use zip-before-of-zip-prev
+  :disable zip-before-of-zip-prev)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2902,7 +2823,6 @@
   (equal (tree-in x (zip-path-tree-before path acc))
          (or (set::in x (zip-path-oset-before path))
              (tree-in x acc)))
-  :enable zip-path-oset-before
   :use ((:instance member-equal-of-tree-in-order-under-iff
                    (tree (zip-path-tree-before path acc)))
         (:instance member-equal-of-tree-in-order-under-iff
@@ -2915,7 +2835,6 @@
   (equal (tree-in x (zip-path-tree-after path acc))
          (or (set::in x (zip-path-oset-after path))
              (tree-in x acc)))
-  :enable zip-path-oset-after
   :use ((:instance member-equal-of-tree-in-order-under-iff
                    (tree (zip-path-tree-after path acc)))
         (:instance member-equal-of-tree-in-order-under-iff
@@ -3018,7 +2937,6 @@
            (tree-subset-p (tree-node head sibling acc)
                           (tree-node head sibling tree)))
   :enable (tree-subset-p
-           tree-in
            tree-subset-p-when-tree-subset-p-of-arg1-and-tree->left
            tree-subset-p-when-tree-subset-p-of-arg1-and-tree->right))
 
@@ -3027,7 +2945,6 @@
            (tree-subset-p (tree-node head acc sibling)
                           (tree-node head tree sibling)))
   :enable (tree-subset-p
-           tree-in
            tree-subset-p-when-tree-subset-p-of-arg1-and-tree->left
            tree-subset-p-when-tree-subset-p-of-arg1-and-tree->right))
 
@@ -3147,8 +3064,7 @@
   :enable (zip-tree-before
            zip-plug
            bstp-of-zip-path-tree-before
-           bstp-of-tree->left-when-bstp
-           tree-subset-p-of-tree->left-when-tree-subset-p))
+           bstp-of-tree->left-when-bstp))
 
 (defrule heapp-of-zip-tree-before-when-heapp-of-zip-plug
   (implies (heapp (zip-plug zip))
@@ -3156,8 +3072,7 @@
   :enable (zip-tree-before
            zip-plug
            heapp-of-zip-path-tree-before
-           heapp-of-tree->left-when-heapp
-           tree-subset-p-of-tree->left-when-tree-subset-p))
+           heapp-of-tree->left-when-heapp))
 
 (defrule bstp-of-zip-tree-after-when-bstp-of-zip-plug
   (implies (bstp (zip-plug zip))
@@ -3165,8 +3080,7 @@
   :enable (zip-tree-after
            zip-plug
            bstp-of-zip-path-tree-after
-           bstp-of-tree->right-when-bstp
-           tree-subset-p-of-tree->right-when-tree-subset-p))
+           bstp-of-tree->right-when-bstp))
 
 (defrule heapp-of-zip-tree-after-when-heapp-of-zip-plug
   (implies (heapp (zip-plug zip))
@@ -3174,8 +3088,7 @@
   :enable (zip-tree-after
            zip-plug
            heapp-of-zip-path-tree-after
-           heapp-of-tree->right-when-heapp
-           tree-subset-p-of-tree->right-when-tree-subset-p))
+           heapp-of-tree->right-when-heapp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

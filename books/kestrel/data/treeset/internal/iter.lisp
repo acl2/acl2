@@ -86,8 +86,7 @@
   (implies (tree-iter-p x)
            (consp x))
   :rule-classes :compound-recognizer
-  :enable (tree-iter-p
-           zipp))
+  :enable (tree-iter-p))
 
 ;; A zipper is at an element, so its car is a tree node: a @(tsee consp), never
 ;; a tag. This is what keeps the three cases apart, and it does so by type
@@ -97,8 +96,7 @@
   (implies (zipp zip)
            (consp (car zip)))
   :rule-classes (:rewrite :forward-chaining)
-  :enable (zipp
-           tree-empty-p))
+  :enable (zipp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -297,24 +295,21 @@
            (equal (tree-iter-before-first-p iter0)
                   (tree-iter-before-first-p iter1)))
   :rule-classes :congruence
-  :enable (tree-iter-before-first-p
-           tree-iter-equiv))
+  :enable (tree-iter-before-first-p))
 
 (defrule tree-iter-after-last-p-when-tree-iter-equiv-congruence
   (implies (tree-iter-equiv iter0 iter1)
            (equal (tree-iter-after-last-p iter0)
                   (tree-iter-after-last-p iter1)))
   :rule-classes :congruence
-  :enable (tree-iter-after-last-p
-           tree-iter-equiv))
+  :enable (tree-iter-after-last-p))
 
 (defrule tree-iter-has-value-p-when-tree-iter-equiv-congruence
   (implies (tree-iter-equiv iter0 iter1)
            (equal (tree-iter-has-value-p iter0)
                   (tree-iter-has-value-p iter1)))
   :rule-classes :congruence
-  :enable (tree-iter-has-value-p
-           tree-iter-equiv))
+  :enable (tree-iter-has-value-p))
 
 ;; The three cases are exclusive and exhaustive.
 
@@ -327,21 +322,13 @@
   (implies (tree-iter-has-value-p iter)
            (not (tree-iter-before-first-p iter)))
   :enable (tree-iter-has-value-p
-           tree-iter-before-first-p
-           tree-iter-fix
-           zipp
-           tree-empty-p
-           irr-tree-iter))
+           tree-iter-before-first-p))
 
 (defrule not-tree-iter-after-last-p-when-tree-iter-has-value-p
   (implies (tree-iter-has-value-p iter)
            (not (tree-iter-after-last-p iter)))
   :enable (tree-iter-has-value-p
-           tree-iter-after-last-p
-           tree-iter-fix
-           zipp
-           tree-empty-p
-           irr-tree-iter))
+           tree-iter-after-last-p))
 
 (defrule not-tree-iter-before-first-p-when-tree-iter-after-last-p
   (implies (tree-iter-after-last-p iter)
@@ -353,15 +340,11 @@
 
 (defrule not-tree-iter-before-first-p-when-zipp
   (implies (zipp zip)
-           (not (tree-iter-before-first-p zip)))
-  :enable (tree-iter-before-first-p
-           tree-iter-fix))
+           (not (tree-iter-before-first-p zip))))
 
 (defrule not-tree-iter-after-last-p-when-zipp
   (implies (zipp zip)
-           (not (tree-iter-after-last-p zip)))
-  :enable (tree-iter-after-last-p
-           tree-iter-fix))
+           (not (tree-iter-after-last-p zip))))
 
 ;; A zipper is never equal to an end, whichever tree the end carries. This is
 ;; the form the move proofs need, where one side is a constructed end and the
@@ -371,15 +354,13 @@
   (implies (zipp zip)
            (not (equal zip (tree-iter-before-first tree))))
   :enable (tree-iter-before-first
-           zipp
-           treep))
+           zipp))
 
 (defrule not-equal-of-zipp-and-tree-iter-after-last
   (implies (zipp zip)
            (not (equal zip (tree-iter-after-last tree))))
   :enable (tree-iter-after-last
-           zipp
-           treep))
+           zipp))
 
 ;; The same disjointness with no equality to match on, which is what a proof
 ;; needs when it has just built an end and is asking whether it is at a value.
@@ -387,14 +368,12 @@
 (defrule not-zipp-of-tree-iter-before-first
   (not (zipp (tree-iter-before-first tree)))
   :enable (tree-iter-before-first
-           zipp
-           treep))
+           zipp))
 
 (defrule not-zipp-of-tree-iter-after-last
   (not (zipp (tree-iter-after-last tree)))
   :enable (tree-iter-after-last
-           zipp
-           treep))
+           zipp))
 
 ;; And conversely, in the direction which lets a proof conclude that an iterator
 ;; landing on a zipper was not at an end to begin with.
@@ -402,14 +381,12 @@
 (defrule not-tree-iter-has-value-p-when-tree-iter-before-first-p
   (implies (tree-iter-before-first-p iter)
            (not (tree-iter-has-value-p iter)))
-  :enable (tree-iter-has-value-p
-           tree-iter-before-first-p))
+  :enable (tree-iter-has-value-p))
 
 (defrule not-tree-iter-has-value-p-when-tree-iter-after-last-p
   (implies (tree-iter-after-last-p iter)
            (not (tree-iter-has-value-p iter)))
-  :enable (tree-iter-has-value-p
-           tree-iter-after-last-p))
+  :enable (tree-iter-has-value-p))
 
 ;; No @(tsee tree-iter-p) hypothesis is needed: anything which is not an
 ;; iterator fixes to @(tsee irr-tree-iter), which is before the first
@@ -420,11 +397,9 @@
                 (not (tree-iter-after-last-p iter)))
            (tree-iter-has-value-p iter))
   :enable (tree-iter-p
-           tree-iter-has-value-p
            tree-iter-before-first-p
            tree-iter-after-last-p
-           tree-iter-fix
-           irr-tree-iter))
+           tree-iter-fix))
 
 ;; The same fact phrased on @(tsee zipp), which is what the guards of the
 ;; zipper operations actually ask for.
@@ -436,8 +411,7 @@
   :enable (tree-iter-p
            tree-iter-before-first-p
            tree-iter-after-last-p
-           tree-iter-fix
-           irr-tree-iter))
+           tree-iter-fix))
 
 ;; What the predicates say about the constructors.
 
@@ -452,7 +426,6 @@
   (tree-iter-after-last-p (tree-iter-after-last tree))
   :enable (tree-iter-after-last-p
            tree-iter-after-last
-           tree-iter-fix
            tree-iter-p))
 
 (defrule not-tree-iter-after-last-p-of-tree-iter-before-first
@@ -466,7 +439,6 @@
   (not (tree-iter-before-first-p (tree-iter-after-last tree)))
   :enable (tree-iter-before-first-p
            tree-iter-after-last
-           tree-iter-fix
            tree-iter-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -491,8 +463,7 @@
            (equal (tree-iter->zip iter0)
                   (tree-iter->zip iter1)))
   :rule-classes :congruence
-  :enable (tree-iter->zip
-           tree-iter-equiv))
+  :enable (tree-iter->zip))
 
 (defrule tree-iter->zip-when-zipp
   (implies (zipp zip)
@@ -508,9 +479,7 @@
   (implies (and (tree-iter-p iter)
                 (not (tree-iter-has-value-p iter)))
            (treep (cdr iter)))
-  :enable (tree-iter-p
-           tree-iter-has-value-p
-           tree-iter-fix))
+  :enable (tree-iter-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -551,8 +520,7 @@
 (defrule tree-iter-plug-when-tree-iter-has-value-p
   (implies (tree-iter-has-value-p iter)
            (equal (tree-iter-plug iter)
-                  (zip-plug (tree-iter->zip iter))))
-  :enable tree-iter-plug)
+                  (zip-plug (tree-iter->zip iter)))))
 
 (defruledl tree-iter-plug-when-not-tree-iter-has-value-p
   (implies (not (tree-iter-has-value-p iter))
@@ -570,10 +538,8 @@
                   (tree-iter-before-first (tree-iter-plug iter))))
   :enable (tree-iter-before-first-p
            tree-iter-before-first
-           tree-iter-has-value-p
            tree-iter-plug
-           tree-iter-fix
-           tree-iter-p))
+           tree-iter-fix))
 
 (defruledl tree-iter-fix-when-tree-iter-after-last-p
   (implies (tree-iter-after-last-p iter)
@@ -581,10 +547,8 @@
                   (tree-iter-after-last (tree-iter-plug iter))))
   :enable (tree-iter-after-last-p
            tree-iter-after-last
-           tree-iter-has-value-p
            tree-iter-plug
-           tree-iter-fix
-           tree-iter-p))
+           tree-iter-fix))
 
 ;; The two rules just above rewrite a fixed iter into a plugged one, and the
 ;; rule above them rewrites a plugged iter back into a fixed one. Enabling
@@ -592,13 +556,15 @@
 ;; companions and easy to reach for together, so say so rather than leaving a
 ;; trap.
 
-(theory-invariant
-  (incompatible (:rewrite tree-iter-fix-when-tree-iter-before-first-p)
-                (:rewrite tree-iter-plug-when-not-tree-iter-has-value-p)))
+(local
+  (theory-invariant
+    (incompatible! (:rewrite tree-iter-fix-when-tree-iter-before-first-p)
+                   (:rewrite tree-iter-plug-when-not-tree-iter-has-value-p))))
 
-(theory-invariant
-  (incompatible (:rewrite tree-iter-fix-when-tree-iter-after-last-p)
-                (:rewrite tree-iter-plug-when-not-tree-iter-has-value-p)))
+(local
+  (theory-invariant
+    (incompatible! (:rewrite tree-iter-fix-when-tree-iter-after-last-p)
+                   (:rewrite tree-iter-plug-when-not-tree-iter-has-value-p))))
 
 (defrule tree-iter-plug-of-tree-iter-before-first
   (equal (tree-iter-plug (tree-iter-before-first tree))
@@ -606,9 +572,7 @@
   :enable (tree-iter-plug
            tree-iter-has-value-p
            tree-iter-before-first
-           tree-iter-fix
            zipp
-           tree-empty-p
            tree-iter-p))
 
 (defrule tree-iter-plug-of-tree-iter-after-last
@@ -617,9 +581,7 @@
   :enable (tree-iter-plug
            tree-iter-has-value-p
            tree-iter-after-last
-           tree-iter-fix
            zipp
-           tree-empty-p
            tree-iter-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -730,26 +692,23 @@
   (implies (tree-empty-p (tree-iter-plug iter))
            (equal (tree-iter-plug iter)
                   nil))
-  :use (:instance tree-empty-p-when-treep (tree (tree-iter-plug iter))))
+  :enable tree-empty-p-when-treep)
 
 (defrulel not-tree-empty-p-of-tree-iter-plug-when-consp
   (implies (consp (tree-iter-plug iter))
-           (not (tree-empty-p (tree-iter-plug iter))))
-  :use (:instance tree-empty-p-when-treep (tree (tree-iter-plug iter))))
+           (not (tree-empty-p (tree-iter-plug iter)))))
 
 ;; Moving never changes the tree the iterator is a position in.
 
 (defrule tree-iter-plug-of-tree-iter-next
   (equal (tree-iter-plug (tree-iter-next iter))
          (tree-iter-plug iter))
-  :enable (tree-iter-next
-           tree-iter-has-value-p))
+  :enable (tree-iter-next))
 
 (defrule tree-iter-plug-of-tree-iter-prev
   (equal (tree-iter-plug (tree-iter-prev iter))
          (tree-iter-plug iter))
-  :enable (tree-iter-prev
-           tree-iter-has-value-p))
+  :enable (tree-iter-prev))
 
 ;; The ends saturate.
 
@@ -778,9 +737,7 @@
                   (tree-iter-fix iter)))
   :enable (tree-iter-next
            tree-iter-prev
-           tree-iter-has-value-p
-           tree-iter-fix-when-tree-iter-before-first-p
-           tree-iter-fix-when-tree-iter-after-last-p))
+           tree-iter-fix-when-tree-iter-before-first-p))
 
 (defrule tree-iter-next-of-tree-iter-prev
   (implies (not (tree-iter-before-first-p iter))
@@ -788,8 +745,6 @@
                   (tree-iter-fix iter)))
   :enable (tree-iter-next
            tree-iter-prev
-           tree-iter-has-value-p
-           tree-iter-fix-when-tree-iter-before-first-p
            tree-iter-fix-when-tree-iter-after-last-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -809,10 +764,7 @@
   :use (:instance zip-next-identity-iff-zip-at-last-p (zip iter))
   :disable zip-next-identity-iff-zip-at-last-p
   :enable (tree-iter-next
-           tree-iter->zip
-           tree-iter-has-value-p
-           tree-iter-fix-when-tree-iter-before-first-p
-           tree-iter-fix-when-tree-iter-after-last-p))
+           tree-iter-fix-when-tree-iter-before-first-p))
 
 (defrule tree-iter-prev-identity-iff-tree-iter-before-first-p
   (equal (equal (tree-iter-prev iter) (tree-iter-fix iter))
@@ -820,9 +772,6 @@
   :use (:instance zip-prev-identity-iff-zip-at-first-p (zip iter))
   :disable zip-prev-identity-iff-zip-at-first-p
   :enable (tree-iter-prev
-           tree-iter->zip
-           tree-iter-has-value-p
-           tree-iter-fix-when-tree-iter-before-first-p
            tree-iter-fix-when-tree-iter-after-last-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -902,8 +851,7 @@
   :use (:instance car-of-tree-in-order
                   (tree (zip-path-tree-before (zip->path zip)
                                               (tree->left (zip->focus zip)))))
-  :disable (car-of-tree-in-order
-            tree-in-order-of-zip-path-tree-before))
+  :disable (car-of-tree-in-order))
 
 (defrule tree-leftmost-of-zip-tree-after
   (equal (tree-leftmost (zip-tree-after zip))
@@ -913,8 +861,7 @@
   :use (:instance car-of-tree-in-order
                   (tree (zip-path-tree-after (zip->path zip)
                                              (tree->right (zip->focus zip)))))
-  :disable (car-of-tree-in-order
-            tree-in-order-of-zip-path-tree-after))
+  :disable (car-of-tree-in-order))
 
 (defrule tree-rightmost-of-zip-tree-before
   (equal (tree-rightmost (zip-tree-before zip))
@@ -924,8 +871,7 @@
   :use (:instance car-of-last-of-tree-in-order
                   (tree (zip-path-tree-before (zip->path zip)
                                               (tree->left (zip->focus zip)))))
-  :disable (car-of-last-of-tree-in-order
-            tree-in-order-of-zip-path-tree-before))
+  :disable (car-of-last-of-tree-in-order))
 
 (defrule tree-rightmost-of-zip-tree-after
   (equal (tree-rightmost (zip-tree-after zip))
@@ -935,8 +881,7 @@
   :use (:instance car-of-last-of-tree-in-order
                   (tree (zip-path-tree-after (zip->path zip)
                                              (tree->right (zip->focus zip)))))
-  :disable (car-of-last-of-tree-in-order
-            tree-in-order-of-zip-path-tree-after))
+  :disable (car-of-last-of-tree-in-order))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -999,11 +944,13 @@
 ;; back into its trigger, through @(tsee consp-of-tree-in-order); so proofs
 ;; pick one.
 
-(theory-invariant (incompatible (:rewrite tree-empty-p-of-tree-iter-tree-before)
-                                (:definition tree-iter-before$inline)))
+(theory-invariant
+  (incompatible! (:rewrite tree-empty-p-of-tree-iter-tree-before)
+                 (:definition tree-iter-before$inline)))
 
-(theory-invariant (incompatible (:rewrite tree-empty-p-of-tree-iter-tree-after)
-                                (:definition tree-iter-after$inline)))
+(theory-invariant
+  (incompatible! (:rewrite tree-empty-p-of-tree-iter-tree-after)
+                 (:definition tree-iter-after$inline)))
 
 ;; Counting a side tree is measuring its sequence.
 
@@ -1024,11 +971,13 @@
 ;; Counting a side tree and unfolding its sequence view loop through @(tsee
 ;; len-of-tree-in-order), so proofs pick one.
 
-(theory-invariant (incompatible (:rewrite tree-nodes-count-of-tree-iter-tree-before)
-                                (:definition tree-iter-before$inline)))
+(theory-invariant
+  (incompatible! (:rewrite tree-nodes-count-of-tree-iter-tree-before)
+                 (:definition tree-iter-before$inline)))
 
-(theory-invariant (incompatible (:rewrite tree-nodes-count-of-tree-iter-tree-after)
-                                (:definition tree-iter-after$inline)))
+(theory-invariant
+  (incompatible! (:rewrite tree-nodes-count-of-tree-iter-tree-after)
+                 (:definition tree-iter-after$inline)))
 
 ;; The two sides, with the element between them where there is one, are the
 ;; whole sequence.
@@ -1058,7 +1007,7 @@
                       (and (member-equal x (tree-iter-after iter)) t))))
   :use ((:instance member-equal-of-tree-in-order-under-iff
                    (tree (tree-iter-plug iter)))
-        (:instance append-of-tree-iter-before-and-tree-iter-after-when-has-value))
+        append-of-tree-iter-before-and-tree-iter-after-when-has-value)
   :disable (member-equal-of-tree-in-order-under-iff
             append-of-tree-iter-before-and-tree-iter-after-when-has-value
             tree-in-order-of-zip-plug))
@@ -1116,16 +1065,16 @@
   (implies (not (tree-empty-p tree))
            (equal (tree-nodes-count tree)
                   (+ 1 (len (zip-after (zip-first tree))))))
-  :use ((:instance tree-in-order-becomes-value-and-after-of-zip-first)
-        (:instance len-of-tree-in-order))
+  :use (tree-in-order-becomes-value-and-after-of-zip-first
+        len-of-tree-in-order)
   :disable len-of-tree-in-order)
 
 (defruledl tree-nodes-count-becomes-1-plus-len-of-before-of-zip-last
   (implies (not (tree-empty-p tree))
            (equal (tree-nodes-count tree)
                   (+ 1 (len (zip-before (zip-last tree))))))
-  :use ((:instance tree-in-order-becomes-before-and-value-of-zip-last)
-        (:instance len-of-tree-in-order))
+  :use (tree-in-order-becomes-before-and-value-of-zip-last
+        len-of-tree-in-order)
   :disable len-of-tree-in-order)
 
 ;; A step drops the value it moves onto from what lies ahead. Because @(tsee
@@ -1137,8 +1086,7 @@
          (cdr (tree-iter-after iter)))
   :enable (tree-iter-after
            tree-iter-tree-after
-           tree-iter-next
-           tree-iter-has-value-p)
+           tree-iter-next)
   :use (:instance tree-in-order-becomes-value-and-after-of-zip-first
                   (tree (tree-iter-plug iter))))
 
@@ -1155,7 +1103,6 @@
            tree-iter-tree-before
            tree-iter-next
            tree-iter-value
-           tree-iter-has-value-p
            tree-in-order-of-zip-plug-split-at-cursor))
 
 ;; The mirror, which cannot be stated the same way: a step back drops the LAST
@@ -1172,9 +1119,7 @@
   :enable (tree-iter-before
            tree-iter-tree-before
            tree-iter-prev
-           tree-iter-value
-           tree-iter-has-value-p
-           zip-before-of-zip-prev)
+           tree-iter-value)
   :use (:instance tree-in-order-becomes-before-and-value-of-zip-last
                   (tree (tree-iter-plug iter))))
 
@@ -1190,8 +1135,6 @@
            tree-iter-tree-after
            tree-iter-prev
            tree-iter-value
-           tree-iter-has-value-p
-           zip-after-of-zip-prev
            tree-in-order-of-zip-plug-split-at-cursor))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1262,7 +1205,6 @@
                   (- (tree-iter-nexts iter) 1)))
   :enable (tree-iter-nexts
            tree-iter-next
-           tree-iter-has-value-p
            tree-iter-after
            tree-iter-tree-after
            tree-nodes-count-becomes-1-plus-len-of-after-of-zip-first))
@@ -1273,11 +1215,9 @@
                   (- (tree-iter-prevs iter) 1)))
   :enable (tree-iter-prevs
            tree-iter-prev
-           tree-iter-has-value-p
            tree-iter-before
            tree-iter-tree-before
-           tree-nodes-count-becomes-1-plus-len-of-before-of-zip-last
-           zip-before-of-zip-prev))
+           tree-nodes-count-becomes-1-plus-len-of-before-of-zip-last))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1289,31 +1229,14 @@
 (defrule osetp-of-tree-iter-before-when-bstp
   (implies (bstp (tree-iter-plug iter))
            (set::setp (tree-iter-before iter)))
-  :cases ((tree-iter-has-value-p iter))
   :enable (tree-iter-before
-           tree-iter-tree-before
-           tree-in-order-of-zip-plug-split-at-cursor
-           data::setp-of-prefix-when-osetp-of-append
-           data::setp-of-suffix-when-osetp-of-append)
-  :disable tree-in-order-of-zip-plug
-  :use ((:instance osetp-of-tree-in-order-when-bstp
-                   (tree (tree-iter-plug iter)))))
+           tree-iter-tree-before))
 
 (defrule osetp-of-tree-iter-after-when-bstp
   (implies (bstp (tree-iter-plug iter))
            (set::setp (tree-iter-after iter)))
-  :cases ((tree-iter-has-value-p iter))
   :enable (tree-iter-after
-           tree-iter-tree-after
-           tree-in-order-of-zip-plug-split-at-cursor)
-  :disable tree-in-order-of-zip-plug
-  :use ((:instance osetp-of-tree-in-order-when-bstp
-                   (tree (tree-iter-plug iter)))
-        (:instance data::setp-of-suffix-when-osetp-of-append
-                   (data::x (zip-before iter))
-                   (data::y (cons (zip-value iter) (zip-after iter))))
-        (:instance data::setp-of-cdr-when-osetp
-                   (data::l (cons (zip-value iter) (zip-after iter))))))
+           tree-iter-tree-after))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1361,43 +1284,27 @@
   (iff (set::in x (tree-iter-oset-before iter))
        (member-equal x (tree-iter-before iter)))
   :enable (tree-iter-oset-before
-           tree-iter-tree-before
-           tree-iter-before
-           tree-iter-tree-before))
+           tree-iter-before))
 
 (defrule in-of-tree-iter-oset-after
   (iff (set::in x (tree-iter-oset-after iter))
        (member-equal x (tree-iter-after iter)))
   :enable (tree-iter-oset-after
-           tree-iter-tree-after
-           tree-iter-after
-           tree-iter-tree-after))
+           tree-iter-after))
 
 ;; Each oset is empty exactly when its sequence is.
 
 (defrule emptyp-of-tree-iter-oset-before
   (equal (set::emptyp (tree-iter-oset-before iter))
          (not (consp (tree-iter-before iter))))
-  :use ((:instance in-of-tree-iter-oset-before
-                   (x (set::head (tree-iter-oset-before iter))))
-        (:instance in-of-tree-iter-oset-before
-                   (x (car (tree-iter-before iter))))
-        (:instance set::in-head
-                   (set::x (tree-iter-oset-before iter))))
-  :disable (in-of-tree-iter-oset-before
-            set::in-head))
+  :enable (tree-iter-oset-before
+           tree-empty-p-of-tree-iter-tree-before))
 
 (defrule emptyp-of-tree-iter-oset-after
   (equal (set::emptyp (tree-iter-oset-after iter))
          (not (consp (tree-iter-after iter))))
-  :use ((:instance in-of-tree-iter-oset-after
-                   (x (set::head (tree-iter-oset-after iter))))
-        (:instance in-of-tree-iter-oset-after
-                   (x (car (tree-iter-after iter))))
-        (:instance set::in-head
-                   (set::x (tree-iter-oset-after iter))))
-  :disable (in-of-tree-iter-oset-after
-            set::in-head))
+  :enable (tree-iter-oset-after
+           tree-empty-p-of-tree-iter-tree-after))
 
 ;; An empty sequence means an empty oset on the same side, since the oset is
 ;; the sequence's members.
@@ -1427,7 +1334,6 @@
   :enable (tree-iter-oset-before
            tree-iter-tree-before
            tree-iter-before
-           tree-iter-tree-before
            tree-oset-becomes-tree-in-order
            zip-oset-before-becomes-zip-before))
 
@@ -1438,7 +1344,6 @@
   :enable (tree-iter-oset-after
            tree-iter-tree-after
            tree-iter-after
-           tree-iter-tree-after
            tree-oset-becomes-tree-in-order
            zip-oset-after-becomes-zip-after))
 
@@ -1453,8 +1358,7 @@
                        (<< x (tree-iter-value iter)))))
   :enable (tree-iter-oset-before
            tree-iter-tree-before
-           tree-iter-value)
-  :disable in-of-tree-iter-oset-before)
+           tree-iter-value))
 
 (defrule in-of-tree-iter-oset-after-when-bstp
   (implies (and (bstp (tree-iter-plug iter))
@@ -1464,8 +1368,7 @@
                        (<< (tree-iter-value iter) x))))
   :enable (tree-iter-oset-after
            tree-iter-tree-after
-           tree-iter-value)
-  :disable in-of-tree-iter-oset-after)
+           tree-iter-value))
 
 ;; A step forward can never land before the first element, whichever
 ;; position it began at. This is what lets a forward walk know it may read
@@ -1473,13 +1376,11 @@
 
 (defrule not-tree-iter-before-first-p-of-tree-iter-next
   (not (tree-iter-before-first-p (tree-iter-next iter)))
-  :enable (tree-iter-next
-           tree-iter-has-value-p))
+  :enable (tree-iter-next))
 
 (defrule not-tree-iter-after-last-p-of-tree-iter-prev
   (not (tree-iter-after-last-p (tree-iter-prev iter)))
-  :enable (tree-iter-prev
-           tree-iter-has-value-p))
+  :enable (tree-iter-prev))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1491,23 +1392,16 @@
   (implies (not (tree-empty-p tree))
            (equal (zip-value (zip-first tree))
                   (tree-leftmost tree)))
-  :use ((:instance tree-in-order-becomes-value-and-after-of-zip-first)
-        (:instance car-of-tree-in-order))
+  :use (tree-in-order-becomes-value-and-after-of-zip-first
+        car-of-tree-in-order)
   :disable car-of-tree-in-order)
-
-(defruledl car-of-last-of-append-of-singleton
-  (equal (car (last (append x (list y))))
-         y)
-  :induct t
-  :enable append)
 
 (defrule zip-value-of-zip-last
   (implies (not (tree-empty-p tree))
            (equal (zip-value (zip-last tree))
                   (tree-rightmost tree)))
-  :enable car-of-last-of-append-of-singleton
-  :use ((:instance tree-in-order-becomes-before-and-value-of-zip-last)
-        (:instance car-of-last-of-tree-in-order))
+  :use (tree-in-order-becomes-before-and-value-of-zip-last
+        car-of-last-of-tree-in-order)
   :disable car-of-last-of-tree-in-order)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1564,15 +1458,13 @@
   (equal (tree-iter-after-last-p (tree-iter-min tree))
          (tree-empty-p tree))
   :enable (tree-iter-min
-           tree-iter-next
-           tree-iter-has-value-p))
+           tree-iter-next))
 
 (defrule tree-iter-before-first-p-of-tree-iter-max
   (equal (tree-iter-before-first-p (tree-iter-max tree))
          (tree-empty-p tree))
   :enable (tree-iter-max
-           tree-iter-prev
-           tree-iter-has-value-p))
+           tree-iter-prev))
 
 (defrule not-tree-iter-before-first-p-of-tree-iter-min
   (not (tree-iter-before-first-p (tree-iter-min tree)))
@@ -1590,8 +1482,7 @@
   :enable (tree-iter-min
            tree-iter-before
            tree-iter-tree-before
-           tree-iter-next
-           tree-iter-has-value-p))
+           tree-iter-next))
 
 (defrule tree-iter-after-of-tree-iter-max
   (equal (tree-iter-after (tree-iter-max tree))
@@ -1599,8 +1490,7 @@
   :enable (tree-iter-max
            tree-iter-after
            tree-iter-tree-after
-           tree-iter-prev
-           tree-iter-has-value-p))
+           tree-iter-prev))
 
 ;; What each walk reads first: the extremum on its own side.
 
@@ -1610,8 +1500,7 @@
                   (tree-leftmost tree)))
   :enable (tree-iter-min
            tree-iter-next
-           tree-iter-value
-           tree-iter-has-value-p))
+           tree-iter-value))
 
 (defrule tree-iter-value-of-tree-iter-max
   (implies (not (tree-empty-p tree))
@@ -1619,8 +1508,7 @@
                   (tree-rightmost tree)))
   :enable (tree-iter-max
            tree-iter-prev
-           tree-iter-value
-           tree-iter-has-value-p))
+           tree-iter-value))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1633,14 +1521,11 @@
            (tree-in (tree-iter-value iter)
                     (tree-iter-plug iter)))
   :enable (tree-iter-value
-           tree-iter-plug
-           tree-iter-has-value-p
            tree-in-order-of-zip-plug-split-at-cursor)
   :use (:instance member-equal-of-tree-in-order-under-iff
                   (x (zip-value (tree-iter->zip iter)))
                   (tree (zip-plug (tree-iter->zip iter))))
-  :disable (member-equal-of-tree-in-order-under-iff
-            tree-in-order-of-zip-plug))
+  :disable (member-equal-of-tree-in-order-under-iff))
 
 ;; The value a step lands on is the one that was at the head of what lay ahead.
 ;; With @(tsee tree-iter-after-of-tree-iter-next), which drops that same head,
@@ -1653,10 +1538,7 @@
   :enable (tree-iter-value
            tree-iter-next
            tree-iter-after
-           tree-iter-tree-after
-           tree-iter-has-value-p)
-  :use (:instance tree-in-order-becomes-value-and-after-of-zip-first
-                  (tree (tree-iter-plug iter))))
+           tree-iter-tree-after))
 
 ;; A step lands on a value exactly when there was something ahead to land on.
 ;; This is what makes @(tsee tree-iter-after-of-tree-iter-next) usable: that
@@ -1668,16 +1550,14 @@
          (consp (tree-iter-after iter)))
   :enable (tree-iter-after
            tree-iter-tree-after
-           tree-iter-next
-           tree-iter-has-value-p))
+           tree-iter-next))
 
 (defrule tree-iter-has-value-p-of-tree-iter-prev
   (equal (tree-iter-has-value-p (tree-iter-prev iter))
          (consp (tree-iter-before iter)))
   :enable (tree-iter-before
            tree-iter-tree-before
-           tree-iter-prev
-           tree-iter-has-value-p))
+           tree-iter-prev))
 
 ;; The only positions with no value are the two ends, and nothing lies ahead of
 ;; the right one. So anywhere but the left end, something ahead means a value
@@ -1689,8 +1569,7 @@
                 (consp (tree-iter-after iter)))
            (tree-iter-has-value-p iter))
   :enable (tree-iter-after
-           tree-iter-tree-after
-           tree-iter-has-value-p))
+           tree-iter-tree-after))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1699,16 +1578,12 @@
 (defrule tree-in-of-tree-iter-tree-before
   (equal (tree-in x (tree-iter-tree-before iter))
          (set::in x (tree-iter-oset-before iter)))
-  :enable (tree-iter-tree-before
-           tree-iter-oset-before
-           tree-iter-tree-before))
+  :enable tree-iter-oset-before)
 
 (defrule tree-in-of-tree-iter-tree-after
   (equal (tree-in x (tree-iter-tree-after iter))
          (set::in x (tree-iter-oset-after iter)))
-  :enable (tree-iter-tree-after
-           tree-iter-oset-after
-           tree-iter-tree-after))
+  :enable tree-iter-oset-after)
 
 ;; Both invariants pass from the plug, so over a search tree the built sides
 ;; are proper treesets.
@@ -1716,26 +1591,22 @@
 (defrule bstp-of-tree-iter-tree-before-when-bstp
   (implies (bstp (tree-iter-plug iter))
            (bstp (tree-iter-tree-before iter)))
-  :enable (tree-iter-tree-before
-           tree-iter-plug-when-tree-iter-has-value-p))
+  :enable (tree-iter-tree-before))
 
 (defrule heapp-of-tree-iter-tree-before-when-heapp
   (implies (heapp (tree-iter-plug iter))
            (heapp (tree-iter-tree-before iter)))
-  :enable (tree-iter-tree-before
-           tree-iter-plug-when-tree-iter-has-value-p))
+  :enable (tree-iter-tree-before))
 
 (defrule bstp-of-tree-iter-tree-after-when-bstp
   (implies (bstp (tree-iter-plug iter))
            (bstp (tree-iter-tree-after iter)))
-  :enable (tree-iter-tree-after
-           tree-iter-plug-when-tree-iter-has-value-p))
+  :enable (tree-iter-tree-after))
 
 (defrule heapp-of-tree-iter-tree-after-when-heapp
   (implies (heapp (tree-iter-plug iter))
            (heapp (tree-iter-tree-after iter)))
-  :enable (tree-iter-tree-after
-           tree-iter-plug-when-tree-iter-has-value-p))
+  :enable (tree-iter-tree-after))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1747,31 +1618,35 @@
          (tree-iter-before iter))
   :enable tree-iter-before)
 
-(theory-invariant (incompatible (:rewrite tree-in-order-of-tree-iter-tree-before)
-                                (:definition tree-iter-before$inline)))
+(theory-invariant
+  (incompatible! (:rewrite tree-in-order-of-tree-iter-tree-before)
+                 (:definition tree-iter-before$inline)))
 
 (defruled tree-in-order-of-tree-iter-tree-after
   (equal (tree-in-order (tree-iter-tree-after iter))
          (tree-iter-after iter))
   :enable tree-iter-after)
 
-(theory-invariant (incompatible (:rewrite tree-in-order-of-tree-iter-tree-after)
-                                (:definition tree-iter-after$inline)))
+(theory-invariant
+  (incompatible! (:rewrite tree-in-order-of-tree-iter-tree-after)
+                 (:definition tree-iter-after$inline)))
 
 (defruled tree-oset-of-tree-iter-tree-before
   (equal (tree-oset (tree-iter-tree-before iter))
          (tree-iter-oset-before iter))
   :enable tree-iter-oset-before)
 
-(theory-invariant (incompatible (:rewrite tree-oset-of-tree-iter-tree-before)
-                                (:definition tree-iter-oset-before)))
+(theory-invariant
+  (incompatible! (:rewrite tree-oset-of-tree-iter-tree-before)
+                 (:definition tree-iter-oset-before)))
 
 (defruled tree-oset-of-tree-iter-tree-after
   (equal (tree-oset (tree-iter-tree-after iter))
          (tree-iter-oset-after iter))
   :enable tree-iter-oset-after)
 
-(theory-invariant (incompatible (:rewrite tree-oset-of-tree-iter-tree-after)
-                                (:definition tree-iter-oset-after)))
+(theory-invariant
+  (incompatible! (:rewrite tree-oset-of-tree-iter-tree-after)
+                 (:definition tree-iter-oset-after)))
 
 

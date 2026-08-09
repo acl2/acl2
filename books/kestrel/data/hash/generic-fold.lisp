@@ -89,9 +89,7 @@
 
 (defrule state-fix-of-state-fix
   (equal (state-fix (state-fix st))
-         (state-fix st))
-  :use (:instance state-fix-when-statep (st (state-fix st)))
-  :disable state-fix-when-statep)
+         (state-fix st)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
