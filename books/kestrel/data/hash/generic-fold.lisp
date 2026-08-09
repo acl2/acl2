@@ -33,7 +33,7 @@
        function which updates the state with one byte, and a finalizer. This
        book constrains the state type and step function and develops the
        algebra of folding the step function over a byte list. In particular,
-       @(tsee update-bytes-of-append) is the key lemma allowing a hash of a
+       @('update-bytes-of-append') is the key lemma allowing a hash of a
        serialized object (see @(see serialization)) to be decomposed along the
        structure of the serialization.")
     (xdoc::p

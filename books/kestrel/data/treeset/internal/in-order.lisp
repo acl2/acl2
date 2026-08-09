@@ -286,6 +286,7 @@
 (define tree-oset ((tree treep))
   :returns (oset set::setp)
   :verify-guards :after-returns
+  :parents (implementation)
   :short "The elements of a tree, as an oset."
   :long
   (xdoc::topstring
@@ -293,8 +294,8 @@
      "Built with oset primitives, so the result is a @(tsee set::setp)
       structurally, for any tree at all. Over a binary search tree this agrees
       with @(tsee tree-in-order), which builds the same oset in @($O(n)$) by
-      reading the elements off in order; see @(tsee
-      tree-oset-becomes-tree-in-order). This function is the logical form:
+      reading the elements off in order; see
+      @('tree-oset-becomes-tree-in-order'). This function is the logical form:
       definitions phrased over it face the mature oset theory rather than
       facts about lists."))
   (if (tree-empty-p tree)

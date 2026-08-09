@@ -211,7 +211,7 @@
        number, whose continuation bits are all set because more significant
        groups always follow. It is the specification for hash implementations
        which serialize a large number by splitting it into portions, rather
-       than extracting one group at a time (see @(tsee nat-to-bytes-split)
+       than extracting one group at a time (see @('nat-to-bytes-split')
        and, e.g., @(see jenkins-one-at-a-time))."))
   :returns (bytes byte-listp)
   (if (zp m)
