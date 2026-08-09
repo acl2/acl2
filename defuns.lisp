@@ -2545,7 +2545,7 @@
                                         (if not-flg var new-var))
              nil nil type-alist ens wrld ttree nil nil))))
 
-(defun putprop-initial-type-prescriptions (names wrld)
+(defun putprop-initial-type-prescriptions (names type-prescription-lst wrld)
 
 ; Suppose we have a clique of mutually recursive fns, names.  Suppose
 ; that we can recover from wrld both the formals and body of each
@@ -2572,6 +2572,7 @@
    (t (let ((fn (car names)))
         (putprop-initial-type-prescriptions
          (cdr names)
+         (cdr type-prescription-lst)
          (putprop fn
                   'type-prescriptions
                   (cons (make type-prescription
@@ -2580,7 +2581,10 @@
                               :term (mcons-term fn (formals fn wrld))
                               :hyps nil
                               :backchain-limit-lst nil
-                              :basic-ts *ts-empty*
+                              :basic-ts (if (eq (car type-prescription-lst)
+                                                :none)
+                                            *ts-unknown*
+                                          *ts-empty*)
                               :vars nil
                               :corollary *t*)
                         (getpropc fn 'type-prescriptions nil wrld))
@@ -3255,7 +3259,7 @@
   30)
 
 (defun guess-and-putprop-type-prescription-lst-for-clique-step
-  (names bodies ens wrld ttree interval state)
+  (names type-prescription-lst bodies ens wrld ttree interval state)
 
 ; Given a list of function names and their normalized bodies
 ; we take one incremental step toward the final type-prescription of
@@ -3303,12 +3307,15 @@
             (declare (ignore erp val))
             (mv-let
              (wrld ttree)
-             (guess-type-prescription-for-fn-step
-              (car names)
-              (car bodies)
-              ens wrld ttree)
+             (if (eq (car type-prescription-lst) :none)
+                 (mv wrld ttree)
+               (guess-type-prescription-for-fn-step
+                (car names)
+                (car bodies)
+                ens wrld ttree))
              (guess-and-putprop-type-prescription-lst-for-clique-step
               (cdr names)
+              (cdr type-prescription-lst)
               (cdr bodies)
               ens
               wrld
@@ -3521,7 +3528,8 @@
                                         cert-data-tp-entry ttree3))))))))
 
 (defun guess-and-putprop-type-prescription-lst-for-clique
-  (names bodies def-nume ens wrld ttree big-mutrec cert-data-tp-entry state)
+  (names type-prescription-lst bodies def-nume ens wrld ttree big-mutrec
+         cert-data-tp-entry state)
 
 ; We assume that in wrld we find 'type-prescriptions for every fn in
 ; names.  We compute new guesses at the type-prescriptions for each fn
@@ -3537,7 +3545,8 @@
          (getprop-x-lst names 'type-prescriptions wrld)))
     (mv-let (wrld1 ttree state)
             (guess-and-putprop-type-prescription-lst-for-clique-step
-             names bodies ens wrld ttree *clique-step-install-interval* state)
+             names type-prescription-lst bodies ens wrld ttree
+             *clique-step-install-interval* state)
             (er-progn
              (update-w big-mutrec wrld1)
              (cond ((equal old-type-prescriptions-lst
@@ -3569,6 +3578,7 @@
                    (t
                     (guess-and-putprop-type-prescription-lst-for-clique
                      names
+                     type-prescription-lst
                      bodies
                      def-nume ens wrld1 ttree big-mutrec cert-data-tp-entry
                      state)))))))
@@ -3652,8 +3662,8 @@
                installed-wrld
                t)))))))))
 
-(defun putprop-type-prescription-lst (names subversive-p def-nume ens wrld
-                                            ttree state)
+(defun putprop-type-prescription-lst (names type-prescription-lst subversive-p
+                                            def-nume ens wrld ttree state)
 
 ; Names is a list of mutually recursive fns being introduced.  We assume that
 ; for each fn in names we can obtain from wrld the 'formals and the normalized
@@ -3816,9 +3826,10 @@
                 (big-mutrec (big-mutrec names)))
             (er-let* ((wrld1 (update-w big-mutrec
                                        (putprop-initial-type-prescriptions
-                                        names wrld))))
+                                        names type-prescription-lst wrld))))
               (guess-and-putprop-type-prescription-lst-for-clique
                names
+               type-prescription-lst
                bodies
                def-nume
                ens
@@ -10358,7 +10369,8 @@
 
   (cond
    ((endp names) (value nil))
-   ((null (car type-prescription-lst))
+   ((member-eq (car type-prescription-lst)
+               '(nil :none))
     (chk-type-prescription-lst (cdr names)
                                (cdr arglists)
                                (cdr type-prescription-lst)
@@ -11518,6 +11530,7 @@
        (mv-let
         (wrld6 ttree2 state)
         (putprop-type-prescription-lst names
+                                       type-prescription-lst
                                        subversive-p
                                        (fn-rune-nume (car names)
                                                      t nil wrld5)
@@ -11613,7 +11626,7 @@
                          (putprop-x-lst1
                           names 'unnormalized-body nil
                           (putprop-x-lst1 names 'def-bodies nil wrld14))
-                         wrld14)
+                       wrld14)
                      #-:non-standard-analysis
                      wrld14))
                 (pprogn
