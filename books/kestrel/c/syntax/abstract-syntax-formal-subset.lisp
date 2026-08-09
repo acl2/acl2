@@ -13,12 +13,11 @@
 (include-book "unambiguity")
 (include-book "purity")
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+
 (local (in-theory (enable* abstract-syntax-unambp-rules)))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -89,8 +88,7 @@
      e.g. if we want to support the verification of transformations
      that take advantage of the flexibility mentioned in @(tsee ident).
      So we may revisit this in the future."))
-  (stringp (ident->unwrap ident))
-  :hooks (:fix))
+  (stringp (ident->unwrap ident)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,8 +100,7 @@
    (xdoc::p
     "Based on @(tsee c::eval-const) and @(tsee c::exec-const),
      only integer constants pass the test."))
-  (const-case const :int)
-  :hooks (:fix))
+  (const-case const :int))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -181,8 +178,7 @@
         (equal tyspecs (list (type-spec-unsigned)
                              (type-spec-long)
                              (type-spec-long)
-                             (type-spec-int)))))
-  :hooks (:fix))
+                             (type-spec-int))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -217,8 +213,7 @@
                   (ident-formalp (struni-spec->name? struni-spec)))))
       (and (equal (type-spec-list-fix tyspecs)
                   (list (type-spec-void)))))
-  :guard-hints (("Goal" :in-theory (enable check-struni-spec-no-members)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable check-struni-spec-no-members))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -233,8 +228,7 @@
      in file-scope object declarations."))
   (b* ((storspecs (stor-spec-list-fix storspecs)))
     (or (equal storspecs nil)
-        (equal storspecs (list (stor-spec-extern)))))
-  :hooks (:fix))
+        (equal storspecs (list (stor-spec-extern))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -259,8 +253,7 @@
        ((mv okp tyspecs) (check-spec/qual-list-all-typespec tyname.specquals)))
     (and okp
          (type-spec-list-integer-formalp tyspecs)
-         (not tyname.declor?)))
-  :hooks (:fix))
+         (not tyname.declor?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -448,8 +441,7 @@
   :short "Check if an optional expression has a formal dynamic semantics."
   (expr-option-case expr?
                     :some (expr-formalp expr?.val)
-                    :none t)
-  :hooks (:fix))
+                    :none t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -474,8 +466,7 @@
   (b* (((desiniter desiniter) desiniter))
     (and (endp desiniter.designors)
          (initer-case desiniter.initer :single)
-         (expr-formalp (initer-single->expr desiniter.initer))))
-  :hooks (:fix))
+         (expr-formalp (initer-single->expr desiniter.initer)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -486,8 +477,7 @@
           have formal dynamic semantics."
   (or (endp desiniters)
       (and (desiniter-formalp (car desiniters))
-           (desiniter-list-formalp (cdr desiniters))))
-  :hooks (:fix))
+           (desiniter-list-formalp (cdr desiniters)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -506,8 +496,7 @@
   (initer-case
    initer
    :single (expr-formalp initer.expr)
-   :list (desiniter-list-formalp initer.elems))
-  :hooks (:fix))
+   :list (desiniter-list-formalp initer.elems)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -528,8 +517,7 @@
      Refer @(tsee declor) for an explanation of how pointers are modeled."))
   (or (endp pointers)
       (and (endp (car pointers))
-           (pointers-formalp (cdr pointers))))
-  :hooks (:fix))
+           (pointers-formalp (cdr pointers)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -546,8 +534,7 @@
      that is not an array declarator.
      So we can only have an identifier."))
   (and (dirdeclor-case dirdeclor :ident)
-       (ident-formalp (dirdeclor-ident->ident dirdeclor)))
-  :hooks (:fix))
+       (ident-formalp (dirdeclor-ident->ident dirdeclor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -562,8 +549,7 @@
     "The direct declarator part must be supported,
      and we can have any number of supported pointers."))
   (and (pointers-formalp (declor->pointers declor))
-       (dirdeclor-block-formalp (declor->direct declor)))
-  :hooks (:fix))
+       (dirdeclor-block-formalp (declor->direct declor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -584,8 +570,7 @@
          (not initdeclor.asm?)
          (endp initdeclor.attribs)
          initdeclor.initer?
-         (initer-formalp initdeclor.initer?)))
-  :hooks (:fix))
+         (initer-formalp initdeclor.initer?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -602,8 +587,7 @@
      and its element must have formal semantics."))
   (and (consp ideclors)
        (endp (cdr ideclors))
-       (init-declor-block-formalp (car ideclors)))
-  :hooks (:fix))
+       (init-declor-block-formalp (car ideclors))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -631,8 +615,7 @@
                   (and okp
                        (type-spec-list-formalp tyspecs)))
                 (init-declor-list-block-formalp declon.declors))
-   :statassert nil)
-  :hooks (:fix))
+   :statassert nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -804,8 +787,7 @@
          (not initdeclor.asm?)
          (endp initdeclor.attribs)
          (or (not initdeclor.initer?)
-             (initer-formalp initdeclor.initer?))))
-  :hooks (:fix))
+             (initer-formalp initdeclor.initer?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -822,8 +804,7 @@
      and its element must have formal semantics."))
   (and (consp ideclors)
        (endp (cdr ideclors))
-       (init-declor-obj-formalp (car ideclors)))
-  :hooks (:fix))
+       (init-declor-obj-formalp (car ideclors))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -853,8 +834,7 @@
                        (type-spec-list-formalp tyspecs)
                        (stor-spec-list-formalp storspecs)))
                 (init-declor-list-obj-formalp declon.declors))
-   :statassert nil)
-  :hooks (:fix))
+   :statassert nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -870,8 +850,7 @@
   (b* (((struct-declor structdeclor) structdeclor))
     (and structdeclor.declor?
          (declor-obj-formalp structdeclor.declor?)
-         (not structdeclor.expr?)))
-  :hooks (:fix))
+         (not structdeclor.expr?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -900,8 +879,7 @@
                 (struct-declor-formalp (car structdeclon.declors))
                 (endp structdeclon.attribs))
    :statassert nil
-   :empty nil)
-  :hooks (:fix))
+   :empty nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -912,8 +890,7 @@
           have formal dynamic semantics."
   (or (endp structdeclons)
       (and (struct-declon-formalp (car structdeclons))
-           (struct-declon-list-formalp (cdr structdeclons))))
-  :hooks (:fix))
+           (struct-declon-list-formalp (cdr structdeclons)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -930,8 +907,7 @@
     (and (endp struni-spec.attribs)
          struni-spec.name?
          (ident-formalp struni-spec.name?)
-         (struct-declon-list-formalp struni-spec.members)))
-  :hooks (:fix))
+         (struct-declon-list-formalp struni-spec.members))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -959,8 +935,7 @@
                        (b* ((struni-spec (type-spec-struct->spec tyspec)))
                          (and (struni-spec-formalp struni-spec)
                               (endp declon.declors))))))
-   :statassert nil)
-  :hooks (:fix))
+   :statassert nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -979,8 +954,7 @@
    :nonabstract (declor-obj-formalp paramdeclor.declor)
    :abstract nil
    :none nil
-   :ambig (impossible))
-  :hooks (:fix))
+   :ambig (impossible)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1000,8 +974,7 @@
     (and okp
          (type-spec-list-formalp tyspecs)
          (param-declor-formalp param.declor)
-         (endp param.attribs)))
-  :hooks (:fix))
+         (endp param.attribs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1012,8 +985,7 @@
           have formal dynamic semantics."
   (or (endp params)
       (and (param-declon-formalp (car params))
-           (param-declon-list-formalp (cdr params))))
-  :hooks (:fix))
+           (param-declon-list-formalp (cdr params)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1039,8 +1011,7 @@
    (and (dirdeclor-case dirdeclor.declor :ident)
         (ident-formalp (dirdeclor-ident->ident dirdeclor.declor))
         (endp dirdeclor.names))
-   :otherwise nil)
-  :hooks (:fix))
+   :otherwise nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1056,8 +1027,7 @@
      And the direct declarator must be supported."))
   (b* (((declor declor) declor))
     (and (pointers-formalp declor.pointers)
-         (dirdeclor-fun-formalp declor.direct)))
-  :hooks (:fix))
+         (dirdeclor-fun-formalp declor.direct))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1076,8 +1046,7 @@
     (and (declor-fun-formalp initdeclor.declor)
          (not initdeclor.asm?)
          (endp initdeclor.attribs)
-         (not initdeclor.initer?)))
-  :hooks (:fix))
+         (not initdeclor.initer?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1094,8 +1063,7 @@
      and its element must have formal semantics."))
   (and (consp ideclors)
        (endp (cdr ideclors))
-       (init-declor-fun-formalp (car ideclors)))
-  :hooks (:fix))
+       (init-declor-fun-formalp (car ideclors))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1120,8 +1088,7 @@
                   (and okp
                        (type-spec-list-formalp tyspecs)))
                 (init-declor-list-fun-formalp declon.declors))
-   :statassert nil)
-  :hooks (:fix))
+   :statassert nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1150,8 +1117,7 @@
          (not fundef.asm?)
          (endp fundef.attribs)
          (endp fundef.declons)
-         (comp-stmt-formalp fundef.body)))
-  :hooks (:fix))
+         (comp-stmt-formalp fundef.body))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1187,8 +1153,7 @@
                (declon-struct-formalp edecl.declon)
                (declon-fun-formalp edecl.declon))
    :empty nil
-   :asm nil)
-  :hooks (:fix))
+   :asm nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1208,8 +1173,7 @@
    :define nil
    :undef nil
    :cond nil
-   :line-comment nil)
-  :hooks (:fix))
+   :line-comment nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1220,8 +1184,7 @@
           have formal dynamic semantics."
   (or (endp items)
       (and (trans-item-formalp (car items))
-           (trans-item-list-formalp (cdr items))))
-  :hooks (:fix))
+           (trans-item-list-formalp (cdr items)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1233,8 +1196,7 @@
   (xdoc::topstring
    (xdoc::p
     "All its translation items must have formal semantics."))
-  (trans-item-list-formalp (trans-unit->items tunit))
-  :hooks (:fix))
+  (trans-item-list-formalp (trans-unit->items tunit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1251,5 +1213,4 @@
   (b* ((map (trans-ensemble->units tunits)))
     (and (= (omap::size map) 1)
          (trans-unit-formalp (omap::head-val map))))
-  :guard-hints (("Goal" :in-theory (enable omap::unfold-equal-size-const)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable omap::unfold-equal-size-const))))
