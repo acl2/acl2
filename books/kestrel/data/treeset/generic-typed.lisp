@@ -35,13 +35,14 @@
 (local (include-book "internal/tree"))
 (local (include-book "internal/in"))
 (local (include-book "set"))
+(local (include-book "iter"))
 (local (include-book "in"))
 (local (include-book "min-max"))
 (local (include-book "cardinality"))
 (local (include-book "subset"))
 (local (include-book "insert"))
 (local (include-book "delete"))
-(local (include-book "iter"))
+(local (include-book "internal/bst"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -54,6 +55,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define set-all-genericp ((set setp))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp)
   (or (emptyp set)
       (and (genericp (min set))
@@ -61,8 +63,6 @@
   :measure (cardinality set))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t set-all-genericp)))
 
 (defrule set-all-genericp-type-prescription
   (booleanp (set-all-genericp set))
@@ -258,6 +258,18 @@
            (set-all-genericp x))
   :enable set-all-genericp-pick-a-point-polar)
 
+;; The same fact with the hypotheses exchanged: here the containing set is
+;; found in the context and the containment itself is left to rewriting, which
+;; suits goals whose subset fact is a rule rather than a hypothesis. Left
+;; disabled: with both orders enabled every all-elements goal would search the
+;; context twice.
+
+(defruled set-all-genericp-when-set-all-genericp-and-subset
+  (implies (and (set-all-genericp y)
+                (subset x y))
+           (set-all-genericp x))
+  :by set-all-genericp-when-subset-and-set-all-genericp)
+
 (defrule set-all-genericp-of-insert
   (equal (set-all-genericp (insert x set))
          (and (genericp x)
@@ -270,28 +282,137 @@
            (set-all-genericp (delete x set)))
   :enable set-all-genericp-pick-a-point-polar)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The peel step of the min/delete recursion, for an arbitrary member.
+(defruled set-all-genericp-of-delete-when-in
+  (implies (in x set)
+           (equal (set-all-genericp set)
+                  (and (genericp x)
+                       (set-all-genericp (delete x set)))))
+  :use ((:instance set-all-genericp-of-insert
+                   (set (delete x set))))
+  :disable set-all-genericp-of-insert
+  :enable (insert-of-delete-same
+           insert-when-in
+           fix-under-equiv))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The same check, run with an @(see iterator) instead of by repeatedly taking
+;; the minimum. The guard rules out a rewound iterator, which has no element to
+;; read; @(tsee iter-min) never produces one and @(tsee next) never reaches one, so
+;; a forward walk stays within it.
 
 (define iter-all-genericp ((iter iterp))
-  (or (donep iter)
+  (declare (xargs :type-prescription :none))
+  :guard (not (before-firstp iter))
+  (or (after-lastp iter)
       (and (genericp (value iter))
            (iter-all-genericp (next iter))))
-  :measure (iter-measure iter))
+  :measure (nexts iter))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled iter-all-genericp-becomes-set-all-genericp
-  (equal (iter-all-genericp iter)
-         (set-all-genericp (from-iter iter)))
-  :induct t
-  :enable (iter-all-genericp
-           set-all-genericp
-           value))
+(defrule iter-all-genericp-when-iter-equiv-congruence
+  (implies (iter-equiv iter0 iter1)
+           (equal (iter-all-genericp iter0)
+                  (iter-all-genericp iter1)))
+  :rule-classes :congruence
+  :expand ((iter-all-genericp iter0)
+           (iter-all-genericp iter1)))
 
-(defrule iter-all-genericp-of-iter
-  (equal (iter-all-genericp (iter set))
+;; If every element of the set is generic then so is every value a walk
+;; produces, since each value it reads is an element. This is the direction a
+;; caller needs in order to conclude that a walk succeeds.
+
+(defruledl genericp-of-value-when-set-all-genericp
+  (implies (and (set-all-genericp (from-iter iter))
+                (has-valuep iter))
+           (genericp (value iter)))
+  :enable set-all-genericp-pick-a-point
+  :use (:instance set-all-genericp-sk-necc
+                  (elem (value iter))
+                  (set (from-iter iter))))
+
+(defruled iter-all-genericp-when-set-all-genericp
+  (implies (and (set-all-genericp (from-iter iter))
+                (not (before-firstp iter)))
+           (iter-all-genericp iter))
+  :induct (iter-all-genericp iter)
+  :enable (iter-all-genericp
+           genericp-of-value-when-set-all-genericp))
+
+(defrule iter-all-genericp-when-after-lastp
+  (implies (after-lastp iter)
+           (iter-all-genericp iter))
+  :enable iter-all-genericp)
+
+;; The converse holds only of a walk that starts at the beginning. An iterator
+;; part way along has already passed some elements and will never read them, so
+;; it can succeed over a set that is not all generic. The correspondence is
+;; therefore stated at @(tsee iter-min), where nothing has been passed yet.
+;;
+;; The proof is an induction along the walk, run on the public step laws: a
+;; step reads the least of what lies ahead, so every element ahead of a
+;; succeeding walk is eventually read. At @(tsee iter-min) nothing is behind,
+;; so that covers the whole set.
+
+(defruledl genericp-when-in-of-after
+  (implies (and (in x (after iter))
+                (iter-all-genericp iter))
+           (genericp x))
+  :induct (iter-all-genericp iter)
+  :expand ((iter-all-genericp iter)
+           (iter-all-genericp (next iter)))
+  :enable (iter-all-genericp
+           not-emptyp-when-in))
+
+;; The first value a walk reads is the minimum, and reading it succeeds over a
+;; nonempty set.
+
+(defruledl genericp-of-min-when-iter-all-genericp-of-iter-min
+  (implies (and (iter-all-genericp (iter-min set))
+                (not (emptyp set)))
+           (genericp (min set)))
+  :expand ((iter-all-genericp (iter-min set))))
+
+;; Any element is either that minimum or lies ahead of the fresh iterator,
+;; since nothing is behind it.
+
+(defruledl genericp-when-in-and-iter-all-genericp-of-iter-min
+  (implies (and (in x set)
+                (iter-all-genericp (iter-min set)))
+           (genericp x))
+  :use ((:instance in-of-from-iter-when-has-valuep
+                   (iter (iter-min set))))
+  :enable (genericp-when-in-of-after
+           genericp-of-min-when-iter-all-genericp-of-iter-min
+           not-emptyp-when-in)
+  :disable in-of-from-iter-when-has-valuep)
+
+;; So a walk that starts at the beginning reads every element, and the two
+;; checks agree.
+
+(defruled set-all-genericp-when-iter-all-genericp-of-iter-min
+  (implies (iter-all-genericp (iter-min set))
+           (set-all-genericp set))
+  :enable (set-all-genericp-pick-a-point
+           genericp-when-in-and-iter-all-genericp-of-iter-min))
+
+;; The stub in the body means the recursion is not visibly boolean, so this has
+;; to be said rather than read off the type prescription.
+
+(defrule booleanp-of-iter-all-genericp
+  (booleanp (iter-all-genericp iter))
+  :rule-classes (:rewrite :type-prescription)
+  :induct (iter-all-genericp iter)
+  :enable iter-all-genericp)
+
+(defrule iter-all-genericp-of-iter-min
+  (equal (iter-all-genericp (iter-min set))
          (set-all-genericp set))
-  :enable iter-all-genericp-becomes-set-all-genericp)
+  :enable set-all-genericp-when-iter-all-genericp-of-iter-min
+  :use (:instance iter-all-genericp-when-set-all-genericp
+                  (iter (iter-min set))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

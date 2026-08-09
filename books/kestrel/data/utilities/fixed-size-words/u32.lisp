@@ -19,14 +19,13 @@
 
 (defund-inline u32-fix (word)
   (declare (xargs :guard (unsigned-byte-p 32 word)
-                  :split-types t)
+                  :split-types t
+                  :type-prescription :none)
            (type (unsigned-byte 32) word))
   (mbe :logic (if (unsigned-byte-p 32 word)
                   word
                 0)
        :exec (the (unsigned-byte 32) word)))
-
-(in-theory (disable (:t u32-fix)))
 
 (defthm u32-fix-type-prescription
   (natp (u32-fix word))
@@ -63,7 +62,8 @@
 (defund-inline u32-equal (x y)
   (declare (xargs :guard (and (unsigned-byte-p 32 x)
                               (unsigned-byte-p 32 y))
-                  :split-types t)
+                  :split-types t
+                  :type-prescription :none)
            (type (unsigned-byte 32) x y))
   (mbe :logic (equal (u32-fix x) (u32-fix y))
        :exec (= (the (unsigned-byte 32) x)
@@ -73,8 +73,6 @@
   :hints (("Goal" :in-theory (enable u32-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t u32-equal)))
 
 (defthm booleanp-of-u32-equal
   (booleanp (u32-equal x y))
@@ -107,7 +105,8 @@
 (defund-inline u32-plus (x y)
   (declare (xargs :guard (and (unsigned-byte-p 32 x)
                               (unsigned-byte-p 32 y))
-                  :split-types t)
+                  :split-types t
+                  :type-prescription :none)
            (type (unsigned-byte 32) x y))
   (mbe :logic (acl2::loghead 32 (+ (u32-fix x) (u32-fix y)))
        :exec (the (unsigned-byte 32)
@@ -116,8 +115,6 @@
                        #.*u32-max*))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t u32-plus)))
 
 (defthm u32-plus-type-prescription
   (natp (u32-plus x y))
@@ -147,7 +144,8 @@
 (defund-inline u32-minus (x y)
   (declare (xargs :guard (and (unsigned-byte-p 32 x)
                               (unsigned-byte-p 32 y))
-                  :split-types t)
+                  :split-types t
+                  :type-prescription :none)
            (type (unsigned-byte 32) x y))
   (mbe :logic (acl2::loghead 32 (- (u32-fix x) (u32-fix y)))
        :exec (the (unsigned-byte 32)
@@ -156,8 +154,6 @@
                        #.*u32-max*))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t u32-minus)))
 
 (defthm u32-minus-type-prescription
   (natp (u32-minus x y))
@@ -186,7 +182,8 @@
 
 (defund-inline u32-uminus (x)
   (declare (xargs :guard (unsigned-byte-p 32 x)
-                  :split-types t)
+                  :split-types t
+                  :type-prescription :none)
            (type (unsigned-byte 32) x))
   (mbe :logic (acl2::loghead 32 (- (u32-fix x)))
        :exec (the (unsigned-byte 32)
@@ -194,8 +191,6 @@
                        #.*u32-max*))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t u32-uminus)))
 
 (defthm u32-uminus-type-prescription
   (natp (u32-uminus x))
@@ -218,7 +213,8 @@
 (defund-inline u32-and (x y)
   (declare (xargs :guard (and (unsigned-byte-p 32 x)
                               (unsigned-byte-p 32 y))
-                  :split-types t)
+                  :split-types t
+                  :type-prescription :none)
            (type (unsigned-byte 32) x y))
   (mbe :logic (acl2::loghead 32 (logand (u32-fix x) (u32-fix y)))
        :exec (the (unsigned-byte 32)
@@ -226,8 +222,6 @@
                        (the (unsigned-byte 32) y)))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t u32-and)))
 
 (defthm u32-and-type-prescription
   (natp (u32-and x y))
@@ -257,7 +251,8 @@
 (defund-inline u32-or (x y)
   (declare (xargs :guard (and (unsigned-byte-p 32 x)
                               (unsigned-byte-p 32 y))
-                  :split-types t)
+                  :split-types t
+                  :type-prescription :none)
            (type (unsigned-byte 32) x y))
   (mbe :logic (acl2::loghead 32 (logior (u32-fix x) (u32-fix y)))
        :exec (the (unsigned-byte 32)
@@ -265,8 +260,6 @@
                        (the (unsigned-byte 32) y)))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t u32-or)))
 
 (defthm u32-or-type-prescription
   (natp (u32-or x y))
@@ -296,7 +289,8 @@
 (defund-inline u32-xor (x y)
   (declare (xargs :guard (and (unsigned-byte-p 32 x)
                               (unsigned-byte-p 32 y))
-                  :split-types t)
+                  :split-types t
+                  :type-prescription :none)
            (type (unsigned-byte 32) x y))
   (mbe :logic (acl2::loghead 32 (logxor (u32-fix x) (u32-fix y)))
        :exec (the (unsigned-byte 32)
@@ -304,8 +298,6 @@
                        (the (unsigned-byte 32) y)))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t u32-xor)))
 
 (defthm u32-xor-type-prescription
   (natp (u32-xor x y))
@@ -334,7 +326,8 @@
 
 (defund-inline u32-not (x)
   (declare (xargs :guard (unsigned-byte-p 32 x)
-                  :split-types t)
+                  :split-types t
+                  :type-prescription :none)
            (type (unsigned-byte 32) x))
   (mbe :logic (acl2::loghead 32 (lognot (u32-fix x)))
        :exec (the (unsigned-byte 32)
@@ -343,8 +336,6 @@
                        #.*u32-max*))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t u32-not)))
 
 (defthm u32-not-type-prescription
   (natp (u32-not x))
@@ -367,7 +358,8 @@
 (defund-inline u32-shl (x shift-amount)
   (declare (xargs :guard (and (unsigned-byte-p 32 x)
                               (unsigned-byte-p 6 shift-amount))
-                  :split-types t)
+                  :split-types t
+                  :type-prescription :none)
            (type (unsigned-byte 32) x)
            (type (unsigned-byte 7) shift-amount))
   (mbe :logic (acl2::lshu 32 (u32-fix x) shift-amount)
@@ -377,8 +369,6 @@
                        #.*u32-max*))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t u32-shl)))
 
 (defthm u32-shl-type-prescription
   (natp (u32-shl x shift-amount))
@@ -403,7 +393,8 @@
 (defund-inline u32-shr (x shift-amount)
   (declare (xargs :guard (and (unsigned-byte-p 32 x)
                               (unsigned-byte-p 6 shift-amount))
-                  :split-types t)
+                  :split-types t
+                  :type-prescription :none)
            (type (unsigned-byte 32) x)
            (type (unsigned-byte 7) shift-amount))
   (mbe :logic (acl2::lshu 32 (u32-fix x) (- shift-amount))
@@ -413,8 +404,6 @@
                        #.*u32-max*))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t u32-shr)))
 
 (defthm u32-shr-type-prescription
   (natp (u32-shr x shift-amount))

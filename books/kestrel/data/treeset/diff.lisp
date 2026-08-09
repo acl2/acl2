@@ -27,6 +27,7 @@
 (include-book "intersect-defs")
 (include-book "to-oset-defs")
 (include-book "generic-typed-defs")
+(include-book "iter-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -49,6 +50,9 @@
 (local (include-book "union"))
 (local (include-book "intersect"))
 (local (include-book "generic-typed"))
+(local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
+(local (include-book "min-max"))
+(local (include-book "iter"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -142,7 +146,6 @@
            (equal (diff x y)
                   (fix x)))
   :enable (diff
-           emptyp
            fix
            setp
            empty))
@@ -208,8 +211,7 @@
 (defruled diff-when-emptyp-of-arg2
   (implies (emptyp y)
            (equal (diff x y)
-                  (fix x)))
-  :enable extensionality)
+                  (fix x))))
 
 (defrule diff-when-emptyp-of-arg2-cheap
   (implies (emptyp y)
@@ -220,8 +222,7 @@
 
 (defrule diff-of-arg1-and-empty
   (equal (diff x (empty))
-         (fix x))
-  :enable diff-when-emptyp-of-arg2)
+         (fix x)))
 
 (defrule diff-of-union
   (equal (diff (union x y) z)
@@ -391,8 +392,7 @@
 (defruled oset-difference-becomes-diff
   (equal (set::difference x y)
          (to-oset (diff (from-oset x)
-                        (from-oset y))))
-  :enable set::expensive-rules)
+                        (from-oset y)))))
 
 (add-to-ruleset from-oset-theory '(oset-difference-becomes-diff))
 
@@ -437,3 +437,46 @@
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
                                             set-all-eqlablep
                                             diff))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The value of an @(see iterator) as an extremum: the least of what has not
+;; been passed, and the greatest of what has been reached. Each characterizes
+;; @(tsee value) for a walk in one direction, with the other side subtracted
+;; from the whole.
+
+(defruled value-becomes-min-of-diff
+  (implies (has-valuep iter)
+           (equal (value iter)
+                  (min (diff (from-iter iter) (before iter)))))
+  :enable (equal-of-min-becomes-sk
+           not-<<-all-l-sk
+           data::<<-rules)
+  :use (
+        (:instance in-when-emptyp
+                   (x (value iter))
+                   (set (diff (from-iter iter) (before iter))))
+        (:instance <<-of-value-when-in-of-after
+                   (x (not-<<-all-l-sk-witness
+                        (diff (from-iter iter) (before iter))
+                        (value iter)))))
+  :disable (<<-of-value-when-in-of-after
+            in-of-value))
+
+(defruled value-becomes-max-of-diff
+  (implies (has-valuep iter)
+           (equal (value iter)
+                  (max (diff (from-iter iter) (after iter)))))
+  :enable (equal-of-max-becomes-sk
+           not-<<-all-r-sk
+           data::<<-rules)
+  :use (
+        (:instance in-when-emptyp
+                   (x (value iter))
+                   (set (diff (from-iter iter) (after iter))))
+        (:instance <<-of-arg1-and-value-when-in-of-before
+                   (x (not-<<-all-r-sk-witness
+                        (value iter)
+                        (diff (from-iter iter) (after iter))))))
+  :disable (<<-of-arg1-and-value-when-in-of-before
+            in-of-value))

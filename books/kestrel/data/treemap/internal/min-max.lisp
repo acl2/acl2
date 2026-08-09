@@ -41,14 +41,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-leftmost ((tree treep))
+  (declare (xargs :type-prescription :none))
   :guard (not (tree-empty-p tree))
   (if (tree-empty-p (tree->left tree))
       (tree-element->key+val (tree->head tree))
     (tree-leftmost (tree->left tree))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-leftmost)))
 
 (defrule tree-leftmost-type-prescription
   (consp (tree-leftmost tree))
@@ -127,14 +126,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-rightmost ((tree treep))
+  (declare (xargs :type-prescription :none))
   :guard (not (tree-empty-p tree))
   (if (tree-empty-p (tree->right tree))
       (tree-element->key+val (tree->head tree))
     (tree-rightmost (tree->right tree))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-rightmost)))
 
 (defrule tree-rightmost-type-prescription
   (consp (tree-rightmost tree))
