@@ -412,7 +412,7 @@
 
 (defines ldm-declors/dirdeclors-obj
   :short "Map declarators and direct declarators to
-          object declarators and direct declarators in the language definition."
+          object declarators in the language definition."
 
   (define ldm-declor-obj ((declor declorp))
     :guard (declor-unambp declor)
@@ -464,6 +464,8 @@
           (b* ((ident (dirdeclor-ident->ident dirdeclor))
                ((erp ident1) (ldm-ident ident)))
             (retok (c::obj-declor-ident ident1))))
+         ((when (dirdeclor-case dirdeclor :paren))
+          (ldm-declor-obj (dirdeclor-paren->inner dirdeclor)))
          ((when (dirdeclor-case dirdeclor :array))
           (b* (((dirdeclor-array dirdeclor) dirdeclor)
                ((erp declor1) (ldm-dirdeclor-obj dirdeclor.declor))

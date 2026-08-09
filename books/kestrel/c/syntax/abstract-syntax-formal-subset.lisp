@@ -732,55 +732,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dirdeclor-obj-formalp ((dirdeclor dirdeclorp))
-  :guard (dirdeclor-unambp dirdeclor)
-  :returns (yes/no booleanp)
-  :short "Check if a direct declarator has formal dynamic semantics,
+(defines declor/dirdeclor-obj-formalp
+  :short "Check if declarators and direct declarators
+          have formal dynamic semantics,
           as part of an object declaration (not in a block)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is for direct declarators not used as part of block items;
-     for those, we have @(tsee dirdeclor-block-formalp) instead.")
-   (xdoc::p
-    "For all other uses of direct declarators (not as part of block items),
-     we allow identifier declarators and array declarators,
-     the latter without size or with an integer constant as size;
-     also see @(tsee ldm-dirdeclor-obj)."))
-  (dirdeclor-case
-   dirdeclor
-   :ident (ident-formalp dirdeclor.ident)
-   :paren nil
-   :array (and (dirdeclor-obj-formalp dirdeclor.declor)
-               (endp dirdeclor.qualspecs)
-               (or (not dirdeclor.size?)
-                   (and (check-expr-iconst dirdeclor.size?) t)))
-   :array-static1 nil
-   :array-static2 nil
-   :array-star nil
-   :function-params nil
-   :function-names nil)
-  :measure (dirdeclor-count dirdeclor)
+
+  (define declor-obj-formalp ((declor declorp))
+    :guard (declor-unambp declor)
+    :returns (yes/no booleanp)
+    :parents (abstract-syntax-formal-subset declor/dirdeclor-obj-formalp)
+    :short "Check if a declarator has formal dynamic semantics,
+            as part of an object declaration (not in a block)."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We support any number of pointers, but without type qualifiers."))
+    (b* (((declor declor) declor))
+      (and (pointers-formalp declor.pointers)
+           (dirdeclor-obj-formalp declor.direct)))
+    :measure (declor-count declor))
+
+  (define dirdeclor-obj-formalp ((dirdeclor dirdeclorp))
+    :guard (dirdeclor-unambp dirdeclor)
+    :returns (yes/no booleanp)
+    :parents (abstract-syntax-formal-subset declor/dirdeclor-obj-formalp)
+    :short "Check if a direct declarator has formal dynamic semantics,
+            as part of an object declaration (not in a block)."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We allow identifier declarators and array declarators,
+       the latter without size or with an integer constant as size.
+       We allow parenthesized supported declarators."))
+    (dirdeclor-case
+     dirdeclor
+     :ident (ident-formalp dirdeclor.ident)
+     :paren (declor-obj-formalp dirdeclor.inner)
+     :array (and (dirdeclor-obj-formalp dirdeclor.declor)
+                 (endp dirdeclor.qualspecs)
+                 (or (not dirdeclor.size?)
+                     (and (check-expr-iconst dirdeclor.size?) t)))
+     :array-static1 nil
+     :array-static2 nil
+     :array-star nil
+     :function-params nil
+     :function-names nil)
+    :measure (dirdeclor-count dirdeclor))
+
   :hints (("Goal" :in-theory (enable o< o-finp)))
-  :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ///
 
-(define declor-obj-formalp ((declor declorp))
-  :guard (declor-unambp declor)
-  :returns (yes/no booleanp)
-  :short "Check if a declarator has formal dynamic semantics,
-          as part of an object declaration (not in a block)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This complements @(tsee dirdeclor-obj-formalp):
-     see the documentation of that function.
-     We support any number of pointers, but without type qualifiers."))
-  (b* (((declor declor) declor))
-    (and (pointers-formalp declor.pointers)
-         (dirdeclor-obj-formalp declor.direct)))
-  :hooks (:fix))
+  (fty::deffixequiv-mutual declor/dirdeclor-obj-formalp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
