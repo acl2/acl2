@@ -36,6 +36,7 @@
 (define tree-subset-p
   ((x treep)
    (y treep))
+  (declare (xargs :type-prescription :none))
   :parents (implementation)
   :short "Check if one tree is a subset of the other."
   :guard (bstp y)
@@ -47,8 +48,6 @@
            (tree-subset-p (tree->right x) y))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-subset-p)))
 
 (defrule tree-subset-p-when-tree-equiv-of-arg1-congruence
   (implies (tree-equiv x0 x1)

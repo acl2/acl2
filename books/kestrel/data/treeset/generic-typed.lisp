@@ -55,6 +55,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define set-all-genericp ((set setp))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp)
   (or (emptyp set)
       (and (genericp (min set))
@@ -62,8 +63,6 @@
   :measure (cardinality set))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t set-all-genericp)))
 
 (defrule set-all-genericp-type-prescription
   (booleanp (set-all-genericp set))
@@ -304,6 +303,7 @@
 ;; a forward walk stays within it.
 
 (define iter-all-genericp ((iter iterp))
+  (declare (xargs :type-prescription :none))
   :guard (not (before-firstp iter))
   (or (after-lastp iter)
       (and (genericp (value iter))
@@ -311,8 +311,6 @@
   :measure (nexts iter))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t iter-all-genericp)))
 
 (defrule iter-all-genericp-when-iter-equiv-congruence
   (implies (iter-equiv iter0 iter1)

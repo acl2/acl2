@@ -73,6 +73,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-generic-count ((tree treep))
+  (declare (xargs :type-prescription :none))
   :returns (count natp :rule-classes :type-prescription)
   (if (tree-empty-p tree)
       0
@@ -80,11 +81,10 @@
        (generic-count (tree-element->key (tree->head tree))
                       (tree-element->val (tree->head tree)))
        (tree-generic-count (tree->left tree))
-       (tree-generic-count (tree->right tree)))))
+       (tree-generic-count (tree->right tree))))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-generic-count)))
 
 (defrule tree-generic-count-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
@@ -156,13 +156,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define map-generic-count ((map mapp))
+  (declare (xargs :type-prescription :none))
   :returns (count natp :rule-classes :type-prescription)
   (tree-generic-count (fix map))
   :guard-hints (("Goal" :in-theory (enable mapp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t map-generic-count)))
 
 (defruled map-generic-count-when-emptyp
   (implies (emptyp map)

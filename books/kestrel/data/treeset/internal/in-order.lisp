@@ -56,17 +56,17 @@
 (define tree-in-order-acc
   ((tree treep)
    (acc true-listp))
+  (declare (xargs :type-prescription :none))
   :returns (list true-listp :rule-classes :type-prescription)
   (if (tree-empty-p tree)
       (llist-fix acc)
     (tree-in-order-acc (tree->left tree)
                        (cons (tree-element->val (tree->head tree))
                              (tree-in-order-acc (tree->right tree)
-                                                acc)))))
+                                                acc))))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-in-order-acc)))
 
 (defrule tree-in-order-acc-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
@@ -112,6 +112,7 @@
 
 (define tree-in-order
   ((tree treep))
+  (declare (xargs :type-prescription :none))
   :returns (list true-listp :rule-classes :type-prescription)
   :parents (implementation)
   :short "Create an in-order list of values from a tree."
@@ -125,8 +126,6 @@
   :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-in-order)))
 
 (defrule tree-in-order-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)

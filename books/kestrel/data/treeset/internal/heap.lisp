@@ -41,6 +41,7 @@
 (define heap<-all-l
   ((tree treep)
    x)
+  (declare (xargs :type-prescription :none))
   :parents (tree)
   :short "Check that all members of a tree are @(tsee heap<) some value."
   :returns (yes/no booleanp :rule-classes :type-prescription)
@@ -50,8 +51,6 @@
            (heap<-all-l (tree->right tree) x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t heap<-all-l)))
 
 (defrule heap<-all-l-when-tree-equiv-congruence
   (implies (tree-equiv x y)

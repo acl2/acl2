@@ -70,6 +70,7 @@
 (define tree-join
   ((left treep)
    (right treep))
+  (declare (xargs :type-prescription :none))
   :returns (tree treep)
   :parents (implementation)
   :short "Join two trees which have previously been @(see tree-split)."
@@ -97,8 +98,6 @@
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-join)))
 
 (defrule tree-join-type-prescription
   (or (consp (tree-join left right))
@@ -231,6 +230,7 @@
   (split
    (left treep)
    (right treep))
+  (declare (xargs :type-prescription :none))
   (declare (ignore split))
   :returns (tree treep)
   :parents (implementation)
@@ -252,8 +252,6 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: prefer tree-join-at?
-
-(in-theory (disable (:t tree-join-at)))
 
 (defrule tree-join-at-type-prescription
   (or (consp (tree-join-at split left right))

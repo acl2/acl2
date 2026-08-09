@@ -99,7 +99,8 @@
 (define jenkins-acc-byte
   ((byte (unsigned-byte-p 8 byte))
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type (unsigned-byte 8) byte)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -110,8 +111,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t jenkins-acc-byte)))
 
 (defrule jenkins-acc-byte-type-prescription
   (natp (jenkins-acc-byte byte acc))
@@ -127,7 +126,8 @@
 (define jenkins-acc-bytes
   ((bytes byte-listp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$)
                  :hints (("Goal" :induct t)))
@@ -141,8 +141,6 @@
       (jenkins-acc-byte (the (unsigned-byte 8) (car bytes)) acc))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t jenkins-acc-bytes)))
 
 (defrule jenkins-acc-bytes-type-prescription
   (natp (jenkins-acc-bytes bytes acc))
@@ -205,7 +203,8 @@
 (define jenkins-acc-leb128-small
   ((n (unsigned-byte-p 56 n))
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type (unsigned-byte 56) n)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -223,8 +222,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t jenkins-acc-leb128-small)))
-
 (defrule jenkins-acc-leb128-small-type-prescription
   (natp (jenkins-acc-leb128-small n acc))
   :rule-classes :type-prescription
@@ -241,7 +238,8 @@
   ((x (unsigned-byte-p 56 x))
    (m natp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type (unsigned-byte 56) x)
            (type unsigned-byte m)
            (type (unsigned-byte 32) acc))
@@ -264,8 +262,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t jenkins-acc-leb128-groups-small)))
-
 (defrule jenkins-acc-leb128-groups-small-type-prescription
   (natp (jenkins-acc-leb128-groups-small x m acc))
   :rule-classes :type-prescription
@@ -283,7 +279,8 @@
    (m natp)
    (acc (unsigned-byte-p 32 acc)))
   :guard (unsigned-byte-p (* 7 m) x)
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type unsigned-byte x)
            (type unsigned-byte m)
            (type (unsigned-byte 32) acc))
@@ -307,8 +304,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t jenkins-acc-leb128-groups)))
-
 (defrule jenkins-acc-leb128-groups-type-prescription
   (natp (jenkins-acc-leb128-groups x m acc))
   :rule-classes :type-prescription
@@ -325,7 +320,8 @@
 (define jenkins-acc-nat
   ((n natp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type unsigned-byte n)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -349,8 +345,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t jenkins-acc-nat)))
-
 (defrule jenkins-acc-nat-type-prescription
   (natp (jenkins-acc-nat n acc))
   :rule-classes :type-prescription
@@ -364,7 +358,8 @@
 (define jenkins-acc-integer-contents
   ((n integerp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type signed-byte n)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -378,8 +373,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t jenkins-acc-integer-contents)))
-
 (defrule jenkins-acc-integer-contents-type-prescription
   (natp (jenkins-acc-integer-contents n acc))
   :rule-classes :type-prescription
@@ -390,7 +383,8 @@
 (define jenkins-acc-integer
   ((n integerp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type signed-byte n)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -399,8 +393,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t jenkins-acc-integer)))
 
 (defrule jenkins-acc-integer-type-prescription
   (natp (jenkins-acc-integer n acc))
@@ -415,7 +407,8 @@
 (define jenkins-acc-rational-contents
   ((n rationalp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type rational n)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -427,8 +420,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t jenkins-acc-rational-contents)))
-
 (defrule jenkins-acc-rational-contents-type-prescription
   (natp (jenkins-acc-rational-contents n acc))
   :rule-classes :type-prescription
@@ -439,7 +430,8 @@
 (define jenkins-acc-rational
   ((n rationalp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type rational n)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -448,8 +440,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t jenkins-acc-rational)))
 
 (defrule jenkins-acc-rational-type-prescription
   (natp (jenkins-acc-rational n acc))
@@ -461,7 +451,8 @@
 (define jenkins-acc-complex-rational
   ((n complex-rationalp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type complex n)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -474,8 +465,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t jenkins-acc-complex-rational)))
-
 (defrule jenkins-acc-complex-rational-type-prescription
   (natp (jenkins-acc-complex-rational n acc))
   :rule-classes :type-prescription
@@ -486,7 +475,8 @@
 (define jenkins-acc-acl2-number
   ((n acl2-numberp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type number n)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -500,8 +490,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t jenkins-acc-acl2-number)))
-
 (defrule jenkins-acc-acl2-number-type-prescription
   (natp (jenkins-acc-acl2-number n acc))
   :rule-classes :type-prescription
@@ -514,7 +502,8 @@
 (define jenkins-acc-character-contents
   ((c characterp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type character c)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -528,8 +517,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t jenkins-acc-character-contents)))
-
 (defrule jenkins-acc-character-contents-type-prescription
   (natp (jenkins-acc-character-contents c acc))
   :rule-classes :type-prescription
@@ -540,7 +527,8 @@
 (define jenkins-acc-character
   ((c characterp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type character c)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -549,8 +537,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t jenkins-acc-character)))
 
 (defrule jenkins-acc-character-type-prescription
   (natp (jenkins-acc-character c acc))
@@ -570,7 +556,8 @@
                              (data::the-u-fixnum len))
                          (equal (data::the-u-fixnum len)
                                 (length (the string str)))))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type string str)
            (type #.data::*u-fixnum-type* i len)
            (type (unsigned-byte 32) acc))
@@ -596,8 +583,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t jenkins-acc-string-index)))
-
 (defrule jenkins-acc-string-index-type-prescription
   (natp (jenkins-acc-string-index str i len acc))
   :rule-classes :type-prescription
@@ -612,7 +597,8 @@
 (define jenkins-acc-string-contents
   ((str stringp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type string str)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -634,8 +620,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t jenkins-acc-string-contents)))
-
 (defrule jenkins-acc-string-contents-type-prescription
   (natp (jenkins-acc-string-contents str acc))
   :rule-classes :type-prescription
@@ -646,7 +630,8 @@
 (define jenkins-acc-string
   ((str stringp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type string str)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -655,8 +640,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t jenkins-acc-string)))
 
 (defrule jenkins-acc-string-type-prescription
   (natp (jenkins-acc-string str acc))
@@ -668,7 +651,8 @@
 (define jenkins-acc-symbol
   ((symbol symbolp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type symbol symbol)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -682,8 +666,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t jenkins-acc-symbol)))
-
 (defrule jenkins-acc-symbol-type-prescription
   (natp (jenkins-acc-symbol symbol acc))
   :rule-classes :type-prescription
@@ -696,7 +678,8 @@
    (acc (unsigned-byte-p 32 acc)))
   :guard (mbe :logic (not (consp x))
               :exec (atom x))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type atom x)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -716,8 +699,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t jenkins-acc-atom)))
-
 (defrule jenkins-acc-atom-type-presciption
   (natp (jenkins-acc-atom list acc))
   :rule-classes :type-prescription
@@ -728,7 +709,8 @@
 (define jenkins-acc
   (x
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
   (let ((acc (mbe :logic (if (unsigned-byte-p 32 acc)
@@ -747,8 +729,6 @@
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t jenkins-acc)))
 
 (defrule jenkins-acc-type-presciption
   (natp (jenkins-acc x acc))
@@ -990,7 +970,8 @@
 ;; incorporated.
 (define jenkins-finalize
   ((acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type (unsigned-byte 32) acc))
   :returns (hash (unsigned-byte-p 32 hash))
   (the (unsigned-byte 32)
@@ -1000,8 +981,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t jenkins-finalize)))
 
 (defrule jenkins-finalize-type-prescription
   (natp (jenkins-finalize acc))
@@ -1013,12 +992,11 @@
 ;; The Jenkins one-at-a-time hash of an explicit byte list.
 (define jenkins-bytes
   ((bytes byte-listp))
+  (declare (xargs :type-prescription :none))
   :returns (hash (unsigned-byte-p 32 hash))
   (jenkins-finalize (jenkins-acc-bytes bytes 0)))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t jenkins-bytes)))
 
 (defrule jenkins-bytes-type-prescription
   (natp (jenkins-bytes bytes))
@@ -1028,6 +1006,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define jenkins (x)
+  (declare (xargs :type-prescription :none))
   :parents (jenkins-one-at-a-time)
   :returns (hash (unsigned-byte-p 32 hash))
   (mbe :logic (jenkins-bytes (to-bytes x))
@@ -1037,8 +1016,6 @@
                               jenkins-acc-becomes-jenkins-acc-bytes))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t jenkins)))
 
 (defrule jenkins-type-presciption
   (natp (jenkins x))

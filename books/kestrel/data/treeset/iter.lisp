@@ -296,6 +296,7 @@
 ;; direction stops at the one it is heading towards.
 
 (define after-lastp ((iter iterp))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (iterator)
   :short "Check whether an @(see iterator) is after the last element."
@@ -305,6 +306,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define before-firstp ((iter iterp))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (iterator)
   :short "Check whether an @(see iterator) is before the first element."
@@ -321,6 +323,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define has-valuep ((iter iterp))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (iterator)
   :short "Check whether an @(see iterator) has a value to read."
@@ -332,8 +335,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t after-lastp) (:t before-firstp) (:t has-valuep)))
 
 (defrule after-lastp-when-iter-equiv-congruence
   (implies (iter-equiv iter0 iter1)
@@ -1130,6 +1131,7 @@
 ;; suitable measure for a walk that way.
 
 (define nexts ((iter iterp))
+  (declare (xargs :type-prescription :none))
   :returns (measure natp :rule-classes (:rewrite :type-prescription))
   :parents (iterator)
   :short "The number of @(tsee next) moves an @(see iterator) has left."
@@ -1139,6 +1141,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define prevs ((iter iterp))
+  (declare (xargs :type-prescription :none))
   :returns (measure natp :rule-classes (:rewrite :type-prescription))
   :parents (iterator)
   :short "The number of @(tsee prev) moves an @(see iterator) has left."
@@ -1146,8 +1149,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t nexts) (:t prevs)))
 
 (defrule nexts-when-iter-equiv-congruence
   (implies (iter-equiv iter0 iter1)

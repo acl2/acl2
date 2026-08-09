@@ -101,6 +101,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define irr-tree-iter ()
+  (declare (xargs :type-prescription :none))
   :returns (iter tree-iter-p
                  :hints (("Goal" :in-theory (enable tree-iter-p))))
   :short "An irrelevant @(see tree-iterator), used as the fixer's default."
@@ -114,7 +115,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t irr-tree-iter) (:e irr-tree-iter)))
+(in-theory (disable (:e irr-tree-iter)))
 
 (defrule irr-tree-iter-type-prescription
   (tree-iter-p (irr-tree-iter))
@@ -140,6 +141,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-fix ((iter tree-iter-p))
+  (declare (xargs :type-prescription :none))
   :returns (iter$ tree-iter-p)
   :short "Fixer for @(see tree-iterator)s."
   (mbe :logic (if (tree-iter-p iter) iter (irr-tree-iter))
@@ -147,8 +149,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-iter-fix)))
 
 (defrule tree-iter-fix-type-prescription
   (tree-iter-p (tree-iter-fix iter))
@@ -253,6 +253,7 @@
 ;; its own, to avoid running the full @(tsee zipp) check.
 
 (define tree-iter-before-first-p ((iter tree-iter-p))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Check whether the iterator is before the first element."
   (eq (car (tree-iter-fix iter)) :before-first)
@@ -261,6 +262,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-after-last-p ((iter tree-iter-p))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Check whether the iterator is after the last element."
   (eq (car (tree-iter-fix iter)) :after-last)
@@ -269,6 +271,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-has-value-p ((iter tree-iter-p))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Check whether the iterator has a value to read."
   :long
@@ -285,10 +288,6 @@
   :guard-hints (("Goal" :in-theory (enable tree-iter-p))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-iter-before-first-p)
-                    (:t tree-iter-after-last-p)
-                    (:t tree-iter-has-value-p)))
 
 (defrule tree-iter-before-first-p-when-tree-iter-equiv-congruence
   (implies (tree-iter-equiv iter0 iter1)
@@ -889,6 +888,7 @@
 ;; zipper level.
 
 (define tree-iter-before ((iter tree-iter-p))
+  (declare (xargs :type-prescription :none))
   :returns (list true-listp :rule-classes :type-prescription)
   :short "The values to the left of the iterator, in order."
   (tree-in-order (tree-iter-tree-before iter))
@@ -897,14 +897,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-after ((iter tree-iter-p))
+  (declare (xargs :type-prescription :none))
   :returns (list true-listp :rule-classes :type-prescription)
   :short "The values to the right of the iterator, in order."
   (tree-in-order (tree-iter-tree-after iter))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-iter-before) (:t tree-iter-after)))
 
 (defrule tree-iter-before-when-tree-iter-equiv-congruence
   (implies (tree-iter-equiv iter0 iter1)
@@ -1149,6 +1148,7 @@
 ;; end is not being approached, and the two then sum to @($n+1$) everywhere.
 
 (define tree-iter-nexts ((iter tree-iter-p))
+  (declare (xargs :type-prescription :none))
   :returns (count natp :rule-classes :type-prescription)
   :short "The number of @(tsee tree-iter-next) moves before saturating."
   (if (tree-iter-after-last-p iter)
@@ -1159,6 +1159,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-prevs ((iter tree-iter-p))
+  (declare (xargs :type-prescription :none))
   :returns (count natp :rule-classes :type-prescription)
   :short "The number of @(tsee tree-iter-prev) moves before saturating."
   (if (tree-iter-before-first-p iter)
@@ -1167,8 +1168,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-iter-nexts) (:t tree-iter-prevs)))
 
 (defrule tree-iter-nexts-when-tree-iter-equiv-congruence
   (implies (tree-iter-equiv iter0 iter1)
