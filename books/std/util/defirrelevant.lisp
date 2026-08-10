@@ -48,8 +48,8 @@
     "The purpose of the function is to provide
      a value of the type whose specific identity does not matter;
      hence `irrelevant':
-     it is irrelevant which value of the type this is
-     (but the fact that the function is unused is not irrelevant).
+     what is irrelevant is which value of the type the function returns,
+     not the function itself, which serves a real purpose.
      Typical uses are
      to fill the non-error result slots of a function
      that is returning an error
