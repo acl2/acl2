@@ -926,7 +926,10 @@
       (eq val t)
       (and (consp val)
            (true-listp (cdr val)) ; actually, a world
-           (posp (car val)))))
+           (or (natp (car val)) ; an index; see eval-event-lst
+; Else (car val) is (cons (- (max-absolute-command-number wrld)) _).
+               (and (consp (car val))
+                    (integerp (caar val)))))))
 
 ; -----------------------------------------------------------------
 ; PROOF-SUPPORTERS-ALIST [GLOBAL-VALUE]
