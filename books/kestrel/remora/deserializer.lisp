@@ -31,6 +31,9 @@
     (xdoc::seetopic "abstract-syntax-trees" "fixtypes")
     ", so that ASTs produced by [impl] can be recreated in ACL2.")
    (xdoc::p
+    "Currently, TERecord, Struct, and FieldProj ASTs from [impl]
+     are not yet supported in ACL2.")
+   (xdoc::p
     "Each conversion function is named @('X-fromJSON'),
      where @('X') is the name of the corresponding AST fixtype
      (e.g. @('dim'), @('var+type?'), @('expr')).
