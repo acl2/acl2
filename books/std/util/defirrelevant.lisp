@@ -60,12 +60,16 @@
      (e.g. guarded by @(tsee impossible))
      but must still yield a well-typed value.")
    (xdoc::p
-    "Both the definition of the function
-     (which @(tsee define) disables by default)
-     and its executable counterpart
-     (which this macro disables explicitly)
-     are disabled.
-     Thus, unless one of these is deliberately enabled,
+    "The function is made opaque:
+     no built-in type-prescription rule is generated
+     (this macro passes @(':type-prescription :none')
+     to @(tsee define)),
+     the definition is disabled
+     (which @(tsee define) does by default),
+     and the executable counterpart is disabled
+     (which this macro does explicitly).
+     Thus, unless the definition or executable counterpart
+     is deliberately enabled,
      proofs cannot depend on which value the function returns,
      but only on its type, via the @(':returns') theorem;
      accidental dependence on the specific value
@@ -75,18 +79,17 @@
      is the advantage of this macro over
      just using some specific value of the type directly.")
    (xdoc::p
-    "A caveat: ACL2 computes a type-prescription rule
-     for the function at admission time,
-     and if @('body') is a constant, like @('0') or @('nil'),
-     that (enabled) rule determines the value exactly,
-     defeating the opacity just described.
-     If opacity matters,
-     use a non-constant @('body'),
-     e.g. a call of a constructor,
-     whose type-prescription rule only constrains
-     the shape of the value."))
+    "The type-prescription rule is suppressed,
+     rather than merely disabled,
+     because if @('body') is a constant, like @('0') or @('nil'),
+     the type-prescription rule that ACL2 computes at admission time
+     determines the value exactly,
+     which would defeat the opacity just described
+     (type-prescription rules are normally enabled,
+     and disabling them by default would be unexpected)."))
   `(define ,name ()
      :returns (irr ,type)
+     :type-prescription :none
      ,@(and parents-p `(:parents ,parents))
      :short ,short
      :long
