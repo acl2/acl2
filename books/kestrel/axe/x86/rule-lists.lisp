@@ -1937,7 +1937,7 @@
 ;;newer-scheme, 32-bits:
 (defund symbolic-execution-rules-with-stop-pcs32 ()
   (declare (xargs :guard t))
-  '(run-until-return-or-reach-pc4
+  '(run-until-return-or-reach-pc32 ; todo: this case is not tested?
     run-until-esp-is-above-or-reach-pc-opener-axe
     run-until-esp-is-above-or-reach-pc-base-axe
     run-until-esp-is-above-or-reach-pc-of-if-arg2
@@ -3010,27 +3010,28 @@
             write-to-segment-of-set-eip
             write-byte-to-segment-of-set-eip
 
-            al-becomes-eax
+            al-becomes-eax ; 8-bit aliases (low)
             bl-becomes-ebx
             cl-becomes-ecx
             dl-becomes-edx
-            ;; sil-becomes-esi
-            ;; dil-becomes-edi
+            sil-becomes-esi
+            dil-becomes-edi
             spl-becomes-esp
             bpl-becomes-ebp
-            ah-becomes-eax
+
+            ah-becomes-eax ; 8-bit aliases (high)
             bh-becomes-ebx
             ch-becomes-ecx
             dh-becomes-edx
-            ax-becomes-eax
+
+            ax-becomes-eax ; 16-bit aliases
             bx-becomes-ebx
             cx-becomes-ecx
             dx-becomes-edx
-            ;; si-becomes-esi
-            ;; di-becomes-edi
+            si-becomes-esi
+            di-becomes-edi
             sp-becomes-esp
-            bp-becomes-ebp
-            ))
+            bp-becomes-ebp))
    '(; caused loops with bvplus-of-constant-and-esp-when-overflow.  probably want to go to bvuminus anyway?:
      acl2::bvminus-of-+-arg2
      acl2::bvminus-of-+-arg3)))
@@ -4291,24 +4292,26 @@
             set-rip-of-bv-array-read-split-cases-smt ; needs acl2::bv-array-read-cases-opener (just below)
             acl2::bv-array-read-cases-opener
 
-            al-becomes-rax
+            al-becomes-rax ; 8-bit aliases (low)
             bl-becomes-rbx
             cl-becomes-rcx
             dl-becomes-rdx
-            ;; sil-becomes-rsi
-            ;; dil-becomes-rdi
+            sil-becomes-rsi
+            dil-becomes-rdi
             spl-becomes-rsp
             bpl-becomes-rbp
-            ah-becomes-rax
+
+            ah-becomes-rax ; 8-bit aliases (high)
             bh-becomes-rbx
             ch-becomes-rcx
             dh-becomes-rdx
-            ax-becomes-rax
+
+            ax-becomes-rax ; 16-bit aliases
             bx-becomes-rbx
             cx-becomes-rcx
             dx-becomes-rdx
-            ;; si-becomes-rsi
-            ;; di-becomes-rdi
+            si-becomes-rsi
+            di-becomes-rdi
             sp-becomes-rsp
             bp-becomes-rbp)))
 
