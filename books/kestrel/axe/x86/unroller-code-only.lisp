@@ -36,4 +36,19 @@
               print-level-at-least-tp
               make-event-quiet maybe-remove-temp-dir
               ;; Rules needed by the unroller:
-              ,@(all-unroller-rules))))
+              ,@(all-unroller-rules)
+              ;; Functions used by the unroller
+              ,@(symbolic-execution-rules32)
+              ,@(symbolic-execution-rules64)
+              ,@(symbolic-execution-rules-with-stop-pcs32)
+              ,@(symbolic-execution-rules-with-stop-pcs64)
+              ;; Names commonly needed in proofs:
+              *standard-flags*
+              )))
+
+;; To support proofs about lifted code
+(in-theory (disable ;; rgfi ; rgfi may be used when the register name is not constant.  let's open it to XR
+;             xr xw
+             ))
+
+;; todo: for reasoning about the result, we may want rules like cf-spec8-becomes-getbit
