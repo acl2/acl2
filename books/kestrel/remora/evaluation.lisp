@@ -1591,11 +1591,7 @@
                                       (make-atom-tlambdan
                                        :params tparams
                                        :body cfun-expr))))
-                           (if (endp (cdr tparams))
-                               (make-type-forall :param (car tparams)
-                                                 :body cfun-type)
-                             (make-type-foralln :params tparams
-                                                :body cfun-type)))
+                           (make-type-forall/foralln tparams cfun-type))
                      (mv cfun-expr cfun-type)))
                   ((ok val) (eval-expr cfun-expr denv (1- limit)))
                   ((ok &) (eval-type cfun-type (expr-denv->tenv denv))))

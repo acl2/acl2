@@ -1145,7 +1145,8 @@
                                        (type-rename-ispace-vars body
                                                                 dim-renam
                                                                 shape-renam))))
-  :enable forall-curried-body)
+  :enable (forall-curried-body
+           make-type-forall/foralln))
 
 ; The analogue for the currying of term lambda abstractions
 ; (see lambda-curried-body), laid down ahead of that currying:
@@ -1988,6 +1989,7 @@
                                                                 atom-all
                                                                 array-all)))))
   :enable (forall-curried-body
+           make-type-forall/foralln
            mergesort-when-singleton)
   :use ((:instance atom/array-rename-remove-bound-of-insert-then-rest
                    (var (car params))

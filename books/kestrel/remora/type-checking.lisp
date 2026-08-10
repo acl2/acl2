@@ -2141,11 +2141,7 @@
                           (make-type-pin :params iparams :body fun-type))
                       fun-type))
           (fun-type (if (consp tparams)
-                        (if (endp (cdr tparams))
-                            (make-type-forall :param (car tparams)
-                                              :body fun-type)
-                          (make-type-foralln :params tparams
-                                             :body fun-type))
+                        (make-type-forall/foralln tparams fun-type)
                       fun-type))
           (type (if (or (consp types) (consp iparams) (consp tparams))
                     (make-type-array
