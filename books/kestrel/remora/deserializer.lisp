@@ -517,13 +517,15 @@
                                  (type-var-list-fromJSON params-js))
                                 ((acl2::erp body)
                                  (type-fromJSON body-j)))
-                             (if (and (consp params) (endp (cdr params)))
-                                 (acl2::retok (make-type-forall
-                                               :param (car params)
-                                               :body body))
-                               (acl2::retok (make-type-foralln
-                                             :params params
-                                             :body body))))
+                             (if (consp params)
+                                 (if (endp (cdr params))
+                                     (acl2::retok (make-type-forall
+                                                   :param (car params)
+                                                   :body body))
+                                   (acl2::retok (make-type-foralln
+                                                 :params params
+                                                 :body body)))
+                               (acl2::reterr (msg "The \"params\" member of a TEForall object must be a nonempty list, but ~x0 is not." params))))
                          (acl2::reterr (msg "The \"params\" member of a TEForall object must be a JSON array, but ~x0 is not." params-j)))))
                     ((equal tag "TEPi")
                      (b* ((params-j
@@ -537,13 +539,15 @@
                                  (ispace-var-list-fromJSON params-js))
                                 ((acl2::erp body)
                                  (type-fromJSON body-j)))
-                             (if (and (consp params) (endp (cdr params)))
-                                 (acl2::retok (make-type-pi
-                                               :param (car params)
-                                               :body body))
-                               (acl2::retok (make-type-pin
-                                             :params params
-                                             :body body))))
+                             (if (consp params)
+                                 (if (endp (cdr params))
+                                     (acl2::retok (make-type-pi
+                                                   :param (car params)
+                                                   :body body))
+                                   (acl2::retok (make-type-pin
+                                                 :params params
+                                                 :body body)))
+                               (acl2::reterr (msg "The \"params\" member of a TEPi object must be a nonempty list, but ~x0 is not." params))))
                          (acl2::reterr (msg "The \"params\" member of a TEPi object must be a JSON array, but ~x0 is not." params-j)))))
                     ((equal tag "TESigma")
                      (b* ((params-j
@@ -557,13 +561,15 @@
                                  (ispace-var-list-fromJSON params-js))
                                 ((acl2::erp body)
                                  (type-fromJSON body-j)))
-                             (if (and (consp params) (endp (cdr params)))
-                                 (acl2::retok (make-type-sigma
-                                               :param (car params)
-                                               :body body))
-                               (acl2::retok (make-type-sigman
-                                             :params params
-                                             :body body))))
+                             (if (consp params)
+                                 (if (endp (cdr params))
+                                     (acl2::retok (make-type-sigma
+                                                   :param (car params)
+                                                   :body body))
+                                   (acl2::retok (make-type-sigman
+                                                 :params params
+                                                 :body body)))
+                               (acl2::reterr (msg "The \"params\" member of a TESigma object must be a nonempty list, but ~x0 is not." params))))
                          (acl2::reterr (msg "The \"params\" member of a TESigma object must be a JSON array, but ~x0 is not." params-j)))))
                     ((equal tag "TERecord")
                      (acl2::reterr (msg "TERecord objects are not yet supported")))
@@ -905,20 +911,22 @@
                                      (var+type?-list-fromJSON params-js))
                                     ((acl2::erp expr)
                                      (expr-fromJSON expr-j)))
-                                 (if (json::value-case type-j :null)
-                                     (acl2::retok (make-bind-fun
-                                                   :var var
-                                                   :params params
-                                                   :type? (make-type-option-none )
-                                                   :expr expr))
-                                   (b* (((acl2::erp type)
-                                         (type-fromJSON type-j)))
-                                     (acl2::retok (make-bind-fun
-                                                   :var var
-                                                   :params params
-                                                   :type? (make-type-option-some
-                                                           :val type)
-                                                   :expr expr)))))
+                                 (if (consp params)
+                                     (if (json::value-case type-j :null)
+                                         (acl2::retok (make-bind-fun
+                                                       :var var
+                                                       :params params
+                                                       :type? (make-type-option-none )
+                                                       :expr expr))
+                                       (b* (((acl2::erp type)
+                                             (type-fromJSON type-j)))
+                                         (acl2::retok (make-bind-fun
+                                                       :var var
+                                                       :params params
+                                                       :type? (make-type-option-some
+                                                               :val type)
+                                                       :expr expr))))
+                                   (acl2::reterr (msg "The \"params\" member of a BindFun object must be a nonempty list, but ~x0 is not." params))))
                              (acl2::reterr (msg "The \"params\" member of a BindFun object must be a JSON array, but ~x0 is not." params-j)))
                          (acl2::reterr (msg "The \"var\" member of a BindFun object must be a string, but ~x0 is not." var-j)))))
                     ((equal tag "BindTFun")
@@ -940,20 +948,22 @@
                                      (type-var-list-fromJSON params-js))
                                     ((acl2::erp expr)
                                      (expr-fromJSON expr-j)))
-                                 (if (json::value-case type-j :null)
-                                     (acl2::retok (make-bind-tfun
-                                                   :var var
-                                                   :params params
-                                                   :type? (make-type-option-none )
-                                                   :expr expr))
-                                   (b* (((acl2::erp type)
-                                         (type-fromJSON type-j)))
-                                     (acl2::retok (make-bind-tfun
-                                                   :var var
-                                                   :params params
-                                                   :type? (make-type-option-some
-                                                           :val type)
-                                                   :expr expr)))))
+                                 (if (consp params)
+                                     (if (json::value-case type-j :null)
+                                         (acl2::retok (make-bind-tfun
+                                                       :var var
+                                                       :params params
+                                                       :type? (make-type-option-none )
+                                                       :expr expr))
+                                       (b* (((acl2::erp type)
+                                             (type-fromJSON type-j)))
+                                         (acl2::retok (make-bind-tfun
+                                                       :var var
+                                                       :params params
+                                                       :type? (make-type-option-some
+                                                               :val type)
+                                                       :expr expr))))
+                                   (acl2::reterr (msg "The \"params\" member of a BindTFun object must be a nonempty list, but ~x0 is not." params))))
                              (acl2::reterr (msg "The \"params\" member of a BindTFun object must be a JSON array, but ~x0 is not." params-j)))
                          (acl2::reterr (msg "The \"var\" member of a BindTFun object must be a string, but ~x0 is not." var-j)))))
                     ((equal tag "BindIFun")
@@ -975,20 +985,22 @@
                                      (ispace-var-list-fromJSON params-js))
                                     ((acl2::erp expr)
                                      (expr-fromJSON expr-j)))
-                                 (if (json::value-case type-j :null)
-                                     (acl2::retok (make-bind-ifun
-                                                   :var var
-                                                   :params params
-                                                   :type? (make-type-option-none )
-                                                   :expr expr))
-                                   (b* (((acl2::erp type)
-                                         (type-fromJSON type-j)))
-                                     (acl2::retok (make-bind-ifun
-                                                   :var var
-                                                   :params params
-                                                   :type? (make-type-option-some
-                                                           :val type)
-                                                   :expr expr)))))
+                                 (if (consp params)
+                                     (if (json::value-case type-j :null)
+                                         (acl2::retok (make-bind-ifun
+                                                       :var var
+                                                       :params params
+                                                       :type? (make-type-option-none )
+                                                       :expr expr))
+                                       (b* (((acl2::erp type)
+                                             (type-fromJSON type-j)))
+                                         (acl2::retok (make-bind-ifun
+                                                       :var var
+                                                       :params params
+                                                       :type? (make-type-option-some
+                                                               :val type)
+                                                       :expr expr))))
+                                   (acl2::reterr (msg "The \"params\" member of a BindIFun object must be a nonempty list, but ~x0 is not." params))))
                              (acl2::reterr (msg "The \"params\" member of a BindIFun object must be a JSON array, but ~x0 is not." params-j)))
                          (acl2::reterr (msg "The \"var\" member of a BindIFun object must be a string, but ~x0 is not." var-j)))))
                     (t
@@ -1045,9 +1057,11 @@
                                      (json::value-array->elements atoms-j))
                                     ((acl2::erp atoms)
                                      (atom-list-fromJSON atoms-js)))
-                                 (acl2::retok (make-expr-array
-                                               :dims dims
-                                               :atoms atoms)))
+                                 (if (consp atoms)
+                                     (acl2::retok (make-expr-array
+                                                   :dims dims
+                                                   :atoms atoms))
+                                   (acl2::reterr (msg "The \"atoms\" member of an Array object must be a nonempty list, but ~x0 is not." atoms))))
                              (acl2::reterr (msg "The \"atoms\" member of an Array object must be a JSON array, but ~x0 is not." atoms-j)))
                          (acl2::reterr (msg "The \"dims\" member of an Array object must be a JSON array, but ~x0 is not." dims-j)))))
                     ((equal tag "EmptyArray")
@@ -1081,9 +1095,11 @@
                                      (json::value-array->elements exprs-j))
                                     ((acl2::erp exprs)
                                      (expr-list-fromJSON exprs-js)))
-                                 (acl2::retok (make-expr-frame
-                                               :dims dims
-                                               :exprs exprs)))
+                                 (if (consp exprs)
+                                     (acl2::retok (make-expr-frame
+                                                   :dims dims
+                                                   :exprs exprs))
+                                   (acl2::reterr (msg "The \"exprs\" member of an Frame object must be a nomempty list, but ~x0 is not." exprs))))
                              (acl2::reterr (msg "The \"exprs\" member of a Frame object must be a JSON array, but ~x0 is not." exprs-j)))
                          (acl2::reterr (msg "The \"dims\" member of a Frame object must be a JSON array, but ~x0 is not." dims-j)))))
                     ((equal tag "EmptyFrame")
@@ -1175,9 +1191,11 @@
                                  (bind-list-fromJSON binds-js))
                                 ((acl2::erp body)
                                  (expr-fromJSON body-j)))
-                             (acl2::retok (make-expr-let
-                                           :binds binds
-                                           :body body)))
+                             (if (consp binds)
+                                 (acl2::retok (make-expr-let
+                                               :binds binds
+                                               :body body))
+                               (acl2::reterr (msg "The \"binds\" member of a Let object must be a nonempty list, but ~x0 is not." binds))))
                          (acl2::reterr (msg "The \"binds\" member of a Let object must be a JSON array, but ~x0 is not." binds-j)))))
                     ((equal tag "Struct")
                      (acl2::reterr (msg "Struct objects are not yet supported")))
