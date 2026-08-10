@@ -1380,7 +1380,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; We regard AL, etc. as just abbreviations, rather than proving rules about them.
+;; We regard AL, etc. as just abbreviations, rather than proving rules about
+;; them, but how we prefer to expand them depends on whether we are in 32-bit
+;; mode or 64-bit mode.  These are the rules for 64-bit mode:
 
 (defthmd al-becomes-rax (equal (al x86) (bvchop 8 (rax x86))) :hints (("Goal" :in-theory (enable al rax))))
 (defthmd bl-becomes-rbx (equal (bl x86) (bvchop 8 (rbx x86))) :hints (("Goal" :in-theory (enable bl rbx))))
