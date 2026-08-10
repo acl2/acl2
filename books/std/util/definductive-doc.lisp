@@ -66,7 +66,7 @@
       These rules are logical implications,
       but a critical unwritten additional requirement is that
       @($R^\\ast$) be the smallest relation satisfying them.
-      For the above rules, @($R^\\ast$) exists and is unique.")
+      For the above rules, @($R^\\ast$) exists.")
 
     (xdoc::p
      "Inductive definitions via inference rules are commonly used
@@ -245,8 +245,11 @@
        or (ii) a term in which none of @('p[1]'), ..., @('p[n]') occurs.
        For a @('conclusion[k]'), the term must have form (i);
        for a @('premise[k,h]'), the term may have either form.
-       All the rule names @('rule[1]'), ..., @('rule[r]') must be distinct;
-       there must be at least one rule, i.e. @('r') must be positive.")
+       The names of the rules with the same predicate in the conclusion
+       must be distinct;
+       rules with different predicates in the conclusions
+       may have the same name.
+       There must be at least one rule, i.e. @('r') must be positive.")
      (xdoc::p
       "Each predicate @('p[i]') must be
        in the conclusion of at least one rule.")
@@ -554,33 +557,29 @@
       "@('...')"
       "@('p[n]-alt')")
      (xdoc::p
-      "Uninterpreted functions, introduced via @(tsee defstub),
+      "Constrained functions, introduced via an @(tsee encapsulate),
        used as generic placeholders for alternate predicates
        that also satisfy all the inference rules,
-       and that are shown to be no smaller than @('p[1]'), ..., @('p[n]')."))
+       and that are shown to be no smaller than @('p[1]'), ..., @('p[n]').
+       The constraints are the theorems described next.
+       The witnesses are @('p[1]'), ..., @('p[n]') themselves,
+       which satisfy the constraints by the rule theorems."))
 
     (xdoc::desc
      (list
-      "@('p[l[1]]-alt-rule[1]-p')"
+      "@('p[l[1]]-alt-rule[1]')"
       "@('...')"
-      "@('p[l[r]]-alt-rule[r]-p')")
+      "@('p[l[r]]-alt-rule[r]')")
      (xdoc::p
-      "Nullary @(tsee defun-sk) functions saying that
-       the uninterpreted @('alt') predicates
-       satisfy the rules.
-       The bodies of these functions are implications
+      "Theorems, exported by the aforementioned @(tsee encapsulate),
+       constraining the @('p[i]-alt') functions to satisfy the rules.
+       Each is an implication
        with the premises as antecedents
-       and with the conclusions as consequents,
-       quantified over the free variables in the rules.
+       and with the conclusion as consequent,
+       with the @('p[i]-alt') functions in place of the predicates.
        For a rule without premises,
-       the body is just the conclusion, without implication.
-       For a rule without free variables,
-       there is no quantification,
-       and a nullary @(tsee defun) is generated instead.")
-     (xdoc::p
-      "These functions are currently not guard-verified,
-       because they may involve arbitrary user-supplied terms.
-       These functions have no fixing theorems, because they have no formals."))
+       the theorem is just the conclusion, without implication.
+       These theorems are disabled, like the rule theorems."))
 
     (xdoc::desc
      (list
@@ -588,9 +587,7 @@
       "@('...')"
       "@('p[n]-alt-when-proof-validp')")
      (xdoc::p
-      "Theorems saying that,
-       if the @(tsee defun-sk)s just above hold,
-       then the validity of each proof tree
+      "Theorems saying that the validity of each proof tree
        with conclusion @('(p[i] x[i,1] ... x[i,m[i]])')
        implies that @('(p[i]-alt x[i,1] ... x[i,m[i]])') holds.
        That is, a proof for @('p[i]') is also a proof for @('p[i]-alt').")
@@ -611,9 +608,8 @@
       "@('...')"
       "@('p[n]-alt-when-p[n]')")
      (xdoc::p
-      "Theorems saying that,
-       if the @(tsee defun-sk)s just above hold,
-       then the alternate predicates hold whenever the defined ones do.
+      "Theorems saying that the alternate predicates hold
+       whenever the defined ones do.
        That is, the defined predicates are the smallest ones
        among those that satisfy the inference rules."))
 
@@ -711,7 +707,7 @@
     (xdoc::desc
      (list
       "@('p[i]-2-alt')"
-      "@('p[l[k]]-2-alt-rule[k]-p')"
+      "@('p[l[k]]-2-alt-rule[k]')"
       "@('p[i]-2-alt-when-proof-validp')"
       "@('p[i]-2-alt-when-p[i]-2')")
      (xdoc::p
@@ -737,7 +733,8 @@
       "Theorems saying that the two representations of proofs
        define the same predicates.
        Each inclusion follows from the minimality theorem of one of the two,
-       used with the predicate of the other in place of the stub:
+       used with the predicate of the other
+       in place of the constrained function:
        what remains to prove is that the latter satisfies the rules,
        which its rule theorems say.
        The equality follows from the two inclusions,

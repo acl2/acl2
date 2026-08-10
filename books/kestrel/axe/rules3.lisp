@@ -14,7 +14,7 @@
 
 ;; This book was called dagrulesmore0.lisp.
 
-;; TODO: Organize these rules and move thing to more fundamental libraries.
+;; TODO: Organize these rules and move things to more fundamental libraries.
 
 ;(include-book "kestrel/lists-light/finalcdr" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system)
@@ -4523,7 +4523,7 @@
 ;;            (equal (list::clear-nth n (bv-array-write size len n val data))
 ;;                   (list::clear-nth n (bvchop-list size (take len data)))))
 ;;   :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2 ceiling-of-lg)
-;;                                   (update-nth-becomes-update-nth2-extend-gen)))))
+;;                                   ()))))
 
 ;; (defthm <-becomes-bvlt-table
 ;;   (implies (and (bind-free (bind-var-to-size-from-table 'free x mfc state))
@@ -8774,7 +8774,7 @@
            (equal (take m (bv-array-write 32 80 n val lst))
                   (bvchop-list 32 (take m lst))))
   :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2)
-                                  (update-nth-becomes-update-nth2-extend-gen)))))
+                                  ()))))
 
 (defthm +-of-minus1-and-bvplus-of-1
   (equal (+ -1 (BVPLUS 32 1 x))
@@ -8793,7 +8793,7 @@
 ;; (defthm bv-array-write-with-index-and-len-same
 ;;   (equal (bv-array-write elem-width len len val lst)
 ;;          (bvchop-list elem-width (take len lst)))
-;;   :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) (UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
+;;   :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
 
 (defthmd bvchop-tighten
   (implies (and (< YSIZE SIZE)
@@ -8849,7 +8849,7 @@
   :hints
   (("Goal" :in-theory (e/d (bv-array-write-opener
                             update-nth2 len-update-nth)
-                           (update-nth-becomes-update-nth2-extend-gen)))))
+                           ()))))
 
 ;gen the 4
 (defthm floor-becomes-slice-when-unsigned-byte-p
@@ -11124,7 +11124,7 @@
            (equal (equal (bv-array-write 32 (bvplus 5 1 n) n 0 data) (repeat (bvplus 5 1 n) 0))
                   (equal (firstn n data) (repeat n 0))))
   :hints (("Goal" :in-theory (e/d (BV-ARRAY-WRITE update-nth2 bvplus ceiling-of-lg equal-of-append repeat)
-                                  (UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN equal-of-cons)))))
+                                  (equal-of-cons)))))
 
 ;gen
 (defthm equal-of-bv-array-write-of-bvplus-and-repeat-of-bvplus-alt
@@ -11149,8 +11149,7 @@
                        (equal val (nth 16 k))
                        (equal (firstn 16 k) (firstn 16 data)))))
   :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2 bvplus bv-array-read equal-of-append equal-of-update-nth-new)
-                                  (update-nth-becomes-update-nth2-extend-gen
-                                   LEN-OF-CDR
+                                  (LEN-OF-CDR
                                    CDR-OF-TAKE)))))
 
 ;fixme gen the 0 (may not be true because of the clear)
@@ -11170,7 +11169,7 @@
                                    equal-of-update-nth-new
                                    )
                                   (;bv-array-write-equal-rewrite-alt bv-array-write-equal-rewrite
-                                   update-nth-becomes-update-nth2-extend-gen)))))
+                                   )))))
 
 (defthm equal-of-repeat-and-bv-array-write-hack
   (implies (and (true-listp data)
@@ -11182,7 +11181,7 @@
            (equal (equal (repeat (bvplus 5 1 x) 0) (bv-array-write 32 (bvplus 5 1 x) x 0 data))
                   (equal (repeat x 0) (firstn x data))))
   :hints (("Goal" :in-theory (e/d (bv-array-write UPDATE-NTH2 bvplus ceiling-of-lg equal-of-append equal-of-update-nth-new)
-                                  (UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
+                                  (
                                    equal-of-cons)))))
 
 (defthm equal-of-repeat-and-bv-array-write-hack-alt
@@ -11412,7 +11411,7 @@
 ;; (defthm bv-array-clear-of-update-nth2-same
 ;;   (equal (bv-array-clear size len index (update-nth2 len index val lst))
 ;;          (bv-array-clear size len index lst))
-;;   :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2) (update-nth-becomes-update-nth2-extend-gen)))))
+;;   :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2) ()))))
 
 (defthm bv-array-read-of-update-nth2-same
   (implies (and (natp len)
@@ -11421,7 +11420,7 @@
            (equal (bv-array-read size len index (update-nth2 len index val lst))
                   (bvchop size val)))
   :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-read-opener update-nth2)
-                                  (update-nth-becomes-update-nth2-extend-gen)))))
+                                  ()))))
 
 ;gen the 0!
 (defthm sbvlt-of-bvplus-of-constant
@@ -12118,7 +12117,7 @@
   (implies (natp index)
            (equal (bv-array-write width 1 index val data)
                   (list (bvchop width val))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) (update-nth-becomes-update-nth2-extend-gen)))))
+  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
 
 ;gen
 (defthm unsigned-byte-p-of-2-when-bvlt
@@ -12181,7 +12180,7 @@
                 (natp numelems))
            (equal (bv-array-write width numelems index val data)
                   (bv-array-write width numelems index val (firstn numelems data))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) (update-nth-becomes-update-nth2-extend-gen)))))
+  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
 
 (defthm unsigned-byte-p-of-+-of-minus-better-helper
   (implies (and (unsigned-byte-p size x)
@@ -12854,7 +12853,7 @@
                                    update-nth2
                                    equal-of-update-nth-new
                                    bvplus)
-                                  (update-nth-becomes-update-nth2-extend-gen)))))
+                                  ()))))
 
 (defthm <-of-bvchop-when-<-of-bvchop-smaller
   (implies (and (< k (bvchop freesize x))

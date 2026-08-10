@@ -14,6 +14,7 @@
 (include-book "fresh-variable-operations")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration)
@@ -126,13 +127,22 @@
      (defret consp-of-fresh-vars-of-dim/shape-subst-alpha-bound-loop
        (equal (consp fresh-vars)
               (consp bound-vars))
+       :hints (("Goal" :induct t)))
+
+     (defret len-of-fresh-vars-of-dim/shape-subst-alpha-bound-loop
+       (equal (len fresh-vars)
+              (len bound-vars))
        :hints (("Goal" :induct t)))))
 
   ///
 
   (defret consp-of-fresh-vars-of-dim/shape-subst-alpha-bound
     (equal (consp fresh-vars)
-           (consp bound-vars))))
+           (consp bound-vars)))
+
+  (defret len-of-fresh-vars-of-dim/shape-subst-alpha-bound
+    (equal (len fresh-vars)
+           (len bound-vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -210,13 +220,22 @@
      (defret consp-of-fresh-vars-of-atom/array-subst-alpha-bound-loop
        (equal (consp fresh-vars)
               (consp bound-vars))
+       :hints (("Goal" :induct t)))
+
+     (defret len-of-fresh-vars-of-atom/array-subst-alpha-bound-loop
+       (equal (len fresh-vars)
+              (len bound-vars))
        :hints (("Goal" :induct t)))))
 
   ///
 
   (defret consp-of-fresh-vars-of-atom/array-subst-alpha-bound
     (equal (consp fresh-vars)
-           (consp bound-vars))))
+           (consp bound-vars)))
+
+  (defret len-of-fresh-vars-of-atom/array-subst-alpha-bound
+    (equal (len fresh-vars)
+           (len bound-vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -266,13 +285,22 @@
      (defret consp-of-fresh-vars-of-expr-subst-alpha-bound-loop
        (equal (consp fresh-vars)
               (consp bound-vars))
+       :hints (("Goal" :induct t)))
+
+     (defret len-of-fresh-vars-of-expr-subst-alpha-bound-loop
+       (equal (len fresh-vars)
+              (len bound-vars))
        :hints (("Goal" :induct t)))))
 
   ///
 
   (defret consp-of-fresh-vars-of-expr-subst-alpha-bound
     (equal (consp fresh-vars)
-           (consp bound-vars))))
+           (consp bound-vars)))
+
+  (defret len-of-fresh-vars-of-expr-subst-alpha-bound
+    (equal (len fresh-vars)
+           (len bound-vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

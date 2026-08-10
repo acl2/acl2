@@ -41,6 +41,7 @@
 (define heap<-all-l
   ((tree treep)
    x)
+  (declare (xargs :type-prescription :none))
   :parents (tree)
   :short "Check that all members of a tree are @(tsee heap<) some value."
   :returns (yes/no booleanp :rule-classes :type-prescription)
@@ -50,8 +51,6 @@
            (heap<-all-l (tree->right tree) x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t heap<-all-l)))
 
 (defrule heap<-all-l-when-tree-equiv-congruence
   (implies (tree-equiv x y)
@@ -418,3 +417,16 @@
     heapp-when-not-tree-empty-p
     heap<-of-tree->head-and-tree->head-of-tree->left
     heap<-of-tree->head-and-tree->head-of-tree->right))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The head of a heap dominates the entire heap.
+(defruled heap<-all-l-becomes-heap<-of-tree->head
+  (implies (heapp tree)
+           (equal (heap<-all-l tree x)
+                  (or (tree-empty-p tree)
+                      (heap< (tree-element->key (tree->head tree)) x))))
+  :induct t
+  :enable (heap<-all-l
+           heapp-extra-rules
+           heap<-rules))

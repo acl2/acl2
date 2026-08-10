@@ -266,6 +266,14 @@
                    (x y)
                    (y x))))
 
+;; Like <<-all-l-weaken, but the hypothesis order binds the free variable by
+;; matching known <<-all-l facts rather than known << facts.
+(defruled <<-all-l-weaken-alt
+  (implies (and (<<-all-l tree x)
+                (<< x y))
+           (<<-all-l tree y))
+  :by <<-all-l-weaken)
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (defruled <<-all-r-weaken
@@ -286,6 +294,14 @@
   :use ((:instance acl2::<<-trichotomy
                    (x y)
                    (y x))))
+
+;; Like <<-all-r-weaken, but the hypothesis order binds the free variable by
+;; matching known <<-all-r facts rather than known << facts.
+(defruled <<-all-r-weaken-alt
+  (implies (and (<<-all-r y tree)
+                (<< x y))
+           (<<-all-r x tree))
+  :by <<-all-r-weaken)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -343,34 +359,34 @@
   :induct t
   :enable fast-bstp-nonempty)
 
-(defruled fast-bstp-nonempty.bstp-when-tree-empty-p
+(defruledl fast-bstp-nonempty.bstp-when-tree-empty-p
   (implies (tree-empty-p tree)
            (mv-nth 0 (fast-bstp-nonempty tree)))
   :enable fast-bstp-nonempty)
 
-(defrule fast-bstp-nonempty.bstp-when-tree-empty-p-cheap
+(defrulel fast-bstp-nonempty.bstp-when-tree-empty-p-cheap
   (implies (tree-empty-p tree)
            (mv-nth 0 (fast-bstp-nonempty tree)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by fast-bstp-nonempty.bstp-when-tree-empty-p)
 
-(defruled fast-bstp-nonempty.bstp-of-tree->left
+(defruledl fast-bstp-nonempty.bstp-of-tree->left
   (implies (mv-nth 0 (fast-bstp-nonempty tree))
            (mv-nth 0 (fast-bstp-nonempty (tree->left tree))))
   :enable fast-bstp-nonempty)
 
-(defrule fast-bstp-nonempty.bstp-of-tree->left-cheap
+(defrulel fast-bstp-nonempty.bstp-of-tree->left-cheap
   (implies (mv-nth 0 (fast-bstp-nonempty tree))
            (mv-nth 0 (fast-bstp-nonempty (tree->left tree))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by fast-bstp-nonempty.bstp-of-tree->left)
 
-(defruled fast-bstp-nonempty.bstp-of-tree->right
+(defruledl fast-bstp-nonempty.bstp-of-tree->right
   (implies (mv-nth 0 (fast-bstp-nonempty tree))
            (mv-nth 0 (fast-bstp-nonempty (tree->right tree))))
   :enable fast-bstp-nonempty)
 
-(defrule fast-bstp-nonempty.bstp-of-tree->right-cheap
+(defrulel fast-bstp-nonempty.bstp-of-tree->right-cheap
   (implies (mv-nth 0 (fast-bstp-nonempty tree))
            (mv-nth 0 (fast-bstp-nonempty (tree->right tree))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
@@ -396,47 +412,25 @@
                ((data::y (mv-nth 1 (fast-bstp-nonempty tree))))))
   :enable data::<<-rules)
 
-(defrule <<-all-l-when-fast-bstp-nonempty
-  (implies (and (not (tree-empty-p tree))
-                (mv-nth 0 (fast-bstp-nonempty tree)))
+(defrulel <<-all-l-when-fast-bstp-nonempty
+  (implies (mv-nth 0 (fast-bstp-nonempty tree))
            (equal (<<-all-l tree x)
-                  (<< (mv-nth 2 (fast-bstp-nonempty tree)) x)))
+                  (or (tree-empty-p tree)
+                      (<< (mv-nth 2 (fast-bstp-nonempty tree)) x))))
   :induct t
   :enable (fast-bstp-nonempty
            <<-all-l
            data::<<-expensive-rules))
 
-(defrule <<-all-r-when-fast-bstp-nonempty
-  (implies (and (not (tree-empty-p tree))
-                (mv-nth 0 (fast-bstp-nonempty tree)))
+(defrulel <<-all-r-when-fast-bstp-nonempty
+  (implies (mv-nth 0 (fast-bstp-nonempty tree))
            (equal (<<-all-r x tree)
-                  (<< x (mv-nth 1 (fast-bstp-nonempty tree)))))
+                  (or (tree-empty-p tree)
+                      (<< x (mv-nth 1 (fast-bstp-nonempty tree))))))
   :induct t
   :enable (fast-bstp-nonempty
            <<-all-r
            data::<<-expensive-rules))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule <<-all-l-of-left-and-head-when-fast-bstp-nonempty
-  (implies (and (not (tree-empty-p tree))
-                (mv-nth 0 (fast-bstp-nonempty tree)))
-           (<<-all-l (tree->left tree)
-                     (tree-element->key (tree->head tree))))
-  ;; TODO: ugly proof. Why is this disable necessary?
-  :disable tree-empty-p-when-not-<<-all-l-cheap
-  :cases ((tree-empty-p (tree->left tree)))
-  :expand (fast-bstp-nonempty tree))
-
-(defrule <<-all-r-of-head-and-right-when-fast-bstp-nonempty
-  (implies (and (not (tree-empty-p tree))
-                (mv-nth 0 (fast-bstp-nonempty tree)))
-           (<<-all-r (tree-element->key (tree->head tree))
-                     (tree->right tree)))
-  ;; Same comment as above
-  :disable tree-empty-p-when-not-<<-all-r-cheap
-  :cases ((tree-empty-p (tree->right tree)))
-  :expand (fast-bstp-nonempty tree))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -462,9 +456,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: When enabled this somehow disrupts subsequent proofs???
-;;   Why would fast-bstp-nonempty even show up???
-(defruled fast-bstp-nonempty.bstp
+(defruledl fast-bstp-nonempty.bstp
   (implies (not (tree-empty-p tree))
            (equal (mv-nth 0 (fast-bstp-nonempty tree))
                   (bstp tree)))
@@ -598,8 +590,10 @@
     <<-all-r-of-arg1-and-tree->right-when-<<-all-r
     <<-all-l-weaken
     <<-all-l-weaken2
+    <<-all-l-weaken-alt
     <<-all-r-weaken
-    <<-all-r-weaken2))
+    <<-all-r-weaken2
+    <<-all-r-weaken-alt))
 
 (defthy bstp-extra-rules
   '(bstp-of-tree->left-when-bstp

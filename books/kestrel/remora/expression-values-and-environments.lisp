@@ -1332,6 +1332,12 @@
     (expr-value-wfp (expr-value-base base))
     :enable (expr-value-wfp check-dims-of-expr-value))
 
+  (defruled expr-value-wfp-when-base
+    (implies (expr-value-case val :base)
+             (expr-value-wfp val))
+    :enable (expr-value-wfp
+             check-dims-of-expr-value))
+
   (defrule expr-value-wfp-of-expr-value-primop
     (equal (expr-value-wfp (expr-value-primop opval))
            (primop-value-wfp opval))

@@ -208,6 +208,39 @@
 (test-check-top-expr
  "(t-app (t-fn (&t) (i-fn ($d) (fn ((x (A &t $d))) x))) Int)")
 
+; Application of a let-bound type function with one parameter:
+; its recorded type is a unary universal type, matched by the application.
+(test-check-top-expr
+ "(let ((t-fun (f (&t)) (i-fn ($d) (fn ((x (A &t $d))) x))))
+  (t-app f Int))")
+
+; A type function binding with no parameters
+; is treated as a plain value binding,
+; as in [impl], whose parser turns it directly into a value binding.
+(test-check-top-expr
+ "(let ((t-fun (f () : Int) 7)) (+ f 1))")
+
+; Similarly for an ispace function binding with no parameters.
+(test-check-top-expr
+ "(let ((i-fun (f () : Int) 7)) (+ f 1))")
+
+; Similarly for a function binding with no value parameters.
+(test-check-top-expr
+ "(let ((fun (f : Int) 7)) (+ f 1))")
+
+; Similarly for a combined function binding with no parameters at all,
+; whether the type and ispace parameter lists are empty or absent.
+(test-check-top-expr
+ "(let ((fun (@f () () : Int) 7)) (+ f 1))")
+(test-check-top-expr
+ "(let ((fun (@f _ _ : Int) 7)) (+ f 1))")
+
+; In a combined function binding, only the layers with parameters
+; are present: here the type and function layers but no ispace layer.
+(test-check-top-expr
+ "(let ((fun (@f (&t) () (x Int) : Int) x))
+  (@f (Int) () 7))")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Full application of a two-parameter term lambda abstraction,
@@ -245,3 +278,13 @@
       (val g (f 2)))
   (g 3))
 ")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Application of a let-bound combined function
+; with one type parameter and one ispace parameter:
+; its recorded type is a unary universal type over a unary product type,
+; matched by the type and ispace applications.
+(test-check-top-expr
+ "(let ((fun (@f (&t) ($d) (x (A &t $d)) : (A &t $d)) x))
+  (@f (Int) (3) [1 2 3]))")

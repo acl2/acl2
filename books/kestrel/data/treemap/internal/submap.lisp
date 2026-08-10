@@ -50,6 +50,7 @@
 (define tree-submap-p
   ((x treep)
    (y treep))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (implementation)
   :short "Check if one tree is a submap of the other."
@@ -71,8 +72,6 @@
            (tree-submap-p (tree->right x) y))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-submap-p)))
 
 (defrule tree-submap-p-when-tree-equiv-of-arg1-congruence
   (implies (tree-equiv x0 x1)

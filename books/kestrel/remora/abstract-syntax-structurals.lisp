@@ -18,6 +18,7 @@
 (include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
 
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration)
@@ -703,6 +704,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define make-type-forall/foralln ((params type-var-listp) (body typep))
+  :guard (consp params)
+  :returns (type typep)
+  :short "Construct a unary or n-ary universal type,
+          depending on the number of parameters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There must be at least one parameter, as required by the guard.
+     If there is exactly one parameter,
+     we construct a unary universal type over that parameter;
+     if there are two or more parameters,
+     we construct an n-ary universal type,
+     consistently with the requirement that
+     n-ary universal types have two or more parameters
+     (see @(tsee type))."))
+  (if (endp (cdr params))
+      (make-type-forall :param (car params) :body body)
+    (make-type-foralln :params params :body body))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-type-var-list-fix))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-binders-count ((type typep))
   :returns (count natp)
   :short "Number of variables bound by the binder of a type."
@@ -768,7 +793,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define forall-curried-body ((params type-var-listp) (body typep))
-  :guard (consp params)
+  :guard (>= (len params) 2)
   :returns (new-body typep)
   :short "Peel the first parameter from a universal type
           and return the remaining body type."
@@ -777,13 +802,10 @@
    (xdoc::p
     "A universal type with two or more parameters
      is sugar for a nested sequence of one-parameter universal types.
-     This function treats an n-ary universal type with at least one parameter
-     as that sequence, or as itself if there is just one parameter,
-     and it returns the body of the outermost universal type.
-     This is the body of the whole universal type
-     when there is just one parameter,
-     otherwise it is another universal type, without the first parameter."))
-  (cond ((endp (cdr params)) (type-fix body))
+     This function treats an n-ary universal type with at least two parameters
+     as that sequence,
+     and it returns the body of the outermost universal type."))
+  (cond ((endp (cdr params)) (prog2$ (impossible) (type-fix body)))
         ((endp (cddr params))
          (make-type-forall :param (cadr params) :body body))
         (t (make-type-foralln :params (cdr params) :body body)))

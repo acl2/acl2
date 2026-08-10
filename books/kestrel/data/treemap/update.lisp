@@ -337,6 +337,7 @@
 (define update-from-alist-rev
   ((alist alistp)
    (map mapp))
+  (declare (xargs :type-prescription :none))
   :returns (map$ mapp)
   (if (endp alist)
       (fix map)
@@ -346,8 +347,6 @@
                                    map))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t update-from-alist-rev)))
 
 (defruled update-from-alist-rev-type-prescription
   (or (consp (update-from-alist-rev alist map))
@@ -409,6 +408,7 @@
 (define update-from-alist
   ((alist alistp)
    (map mapp))
+  (declare (xargs :type-prescription :none))
   :returns (map$ mapp)
   :parents (update)
   :short "Add an alist of key-value pairs to a @(see treemap)."
@@ -428,8 +428,6 @@
   :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t update-from-alist)))
 
 (defruled update-from-alist-type-prescription
   (or (consp (update-from-alist alist map))
@@ -499,6 +497,7 @@
 
 (define from-alist
   ((alist alistp))
+  (declare (xargs :type-prescription :none))
   :parents (treemap)
   :short "Create a map from an alist of key-value pairs."
   :long
@@ -512,8 +511,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t from-alist)))
 
 (defruled from-alist-type-prescription
   (or (consp (from-alist alist))
@@ -560,6 +557,7 @@
 (define update-from-omap
   ((omap omap::mapp)
    (map mapp))
+  (declare (xargs :type-prescription :none))
   :returns (map$ mapp)
   :parents (update)
   :short "Add an omap of key-value pairs to a @(see treemap)."
@@ -576,8 +574,6 @@
                         (update key val map)))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t update-from-omap)))
 
 (defruled update-from-omap-type-prescription
   (or (consp (update-from-omap omap map))
@@ -644,6 +640,7 @@
 
 (define from-omap
   ((omap omap::mapp))
+  (declare (xargs :type-prescription :none))
   :parents (treemap)
   :short "Create a map from an omap."
   :long
@@ -657,8 +654,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t from-omap)))
 
 (defruled from-omap-type-prescription
   (or (consp (from-omap omap))

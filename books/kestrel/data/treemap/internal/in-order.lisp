@@ -77,6 +77,7 @@
 (define tree-in-order-acc
   ((tree treep)
    (acc alistp))
+  (declare (xargs :type-prescription :none))
   :returns (alist alistp)
   (if (tree-empty-p tree)
       (mbe :logic (if (alistp acc) acc nil)
@@ -90,8 +91,6 @@
   :guard-hints (("Goal" :in-theory (enable alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-in-order-acc)))
 
 (defruled true-listp-of-tree-in-order-acc
   (true-listp (tree-in-order-acc tree acc))
@@ -155,6 +154,7 @@
 
 (define tree-in-order
   ((tree treep))
+  (declare (xargs :type-prescription :none))
   :returns (alist alistp)
   :parents (implementation)
   :short "Create an in-order alist of key-value pairs from a tree."
@@ -168,8 +168,6 @@
   :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-in-order)))
 
 (defruled true-listp-of-tree-in-order
   (true-listp (tree-in-order tree))

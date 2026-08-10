@@ -345,7 +345,7 @@
               :denv (type-denv-restrict (type-free-ispace-vars type)
                                         (type-free-type-vars type)
                                         denv))
-     :foralln (b* (((unless (consp type.params)) (reserr nil)))
+     :foralln (b* (((unless (>= (len type.params) 2)) (reserr nil)))
                 (make-type-value-forall
                  :param (car type.params)
                  :body (forall-curried-body type.params type.body)
@@ -1373,7 +1373,12 @@
        we evaluate it, ignoring the resulting type value for now.
        Since the parameter types are already evaluated for the lambda value,
        the function type value can be assembled from these pieces
-       when we need to check it against the lambda value.")
+       when we need to check it against the lambda value.
+       A function binding with no parameters
+       is treated as a plain value binding,
+       consistently with the type checker and with [impl],
+       whose parser turns such a binding
+       directly into a value binding.")
      (xdoc::p
       "For a type function binding,
        we extend the dynamic environment
@@ -1387,7 +1392,10 @@
        Note that we cannot just evaluate the type in the bindings,
        but we need to form the universal type
        (or, equivalently, extend the dynamic environment)
-       because that type may reference the type parameters.")
+       because that type may reference the type parameters.
+       A type function binding with no parameters
+       is treated as a plain value binding,
+       similarly to a nullary function bindings.")
      (xdoc::p
       "For an ispace function binding,
        we extend the dynamic environment
@@ -1399,7 +1407,10 @@
        over the ispace parameters with the result type as body,
        and we evaluate it, ignoring the resulting type value for now;
        we form the product type, instead of evaluating the result type directly,
-       because the result type may reference the ispace parameters.")
+       because the result type may reference the ispace parameters.
+       An ispace function binding with no parameters
+       is treated as a plain value binding,
+       similarly to a nullary function bindings.")
      (xdoc::p
       "For a combined function binding,
        we form the nested abstraction expression
@@ -1411,7 +1422,13 @@
        after being desugared to a value binding.
        As for the other bindings,
        we also form the corresponding nested type and evaluate it,
-       ignoring the resulting type value for now.")
+       ignoring the resulting type value for now.
+       Each layer is formed only if
+       the corresponding parameters are present;
+       an absent parameter list and an empty one are treated alike,
+       consistently with the type checker and with [impl].
+       With no parameters at all,
+       the binding is treated as a plain value binding.")
      (xdoc::p
       "The lambda values formed for the function bindings
        are closures with restricted dynamic environments,
@@ -1432,7 +1449,14 @@
                                            (expr-denv->tenv denv))
                           :none nil)))
               (expr-denv-add-expr bind.var val denv))
-       :fun (b* (((unless (consp bind.params)) (reserr nil))
+       :fun (b* (((when (endp bind.params))
+                  (b* (((ok val) (eval-expr bind.expr denv (1- limit)))
+                       ((ok &) (type-option-case
+                                bind.type?
+                                :some (eval-type bind.type?.val
+                                                 (expr-denv->tenv denv))
+                                :none nil)))
+                    (expr-denv-add-expr bind.var val denv)))
                  ((ok param) (eval-var+type? (car bind.params)
                                              (expr-denv->tenv denv)))
                  (val (make-expr-value-lambda
@@ -1455,7 +1479,14 @@
                                            (expr-denv->tenv denv))
                           :none nil)))
               (expr-denv-add-expr bind.var val denv))
-       :tfun (b* (((unless (consp bind.params)) (reserr nil))
+       :tfun (b* (((when (endp bind.params))
+                   (b* (((ok val) (eval-expr bind.expr denv (1- limit)))
+                        ((ok &) (type-option-case
+                                 bind.type?
+                                 :some (eval-type bind.type?.val
+                                                  (expr-denv->tenv denv))
+                                 :none nil)))
+                     (expr-denv-add-expr bind.var val denv)))
                   (val (make-expr-value-tlambda
                         :param (car bind.params)
                         :body (tlambda-curried-body bind.params bind.expr)
@@ -1469,12 +1500,19 @@
                   ((ok &) (type-option-case
                            bind.type?
                            :some (eval-type
-                                  (make-type-foralln :params bind.params
-                                                     :body bind.type?.val)
+                                  (make-type-forall/foralln bind.params
+                                                            bind.type?.val)
                                   (expr-denv->tenv denv))
                            :none nil)))
                (expr-denv-add-expr bind.var val denv))
-       :ifun (b* (((unless (consp bind.params)) (reserr nil))
+       :ifun (b* (((when (endp bind.params))
+                   (b* (((ok val) (eval-expr bind.expr denv (1- limit)))
+                        ((ok &) (type-option-case
+                                 bind.type?
+                                 :some (eval-type bind.type?.val
+                                                  (expr-denv->tenv denv))
+                                 :none nil)))
+                     (expr-denv-add-expr bind.var val denv)))
                   (val (make-expr-value-ilambda
                         :param (car bind.params)
                         :body (ilambda-curried-body bind.params bind.expr)
@@ -1488,44 +1526,77 @@
                   ((ok &) (type-option-case
                            bind.type?
                            :some (eval-type
-                                  (make-type-pin :params bind.params
-                                                 :body bind.type?.val)
+                                  (if (endp (cdr bind.params))
+                                      (make-type-pi
+                                       :param (car bind.params)
+                                       :body bind.type?.val)
+                                    (make-type-pin
+                                     :params bind.params
+                                     :body bind.type?.val))
                                   (expr-denv->tenv denv))
                            :none nil)))
                (expr-denv-add-expr bind.var val denv))
-       :cfun (b* ((lambda-expr (make-expr-array
-                                :dims nil
-                                :atoms (list (make-atom-lambdan
-                                              :params bind.params
-                                              :body bind.expr
-                                              :type? bind.type))))
+       :cfun (b* ((tparams (type-var-list-option-case
+                            bind.tparams? :some bind.tparams?.val :none nil))
+                  (iparams (ispace-var-list-option-case
+                            bind.iparams? :some bind.iparams?.val :none nil))
+                  (cfun-expr (if (consp bind.params)
+                                 (make-expr-array
+                                  :dims nil
+                                  :atoms (list
+                                          (if (endp (cdr bind.params))
+                                              (make-atom-lambda
+                                               :param (car bind.params)
+                                               :body bind.expr
+                                               :type? bind.type)
+                                            (make-atom-lambdan
+                                             :params bind.params
+                                             :body bind.expr
+                                             :type? bind.type))))
+                               bind.expr))
                   ((ok in) (var+type?-list->type-list-or-err bind.params))
-                  (lambda-type (if (and (consp in) (endp (cdr in)))
-                                   (make-type-fun :in (car in)
-                                                  :out bind.type)
-                                 (make-type-funn :in in :out bind.type)))
-                  ((mv iexpr itype)
-                   (ispace-var-list-option-case
-                    bind.iparams?
-                    :some (mv (make-expr-array
-                               :dims nil
-                               :atoms (list (make-atom-ilambdan
-                                             :params bind.iparams?.val
-                                             :body lambda-expr)))
-                              (make-type-pin :params bind.iparams?.val
-                                             :body lambda-type))
-                    :none (mv lambda-expr lambda-type)))
+                  (cfun-type (if (consp in)
+                                 (if (endp (cdr in))
+                                     (make-type-fun :in (car in)
+                                                    :out bind.type)
+                                   (make-type-funn :in in :out bind.type))
+                               bind.type))
                   ((mv cfun-expr cfun-type)
-                   (type-var-list-option-case
-                    bind.tparams?
-                    :some (mv (make-expr-array
-                               :dims nil
-                               :atoms (list (make-atom-tlambdan
-                                             :params bind.tparams?.val
-                                             :body iexpr)))
-                              (make-type-foralln :params bind.tparams?.val
-                                                 :body itype))
-                    :none (mv iexpr itype)))
+                   (if (consp iparams)
+                       (mv (make-expr-array
+                            :dims nil
+                            :atoms (list
+                                    (if (endp (cdr iparams))
+                                        (make-atom-ilambda
+                                         :param (car iparams)
+                                         :body cfun-expr)
+                                      (make-atom-ilambdan
+                                       :params iparams
+                                       :body cfun-expr))))
+                           (if (endp (cdr iparams))
+                               (make-type-pi :param (car iparams)
+                                             :body cfun-type)
+                             (make-type-pin :params iparams
+                                            :body cfun-type)))
+                     (mv cfun-expr cfun-type)))
+                  ((mv cfun-expr cfun-type)
+                   (if (consp tparams)
+                       (mv (make-expr-array
+                            :dims nil
+                            :atoms (list
+                                    (if (endp (cdr tparams))
+                                        (make-atom-tlambda
+                                         :param (car tparams)
+                                         :body cfun-expr)
+                                      (make-atom-tlambdan
+                                       :params tparams
+                                       :body cfun-expr))))
+                           (if (endp (cdr tparams))
+                               (make-type-forall :param (car tparams)
+                                                 :body cfun-type)
+                             (make-type-foralln :params tparams
+                                                :body cfun-type)))
+                     (mv cfun-expr cfun-type)))
                   ((ok val) (eval-expr cfun-expr denv (1- limit)))
                   ((ok &) (eval-type cfun-type (expr-denv->tenv denv))))
                (expr-denv-add-expr bind.var val denv))))

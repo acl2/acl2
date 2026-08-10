@@ -5521,7 +5521,7 @@
                                  :declor (param-declor-none
                                           (type-vinfo (type-void)))
                                  :attribs nil
-                                 :info (type-option-vinfo nil)))
+                                 :info nil))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -5794,7 +5794,7 @@
                                  :declor (param-declor-none
                                           (type-vinfo (type-void)))
                                  :attribs nil
-                                 :info (type-option-vinfo nil)))
+                                 :info nil))
                           (make-type-params-prototype
                            :params nil
                            :ellipsis nil)
@@ -5912,12 +5912,11 @@
                 :array (make-type-pointer :to type.of)
                 :function (make-type-pointer :to type)
                 :otherwise type))
-         (info (type-option-vinfo type))
          ((when (not ident?))
           (retok (make-param-declon :specs new-specs
                                     :declor new-decl
                                     :attribs paramdecl.attribs
-                                    :info info)
+                                    :info nil)
                  type
                  (set::union types more-types)
                  vstate))
@@ -5936,7 +5935,7 @@
       (retok (make-param-declon :specs new-specs
                                 :declor new-decl
                                 :attribs paramdecl.attribs
-                                :info info)
+                                :info nil)
              type
              (set::union types more-types)
              vstate))

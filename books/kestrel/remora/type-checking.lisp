@@ -1963,13 +1963,23 @@
        to associate that function type to the bound variable.
        If the optional result type is present,
        we check that it is valid and equivalent to
-       the type of the body of the abstraction.")
+       the type of the body of the abstraction.
+       A function binding with no parameters
+       is treated as a plain value binding:
+       the variable is bound to the type of the body,
+       not wrapped in any function type.
+       This is consistent with [impl],
+       whose parser turns such a binding
+       directly into a value binding.")
      (xdoc::p
       "A type function binding and an ispace function binding
        are treated similarly to a function binding,
        but as syntactic sugar for binding the variable
        to a type abstraction or an ispace abstraction,
-       so their types are a universal type or a product type.")
+       so their types are a universal type or a product type.
+       A type function binding or an ispace function binding with no parameters
+       is treated as a plain value binding,
+       as done for a function binding.")
      (xdoc::p
       "A combined function binding
        is syntactic sugar for binding the variable
@@ -1980,7 +1990,16 @@
        a function type, a product type, and a universal type.
        We check the body in the static environment
        extended with all the parameters,
-       and we check that its type is equivalent to the declared result type.")
+       and we check that its type is equivalent to the declared result type.
+       Each layer is present only if
+       the corresponding parameters are present;
+       an absent parameter list and an empty one are treated alike,
+       consistently with [impl].
+       In particular, with no value parameters
+       there is no function type layer,
+       and with no parameters at all
+       the binding is treated as a plain value binding,
+       with the variable bound to the type of the body.")
      (xdoc::p
       "For an ispace binding,
        we check that the bound ispace is valid,
@@ -2042,15 +2061,15 @@
           ((ok (type+expr ee)) (check-expr bind.expr senv-body))
           ((unless (check-bind-type-annotation bind.type? ee.type senv))
            (reserr nil))
-          (fun-type (if (and (consp types) (endp (cdr types)))
-                        (make-type-fun :in (car types) :out ee.type)
-                      (make-type-funn :in types :out ee.type))))
+          (type (if (consp types)
+                    (make-type-array
+                     :elem (if (endp (cdr types))
+                               (make-type-fun :in (car types) :out ee.type)
+                             (make-type-funn :in types :out ee.type))
+                     :ispace (ispace-shape (shape-dims nil)))
+                  ee.type)))
        (make-senv+bind
-        :senv (senv-add-var+type bind.var
-                                 (make-type-array
-                                  :elem fun-type
-                                  :ispace (ispace-shape (shape-dims nil)))
-                                 senv)
+        :senv (senv-add-var+type bind.var type senv)
         :bind (make-bind-fun :var bind.var
                              :params bind.params
                              :type? bind.type?
@@ -2060,15 +2079,14 @@
           (senv-body (senv-add-type-vars bind.params senv))
           ((ok (type+expr ee)) (check-expr bind.expr senv-body))
           ((unless (check-bind-type-annotation bind.type? ee.type senv-body))
-           (reserr nil)))
+           (reserr nil))
+          (type (if (consp bind.params)
+                    (make-type-array
+                     :elem (make-type-forall/foralln bind.params ee.type)
+                     :ispace (ispace-shape (shape-dims nil)))
+                  ee.type)))
        (make-senv+bind
-        :senv (senv-add-var+type bind.var
-                                 (make-type-array
-                                  :elem (make-type-foralln
-                                         :params bind.params
-                                         :body ee.type)
-                                  :ispace (ispace-shape (shape-dims nil)))
-                                 senv)
+        :senv (senv-add-var+type bind.var type senv)
         :bind (make-bind-tfun :var bind.var
                               :params bind.params
                               :type? bind.type?
@@ -2078,15 +2096,18 @@
           (senv-body (senv-add-ispace-vars bind.params senv))
           ((ok (type+expr ee)) (check-expr bind.expr senv-body))
           ((unless (check-bind-type-annotation bind.type? ee.type senv-body))
-           (reserr nil)))
+           (reserr nil))
+          (type (if (consp bind.params)
+                    (make-type-array
+                     :elem (if (endp (cdr bind.params))
+                               (make-type-pi :param (car bind.params)
+                                             :body ee.type)
+                             (make-type-pin :params bind.params
+                                            :body ee.type))
+                     :ispace (ispace-shape (shape-dims nil)))
+                  ee.type)))
        (make-senv+bind
-        :senv (senv-add-var+type bind.var
-                                 (make-type-array
-                                  :elem (make-type-pin
-                                         :params bind.params
-                                         :body ee.type)
-                                  :ispace (ispace-shape (shape-dims nil)))
-                                 senv)
+        :senv (senv-add-var+type bind.var type senv)
         :bind (make-bind-ifun :var bind.var
                               :params bind.params
                               :type? bind.type?
@@ -2109,25 +2130,31 @@
           ((ok senv-body) (senv-add-vars+types bind.params senv-iparams))
           ((ok (type+expr ee)) (check-expr bind.expr senv-body))
           ((unless (type-equivp ee.type btype)) (reserr nil))
-          (fun-type (if (and (consp types) (endp (cdr types)))
-                        (make-type-fun :in (car types) :out btype)
-                      (make-type-funn :in types :out btype)))
-          (fun-type (ispace-var-list-option-case
-                     bind.iparams?
-                     :some (make-type-pin :params bind.iparams?.val
+          (fun-type (if (consp types)
+                        (if (endp (cdr types))
+                            (make-type-fun :in (car types) :out btype)
+                          (make-type-funn :in types :out btype))
+                      ee.type))
+          (fun-type (if (consp iparams)
+                        (if (endp (cdr iparams))
+                            (make-type-pi :param (car iparams)
                                           :body fun-type)
-                     :none fun-type))
-          (fun-type (type-var-list-option-case
-                     bind.tparams?
-                     :some (make-type-foralln :params bind.tparams?.val
+                          (make-type-pin :params iparams :body fun-type))
+                      fun-type))
+          (fun-type (if (consp tparams)
+                        (if (endp (cdr tparams))
+                            (make-type-forall :param (car tparams)
                                               :body fun-type)
-                     :none fun-type)))
+                          (make-type-foralln :params tparams
+                                             :body fun-type))
+                      fun-type))
+          (type (if (or (consp types) (consp iparams) (consp tparams))
+                    (make-type-array
+                     :elem fun-type
+                     :ispace (ispace-shape (shape-dims nil)))
+                  ee.type)))
        (make-senv+bind
-        :senv (senv-add-var+type bind.var
-                                 (make-type-array
-                                  :elem fun-type
-                                  :ispace (ispace-shape (shape-dims nil)))
-                                 senv)
+        :senv (senv-add-var+type bind.var type senv)
         :bind (make-bind-cfun :var bind.var
                               :tparams? bind.tparams?
                               :iparams? bind.iparams?

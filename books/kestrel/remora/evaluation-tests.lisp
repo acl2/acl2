@@ -131,3 +131,48 @@
 ; to which the second argument array is applied element-wise.
 (test-eval-top-expr
  "((fn ((x Int) (y Int)) (+ x y)) [1 2 3] [4 5 6])")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A let-bound type function with one parameter and a result type annotation:
+; the annotation is wrapped into a unary universal type for evaluation.
+(test-eval-top-expr
+ "(let ((t-fun (f (&t) : Int) 7)) (t-app f Int))")
+
+; A type function binding with no parameters
+; is treated as a plain value binding, as in [impl].
+(test-eval-top-expr
+ "(let ((t-fun (f () : Int) 7)) (+ f 1))")
+
+; Similarly for an ispace function binding with no parameters.
+(test-eval-top-expr
+ "(let ((i-fun (f () : Int) 7)) (+ f 1))")
+
+; Similarly for a function binding with no value parameters.
+(test-eval-top-expr
+ "(let ((fun (f : Int) 7)) (+ f 1))")
+
+; Similarly for a combined function binding with no parameters at all,
+; whether the type and ispace parameter lists are empty or absent.
+(test-eval-top-expr
+ "(let ((fun (@f () () : Int) 7)) (+ f 1))")
+(test-eval-top-expr
+ "(let ((fun (@f _ _ : Int) 7)) (+ f 1))")
+
+; In a combined function binding, only the layers with parameters
+; are present: here the type and function layers but no ispace layer.
+(test-eval-top-expr
+ "(let ((fun (@f (&t) () (x Int) : Int) x))
+  (@f (Int) () 7))")
+
+; A let-bound ispace function with one parameter and a result type annotation:
+; the annotation is wrapped into a unary product type for evaluation.
+(test-eval-top-expr
+ "(let ((i-fun (f ($d) : Int) 7)) (i-app f 3))")
+
+; A let-bound combined function
+; with one type parameter, one ispace parameter, and one value parameter:
+; it desugars to a nest of unary abstractions, with a nested unary type.
+(test-eval-top-expr
+ "(let ((fun (@f (&t) ($d) (x (A &t $d)) : (A &t $d)) x))
+  (@f (Int) (3) [1 2 3]))")
