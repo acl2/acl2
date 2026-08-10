@@ -1990,7 +1990,8 @@
                                                                 array-all)))))
   :enable (forall-curried-body
            make-type-forall/foralln
-           mergesort-when-singleton)
+           mergesort-when-singleton
+           acl2::equal-len-const)
   :use ((:instance atom/array-rename-remove-bound-of-insert-then-rest
                    (var (car params))
                    (rest (cdr params)))))
@@ -2153,7 +2154,8 @@
                        type-valuep-when-result-not-error
                        type-value-listp-when-result-not-error
                        type-denv-lookup-type
-                       acl2::lt-len-const))
+                       acl2::lt-len-const
+                       acl2::equal-len-const))
    (and acl2::stable-under-simplificationp
         '(:use ((:instance denv-type-vars-renamed-p-necc
                            (var (type-var->var type))))))))

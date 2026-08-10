@@ -25,6 +25,7 @@
 
 (local (include-book "lists"))
 
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
@@ -2667,7 +2668,8 @@
                        expr-value-wfp-of-expr-value-with-nonempty-dims
                        list-prefix-join-upper-bound
                        primop-value-funp
-                       primop-value-fun-fo-p)
+                       primop-value-fun-fo-p
+                       acl2::lt-len-const)
                       (len-of-eval-expr-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
