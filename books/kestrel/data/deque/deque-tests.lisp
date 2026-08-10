@@ -6,19 +6,19 @@
 ;
 ; Author: Aakash Koneru
 
-(in-package "DATA")
+(in-package "DEQUE")
 
 (include-book "deque")
 
 (assert-event (equal (deque->list (empty-deque)) nil))
-(assert-event (deque-emptyp (empty-deque)))
+(assert-event (emptyp (empty-deque)))
 (assert-event (equal (deque-size (empty-deque)) 0))
 
 (local (defconst *dq* (push-back 3 (push-front 1 (push-front 2 (empty-deque))))))
 
 (assert-event (equal (deque->list *dq*) '(1 2 3)))
 (assert-event (dequep *dq*))
-(assert-event (not (deque-emptyp *dq*)))
+(assert-event (not (emptyp *dq*)))
 (assert-event (equal (deque-size *dq*) 3))
 (assert-event (equal (front *dq*) 1))
 (assert-event (equal (back *dq*) 3))

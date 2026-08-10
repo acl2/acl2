@@ -6,6 +6,6 @@
 ;
 ; Author: Aakash Koneru
 
-(in-package "DEQUE")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "deque")
+(in-package "DEQUE")
