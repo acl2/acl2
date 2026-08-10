@@ -17,6 +17,7 @@
 
 (include-book "tree-defs")
 (include-book "in-defs")
+(include-book "heap-defs")
 (include-book "split-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -35,6 +36,7 @@
 (define tree-subset-p
   ((x treep)
    (y treep))
+  (declare (xargs :type-prescription :none))
   :parents (implementation)
   :short "Check if one tree is a subset of the other."
   :guard (bstp y)
@@ -46,8 +48,6 @@
            (tree-subset-p (tree->right x) y))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-subset-p)))
 
 (defrule tree-subset-p-when-tree-equiv-of-arg1-congruence
   (implies (tree-equiv x0 x1)
@@ -427,3 +427,35 @@
     tree-subset-p-of-tree->left-when-tree-subset-p
     tree-subset-p-of-tree->right-when-tree-subset-p
     tree-subset-p-when-not-tree-in-of-tree->head))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Bounds are monotone under subset: what bounds every element of a tree
+;; bounds every element of any subset.
+
+(defruled <<-all-r-when-tree-subset-p
+  (implies (and (<<-all-r x tree)
+                (tree-subset-p acc tree))
+           (<<-all-r x acc))
+  :induct (tree-subset-p acc tree)
+  :enable (tree-subset-p
+           <<-all-r
+           <<-when-<<-all-r-and-tree-in))
+
+(defruled <<-all-l-when-tree-subset-p
+  (implies (and (<<-all-l tree x)
+                (tree-subset-p acc tree))
+           (<<-all-l acc x))
+  :induct (tree-subset-p acc tree)
+  :enable (tree-subset-p
+           <<-all-l
+           <<-when-<<-all-l-and-tree-in))
+
+(defruled heap<-all-l-when-tree-subset-p
+  (implies (and (heap<-all-l tree x)
+                (tree-subset-p acc tree))
+           (heap<-all-l acc x))
+  :induct (tree-subset-p acc tree)
+  :enable (tree-subset-p
+           heap<-all-l
+           heap<-when-heap<-all-l-and-tree-in))

@@ -42,6 +42,7 @@
 (define tree-diff
   ((x treep)
    (y treep))
+  (declare (xargs :type-prescription :none))
   :parents (implementation)
   :short "Take the difference of two treaps."
   :returns (tree treep)
@@ -73,8 +74,6 @@
   :guard-hints (("Goal" :in-theory (enable tree-join-at))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-diff)))
 
 (defrule tree-diff-type-prescription
   (or (consp (tree-diff x y))
