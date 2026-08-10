@@ -346,13 +346,12 @@
               :denv (type-denv-restrict (type-free-ispace-vars type)
                                         (type-free-type-vars type)
                                         denv))
-     :foralln (b* (((unless (>= (len type.params) 2)) (reserr nil)))
-                (make-type-value-forall
-                 :param (car type.params)
-                 :body (forall-curried-body type.params type.body)
-                 :denv (type-denv-restrict (type-free-ispace-vars type)
-                                           (type-free-type-vars type)
-                                           denv)))
+     :foralln (make-type-value-forall
+               :param (car type.params)
+               :body (forall-curried-body type.params type.body)
+               :denv (type-denv-restrict (type-free-ispace-vars type)
+                                         (type-free-type-vars type)
+                                         denv))
      :pi (make-type-value-pi
           :param type.param
           :body type.body
