@@ -6,11 +6,12 @@
 ;
 ; Author: Aakash Koneru
 
-(in-package "DATA")
+(in-package "DEQUE")
 
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -34,17 +35,17 @@
     (xdoc::p
       "A <b>deque</b> (double-ended queue) is a finite sequence that supports
        inserting and removing elements at <i>both</i> ends, in constant
-       amortized time O(1).  This is an implementation in the style of
+       amortized time O(1) under single-threaded usage. This is an implementation in the style of
        Okasaki's banker's deque: a deque is a front list consed together with
        a reversed rear list, plus the cached length of each side so the balance
        check never recomputes @('len').  Whenever one side grows more than
        three times the other, the deque is rebalanced by splitting the elements evenly.")
     (xdoc::p
-      "@(see dequep) recognizes a well-formed deque and @(see deque->list)
-       returns the sequence it denotes.  The operations are @(see empty-deque),
-       @(see push-front), @(see push-back), @(see front), @(see back), @(see
-       pop-front), @(see pop-back), @(see deque-emptyp), @(see deque-size), and
-       @(see list->deque).  @(see deque-equiv) equates deques that denote the
+      "@(tsee dequep) recognizes a well-formed deque and @(tsee deque->list)
+       returns the sequence it denotes.  The operations are @(tsee empty-deque),
+       @(tsee push-front), @(tsee push-back), @(tsee front), @(tsee back), @(tsee
+       pop-front), @(tsee pop-back), @(tsee emptyp), @(tsee deque-size), and
+       @(tsee list->deque).  @(tsee deque-equiv) equates deques that denote the
        same sequence, and every operation respects it.")))
 
 (defxdoc dequep
@@ -69,11 +70,15 @@
 
 (defxdoc front
   :parents (deque)
-  :short "The front (leftmost) element of a deque.")
+  :short "The front (leftmost) element of a deque."
+  :long "<p>Returns @('nil') when the deque is empty (there is no front
+         element).</p>")
 
 (defxdoc back
   :parents (deque)
-  :short "The back (rightmost) element of a deque.")
+  :short "The back (rightmost) element of a deque."
+  :long "<p>Returns @('nil') when the deque is empty (there is no back
+         element).</p>")
 
 (defxdoc pop-front
   :parents (deque)
@@ -83,7 +88,7 @@
   :parents (deque)
   :short "Remove the back element of a non-empty deque.")
 
-(defxdoc deque-emptyp
+(defxdoc emptyp
   :parents (deque)
   :short "Recognize the empty deque.")
 
@@ -102,7 +107,7 @@
 ;-------------------
 ;; Representation: a deque stores the front list, the (reversed) rear
 ;; list, and the lengths of both, so the balance check never recomputes LEN.
-;; The sequence it denotes is (append front (acl2::reverse-list rear)).  Concretely a
+;; The sequence it denotes is (append front (reverse-list rear)).  Concretely a
 ;; deque is
 ;;   ((front . rear) . (flen . rlen)).
 
@@ -223,11 +228,11 @@
 (defund deque->list (dq)
   (declare (xargs :guard (weak-dequep dq)))
   (append (weak-deque->front dq)
-          (acl2::reverse-list (weak-deque->rear dq))))
+          (reverse-list (weak-deque->rear dq))))
 
 (defthm deque->list-of-weak-deque
   (equal (deque->list (weak-deque f r flen rlen))
-         (append f (acl2::reverse-list r)))
+         (append f (reverse-list r)))
   :hints (("Goal" :in-theory (enable deque->list))))
 
 ;-------------------
@@ -301,18 +306,18 @@
 (defund rebalance (f r flen rlen)
   (declare (xargs :guard (and (true-listp f) (true-listp r) (natp flen) (natp rlen))
                   :guard-hints (("Goal" :in-theory (enable natp)))))
-  (let* ((all (append f (acl2::reverse-list r)))
+  (let* ((all (append f (reverse-list r)))
          (n (+ flen rlen))
          (k (ceiling n 2)))
     (weak-deque (take k all)
-                (acl2::reverse-list (nthcdr k all))
+                (reverse-list (nthcdr k all))
                 k (- n k))))
 
 (defthm deque->list-of-rebalance
   (implies (and (true-listp f) (true-listp r)
                 (equal flen (len f)) (equal rlen (len r)))
            (equal (deque->list (rebalance f r flen rlen))
-                  (append f (acl2::reverse-list r))))
+                  (append f (reverse-list r))))
   :hints (("Goal"
             :in-theory (e/d (rebalance deque->list
                                        acl2::append-of-take-and-nthcdr-2)
@@ -322,8 +327,7 @@
 (defthm dequep-of-rebalance
   (implies (and (equal flen (len f)) (equal rlen (len r)))
            (dequep (rebalance f r flen rlen)))
-  :hints (("Goal" :in-theory (e/d (rebalance dequep balancedp)
-                                  (acl2::take-of-append acl2::nthcdr-of-append-gen))
+  :hints (("Goal" :in-theory (enable rebalance dequep balancedp)
                   :use (:instance halves-balanced
                                   (n (+ flen rlen))))))
 
@@ -338,7 +342,7 @@
   (implies (and (true-listp f) (true-listp r)
                 (equal flen (len f)) (equal rlen (len r)))
            (equal (deque->list (mk-deque f r flen rlen))
-                  (append f (acl2::reverse-list r))))
+                  (append f (reverse-list r))))
   :hints (("Goal" :in-theory (enable mk-deque))))
 
 (defthm dequep-of-mk-deque
@@ -364,7 +368,7 @@
 
 (in-theory (disable (:e empty-deque)))
 
-(defund deque-emptyp (dq)
+(defund emptyp (dq)
   (declare (xargs :guard (dequep dq)
                   :guard-hints (("Goal" :in-theory (enable dequep)))))
   (let ((dq (deque-fix dq)))
@@ -383,17 +387,17 @@
          (len (deque->list (deque-fix dq))))
   :hints (("Goal" :in-theory (enable deque-size deque->list))))
 
-(defthm deque-emptyp-iff-size-0
+(defthm emptyp-iff-size-0
   (implies (dequep dq)
-           (equal (deque-emptyp dq)
+           (equal (emptyp dq)
                   (equal (deque-size dq) 0)))
-  :hints (("Goal" :in-theory (e/d (deque-emptyp deque-size dequep)
+  :hints (("Goal" :in-theory (e/d (emptyp deque-size dequep)
                                   (deque-size-is-len-of-deque->list)))))
 
-(defthmd deque-emptyp-iff-deque-fix-equal-empty-deque
-  (equal (deque-emptyp dq)
+(defthmd emptyp-iff-deque-fix-equal-empty-deque
+  (equal (emptyp dq)
          (equal (deque-fix dq) (empty-deque)))
-  :hints (("Goal" :in-theory (enable deque-emptyp deque-fix empty-deque
+  :hints (("Goal" :in-theory (enable emptyp deque-fix empty-deque
                                      dequep
                                      weak-deque->front weak-deque->rear
                                      weak-deque->flen weak-deque->rlen
@@ -437,9 +441,9 @@
 (local
   (defthm car-of-reverse-list-when-len-<=-1
     (implies (<= (len x) 1)
-             (equal (car (acl2::reverse-list x))
+             (equal (car (reverse-list x))
                     (car x)))
-    :hints (("Goal" :in-theory (enable acl2::reverse-list)))))
+    :hints (("Goal" :in-theory (enable reverse-list)))))
 
 (local
   (defthm car-of-last-when-len-<=-1
@@ -466,21 +470,19 @@
 
 (local
   (defthm car-of-reverse-list-is-car-of-last
-    (equal (car (acl2::reverse-list l))
+    (equal (car (reverse-list l))
            (car (last l)))
-    :hints (("Goal" :in-theory (enable acl2::reverse-list last)))))
+    :hints (("Goal" :in-theory (enable reverse-list last)))))
 
 (defthm back-is-last-of-deque->list
   (equal (back dq)
          (car (last (deque->list (deque-fix dq)))))
-  :hints (("Goal" :in-theory (e/d (back deque->list dequep balancedp deque-fix)
-                                  (acl2::car-of-reverse-list)))))
+  :hints (("Goal" :in-theory (enable back deque->list dequep balancedp deque-fix))))
 
 ; Remove the front element.
 (defund pop-front (dq)
-  (declare (xargs :guard (and (dequep dq)
-                              (not (deque-emptyp dq)))
-                  :guard-hints (("Goal" :in-theory (enable dequep deque-emptyp)))))
+  (declare (xargs :guard (dequep dq)
+                  :guard-hints (("Goal" :in-theory (enable dequep)))))
   (let ((dq (deque-fix dq)))
     (if (consp (weak-deque->front dq))
         (mk-deque (cdr (weak-deque->front dq))
@@ -490,14 +492,12 @@
 
 (defthm dequep-of-pop-front
   (dequep (pop-front dq))
-  :hints (("Goal" :in-theory (e/d (pop-front)
-                                  (deque-emptyp-iff-size-0)))))
+  :hints (("Goal" :in-theory (enable pop-front))))
 
 ; Remove the back element.
 (defund pop-back (dq)
-  (declare (xargs :guard (and (dequep dq)
-                              (not (deque-emptyp dq)))
-                  :guard-hints (("Goal" :in-theory (enable dequep deque-emptyp)))))
+  (declare (xargs :guard (dequep dq)
+                  :guard-hints (("Goal" :in-theory (enable dequep)))))
   (let ((dq (deque-fix dq)))
     (if (consp (weak-deque->rear dq))
         (mk-deque (weak-deque->front dq)
@@ -507,8 +507,7 @@
 
 (defthm dequep-of-pop-back
   (dequep (pop-back dq))
-  :hints (("Goal" :in-theory (e/d (pop-back)
-                                  (deque-emptyp-iff-size-0)))))
+  :hints (("Goal" :in-theory (enable pop-back))))
 
 ; Build a (balanced) deque with the elements of a list.
 (defund list->deque (l)
@@ -571,8 +570,7 @@
 (defthm deque->list-of-pop-front
   (equal (deque->list (pop-front dq))
          (cdr (deque->list (deque-fix dq))))
-  :hints (("Goal" :in-theory (e/d (pop-front deque-emptyp deque->list)
-                                  (deque-emptyp-iff-size-0)))))
+  :hints (("Goal" :in-theory (enable pop-front emptyp deque->list))))
 
 (defthm deque-size-of-push-front
   (equal (deque-size (push-front x dq))
@@ -580,29 +578,32 @@
 
 (defthm deque-size-of-pop-front
   (implies (and (dequep dq)
-                (not (deque-emptyp dq)))
+                (not (emptyp dq)))
            (equal (deque-size (pop-front dq))
                   (+ -1 (deque-size dq)))))
 
 (defthm front-of-push-front
   (equal (front (push-front x dq)) x))
 
-(defthm not-deque-emptyp-of-push-front
-  (not (deque-emptyp (push-front x dq))))
+(defthm not-emptyp-of-push-front
+  (not (emptyp (push-front x dq))))
 
 (defthm pop-front-of-push-front
   (deque-equiv (pop-front (push-front x dq)) dq)
   :hints (("Goal" :in-theory (enable deque-equiv))))
 
-(defthmd deque-emptyp-as-atom-of-deque->list
-  (equal (deque-emptyp dq)
+(defthmd emptyp-as-atom-of-deque->list
+  (equal (emptyp dq)
          (atom (deque->list (deque-fix dq))))
-  :hints (("Goal" :in-theory (enable deque-emptyp deque->list))))
+  :hints (("Goal" :in-theory (enable emptyp deque->list))))
 
 (defthm push-front-of-front-and-pop-front
-  (implies (not (deque-emptyp dq))
+  (implies (not (emptyp dq))
            (deque-equiv (push-front (front dq) (pop-front dq)) dq))
-  :hints (("Goal" :in-theory (enable deque-equiv deque-emptyp-as-atom-of-deque->list))))
+  :hints (("Goal" :in-theory (enable deque-equiv
+                                     emptyp-as-atom-of-deque->list
+                                     ))))
+
 
 (defthm deque->list-of-push-back
   (equal (deque->list (push-back x dq))
@@ -612,8 +613,7 @@
 (defthm deque->list-of-pop-back
   (equal (deque->list (pop-back dq))
          (butlast (deque->list (deque-fix dq)) 1))
-  :hints (("Goal" :in-theory (e/d (pop-back deque-emptyp deque->list)
-                                  (deque-emptyp-iff-size-0)))))
+  :hints (("Goal" :in-theory (enable pop-back emptyp deque->list))))
 
 (defthm deque-size-of-push-back
   (equal (deque-size (push-back x dq))
@@ -621,19 +621,40 @@
 
 (defthm deque-size-of-pop-back
   (implies (and (dequep dq)
-                (not (deque-emptyp dq)))
+                (not (emptyp dq)))
            (equal (deque-size (pop-back dq))
                   (+ -1 (deque-size dq)))))
 
 (defthm back-of-push-back
   (equal (back (push-back x dq)) x))
 
-(defthm not-deque-emptyp-of-push-back
-  (not (deque-emptyp (push-back x dq))))
+(defthm not-emptyp-of-push-back
+  (not (emptyp (push-back x dq))))
 
 (defthm pop-back-of-push-back
   (deque-equiv (pop-back (push-back x dq)) dq)
   :hints (("Goal" :in-theory (enable deque-equiv))))
+
+(local
+  (defthm append-of-take-of-len-1-and-last-elem
+    (implies (and (true-listp x)
+                  (consp x))
+             (equal (append (take (+ -1 (len x)) x)
+                            (list (car (last x))))
+                    x))))
+
+(local
+  (defthm list-of-car-when-len-1
+    (implies (and (true-listp x)
+                  (equal (len x) 1))
+             (equal (list (car x))
+                    x))))
+
+(defthm push-back-of-back-and-pop-back
+  (implies (not (emptyp dq))
+           (deque-equiv (push-back (back dq) (pop-back dq)) dq))
+  :hints (("Goal" :in-theory (enable deque-equiv
+                                     emptyp-as-atom-of-deque->list))))
 
 ;-------------------
 ; Congruence Rules.
@@ -687,9 +708,39 @@
   :rule-classes :congruence
   :hints (("Goal" :in-theory (enable deque-equiv))))
 
-(defthm deque-emptyp-when-deque-equiv-congruence
+(defthm emptyp-when-deque-equiv-congruence
   (implies (deque-equiv dq0 dq1)
-           (equal (deque-emptyp dq0)
-                  (deque-emptyp dq1)))
+           (equal (emptyp dq0)
+                  (emptyp dq1)))
   :rule-classes :congruence
-  :hints (("Goal" :in-theory (enable deque-equiv deque-emptyp-as-atom-of-deque->list))))
+  :hints (("Goal" :in-theory (enable deque-equiv emptyp-as-atom-of-deque->list))))
+
+;-------------------
+; Linear rules on DEQUE-SIZE, useful for termination proofs that recur by
+; popping a deque.
+
+(defthm dequep-when-not-emptyp
+  (implies (not (emptyp dq))
+           (dequep dq))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable emptyp deque-fix))))
+
+(defthm posp-of-deque-size-when-not-emptyp
+  (implies (not (emptyp dq))
+           (< 0 (deque-size dq)))
+  :rule-classes :linear
+  :hints (("Goal" :use emptyp-iff-size-0)))
+
+(defthm deque-size-of-pop-front-linear
+  (implies (not (emptyp dq))
+           (< (deque-size (pop-front dq))
+              (deque-size dq)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (disable deque-size-is-len-of-deque->list))))
+
+(defthm deque-size-of-pop-back-linear
+  (implies (not (emptyp dq))
+           (< (deque-size (pop-back dq))
+              (deque-size dq)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (disable deque-size-is-len-of-deque->list))))
