@@ -221,7 +221,17 @@
     (type-option-case
      type?
      :none (reserr nil)
-     :some type?.val)))
+     :some type?.val))
+
+  ///
+
+  (defret type-wfp-of-var+type?->type-or-err
+    (implies (not (reserrp type))
+             (type-wfp type))
+    :hyp (var+type?-wfp vt)
+    :hints (("Goal" :in-theory (enable var+type?-wfp
+                                       type-option-wfp
+                                       type-option-some->val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -232,7 +242,17 @@
   (b* (((when (endp x)) nil)
        ((ok type) (var+type?->type-or-err (car x)))
        ((ok types) (var+type?-list->type-list-or-err (cdr x))))
-    (cons type types)))
+    (cons type types))
+
+  ///
+
+  (defret type-list-wfp-of-var+type?-list->type-list-or-err
+    (implies (not (reserrp types))
+             (type-list-wfp types))
+    :hyp (var+type?-list-wfp x)
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* ast-wfp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
