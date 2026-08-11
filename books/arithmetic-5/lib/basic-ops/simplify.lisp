@@ -510,30 +510,51 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Moore Modification: See the Essay on Moore's Use of ``Wrappers'' and Robert's
+; ``Ugly Hacks'' which may be found in lib/basic-ops/common.lisp
+
+(defun find-matching-factors-gather-exponents-wrapper (lhs rhs mfc state)
+  (declare (xargs :mode :program))
+  (if (use-original-arith-5-rules mfc state)
+      (find-matching-factors-gather-exponents lhs rhs nil mfc state)
+      (find-matching-factors-gather-exponents lhs rhs t mfc state)))
+
 (defthm simplify-products-gather-exponents-equal
-    (implies (and (acl2-numberp lhs)
-                  (acl2-numberp rhs)
-                  (syntaxp (not (quotep lhs)))
-                  (syntaxp (not (quotep rhs)))
-                  (syntaxp (in-term-order-* lhs mfc state))
-		  (syntaxp (in-term-order-* rhs mfc state))
-                  (bind-free
-                   (find-matching-factors-gather-exponents lhs rhs mfc state)
-                   (x))
-		  ;; Something is not right if x = +/-1.  This will
-		  ;; presumably be rewritten away later.  We abort
-		  ;; for now.
-		  (syntaxp (not (equal x ''1)))
-		  (syntaxp (not (equal x ''-1)))
-                  (case-split (acl2-numberp x))
-		  (case-split (not (equal x 0))))
-             (equal (equal lhs rhs)
-		    (equal (* x lhs) (* x rhs)))))
+  (implies (and (acl2-numberp lhs)
+                (acl2-numberp rhs)
+                (syntaxp (not (quotep lhs)))
+                (syntaxp (not (quotep rhs)))
+                (syntaxp (in-term-order-* lhs mfc state))
+		(syntaxp (in-term-order-* rhs mfc state))
+                (bind-free
+                 (find-matching-factors-gather-exponents-wrapper lhs rhs
+                                                                 mfc state)
+                 (x))
+		;; Something is not right if x = +/-1.  This will
+		;; presumably be rewritten away later.  We abort
+		;; for now.
+		(syntaxp (not (equal x ''1)))
+		(syntaxp (not (equal x ''-1)))
+                (case-split (acl2-numberp x))
+		(case-split (not (equal x 0))))
+           (equal (equal lhs rhs)
+		  (equal (* x lhs)
+                         (* x rhs)))))
 
 (local
  (in-theory (disable simplify-products-gather-exponents-equal)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Moore Modification: See the Essay on Moore's Use of ``Wrappers'' and Robert's
+; ``Ugly Hacks'' which may be found in lib/basic-ops/common.lisp
+
+(defun find-rational-matching-factors-gather-exponents-wrapper
+    (lhs rhs mfc state)
+  (declare (xargs :mode :program))
+  (if (use-original-arith-5-rules mfc state)
+      (find-rational-matching-factors-gather-exponents lhs rhs nil mfc state)
+      (find-rational-matching-factors-gather-exponents lhs rhs t mfc state)))
 
 (defthm simplify-products-gather-exponents-<
     (implies (and (acl2-numberp lhs)
@@ -543,8 +564,8 @@
                   (syntaxp (in-term-order-* lhs mfc state))
 		  (syntaxp (in-term-order-* rhs mfc state))
                   (bind-free
-                   (find-rational-matching-factors-gather-exponents lhs rhs
-                                                                    mfc state)
+                   (find-rational-matching-factors-gather-exponents-wrapper
+                    lhs rhs mfc state)
                    (x))
 		  ;; Something is not right if x = +/-1.  This will
 		  ;; presumably be rewritten away later.  We abort
@@ -572,7 +593,8 @@
                   (syntaxp (in-term-order-* lhs mfc state))
 		  (syntaxp (in-term-order-* rhs mfc state))
                   (bind-free
-                   (find-matching-factors-scatter-exponents lhs rhs mfc state)
+                   (find-matching-factors-scatter-exponents lhs rhs
+                                                            mfc state)
                    (x))
 		  (syntaxp (not (equal x ''1)))
 		  (syntaxp (not (equal x ''-1)))
@@ -594,8 +616,8 @@
                   (syntaxp (in-term-order-* lhs mfc state))
 		  (syntaxp (in-term-order-* rhs mfc state))
                   (bind-free
-                   (find-rational-matching-factors-scatter-exponents lhs rhs
-                                                                    mfc state)
+                   (find-rational-matching-factors-scatter-exponents
+                    lhs rhs mfc state)
                    (x))
 		  (syntaxp (not (equal x ''1)))
 		  (syntaxp (not (equal x ''-1)))
