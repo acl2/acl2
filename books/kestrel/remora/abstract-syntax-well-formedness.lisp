@@ -82,6 +82,7 @@
 (fty::deffold-reduce wfp
   :short "Well-formedness predicate over ASTs."
   :types (dims
+          dim-list-list
           shapes/ispaces
           ispace-list-option
           ispace-var
