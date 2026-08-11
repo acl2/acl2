@@ -122,7 +122,7 @@
 
   (defret atom-list-wfp-of-atom-base-list
     (atom-list-wfp atoms)
-    :hints (("Goal" :induct t :in-theory (enable* abstract-syntax-wfp-rules)))))
+    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

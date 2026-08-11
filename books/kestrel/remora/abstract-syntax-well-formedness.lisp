@@ -193,7 +193,7 @@
                      (var+type?-list-wfp decl.params)
                      (type-option-wfp decl.type?)
                      (expr-wfp decl.expr))))
-  :name abstract-syntax-wfp)
+  :name ast-wfp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -205,7 +205,7 @@
            (dim-list-wfp dims))
     :induct t
     :enable (list-to-singletons
-             abstract-syntax-wfp-rules))
+             ast-wfp-rules))
 
-  (add-to-ruleset abstract-syntax-wfp-rules
+  (add-to-ruleset ast-wfp-rules
                   '(dim-list-list-wfp-of-lists-to-singletons)))
