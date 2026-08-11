@@ -29,7 +29,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "std/util/top" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "centaur/vl/util/defs" :dir :system)
 (include-book "centaur/vl/util/namedb" :dir :system)
 (include-book "aig-base")

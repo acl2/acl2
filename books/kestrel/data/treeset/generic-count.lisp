@@ -58,17 +58,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-generic-count ((tree treep))
+  (declare (xargs :type-prescription :none))
   :returns (count natp :rule-classes :type-prescription)
   (if (tree-empty-p tree)
       0
     (+ 1
        (generic-count (tree-element->val (tree->head tree)))
        (tree-generic-count (tree->left tree))
-       (tree-generic-count (tree->right tree)))))
+       (tree-generic-count (tree->right tree))))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-generic-count)))
 
 (defrule tree-generic-count-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
@@ -141,13 +141,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define set-generic-count ((set setp))
+  (declare (xargs :type-prescription :none))
   :returns (count natp :rule-classes :type-prescription)
   (tree-generic-count (fix set))
   :guard-hints (("Goal" :in-theory (enable setp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t set-generic-count)))
 
 (defruled set-generic-count-when-emptyp
   (implies (emptyp set)

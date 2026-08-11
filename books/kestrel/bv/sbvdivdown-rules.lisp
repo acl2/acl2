@@ -101,7 +101,7 @@
                                           logapp
                                           TRUNCATE-BECOMES-FLOOR-GEN
                                           )
-                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                  (;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    )))))
 
 (defthmd bvchop-of-minus-rule
@@ -144,7 +144,7 @@
                                    truncate-becomes-floor-other
                                    bvchop-of-minus-rule
                                    )
-                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                  (;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    ;;mod-sum-cases
                                    ;;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
                                    ;;SBVDIV-rewrite
@@ -196,7 +196,7 @@
                                    (:REWRITE UNSIGNED-BYTE-P-OF-FLOOR)
 
                                    EQUAL-OF-0-AND-FLOOR
-                                   BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                   ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    FLOOR-OF-1-ARG1 ;why?
                                    mod-sum-cases
                                    ;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?

@@ -761,6 +761,8 @@
     type-count
     type-void
     type-sint
+    type-unknown
+
     type-pointer->to
 
     type-listp
@@ -814,10 +816,6 @@
     type-vinfop
     type-vinfo-fix
     type-vinfo->type
-
-    type-option-vinfo
-    type-option-vinfop
-    type-option-vinfo->type?
 
     type+uid-vinfo
     type+uid-vinfop

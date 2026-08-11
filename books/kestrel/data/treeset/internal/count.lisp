@@ -30,16 +30,16 @@
 (define tree-nodes-count-acc
   ((tree treep)
    (acc natp))
+  (declare (xargs :type-prescription :none))
   :returns (count natp :rule-classes :type-prescription)
   (if (tree-empty-p tree)
       (lnfix acc)
     (tree-nodes-count-acc (tree->left tree)
                           (tree-nodes-count-acc (tree->right tree)
-                                                (+ 1 (lnfix acc))))))
+                                                (+ 1 (lnfix acc)))))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-nodes-count-acc)))
 
 (defrule tree-nodes-count-acc-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
@@ -79,6 +79,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-nodes-count ((tree treep))
+  (declare (xargs :type-prescription :none))
   :parents (implementation)
   :short "The number of elements in a tree."
   :returns (count natp :rule-classes :type-prescription)
@@ -93,8 +94,6 @@
   :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-nodes-count)))
 
 (defrule tree-nodes-count-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)

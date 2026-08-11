@@ -31,13 +31,13 @@
 ;;                            string-listp
 ;;                            )))
 
-;; todo: slow
-;; todo: This function is very slow to compile in SBCL.
+;; Without the optimize declare, this function is very slow to compile in SBCL.
 ;; todo: allow the package to be an option
 (defun make-memory-region-machinery-fn (num-address-bits pkg)
   (declare (xargs :guard (and (natp num-address-bits)
                               (stringp pkg)
-                              (not (equal "" pkg)))))
+                              (not (equal "" pkg))))
+           (optimize (speed 0) (debug 0) (compilation-speed 3)))
   (let* ((in-regionp-name (acl2::pack-in-package pkg 'in-region num-address-bits 'p))
          (subregionp-name (acl2::pack-in-package pkg 'subregion num-address-bits 'p))
          (subregionp-spec-name (acl2::pack-in-package pkg subregionp-name '-spec))
@@ -47,7 +47,9 @@
        (include-book "kestrel/bv/bvlt-def" :dir :system)
        (include-book "kestrel/bv/logext-def" :dir :system)
        (include-book "kestrel/bv/bvsx-def" :dir :system)
-       (include-book "kestrel/bv/bvminus" :dir :system) ; todo: reduce
+       (include-book "kestrel/bv/bvplus-def" :dir :system)
+       (include-book "kestrel/bv/bvminus-def" :dir :system)
+       (include-book "kestrel/bv/bvuminus-def" :dir :system)
 
        (encapsulate ()
 
@@ -60,6 +62,7 @@
          (local (include-book "kestrel/bv/bvplus" :dir :system))
          (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
          (local (include-book "kestrel/bv/bvuminus" :dir :system))
+         (local (include-book "kestrel/bv/bvminus" :dir :system))
          (local (include-book "kestrel/bv/logext" :dir :system))
          (local (include-book "kestrel/bv/rules" :dir :system)) ; for bvplus-of-logext rules
          (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -116,25 +119,25 @@
          (defthm ,(acl2::pack-in-package pkg in-regionp-name '-same-end)
            (equal (,in-regionp-name (bvplus ,num-address-bits ad (bvplus ,num-address-bits -1 len)) len ad)
                   (posp len))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name bvuminus bvminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
          (defthm ,(acl2::pack-in-package pkg in-regionp-name '-same-end-alt)
            (equal (,in-regionp-name (bvplus ,num-address-bits ,(+ -1 (expt 2 num-address-bits)) (bvplus ,num-address-bits ad len)) len ad)
                   (posp len))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name bvuminus bvminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
          ;; note that the region size can't be 2^,num-address-bits
          (defthm ,(acl2::pack-in-package pkg 'not- in-regionp-name '-one-past-end)
            (equal (,in-regionp-name (bvplus ,num-address-bits ad len) len ad)
                   (and (<= (expt 2 ,num-address-bits) len)
                        (natp len)))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name bvuminus bvminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
          ;; if the region size is 2^,num-address-bits-1, being in the region means not being the single address just before the region
          (defthm ,(acl2::pack-in-package pkg in-regionp-name '-of-2^ num-address-bits "-1") ; or could put in the actual large value
            (equal (,in-regionp-name ad (+ -1 (expt 2 ,num-address-bits)) start-ad)
                   (not (equal (bvchop ,num-address-bits ad) (bvminus ,num-address-bits start-ad 1))))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name bvuminus bvplus ifix acl2::bvchop-of-sum-cases))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name bvuminus bvminus bvplus ifix acl2::bvchop-of-sum-cases))))
 
          (defthm ,(acl2::pack-in-package pkg in-regionp-name '-monotone)
            (implies (and (,in-regionp-name x len1 ad)
@@ -150,7 +153,7 @@
                          (bvle ,num-address-bits (bvminus ,num-address-bits x ad) (bvminus ,num-address-bits y ad)) ; x is closer to the start of the region than y
                          (unsigned-byte-p ,num-address-bits len))
                     (not (,in-regionp-name y len ad)))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name bvuminus bvminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
          (defthm ,(acl2::pack-in-package pkg in-regionp-name '-of-bvchop-arg1)
            (implies (and (<= ,num-address-bits n)
@@ -233,7 +236,7 @@
          (defthm ,(acl2::pack-in-package pkg in-regionp-name '-cancel-1-1+)
            (equal (,in-regionp-name x len (bvplus ,num-address-bits x z))
                   (,in-regionp-name 0 len z))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name bvminus))))
 
          (defthm ,(acl2::pack-in-package pkg in-regionp-name '-cancel-1+-1)
            (equal (,in-regionp-name (bvplus ,num-address-bits x z) len x)
@@ -298,7 +301,7 @@
                     (equal (,in-regionp-name x len2 k)
                            (,in-regionp-name x (- len2 (- (expt 2 ,num-address-bits) k)) 0)))
            :hints (("Goal" :cases ((< (+ (expt 2 ,num-address-bits) (- k) x) len2))
-                    :in-theory (enable ,in-regionp-name bvplus bvuminus bvlt acl2::bvchop-of-sum-cases unsigned-byte-p
+                    :in-theory (enable ,in-regionp-name bvplus bvuminus bvminus bvlt acl2::bvchop-of-sum-cases unsigned-byte-p
                                        ;;acl2::sbvlt-rewrite
                                        ))))
 
@@ -312,7 +315,7 @@
                          )
                     (equal (,in-regionp-name (bvplus ,num-address-bits k1 x) len2 (bvplus ,num-address-bits k2 y))
                            (,in-regionp-name x len2 (bvplus ,num-address-bits (bvminus ,num-address-bits k2 k1) y))))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
          ;; which arg do we prefer to make 0?
          (defthm ,(acl2::pack-in-package pkg in-regionp-name '-cancel-constants-1-1+)
@@ -322,7 +325,7 @@
                          )
                     (equal (,in-regionp-name k1 len2 (bvplus ,num-address-bits k2 y))
                            (,in-regionp-name 0 len2 (bvplus ,num-address-bits (bvminus ,num-address-bits k2 k1) y))))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
          ;; how do we prefer to handle this?
          (defthm ,(acl2::pack-in-package pkg in-regionp-name '-cancel-constants-1+-1)
@@ -332,7 +335,7 @@
                          )
                     (equal (,in-regionp-name (bvplus ,num-address-bits k1 x) len2 k2)
                            (,in-regionp-name x len2 (bvminus ,num-address-bits k2 k1))))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
          ;; disabled for the proofs below
          (defthmd ,(acl2::pack-in-package pkg in-regionp-name '-of-0-arg3)
@@ -378,7 +381,7 @@
                              (or (<= start-ad ad)
                                  (< ad (- (+ start-ad len)
                                           (expt 2 ,num-address-bits)))))))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name bvlt bvuminus bvplus acl2::bvchop-of-sum-cases))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name bvlt bvuminus bvminus bvplus acl2::bvchop-of-sum-cases))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -430,7 +433,7 @@
                          (,in-regionp-name ad1 len1 start1)
                          (,in-regionp-name ad2 len2 start2))
                     (not (equal (bvchop ,num-address-bits ad1) (bvchop ,num-address-bits ad2))))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name ,disjoint-regionsp-name bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name ,disjoint-regionsp-name bvuminus bvminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
          ;; Addresses in disjoint regions cannot be equal.
          (defthm ,(acl2::pack-in-package pkg 'not-equal-when- disjoint-regionsp-name)
@@ -438,21 +441,21 @@
                          (,in-regionp-name ad1 len1 start1)
                          (,in-regionp-name ad2 len2 start2))
                     (not (equal ad1 ad2)))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name ,disjoint-regionsp-name bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name ,disjoint-regionsp-name bvuminus bvminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
          (defthm ,(acl2::pack-in-package pkg 'not-equal-when- disjoint-regionsp-name '-alt)
            (implies (and (,disjoint-regionsp-name len1 start1 len2 start2)
                          (,in-regionp-name ad2 len1 start1)
                          (,in-regionp-name ad1 len2 start2))
                     (not (equal ad1 ad2)))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name ,disjoint-regionsp-name bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name ,disjoint-regionsp-name bvuminus bvminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
          ;; If any address is in both, they are not disjoint.
          (defthm ,(acl2::pack-in-package pkg 'not- disjoint-regionsp-name '-when-address-in-both)
            (implies (and (,in-regionp-name ad len1 start1)
                          (,in-regionp-name ad len2 start2))
                     (not (,disjoint-regionsp-name len1 start1 len2 start2)))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name ,disjoint-regionsp-name bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name ,disjoint-regionsp-name bvuminus bvminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
          (defthm ,(acl2::pack-in-package pkg 'not- in-regionp-name '-when- disjoint-regionsp-name '-one)
            (implies (and (,disjoint-regionsp-name len1 start1 len2 start2)
@@ -469,7 +472,7 @@
            (implies (,disjoint-regionsp-name len1 start1 len2 start2)
                     (not (and (,in-regionp-name ad len1 start1)
                               (,in-regionp-name ad len2 start2))))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name ,disjoint-regionsp-name bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name ,disjoint-regionsp-name bvuminus bvminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
          ;; If not disjoint, some address is in both (in fact, one of the start addresses will be in the other region):
          (defthm ,(acl2::pack-in-package pkg 'in-one-when-not- disjoint-regionsp-name)
@@ -545,7 +548,7 @@
          (defthm ,(acl2::pack-in-package pkg disjoint-regionsp-name '-cancel-2+-2)
            (equal (,disjoint-regionsp-name len1 (bvplus ,num-address-bits z (bvplus ,num-address-bits x w)) len2 (bvplus ,num-address-bits y x))
                   (,disjoint-regionsp-name len1 (bvplus ,num-address-bits z w) len2 y))
-           :hints (("Goal" :in-theory (enable ,disjoint-regionsp-name))))
+           :hints (("Goal" :in-theory (enable ,disjoint-regionsp-name acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
          ;; todo: more like this?
          (defthm ,(acl2::pack-in-package pkg disjoint-regionsp-name '-of-bvplus-of-constant-and-constant)
@@ -553,14 +556,15 @@
                                   (quotep k2)))
                     (equal (,disjoint-regionsp-name len1 (bvplus ,num-address-bits k1 x) len2 k2)
                            (,disjoint-regionsp-name len1 x len2 (bvminus ,num-address-bits k2 k1))))
-           :hints (("Goal" :in-theory (enable ,disjoint-regionsp-name))))
+           :hints (("Goal" :in-theory (enable ,disjoint-regionsp-name acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
          (defthm ,(acl2::pack-in-package pkg disjoint-regionsp-name '-of-1-and-1)
            (equal (,disjoint-regionsp-name 1 x 1 y)
                   (not (equal (bvchop ,num-address-bits x)
                               (bvchop ,num-address-bits y))))
            :hints (("Goal" :in-theory (e/d (,disjoint-regionsp-name)
-                                           (acl2::bvminus-becomes-bvplus-of-bvuminus)))))
+                                           (;acl2::bvminus-becomes-bvplus-of-bvuminus
+                                            )))))
 
          ;; todo: show that this reduces to a more familiar notion in the non-wrap-around case
          ;; todo: use defun-sk to show correctness
@@ -784,7 +788,7 @@
                          (,in-regionp-name ad len1 ad1))
                     (,in-regionp-name ad len2 ad2))
            :hints (("Goal" :in-theory (enable ,in-regionp-name ,disjoint-regionsp-name ,SUBREGIONP-NAME
-                                              bvuminus bvplus bvlt
+                                              bvuminus bvminus bvplus bvlt
                                               ifix
                                               ACL2::BVLT-OF-0-ARG2
                                               acl2::bvchop-of-sum-cases
@@ -797,7 +801,7 @@
                          (not (,in-regionp-name ad len2 ad2)))
                     (not (,subregionp-name len1 ad1 len2 ad2)))
            :hints (("Goal" :in-theory (enable ,in-regionp-name ,disjoint-regionsp-name ,SUBREGIONP-NAME
-                                              bvuminus bvplus bvlt
+                                              bvuminus bvminus bvplus bvlt
                                               ifix
                                               ACL2::BVLT-OF-0-ARG2
                                               acl2::bvchop-of-sum-cases
@@ -888,7 +892,7 @@
                          )
                     (equal (,subregionp-name len1 (bvplus ,num-address-bits k1 x) len2 k2)
                            (,subregionp-name len1 x len2 (bvminus ,num-address-bits k2 k1))))
-           :hints (("Goal" :in-theory (enable ,subregionp-name ,in-regionp-name))))
+           :hints (("Goal" :in-theory (enable ,subregionp-name ,in-regionp-name acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
          (defthm ,(acl2::pack-in-package pkg subregionp-name '-cancel-constants-1+-1+)
            (implies (and (syntaxp (and (quotep k1)
@@ -897,7 +901,7 @@
                          )
                     (equal (,subregionp-name len1 (bvplus ,num-address-bits k1 x) len2 (bvplus ,num-address-bits k2 y))
                            (,subregionp-name len1 x len2 (bvplus ,num-address-bits (bvminus ,num-address-bits k2 k1) y))))
-           :hints (("Goal" :in-theory (enable ,subregionp-name ,in-regionp-name))))
+           :hints (("Goal" :in-theory (enable ,subregionp-name ,in-regionp-name acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
          ;; (thm
          ;;   (equal (sbvlt ,num-address-bits x 0)
@@ -915,7 +919,7 @@
                          )
                     (equal (,subregionp-name len1 x len2 k)
                            (,subregionp-name len1 x (- len2 (- (expt 2 ,num-address-bits) k)) 0)))
-           :hints (("Goal" :in-theory (enable ,subregionp-name ,in-regionp-name bvplus bvuminus bvlt acl2::bvchop-of-sum-cases unsigned-byte-p
+           :hints (("Goal" :in-theory (enable ,subregionp-name ,in-regionp-name bvplus bvuminus bvminus bvlt acl2::bvchop-of-sum-cases unsigned-byte-p
                                               ;;acl2::sbvlt-rewrite
                                               ))))
 
@@ -930,14 +934,14 @@
                          )
                     (equal (,subregionp-name len1 x len2 y)
                            (,subregionp-name 1 x (- len2 (- len1 1)) y)))
-           :hints (("Goal" :in-theory (enable ,subregionp-name ,in-regionp-name bvlt bvplus bvuminus acl2::bvchop-of-sum-cases))))
+           :hints (("Goal" :in-theory (enable ,subregionp-name ,in-regionp-name bvlt bvplus bvuminus bvminus acl2::bvchop-of-sum-cases))))
 
          (defthm ,(acl2::pack-in-package pkg subregionp-name '-of-1-arg1)
            (equal (,subregionp-name 1 x len2 y)
                   (and (natp len2)
                        (or (<= (expt 2 ,num-address-bits) len2)
                            (,in-regionp-name x len2 y))))
-           :hints (("Goal" :in-theory (enable ,subregionp-name ,in-regionp-name bvlt bvplus bvuminus acl2::bvchop-of-sum-cases))))
+           :hints (("Goal" :in-theory (enable ,subregionp-name ,in-regionp-name bvlt bvplus bvuminus bvminus acl2::bvchop-of-sum-cases))))
 
          (defthm ,(acl2::pack-in-package pkg subregionp-name '-subst-constant-arg4)
            (implies (and (equal k (bvchop ,num-address-bits ad2))
@@ -1210,7 +1214,7 @@
                     (,disjoint-regionsp-name len3 ad3 len4 ad4))
            :hints (("Goal"
                     :in-theory (enable ,in-regionp-name ,disjoint-regionsp-name ,subregionp-name
-                                       bvuminus bvplus bvlt
+                                       bvuminus bvminus bvplus bvlt
                                        ifix
                                        acl2::bvlt-of-0-arg2
                                        acl2::bvchop-of-sum-cases

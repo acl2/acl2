@@ -29,7 +29,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "GETOPT")
-(include-book "std/util/top" :dir :system)
+(include-book "std/util/define" :dir :system)
+(include-book "std/strings/cat-base" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 
 

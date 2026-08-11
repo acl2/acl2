@@ -19,6 +19,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 
 ;; Similar to program-at but simpler, and easier to connect to read and read-byte, as this just calls read-byte repeatedly.
 ;; todo: consider making the len a param?
@@ -65,8 +66,7 @@
                                 acl2::bvchop-of-sum-cases
                                 ;;read-byte
                                 acl2::bv-array-read-opener
-                                bvuminus
-                                )))))
+                                bvuminus bvminus)))))
 
 ;; often the resulting array can be trimmed down.
 (defthm read-byte-when-bytes-loadedp
@@ -120,7 +120,7 @@
                               ;;bv-array-read
                               bvlt
                               bvplus
-                              bvuminus
+                              bvuminus bvminus
                               acl2::bvchop-of-sum-cases
                               )
                              ( ;(:e expt)

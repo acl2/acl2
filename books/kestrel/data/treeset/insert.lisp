@@ -342,6 +342,7 @@
 (define insert-all
   ((list true-listp)
    (set setp))
+  (declare (xargs :type-prescription :none))
   :returns (set$ setp)
   :parents (insert)
   :short "Add a list of values to the set."
@@ -356,8 +357,6 @@
                 (insert (first list) set))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t insert-all)))
 
 (defruled insert-all-type-prescription
   (or (consp (insert-all list set))
@@ -427,6 +426,7 @@
 
 (define from-list
   ((list true-listp))
+  (declare (xargs :type-prescription :none))
   :parents (treeset)
   :short "Create a set from a list of values."
   :long
@@ -440,8 +440,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t from-list)))
 
 (defruled from-list-type-prescription
   (or (consp (from-list list))
@@ -526,6 +524,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define from-oset ((oset set::setp))
+  (declare (xargs :type-prescription :none))
   :parents (insert)
   :short "Build a @(see treeset) from an oset."
   :long
@@ -539,8 +538,6 @@
   (from-list (set::sfix oset)))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t from-oset)))
 
 (defruled from-oset-type-prescription
   (or (consp (from-oset oset))

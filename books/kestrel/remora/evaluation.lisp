@@ -12,7 +12,9 @@
 
 (include-book "bound-and-free-variable-operations")
 (include-book "expression-values-and-environments")
-(include-book "primitives-evaluation")
+(include-book "primitives-evaluation-on-types")
+(include-book "primitives-evaluation-on-ispaces")
+(include-book "primitives-evaluation-first-order")
 (include-book "nat-lists")
 (include-book "integer-lists")
 (include-book "character-literal-codes")
@@ -343,7 +345,7 @@
               :denv (type-denv-restrict (type-free-ispace-vars type)
                                         (type-free-type-vars type)
                                         denv))
-     :foralln (b* (((unless (consp type.params)) (reserr nil)))
+     :foralln (b* (((unless (>= (len type.params) 2)) (reserr nil)))
                 (make-type-value-forall
                  :param (car type.params)
                  :body (forall-curried-body type.params type.body)
@@ -1371,7 +1373,12 @@
        we evaluate it, ignoring the resulting type value for now.
        Since the parameter types are already evaluated for the lambda value,
        the function type value can be assembled from these pieces
-       when we need to check it against the lambda value.")
+       when we need to check it against the lambda value.
+       A function binding with no parameters
+       is treated as a plain value binding,
+       consistently with the type checker and with [impl],
+       whose parser turns such a binding
+       directly into a value binding.")
      (xdoc::p
       "For a type function binding,
        we extend the dynamic environment
@@ -1385,7 +1392,10 @@
        Note that we cannot just evaluate the type in the bindings,
        but we need to form the universal type
        (or, equivalently, extend the dynamic environment)
-       because that type may reference the type parameters.")
+       because that type may reference the type parameters.
+       A type function binding with no parameters
+       is treated as a plain value binding,
+       similarly to a nullary function bindings.")
      (xdoc::p
       "For an ispace function binding,
        we extend the dynamic environment
@@ -1397,7 +1407,10 @@
        over the ispace parameters with the result type as body,
        and we evaluate it, ignoring the resulting type value for now;
        we form the product type, instead of evaluating the result type directly,
-       because the result type may reference the ispace parameters.")
+       because the result type may reference the ispace parameters.
+       An ispace function binding with no parameters
+       is treated as a plain value binding,
+       similarly to a nullary function bindings.")
      (xdoc::p
       "For a combined function binding,
        we form the nested abstraction expression
@@ -1409,7 +1422,13 @@
        after being desugared to a value binding.
        As for the other bindings,
        we also form the corresponding nested type and evaluate it,
-       ignoring the resulting type value for now.")
+       ignoring the resulting type value for now.
+       Each layer is formed only if
+       the corresponding parameters are present;
+       an absent parameter list and an empty one are treated alike,
+       consistently with the type checker and with [impl].
+       With no parameters at all,
+       the binding is treated as a plain value binding.")
      (xdoc::p
       "The lambda values formed for the function bindings
        are closures with restricted dynamic environments,
@@ -1430,7 +1449,14 @@
                                            (expr-denv->tenv denv))
                           :none nil)))
               (expr-denv-add-expr bind.var val denv))
-       :fun (b* (((unless (consp bind.params)) (reserr nil))
+       :fun (b* (((when (endp bind.params))
+                  (b* (((ok val) (eval-expr bind.expr denv (1- limit)))
+                       ((ok &) (type-option-case
+                                bind.type?
+                                :some (eval-type bind.type?.val
+                                                 (expr-denv->tenv denv))
+                                :none nil)))
+                    (expr-denv-add-expr bind.var val denv)))
                  ((ok param) (eval-var+type? (car bind.params)
                                              (expr-denv->tenv denv)))
                  (val (make-expr-value-lambda
@@ -1453,7 +1479,14 @@
                                            (expr-denv->tenv denv))
                           :none nil)))
               (expr-denv-add-expr bind.var val denv))
-       :tfun (b* (((unless (consp bind.params)) (reserr nil))
+       :tfun (b* (((when (endp bind.params))
+                   (b* (((ok val) (eval-expr bind.expr denv (1- limit)))
+                        ((ok &) (type-option-case
+                                 bind.type?
+                                 :some (eval-type bind.type?.val
+                                                  (expr-denv->tenv denv))
+                                 :none nil)))
+                     (expr-denv-add-expr bind.var val denv)))
                   (val (make-expr-value-tlambda
                         :param (car bind.params)
                         :body (tlambda-curried-body bind.params bind.expr)
@@ -1467,12 +1500,19 @@
                   ((ok &) (type-option-case
                            bind.type?
                            :some (eval-type
-                                  (make-type-foralln :params bind.params
-                                                     :body bind.type?.val)
+                                  (make-type-forall/foralln bind.params
+                                                            bind.type?.val)
                                   (expr-denv->tenv denv))
                            :none nil)))
                (expr-denv-add-expr bind.var val denv))
-       :ifun (b* (((unless (consp bind.params)) (reserr nil))
+       :ifun (b* (((when (endp bind.params))
+                   (b* (((ok val) (eval-expr bind.expr denv (1- limit)))
+                        ((ok &) (type-option-case
+                                 bind.type?
+                                 :some (eval-type bind.type?.val
+                                                  (expr-denv->tenv denv))
+                                 :none nil)))
+                     (expr-denv-add-expr bind.var val denv)))
                   (val (make-expr-value-ilambda
                         :param (car bind.params)
                         :body (ilambda-curried-body bind.params bind.expr)
@@ -1486,44 +1526,77 @@
                   ((ok &) (type-option-case
                            bind.type?
                            :some (eval-type
-                                  (make-type-pin :params bind.params
-                                                 :body bind.type?.val)
+                                  (if (endp (cdr bind.params))
+                                      (make-type-pi
+                                       :param (car bind.params)
+                                       :body bind.type?.val)
+                                    (make-type-pin
+                                     :params bind.params
+                                     :body bind.type?.val))
                                   (expr-denv->tenv denv))
                            :none nil)))
                (expr-denv-add-expr bind.var val denv))
-       :cfun (b* ((lambda-expr (make-expr-array
-                                :dims nil
-                                :atoms (list (make-atom-lambdan
-                                              :params bind.params
-                                              :body bind.expr
-                                              :type? bind.type))))
+       :cfun (b* ((tparams (type-var-list-option-case
+                            bind.tparams? :some bind.tparams?.val :none nil))
+                  (iparams (ispace-var-list-option-case
+                            bind.iparams? :some bind.iparams?.val :none nil))
+                  (cfun-expr (if (consp bind.params)
+                                 (make-expr-array
+                                  :dims nil
+                                  :atoms (list
+                                          (if (endp (cdr bind.params))
+                                              (make-atom-lambda
+                                               :param (car bind.params)
+                                               :body bind.expr
+                                               :type? bind.type)
+                                            (make-atom-lambdan
+                                             :params bind.params
+                                             :body bind.expr
+                                             :type? bind.type))))
+                               bind.expr))
                   ((ok in) (var+type?-list->type-list-or-err bind.params))
-                  (lambda-type (if (and (consp in) (endp (cdr in)))
-                                   (make-type-fun :in (car in)
-                                                  :out bind.type)
-                                 (make-type-funn :in in :out bind.type)))
-                  ((mv iexpr itype)
-                   (ispace-var-list-option-case
-                    bind.iparams?
-                    :some (mv (make-expr-array
-                               :dims nil
-                               :atoms (list (make-atom-ilambdan
-                                             :params bind.iparams?.val
-                                             :body lambda-expr)))
-                              (make-type-pin :params bind.iparams?.val
-                                             :body lambda-type))
-                    :none (mv lambda-expr lambda-type)))
+                  (cfun-type (if (consp in)
+                                 (if (endp (cdr in))
+                                     (make-type-fun :in (car in)
+                                                    :out bind.type)
+                                   (make-type-funn :in in :out bind.type))
+                               bind.type))
                   ((mv cfun-expr cfun-type)
-                   (type-var-list-option-case
-                    bind.tparams?
-                    :some (mv (make-expr-array
-                               :dims nil
-                               :atoms (list (make-atom-tlambdan
-                                             :params bind.tparams?.val
-                                             :body iexpr)))
-                              (make-type-foralln :params bind.tparams?.val
-                                                 :body itype))
-                    :none (mv iexpr itype)))
+                   (if (consp iparams)
+                       (mv (make-expr-array
+                            :dims nil
+                            :atoms (list
+                                    (if (endp (cdr iparams))
+                                        (make-atom-ilambda
+                                         :param (car iparams)
+                                         :body cfun-expr)
+                                      (make-atom-ilambdan
+                                       :params iparams
+                                       :body cfun-expr))))
+                           (if (endp (cdr iparams))
+                               (make-type-pi :param (car iparams)
+                                             :body cfun-type)
+                             (make-type-pin :params iparams
+                                            :body cfun-type)))
+                     (mv cfun-expr cfun-type)))
+                  ((mv cfun-expr cfun-type)
+                   (if (consp tparams)
+                       (mv (make-expr-array
+                            :dims nil
+                            :atoms (list
+                                    (if (endp (cdr tparams))
+                                        (make-atom-tlambda
+                                         :param (car tparams)
+                                         :body cfun-expr)
+                                      (make-atom-tlambdan
+                                       :params tparams
+                                       :body cfun-expr))))
+                           (if (endp (cdr tparams))
+                               (make-type-forall :param (car tparams)
+                                                 :body cfun-type)
+                             (make-type-foralln :params tparams
+                                                :body cfun-type)))
+                     (mv cfun-expr cfun-type)))
                   ((ok val) (eval-expr cfun-expr denv (1- limit)))
                   ((ok &) (eval-type cfun-type (expr-denv->tenv denv))))
                (expr-denv-add-expr bind.var val denv))))
@@ -2131,8 +2204,7 @@
        it is applied to the argument cell via @(tsee eval-primop-fun),
        which yields either the next stage of the operation
        or, on the operation's last argument, the result of applying it,
-       dispatching to the corresponding ACL2 functions
-       in @(see primitives-evaluation)."))
+       dispatching to the corresponding ACL2 functions."))
     (b* (((when (zp limit)) (reserr :limit)))
       (expr-value-case
        funcell
@@ -2147,7 +2219,7 @@
                    funcell.denv)))
          (eval-expr funcell.body denv (1- limit)))
        :primop (if (primop-value-funp funcell.val)
-                   (eval-primop-fun funcell.val argcell)
+                   (eval-primop-fun funcell.val argcell (1- limit))
                  (reserr nil))
        :otherwise (reserr nil)))
     :measure (nfix limit))
@@ -2268,7 +2340,8 @@
        a non-empty array of boxes (see @(tsee eval-unbox))."))
     (b* (((when (zp limit)) (reserr :limit))
          ((when (endp targets)) nil)
-         ((ok val) (eval-unbox (car targets) ispaces var body type denv (1- limit)))
+         ((ok val)
+          (eval-unbox (car targets) ispaces var body type denv (1- limit)))
          ((ok vals)
           (eval-unbox-list (cdr targets) ispaces var body type denv (1- limit))))
       (cons val vals))
@@ -2283,6 +2356,81 @@
       :hints (("Goal"
                :induct (acl2::cdr-dec-induct targets limit)
                :in-theory (enable len)))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-primop-fun ((op primop-valuep) (arg expr-valuep) (limit natp))
+    :guard (and (primop-value-funp op)
+                (primop-value-wfp op)
+                (expr-value-wfp arg))
+    :returns (val expr-value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate the application of a primitive operation
+            to one argument cell."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called by @(tsee eval-app-cell).
+       If the operation is first-order
+       (see @(tsee primop-value-fun-fo-p)),
+       we delegate to @(tsee eval-primop-fun-fo),
+       which is outside the mutual recursion.
+       Otherwise, the operation is higher-order,
+       and its application may involve executing arbitrary Remora code,
+       which is why this function is part of the mutual recursion.
+       Currently the only higher-order case is
+       the last stage of the @('reduce') primitive,
+       which we delegate to @(tsee prim-reduce),
+       passing the stored values and the argument cell.")
+     (xdoc::p
+      "Since @(tsee prim-reduce) is currently a stub,
+       this function is not actually mutually recursive
+       with the other functions of the clique yet;
+       it will be, once @(tsee prim-reduce) is given its actual definition."))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (primop-value-fun-fo-p op))
+          (eval-primop-fun-fo op arg)))
+      (primop-value-case
+       op
+       :reduce-t-d-s-f (prim-reduce op.tval op.dval op.sval op.fval
+                                    arg (1- limit))
+       :otherwise (reserr (impossible))))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define prim-reduce ((tval type-valuep)
+                       (d natp)
+                       (s nat-listp)
+                       (fval expr-valuep)
+                       (arg expr-valuep)
+                       (limit natp))
+    :guard (and (expr-value-wfp fval)
+                (expr-value-wfp arg))
+    :returns (val expr-value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Evaluate the last stage of the @('reduce') primitive."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is the semantics of the fully instantiated @('reduce') operation,
+       applied to its last argument
+       (see the @(':reduce-t-d-s-f') summand of @(tsee primop-value)):
+       @('tval'), @('d'), and @('s') are the instantiation values,
+       @('fval') is the previously received function value,
+       and @('arg') is the argument cell.
+       This is currently a stub that always returns an error;
+       the actual definition will use the instantiation values
+       (e.g. to check the argument cell's dimensions),
+       analogously to the first-order @('prim-...') functions."))
+    (declare (ignore tval d s fval arg))
+    (b* (((when (zp limit)) (reserr :limit)))
+      (reserr :todo))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove eventually
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2471,6 +2619,18 @@
                     (not (reserrp vals)))
                (expr-value-list-wfp vals))
       :fn eval-unbox-list)
+    (defret expr-value-wfp-of-eval-primop-fun
+      (implies (and (primop-value-wfp op)
+                    (expr-value-wfp arg)
+                    (not (reserrp val)))
+               (expr-value-wfp val))
+      :fn eval-primop-fun)
+    (defret expr-value-wfp-of-prim-reduce
+      (implies (and (expr-value-wfp fval)
+                    (expr-value-wfp arg)
+                    (not (reserrp val)))
+               (expr-value-wfp val))
+      :fn prim-reduce)
     :mutual-recursion eval-exprs/atoms/binds
     :hints
     (("Goal"
@@ -2495,7 +2655,8 @@
                (eval-app-list funcells argcells limit)
                (eval-app-cell funcell argcell limit)
                (eval-unbox target ispaces var body type denv limit)
-               (eval-unbox-list targets ispaces var body type denv limit)))))
+               (eval-unbox-list targets ispaces var body type denv limit)
+               (eval-primop-fun op arg limit)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2508,7 +2669,9 @@
                        true-list-listp-when-expr-value-list-listp
                        acl2::nat-listp-of-car-when-nat-list-listp
                        expr-value-wfp-of-expr-value-with-nonempty-dims
-                       list-prefix-join-upper-bound)
+                       list-prefix-join-upper-bound
+                       primop-value-funp
+                       primop-value-fun-fo-p)
                       (len-of-eval-expr-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

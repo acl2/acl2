@@ -81,8 +81,7 @@
                   (bv-array-write size len index (trim size val)
                                   array)))
   :hints (("Goal" :in-theory (e/d (bv-array-write trim update-nth2)
-                                  (;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
-                                   )))))
+                                  ()))))
 
 (defthmd bv-array-write-trim-value
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size val :non-arithmetic dag-array))
@@ -107,8 +106,7 @@
                                   0 a (cons 0 data))))
   :hints
   (("Goal" :in-theory (e/d (bv-array-write update-nth2 unsigned-byte-p-forced)
-                           (;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
-                            )))))
+                           ()))))
 
 (defthmd bv-array-write-of-bv-array-write-tighten2
   (implies (and (< element-size2 element-size1)
@@ -127,8 +125,7 @@
            (equal (bv-array-write element-size1 len index1 val1 (bv-array-write element-size2 len index2 val2 lst))
                   (bv-array-write element-size2 len index1 val1 (bv-array-write element-size2 len index2 val2 lst))))
   :hints (("Goal" :in-theory (e/d (update-nth2 len-update-nth BV-ARRAY-WRITE unsigned-byte-p-forced BVCHOP-LIST-OF-TAKE-OF-BVCHOP-LIST-GEN)
-                                  (;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
-                                   )))))
+                                  ()))))
 
 
 (defthmd cons-of-bv-array-write-gen
@@ -150,7 +147,7 @@
                                                unsigned-byte-p-forced
                                                unsigned-byte-p
                                                equal-of-update-nth)
-                                  (;bvplus-recollapse ;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
+                                  (;bvplus-recollapse
                                    )))))
 
 ;; (defthmd bv-array-write-of-myif-drop-logext-lists-arg2
@@ -163,7 +160,7 @@
 ;;                   (bv-array-write size len index val (myif test y (push-bvchop-list size x)))))
 ;;   :hints (("Goal" :in-theory (e/d (myif BV-ARRAY-WRITE update-nth2 bvchop-list-of-take-of-bvchop-list)
 ;;                                   (LIST::CLEAR-NTH-EQUAL-CLEAR-NTH-REWRITE
-;;                                    UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
+;;                                    )))))
 
 ;; (defthmd bv-array-write-of-myif-drop-logext-lists-arg1
 ;;   (implies (and (axe-syntaxp (myif-nest-needs-bvchop-list x size dag-array)) ;else it could loop?
@@ -175,7 +172,7 @@
 ;;                   (bv-array-write size len index val (myif test (push-bvchop-list size x) y))))
 ;;   :hints (("Goal" :in-theory (e/d (myif BV-ARRAY-WRITE update-nth2 bvchop-list-of-take-of-bvchop-list)
 ;;                                   (LIST::CLEAR-NTH-EQUAL-CLEAR-NTH-REWRITE
-;;                                    UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
+;;                                    )))))
 
 (defthmd myif-of-bv-array-write-arg1-safe
   (implies (and (axe-syntaxp (bv-array-write-nest-ending-inp-axe thenpart lst dag-array))
@@ -192,8 +189,7 @@
   (("Goal"
     :in-theory (e/d (myif update-nth2 bv-array-read bv-array-write)
                     (nth-0-cons ;myif-of-constant-lists
-                     NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ ;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
-                     )))))
+                     NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
 
 (defthmd myif-of-bv-array-write-arg2-safe
   (implies (and (axe-syntaxp (bv-array-write-nest-ending-inp-axe thenpart lst dag-array))
@@ -213,8 +209,7 @@
                           bv-array-read
                           )
                     (nth-0-cons ;myif-of-constant-lists
-                     NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ ;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
-                     )))))
+                     NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
 
 ;; (defthmd bv-array-read-of-myif-drop-logext-lists-arg2
 ;;   (implies (and (axe-syntaxp (myif-nest-needs-bvchop-list x size dag-array)) ;else it could loop?
@@ -253,8 +248,7 @@
            (equal (bv-array-write size length index val array)
                   (bv-array-write valsize length index val array)))
   :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2 unsigned-byte-p-forced)
-                                  (;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
-                                   )))))
+                                  ()))))
 
 (defthmd bv-array-write-does-nothing-cheap
   (implies (and (axe-syntaxp (bv-array-write-nest-with-val-at-indexp-axe lst val key dag-array)) ;this seemed very expensive in one situation (but it was because of huge bv-array-write nests due to some problem -- not this rule's fault)
@@ -268,9 +262,7 @@
   :hints (("Goal" :in-theory (e/d (bv-array-write bv-array-read update-nth2
                                                   ;list::update-nth-equal-rewrite
                                                   BVCHOP-WHEN-I-IS-NOT-AN-INTEGER) (;take-of-bvchop-list
-                                                  NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                                  ;;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
-                                                  )))))
+                                                  NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
 
 (defthmd bv-array-read-trim-index-axe
   (implies (and (syntaxp (quotep len))
@@ -415,7 +407,7 @@
                                    )
                                   (;anti-subrange
                                    ;CDR-OF-TAKE-BECOMES-SUBRANGE ;bozo
-                                   UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
+                                   )))))
 
 ;all cases - drop some hyps?
 ;this rule seemed to split into a lot of cases before the two "irrelevant write" cases were combined

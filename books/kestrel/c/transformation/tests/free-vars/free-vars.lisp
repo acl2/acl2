@@ -79,7 +79,7 @@
                                         (acl2::string=>nats ,input)
                                         dialect
                                         t))
-         (dstate (c$::init-dstate "" ienv))
+         (dstate (c$::init-dstate (filepath "") ienv))
          ((mv erp2 ast & &) (c$::dimb-trans-unit ast dstate nil nil nil 1000))
          ((mv erp3 fundef) (trans-unit-find-fundef (c$::ident ,fun) ast))
          (free-vars (free-vars-fundef fundef nil))

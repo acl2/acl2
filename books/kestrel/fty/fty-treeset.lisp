@@ -426,7 +426,7 @@
                   :in-theory
                   (enable treeset::cardinality-of-delete-when-in
                           treeset::in-of-min
-                          (:t treeset::cardinality$inline)
+                          treeset::cardinality-type-prescription
                           treeset::emptyp-type-prescription
                           acl2::o-p)))
          :verify-guards nil))

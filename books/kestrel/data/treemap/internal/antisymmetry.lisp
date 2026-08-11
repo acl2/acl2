@@ -58,7 +58,9 @@
   :use ((:instance heap<-of-tree->head-and-arg2-when-in-arg2-of-tree-key-set
                    (key (tree-element->key (tree->head x)))
                    (tree y))
-        ;; TODO: why are :use hints these necessary?
+        ;; These :use hints are necessary because the in-facts never appear
+        ;; as rewrite targets; they are only needed to relieve the hypotheses
+        ;; of backchain-limit-0 rules, and so must be present verbatim.
         (:instance treeset::in-when-subset-and-in
                    (a (tree-element->key (tree->head y)))
                    (x (tree-key-set y))

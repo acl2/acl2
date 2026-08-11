@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax-structurals")
 
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
 (acl2::controlled-configuration)
@@ -153,12 +154,13 @@
        ((unless (type-case type :foralln)) (reserr nil))
        (params (type-foralln->params type))
        (body (type-foralln->body type))
-       ((unless (consp params)) (reserr nil)))
+       ((unless (>= (len params) 2)) (reserr nil)))
     (make-typevar+type
      :var (car params)
-     :type (if (consp (cdr params))
-               (make-type-foralln :params (cdr params) :body body)
-             body))))
+     :type (if (endp (cddr params))
+               (make-type-forall :param (cadr params) :body body)
+             (make-type-foralln :params (cdr params) :body body))))
+  :guard-hints (("Goal" :in-theory (enable acl2::lt-len-const))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -189,12 +191,13 @@
        ((unless (type-case type :pin)) (reserr nil))
        (params (type-pin->params type))
        (body (type-pin->body type))
-       ((unless (consp params)) (reserr nil)))
+       ((unless (>= (len params) 2)) (reserr nil)))
     (make-ispacevar+type
      :var (car params)
-     :type (if (consp (cdr params))
-               (make-type-pin :params (cdr params) :body body)
-             body))))
+     :type (if (endp (cddr params))
+               (make-type-pi :param (cadr params) :body body)
+             (make-type-pin :params (cdr params) :body body))))
+  :guard-hints (("Goal" :in-theory (enable acl2::lt-len-const))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
