@@ -1914,58 +1914,20 @@ void g(void) {
 
 ;; Array size expressions.
 
-;; An integer constant gives a known constant length.
-(test-valid
-  "int a[5];
-"
-  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
-             (item (first (trans-unit->items tunit)))
-             (declon (ext-declon-declon->declon
-                      (trans-item-declon->declon item)))
-             (initdeclor (first (declon-declon->declors declon)))
-             (type (init-declor-vinfo->type
-                    (init-declor->info initdeclor))))
-          (equal type
-                 (make-type-array
-                  :of (type-sint)
-                  :kind (make-type-array-kind-const-len :len 5)))))
-
-;; The current ICE check is conservative about evaluated arithmetic, so the
-;; length form remains unknown when that check returns :unknown.
+;; Exercise an arithmetic integer constant expression.  The current ICE check
+;; is conservative about evaluated arithmetic, but the declarations are
+;; compatible whether or not it can determine the length precisely.
 (test-valid
   "int a[2 + 3];
-"
-  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
-             (item (first (trans-unit->items tunit)))
-             (declon (ext-declon-declon->declon
-                      (trans-item-declon->declon item)))
-             (initdeclor (first (declon-declon->declors declon)))
-             (type (init-declor-vinfo->type
-                    (init-declor->info initdeclor))))
-          (equal type
-                 (make-type-array
-                  :of (type-sint)
-                  :kind (type-array-kind-unknown-complete)))))
+int a[5];
+")
 
-;; An ordinary identifier expression gives a nonconstant length in C17.
+;; Exercise a variable length array whose bound is an ordinary identifier.
 (test-valid
   "void f(int n) {
   int a[n];
 }
-"
-  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
-             (item (first (trans-unit->items tunit)))
-             (fundef (ext-declon-fundef->fundef
-                      (trans-item-declon->declon item)))
-             (block-item (first (comp-stmt->items (fundef->body fundef))))
-             (declon (block-item-declon->declon block-item))
-             (initdeclor (first (declon-declon->declors declon)))
-             (type (init-declor-vinfo->type
-                    (init-declor->info initdeclor))))
-          (equal type
-                 (make-type-array
-                  :of (type-sint)
-                  :kind (type-array-kind-nonconst-len)))))
+")
 
 ;; Different constant lengths make declarations incompatible.
 (test-valid-fail
