@@ -236,6 +236,67 @@
   :hints (("Goal" :in-theory (enable path-p absolute-path-p relative-path-p
                                      path-kind path-kind-p))))
 
+
+; Fixers
+;--------------------------
+
+(defund-inline path-kind-fix (x)
+  (declare (xargs :guard (path-kind-p x)))
+  (mbe :logic (if (path-kind-p x) x :relative)
+       :exec x))
+
+(defthm path-kind-p-of-path-kind-fix
+  (path-kind-p (path-kind-fix x))
+  :hints (("Goal" :in-theory (enable path-kind-fix path-kind-p))))
+
+(defthm path-kind-fix-when-path-kind-p
+  (implies (path-kind-p x)
+           (equal (path-kind-fix x) x))
+  :hints (("Goal" :in-theory (enable path-kind-fix))))
+
+(defund-inline segment-fix (x)
+  (declare (xargs :guard (segment-p x)))
+  (mbe :logic (if (segment-p x) x "")
+       :exec x))
+
+(defthm segment-p-of-segment-fix
+  (segment-p (segment-fix x))
+  :hints (("Goal" :in-theory (enable segment-fix segment-p))))
+
+(defthm segment-fix-when-segment-p
+  (implies (segment-p x)
+           (equal (segment-fix x) x))
+  :hints (("Goal" :in-theory (enable segment-fix))))
+
+(defund-inline segment-list-fix (x)
+  (declare (xargs :guard (segment-listp x)))
+  (mbe :logic (if (segment-listp x) x nil)
+       :exec x))
+
+(defthm segment-listp-of-segment-list-fix
+  (segment-listp (segment-list-fix x))
+  :hints (("Goal" :in-theory (enable segment-list-fix segment-listp))))
+
+(defthm segment-list-fix-when-segment-listp
+  (implies (segment-listp x)
+           (equal (segment-list-fix x) x))
+  :hints (("Goal" :in-theory (enable segment-list-fix))))
+
+(defund-inline path-fix (x)
+  (declare (xargs :guard (path-p x)))
+  (mbe :logic (if (path-p x) x (make-path :relative nil))
+       :exec x))
+
+(defthm path-p-of-path-fix
+  (path-p (path-fix x))
+  :hints (("Goal" :in-theory (enable path-fix path-p make-path
+                                     path-kind-p segment-listp))))
+
+(defthm path-fix-when-path-p
+  (implies (path-p x)
+           (equal (path-fix x) x))
+  :hints (("Goal" :in-theory (enable path-fix))))
+
 ; Parse-path : String to path.
 
 (defund map-tokens (strs)
@@ -258,8 +319,7 @@
              (map-tokens (str::strtok str (list #\/)))))
 
 (defthm path-p-of-parse-path
-  (implies (stringp str)
-           (path-p (parse-path str)))
+  (path-p (parse-path str))
   :hints (("Goal" :in-theory (enable parse-path))))
 
 (defund parse-path-windows (str)
@@ -267,8 +327,7 @@
   (parse-path (str::strsubst "\\" "/" str)))
 
 (defthm path-p-of-parse-path-windows
-  (implies (stringp str)
-           (path-p (parse-path-windows str)))
+  (path-p (parse-path-windows str))
   :hints (("Goal" :in-theory (enable parse-path-windows))))
 
 
@@ -299,7 +358,8 @@
 (defund path-to-string-sep (pd sep)
   (declare (xargs :guard (and (path-p pd)
                               (stringp sep))))
-  (let ((body (str::join (segs->strings (path-segments pd)) sep)))
+  (let* ((pd (path-fix pd))
+         (body (str::join (segs->strings (path-segments pd)) sep)))
     (if (eq (path-kind pd) :absolute)
         (str::cat sep body)
       body)))
@@ -312,14 +372,17 @@
   (declare (xargs :guard (path-p pd)))
   (path-to-string-sep pd "/"))
 
+(defthm stringp-of-path-to-string-sep
+  (implies (stringp sep)
+           (stringp (path-to-string-sep pd sep)))
+  :hints (("Goal" :in-theory (enable path-to-string-sep))))
+
 (defthm stringp-of-path-to-string-windows
-  (implies (path-p pd)
-           (stringp (path-to-string-windows pd)))
+  (stringp (path-to-string-windows pd))
   :hints (("Goal" :in-theory (enable path-to-string-windows))))
 
 (defthm stringp-of-path-to-string
-  (implies (path-p pd)
-           (stringp (path-to-string pd)))
+  (stringp (path-to-string pd))
   :hints (("Goal" :in-theory (enable path-to-string))))
 
 ;Path resolution
@@ -476,8 +539,7 @@
 
 ; normalize-path always produces a normal path.
 (defthm normal-path-p-of-normalize-path
-  (implies (path-p p)
-           (normal-path-p (normalize-path p)))
+  (normal-path-p (normalize-path p))
   :hints (("Goal" :in-theory (enable normal-path-p normalize-path
                                      normalize-segments))))
 
@@ -623,12 +685,12 @@
 
 (defund path-parent (p)
   (declare (xargs :guard (path-p p)))
-  (make-path (path-kind p)
-             (parent-segments (path-segments p))))
+  (let ((p (path-fix p)))
+    (make-path (path-kind p)
+               (parent-segments (path-segments p)))))
 
 (defthm path-p-of-path-parent
-  (implies (path-p p)
-           (path-p (path-parent p)))
+  (path-p (path-parent p))
   :hints (("Goal" :in-theory (enable path-parent))))
 
 
@@ -723,15 +785,13 @@
   :hints (("Goal" :in-theory (enable relativize-path relative-path-p))))
 
 (defthm path-p-of-relativize-path
-  (implies (and (path-p base)
-                (path-p p)
+  (implies (and (path-p p)
                 (path-prefixp base p))
            (path-p (relativize-path base p)))
   :hints (("Goal" :in-theory (enable relativize-path))))
 
 (defthm path-equiv-of-resolve-of-relativize-path
-  (implies (and (path-p base)
-                (path-p p)
+  (implies (and (path-p p)
                 (path-prefixp base p))
            (path-equiv (resolve base (relativize-path base p))
                        p))
@@ -746,9 +806,7 @@
     :hints (("Goal" :in-theory (enable segments-after-prefix)))))
 
 (defthm relativize-path-of-resolve
-  (implies (and (path-p base)
-                (path-p r)
-                (relative-path-p r))
+  (implies (relative-path-p r)
            (equal (relativize-path base (resolve base r))
                   r))
   :hints (("Goal" :in-theory (enable relativize-path resolve path-prefixp
