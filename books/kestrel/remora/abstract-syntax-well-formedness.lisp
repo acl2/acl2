@@ -14,6 +14,8 @@
 (include-book "abstract-syntax-trees")
 (include-book "identifier-syntax")
 
+(include-book "lists")
+
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -192,3 +194,18 @@
                      (type-option-wfp decl.type?)
                      (expr-wfp decl.expr))))
   :name abstract-syntax-wfp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection ast-wfp-additional-theorems
+  :short "Additional theorems about the AST well-formedness predicates."
+
+  (defruled dim-list-list-wfp-of-lists-to-singletons
+    (equal (dim-list-list-wfp (list-to-singletons dims))
+           (dim-list-wfp dims))
+    :induct t
+    :enable (list-to-singletons
+             abstract-syntax-wfp-rules))
+
+  (add-to-ruleset abstract-syntax-wfp-rules
+                  '(dim-list-list-wfp-of-lists-to-singletons)))
