@@ -2920,12 +2920,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; These introduce the 32-bit normal forms:
+(defund register-aliases32 ()
+  (declare (xargs :guard t))
+  '(al-becomes-eax ; 8-bit aliases (low)
+    bl-becomes-ebx
+    cl-becomes-ecx
+    dl-becomes-edx
+    sil-becomes-esi
+    dil-becomes-edi
+    spl-becomes-esp
+    bpl-becomes-ebp
+
+    ah-becomes-eax ; 8-bit aliases (high)
+    bh-becomes-ebx
+    ch-becomes-ecx
+    dh-becomes-edx
+
+    ax-becomes-eax ; 16-bit aliases
+    bx-becomes-ebx
+    cx-becomes-ecx
+    dx-becomes-edx
+    si-becomes-esi
+    di-becomes-edi
+    sp-becomes-esp
+    bp-becomes-ebp))
+
 ;; Used in loop-lifter (old normal form) and unroller (new normal form)
 ;; todo: move some of these to lifter-rules-common
 (defund lifter-rules32 ()
   (declare (xargs :guard t))
   (set-difference-equal
-   (append (lifter-rules-common)
+   (append (register-aliases32)
+           (lifter-rules-common)
            (read-over-write-rules32)
            (segment-base-and-bounds-rules-32)
            (step-opener-rules32)
@@ -3010,28 +3037,7 @@
             write-to-segment-of-set-eip
             write-byte-to-segment-of-set-eip
 
-            al-becomes-eax ; 8-bit aliases (low)
-            bl-becomes-ebx
-            cl-becomes-ecx
-            dl-becomes-edx
-            sil-becomes-esi
-            dil-becomes-edi
-            spl-becomes-esp
-            bpl-becomes-ebp
-
-            ah-becomes-eax ; 8-bit aliases (high)
-            bh-becomes-ebx
-            ch-becomes-ecx
-            dh-becomes-edx
-
-            ax-becomes-eax ; 16-bit aliases
-            bx-becomes-ebx
-            cx-becomes-ecx
-            dx-becomes-edx
-            si-becomes-esi
-            di-becomes-edi
-            sp-becomes-esp
-            bp-becomes-ebp))
+            ))
    '(; caused loops with bvplus-of-constant-and-esp-when-overflow.  probably want to go to bvuminus anyway?:
      acl2::bvminus-of-+-arg2
      acl2::bvminus-of-+-arg3)))
@@ -4253,10 +4259,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; These introduce the 64-bit normal forms:
+(defund register-aliases64 ()
+  (declare (xargs :guard t))
+  '(al-becomes-rax ; 8-bit aliases (low)
+    bl-becomes-rbx
+    cl-becomes-rcx
+    dl-becomes-rdx
+    sil-becomes-rsi
+    dil-becomes-rdi
+    spl-becomes-rsp
+    bpl-becomes-rbp
+
+    ah-becomes-rax ; 8-bit aliases (high)
+    bh-becomes-rbx
+    ch-becomes-rcx
+    dh-becomes-rdx
+
+    ax-becomes-rax ; 16-bit aliases
+    bx-becomes-rbx
+    cx-becomes-rcx
+    dx-becomes-rdx
+    si-becomes-rsi
+    di-becomes-rdi
+    sp-becomes-rsp
+    bp-becomes-rbp))
+
 ;; Used by the unroller (new normal forms) and loop-lifter (old normal forms).
 (defund lifter-rules64 ()
   (declare (xargs :guard t))
-  (append (lifter-rules-common)
+  (append (register-aliases64)
+          (lifter-rules-common)
           (if-lowering-rules64)
           ;; read and write are used by the 64-bit lifter only (well, low-level 32-bit lifting also uses them):
           (linear-memory-rules) ; these introduce read and write
@@ -4290,30 +4323,7 @@
             set-rip-of-logext
             set-rip-of-bvif-split ; we must resolve the RIP to keep going
             set-rip-of-bv-array-read-split-cases-smt ; needs acl2::bv-array-read-cases-opener (just below)
-            acl2::bv-array-read-cases-opener
-
-            al-becomes-rax ; 8-bit aliases (low)
-            bl-becomes-rbx
-            cl-becomes-rcx
-            dl-becomes-rdx
-            sil-becomes-rsi
-            dil-becomes-rdi
-            spl-becomes-rsp
-            bpl-becomes-rbp
-
-            ah-becomes-rax ; 8-bit aliases (high)
-            bh-becomes-rbx
-            ch-becomes-rcx
-            dh-becomes-rdx
-
-            ax-becomes-rax ; 16-bit aliases
-            bx-becomes-rbx
-            cx-becomes-rcx
-            dx-becomes-rdx
-            si-becomes-rsi
-            di-becomes-rdi
-            sp-becomes-rsp
-            bp-becomes-rbp)))
+            acl2::bv-array-read-cases-opener)))
 
 (defund new-normal-form-rules64-intro ()
   (declare (xargs :guard t))
