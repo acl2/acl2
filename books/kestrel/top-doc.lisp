@@ -57,6 +57,7 @@
    (include-book "prime-fields/doc")
    (include-book "remora/top")
    (include-book "risc-v/top")
+   (include-book "rust/top")
    (include-book "simpl-imp/top")
    (include-book "soft/top")
    (include-book "solidity/top")
