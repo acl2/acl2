@@ -13,6 +13,8 @@
 (include-book "abstract-syntax")
 (include-book "values-to-abstract-syntax")
 
+(local (include-book "std/lists/len" :dir :system))
+
 (include-book "kestrel/json/top" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
