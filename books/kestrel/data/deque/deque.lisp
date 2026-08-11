@@ -82,11 +82,15 @@
 
 (defxdoc pop-front
   :parents (deque)
-  :short "Remove the front element of a non-empty deque.")
+  :short "Remove the front element of a deque."
+  :long "<p>Returns the empty deque when the deque is already empty (there is
+         no front element to remove).</p>")
 
 (defxdoc pop-back
   :parents (deque)
-  :short "Remove the back element of a non-empty deque.")
+  :short "Remove the back element of a deque."
+  :long "<p>Returns the empty deque when the deque is already empty (there is
+         no back element to remove).</p>")
 
 (defxdoc emptyp
   :parents (deque)
