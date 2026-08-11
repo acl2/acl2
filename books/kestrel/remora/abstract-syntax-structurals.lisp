@@ -95,7 +95,14 @@
 (std::defprojection shape-dims-list ((x dim-list-listp))
   :returns (shapes shape-listp)
   :short "Lift @(tsee shape-dims) to lists."
-  (shape-dims x))
+  (shape-dims x)
+
+  ///
+
+  (defret shape-list-wfp-of-shape-dims-list
+    (equal (shape-list-wfp (shape-dims-list dimss))
+           (dim-list-list-wfp dimss))
+    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
