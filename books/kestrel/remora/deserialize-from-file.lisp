@@ -30,7 +30,7 @@
   (xdoc::topstring
    (xdoc::p
     "Reads and parses @('filename') as JSON
-     (via @(tsee acl2::parse-file-as-json)),
+     (via @('parse-file-as-json')),
      converts the parsed result to a @(tsee json::valuep)
      (via @(tsee json::parsed-to-value)),
      and converts that to an @(tsee expr) via @(tsee expr-fromJSON).
@@ -63,7 +63,7 @@
   (xdoc::topstring
    (xdoc::p
     "Reads and parses @('filename') as JSON
-     (via @(tsee acl2::parse-file-as-json)),
+     (via @('parse-file-as-json')),
      converts the parsed result to a @(tsee json::valuep)
      (via @(tsee json::parsed-to-value)),
      and converts that to a @(tsee file) via @(tsee file-fromJSON).
