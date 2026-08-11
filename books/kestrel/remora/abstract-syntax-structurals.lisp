@@ -547,7 +547,15 @@
   (cond ((endp in) (type-fix out))
         (t (make-type-fun :in (car in)
                           :out (nest-fun-types (cdr in) out))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret type-wfp-of-nest-fun-types
+    (equal (type-wfp type)
+           (and (type-list-wfp in)
+                (type-wfp out)))
+    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -558,7 +566,15 @@
   (cond ((endp params) (type-fix body))
         (t (make-type-forall :param (car params)
                              :body (nest-forall-types (cdr params) body))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret type-wfp-of-nest-forall-types
+    (equal (type-wfp type)
+           (and (type-var-list-wfp params)
+                (type-wfp body)))
+    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -569,7 +585,15 @@
   (cond ((endp params) (type-fix body))
         (t (make-type-pi :param (car params)
                          :body (nest-pi-types (cdr params) body))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret type-wfp-of-nest-pi-types
+    (equal (type-wfp type)
+           (and (ispace-var-list-wfp params)
+                (type-wfp body)))
+    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -580,7 +604,15 @@
   (cond ((endp params) (type-fix body))
         (t (make-type-sigma :param (car params)
                             :body (nest-sigma-types (cdr params) body))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret type-wfp-of-nest-sigma-types
+    (equal (type-wfp type)
+           (and (ispace-var-list-wfp params)
+                (type-wfp body)))
+    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -591,7 +623,15 @@
           and zero or more argument expressions."
   (cond ((endp args) (expr-fix fun))
         (t (nest-app-exprs (make-expr-app :fun fun :arg (car args))
-                           (cdr args)))))
+                           (cdr args))))
+
+  ///
+
+  (defret expr-wfp-of-nest-app-exprs
+    (equal (expr-wfp expr)
+           (and (expr-wfp fun)
+                (expr-list-wfp args)))
+    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -602,7 +642,15 @@
           and zero or more argument types."
   (cond ((endp args) (expr-fix fun))
         (t (nest-tapp-exprs (make-expr-tapp :fun fun :arg (car args))
-                            (cdr args)))))
+                            (cdr args))))
+
+  ///
+
+  (defret expr-wfp-of-nest-tapp-exprs
+    (equal (expr-wfp expr)
+           (and (expr-wfp fun)
+                (type-list-wfp args)))
+    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -613,7 +661,15 @@
           and zero or more argument ispaces."
   (cond ((endp args) (expr-fix fun))
         (t (nest-iapp-exprs (make-expr-iapp :fun fun :arg (car args))
-                            (cdr args)))))
+                            (cdr args))))
+
+  ///
+
+  (defret expr-wfp-of-nest-iapp-exprs
+    (equal (expr-wfp expr)
+           (and (expr-wfp fun)
+                (ispace-list-wfp args)))
+    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -639,7 +695,19 @@
                           :param (car params)
                           :body (nest-lambda-exprs (cdr params) body type?)
                           :type? (if (endp (cdr params)) type? nil))))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret expr-wfp-of-nest-lambda-exprs
+    (equal (expr-wfp expr)
+           (if (consp params)
+               (and (var+type?-list-wfp params)
+                    (expr-wfp body)
+                    (type-option-wfp type?))
+             (expr-wfp body)))
+    :hints (("Goal" :induct t :in-theory (enable* expr-wfp
+                                                  ast-wfp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -653,7 +721,16 @@
             :atoms (list (make-atom-tlambda
                           :param (car params)
                           :body (nest-tlambda-exprs (cdr params) body))))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret expr-wfp-of-nest-tlambda-exprs
+    (equal (expr-wfp expr)
+           (and (type-var-list-wfp params)
+                (expr-wfp body)))
+    :hints (("Goal" :induct t :in-theory (enable* expr-wfp
+                                                  ast-wfp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -667,7 +744,16 @@
             :atoms (list (make-atom-ilambda
                           :param (car params)
                           :body (nest-ilambda-exprs (cdr params) body))))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret expr-wfp-of-nest-ilambda-exprs
+    (equal (expr-wfp expr)
+           (and (ispace-var-list-wfp params)
+                (expr-wfp body)))
+    :hints (("Goal" :induct t :in-theory (enable* expr-wfp
+                                                  ast-wfp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -716,7 +802,35 @@
                :target (expr-var var)
                :body (nest-unbox-exprs-loop (cdr ispaces) var body)
                :type? nil)))
-     :verify-guards :after-returns)))
+     :verify-guards :after-returns
+
+     ///
+
+     (defret expr-wfp-of-nest-unbox-exprs-loop
+       (equal (expr-wfp expr)
+              (if (consp ispaces)
+                  (and (ispace-var-list-wfp ispaces)
+                       (valid-identifier-string-p var)
+                       (expr-wfp body))
+                (expr-wfp body)))
+       :hyp (stringp var)
+       :hints (("Goal" :induct t :in-theory (enable* expr-wfp
+                                                     ast-wfp-rules))))))
+
+  ///
+
+  (defret expr-wfp-of-nest-unbox-exprs
+    (equal (expr-wfp expr)
+           (if (consp ispaces)
+               (and (ispace-var-list-wfp ispaces)
+                    (valid-identifier-string-p var)
+                    (expr-wfp target)
+                    (expr-wfp body)
+                    (type-option-wfp type?))
+             (expr-wfp body)))
+    :hyp (stringp var)
+    :hints (("Goal" :in-theory (enable* expr-wfp
+                                        ast-wfp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -740,7 +854,16 @@
                           :ispace (car ispaces)
                           :array (nest-box-exprs (cdr ispaces) body)
                           :type? nil)))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret expr-wfp-of-nest-box-exprs
+    (equal (expr-wfp expr)
+           (and (ispace-list-wfp ispaces)
+                (expr-wfp body)))
+    :hints (("Goal" :induct t :in-theory (enable* expr-wfp
+                                                  ast-wfp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
