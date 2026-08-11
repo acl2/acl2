@@ -806,9 +806,7 @@
      as that sequence,
      and it returns the body of the outermost universal type."))
   (cond ((endp (cdr params)) (prog2$ (impossible) (type-fix body)))
-        ((endp (cddr params))
-         (make-type-forall :param (cadr params) :body body))
-        (t (make-type-foralln :params (cdr params) :body body)))
+        (t (make-type-forall/foralln (cdr params) body)))
   :hooks ((:fix :hints (("Goal"
                          :in-theory (enable cdr-of-type-var-list-fix)))))
 
@@ -820,7 +818,8 @@
                                                   (type-foralln->body type)))
                  (type-count type)))
     :rule-classes :linear
-    :enable forall-curried-body
+    :enable (forall-curried-body
+             make-type-forall/foralln)
     :expand ((type-count type)
              (type-count (type-forall (cadr (type-foralln->params type))
                                       (type-foralln->body type)))
@@ -837,7 +836,10 @@
                                                  (type-foralln->body type)))
         (type-binders-count type)))
     :rule-classes :linear
-    :enable (forall-curried-body type-binders-count len)
+    :enable (forall-curried-body
+             type-binders-count
+             make-type-forall/foralln
+             len)
     :expand ((type-count type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -485,7 +485,8 @@
        they always contain two or more parameters
        (because there must have at least one parameter,
        and if there is just one we use the unary forms),
-       but this fixtype does not capture this requirement.
+       but this fixtype does not capture this requirement
+       for @(':pi') and @(':sigma') summands yet.
        Note the slight difference with function types,
        where singleton lists are allowed as explained above.")
      (xdoc::p
@@ -507,8 +508,13 @@
             (out type)))
     (:forall ((param type-var)
               (body type)))
-    (:foralln ((params type-var-list) ; two or more
-               (body type)))
+    (:foralln ((params type-var-list
+                       :reqfix (if (>= (len params) 2)
+                                   params
+                                 (list (type-var-fix nil)
+                                       (type-var-fix nil))))
+               (body type))
+     :require (>= (len params) 2))
     (:pi ((param ispace-var)
           (body type)))
     (:pin ((params ispace-var-list) ; two or more
@@ -517,7 +523,22 @@
              (body type)))
     (:sigman ((params ispace-var-list) ; two or more
               (body type)))
-    :pred typep)
+    :pred typep
+
+    ///
+
+    (defrule consp-of-type-foralln->params
+      (consp (type-foralln->params type))
+      :rule-classes :type-prescription
+      :use (:instance type-foralln-requirements (x type))
+      :disable type-foralln-requirements)
+
+    (defruled consp-of-cdr-of-type-foralln->params
+      (consp (cdr (type-foralln->params type)))
+      :rule-classes :type-prescription
+      :use (:instance type-foralln-requirements (x type))
+      :disable type-foralln-requirements
+      :enable len))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

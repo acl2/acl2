@@ -25,6 +25,7 @@
 
 (local (include-book "lists"))
 
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
@@ -345,13 +346,12 @@
               :denv (type-denv-restrict (type-free-ispace-vars type)
                                         (type-free-type-vars type)
                                         denv))
-     :foralln (b* (((unless (>= (len type.params) 2)) (reserr nil)))
-                (make-type-value-forall
-                 :param (car type.params)
-                 :body (forall-curried-body type.params type.body)
-                 :denv (type-denv-restrict (type-free-ispace-vars type)
-                                           (type-free-type-vars type)
-                                           denv)))
+     :foralln (make-type-value-forall
+               :param (car type.params)
+               :body (forall-curried-body type.params type.body)
+               :denv (type-denv-restrict (type-free-ispace-vars type)
+                                         (type-free-type-vars type)
+                                         denv))
      :pi (make-type-value-pi
           :param type.param
           :body type.body
@@ -1591,11 +1591,7 @@
                                       (make-atom-tlambdan
                                        :params tparams
                                        :body cfun-expr))))
-                           (if (endp (cdr tparams))
-                               (make-type-forall :param (car tparams)
-                                                 :body cfun-type)
-                             (make-type-foralln :params tparams
-                                                :body cfun-type)))
+                           (make-type-forall/foralln tparams cfun-type))
                      (mv cfun-expr cfun-type)))
                   ((ok val) (eval-expr cfun-expr denv (1- limit)))
                   ((ok &) (eval-type cfun-type (expr-denv->tenv denv))))
@@ -2671,7 +2667,8 @@
                        expr-value-wfp-of-expr-value-with-nonempty-dims
                        list-prefix-join-upper-bound
                        primop-value-funp
-                       primop-value-fun-fo-p)
+                       primop-value-fun-fo-p
+                       acl2::lt-len-const)
                       (len-of-eval-expr-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
