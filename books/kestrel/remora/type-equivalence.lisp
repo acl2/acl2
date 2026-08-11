@@ -433,10 +433,6 @@
                             (body1 (type-rename-type-vars type1.body
                                                           maps.1st
                                                           maps.2nd))
-                            ((unless (>= (len type2.params) 2))
-                             (raise "Internal error: ~
-                                     :FORALLN has params ~x0."
-                                    type2.params))
                             (body2 (type-rename-type-vars
                                     (forall-curried-body type2.params
                                                          type2.body)
@@ -456,10 +452,6 @@
                                    used))
                             ((when (reserrp maps)) nil)
                             ((string-string-map-quadruple maps) maps)
-                            ((unless (>= (len type1.params) 2))
-                             (raise "Internal error: ~
-                                     :FORALLN has params ~x0."
-                                    type1.params))
                             (body1 (type-rename-type-vars
                                     (forall-curried-body type1.params
                                                          type1.body)
@@ -481,19 +473,11 @@
                                     used))
                              ((when (reserrp maps)) nil)
                              ((string-string-map-quadruple maps) maps)
-                             ((unless (>= (len type1.params) 2))
-                              (raise "Internal error: ~
-                                      :FORALLN has params ~x0."
-                                     type1.params))
                              (body1 (type-rename-type-vars
                                      (forall-curried-body type1.params
                                                           type1.body)
                                      maps.1st
                                      maps.2nd))
-                             ((unless (>= (len type2.params) 2))
-                              (raise "Internal error: ~
-                                      :FORALLN has params ~x0."
-                                     type2.params))
                              (body2 (type-rename-type-vars
                                      (forall-curried-body type2.params
                                                           type2.body)
@@ -659,7 +643,6 @@
                                    maps.4th)))
                         (type-equivp body1 body2))
               :otherwise nil)))
-  :no-function nil
   :measure (two-nats-measure (+ (type-count type1)
                                 (type-count type2))
                              (+ (type-binders-count type1)
