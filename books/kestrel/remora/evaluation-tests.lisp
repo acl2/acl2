@@ -176,3 +176,59 @@
 (test-eval-top-expr
  "(let ((fun (@f (&t) ($d) (x (A &t $d)) : (A &t $d)) x))
   (@f (Int) (3) [1 2 3]))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Tests for the reduce primitive,
+; whose final stage executes Remora code
+; and is thus part of the evaluation mutual recursion.
+
+(defmacro iv (n) `(expr-value-base (base-value-int (int-value ,n))))
+
+(defconst *tv-int* (type-value-base (base-type-int)))
+
+(defconst *vec3*
+  (expr-value-vector (list (iv 1) (iv 2) (iv 3))))
+
+(defconst *add-fun*
+  (expr-value-primop (primop-value-int-binary (int-binary-primop-add))))
+
+(defconst *sub-fun*
+  (expr-value-primop (primop-value-int-binary (int-binary-primop-sub))))
+
+; Sum fold over a vector of scalar cells: (+ (+ 1 2) 3) = 6.
+(assert-event
+ (equal (prim-reduce *tv-int* 2 nil *add-fun* *vec3* 1000)
+        (iv 6)))
+
+; The fold is a left fold, seeded with the first cell:
+; (- (- 1 2) 3) = -4, whereas a right fold would give (- 1 (- 2 3)) = 2.
+(assert-event
+ (equal (prim-reduce *tv-int* 2 nil *sub-fun* *vec3* 1000)
+        (iv -4)))
+
+; A single cell (d = 0) is returned directly,
+; without ever applying the function value.
+(assert-event
+ (equal (prim-reduce *tv-int* 0 nil *sub-fun*
+                     (expr-value-vector (list (iv 7)))
+                     1000)
+        (iv 7)))
+
+; Argument cell dimensions not matching the instantiation.
+(assert-event
+ (reserrp (prim-reduce *tv-int* 1 nil *add-fun* *vec3* 1000)))
+
+; Via the higher-order eval-primop-fun.
+(assert-event
+ (equal (eval-primop-fun (make-primop-value-reduce-t-d-s-f :tval *tv-int*
+                                                           :dval 2
+                                                           :sval nil
+                                                           :fval *add-fun*)
+                         *vec3*
+                         1000)
+        (iv 6)))
+
+; End-to-end: parse, type-check, and evaluate a reduce expression.
+(test-eval-top-expr
+ "(@reduce (Int) (2 []) + [1 2 3])")
