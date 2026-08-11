@@ -189,6 +189,12 @@
 
   ///
 
+  (defret shape-list-wfp-of-ispace-shape-list->shape
+    (shape-list-wfp shapes)
+    :hyp (and (ispace-list-case-shape x)
+              (ispace-list-wfp x))
+    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules))))
+
   (defrule shape-list-count-of-ispace-shape-list->shape
     (implies (ispace-list-case-shape x)
              (<= (shape-list-count (ispace-shape-list->shape x))
