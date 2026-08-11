@@ -10,6 +10,7 @@
 
 (in-package "REMORA")
 
+(include-book "abstract-syntax-well-formedness")
 (include-book "abstract-syntax-derived-fixtypes")
 (include-book "lists")
 
@@ -115,7 +116,13 @@
 (std::defprojection atom-base-list ((x base-lit-listp))
   :returns (atoms atom-listp)
   :short "Lift @(tsee atom-base) to lists."
-  (atom-base x))
+  (atom-base x)
+
+  ///
+
+  (defret atom-list-wfp-of-atom-base-list
+    (atom-list-wfp atoms)
+    :hints (("Goal" :induct t :in-theory (enable* abstract-syntax-wfp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
