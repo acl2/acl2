@@ -19,6 +19,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local (in-theory (enable* ast-wfp-rules ast-desugar-rules)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ well-formedness-under-desugaring
   :parents (abstract-syntax)
   :short "Preservation of well-formedness under desugaring."
@@ -43,8 +47,7 @@
     :induct t
     :enable (ispace-list-desugar-in-splice
              ispace-desugar-in-splice
-             ispace-wfp
-             ast-wfp-rules))
+             ispace-wfp))
 
   (defret-mutual wfp-of-shapes/ispaces-desugar
     (defret shape-wfp-of-shape-desugar
@@ -64,16 +67,15 @@
       :hyp (ispace-list-wfp ispace-list)
       :fn ispace-list-desugar)
     :mutual-recursion shapes/ispaces-desugar
-    :hints (("Goal" :in-theory (enable* shape-desugar
-                                        shape-list-desugar
-                                        ispace-desugar
-                                        ispace-list-desugar
-                                        shape-wfp
-                                        shape-list-wfp
-                                        ispace-wfp
-                                        ispace-list-wfp
-                                        dim-list-wfp
-                                        ast-wfp-rules))))
+    :hints (("Goal" :in-theory (enable shape-desugar
+                                       shape-list-desugar
+                                       ispace-desugar
+                                       ispace-list-desugar
+                                       shape-wfp
+                                       shape-list-wfp
+                                       ispace-wfp
+                                       ispace-list-wfp
+                                       dim-list-wfp))))
 
   (defret-mutual wfp-of-types-desugar
     (defret type-wfp-of-type-desugar
@@ -85,11 +87,10 @@
       :hyp (type-list-wfp type-list)
       :fn type-list-desugar)
     :mutual-recursion types-desugar
-    :hints (("Goal" :in-theory (enable* type-desugar
-                                        type-list-desugar
-                                        type-wfp
-                                        type-list-wfp
-                                        ast-wfp-rules))))
+    :hints (("Goal" :in-theory (enable type-desugar
+                                       type-list-desugar
+                                       type-wfp
+                                       type-list-wfp))))
 
   (defret type-option-wfp-of-type-option-desugar
     (type-option-wfp result)
@@ -112,8 +113,7 @@
     :fn var+type?-list-desugar
     :hints (("Goal"
              :induct t
-             :in-theory (enable* var+type?-list-desugar
-                                 ast-wfp-rules))))
+             :in-theory (enable var+type?-list-desugar))))
 
   (defret-mutual wfp-of-exprs/atoms/binds-desugar
     (defret expr-wfp-of-expr-desugar
@@ -141,23 +141,21 @@
       :hyp (bind-list-wfp bind-list)
       :fn bind-list-desugar)
     :mutual-recursion exprs/atoms/binds-desugar
-    :hints (("Goal" :in-theory (enable* expr-desugar
-                                        expr-list-desugar
-                                        atom-desugar
-                                        atom-list-desugar
-                                        bind-desugar
-                                        bind-list-desugar
-                                        expr-wfp
-                                        expr-list-wfp
-                                        atom-wfp
-                                        atom-list-wfp
-                                        bind-wfp
-                                        bind-list-wfp
-                                        type-option-wfp
-                                        type-list-option-wfp
-                                        ispace-list-option-wfp
-                                        type-var-list-option-wfp
-                                        ispace-var-list-option-wfp
-                                        ast-wfp-rules
-                                        ast-desugar-rules
-                                        type-option-some->val)))))
+    :hints (("Goal" :in-theory (enable expr-desugar
+                                       expr-list-desugar
+                                       atom-desugar
+                                       atom-list-desugar
+                                       bind-desugar
+                                       bind-list-desugar
+                                       expr-wfp
+                                       expr-list-wfp
+                                       atom-wfp
+                                       atom-list-wfp
+                                       bind-wfp
+                                       bind-list-wfp
+                                       type-option-wfp
+                                       type-list-option-wfp
+                                       ispace-list-option-wfp
+                                       type-var-list-option-wfp
+                                       ispace-var-list-option-wfp
+                                       type-option-some->val)))))
