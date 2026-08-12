@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Stephen Westfold
+; Authors: Stephen Westfold
+;          Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,6 +32,13 @@
 (defmacro+ list-to-oset (l)
   :short "Converts a list to an oset by sorting and removing dupliates."
   `(set::mergesort ,l))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled mergesort-of-cons
+  (equal (set::mergesort (cons a l))
+         (set::insert a (set::mergesort l)))
+  :enable set::mergesort)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
