@@ -1305,7 +1305,8 @@
 (defund bitops-to-bv-rules ()
   (declare (xargs :guard t))
   '(;; Rules to handle part-select-width-low:
-    acl2::part-select-width-low-becomes-slice ; for when low and width are constants
+    ;; acl2::part-select-width-low-becomes-slice ; for when low and width are constants
+    acl2::part-select-width-low-becomes-slice-gen ; allows low and width to be non-constants (can happen with shifts)
 
     ;; should we instead go to putbits?
     ;; TODO: Think about the case when sizes/indices are not constant

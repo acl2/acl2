@@ -591,31 +591,40 @@
 (local
  (in-theory (disable matching-factor-gather-exponents-p)))
 
-(defun find-matching-factor-gather-exponents (to-match x mfc state)
+(defun find-matching-factor-gather-exponents (to-match x newp mfc state)
   (declare (xargs :guard t))
   (cond ((eq (fn-symb x) 'BINARY-*)
-         (cond ((and (matching-factor-gather-exponents-p to-match (arg1 x))
+         (cond ((and (matching-factor-gather-exponents-p to-match (arg1 x) newp)
 		     ;; prevent various odd loops
 		     (stable-under-rewriting-products (arg1 x) mfc state))
                 (list (cons 'match (arg1 x))))
                ((eq (fn-symb (arg2 x)) 'BINARY-*)
-                (find-matching-factor-gather-exponents to-match (arg2 x)
+                (find-matching-factor-gather-exponents to-match (arg2 x) newp
 						       mfc state))
-               ((and (matching-factor-gather-exponents-p to-match (arg2 x))
+               ((and (matching-factor-gather-exponents-p to-match (arg2 x) newp)
 		     (stable-under-rewriting-products (arg2 x) mfc state))
                 (list (cons 'match (arg2 x))))
                (t
                 nil)))
-        ((and (matching-factor-gather-exponents-p to-match x)
+        ((and (matching-factor-gather-exponents-p to-match x newp)
 	      (stable-under-rewriting-products x mfc state))
          (list (cons 'match x)))
         (t
          nil)))
 
+; Moore Modification: See the Essay on Moore's Use of ``Wrappers'' and Robert's
+; ``Ugly Hacks'' which may be found in lib/basic-ops/common.lisp
+
+(defun find-matching-factor-gather-exponents-wrapper (lhs rhs mfc state)
+  (declare (xargs :mode :program))
+  (if (use-original-arith-5-rules mfc state)
+      (find-matching-factor-gather-exponents lhs rhs nil mfc state)
+      (find-matching-factor-gather-exponents lhs rhs t mfc state)))
+
 (defthm normalize-factors-gather-exponents
     (implies (and (syntaxp (in-term-order-* y mfc state))
                   (bind-free
-		   (find-matching-factor-gather-exponents
+		   (find-matching-factor-gather-exponents-wrapper
 		    (factor-pattern-gather-exponents x) y mfc state)
 		   (match)))
              (equal (* x y)
