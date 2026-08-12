@@ -6883,11 +6883,96 @@
                     which disallows the initializer, ~
                     but the initializer ~x2 is present."
                    ident type initdeclor.initer?))
+         (declared-type type)
+         (ext-info? (vstate-lookup-ext ident vstate))
+         ((when (and (linkage-case linkage :external)
+                     ext-info?
+                     (not (type-compatible-p
+                           (valid-ext-info->type ext-info?)
+                           type
+                           (vstate->completions vstate)
+                           ienv))))
+          (retmsg$ "The identifier ~x0 with external linkage and type ~x1 ~
+                    was previously declared with incompatible type ~x2."
+                   ident
+                   type
+                   (valid-ext-info->type ext-info?)))
+         ((when (and (linkage-case linkage :external)
+                     (vstate-has-internalp ident vstate)))
+          (retmsg$ "The identifier ~x0 with external linkage ~
+                    was previously declared with internal linkage ~
+                    in the same translation unit."
+                   ident))
+         ((when (and (linkage-case linkage :internal)
+                     ext-info?
+                     (in (vstate->filepath vstate)
+                         (valid-ext-info->declared-in ext-info?))))
+          (retmsg$ "The identifier ~x0 with internal linkage ~
+                    was previously declared with external linkage ~
+                    in the same translation unit."
+                   ident))
+         ((mv info? currentp) (vstate-lookup-ord ident vstate))
+         ((when (and info?
+                     currentp
+                     (or (valid-ord-info-case info? :typedef)
+                         (valid-ord-info-case info? :enumconst))))
+          (retmsg$ "The identifier ~x0 ~
+                    is already declared in the current scope ~
+                    with associated information ~x1."
+                   ident info?))
+         (linked-redecl-p
+          (and info?
+               (valid-ord-info-case info? :objfun)
+               (not (linkage-case linkage :none))
+               (not (linkage-case
+                      (valid-ord-info-objfun->linkage info?)
+                      :none))))
+         ((when (and info?
+                     currentp
+                     (valid-ord-info-case info? :objfun)
+                     (not linked-redecl-p)))
+          (retmsg$ "The identifier ~x0 ~
+                    is already declared in the current scope ~
+                    with associated information ~x1."
+                   ident info?))
+         ((when (and linked-redecl-p
+                     (not (type-compatible-p
+                           type
+                           (valid-ord-info-objfun->type info?)
+                           (vstate->completions vstate)
+                           ienv))))
+          (retmsg$ "The identifier ~x0 ~
+                    is declared with type ~x1 ~
+                    after being declared with type ~x2."
+                   ident type (valid-ord-info-objfun->type info?)))
+         ((when (and linked-redecl-p
+                     (linkage-case linkage :internal)
+                     (linkage-case
+                      (valid-ord-info-objfun->linkage info?)
+                      :external)))
+          (retmsg$ "The identifier ~x0 ~
+                    is declared with internal linkage ~
+                    after being declared with external linkage."
+                   ident))
+         ((when (and linked-redecl-p
+                     (linkage-case linkage :external)
+                     (linkage-case
+                      (valid-ord-info-objfun->linkage info?)
+                      :internal)))
+          (raise "Internal error: ~ the identifier ~x0 ~
+                  is declared with external linkage ~
+                  after being declared with internal linkage."
+                 ident)
+          (retmsg$ ""))
+         ((mv type vstate)
+          (if linked-redecl-p
+              (vstate-make-type-composite
+               type (valid-ord-info-objfun->type info?) vstate)
+            (mv (type-fix type) (vstate-fix vstate))))
          (complete-array-after-initer-p
           (and initdeclor.initer?
                (type-case type :array)
                (type-array-kind-case (type-array->kind type) :incomplete)))
-         ((mv info? currentp) (vstate-lookup-ord ident vstate))
          (defstatus (if (type-case type :function)
                         (valid-defstatus-undefined)
                       (if (> (vstate-num-scopes vstate) 1)
@@ -6910,6 +6995,18 @@
                     :defstatus defstatus
                     :uid uid))
          (vstate (vstate-add-ord ident new-info vstate))
+         (update-ext-p
+          (and (linkage-case linkage :external)
+               ext-info?))
+         ((mv ext-type vstate)
+          (if update-ext-p
+              (vstate-make-type-composite
+               (valid-ext-info->type ext-info?) declared-type vstate)
+            (mv (irr-type) vstate)))
+         (vstate
+          (if update-ext-p
+              (vstate-update-ext-type ident ext-type vstate)
+            vstate))
          ((erp new-initer? more-types vstate)
           (valid-initer-option initdeclor.initer? type lifetime? vstate))
          ((mv type vstate)
@@ -6923,109 +7020,23 @@
                     (change-valid-ord-info-objfun new-info :type type))
                    (vstate (vstate-add-ord ident new-info vstate))
                    (ext-info? (vstate-lookup-ext ident vstate))
+                   (update-ext-p
+                    (and (linkage-case linkage :external)
+                         ext-info?))
+                   ((mv ext-type vstate)
+                    (if update-ext-p
+                        (vstate-make-type-composite
+                         (valid-ext-info->type ext-info?) type vstate)
+                      (mv (irr-type) vstate)))
                    (vstate
-                    (if (and (linkage-case linkage :external)
-                             ext-info?
-                             (type-case (valid-ext-info->type ext-info?)
-                                        :array)
-                             (type-array-kind-case
-                               (type-array->kind
-                                (valid-ext-info->type ext-info?))
-                               :incomplete))
-                        (vstate-update-ext-type ident type vstate)
+                    (if update-ext-p
+                        (vstate-update-ext-type ident ext-type vstate)
                       vstate)))
                 (mv type vstate))
             (mv type vstate)))
          (anno-info (make-init-declor-vinfo :type type
                                             :typedefp nil
-                                            :uid uid))
-         ((when (and (linkage-case linkage :external)
-                     (let ((ext-info? (vstate-lookup-ext ident vstate)))
-                       (and ext-info?
-                            (not (type-compatible-p
-                                  (valid-ext-info->type ext-info?)
-                                  type
-                                  (vstate->completions vstate)
-                                  ienv))))))
-          (retmsg$ "The identifier ~x0 with external linkage and type ~x1 ~
-                    was previously declared with incompatible type ~x2."
-                   ident
-                   type
-                   (valid-ext-info->type
-                    (vstate-lookup-ext ident vstate))))
-         ((when (and (linkage-case linkage :external)
-                     (vstate-has-internalp ident vstate)))
-          (retmsg$ "The identifier ~x0 with external linkage ~
-                    was previously declared with internal linkage ~
-                    in the same translation unit."
-                   ident))
-         ((when (and (linkage-case linkage :internal)
-                     (let ((ext-info? (vstate-lookup-ext ident vstate)))
-                       (and ext-info?
-                            (in (vstate->filepath vstate)
-                                (valid-ext-info->declared-in ext-info?))))))
-          (retmsg$ "The identifier ~x0 with internal linkage ~
-                    was previously declared with external linkage ~
-                    in the same translation unit."
-                   ident))
-         ((when (not info?))
-          (retok (make-init-declor :declor new-declor
-                                   :asm? initdeclor.asm?
-                                   :attribs initdeclor.attribs
-                                   :initer? new-initer?
-                                   :info anno-info)
-                 (set::union types more-types)
-                 vstate))
-         ((when (or (valid-ord-info-case info? :typedef)
-                    (valid-ord-info-case info? :enumconst)))
-          (if currentp
-              (retmsg$ "The identifier ~x0 ~
-                        is already declared in the current scope ~
-                        with associated information ~x1."
-                       ident info?)
-            (retok (make-init-declor :declor new-declor
-                                     :asm? initdeclor.asm?
-                                     :attribs initdeclor.attribs
-                                     :initer? new-initer?
-                                     :info anno-info)
-                   (set::union types more-types)
-                   vstate)))
-         ((valid-ord-info-objfun info) info?)
-         ((when (or (linkage-case linkage :none)
-                    (linkage-case info.linkage :none)))
-          (if currentp
-              (retmsg$ "The identifier ~x0 ~
-                        is already declared in the current scope ~
-                        with associated information ~x1."
-                       ident info?)
-            (retok (make-init-declor :declor new-declor
-                                     :asm? initdeclor.asm?
-                                     :attribs initdeclor.attribs
-                                     :initer? new-initer?
-                                     :info anno-info)
-                   (set::union types more-types)
-                   vstate)))
-         ((unless (type-compatible-p type
-                                     info.type
-                                     (vstate->completions vstate)
-                                     ienv))
-          (retmsg$ "The identifier ~x0 ~
-                    is declared with type ~x1 ~
-                    after being declared with type ~x2."
-                   ident type info.type))
-         ((when (and (linkage-case linkage :internal)
-                     (linkage-case info.linkage :external)))
-          (retmsg$ "The identifier ~x0 ~
-                    is declared with internal linkage ~
-                    after being declared with external linkage."
-                   ident))
-         ((when (and (linkage-case linkage :external)
-                     (linkage-case info.linkage :internal)))
-          (raise "Internal error: ~ the identifier ~x0 ~
-                  is declared with external linkage ~
-                  after being declared with internal linkage."
-                 ident)
-          (retmsg$ "")))
+                                            :uid uid)))
       (retok (make-init-declor :declor new-declor
                                :asm? initdeclor.asm?
                                :attribs initdeclor.attribs
@@ -8039,21 +8050,20 @@
        ((unless (type-case type :function))
         (retmsg$ "The function definition ~x0 has type ~x1."
                  (fundef-fix fundef) type))
+       (ext-info? (vstate-lookup-ext ident vstate))
        ((when (and (linkage-case linkage :external)
-                   (let ((ext-info? (vstate-lookup-ext ident vstate)))
-                     (and ext-info?
-                          (not (type-compatible-p
-                                (valid-ext-info->type ext-info?)
-                                type
-                                (vstate->completions vstate)
-                                ienv))))))
+                   ext-info?
+                   (not (type-compatible-p
+                         (valid-ext-info->type ext-info?)
+                         type
+                         (vstate->completions vstate)
+                         ienv))))
         (retmsg$ "The function definition ~x0 ~
                   with external linkage and type ~x1 ~
                   was previously declared with incompatible type ~x2."
                  ident
                  type
-                 (valid-ext-info->type
-                  (vstate-lookup-ext ident vstate))))
+                 (valid-ext-info->type ext-info?)))
        ((when (and (linkage-case linkage :external)
                    (vstate-has-internalp ident vstate)))
         (retmsg$ "The function definition ~x0 with external linkage ~
@@ -8061,17 +8071,17 @@
                   in the same translation unit."
                  ident))
        ((when (and (linkage-case linkage :internal)
-                   (let ((ext-info? (vstate-lookup-ext ident vstate)))
-                     (and ext-info?
-                          (in (vstate->filepath vstate)
-                              (valid-ext-info->declared-in ext-info?))))))
+                   ext-info?
+                   (in (vstate->filepath vstate)
+                       (valid-ext-info->declared-in ext-info?))))
         (retmsg$ "The function definition ~x0 with internal linkage ~
                   was previously declared with external linkage ~
                   in the same translation unit."
                  ident))
+       (declared-type type)
        (info? (vstate-lookup-ord-file-scope ident vstate))
-       ((erp fundef-uid vstate)
-        (b* (((reterr) (irr-uid) (irr-vstate))
+       ((erp fundef-uid type vstate)
+        (b* (((reterr) (irr-uid) (irr-type) (irr-vstate))
              ((when (not info?))
               (b* (((mv uid vstate) (vstate-get-fresh-uid ident linkage vstate))
                    (info (make-valid-ord-info-objfun
@@ -8079,7 +8089,9 @@
                           :linkage linkage
                           :defstatus (valid-defstatus-defined)
                           :uid uid)))
-                (retok uid (vstate-add-ord-file-scope ident info vstate))))
+                (retok uid
+                       (type-fix type)
+                       (vstate-add-ord-file-scope ident info vstate))))
              (info info?)
              ((unless (valid-ord-info-case info :objfun))
               (retmsg$ "The name of the function definition ~x0 ~
@@ -8111,16 +8123,27 @@
               (retmsg$ "The function definition ~x0 ~
                         is a redefinition of the function."
                        (fundef-fix fundef)))
-             ((mv uid vstate)
-              (if (and info? (valid-ord-info-case info? :objfun))
-                  (mv (valid-ord-info-objfun->uid info?) vstate)
-                (vstate-get-fresh-uid ident linkage vstate)))
+             ((mv type vstate)
+              (vstate-make-type-composite type info.type vstate))
+             (uid info.uid)
              (info (make-valid-ord-info-objfun
                     :type type
                     :linkage linkage
                     :defstatus (valid-defstatus-defined)
                     :uid uid)))
-          (retok uid (vstate-add-ord-file-scope ident info vstate))))
+          (retok uid
+                 type
+                 (vstate-add-ord-file-scope ident info vstate))))
+       (update-ext-p (and (linkage-case linkage :external) ext-info?))
+       ((mv ext-type vstate)
+        (if update-ext-p
+            (vstate-make-type-composite
+             (valid-ext-info->type ext-info?) declared-type vstate)
+          (mv (irr-type) vstate)))
+       (vstate
+        (if update-ext-p
+            (vstate-update-ext-type ident ext-type vstate)
+          vstate))
        ((erp new-declons types vstate)
         (valid-declon-list fundef.declons vstate))
        ((unless (set::emptyp types))
