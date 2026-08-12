@@ -1520,7 +1520,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The variables of a rule become fields of the summand of the proof,
-; for the second representation of proofs;
+; for the first representation of proofs;
 ; so they must differ from the names that those events use
 ; for the arguments of the conclusion, for the proofs of the premises,
 ; and for the variable of the fixtypes of proofs.

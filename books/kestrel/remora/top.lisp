@@ -21,6 +21,8 @@
 (include-book "monomorphize-from-file")
 (include-book "eval-from-file")
 (include-book "unique-names")
+(include-book "deserializer")
+(include-book "deserialize-from-file")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
