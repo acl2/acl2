@@ -1380,7 +1380,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; We regard AL, etc. as just abbreviations, rather than proving rules about them.
+;; We regard AL, etc. as just abbreviations, rather than proving rules about
+;; them, but how we prefer to expand them depends on whether we are in 32-bit
+;; mode or 64-bit mode.  These are the rules for 64-bit mode:
 
 (defthmd al-becomes-rax (equal (al x86) (bvchop 8 (rax x86))) :hints (("Goal" :in-theory (enable al rax))))
 (defthmd bl-becomes-rbx (equal (bl x86) (bvchop 8 (rbx x86))) :hints (("Goal" :in-theory (enable bl rbx))))
@@ -1404,3 +1406,24 @@
 (defthmd di-becomes-rdi (equal (di x86) (bvchop 16 (rdi x86))) :hints (("Goal" :in-theory (enable di rdi))))
 (defthmd sp-becomes-rsp (equal (sp x86) (bvchop 16 (rsp x86))) :hints (("Goal" :in-theory (enable sp rsp))))
 (defthmd bp-becomes-rbp (equal (bp x86) (bvchop 16 (rbp x86))) :hints (("Goal" :in-theory (enable bp rbp))))
+
+;; TODO: Dups!
+;; Register readers (these chop the signed-byte-64 values down to unsigned-byte-32s):
+;; In 64-bit mode, these expand to chops of rax.
+(defund eax (x86) (declare (xargs :stobjs x86)) (bvchop 32 (rgfi *rax* x86)))
+(defund ebx (x86) (declare (xargs :stobjs x86)) (bvchop 32 (rgfi *rbx* x86)))
+(defund ecx (x86) (declare (xargs :stobjs x86)) (bvchop 32 (rgfi *rcx* x86)))
+(defund edx (x86) (declare (xargs :stobjs x86)) (bvchop 32 (rgfi *rdx* x86)))
+(defund esp (x86) (declare (xargs :stobjs x86)) (bvchop 32 (rgfi *rsp* x86)))
+(defund ebp (x86) (declare (xargs :stobjs x86)) (bvchop 32 (rgfi *rbp* x86)))
+(defund esi (x86) (declare (xargs :stobjs x86)) (bvchop 32 (rgfi *rsi* x86)))
+(defund edi (x86) (declare (xargs :stobjs x86)) (bvchop 32 (rgfi *rdi* x86)))
+
+(defthmd eax-becomes-rax (equal (eax x86) (bvchop 32 (rax x86))) :hints (("Goal" :in-theory (enable eax rax))))
+(defthmd ebx-becomes-rbx (equal (ebx x86) (bvchop 32 (rbx x86))) :hints (("Goal" :in-theory (enable ebx rbx))))
+(defthmd ecx-becomes-rcx (equal (ecx x86) (bvchop 32 (rcx x86))) :hints (("Goal" :in-theory (enable ecx rcx))))
+(defthmd edx-becomes-rdx (equal (edx x86) (bvchop 32 (rdx x86))) :hints (("Goal" :in-theory (enable edx rdx))))
+(defthmd esi-becomes-rsi (equal (esi x86) (bvchop 32 (rsi x86))) :hints (("Goal" :in-theory (enable esi rsi))))
+(defthmd edi-becomes-rdi (equal (edi x86) (bvchop 32 (rdi x86))) :hints (("Goal" :in-theory (enable edi rdi))))
+(defthmd esp-becomes-rsp (equal (esp x86) (bvchop 32 (rsp x86))) :hints (("Goal" :in-theory (enable esp rsp))))
+(defthmd ebp-becomes-rbp (equal (ebp x86) (bvchop 32 (rbp x86))) :hints (("Goal" :in-theory (enable ebp rbp))))

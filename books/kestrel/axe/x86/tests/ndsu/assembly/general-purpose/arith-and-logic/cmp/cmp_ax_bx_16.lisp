@@ -17,16 +17,7 @@
 ;; (depends-on "cmp_ax_bx_16.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
-
-
-;; Rewrite ax/bx to bvchop-of-rax/rbx so proofs reduce to the existing rax/rbx form.
-(local (defthm ax-rewrite
-  (equal (ax x86) (bvchop 16 (rax x86)))
-  :hints (("Goal" :in-theory (enable ax rax)))))
-(local (defthm bx-rewrite
-  (equal (bx x86) (bvchop 16 (rbx x86)))
-  :hints (("Goal" :in-theory (enable bx rbx)))))
+(include-book "../../../support")
 
 ;; Lifts the subroutine into logic: Creates the function cmp_ax_bx_16, which
 ;; represents the effect of the program on the x86 state.
@@ -113,4 +104,4 @@
                 (not (member-eq flag *standard-flags*)))
            (equal (get-flag flag (cmp_ax_bx_16 x86))
                   (get-flag flag x86)))
-  :hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant))))
+  )

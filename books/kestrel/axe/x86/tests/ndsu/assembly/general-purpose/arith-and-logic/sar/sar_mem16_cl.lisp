@@ -17,13 +17,7 @@
 ;; (depends-on "sar_mem16_cl.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
-
-
-;; Rewrite cl to bvchop-of-rcx so proofs reduce to the existing rcx form.
-(local (defthm cl-rewrite
-  (equal (cl x86) (bvchop 8 (rcx x86)))
-  :hints (("Goal" :in-theory (enable cl rcx)))))
+(include-book "../../../support")
 
 ;; Lifts the subroutine into logic: Creates the function sar_mem16_cl, which
 ;; represents the effect of the program on the x86 state.
@@ -150,4 +144,4 @@
                 (not (member-eq flag *standard-flags*)))
            (equal (get-flag flag (sar_mem16_cl x86))
                   (get-flag flag x86)))
-  :hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant))))
+  )

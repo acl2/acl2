@@ -17,7 +17,7 @@
 ;; (depends-on "not_rax_64.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
+(include-book "../../../support")
 
 ;; Lifts the subroutine into logic: Creates the function not_rax_64, which
 ;; represents the effect of the program on the x86 state.

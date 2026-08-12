@@ -1,7 +1,7 @@
 ; A theory of register readers and writers (emphasis on readability of terms)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -59,7 +59,8 @@
 (defund edx (x86) (declare (xargs :stobjs x86)) (bvchop 32 (rgfi *rdx* x86)))
 (defund esp (x86) (declare (xargs :stobjs x86)) (bvchop 32 (rgfi *rsp* x86)))
 (defund ebp (x86) (declare (xargs :stobjs x86)) (bvchop 32 (rgfi *rbp* x86)))
-;; todo: esi and edi!
+(defund esi (x86) (declare (xargs :stobjs x86)) (bvchop 32 (rgfi *rsi* x86)))
+(defund edi (x86) (declare (xargs :stobjs x86)) (bvchop 32 (rgfi *rdi* x86)))
 
 ;; used for, for example, when FLD is :UNDEF
 (defthm eax-of-xw (implies (not (equal fld :rgf)) (equal (eax (xw fld index value x86)) (eax x86))) :hints (("Goal" :in-theory (enable eax))))
@@ -875,14 +876,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; We regard AL, etc. as just abbreviations, rather than proving rules about them.
+;; We regard AL, etc. as just abbreviations, rather than proving rules about
+;; them, but how we prefer to expand them depends on whether we are in 32-bit
+;; mode or 64-bit mode.  These are the rules for 32-bit mode:
 
 (defthmd al-becomes-eax (equal (al x86) (bvchop 8 (eax x86))) :hints (("Goal" :in-theory (enable al eax))))
 (defthmd bl-becomes-ebx (equal (bl x86) (bvchop 8 (ebx x86))) :hints (("Goal" :in-theory (enable bl ebx))))
 (defthmd cl-becomes-ecx (equal (cl x86) (bvchop 8 (ecx x86))) :hints (("Goal" :in-theory (enable cl ecx))))
 (defthmd dl-becomes-edx (equal (dl x86) (bvchop 8 (edx x86))) :hints (("Goal" :in-theory (enable dl edx))))
-;; (defthmd sil-becomes-esi (equal (sil x86) (bvchop 8 (esi x86))) :hints (("Goal" :in-theory (enable sil esi))))
-;; (defthmd dil-becomes-edi (equal (dil x86) (bvchop 8 (edi x86))) :hints (("Goal" :in-theory (enable dil edi))))
+(defthmd sil-becomes-esi (equal (sil x86) (bvchop 8 (esi x86))) :hints (("Goal" :in-theory (enable sil esi))))
+(defthmd dil-becomes-edi (equal (dil x86) (bvchop 8 (edi x86))) :hints (("Goal" :in-theory (enable dil edi))))
 (defthmd spl-becomes-esp (equal (spl x86) (bvchop 8 (esp x86))) :hints (("Goal" :in-theory (enable spl esp))))
 (defthmd bpl-becomes-ebp (equal (bpl x86) (bvchop 8 (ebp x86))) :hints (("Goal" :in-theory (enable bpl ebp))))
 
@@ -895,7 +898,7 @@
 (defthmd bx-becomes-ebx (equal (bx x86) (bvchop 16 (ebx x86))) :hints (("Goal" :in-theory (enable bx ebx))))
 (defthmd cx-becomes-ecx (equal (cx x86) (bvchop 16 (ecx x86))) :hints (("Goal" :in-theory (enable cx ecx))))
 (defthmd dx-becomes-edx (equal (dx x86) (bvchop 16 (edx x86))) :hints (("Goal" :in-theory (enable dx edx))))
-;; (defthmd si-becomes-esi (equal (si x86) (bvchop 16 (esi x86))) :hints (("Goal" :in-theory (enable si esi))))
-;; (defthmd di-becomes-edi (equal (di x86) (bvchop 16 (edi x86))) :hints (("Goal" :in-theory (enable di edi))))
+(defthmd si-becomes-esi (equal (si x86) (bvchop 16 (esi x86))) :hints (("Goal" :in-theory (enable si esi))))
+(defthmd di-becomes-edi (equal (di x86) (bvchop 16 (edi x86))) :hints (("Goal" :in-theory (enable di edi))))
 (defthmd sp-becomes-esp (equal (sp x86) (bvchop 16 (esp x86))) :hints (("Goal" :in-theory (enable sp esp))))
 (defthmd bp-becomes-ebp (equal (bp x86) (bvchop 16 (ebp x86))) :hints (("Goal" :in-theory (enable bp ebp))))
