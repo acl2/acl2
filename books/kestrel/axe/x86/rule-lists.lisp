@@ -4287,7 +4287,16 @@
     si-becomes-rsi
     di-becomes-rdi
     sp-becomes-rsp
-    bp-becomes-rbp))
+    bp-becomes-rbp
+
+    eax-becomes-rax ; 32-bit aliases (in 32-bit mode, EAX, etc. would be the normal forms)
+    ebx-becomes-rbx
+    ecx-becomes-rcx
+    edx-becomes-rdx
+    esi-becomes-rsi
+    edi-becomes-rdi
+    esp-becomes-rsp
+    ebp-becomes-rbp))
 
 ;; Used by the unroller (new normal forms) and loop-lifter (old normal forms).
 (defund lifter-rules64 ()
