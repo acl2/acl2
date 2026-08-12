@@ -40,7 +40,15 @@
          (set::insert a (set::mergesort l)))
   :enable set::mergesort)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled mergesort-when-consp
+  (implies (consp l)
+           (equal (set::mergesort l)
+                  (set::insert (car l) (set::mergesort (cdr l)))))
+  :enable mergesort-of-cons)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled union-of-differences
   (equal (set::union (set::difference a c) (set::difference b c))
