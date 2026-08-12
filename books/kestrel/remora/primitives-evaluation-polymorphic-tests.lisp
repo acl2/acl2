@@ -1003,3 +1003,99 @@
                                                                 :nval 3)
                            *mat23*)
        :primop)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation iota/static:
+; a single ispace application directly yields the final array.
+
+; Ispace application to a matrix shape:
+; the result is the row-major enumeration, not a next-stage operation.
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-iota/static)
+                   (ispace-value-shape (list 2 3)))
+ (expr-value-vector
+  (list (expr-value-vector (list (iv 0) (iv 1) (iv 2)))
+        (expr-value-vector (list (iv 3) (iv 4) (iv 5))))))
+
+; Ispace application to the scalar shape: the rank-0 array holding 0.
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-iota/static)
+                   (ispace-value-shape nil))
+ (iv 0))
+
+; Ispace application to a shape with a zero dimension: the empty array.
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-iota/static)
+                   (ispace-value-shape (list 0)))
+ (expr-value-with-empty-dim (list 0) *tv-int*))
+
+; A dimension where a shape is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-iota/static)
+                            (ispace-value-dim 3))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation reduce:
+; instantiation stage transitions and storage of the function value.
+; The application of the final stage executes Remora code,
+; so it is tested with the evaluator (see evaluation-tests.lisp).
+
+; Type application: reduce applied to one atom type value.
+
+(acl2::assert-equal
+ (eval-primop-tfun (primop-value-reduce) *tv-int*)
+ (expr-value-primop (primop-value-reduce-t *tv-int*)))
+
+; Array type value where an atom one is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-tfun (primop-value-reduce)
+                            (make-type-value-array :elem *tv-int*
+                                                   :dims (list 3)))))
+
+; Ispace applications: reduce-t applied to a dimension,
+; then reduce-t-d applied to a shape.
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-reduce-t *tv-int*)
+                   (ispace-value-dim 2))
+ (expr-value-primop (make-primop-value-reduce-t-d :tval *tv-int*
+                                                  :dval 2)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-reduce-t-d :tval *tv-int*
+                                                 :dval 2)
+                   (ispace-value-shape nil))
+ (expr-value-primop (make-primop-value-reduce-t-d-s :tval *tv-int*
+                                                    :dval 2
+                                                    :sval nil)))
+
+; A shape where a dimension is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-reduce-t *tv-int*)
+                            (ispace-value-shape nil))))
+
+; A dimension where a shape is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (make-primop-value-reduce-t-d :tval *tv-int*
+                                                          :dval 2)
+                            (ispace-value-dim 3))))
+
+; Value application: reduce-t-d-s stores the function value.
+
+(defconst *add-fun*
+  (expr-value-primop (primop-value-int-binary (int-binary-primop-add))))
+
+(acl2::assert-equal
+ (eval-primop-fun-fo (make-primop-value-reduce-t-d-s :tval *tv-int*
+                                                     :dval 2
+                                                     :sval nil)
+                     *add-fun*)
+ (expr-value-primop (make-primop-value-reduce-t-d-s-f :tval *tv-int*
+                                                      :dval 2
+                                                      :sval nil
+                                                      :fval *add-fun*)))

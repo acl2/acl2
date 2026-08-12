@@ -2377,12 +2377,7 @@
        Currently the only higher-order case is
        the last stage of the @('reduce') primitive,
        which we delegate to @(tsee prim-reduce),
-       passing the stored values and the argument cell.")
-     (xdoc::p
-      "Since @(tsee prim-reduce) is currently a stub,
-       this function is not actually mutually recursive
-       with the other functions of the clique yet;
-       it will be, once @(tsee prim-reduce) is given its actual definition."))
+       passing the stored values and the argument cell."))
     (b* (((when (zp limit)) (reserr :limit))
          ((when (primop-value-fun-fo-p op))
           (eval-primop-fun-fo op arg)))
@@ -2415,18 +2410,57 @@
        @('tval'), @('d'), and @('s') are the instantiation values,
        @('fval') is the previously received function value,
        and @('arg') is the argument cell.
-       This is currently a stub that always returns an error;
-       the actual definition will use the instantiation values
-       (e.g. to check the argument cell's dimensions),
-       analogously to the first-order @('prim-...') functions."))
-    (declare (ignore tval d s fval arg))
-    (b* (((when (zp limit)) (reserr :limit)))
-      (reserr :todo))
+       According to the instantiated type of the operation,
+       the argument cell consists of @('1+d') cells of shape @('s'),
+       and the function value combines two cells of shape @('s')
+       into one cell of that shape.
+       We defensively check that the argument cell
+       has the expected dimensions.
+       We obtain its cells via @(tsee cells-at-depth-in-expr-value),
+       and we left-fold the function value over them
+       via @(tsee prim-reduce-loop),
+       starting with the first cell:
+       this mirrors the interpreter in [impl],
+       which computes @('foldM (applyFun op) c cs').
+       The type value is not used dynamically, as in [impl]."))
+    (declare (ignore tval))
+    (b* (((when (zp limit)) (reserr :limit))
+         (d (lnfix d))
+         (s (nat-list-fix s))
+         ((unless (equal (dims-of-expr-value arg) (cons (1+ d) s)))
+          (reserr nil))
+         ((ok cells) (cells-at-depth-in-expr-value arg 1))
+         ((unless (consp cells)) (reserr nil)))
+      (prim-reduce-loop (car cells) (cdr cells) fval (1- limit)))
     :measure (nfix limit))
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove eventually
+  (define prim-reduce-loop ((acc expr-valuep)
+                            (cells expr-value-listp)
+                            (fval expr-valuep)
+                            (limit natp))
+    :guard (and (expr-value-wfp acc)
+                (expr-value-list-wfp cells)
+                (expr-value-wfp fval))
+    :returns (val expr-value-resultp)
+    :parents (evaluation eval-exprs/atoms/binds)
+    :short "Left fold of the combining function over the cells."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We apply the function value to the accumulator and the first cell,
+       through two applications of @(tsee eval-app-cell)
+       (consistently with the curried view of applications),
+       and we continue with the result as the new accumulator
+       and with the remaining cells.
+       When the cells run out, the accumulator is the result.
+       This is used by @(tsee prim-reduce),
+       which seeds the accumulator with the first cell of its argument."))
+    (b* (((when (zp limit)) (reserr :limit))
+         ((when (endp cells)) (expr-value-fix acc))
+         ((ok fval1) (eval-app-cell fval acc (1- limit)))
+         ((ok acc1) (eval-app-cell fval1 (car cells) (1- limit))))
+      (prim-reduce-loop acc1 (cdr cells) fval (1- limit)))
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2521,7 +2555,17 @@
                       (eval-unbox-list targets ispaces var body
                                        (type-value-fix type) denv limit)
                       (eval-unbox-list targets ispaces var body
-                                       type (expr-denv-fix denv) limit))
+                                       type (expr-denv-fix denv) limit)
+                      (prim-reduce tval d s fval arg limit)
+                      (prim-reduce (type-value-fix tval) d s fval arg limit)
+                      (prim-reduce tval (nfix d) s fval arg limit)
+                      (prim-reduce tval d (nat-list-fix s) fval arg limit)
+                      (prim-reduce tval d s (expr-value-fix fval) arg limit)
+                      (prim-reduce tval d s fval (expr-value-fix arg) limit)
+                      (prim-reduce-loop acc cells fval limit)
+                      (prim-reduce-loop (expr-value-fix acc) cells fval limit)
+                      (prim-reduce-loop acc (expr-value-list-fix cells) fval limit)
+                      (prim-reduce-loop acc cells (expr-value-fix fval) limit))
              :in-theory (enable nfix zp))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2627,6 +2671,13 @@
                     (not (reserrp val)))
                (expr-value-wfp val))
       :fn prim-reduce)
+    (defret expr-value-wfp-of-prim-reduce-loop
+      (implies (and (expr-value-wfp acc)
+                    (expr-value-list-wfp cells)
+                    (expr-value-wfp fval)
+                    (not (reserrp val)))
+               (expr-value-wfp val))
+      :fn prim-reduce-loop)
     :mutual-recursion eval-exprs/atoms/binds
     :hints
     (("Goal"
@@ -2652,7 +2703,9 @@
                (eval-app-cell funcell argcell limit)
                (eval-unbox target ispaces var body type denv limit)
                (eval-unbox-list targets ispaces var body type denv limit)
-               (eval-primop-fun op arg limit)))))
+               (eval-primop-fun op arg limit)
+               (prim-reduce tval d s fval arg limit)
+               (prim-reduce-loop acc cells fval limit)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
