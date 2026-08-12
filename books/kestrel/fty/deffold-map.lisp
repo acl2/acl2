@@ -473,9 +473,10 @@
                                            (overrides alistp)
                                            (fty-table alistp))
   :returns (rules symbol-listp)
-  :short "Generate the names of the rules needed to verify the guards of
-          the map function for a product, sum, or option type
-          whose products have dependent requirements."
+  :short "Generate the names of the rules needed to verify
+          the guards of the map function for
+          a product type or
+          a sum type whose products have dependent requirements."
   :long
   (xdoc::topstring
    (xdoc::p
