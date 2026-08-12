@@ -210,6 +210,10 @@ simpler program.  Satlink includes a script that makes it easy to run the
 solver and then check any UNSAT answers.  See @(see unsat-checking) for more
 information.</p>
 
+<p>Glucose links with zlib and is known to crash after consuming a huge amount
+of memory when run on systems that do not have zlib. If this kind of memory
+blowup occurs in your work, definitely install zlib, and possibly rebuild
+glucose from source afterwards.</p>
 
 
 <h3><a href='http://www.cril.univ-artois.fr/~hoessen/penelope.html'>Penelope</a></h3>
