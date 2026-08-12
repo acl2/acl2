@@ -1,6 +1,6 @@
 ; Utilities that translate terms
 ;
-; Copyright (C) 2014-2022 Kestrel Institute
+; Copyright (C) 2014-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -80,3 +80,29 @@
                   ))
   (let ((wrld (table-programmatic 'acl2-defaults-table :ignore-ok t wrld)))
     (translate-term term ctx wrld)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp translated-term state).
+(defund translate-term-in-logic-mode (term ctx state)
+  (declare (xargs :stobjs state
+                  ;; todo: guard?
+                  ))
+  (let ((wrld (w state)))
+    (mv-let (erp translated-term state)
+      (in-logic-mode (translate-term term ctx wrld) state)
+      (if erp
+          (mv erp nil state)
+        (if (not ;; (termp translated-term wrld) ; todo: use this, but what about the guard
+                 (pseudo-termp translated-term)
+                 )
+            ;; should never happen:
+            (prog2$ (er hard? 'translate-term-in-logic-mode "Bad result of translation: ~x0." translated-term)
+                    (mv :bad-result-of-translation nil state))
+          (mv nil ; no error
+              translated-term
+              state))))))
+
+(defthm pseudo-termp-of-mv-nth-1-of-translate-term-in-logic-mode
+  (pseudo-termp (mv-nth 1 (translate-term-in-logic-mode term ctx state)))
+  :hints (("Goal" :in-theory (enable translate-term-in-logic-mode))))

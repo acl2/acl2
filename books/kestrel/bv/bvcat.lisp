@@ -15,6 +15,7 @@
 (include-book "slice-def")
 (include-book "getbit-def")
 (include-book "bvchop")
+(include-book "kestrel/utilities/polarity" :dir :system)
 (local (include-book "unsigned-byte-p"))
 (local (include-book "logapp"))
 (local (include-book "slice"))
@@ -1575,3 +1576,18 @@
                          (+ -1 highsize lowsize)
                          (bvcat (+ -1 highsize) highval lowsize lowval))))
   :hints (("Goal" :in-theory (enable natp))))
+
+(defthm equal-of-slice-and-constant-when-equal-of-bvchop-and-constant
+  (implies (and (syntaxp (or (want-to-strengthen (equal k2 (slice high low y)))
+                             (want-to-strengthen (equal (slice high low y) k2))))
+                (syntaxp (quotep k2))
+                (equal (bvchop low y) k1)
+                (syntaxp (quotep k1))
+                (natp low)
+                (natp high)
+                (<= low high))
+           (equal (equal k2 (slice high low y))
+                  (and (unsigned-byte-p (- (+ 1 high) low) k2)
+                       (equal (bvchop (+ 1 high) y) (bvcat (- (+ 1 high) low) k2 low k1)))))
+  :hints (("Goal" :in-theory (disable ;BVCHOP-SUBST-CONSTANT SLICE-SUBST-CONSTANT
+                               ))))
