@@ -42,6 +42,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled union-of-differences
+  (equal (set::union (set::difference a c) (set::difference b c))
+         (set::difference (set::union a b) c))
+  :enable (set::double-containment
+           set::pick-a-point-subset-strategy))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled emptyp-intersect-of-union-left-1
   (implies (set::emptyp (set::intersect (set::union a b) c))
            (set::emptyp (set::intersect a c)))
