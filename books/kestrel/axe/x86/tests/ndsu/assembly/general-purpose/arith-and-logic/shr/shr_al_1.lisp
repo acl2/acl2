@@ -17,7 +17,7 @@
 ;; (depends-on "shr_al_1.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
+(include-book "../../../support")
 
 
 ;; Rewrite al to bvchop-of-rax so proofs reduce to the existing rax form.
@@ -106,4 +106,4 @@
                 (not (member-eq flag *standard-flags*)))
            (equal (get-flag flag (shr_al_1 x86))
                   (get-flag flag x86)))
-  :hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant))))
+  )

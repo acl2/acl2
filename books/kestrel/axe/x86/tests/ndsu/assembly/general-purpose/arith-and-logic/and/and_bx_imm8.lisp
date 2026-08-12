@@ -17,7 +17,7 @@
 ;; (depends-on "and_bx_imm8.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
+(include-book "../../../support")
 
 
 ;; Rewrite bx to bvchop-of-rbx so proofs reduce to the rbx form.
@@ -112,4 +112,4 @@
                 (not (member-eq flag *standard-flags*)))
            (equal (get-flag flag (and_bx_imm8 x86))
                   (get-flag flag x86)))
-  :hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant))))
+  )

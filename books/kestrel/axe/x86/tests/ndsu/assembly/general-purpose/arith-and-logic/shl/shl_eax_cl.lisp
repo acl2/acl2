@@ -17,17 +17,13 @@
 ;; (depends-on "shl_eax_cl.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
+(include-book "../../../support")
 (include-book "kestrel/x86/register-readers-and-writers32" :dir :system)
 
 ;; Rewrite eax to bvchop-of-rax so proofs reduce to the existing rax form.
 (local (defthm eax-rewrite
   (equal (eax x86) (bvchop 32 (rax x86)))
   :hints (("Goal" :in-theory (enable eax rax)))))
-;; Rewrite cl to bvchop-of-rcx so proofs reduce to the existing rcx form.
-(local (defthm cl-rewrite
-  (equal (cl x86) (bvchop 8 (rcx x86)))
-  :hints (("Goal" :in-theory (enable cl rcx)))))
 
 ;; Lifts the subroutine into logic: Creates the function shl_eax_cl, which
 ;; represents the effect of the program on the x86 state.
@@ -153,4 +149,4 @@
                 (not (member-eq flag *standard-flags*)))
            (equal (get-flag flag (shl_eax_cl x86))
                   (get-flag flag x86)))
-  :hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant))))
+  )

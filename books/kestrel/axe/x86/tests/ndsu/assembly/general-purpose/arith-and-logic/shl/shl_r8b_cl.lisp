@@ -17,7 +17,7 @@
 ;; (depends-on "shl_r8b_cl.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
+(include-book "../../../support")
 
 
 ;; Rewrite cl to bvchop-of-rcx so proofs reduce to the existing rcx form.
@@ -136,4 +136,4 @@
                 (not (member-eq flag *standard-flags*)))
            (equal (get-flag flag (shl_r8b_cl x86))
                   (get-flag flag x86)))
-  :hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant))))
+  )

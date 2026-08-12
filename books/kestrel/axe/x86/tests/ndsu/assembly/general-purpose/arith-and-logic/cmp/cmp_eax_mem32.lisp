@@ -17,7 +17,7 @@
 ;; (depends-on "cmp_eax_mem32.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
+(include-book "../../../support")
 (include-book "kestrel/x86/register-readers-and-writers32" :dir :system)
 
 ;; Rewrite eax to bvchop-of-rax so proofs reduce to the rax form.
@@ -112,4 +112,4 @@
                 (not (member-eq flag *standard-flags*)))
            (equal (get-flag flag (cmp_eax_mem32 x86))
                   (get-flag flag x86)))
-  :hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant))))
+  )

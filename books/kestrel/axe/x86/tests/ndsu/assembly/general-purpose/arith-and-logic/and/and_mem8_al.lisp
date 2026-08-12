@@ -17,7 +17,7 @@
 ;; (depends-on "and_mem8_al.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
+(include-book "../../../support")
 
 
 ;; Bridge: connect al to bvchop-of-rax so Axe proofs reduce to the rax form.
@@ -102,4 +102,4 @@
                 (not (member-eq flag *standard-flags*)))
            (equal (get-flag flag (and_mem8_al x86))
                   (get-flag flag x86)))
-  :hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant))))
+  )

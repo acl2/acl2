@@ -17,7 +17,7 @@
 ;; (depends-on "not_bl_8.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
+(include-book "../../../support")
 
 
 ;; Rewrite bl to bvchop-of-rbx so proofs reduce to the rbx form.

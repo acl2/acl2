@@ -17,7 +17,7 @@
 ;; (depends-on "sal_rax_cl.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
+(include-book "../../../support")
 
 ;; Rewrite cl to bvchop-of-rcx so proofs reduce to the existing rcx form.
 (local (defthm cl-rewrite
@@ -142,4 +142,4 @@
                 (not (member-eq flag *standard-flags*)))
            (equal (get-flag flag (sal_rax_cl x86))
                   (get-flag flag x86)))
-  :hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant))))
+  )

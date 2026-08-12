@@ -17,7 +17,7 @@
 ;; (depends-on "not_ax_16.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
+(include-book "../../../support")
 
 
 ;; Rewrite ax to bvchop-of-rax so proofs reduce to the existing rax form.

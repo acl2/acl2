@@ -17,7 +17,7 @@
 ;; (depends-on "sub_ebx_imm32.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
+(include-book "../../../support")
 (include-book "kestrel/x86/register-readers-and-writers32" :dir :system)
 
 (local (defthm ebx-rewrite
@@ -117,4 +117,4 @@
                 (not (member-eq flag *standard-flags*)))
            (equal (get-flag flag (sub_ebx_imm32 x86))
                   (get-flag flag x86)))
-  :hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant))))
+  )
