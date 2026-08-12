@@ -3066,7 +3066,8 @@
                       (valid-tyname expr.type vstate))
                      (lifetime (if (> (vstate-num-scopes vstate) 1)
                                    (lifetime-auto)
-                                 (lifetime-static))))
+                                 (lifetime-static)))
+                     (complit-info (make-type-vinfo :type target-type)))
                   (cond
                    ((or (type-case target-type :unknown)
                         (type-case target-type :unknown-builtin)
@@ -3081,7 +3082,8 @@
                            vstate)))
                       (retok (make-expr-complit :type new-type
                                                 :elems new-elems
-                                                :final-comma expr.final-comma)
+                                                :final-comma expr.final-comma
+                                                :info complit-info)
                              target-type
                              (set::union types-type types-desiniters)
                              vstate)))
@@ -3130,7 +3132,8 @@
                            :elems (list (make-desiniter
                                          :designors nil
                                          :initer (initer-single new-init-expr)))
-                           :final-comma expr.final-comma)))
+                           :final-comma expr.final-comma
+                           :info complit-info)))
                       (retok new-complit
                              target-type
                              (set::union types-type types-init-expr)
@@ -3184,7 +3187,8 @@
                                        :strings (expr-string->strings
                                                  str-expr)
                                        :info info))))
-                           :final-comma expr.final-comma)))
+                           :final-comma expr.final-comma
+                           :info complit-info)))
                       (retok new-complit
                              target-type
                              types-type
@@ -3208,9 +3212,10 @@
                                                 lifetime
                                                 vstate)))
                       (retok (make-expr-complit
-                              :type new-type
-                              :elems new-elems
-                              :final-comma expr.final-comma)
+                             :type new-type
+                             :elems new-elems
+                             :final-comma expr.final-comma
+                             :info complit-info)
                              target-type
                              (set::union types-type types-desiniters)
                              vstate)))
