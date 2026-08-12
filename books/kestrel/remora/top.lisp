@@ -23,6 +23,7 @@
 (include-book "unique-names")
 (include-book "deserializer")
 (include-book "deserialize-from-file")
+(include-book "unique-names-properties")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

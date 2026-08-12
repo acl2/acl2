@@ -40,14 +40,20 @@
   (xdoc::topstring
    (xdoc::p
     "Traverses a Remora program, replacing every @(':capp') call to a known
-     @(':cfun') that carries non-empty ispace arguments with a plain @(':appn')
+     @(':cfun') that carries type arguments, ispace arguments, or both with a
+     plain @(':appn')
      call to a freshly generated, fully-instantiated @(':fun') definition.
      The new function is built by binding the @(':cfun')'s ispace parameters to
      the evaluated nat values and partially evaluating dimensions throughout the
-     type and body.")
+     type and body, and by binding its type parameters to the type arguments
+     and substituting them throughout.  A @(':cfun') may abstract only type
+     parameters, or only ispace parameters, so a call is instantiated as soon
+     as it supplies either kind of argument; a @(':capp') that supplies
+     neither has nothing to instantiate and is left alone.")
    (xdoc::p
     "Index-function definitions are handled the same way: every @(':iappn')
-     call to a known @(':ifun') with non-empty ispace arguments is replaced by
+     or @(':iapp') call to a known @(':ifun') with non-empty ispace arguments
+     is replaced by
      a reference to a freshly generated, fully-instantiated @(':val') definition
      (an @(':ifun') abstracts only ispace parameters, so the instance has no
      value parameters and is a @(':val') rather than a @(':fun')).")
@@ -685,9 +691,39 @@
                    (mono-expr x.fun defs fn-info-map dim-var-map type-map)))
                (mv err fn-info-map (expr-tappn new-fun x.args)))
 
-      :iapp (b* (((mv err fn-info-map new-fun)
-                  (mono-expr x.fun defs fn-info-map dim-var-map type-map)))
-              (mv err fn-info-map (expr-iapp new-fun x.arg)))
+      :iapp
+      (b* (((mv err fn-info-map new-fun)
+            (mono-expr x.fun defs fn-info-map dim-var-map type-map))
+           ((when err) (mv err fn-info-map (expr-iapp new-fun x.arg)))
+           (fun new-fun)
+           ; Only monomorphize an :iapp of a known :ifun :var.  The single
+           ; ispace argument supplies the nat list for the ifun's ispace
+           ; parameters, analogously to the :iappn case (which carries a list).
+           ((mv err fn-info-map new-expr)
+            (expr-case fun
+              :var (b* ((ifun-name fun.name)
+                        (def-entry (assoc-equal ifun-name defs))
+                        ((unless def-entry)
+                         (if (assoc-equal ifun-name fn-info-map)
+                             (mv :out-of-scope-fun-reference fn-info-map
+                                 (expr-iapp fun x.arg))
+                           (mv nil fn-info-map (expr-iapp fun x.arg))))
+                        ((mv eval-err nats) (eval-iargs (list x.arg) dim-var-map))
+                        ((when eval-err)
+                         (mv :ispace-eval-error fn-info-map (expr-iapp fun x.arg)))
+                        (inst-name (cfun-inst-name ifun-name nil nats))
+                        ; Record the request; the instance is created when
+                        ; the ifun's :let is exited.
+                        (fn-info-map
+                         (fn-info-map-add-request
+                          fn-info-map ifun-name
+                          (make-inst-request :inst-name inst-name
+                                             :nats nats
+                                             :targ-tys nil))))
+                 (mv nil fn-info-map (expr-var inst-name)))
+              :otherwise (mv nil fn-info-map (expr-iapp fun x.arg))))
+           ((when err) (mv err fn-info-map new-expr)))
+        (mv nil fn-info-map new-expr))
 
       :iappn
       (b* (((mv err fn-info-map new-fun)
@@ -731,49 +767,56 @@
             (mono-expr-list x.args defs fn-info-map dim-var-map type-map))
            ((when err) (mv err fn-info-map (expr-capp new-fun x.targs x.iargs new-args)))
            (fun new-fun)
-           ; Only monomorphize a :capp of a :var to non-empty :some iargs.
+           (iarg-isps (ispace-list-option-case x.iargs
+                        :some x.iargs.val :none nil))
+           (targ-tys  (type-list-option-case x.targs
+                        :some x.targs.val :none nil))
+           ; Only monomorphize a :capp of a :var that supplies at least one
+           ; argument to instantiate a parameter with: type arguments,
+           ; ispace arguments, or both.  A :cfun may have parameters of just
+           ; one of the two kinds, so neither list alone can be required; a
+           ; call with neither has nothing to instantiate and is an ordinary
+           ; application.
            ((mv err fn-info-map new-expr)
-            (ispace-list-option-case x.iargs
-              :none (mv nil fn-info-map (expr-capp fun x.targs x.iargs new-args))
-              :some (if (not (consp x.iargs.val))
-                        (mv nil fn-info-map (expr-capp fun x.targs x.iargs new-args))
-                      (expr-case fun
-                        :var (b* ((cfun-name fun.name)
-                                  ((mv eval-err nats) (eval-iargs x.iargs.val dim-var-map))
-                                  ((when eval-err)
-                                   (mv :ispace-eval-error fn-info-map
-                                       (expr-capp fun x.targs x.iargs new-args)))
-                                  (tnames    (type-list-option-case x.targs
-                                               :some (name-for-type-list x.targs.val type-map)
-                                               :none nil))
-                                  (inst-name (cfun-inst-name cfun-name tnames nats))
-                                  (targ-tys  (type-list-option-case x.targs
-                                               :some x.targs.val :none nil))
-                                  (mono-expr (expr-appn (expr-var inst-name) new-args))
-                                  (def-entry (assoc-equal cfun-name defs))
-                                  ; An unknown cfun is built-in: emit the same instance call
-                                  ; as for a known cfun, but do not build/register an instance.
-                                  ; A registered but out-of-scope cfun is a recursive or
-                                  ; forward reference, which non-recursive scoping rules out.
-                                  ((unless def-entry)
-                                   (if (assoc-equal cfun-name fn-info-map)
-                                       (mv :out-of-scope-fun-reference fn-info-map
-                                           (expr-capp fun x.targs x.iargs new-args))
-                                     (mv nil fn-info-map mono-expr)))
-                                  ; Record the request, with the type arguments
-                                  ; resolved through the call site's type-map;
-                                  ; the instance is created when the cfun's
-                                  ; :let is exited.
-                                  (fn-info-map
-                                   (fn-info-map-add-request
-                                    fn-info-map cfun-name
-                                    (make-inst-request
-                                     :inst-name inst-name
-                                     :nats nats
-                                     :targ-tys (type-list-subst-type-vars
-                                                targ-tys type-map type-map)))))
-                                (mv nil fn-info-map mono-expr))
-                        :otherwise (mv nil fn-info-map (expr-capp fun x.targs x.iargs new-args))))))
+            (if (and (endp iarg-isps) (endp targ-tys))
+                (mv nil fn-info-map (expr-capp fun x.targs x.iargs new-args))
+              (expr-case fun
+                :var (b* ((cfun-name fun.name)
+                          (def-entry (assoc-equal cfun-name defs))
+                          ; An unknown cfun is built-in: leave the
+                          ; :capp unchanged, i.e. do not monomorphize.
+                          ; A registered but out-of-scope cfun is a
+                          ; recursive or forward reference, which
+                          ; non-recursive scoping rules out.
+                          ((unless def-entry)
+                           (if (assoc-equal cfun-name fn-info-map)
+                               (mv :out-of-scope-fun-reference fn-info-map
+                                   (expr-capp fun x.targs x.iargs new-args))
+                             (mv nil fn-info-map
+                                 (expr-capp fun x.targs x.iargs new-args))))
+                          ; With no ispace arguments this yields no nats, and
+                          ; the instance's dim-var-map is just the call site's.
+                          ((mv eval-err nats) (eval-iargs iarg-isps dim-var-map))
+                          ((when eval-err)
+                           (mv :ispace-eval-error fn-info-map
+                               (expr-capp fun x.targs x.iargs new-args)))
+                          (tnames    (name-for-type-list targ-tys type-map))
+                          (inst-name (cfun-inst-name cfun-name tnames nats))
+                          ; Record the request, with the type arguments
+                          ; resolved through the call site's type-map;
+                          ; the instance is created when the cfun's
+                          ; :let is exited.
+                          (fn-info-map
+                           (fn-info-map-add-request
+                            fn-info-map cfun-name
+                            (make-inst-request
+                             :inst-name inst-name
+                             :nats nats
+                             :targ-tys (type-list-subst-type-vars
+                                        targ-tys type-map type-map)))))
+                       (mv nil fn-info-map
+                           (expr-appn (expr-var inst-name) new-args)))
+                :otherwise (mv nil fn-info-map (expr-capp fun x.targs x.iargs new-args)))))
            ((when err) (mv err fn-info-map new-expr)))
         (mv nil fn-info-map new-expr))
 
@@ -793,7 +836,7 @@
                  (mv err fn-info-map (expr-bracket new-es)))
 
       :let (if (and (consp x.binds) (endp (cdr x.binds)))
-               ;; Lets should have been normalized before calling this to have obly one bind
+               ;; Lets should have been normalized before calling this to have only one bind
                (b* ((bnd (car x.binds))
                     ((mv err fn-info-map new-bind)
                      (mono-bind bnd defs fn-info-map dim-var-map type-map))
@@ -1102,3 +1145,76 @@
        ((mv err fn-info-map new-expr)
         (mono-expr expr nil nil nil nil)))
     (mv err fn-info-map (expr-flatten-let new-expr))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; File-level monomorphization, for files with no imports.
+;
+; The declarations of a file are a sequence of bindings whose scopes nest
+; left to right, which is exactly the scoping of the nested single-bind
+; :LETs that MONO-EXPR consumes.  So a file is monomorphized by folding
+; its declarations into one such nest --- with the conversions between
+; declarations and bindings of UTILITY-TRANSFORMS --- monomorphizing the
+; resulting expression, and reading the declarations back off the
+; (flattened) :LET that comes out.  Since the instances of a definition
+; are spliced in at the :LET that binds it, replacing it, this is
+; precisely the hoisting of instance bindings into new declarations that
+; program-level monomorphization is supposed to do.
+;
+; The body of the innermost :LET is a placeholder --- an empty array
+; literal, which binds and mentions nothing --- and is discarded.  (Unlike
+; FILE-TO-EXPR, which runs a file and so uses its MAIN entry point's body,
+; monomorphization transforms every declaration and keeps them all.)
+
+(define monomorphize-file ((file filep))
+  :returns (mv err (new-file filep))
+  :short "Monomorphize an import-free Remora file."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "File-level entry point.  Returns @('(mv error new-file)').  On
+     success @('error') is @('nil'); on failure it is a keyword and the
+     input file is returned unchanged.")
+   (xdoc::p
+    "The file must have no imports: they would have to be resolved first,
+     by replacing them with the declarations of the imported files (see
+     @(tsee file)), which we do not do here.  A file with imports yields
+     the error @(':imports-not-supported').")
+   (xdoc::p
+    "The declarations are folded into a nest of single-bind @(':let')s,
+     which is monomorphized with @(tsee monomorphize-top-expr), and the
+     declarations of the result are read back off the resulting
+     @(':let').  A @(':cfun') or @(':ifun') definition that is
+     instantiated is thus replaced by the definitions of its instances,
+     and the call sites --- in later definitions and in the entry
+     points --- become calls of those instances.  Definitions that are
+     not instantiated, and all entry points, are kept, with their bodies
+     monomorphized.")
+   (xdoc::p
+    "The errors of @(tsee monomorphize-top-expr) are passed through.  The
+     additional error @(':unexpected-monomorphization-result') is
+     unreachable: the monomorphization of a @(':let') is a @(':let').")
+   (xdoc::p
+    "Note that @(tsee monomorphize-top-expr) uniquifies binder names
+     first (see @(tsee expr-uniquify-names)), which keeps a name unless
+     it has already been seen.  The names declared by a file are
+     therefore preserved so long as they are distinct from each other and
+     from the names of the free variables of the declarations, i.e. the
+     built-in functions --- which again holds of any well-formed file."))
+  (b* (((file file) file)
+       ((when (consp file.imports))
+        (mv :imports-not-supported (file-fix file)))
+       ; No declarations: nothing to monomorphize, and NEST-LET-BINDS would
+       ; return the placeholder body rather than a :LET.
+       ((when (endp file.decls))
+        (mv nil (file-fix file)))
+       (entry-names (decl-list-entry-names file.decls))
+       (binds (decl-list-to-binds file.decls))
+       (expr (nest-let-binds binds (expr-array nil nil)))
+       ((mv err & new-expr) (monomorphize-top-expr expr))
+       ((when err) (mv err (file-fix file)))
+       ((unless (expr-case new-expr :let))
+        (mv :unexpected-monomorphization-result (file-fix file)))
+       (new-decls (bind-list-to-decls (expr-let->binds new-expr) entry-names)))
+    (mv nil (make-file :imports nil :decls new-decls))))
