@@ -19,12 +19,6 @@
 
 (include-book "../../../support")
 
-
-;; Rewrite bl to bvchop-of-rbx so proofs reduce to the rbx form.
-(local (defthm bl-rewrite
-  (equal (bl x86) (bvchop 8 (rbx x86)))
-  :hints (("Goal" :in-theory (enable bl rbx)))))
-
 ;; Lifts the subroutine into logic: Creates the function or_bl_imm8, which
 ;; represents the effect of the program on the x86 state.
 ;; OR BL, 5 is encoded as 80 CB 05 (3 bytes), so stop PC = 0x401003.

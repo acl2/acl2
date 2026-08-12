@@ -18,15 +18,6 @@
 ;; cert_param: (uses-stp)
 
 (include-book "../../../support")
-(include-book "kestrel/x86/register-readers-and-writers32" :dir :system)
-
-;; Rewrite eax/ebx to bvchop-of-rax/rbx so proofs reduce to the existing rax/rbx form.
-(local (defthm eax-rewrite
-  (equal (eax x86) (bvchop 32 (rax x86)))
-  :hints (("Goal" :in-theory (enable eax rax)))))
-(local (defthm ebx-rewrite
-  (equal (ebx x86) (bvchop 32 (rbx x86)))
-  :hints (("Goal" :in-theory (enable ebx rbx)))))
 
 ;; Lifts the subroutine into logic: Creates the function xor_eax_ebx_32, which
 ;; represents the effect of the program on the x86 state.

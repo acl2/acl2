@@ -18,12 +18,6 @@
 ;; cert_param: (uses-stp)
 
 (include-book "../../../support")
-(include-book "kestrel/x86/register-readers-and-writers32" :dir :system)
-
-;; Bridge: connect eax to bvchop-of-rax so Axe proofs reduce to the rax form.
-(local (defthm eax-rewrite
-  (equal (eax x86) (bvchop 32 (rax x86)))
-  :hints (("Goal" :in-theory (enable eax rax)))))
 
 ;; Lifts the subroutine into logic: Creates the function and_mem32_eax, which
 ;; represents the effect of the program on the x86 state.

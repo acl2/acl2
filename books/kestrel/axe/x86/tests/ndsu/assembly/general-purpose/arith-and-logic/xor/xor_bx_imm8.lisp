@@ -19,12 +19,6 @@
 
 (include-book "../../../support")
 
-
-;; Rewrite bx to bvchop-of-rbx so proofs reduce to the rbx form.
-(local (defthm bx-rewrite
-  (equal (bx x86) (bvchop 16 (rbx x86)))
-  :hints (("Goal" :in-theory (enable bx rbx)))))
-
 ;; Lifts the subroutine into logic: Creates the function xor_bx_imm8, which
 ;; represents the effect of the program on the x86 state.
 ;; XOR BX, 5 is encoded as 66 83 F3 05 (4 bytes), so stop PC = 0x401004.

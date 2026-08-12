@@ -19,12 +19,6 @@
 
 (include-book "../../../support")
 
-
-;; Rewrite ax to bvchop-of-rax so proofs reduce to the rax form.
-(local (defthm ax-rewrite
-  (equal (ax x86) (bvchop 16 (rax x86)))
-  :hints (("Goal" :in-theory (enable ax rax)))))
-
 ;; Lifts the subroutine into logic: Creates the function add_ax_imm16, which
 ;; represents the effect of the program on the x86 state.
 ;; ADD AX, 500 is encoded as 66 05 F4 01 (4 bytes), so stop PC = 0x401004.

@@ -19,12 +19,6 @@
 
 (include-book "../../../support")
 
-
-;; Rewrite ax to bvchop-of-rax so proofs reduce to the existing rax form.
-(local (defthm ax-rewrite
-  (equal (ax x86) (bvchop 16 (rax x86)))
-  :hints (("Goal" :in-theory (enable ax rax)))))
-
 ;; Lifts the subroutine into logic: Creates the function shr_ax_1, which
 ;; represents the effect of the program on the x86 state.
 ;; SHR AX, 1 is encoded as 66 D1 E8 (3 bytes), so stop PC = #x401003.

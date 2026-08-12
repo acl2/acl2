@@ -19,15 +19,6 @@
 
 (include-book "../../../support")
 
-
-;; Rewrite al/bl to bvchop-of-rax/rbx so proofs reduce to the existing rax/rbx form.
-(local (defthm al-rewrite
-  (equal (al x86) (bvchop 8 (rax x86)))
-  :hints (("Goal" :in-theory (enable al rax)))))
-(local (defthm bl-rewrite
-  (equal (bl x86) (bvchop 8 (rbx x86)))
-  :hints (("Goal" :in-theory (enable bl rbx)))))
-
 ;; Lifts the subroutine into logic: Creates the function or_al_bl_8, which
 ;; represents the effect of the program on the x86 state.
 ;; OR AL, BL is encoded as 08 D8 (2 bytes), so stop PC = 0x401002.

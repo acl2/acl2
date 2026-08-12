@@ -19,11 +19,6 @@
 
 (include-book "../../../support")
 
-
-(local (defthm bl-rewrite
-  (equal (bl x86) (bvchop 8 (rbx x86)))
-  :hints (("Goal" :in-theory (enable bl rbx)))))
-
 ;; Lifts the subroutine into logic: Creates the function cmp_bl_imm8, which
 ;; represents the effect of the program on the x86 state.
 ;; CMP BL, 5 is encoded as 80 FB 05 (3 bytes), so stop PC = 0x401003.

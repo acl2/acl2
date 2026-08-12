@@ -19,12 +19,6 @@
 
 (include-book "../../../support")
 
-
-;; Rewrite bl to bvchop-of-rbx so proofs reduce to the rbx form.
-(local (defthm bl-rewrite
-  (equal (bl x86) (bvchop 8 (rbx x86)))
-  :hints (("Goal" :in-theory (enable bl rbx)))))
-
 ;; Lifts the subroutine into logic: Creates the function not_bl_8, which
 ;; represents the effect of the program on the x86 state.
 ;; NOT BL is encoded as F6 D3 (2 bytes), so stop PC = 0x401002.

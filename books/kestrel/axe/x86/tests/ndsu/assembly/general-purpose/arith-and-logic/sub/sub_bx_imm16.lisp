@@ -19,11 +19,6 @@
 
 (include-book "../../../support")
 
-
-(local (defthm bx-rewrite
-  (equal (bx x86) (bvchop 16 (rbx x86)))
-  :hints (("Goal" :in-theory (enable bx rbx)))))
-
 ;; Lifts the subroutine into logic: Creates the function sub_bx_imm16, which
 ;; represents the effect of the program on the x86 state.
 ;; SUB BX, 300 is encoded as 66 81 EB 2C 01 (5 bytes), so stop PC = 0x401005.

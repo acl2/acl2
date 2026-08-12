@@ -18,12 +18,6 @@
 ;; cert_param: (uses-stp)
 
 (include-book "../../../support")
-(include-book "kestrel/x86/register-readers-and-writers32" :dir :system)
-
-;; Rewrite ebx to bvchop-of-rbx so proofs reduce to the rbx form.
-(local (defthm ebx-rewrite
-  (equal (ebx x86) (bvchop 32 (rbx x86)))
-  :hints (("Goal" :in-theory (enable ebx rbx)))))
 
 ;; Lifts the subroutine into logic: Creates the function xor_ebx_imm8, which
 ;; represents the effect of the program on the x86 state.

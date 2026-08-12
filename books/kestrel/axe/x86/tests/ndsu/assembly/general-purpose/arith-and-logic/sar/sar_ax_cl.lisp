@@ -19,16 +19,6 @@
 
 (include-book "../../../support")
 
-
-;; Rewrite ax to bvchop-of-rax so proofs reduce to the existing rax form.
-(local (defthm ax-rewrite
-  (equal (ax x86) (bvchop 16 (rax x86)))
-  :hints (("Goal" :in-theory (enable ax rax)))))
-;; Rewrite cl to bvchop-of-rcx so proofs reduce to the existing rcx form.
-(local (defthm cl-rewrite
-  (equal (cl x86) (bvchop 8 (rcx x86)))
-  :hints (("Goal" :in-theory (enable cl rcx)))))
-
 ;; Lifts the subroutine into logic: Creates the function sar_ax_cl, which
 ;; represents the effect of the program on the x86 state.
 ;; SAR AX, CL is encoded as 66 D3 F8 (3 bytes), so stop PC = #x401003.

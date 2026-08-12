@@ -19,12 +19,6 @@
 
 (include-book "../../../support")
 
-
-;; Rewrite ax to bvchop-of-rax so proofs reduce to the rax form.
-(local (defthm ax-rewrite
-  (equal (ax x86) (bvchop 16 (rax x86)))
-  :hints (("Goal" :in-theory (enable ax rax)))))
-
 ;; Lifts the subroutine into logic: Creates the function cmp_ax_mem16, which
 ;; represents the effect of the program on the x86 state.
 ;; CMP AX, [RBX] is encoded as 66 3B 03 (3 bytes), so stop PC = 0x401003.

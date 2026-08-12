@@ -19,12 +19,6 @@
 
 (include-book "../../../support")
 
-
-;; Rewrite al to bvchop-of-rax so proofs reduce to the existing rax form.
-(local (defthm al-rewrite
-  (equal (al x86) (bvchop 8 (rax x86)))
-  :hints (("Goal" :in-theory (enable al rax)))))
-
 ;; Lifts the subroutine into logic: Creates the function sar_al_imm8, which
 ;; represents the effect of the program on the x86 state.
 ;; SAR AL, 3 is encoded as C0 F8 03 (3 bytes), so stop PC = #x401003.

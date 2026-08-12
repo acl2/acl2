@@ -19,15 +19,6 @@
 
 (include-book "../../../support")
 
-
-;; Rewrite ax/bx to bvchop-of-rax/rbx so proofs reduce to the existing rax/rbx form.
-(local (defthm ax-rewrite
-  (equal (ax x86) (bvchop 16 (rax x86)))
-  :hints (("Goal" :in-theory (enable ax rax)))))
-(local (defthm bx-rewrite
-  (equal (bx x86) (bvchop 16 (rbx x86)))
-  :hints (("Goal" :in-theory (enable bx rbx)))))
-
 ;; Lifts the subroutine into logic: Creates the function and_ax_bx_16, which
 ;; represents the effect of the program on the x86 state.
 ;; AND AX, BX is encoded as 66 21 D8 (3 bytes), so stop PC = 0x401003.

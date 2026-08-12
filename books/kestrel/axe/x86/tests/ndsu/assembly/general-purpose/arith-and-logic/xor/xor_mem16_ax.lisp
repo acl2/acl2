@@ -19,12 +19,6 @@
 
 (include-book "../../../support")
 
-
-;; Bridge: connect ax to bvchop-of-rax so Axe proofs reduce to the rax form.
-(local (defthm ax-rewrite
-  (equal (ax x86) (bvchop 16 (rax x86)))
-  :hints (("Goal" :in-theory (enable ax rax)))))
-
 ;; Lifts the subroutine into logic: Creates the function xor_mem16_ax, which
 ;; represents the effect of the program on the x86 state.
 ;; XOR [RBX], AX is encoded as 66 31 03 (3 bytes), so stop PC = 0x401003.

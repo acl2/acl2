@@ -19,12 +19,6 @@
 
 (include-book "../../../support")
 
-
-;; Rewrite bx to bvchop-of-rbx so proofs reduce to the rbx form.
-(local (defthm bx-rewrite
-  (equal (bx x86) (bvchop 16 (rbx x86)))
-  :hints (("Goal" :in-theory (enable bx rbx)))))
-
 ;; Lifts the subroutine into logic: Creates the function add_bx_imm16, which
 ;; represents the effect of the program on the x86 state.
 ;; ADD BX, 100 is encoded as 66 83 C3 64 (4 bytes), so stop PC = 0x401004.

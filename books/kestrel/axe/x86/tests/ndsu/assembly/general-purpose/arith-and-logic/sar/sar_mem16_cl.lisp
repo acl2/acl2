@@ -19,12 +19,6 @@
 
 (include-book "../../../support")
 
-
-;; Rewrite cl to bvchop-of-rcx so proofs reduce to the existing rcx form.
-(local (defthm cl-rewrite
-  (equal (cl x86) (bvchop 8 (rcx x86)))
-  :hints (("Goal" :in-theory (enable cl rcx)))))
-
 ;; Lifts the subroutine into logic: Creates the function sar_mem16_cl, which
 ;; represents the effect of the program on the x86 state.
 ;; SAR word [RBX], CL is encoded as 66 D3 3B (3 bytes), so stop PC = #x401003.

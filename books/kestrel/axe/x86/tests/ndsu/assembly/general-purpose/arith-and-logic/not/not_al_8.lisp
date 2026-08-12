@@ -19,12 +19,6 @@
 
 (include-book "../../../support")
 
-
-;; Rewrite al to bvchop-of-rax so proofs reduce to the existing rax form.
-(local (defthm al-rewrite
-  (equal (al x86) (bvchop 8 (rax x86)))
-  :hints (("Goal" :in-theory (enable al rax)))))
-
 ;; Lifts the subroutine into logic: Creates the function not_al_8, which
 ;; represents the effect of the program on the x86 state.
 ;; NOT AL is encoded as F6 D0 (2 bytes), so stop PC = 0x401002.
