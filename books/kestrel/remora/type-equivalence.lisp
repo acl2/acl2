@@ -217,6 +217,16 @@
      provided that their ispaces are equivalent to the empty list of dimensions;
      for bracket types, we form a concatenation prior to the comparison.")
    (xdoc::p
+    "An array type variable @('*t') stands for
+     the array type @('(A &t @t)') in Remora
+     (but not all parts of our formalization follow that yet),
+     where the atom type variable and the shape variable
+     have the same name as the array type variable
+     (without the sigils).
+     But since @('@t') is a variable,
+     it cannot be equivalent to the shape @('[]'),
+     and thus we do not perform any normalization on array type variables.")
+   (xdoc::p
     "Additionally, also to facilitate (the rest of) equivalence checking,
      we turn an n-ary function type without input types into its output type,
      to which it is equivalent (see @(tsee type))."))
