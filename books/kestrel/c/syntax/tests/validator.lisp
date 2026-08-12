@@ -1935,6 +1935,53 @@ int a[5];
 int a[20];
 ")
 
+;; An intervening incomplete declaration retains the prior known length in the
+;; composite type.
+(test-valid-fail
+  "static int a[10];
+extern int a[];
+static int a[20];
+")
+
+;; The external information retains a composite across translation units.
+(test-valid-fail
+  "extern int a[];
+"
+  "extern int a[10];
+"
+  "extern int a[20];
+")
+
+;; An unspecified parameter list does not discard a prior prototype.
+(test-valid-fail
+  "static int f(int);
+static int f();
+static int f(double);
+")
+
+;; External function information also retains a prototype across translation
+;; units.
+(test-valid-fail
+  "extern int f();
+"
+  "extern int f(int);
+"
+  "extern int f(double);
+")
+
+;; A function definition also retains the composite of its type with a prior
+;; declaration.  Internal linkage ensures this is checked in the ordinary
+;; identifier table rather than via the external information.
+(test-valid-fail
+  "static int f(int);
+static int f(x)
+  int x;
+{
+  return x;
+}
+static int f(double);
+")
+
 ;; The precise kind is propagated to inner array layers.
 (test-valid-fail
   "int a[2][3];
