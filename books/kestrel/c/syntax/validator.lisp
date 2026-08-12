@@ -2807,10 +2807,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define array-size-expr-type-kind ((expr exprp) (ienv ienvp))
+(define valid-array-size-expr-type-kind ((expr exprp) (ienv ienvp))
   :guard (expr-unambp expr)
-  :returns (kind type-array-kindp)
-  :short "Determine the array kind specified by a validated size expression."
+  :returns (mv (erp maybe-msgp)
+               (kind type-array-kindp))
+  :short "Validate an array size and determine its array kind."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2821,19 +2822,31 @@
      we use @(':unknown-complete') when it cannot determine
      whether the expression is an integer constant expression.")
    (xdoc::p
-    "For an integer constant expression,
-     we also attempt to evaluate the length.
-     If constant evaluation produces a positive integer, we retain it;
-     otherwise, we leave the constant length unknown.
-     In particular, this function does not enforce the constraint requiring
-     a constant size expression to have a value greater than zero
-     [C17:6.7.6.2/1] [C23:6.7.7.3/1]."))
-  (b* ((icep (expr-ice-p expr (ienv->dialect ienv)))
-       ((when (eq icep nil)) (type-array-kind-nonconst-len))
-       ((unless (eq icep t)) (type-array-kind-unknown-complete))
-       (integer? (value-to-integer (const-eval-expr expr ienv))))
-    (make-type-array-kind-const-len
-     :len (and (posp integer?) integer?))))
+    "We attempt to evaluate the size expression.
+     A known negative value is invalid.
+     A known zero value is also invalid in standard C
+     [C17:6.7.6.2/1] [C23:6.7.7.3/1],
+     but we allow it when GCC or Clang extensions are enabled.
+     If an integer constant expression evaluates to a positive integer,
+     we retain that length;
+     otherwise, we leave the constant length unknown."))
+  (b* (((reterr) (type-array-kind-unknown-complete))
+       (icep (expr-ice-p expr (ienv->dialect ienv)))
+       (integer? (value-to-integer (const-eval-expr expr ienv)))
+       ((when (and integer? (< integer? 0)))
+        (retmsg$ "The array size expression ~x0 has negative value ~x1."
+                 (expr-fix expr)
+                 integer?))
+       ((when (and (equal integer? 0)
+                   (not (ienv->gcc/clang ienv))))
+        (retmsg$ "The array size expression ~x0 has value zero."
+                 (expr-fix expr)))
+       ((when (eq icep nil))
+        (retok (type-array-kind-nonconst-len)))
+       ((unless (eq icep t))
+        (retok (type-array-kind-unknown-complete))))
+    (retok (make-type-array-kind-const-len
+            :len (and (posp integer?) integer?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5508,6 +5521,13 @@
                        has type ~x1."
                       (dirdeclor-fix dirdeclor)
                       index-type?))
+            ((erp kind)
+             (expr-option-case
+               new-expr?
+               :some
+               (valid-array-size-expr-type-kind
+                new-expr?.val (vstate->ienv vstate))
+               :none (retok (type-array-kind-incomplete))))
             (type
              (expr-option-case
                new-expr?
@@ -5515,8 +5535,7 @@
                (type-array-change-kind-at-depth
                 type
                 (dirdeclor-derived-type-depth dirdeclor.declor)
-                (array-size-expr-type-kind new-expr?.val
-                                           (vstate->ienv vstate)))
+                kind)
                :none type)))
          (retok (make-dirdeclor-array :declor new-dirdeclor
                                       :qualspecs dirdeclor.qualspecs
@@ -5543,11 +5562,14 @@
                        has type ~x1."
                       (dirdeclor-fix dirdeclor)
                       index-type))
+            ((erp kind)
+             (valid-array-size-expr-type-kind
+              new-expr (vstate->ienv vstate)))
             (type
              (type-array-change-kind-at-depth
               type
               (dirdeclor-derived-type-depth dirdeclor.declor)
-              (array-size-expr-type-kind new-expr (vstate->ienv vstate)))))
+              kind)))
          (retok (make-dirdeclor-array-static1 :declor new-dirdeclor
                                               :qualspecs dirdeclor.qualspecs
                                               :size new-expr)
@@ -5573,11 +5595,14 @@
                        has type ~x1."
                       (dirdeclor-fix dirdeclor)
                       index-type))
+            ((erp kind)
+             (valid-array-size-expr-type-kind
+              new-expr (vstate->ienv vstate)))
             (type
              (type-array-change-kind-at-depth
               type
               (dirdeclor-derived-type-depth dirdeclor.declor)
-              (array-size-expr-type-kind new-expr (vstate->ienv vstate)))))
+              kind)))
          (retok (make-dirdeclor-array-static2 :declor new-dirdeclor
                                               :qualspecs dirdeclor.qualspecs
                                               :size new-expr)
@@ -5825,6 +5850,13 @@
                        has type ~x1."
                       (dirabsdeclor-fix dirabsdeclor)
                       index-type?))
+            ((erp kind)
+             (expr-option-case
+               new-size?
+               :some
+               (valid-array-size-expr-type-kind
+                new-size?.val (vstate->ienv vstate))
+               :none (retok (type-array-kind-incomplete))))
             (type
              (expr-option-case
                new-size?
@@ -5833,8 +5865,7 @@
                 type
                 (dirabsdeclor-option-derived-type-depth
                  dirabsdeclor.declor?)
-                (array-size-expr-type-kind new-size?.val
-                                           (vstate->ienv vstate)))
+                kind)
                :none type)))
          (retok (make-dirabsdeclor-array
                  :declor? new-declor?
@@ -5861,11 +5892,14 @@
                        has type ~x1."
                       (dirabsdeclor-fix dirabsdeclor)
                       index-type))
+            ((erp kind)
+             (valid-array-size-expr-type-kind
+              new-size (vstate->ienv vstate)))
             (type
              (type-array-change-kind-at-depth
               type
               (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?)
-              (array-size-expr-type-kind new-size (vstate->ienv vstate)))))
+              kind)))
          (retok (make-dirabsdeclor-array-static1
                  :declor? new-declor?
                  :qualspecs dirabsdeclor.qualspecs
@@ -5891,11 +5925,14 @@
                        has type ~x1."
                       (dirabsdeclor-fix dirabsdeclor)
                       index-type))
+            ((erp kind)
+             (valid-array-size-expr-type-kind
+              new-size (vstate->ienv vstate)))
             (type
              (type-array-change-kind-at-depth
               type
               (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?)
-              (array-size-expr-type-kind new-size (vstate->ienv vstate)))))
+              kind)))
          (retok (make-dirabsdeclor-array-static2
                  :declor? new-declor?
                  :qualspecs dirabsdeclor.qualspecs

@@ -1914,6 +1914,42 @@ void g(void) {
 
 ;; Array size expressions.
 
+;; Standard C requires constant array sizes to be positive.
+(test-valid-fail
+  "int a[-1];
+")
+
+(test-valid-fail
+  "int a[0];
+")
+
+(test-valid-fail
+  "int a[0];
+"
+  :dialect (c::make-dialect :std (c::standard-c23)))
+
+;; GCC and Clang accept zero-length arrays as extensions, but still reject
+;; negative sizes.
+(test-valid
+  "int a[0];
+"
+  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+  "int a[0];
+"
+  :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid-fail
+  "int a[-1];
+"
+  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+  "int a[-1];
+"
+  :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
 ;; Exercise an arithmetic integer constant expression.  The current ICE check
 ;; is conservative about evaluated arithmetic, but the declarations are
 ;; compatible whether or not it can determine the length precisely.
