@@ -2808,6 +2808,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define array-size-expr-type-kind ((expr exprp) (ienv ienvp))
+  :guard (expr-unambp expr)
   :returns (kind type-array-kindp)
   :short "Determine the array kind specified by a validated size expression."
   :long
@@ -2824,174 +2825,15 @@
      we also attempt to evaluate the length.
      If constant evaluation produces a positive integer, we retain it;
      otherwise, we leave the constant length unknown.
-     In particular, this function does not enforce the constraint that
-     a constant size expression have a value greater than zero
+     In particular, this function does not enforce the constraint requiring
+     a constant size expression to have a value greater than zero
      [C17:6.7.6.2/1] [C23:6.7.7.3/1]."))
-  (if (expr-unambp expr)
-      (case (expr-ice-p expr t (ienv->dialect ienv))
-        ((t) (b* ((integer? (value-to-integer
-                             (const-eval-expr expr ienv))))
-               (make-type-array-kind-const-len
-                :len (and (posp integer?) integer?))))
-        ((nil) (type-array-kind-nonconst-len))
-        (otherwise (type-array-kind-unknown-complete)))
-    (type-array-kind-unknown-complete)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define pointer-type-path-aux
-  ((pointers typequal/attribspec-list-listp)
-   (path true-listp))
-  :returns (new-path true-listp)
-  :short "Prepend a pointer-derived type path to a type path."
-  (if (endp pointers)
-      (true-list-fix path)
-    (cons :pointer (pointer-type-path-aux (rest pointers) path))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defines declor/dirdeclor-type-path-aux
-  :short "Calculate a path through a type derived by a declarator."
-
-  (define declor-type-path-aux ((declor declorp) (path true-listp))
-    :returns (new-path true-listp)
-    (b* (((declor declor) declor))
-      (dirdeclor-type-path-aux
-       declor.direct
-       (pointer-type-path-aux declor.pointers path)))
-    :measure (declor-count declor))
-
-  (define dirdeclor-type-path-aux ((dirdeclor dirdeclorp)
-                                   (path true-listp))
-    :returns (new-path true-listp)
-    (dirdeclor-case
-      dirdeclor
-      :ident (true-list-fix path)
-      :paren (declor-type-path-aux dirdeclor.inner path)
-      :array (dirdeclor-type-path-aux dirdeclor.declor
-                                     (cons :array path))
-      :array-static1 (dirdeclor-type-path-aux dirdeclor.declor
-                                             (cons :array path))
-      :array-static2 (dirdeclor-type-path-aux dirdeclor.declor
-                                             (cons :array path))
-      :array-star (dirdeclor-type-path-aux dirdeclor.declor
-                                          (cons :array path))
-      :function-params (dirdeclor-type-path-aux dirdeclor.declor
-                                               (cons :function path))
-      :function-names (dirdeclor-type-path-aux dirdeclor.declor
-                                              (cons :function path)))
-    :measure (dirdeclor-count dirdeclor))
-
-  :ruler-extenders :all
-  :verify-guards nil
-  ///
-
-  (verify-guards declor-type-path-aux))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defines absdeclor/dirabsdeclor-type-path-aux
-  :short "Calculate a path through a type derived by an abstract declarator."
-
-  (define absdeclor-type-path-aux ((absdeclor absdeclorp)
-                                  (path true-listp))
-    :returns (new-path true-listp)
-    (b* (((absdeclor absdeclor) absdeclor))
-      (dirabsdeclor-option-type-path-aux
-       absdeclor.direct?
-       (pointer-type-path-aux absdeclor.pointers path)))
-    :measure (absdeclor-count absdeclor))
-
-  (define dirabsdeclor-option-type-path-aux
-    ((dirabsdeclor? dirabsdeclor-optionp)
-     (path true-listp))
-    :returns (new-path true-listp)
-    (dirabsdeclor-option-case
-      dirabsdeclor?
-      :none (true-list-fix path)
-      :some (dirabsdeclor-type-path-aux dirabsdeclor?.val path))
-    :measure (dirabsdeclor-option-count dirabsdeclor?))
-
-  (define dirabsdeclor-type-path-aux ((dirabsdeclor dirabsdeclorp)
-                                      (path true-listp))
-    :returns (new-path true-listp)
-    (dirabsdeclor-case
-      dirabsdeclor
-      :dummy-base (true-list-fix path)
-      :paren (absdeclor-type-path-aux dirabsdeclor.inner path)
-      :array (dirabsdeclor-option-type-path-aux dirabsdeclor.declor?
-                                               (cons :array path))
-      :array-static1 (dirabsdeclor-option-type-path-aux dirabsdeclor.declor?
-                                                       (cons :array path))
-      :array-static2 (dirabsdeclor-option-type-path-aux dirabsdeclor.declor?
-                                                       (cons :array path))
-      :array-star (dirabsdeclor-option-type-path-aux dirabsdeclor.declor?
-                                                    (cons :array path))
-      :function (dirabsdeclor-option-type-path-aux dirabsdeclor.declor?
-                                                  (cons :function path)))
-    :measure (dirabsdeclor-count dirabsdeclor))
-
-  :ruler-extenders :all
-  :verify-guards nil
-  ///
-
-  (verify-guards absdeclor-type-path-aux))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-array-change-kind-at-path ((type typep)
-                                        (path true-listp)
-                                        (kind type-array-kindp))
-  :returns (new-type typep)
-  :short "Change the kind of the array type at a derived-type path."
-  :long
-  (xdoc::topstring-p
-   "The path consists of @(':array'), @(':pointer'), and @(':function')
-    steps, which respectively follow array element, pointer target,
-    and function return types.
-    The type at the end of the path must be an array type.")
-  (b* (((when (endp path))
-        (type-case type
-          :array (change-type-array type :kind kind)
-          :otherwise (prog2$ (raise "Internal error: expected array type ~x0."
-                                    (type-fix type))
-                             (type-fix type))))
-       (step (car path))
-       (path (cdr path)))
-    (case step
-      (:array
-       (type-case type
-         :array (change-type-array
-                 type
-                 :of (type-array-change-kind-at-path type.of path kind))
-         :otherwise (prog2$ (raise "Internal error: expected array type ~x0."
-                                   (type-fix type))
-                            (type-fix type))))
-      (:pointer
-       (type-case type
-         :pointer (change-type-pointer
-                   type
-                   :to (type-array-change-kind-at-path type.to path kind))
-         :otherwise (prog2$ (raise "Internal error: expected pointer type ~x0."
-                                   (type-fix type))
-                            (type-fix type))))
-      (:function
-       (type-case type
-         :function (change-type-function
-                    type
-                    :ret (type-array-change-kind-at-path type.ret path kind))
-         :otherwise (prog2$ (raise "Internal error: expected function type ~x0."
-                                   (type-fix type))
-                            (type-fix type))))
-      (otherwise
-       (prog2$ (raise "Internal error: invalid type path step ~x0." step)
-               (type-fix type)))))
-  :measure (acl2-count path)
-  :verify-guards nil
-  :no-function nil
-  ///
-
-  (verify-guards type-array-change-kind-at-path))
+  (b* ((icep (expr-ice-p expr (ienv->dialect ienv)))
+       ((when (eq icep nil)) (type-array-kind-nonconst-len))
+       ((unless (eq icep t)) (type-array-kind-unknown-complete))
+       (integer? (value-to-integer (const-eval-expr expr ienv))))
+    (make-type-array-kind-const-len
+     :len (and (posp integer?) integer?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5670,9 +5512,9 @@
              (expr-option-case
                new-expr?
                :some
-               (type-array-change-kind-at-path
+               (type-array-change-kind-at-depth
                 type
-                (dirdeclor-type-path-aux dirdeclor.declor nil)
+                (dirdeclor-derived-type-depth dirdeclor.declor)
                 (array-size-expr-type-kind new-expr?.val
                                            (vstate->ienv vstate)))
                :none type)))
@@ -5702,9 +5544,9 @@
                       (dirdeclor-fix dirdeclor)
                       index-type))
             (type
-             (type-array-change-kind-at-path
+             (type-array-change-kind-at-depth
               type
-              (dirdeclor-type-path-aux dirdeclor.declor nil)
+              (dirdeclor-derived-type-depth dirdeclor.declor)
               (array-size-expr-type-kind new-expr (vstate->ienv vstate)))))
          (retok (make-dirdeclor-array-static1 :declor new-dirdeclor
                                               :qualspecs dirdeclor.qualspecs
@@ -5732,9 +5574,9 @@
                       (dirdeclor-fix dirdeclor)
                       index-type))
             (type
-             (type-array-change-kind-at-path
+             (type-array-change-kind-at-depth
               type
-              (dirdeclor-type-path-aux dirdeclor.declor nil)
+              (dirdeclor-derived-type-depth dirdeclor.declor)
               (array-size-expr-type-kind new-expr (vstate->ienv vstate)))))
          (retok (make-dirdeclor-array-static2 :declor new-dirdeclor
                                               :qualspecs dirdeclor.qualspecs
@@ -5987,10 +5829,10 @@
              (expr-option-case
                new-size?
                :some
-               (type-array-change-kind-at-path
+               (type-array-change-kind-at-depth
                 type
-                (dirabsdeclor-option-type-path-aux
-                 dirabsdeclor.declor? nil)
+                (dirabsdeclor-option-derived-type-depth
+                 dirabsdeclor.declor?)
                 (array-size-expr-type-kind new-size?.val
                                            (vstate->ienv vstate)))
                :none type)))
@@ -6020,9 +5862,9 @@
                       (dirabsdeclor-fix dirabsdeclor)
                       index-type))
             (type
-             (type-array-change-kind-at-path
+             (type-array-change-kind-at-depth
               type
-              (dirabsdeclor-option-type-path-aux dirabsdeclor.declor? nil)
+              (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?)
               (array-size-expr-type-kind new-size (vstate->ienv vstate)))))
          (retok (make-dirabsdeclor-array-static1
                  :declor? new-declor?
@@ -6050,9 +5892,9 @@
                       (dirabsdeclor-fix dirabsdeclor)
                       index-type))
             (type
-             (type-array-change-kind-at-path
+             (type-array-change-kind-at-depth
               type
-              (dirabsdeclor-option-type-path-aux dirabsdeclor.declor? nil)
+              (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?)
               (array-size-expr-type-kind new-size (vstate->ienv vstate)))))
          (retok (make-dirabsdeclor-array-static2
                  :declor? new-declor?
@@ -6924,7 +6766,8 @@
        being validated.  After successful validation, the initializer
        completes the array type [C17:6.7.9/22].
        We record the completed type as having constant length,
-       but for now we leave the length itself unknown.
+       but we do not yet derive the numerical length from the initializer,
+       so for now we leave the length itself unknown.
        We replace the incomplete type in the validation table and in the
        initializer declarator annotation.")
      (xdoc::p
@@ -7071,7 +6914,8 @@
           (valid-initer-option initdeclor.initer? type lifetime? vstate))
          ((mv type vstate)
           (if complete-array-after-initer-p
-              (b* ((type
+              (b* (;; TODO: Derive the length from the initializer.
+                   (type
                     (change-type-array
                      type
                      :kind (make-type-array-kind-const-len :len nil)))
@@ -7808,8 +7652,6 @@
 
   ///
 
-  (verify-guards valid-expr)
-
   (fty::deffixequiv-mutual valid-exprs/decls/stmts)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -8086,6 +7928,8 @@
            ((acl2::occur-lst '(acl2::flag-is 'valid-dirabsdeclor) clause)
             '(:expand ((valid-dirabsdeclor dirabsdeclor type vstate))))
            (t nil)))))
+
+(verify-guards valid-expr)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

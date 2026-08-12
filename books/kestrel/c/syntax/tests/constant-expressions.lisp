@@ -122,7 +122,7 @@ void f(void) {
          (block-item (first (comp-stmt->items (fundef->body fundef))))
          (stmt (block-item-stmt->stmt block-item))
          (expr (stmt-expr->expr? stmt)))
-      (equal (expr-ice-p expr t dialect) ,expected))))
+      (equal (expr-ice-p expr dialect) ,expected))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

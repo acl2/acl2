@@ -870,7 +870,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-ice-p ((expr exprp) (evaluatedp 3p) (dialect c::dialectp))
+(define expr-ice-p ((expr exprp) (dialect c::dialectp))
   :guard (expr-unambp expr)
   :returns (3vl 3p)
   :short "Check whether an expression is an integer constant expression (ICE)."
@@ -897,7 +897,14 @@
      when the result type, a variable length array type,
      or another required fact cannot be established.")
    (xdoc::p
+    "The expression is treated as evaluated at its root.
+     The exception for operators contained within unevaluated subexpressions
+     [C17:6.6/3] [C23:6.6/3]
+     is applied relative to the evaluation of this candidate ICE.
+     Whether the candidate itself occurs in an unevaluated context
+     of a larger expression does not change its ICE status.")
+   (xdoc::p
     "The recursive checks are performed by @(tsee expr-ice-core-3p)."))
   (3and
    (expr-integer-type-3p expr)
-   (expr-ice-core-3p expr evaluatedp t dialect)))
+   (expr-ice-core-3p expr t t dialect)))

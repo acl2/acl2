@@ -128,6 +128,10 @@
      The @('len') field allows a @('nil') value
      to represent an unknown length.
      This occurs as a result of imprecise analysis.
+     In particular, the validator currently classifies
+     an array completed by its initializer as @(':const-len'),
+     but does not yet derive its numerical length from that initializer,
+     so its @('len') field is @('nil').
      We use a positive integer instead of a natural
      because arrays are not empty [C17:6.2.5/20] [C23:6.2.5/25],
      and so a determined constant length must not be 0
@@ -2707,3 +2711,50 @@
       (type-fix type)
     (make-type-pointer :to (make-pointers-to (rest pointers) type)))
   :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-array-change-kind-at-depth ((type typep)
+                                         (depth natp)
+                                         (kind type-array-kindp))
+  :returns (new-type typep)
+  :short "Change the kind of an array at a derived-type depth."
+  :long
+  (xdoc::topstring-p
+   "At each positive depth, this follows the next type along a
+    declarator-derived spine: the element type of an array,
+    the target type of a pointer, or the return type of a function.
+    The type at depth zero must be an array type.")
+  (b* ((type (type-fix type))
+       (depth (nfix depth))
+       (kind (type-array-kind-fix kind))
+       ((when (zp depth))
+        (type-case type
+          :array (change-type-array type :kind kind)
+          :otherwise (prog2$ (raise "Internal error: expected array type ~x0."
+                                    type)
+                             type)))
+       (depth (1- depth)))
+    (type-case type
+      :array
+      (change-type-array
+       type
+       :of (type-array-change-kind-at-depth type.of depth kind))
+      :pointer
+      (change-type-pointer
+       type
+       :to (type-array-change-kind-at-depth type.to depth kind))
+      :function
+      (change-type-function
+       type
+       :ret (type-array-change-kind-at-depth type.ret depth kind))
+      :otherwise
+      (prog2$ (raise "Internal error: expected derived type ~x0." type)
+              type)))
+  :measure (nfix depth)
+  :verify-guards nil
+  :no-function nil
+  :hooks nil
+  ///
+
+  (verify-guards type-array-change-kind-at-depth))
