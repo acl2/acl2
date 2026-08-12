@@ -1045,12 +1045,6 @@
 ; renaming maps equals removing all the parameters at once.
 
 (local
- (defruled mergesort-of-cons
-   (equal (set::mergesort (cons a l))
-          (set::insert a (set::mergesort l)))
-   :enable set::mergesort))
-
-(local
  (defruled mergesort-when-singleton
    (implies (and (consp params)
                  (not (consp (cdr params))))
