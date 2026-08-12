@@ -1647,9 +1647,9 @@
    (xdoc::p
     "The @('sizeof') operator applied to an expression
      requires a non-function complete type [C17:6.5.3.4/1].
-     In our current approximate type system,
-     we just exclude function types,
-     but we do not have a notion of complete types yet.
+     We exclude function types and incomplete array types.
+     Our current approximate type system may not recognize
+     other incomplete types.
      The result has type @('size_t') [C17:6.5.3.4/5],
      whose definition is implementation-defined,
      so for now we just return the unknown type;
@@ -1726,12 +1726,22 @@
                          (type-case type-arg :pointer)))
              (reterr msg)))
          (retok (type-fix type-arg))))
-      (:sizeof (b* (((when (type-case type-arg :function))
+      (:sizeof (b* (((when (type-case
+                            type-arg
+                            :function t
+                            :array (type-array-kind-case type-arg.kind
+                                                         :incomplete)
+                            :otherwise nil))
                      (reterr msg)))
-                 (retok (type-unknown-arithmetic))))
-      (:alignof (b* (((when (type-case type-arg :function))
-                      (reterr msg)))
                   (retok (type-unknown-arithmetic))))
+      (:alignof (b* (((when (type-case
+                             type-arg
+                             :function t
+                             :array (type-array-kind-case type-arg.kind
+                                                          :incomplete)
+                             :otherwise nil))
+                      (reterr msg)))
+                   (retok (type-unknown-arithmetic))))
       (:real (type-case type-arg
                         :floatc (retok (type-float))
                         :doublec (retok (type-double))
@@ -2163,20 +2173,25 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('sizeof') operator applied to an type name
-     requires a non-function complete type [C17:6.5.3.4/1].
-     In our current approximate type system,
-     we just exclude function types,
-     but we do not have a notion of complete types yet.
+    "The @('sizeof') operator applied to a type name,
+     and the @('_Alignof') operator,
+     require a non-function complete type [C17:6.5.3.4/1].
+     We exclude function types and incomplete array types.
+     Our current approximate type system may not recognize
+     other incomplete types.
      The result has type @('size_t') [C17:6.5.3.4/5],
      whose definition is implementation-defined,
      so for now we just return the unknown arithmetic type;
      we will need to extend implementation environments
      with information about the definition of @('size_t')."))
   (b* (((reterr) (irr-type))
-       ((when (type-case type :function))
+       ((when (type-case
+               type
+               :function t
+               :array (type-array-kind-case type.kind :incomplete)
+               :otherwise nil))
         (retmsg$ "In the ~s0 type expression ~x1, ~
-                  the argument ~x2 is a function type."
+                  the argument ~x2 is a function or incomplete array type."
                  (case (expr-kind expr)
                    (:sizeof "sizeof")
                    (:alignof "_Alignof")
@@ -2922,7 +2937,11 @@
      (xdoc::p
       "To validate a compound literal, first we validate the type name,
        obtaining a type if that validation is successful.
-       The type of the compound literal is the one denoted by the type name.
+       The type of the compound literal is the one denoted by the type name,
+       except that an array of unknown size is completed by its initializer
+       [C17:6.5.2.5/4].
+       As with initialized array declarations, we currently record the array
+       as having constant length but leave the numerical length unknown.
        We also retrieve
        the storage duration (i.e. lifetime) of the object,
        which is either static or automatic,
@@ -3067,7 +3086,17 @@
                      (lifetime (if (> (vstate-num-scopes vstate) 1)
                                    (lifetime-auto)
                                  (lifetime-static)))
-                     (complit-info (make-type-vinfo :type target-type)))
+                     (complit-type
+                      (type-case
+                       target-type
+                       :array
+                       (if (type-array-kind-case target-type.kind :incomplete)
+                           (change-type-array
+                            target-type
+                            :kind (make-type-array-kind-const-len :len nil))
+                         target-type)
+                       :otherwise target-type))
+                     (complit-info (make-type-vinfo :type complit-type)))
                   (cond
                    ((or (type-case target-type :unknown)
                         (type-case target-type :unknown-builtin)
@@ -3084,7 +3113,7 @@
                                                 :elems new-elems
                                                 :final-comma expr.final-comma
                                                 :info complit-info)
-                             target-type
+                             complit-type
                              (set::union types-type types-desiniters)
                              vstate)))
                    ((type-scalarp target-type)
@@ -3135,7 +3164,7 @@
                            :final-comma expr.final-comma
                            :info complit-info)))
                       (retok new-complit
-                             target-type
+                             complit-type
                              (set::union types-type types-init-expr)
                              vstate)))
                    ((and (type-case target-type :array)
@@ -3190,7 +3219,7 @@
                            :final-comma expr.final-comma
                            :info complit-info)))
                       (retok new-complit
-                             target-type
+                             complit-type
                              types-type
                              (vstate-fix vstate))))
                    ((or (type-aggregatep target-type)
@@ -3216,7 +3245,7 @@
                              :elems new-elems
                              :final-comma expr.final-comma
                              :info complit-info)
-                             target-type
+                             complit-type
                              (set::union types-type types-desiniters)
                              vstate)))
                    (t (retmsg$ "The compound literal ~x0 ~

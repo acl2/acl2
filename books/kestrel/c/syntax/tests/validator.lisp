@@ -451,7 +451,7 @@ void f() {
   }
 ")
 
-(test-valid
+(test-valid-fail
  "int myarray[];
   int foo () {
   int x = sizeof(myarray);
@@ -1177,6 +1177,20 @@ struct s arr[] = {1, [0].y = 2, {.x = 3, 4}, 5};
 (test-valid
   "int foo(void) {
   return (int [1][1]) {42}[0][0];
+}
+")
+
+;; An array of unknown size is completed by the compound literal's
+;; initializer, so the compound literal has complete type and sizeof is valid.
+(test-valid
+  "int f(void) {
+  return sizeof((int []) {1, 2});
+}
+")
+
+(test-valid-fail
+  "int f(void) {
+  return sizeof(int []);
 }
 ")
 
