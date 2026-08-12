@@ -15,13 +15,7 @@
 (include-book "kestrel/utilities/defconst-computed" :dir :system)
 (include-book "../priorities")
 
-(include-book "projects/x86isa/machine/instructions/top" :dir :system) ;needed to get the full ruleset instruction-decoding-and-spec-rules
-
-;; TODO: Use union-equal instead of append?  Or even, in some cases, a version that detects duplicates.
-
-;todo: add a variant of get-ruleset that complains if the ruleset doesn't exist..
-(acl2::defconst-computed-simple *instruction-decoding-and-spec-rules*
-  (acl2::get-ruleset 'x86isa::instruction-decoding-and-spec-rules (w state)))
+;; TODO: Use union-equal instead of append below?  Or even, in some cases, a version that detects duplicates.
 
 (defun map-add-suffix (syms str)
   (declare (xargs :guard (and (symbol-listp syms)
@@ -31,20 +25,29 @@
     (cons (add-suffix (first syms) str)
           (map-add-suffix (rest syms) str))))
 
-;; todo: some of these should be added to the X86 package:
+(encapsulate ()
+  (local (include-book "projects/x86isa/machine/instructions/top" :dir :system)) ;needed to get the full ruleset instruction-decoding-and-spec-rules
 
-;; n08$inline and many more
-;; todo: go directly to bvchop?
-(acl2::defconst-computed-simple *unsigned-choppers* (map-add-suffix (acl2::get-ruleset 'x86isa::nw-defs (w state)) "$INLINE"))
+  ;;todo: add a variant of get-ruleset that complains if the ruleset doesn't exist..
+  (acl2::defconst-computed-simple *instruction-decoding-and-spec-rules*
+    (acl2::get-ruleset 'x86isa::instruction-decoding-and-spec-rules (w state)))
 
-;; i08$inline and many more
-(acl2::defconst-computed-simple *signed-choppers* (map-add-suffix (acl2::get-ruleset 'x86isa::iw-defs (w state)) "$INLINE"))
+  ;; todo: some of these should be added to the X86 package:
 
-;; n08p$inline and many more
-(acl2::defconst-computed-simple *unsigned-recognizers* (map-add-suffix (acl2::get-ruleset 'x86isa::nwp-defs (w state)) "$INLINE"))
+  ;; n08$inline and many more
+  ;; todo: go directly to bvchop?
+  (acl2::defconst-computed-simple *unsigned-choppers* (map-add-suffix (acl2::get-ruleset 'x86isa::nw-defs (w state)) "$INLINE"))
 
-;; i08p$inline and many more
-(acl2::defconst-computed-simple *signed-recognizers* (map-add-suffix (acl2::get-ruleset 'x86isa::iwp-defs (w state)) "$INLINE"))
+  ;; i08$inline and many more
+  (acl2::defconst-computed-simple *signed-choppers* (map-add-suffix (acl2::get-ruleset 'x86isa::iw-defs (w state)) "$INLINE"))
+
+  ;; n08p$inline and many more
+  (acl2::defconst-computed-simple *unsigned-recognizers* (map-add-suffix (acl2::get-ruleset 'x86isa::nwp-defs (w state)) "$INLINE"))
+
+  ;; i08p$inline and many more
+  (acl2::defconst-computed-simple *signed-recognizers* (map-add-suffix (acl2::get-ruleset 'x86isa::iwp-defs (w state)) "$INLINE"))
+  )
+
 
 ;; Most of these are just names of functions to open
 (defund instruction-rules ()
