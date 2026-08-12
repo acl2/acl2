@@ -26,8 +26,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (enable typep-when-result-not-error
-                          type-listp-when-result-not-error)))
+(local (in-theory (enable* typep-when-result-not-error
+                           type-listp-when-result-not-error
+                           ast-wfp-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,7 +103,7 @@
   (defret shape-list-wfp-of-shape-dims-list
     (equal (shape-list-wfp (shape-dims-list dimss))
            (dim-list-list-wfp dimss))
-    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -129,7 +130,7 @@
 
   (defret atom-list-wfp-of-atom-base-list
     (atom-list-wfp atoms)
-    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -193,7 +194,7 @@
     (shape-list-wfp shapes)
     :hyp (and (ispace-list-case-shape x)
               (ispace-list-wfp x))
-    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules))))
+    :hints (("Goal" :induct t)))
 
   (defrule shape-list-count-of-ispace-shape-list->shape
     (implies (ispace-list-case-shape x)
@@ -252,7 +253,7 @@
     :hyp (var+type?-list-wfp x)
     :hints (("Goal"
              :induct t
-             :in-theory (enable* ast-wfp-rules)))))
+            ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -555,7 +556,7 @@
     (equal (type-wfp type)
            (and (type-list-wfp in)
                 (type-wfp out)))
-    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -574,7 +575,7 @@
     (equal (type-wfp type)
            (and (type-var-list-wfp params)
                 (type-wfp body)))
-    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -593,7 +594,7 @@
     (equal (type-wfp type)
            (and (ispace-var-list-wfp params)
                 (type-wfp body)))
-    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -612,7 +613,7 @@
     (equal (type-wfp type)
            (and (ispace-var-list-wfp params)
                 (type-wfp body)))
-    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -631,7 +632,7 @@
     (equal (expr-wfp expr)
            (and (expr-wfp fun)
                 (expr-list-wfp args)))
-    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -650,7 +651,7 @@
     (equal (expr-wfp expr)
            (and (expr-wfp fun)
                 (type-list-wfp args)))
-    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -669,7 +670,7 @@
     (equal (expr-wfp expr)
            (and (expr-wfp fun)
                 (ispace-list-wfp args)))
-    :hints (("Goal" :induct t :in-theory (enable* ast-wfp-rules)))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -706,8 +707,7 @@
                     (expr-wfp body)
                     (type-option-wfp type?))
              (expr-wfp body)))
-    :hints (("Goal" :induct t :in-theory (enable* expr-wfp
-                                                  ast-wfp-rules)))))
+    :hints (("Goal" :induct t :in-theory (enable expr-wfp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -729,8 +729,7 @@
     (equal (expr-wfp expr)
            (and (type-var-list-wfp params)
                 (expr-wfp body)))
-    :hints (("Goal" :induct t :in-theory (enable* expr-wfp
-                                                  ast-wfp-rules)))))
+    :hints (("Goal" :induct t :in-theory (enable expr-wfp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -752,8 +751,7 @@
     (equal (expr-wfp expr)
            (and (ispace-var-list-wfp params)
                 (expr-wfp body)))
-    :hints (("Goal" :induct t :in-theory (enable* expr-wfp
-                                                  ast-wfp-rules)))))
+    :hints (("Goal" :induct t :in-theory (enable expr-wfp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -814,8 +812,7 @@
                        (expr-wfp body))
                 (expr-wfp body)))
        :hyp (stringp var)
-       :hints (("Goal" :induct t :in-theory (enable* expr-wfp
-                                                     ast-wfp-rules))))))
+       :hints (("Goal" :induct t :in-theory (enable expr-wfp))))))
 
   ///
 
@@ -829,8 +826,7 @@
                     (type-option-wfp type?))
              (expr-wfp body)))
     :hyp (stringp var)
-    :hints (("Goal" :in-theory (enable* expr-wfp
-                                        ast-wfp-rules)))))
+    :hints (("Goal" :in-theory (enable expr-wfp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -862,8 +858,7 @@
     (equal (expr-wfp expr)
            (and (ispace-list-wfp ispaces)
                 (expr-wfp body)))
-    :hints (("Goal" :induct t :in-theory (enable* expr-wfp
-                                                  ast-wfp-rules)))))
+    :hints (("Goal" :induct t :in-theory (enable expr-wfp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
