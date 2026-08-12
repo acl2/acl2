@@ -400,9 +400,37 @@
     :enable (type-option-desugar
              type-option-some->val))
 
+  (defruled car-of-var+type?-list-desugar
+    (implies (consp var+type?-list)
+             (equal (car (var+type?-list-desugar var+type?-list))
+                    (var+type?-desugar (car var+type?-list))))
+    :expand ((var+type?-list-desugar var+type?-list)))
+
+  (defruled cdr-of-var+type?-list-desugar
+    (equal (cdr (var+type?-list-desugar var+type?-list))
+           (var+type?-list-desugar (cdr var+type?-list)))
+    :expand ((var+type?-list-desugar var+type?-list)
+             (var+type?-list-desugar (cdr var+type?-list))))
+
+  (defruled car-of-ispace-list-desugar
+    (implies (consp ispace-list)
+             (equal (car (ispace-list-desugar ispace-list))
+                    (ispace-desugar (car ispace-list))))
+    :expand ((ispace-list-desugar ispace-list)))
+
+  (defruled cdr-of-ispace-list-desugar
+    (equal (cdr (ispace-list-desugar ispace-list))
+           (ispace-list-desugar (cdr ispace-list)))
+    :expand ((ispace-list-desugar ispace-list)
+             (ispace-list-desugar (cdr ispace-list))))
+
   (add-to-ruleset ast-desugar-rules
                   '(type-option-desugar-iff
-                    type-option-desugar-to-type-desugar)))
+                    type-option-desugar-to-type-desugar
+                    car-of-var+type?-list-desugar
+                    cdr-of-var+type?-list-desugar
+                    car-of-ispace-list-desugar
+                    cdr-of-ispace-list-desugar)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
