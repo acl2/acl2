@@ -98,8 +98,7 @@
                      ispace-free-ispace-vars
                      ispace-list-free-ispace-vars
                      dim-list-free-ispace-vars
-                     shape-list-free-ispace-vars-of-shape-dims-list
-                     dim-list-list-free-ispace-vars-of-list-to-singletons))))
+                     shape-list-free-ispace-vars-of-shape-dims-list))))
 
   (defret-mutual free-ispace-vars-of-types-desugar
     (defret type-free-ispace-vars-of-type-desugar
@@ -223,7 +222,6 @@
               bind-wfp
               bind-list-wfp
               type-option-some->val
-              type-list-free-ispace-vars-of-var+type?-list->type-list-or-err
               acl2::consp-of-cdr
               union-of-differences
               mergesort-when-consp
