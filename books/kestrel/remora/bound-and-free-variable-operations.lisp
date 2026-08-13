@@ -408,7 +408,7 @@
     :induct t
     :enable atom-base-list)
 
-  (defruled type-list-free-ispace-vars-of-var+type?-list->type-list-or-err
+  (defrule type-list-free-ispace-vars-of-var+type?-list->type-list-or-err
     (implies (not (reserrp (var+type?-list->type-list-or-err var+type?s)))
              (equal (type-list-free-ispace-vars
                      (var+type?-list->type-list-or-err var+type?s))
