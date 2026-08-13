@@ -214,11 +214,6 @@
 
 (defsection free-type-vars-of-desugar
   :short "Desugaring preserves the free type variables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "There is no theorem for the desugaring of shapes and ispaces,
-     which contain no type variables."))
 
   (defret-mutual free-type-vars-of-types-desugar
     (defret type-free-type-vars-of-type-desugar
@@ -329,13 +324,6 @@
 
 (defsection free-expr-vars-of-desugar
   :short "Desugaring preserves the free expression variables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "There are no theorems for the desugaring of
-     shapes, ispaces, types, optional types,
-     and variables with optional types,
-     which contain no expression variables."))
 
   (defret-mutual free-expr-vars-of-exprs/atoms/binds-desugar
     (defret expr-free-expr-vars-of-expr-desugar
