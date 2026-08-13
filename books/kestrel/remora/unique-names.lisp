@@ -12,7 +12,7 @@
 
 (include-book "abstract-syntax-structurals")
 (include-book "abstract-syntax-trees")
-(include-book "bound-and-free-variable-operations")
+(include-book "all-variable-operations")
 (include-book "fresh-variable-operations")
 (include-book "variable-renaming-operations")
 (include-book "osets")

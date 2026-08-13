@@ -20,15 +20,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ bound-and-free-variable-operations
+(defxdoc+ all-variable-operations
   :parents (abstract-syntax-variable-operations)
-  :short "Operations for retrieving bound and free variables from ASTs."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We provide operations to collect
-     bound, free, and all (i.e. bound and free)
-     ispace, type, and expression variables."))
+  :short "Operations for retrieving all (bound and free) variables from ASTs."
   :order-subtopics t
   :default-parent t)
 

@@ -12,7 +12,7 @@
 
 (include-book "bound-variable-operations")
 (include-book "free-variable-operations")
-(include-book "bound-and-free-variable-operations")
+(include-book "all-variable-operations")
 (include-book "fresh-variable-operations")
 (include-book "variable-renaming-operations")
 (include-book "variable-renaming-alpha-operations")
@@ -26,7 +26,7 @@
   :short "Operations on ASTs related to variables."
   :order-subtopics (bound-variable-operations
                     free-variable-operations
-                    bound-and-free-variable-operations
+                    all-variable-operations
                     fresh-variable-operations
                     variable-renaming-operations
                     variable-renaming-alpha-operations
