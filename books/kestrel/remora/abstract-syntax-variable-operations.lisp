@@ -20,6 +20,7 @@
 (include-book "variable-substitution-alpha-operations")
 (include-book "bound-variables-under-desugaring")
 (include-book "free-variables-under-desugaring")
+(include-book "all-variables-under-desugaring")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,4 +36,5 @@
                     variable-substitution-operations
                     variable-substitution-alpha-operations
                     bound-variables-under-desugaring
-                    free-variables-under-desugaring))
+                    free-variables-under-desugaring
+                    all-variables-under-desugaring))
