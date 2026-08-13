@@ -317,7 +317,7 @@
       "If we have a tag, we look it up in the validation information,
        so we can recursively check the struct type found there.
        However, if we have already encountered that tag,
-       we retun @('nil') without re-visiting the members,
+       we return @('nil') without re-visiting the members,
        because it means that we have not found the struct type being split.
        If we visit the members, we add the tag to the set of encountered ones.")
      (xdoc::p
