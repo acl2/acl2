@@ -36,4 +36,50 @@
               print-level-at-least-tp
               make-event-quiet maybe-remove-temp-dir
               ;; Rules needed by the unroller:
-              ,@(all-unroller-rules))))
+              ,@(all-unroller-rules)
+              ;; Functions used by the unroller
+              ,@(symbolic-execution-rules32)
+              ,@(symbolic-execution-rules64)
+              ,@(symbolic-execution-rules-with-stop-pcs32)
+              ,@(symbolic-execution-rules-with-stop-pcs64)
+              ;; Names commonly needed in proofs:
+              *standard-flags*
+              ;; Names of rule-lists, to enable:
+              register-aliases32
+              register-aliases64
+              ;; Rules needed for proofs:
+              x::cf-spec8-becomes-getbit
+              x::cf-spec16-becomes-getbit
+              x::cf-spec32-becomes-getbit
+              x::cf-spec64-becomes-getbit
+              x::sf-spec8-becomes-getbit
+              x::sf-spec16-becomes-getbit
+              x::sf-spec32-becomes-getbit
+              x::sf-spec64-becomes-getbit
+              x::add-af-spec8-becomes-bvlt
+              x::add-af-spec16-becomes-bvlt
+              x::add-af-spec32-becomes-bvlt
+              x::add-af-spec64-becomes-bvlt
+              x::adc-af-spec8-becomes-bvlt
+              x::adc-af-spec16-becomes-bvlt
+              x::adc-af-spec32-becomes-bvlt
+              x::adc-af-spec64-becomes-bvlt
+              x::sub-af-spec8-becomes-bvlt
+              x::sub-af-spec16-becomes-bvlt
+              x::sub-af-spec32-becomes-bvlt
+              x::sub-af-spec64-becomes-bvlt
+              x86isa::sub-cf-spec8-opener
+              x86isa::sub-cf-spec16-opener
+              x86isa::sub-cf-spec32-opener
+              x86isa::sub-cf-spec64-opener
+              x::sbb-af-spec8-becomes-bvlt
+              x::sbb-af-spec16-becomes-bvlt
+              x::sbb-af-spec32-becomes-bvlt
+              x::sbb-af-spec64-becomes-bvlt)))
+
+;; To support proofs about lifted code
+(in-theory (disable ;; rgfi ; rgfi may be used when the register name is not constant.  let's open it to XR
+;             xr xw
+             ))
+
+;; todo: for reasoning about the result, we may want rules like cf-spec8-becomes-getbit

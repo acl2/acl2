@@ -17,13 +17,7 @@
 ;; (depends-on "add_al_mem8.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
-
-
-;; Rewrite al to bvchop-of-rax so proofs reduce to the rax form.
-(local (defthm al-rewrite
-  (equal (al x86) (bvchop 8 (rax x86)))
-  :hints (("Goal" :in-theory (enable al rax)))))
+(include-book "../../../support")
 
 ;; Lifts the subroutine into logic: Creates the function add_al_mem8, which
 ;; represents the effect of the program on the x86 state.
@@ -129,4 +123,4 @@
                 (not (member-eq flag *standard-flags*)))
            (equal (get-flag flag (add_al_mem8 x86))
                   (get-flag flag x86)))
-  :hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant))))
+  )
