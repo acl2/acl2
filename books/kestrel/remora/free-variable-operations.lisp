@@ -555,19 +555,6 @@
 (defsection free-expr-vars-theorems-about-structurals
   :short "Some theorems about
           the free expression variables over some structural operations."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "There are no theorems about
-     the operations that build nests of types,
-     which contain no expression variables.")
-   (xdoc::p
-    "Only the operations that build nests of
-     expression abstractions and unboxing expressions
-     bind expression variables;
-     the ones that build nests of
-     type and ispace applications and abstractions, and of boxing atoms,
-     are transparent to the expression variables."))
 
   (local (in-theory (enable* ast-free-expr-vars-rules)))
 
