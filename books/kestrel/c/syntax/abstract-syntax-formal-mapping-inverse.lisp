@@ -352,7 +352,23 @@
                                   :info nil)
                                nil)))))
   :measure (c::obj-declor-count declor)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule ldm-declor-obj-of-ildm-obj-declor
+    (equal (ldm-declor-obj (ildm-obj-declor declor))
+           (mv nil (c::obj-declor-dec0-to-oct0 declor)))
+    :induct t
+    :enable (ldm-declor-obj
+             ldm-declor-obj-loop
+             ldm-dirdeclor-obj
+             check-expr-iconst
+             c::obj-declor-dec0-to-oct0
+             c::iconst-option-dec0-to-oct0
+             c::iconst-option-some->val
+             mv-nth-0-ldm-dirdeclor-obj-of-declor-to-dirdeclor
+             mv-nth-1-ldm-dirdeclor-obj-of-declor-to-dirdeclor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
