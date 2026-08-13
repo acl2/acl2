@@ -568,7 +568,8 @@
      (xdoc::p
       "This is analogous to @(tsee ldm-declor-obj),
        but for abstract declarators.
-       But there is a difference in how we handle the direct abstract declarator,
+       But there is a difference
+       in how we handle the direct abstract declarator,
        since that may be present or not.
        If not present, we wrap pointers around
        the @(':none') case of @(tsee c::obj-adeclor).")
@@ -633,16 +634,9 @@
                                         :size iconst?)))
     :measure (dirabsdeclor-option-count dirabsdeclor))
 
-  :hints
-  (("Goal"
-    :use ((:instance absdeclor-count-of-dirabsdeclor-paren->inner
-                     (x dirabsdeclor))
-          (:instance dirabsdeclor-option-count-of-dirabsdeclor-array->declor?
-                     (x dirabsdeclor))
-          (:instance dirabsdeclor-option-count-of-absdeclor->direct?
-                     (x absdeclor)))
-    :in-theory (enable dirabsdeclor-option-count
-                       dirabsdeclor-option-some->val)))
+  :hints (("Goal"
+           :expand ((dirabsdeclor-option-count dirabsdeclor))
+           :in-theory (enable dirabsdeclor-option-some->val)))
 
   :verify-guards :after-returns
 
