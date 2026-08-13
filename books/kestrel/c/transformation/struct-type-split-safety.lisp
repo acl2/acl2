@@ -187,9 +187,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This involves looking up struct types
+    "This involves looking up struct and union types
      in the type completions via the validation tables,
      in order to check the members found there.
+     We keep track of the tags of the struct and union types
+     that we have encountered,
+     to avoid looping in case of (directly or indirectly)
+     self-referential struct and union types.
      Termination requires a more elaborate argument
      than we are willing to flesh out at this time,
      and so we cop out with an artificial recursion limit."))
@@ -200,6 +204,7 @@
                                            (spec sts-struct-specp)
                                            (vtable valid-tablep)
                                            (completions type-completions-p)
+                                           (tags ident-setp)
                                            (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
@@ -251,18 +256,18 @@
                                                  type.tag/members
                                                  spec)
                    (type-struni-tag/members-may-refer-to-struct-spec-p
-                    type.tag/members spec vtable completions (1- limit)))
+                    type.tag/members spec vtable completions tags (1- limit)))
        :union (type-struni-tag/members-may-refer-to-struct-spec-p
-               type.tag/members spec vtable completions (1- limit))
+               type.tag/members spec vtable completions tags (1- limit))
        :enum nil
        :array (type-may-refer-to-struct-spec-p
-               type.of spec vtable completions (1- limit))
+               type.of spec vtable completions tags (1- limit))
        :pointer (type-may-refer-to-struct-spec-p
-                 type.to spec vtable completions (1- limit))
+                 type.to spec vtable completions tags (1- limit))
        :function (or (type-may-refer-to-struct-spec-p
-                      type.ret spec vtable completions (1- limit))
+                      type.ret spec vtable completions tags (1- limit))
                      (type-params-may-refer-to-struct-spec-p
-                      type.params spec vtable completions (1- limit)))
+                      type.params spec vtable completions tags (1- limit)))
        :unknown t
        :unknown-builtin nil
        :unknown-scalar t
@@ -277,6 +282,7 @@
      (spec sts-struct-specp)
      (vtable valid-tablep)
      (completions type-completions-p)
+     (tags ident-setp)
      (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
@@ -285,9 +291,9 @@
     (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
       (and (not (endp types))
            (or (type-may-refer-to-struct-spec-p
-                (car types) spec vtable completions (1- limit))
+                (car types) spec vtable completions tags (1- limit))
                (type-list-may-refer-to-struct-spec-p
-                (cdr types) spec vtable completions (1- limit)))))
+                (cdr types) spec vtable completions tags (1- limit)))))
     :no-function nil
     :measure (nfix limit))
 
@@ -298,6 +304,7 @@
      (spec sts-struct-specp)
      (vtable valid-tablep)
      (completions type-completions-p)
+     (tags ident-setp)
      (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
@@ -308,13 +315,20 @@
     (xdoc::topstring
      (xdoc::p
       "If we have a tag, we look it up in the validation information,
-       so we can recursively check the struct type found there.")
+       so we can recursively check the struct type found there.
+       However, if we have already encountered that tag,
+       we return @('nil') without re-visiting the members,
+       because it means that we have not found the struct type being split.
+       If we visit the members, we add the tag to the set of encountered ones.")
      (xdoc::p
       "If instead we have members, we recursively check them."))
     (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
       (type-struni-tag/members-case
        tystr-tag/mems
-       :tagged (b* (((mv info &)
+       :tagged (b* (((when (set::in tystr-tag/mems.tag
+                                    (ident-set-fix tags)))
+                     nil)
+                    ((mv info &)
                      (c$::valid-lookup-tag tystr-tag/mems.tag vtable))
                     ((unless info)
                      (raise "Internal error: ~
@@ -327,11 +341,14 @@
                      (raise "Internal error: ~
                              no members for ~x0 in ~x0."
                             uid completions))
-                    (members (cdr members?)))
+                    (members (cdr members?))
+                    (tags (set::insert tystr-tag/mems.tag
+                                       (ident-set-fix tags))))
                  (type-struni-member-list-may-refer-to-struct-spec-p
-                  members spec vtable completions (1- limit)))
+                  members spec vtable completions tags (1- limit)))
        :untagged (type-struni-member-list-may-refer-to-struct-spec-p
-                  tystr-tag/mems.members spec vtable completions (1- limit))))
+                  tystr-tag/mems.members spec vtable completions tags
+                  (1- limit))))
     :no-function nil
     :measure (nfix limit))
 
@@ -342,6 +359,7 @@
      (spec sts-struct-specp)
      (vtable valid-tablep)
      (completions type-completions-p)
+     (tags ident-setp)
      (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
@@ -349,7 +367,7 @@
             may refer to the struct type being split, directly or indirectly."
     (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
       (type-may-refer-to-struct-spec-p
-       (type-struni-member->type mem) spec vtable completions (1- limit)))
+       (type-struni-member->type mem) spec vtable completions tags (1- limit)))
     :no-function nil
     :measure (nfix limit))
 
@@ -360,6 +378,7 @@
      (spec sts-struct-specp)
      (vtable valid-tablep)
      (completions type-completions-p)
+     (tags ident-setp)
      (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
@@ -368,9 +387,9 @@
     (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
       (and (not (endp mems))
            (or (type-struni-member-may-refer-to-struct-spec-p
-                (car mems) spec vtable completions (1- limit))
+                (car mems) spec vtable completions tags (1- limit))
                (type-struni-member-list-may-refer-to-struct-spec-p
-                (cdr mems) spec vtable completions (1- limit)))))
+                (cdr mems) spec vtable completions tags (1- limit)))))
     :no-function nil
     :measure (nfix limit))
 
@@ -381,6 +400,7 @@
      (spec sts-struct-specp)
      (vtable valid-tablep)
      (completions type-completions-p)
+     (tags ident-setp)
      (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety types-may-refer-to-struct-spec-p)
@@ -391,9 +411,9 @@
       (type-params-case
        params
        :prototype (type-list-may-refer-to-struct-spec-p
-                   params.params spec vtable completions (1- limit))
+                   params.params spec vtable completions tags (1- limit))
        :old-style (type-list-may-refer-to-struct-spec-p
-                   params.params spec vtable completions (1- limit))
+                   params.params spec vtable completions tags (1- limit))
        :unspecified nil))
     :no-function nil
     :measure (nfix limit))
@@ -478,6 +498,10 @@
     "This code involves looking up struct types
      in the type completions via the validation tables,
      in order to check the members found there.
+     We keep track of the tags of the struct and union types
+     that we have encountered,
+     to avoid looping in case of (directly or indirectly)
+     self-referential struct and union types.
      Termination requires a more elaborate argument
      than we are willing to flesh out at this time,
      and so we cop out with an artificial recursion limit."))
@@ -489,6 +513,7 @@
                           (spec sts-struct-specp)
                           (vtable valid-tablep)
                           (completions type-completions-p)
+                          (tags ident-setp)
                           (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
@@ -563,18 +588,19 @@
                                                       spec))
                    (sts-reject `(:nested ,(type-fix type)))
                  (type-struni-tag/members-sts-safep
-                  type.tag/members nil spec vtable completions (1- limit)))
+                  type.tag/members nil spec vtable completions tags (1- limit)))
        :union (type-struni-tag/members-sts-safep
-               type.tag/members t spec vtable completions (1- limit))
+               type.tag/members t spec vtable completions tags (1- limit))
        :enum t
        :array (type-sts-safep
-               type.of nested spec vtable completions (1- limit))
+               type.of nested spec vtable completions tags (1- limit))
        :pointer (type-sts-safep
-                 type.to nested spec vtable completions (1- limit))
+                 type.to nested spec vtable completions tags (1- limit))
        :function (and (type-sts-safep
-                       type.ret t spec vtable completions (1- limit))
+                       type.ret t spec vtable completions tags (1- limit))
                       (type-params-sts-safep
-                       type.params nested spec vtable completions (1- limit)))
+                       type.params nested spec vtable completions tags
+                       (1- limit)))
        :unknown (sts-reject (type-fix type))
        :unknown-builtin t
        :unknown-scalar (sts-reject (type-fix type))
@@ -589,6 +615,7 @@
                                (spec sts-struct-specp)
                                (vtable valid-tablep)
                                (completions type-completions-p)
+                               (tags ident-setp)
                                (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
@@ -600,9 +627,9 @@
     (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
       (or (endp types)
           (and (type-sts-safep
-                (car types) nested spec vtable completions (1- limit))
+                (car types) nested spec vtable completions tags (1- limit))
                (type-list-sts-safep
-                (cdr types) nested spec vtable completions (1- limit)))))
+                (cdr types) nested spec vtable completions tags (1- limit)))))
     :no-function nil
     :measure (nfix limit))
 
@@ -614,6 +641,7 @@
      (spec sts-struct-specp)
      (vtable valid-tablep)
      (completions type-completions-p)
+     (tags ident-setp)
      (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
@@ -624,13 +652,21 @@
     (xdoc::topstring
      (xdoc::p
       "If we have a tag, we look it up in the validation information,
-       so we can recursively check the struct type found there.")
+       so we can recursively check the struct type found there.
+       However, if we have already encountered that tag,
+       we retun @('t') without re-visiting the members,
+       because it means that we have not found
+       any unsafe use of the struct type being split.
+       If we visit the members, we add the tag to the set of encountered ones.")
      (xdoc::p
       "If instead we have members, we recursively check them."))
     (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
       (type-struni-tag/members-case
        tystr-tag/mems
-       :tagged (b* (((mv info &)
+       :tagged (b* (((when (set::in tystr-tag/mems.tag
+                                    (ident-set-fix tags)))
+                     t)
+                    ((mv info &)
                      (c$::valid-lookup-tag tystr-tag/mems.tag vtable))
                     ((unless info)
                      (raise "Internal error: ~
@@ -643,18 +679,22 @@
                      (raise "Internal error: ~
                              no members for ~x0 in ~x0."
                             uid completions))
-                    (members (cdr members?)))
+                    (members (cdr members?))
+                    (tags (set::insert tystr-tag/mems.tag
+                                       (ident-set-fix tags))))
                  (type-struni-member-list-sts-safep members
                                                     nested
                                                     spec
                                                     vtable
                                                     completions
+                                                    tags
                                                     (1- limit)))
        :untagged (type-struni-member-list-sts-safep tystr-tag/mems.members
                                                     nested
                                                     spec
                                                     vtable
                                                     completions
+                                                    tags
                                                     (1- limit))))
     :no-function nil
     :measure (nfix limit))
@@ -666,6 +706,7 @@
                                         (spec sts-struct-specp)
                                         (vtable valid-tablep)
                                         (completions type-completions-p)
+                                        (tags ident-setp)
                                         (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
@@ -677,6 +718,7 @@
                       spec
                       vtable
                       completions
+                      tags
                       (1- limit)))
     :no-function nil
     :measure (nfix limit))
@@ -688,6 +730,7 @@
                                              (spec sts-struct-specp)
                                              (vtable valid-tablep)
                                              (completions type-completions-p)
+                                             (tags ident-setp)
                                              (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
@@ -700,9 +743,9 @@
     (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
       (or (endp mems)
           (and (type-struni-member-sts-safep
-                (car mems) nested spec vtable completions (1- limit))
+                (car mems) nested spec vtable completions tags (1- limit))
                (type-struni-member-list-sts-safep
-                (cdr mems) nested spec vtable completions (1- limit)))))
+                (cdr mems) nested spec vtable completions tags (1- limit)))))
     :no-function nil
     :measure (nfix limit))
 
@@ -713,6 +756,7 @@
                                  (spec sts-struct-specp)
                                  (vtable valid-tablep)
                                  (completions type-completions-p)
+                                 (tags ident-setp)
                                  (limit natp))
     :returns (yes/no booleanp)
     :parents (struct-type-split-safety type/type-list-sts-safep)
@@ -727,9 +771,9 @@
       (type-params-case
        params
        :prototype (type-list-sts-safep
-                   params.params nested spec vtable completions (1- limit))
+                   params.params nested spec vtable completions tags (1- limit))
        :old-style (type-list-sts-safep
-                   params.params nested spec vtable completions (1- limit))
+                   params.params nested spec vtable completions tags (1- limit))
        :unspecified t))
     :no-function nil
     :measure (nfix limit))
@@ -754,7 +798,7 @@
   (xdoc::topstring
    (xdoc::p
     "We set the nested flag to @('nil'), since we are at the top level."))
-  (or (type-sts-safep type nil spec vtable completions 1000000)
+  (or (type-sts-safep type nil spec vtable completions nil 1000000)
       (sts-reject (type-fix type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -903,11 +947,13 @@
                                                         spec
                                                         vtable
                                                         completions
+                                                        nil
                                                         1000000))
                   (not (type-may-refer-to-struct-spec-p dst-type
                                                         spec
                                                         vtable
                                                         completions
+                                                        nil
                                                         1000000)))))
       (sts-reject (expr-cast tyname arg))))
 
