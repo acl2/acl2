@@ -276,6 +276,15 @@
     :induct t
     :enable atom-base-list)
 
+  (defrule shape-list-free-ispace-vars-of-ispace-shape-list->shape
+    (implies (ispace-list-case-shape ispaces)
+             (equal (shape-list-free-ispace-vars
+                     (ispace-shape-list->shape ispaces))
+                    (ispace-list-free-ispace-vars ispaces)))
+    :induct t
+    :enable (ispace-shape-list->shape
+             ispace-free-ispace-vars))
+
   (defrule type-list-free-ispace-vars-of-var+type?-list->type-list-or-err
     (implies (not (reserrp (var+type?-list->type-list-or-err var+type?s)))
              (equal (type-list-free-ispace-vars

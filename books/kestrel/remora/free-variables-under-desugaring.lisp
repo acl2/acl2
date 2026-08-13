@@ -55,19 +55,14 @@
 (defsection free-ispace-vars-of-desugar
   :short "Desugaring preserves the free ispace variables."
 
-  (defrule shape-list-free-ispace-vars-of-ispace-shape-list->shape-of-splice
-    (equal (shape-list-free-ispace-vars
-            (ispace-shape-list->shape (ispace-list-desugar-in-splice ispaces)))
+  (defrule ispace-list-free-ispace-vars-of-ispace-list-desugar-in-splice
+    (equal (ispace-list-free-ispace-vars
+            (ispace-list-desugar-in-splice ispaces))
            (ispace-list-free-ispace-vars ispaces))
     :induct t
     :enable (ispace-list-desugar-in-splice
              ispace-desugar-in-splice
-             ispace-shape-list->shape
-             shape-free-ispace-vars
-             shape-list-free-ispace-vars
-             ispace-free-ispace-vars
-             ispace-list-free-ispace-vars
-             dim-list-free-ispace-vars))
+             ispace-free-ispace-vars))
 
   (defret-mutual free-ispace-vars-of-shapes/ispaces-desugar
     (defret shape-free-ispace-vars-of-shape-desugar
