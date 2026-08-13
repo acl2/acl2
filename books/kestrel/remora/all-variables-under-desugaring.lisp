@@ -22,7 +22,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (enable* ast-all-type-vars-rules
+(local (in-theory (enable* ast-all-ispace-vars-rules
+                           ast-all-type-vars-rules
                            ast-all-expr-vars-rules
                            ast-wfp-rules
                            ast-desugar-rules)))
@@ -38,7 +39,7 @@
    (xdoc::p
     "We prove that desugaring preserves all the variables of ASTs:
      a desugared AST has the same
-     type and expression variables as the original AST.")
+     ispace, type, and expression variables as the original AST.")
    (xdoc::p
     "The theorems about expressions, atoms, and bindings
      have well-formedness hypotheses:
@@ -48,28 +49,162 @@
      whose desugaring introduces a spurious parameter,
      and n-ary unboxing expressions with no ispace variables,
      whose desugaring drops the target;
-     well-formedness excludes these ASTs.")
-   (xdoc::p
-    "The theorems for the ispace variables are not here yet:
-     they do not hold for @(tsee ast-all-ispace-vars) as currently defined,
-     because that operation does not include
-     the ispace variables introduced by
-     ispace abstractions and unboxing expressions
-     (unlike @(tsee ast-all-type-vars), which includes
-     the type variables introduced by type abstractions,
-     and unlike @(tsee ast-all-expr-vars), which includes
-     the expression variables introduced by
-     expression abstractions and unboxing expressions).
-     Since desugaring turns
-     the ispace parameters of combined function bindings
-     into ispace abstractions,
-     those variables are lost."))
+     well-formedness excludes these ASTs."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: ispace vars (see the discussion in the topic above)
+(defsection all-ispace-vars-of-desugar
+  :short "Desugaring preserves all the ispace variables."
+
+  (defrule ispace-list-all-ispace-vars-of-ispace-list-desugar-in-splice
+    (equal (ispace-list-all-ispace-vars
+            (ispace-list-desugar-in-splice ispaces))
+           (ispace-list-all-ispace-vars ispaces))
+    :induct t
+    :enable (ispace-list-desugar-in-splice
+             ispace-desugar-in-splice
+             ispace-all-ispace-vars))
+
+  (defret-mutual all-ispace-vars-of-shapes/ispaces-desugar
+    (defret shape-all-ispace-vars-of-shape-desugar
+      (equal (shape-all-ispace-vars result)
+             (shape-all-ispace-vars shape))
+      :fn shape-desugar)
+    (defret shape-list-all-ispace-vars-of-shape-list-desugar
+      (equal (shape-list-all-ispace-vars result)
+             (shape-list-all-ispace-vars shape-list))
+      :fn shape-list-desugar)
+    (defret ispace-all-ispace-vars-of-ispace-desugar
+      (equal (ispace-all-ispace-vars result)
+             (ispace-all-ispace-vars ispace))
+      :fn ispace-desugar)
+    (defret ispace-list-all-ispace-vars-of-ispace-list-desugar
+      (equal (ispace-list-all-ispace-vars result)
+             (ispace-list-all-ispace-vars ispace-list))
+      :fn ispace-list-desugar)
+    :mutual-recursion shapes/ispaces-desugar
+    :hints (("Goal" :in-theory (enable shape-desugar
+                                       shape-list-desugar
+                                       ispace-desugar
+                                       ispace-list-desugar
+                                       shape-all-ispace-vars
+                                       shape-list-all-ispace-vars
+                                       ispace-all-ispace-vars
+                                       ispace-list-all-ispace-vars
+                                       dim-list-all-ispace-vars))))
+
+  (defret-mutual all-ispace-vars-of-types-desugar
+    (defret type-all-ispace-vars-of-type-desugar
+      (equal (type-all-ispace-vars result)
+             (type-all-ispace-vars type))
+      :fn type-desugar)
+    (defret type-list-all-ispace-vars-of-type-list-desugar
+      (equal (type-list-all-ispace-vars result)
+             (type-list-all-ispace-vars type-list))
+      :fn type-list-desugar)
+    :mutual-recursion types-desugar
+    :hints (("Goal" :in-theory (enable type-desugar
+                                       type-list-desugar
+                                       type-all-ispace-vars
+                                       type-list-all-ispace-vars))))
+
+  (defret type-option-all-ispace-vars-of-type-option-desugar
+    (equal (type-option-all-ispace-vars result)
+           (type-option-all-ispace-vars type-option))
+    :fn type-option-desugar
+    :hints (("Goal" :in-theory (enable type-option-desugar
+                                       type-option-all-ispace-vars
+                                       type-option-some->val))))
+
+  (defret var+type?-all-ispace-vars-of-var+type?-desugar
+    (equal (var+type?-all-ispace-vars result)
+           (var+type?-all-ispace-vars var+type?))
+    :fn var+type?-desugar
+    :hints (("Goal" :in-theory (enable var+type?-desugar
+                                       var+type?-all-ispace-vars))))
+
+  (defret var+type?-list-all-ispace-vars-of-var+type?-list-desugar
+    (equal (var+type?-list-all-ispace-vars result)
+           (var+type?-list-all-ispace-vars var+type?-list))
+    :fn var+type?-list-desugar
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable var+type?-list-desugar
+                                var+type?-list-all-ispace-vars))))
+
+  (defrulel ispace-list-all-ispace-vars-fold
+    (implies (consp ispaces)
+             (equal (set::union (ispace-all-ispace-vars (car ispaces))
+                                (ispace-list-all-ispace-vars (cdr ispaces)))
+                    (ispace-list-all-ispace-vars ispaces))))
+
+  (defrulel var+type?-list-all-ispace-vars-fold
+    (implies (consp var+type?s)
+             (equal (set::union (var+type?-all-ispace-vars (car var+type?s))
+                                (var+type?-list-all-ispace-vars
+                                 (cdr var+type?s)))
+                    (var+type?-list-all-ispace-vars var+type?s))))
+
+  (defret-mutual all-ispace-vars-of-exprs/atoms/binds-desugar
+    (defret expr-all-ispace-vars-of-expr-desugar
+      (equal (expr-all-ispace-vars result)
+             (expr-all-ispace-vars expr))
+      :hyp (expr-wfp expr)
+      :fn expr-desugar)
+    (defret expr-list-all-ispace-vars-of-expr-list-desugar
+      (equal (expr-list-all-ispace-vars result)
+             (expr-list-all-ispace-vars expr-list))
+      :hyp (expr-list-wfp expr-list)
+      :fn expr-list-desugar)
+    (defret atom-all-ispace-vars-of-atom-desugar
+      (equal (atom-all-ispace-vars result)
+             (atom-all-ispace-vars atom))
+      :hyp (atom-wfp atom)
+      :fn atom-desugar)
+    (defret atom-list-all-ispace-vars-of-atom-list-desugar
+      (equal (atom-list-all-ispace-vars result)
+             (atom-list-all-ispace-vars atom-list))
+      :hyp (atom-list-wfp atom-list)
+      :fn atom-list-desugar)
+    (defret bind-all-ispace-vars-of-bind-desugar
+      (equal (bind-all-ispace-vars result)
+             (bind-all-ispace-vars bind))
+      :hyp (bind-wfp bind)
+      :fn bind-desugar)
+    (defret bind-list-all-ispace-vars-of-bind-list-desugar
+      (equal (bind-list-all-ispace-vars result)
+             (bind-list-all-ispace-vars bind-list))
+      :hyp (bind-list-wfp bind-list)
+      :fn bind-list-desugar)
+    :mutual-recursion exprs/atoms/binds-desugar
+    :hints (("Goal" :in-theory (enable expr-desugar
+                                       expr-list-desugar
+                                       atom-desugar
+                                       atom-list-desugar
+                                       bind-desugar
+                                       bind-list-desugar
+                                       expr-all-ispace-vars
+                                       expr-list-all-ispace-vars
+                                       atom-all-ispace-vars
+                                       atom-list-all-ispace-vars
+                                       bind-all-ispace-vars
+                                       bind-list-all-ispace-vars
+                                       type-option-all-ispace-vars
+                                       type-list-option-all-ispace-vars
+                                       ispace-list-option-all-ispace-vars
+                                       expr-wfp
+                                       expr-list-wfp
+                                       atom-wfp
+                                       atom-list-wfp
+                                       bind-wfp
+                                       bind-list-wfp
+                                       type-option-some->val
+                                       acl2::consp-of-cdr
+                                       mergesort-when-consp
+                                       set::union-symmetric
+                                       set::union-commutative)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
