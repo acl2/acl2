@@ -14,6 +14,8 @@
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 
+(local (include-book "osets"))
+
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
@@ -182,6 +184,7 @@
      For the body of a @('let') expression,
      we just remove all the variables bound in the bindings."))
   :types (dims
+          dim-list-list
           shapes/ispaces
           ispace-list-option
           types
@@ -369,6 +372,175 @@
                              (bind-list-free-expr-vars (cdr bind-list))
                              (bind-bound-expr-vars bind))))))
   :name ast-free-expr-vars)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection ast-free-ispace-vars-additional-theorems
+  :short "Additional theorems about free ispace variables."
+
+  (defruled dim-list-list-free-ispace-vars-of-list-to-singletons
+    (equal (dim-list-list-free-ispace-vars (list-to-singletons dims))
+           (dim-list-free-ispace-vars dims))
+    :induct t
+    :enable (list-to-singletons
+             ast-free-ispace-vars-rules))
+
+  (add-to-ruleset ast-free-ispace-vars-rules
+                  '(dim-list-list-free-ispace-vars-of-list-to-singletons)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection free-ispace-vars-theorems-about-structurals
+  :short "Some theorems about
+          the free ispace variables over some structural operations."
+
+  (local (in-theory (enable* ast-free-ispace-vars-rules)))
+
+  (defruled shape-list-free-ispace-vars-of-shape-dims-list
+    (equal (shape-list-free-ispace-vars (shape-dims-list dimss))
+           (dim-list-list-free-ispace-vars dimss))
+    :induct t
+    :enable shape-dims-list)
+
+  (defrule atom-list-free-ispace-vars-of-atom-base-list
+    (equal (atom-list-free-ispace-vars (atom-base-list lits))
+           nil)
+    :induct t
+    :enable atom-base-list)
+
+  (defruled type-list-free-ispace-vars-of-var+type?-list->type-list-or-err
+    (implies (not (reserrp (var+type?-list->type-list-or-err var+type?s)))
+             (equal (type-list-free-ispace-vars
+                     (var+type?-list->type-list-or-err var+type?s))
+                    (var+type?-list-free-ispace-vars var+type?s)))
+    :induct t
+    :enable (var+type?-list->type-list-or-err
+             var+type?->type-or-err
+             type-list-free-ispace-vars
+             var+type?-list-free-ispace-vars
+             var+type?-free-ispace-vars
+             type-option-free-ispace-vars
+             type-option-some->val))
+
+  (defrule type-free-ispace-vars-of-nest-fun-types
+    (equal (type-free-ispace-vars (nest-fun-types in out))
+           (set::union (type-list-free-ispace-vars in)
+                       (type-free-ispace-vars out)))
+    :induct t
+    :enable (nest-fun-types
+             type-free-ispace-vars
+             type-list-free-ispace-vars))
+
+  (defrule type-free-ispace-vars-of-nest-forall-types
+    (equal (type-free-ispace-vars (nest-forall-types params body))
+           (type-free-ispace-vars body))
+    :induct t
+    :enable (nest-forall-types
+             type-free-ispace-vars))
+
+  (defrule type-free-ispace-vars-of-nest-pi-types
+    (implies (ispace-var-listp params)
+             (equal (type-free-ispace-vars (nest-pi-types params body))
+                    (set::difference (type-free-ispace-vars body)
+                                     (set::mergesort params))))
+    :induct t
+    :enable (nest-pi-types
+             type-free-ispace-vars
+             mergesort-of-cons))
+
+  (defrule type-free-ispace-vars-of-nest-sigma-types
+    (implies (ispace-var-listp params)
+             (equal (type-free-ispace-vars (nest-sigma-types params body))
+                    (set::difference (type-free-ispace-vars body)
+                                     (set::mergesort params))))
+    :induct t
+    :enable (nest-sigma-types
+             type-free-ispace-vars
+             mergesort-of-cons))
+
+  (defrule expr-free-ispace-vars-of-nest-app-exprs
+    (equal (expr-free-ispace-vars (nest-app-exprs fun args))
+           (set::union (expr-free-ispace-vars fun)
+                       (expr-list-free-ispace-vars args)))
+    :induct t
+    :enable (nest-app-exprs
+             expr-list-free-ispace-vars))
+
+  (defrule expr-free-ispace-vars-of-nest-tapp-exprs
+    (equal (expr-free-ispace-vars (nest-tapp-exprs fun args))
+           (set::union (expr-free-ispace-vars fun)
+                       (type-list-free-ispace-vars args)))
+    :induct t
+    :enable (nest-tapp-exprs
+             type-list-free-ispace-vars))
+
+  (defrule expr-free-ispace-vars-of-nest-iapp-exprs
+    (equal (expr-free-ispace-vars (nest-iapp-exprs fun args))
+           (set::union (expr-free-ispace-vars fun)
+                       (ispace-list-free-ispace-vars args)))
+    :induct t
+    :enable (nest-iapp-exprs
+             ispace-list-free-ispace-vars))
+
+  (defrule expr-free-ispace-vars-of-nest-lambda-exprs
+    (equal (expr-free-ispace-vars (nest-lambda-exprs params body type?))
+           (if (consp params)
+               (set::union (var+type?-list-free-ispace-vars params)
+                           (set::union (expr-free-ispace-vars body)
+                                       (type-option-free-ispace-vars type?)))
+             (expr-free-ispace-vars body)))
+    :induct t
+    :enable (nest-lambda-exprs
+             var+type?-list-free-ispace-vars))
+
+  (defrule expr-free-ispace-vars-of-nest-tlambda-exprs
+    (equal (expr-free-ispace-vars (nest-tlambda-exprs params body))
+           (expr-free-ispace-vars body))
+    :induct t
+    :enable nest-tlambda-exprs)
+
+  (defrule expr-free-ispace-vars-of-nest-ilambda-exprs
+    (implies (ispace-var-listp params)
+             (equal (expr-free-ispace-vars (nest-ilambda-exprs params body))
+                    (set::difference (expr-free-ispace-vars body)
+                                     (set::mergesort params))))
+    :induct t
+    :enable (nest-ilambda-exprs
+             atom-free-ispace-vars
+             mergesort-of-cons))
+
+  (defrule expr-free-ispace-vars-of-nest-unbox-exprs
+    (implies (ispace-var-listp ispaces)
+             (equal (expr-free-ispace-vars
+                     (nest-unbox-exprs ispaces var target body type?))
+                    (if (consp ispaces)
+                        (set::union (expr-free-ispace-vars target)
+                                    (set::difference
+                                     (expr-free-ispace-vars body)
+                                     (set::mergesort ispaces)))
+                      (expr-free-ispace-vars body))))
+    :enable (nest-unbox-exprs
+             expr-free-ispace-vars
+             mergesort-of-cons)
+    :prep-lemmas
+    ((defrule expr-free-ispace-vars-of-nest-unbox-exprs-loop
+       (implies (ispace-var-listp ispaces)
+                (equal (expr-free-ispace-vars
+                        (nest-unbox-exprs-loop ispaces var body))
+                       (set::difference (expr-free-ispace-vars body)
+                                        (set::mergesort ispaces))))
+       :induct t
+       :enable (nest-unbox-exprs-loop
+                expr-free-ispace-vars
+                mergesort-of-cons))))
+
+  (defrule expr-free-ispace-vars-of-nest-box-exprs
+    (equal (expr-free-ispace-vars (nest-box-exprs ispaces body))
+           (set::union (ispace-list-free-ispace-vars ispaces)
+                       (expr-free-ispace-vars body)))
+    :induct t
+    :enable (nest-box-exprs
+             ispace-list-free-ispace-vars)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
