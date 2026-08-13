@@ -715,32 +715,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines declor/dirdeclor-obj-formalp
+(defines declor/dirdeclor-obj-file-formalp
   :short "Check if declarators and direct declarators
           have formal dynamic semantics,
-          as part of an object declaration (not in a block)."
+          as part of a file-scope object declaration."
 
-  (define declor-obj-formalp ((declor declorp))
+  (define declor-obj-file-formalp ((declor declorp))
     :guard (declor-unambp declor)
     :returns (yes/no booleanp)
-    :parents (abstract-syntax-formal-subset declor/dirdeclor-obj-formalp)
+    :parents (abstract-syntax-formal-subset declor/dirdeclor-obj-file-formalp)
     :short "Check if a declarator has formal dynamic semantics,
-            as part of an object declaration (not in a block)."
+            as part of a file-scope object declaration."
     :long
     (xdoc::topstring
      (xdoc::p
       "We support any number of pointers, but without type qualifiers."))
     (b* (((declor declor) declor))
       (and (pointers-formalp declor.pointers)
-           (dirdeclor-obj-formalp declor.direct)))
+           (dirdeclor-obj-file-formalp declor.direct)))
     :measure (declor-count declor))
 
-  (define dirdeclor-obj-formalp ((dirdeclor dirdeclorp))
+  (define dirdeclor-obj-file-formalp ((dirdeclor dirdeclorp))
     :guard (dirdeclor-unambp dirdeclor)
     :returns (yes/no booleanp)
-    :parents (abstract-syntax-formal-subset declor/dirdeclor-obj-formalp)
+    :parents (abstract-syntax-formal-subset declor/dirdeclor-obj-file-formalp)
     :short "Check if a direct declarator has formal dynamic semantics,
-            as part of an object declaration (not in a block)."
+            as part of a file-scope object declaration."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -750,8 +750,8 @@
     (dirdeclor-case
      dirdeclor
      :ident (ident-formalp dirdeclor.ident)
-     :paren (declor-obj-formalp dirdeclor.inner)
-     :array (and (dirdeclor-obj-formalp dirdeclor.declor)
+     :paren (declor-obj-file-formalp dirdeclor.inner)
+     :array (and (dirdeclor-obj-file-formalp dirdeclor.declor)
                  (endp dirdeclor.qualspecs)
                  (or (not dirdeclor.size?)
                      (and (check-expr-iconst dirdeclor.size?) t)))
@@ -766,24 +766,24 @@
 
   ///
 
-  (fty::deffixequiv-mutual declor/dirdeclor-obj-formalp))
+  (fty::deffixequiv-mutual declor/dirdeclor-obj-file-formalp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-declor-obj-formalp ((initdeclor init-declorp))
+(define init-declor-obj-file-formalp ((initdeclor init-declorp))
   :guard (init-declor-unambp initdeclor)
   :returns (yes/no booleanp)
   :short "Check if an initializer declarator has formal dynamic semantics,
-          as part of an object declaration (not in a block)."
+          as part of a file-scope object declaration."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This complements @(tsee declor-obj-formalp);
+    "This complements @(tsee declor-obj-file-formalp);
      see the documentation of that function.
      The initializer is optional, but if present it must be supported.
      There must be no assembler name specifier and no attribute specifiers."))
   (b* (((init-declor initdeclor) initdeclor))
-    (and (declor-obj-formalp initdeclor.declor)
+    (and (declor-obj-file-formalp initdeclor.declor)
          (not initdeclor.asm?)
          (endp initdeclor.attribs)
          (or (not initdeclor.initer?)
@@ -791,12 +791,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-declor-list-obj-formalp ((ideclors init-declor-listp))
+(define init-declor-list-obj-file-formalp ((ideclors init-declor-listp))
   :guard (init-declor-list-unambp ideclors)
   :returns (yes/no booleanp)
   :short "Check if a list of initializer declarators
           has formal dynamic semantics,
-          as part of an object declaration (not in a block)."
+          as part of a file-scope object declaration."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -804,19 +804,19 @@
      and its element must have formal semantics."))
   (and (consp ideclors)
        (endp (cdr ideclors))
-       (init-declor-obj-formalp (car ideclors))))
+       (init-declor-obj-file-formalp (car ideclors))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define declon-obj-formalp ((declon declonp))
+(define declon-obj-file-formalp ((declon declonp))
   :guard (declon-unambp declon)
   :returns (yes/no booleanp)
   :short "Check if a declaration has formal dynamic semantics,
-          as an object declaration (not in a block)."
+          as a file-scope object declaration."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This complements @(tsee init-declor-obj-formalp);
+    "This complements @(tsee init-declor-obj-file-formalp);
      see the documentation of that function.
      The declaration must not be a static assertion declaration.
      We require a single supported initializer declarator.
@@ -833,7 +833,7 @@
                   (and okp
                        (type-spec-list-formalp tyspecs)
                        (stor-spec-list-formalp storspecs)))
-                (init-declor-list-obj-formalp declon.declors))
+                (init-declor-list-obj-file-formalp declon.declors))
    :statassert nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -849,7 +849,7 @@
      The optional expression must be absent."))
   (b* (((struct-declor structdeclor) structdeclor))
     (and structdeclor.declor?
-         (declor-obj-formalp structdeclor.declor?)
+         (declor-obj-file-formalp structdeclor.declor?)
          (not structdeclor.expr?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -951,7 +951,7 @@
      The underlying declarator must be supported, for an object."))
   (param-declor-case
    paramdeclor
-   :nonabstract (declor-obj-formalp paramdeclor.declor)
+   :nonabstract (declor-obj-file-formalp paramdeclor.declor)
    :abstract nil
    :none nil
    :ambig (impossible)))
@@ -1149,7 +1149,7 @@
   (ext-declon-case
    edecl
    :fundef (fundef-formalp edecl.fundef)
-   :declon (or (declon-obj-formalp edecl.declon)
+   :declon (or (declon-obj-file-formalp edecl.declon)
                (declon-struct-formalp edecl.declon)
                (declon-fun-formalp edecl.declon))
    :empty nil

@@ -511,17 +511,18 @@
 
   ///
 
-  (defret-mutual ldm-declors/dirdeclors-ok-when-declors/dirdeclors-obj-formalp
-    (defret ldm-declor-obj-ok-when-declor-obj-formalp
+  (defret-mutual
+    ldm-declors/dirdeclors-ok-when-declors/dirdeclors-obj-file-formalp
+    (defret ldm-declor-obj-ok-when-declor-obj-file-formalp
       (not erp)
-      :hyp (declor-obj-formalp declor)
+      :hyp (declor-obj-file-formalp declor)
       :fn ldm-declor-obj)
-    (defret ldm-dirdeclor-obj-ok-when-dirdeclor-obj-formalp
+    (defret ldm-dirdeclor-obj-ok-when-dirdeclor-obj-file-formalp
       (not erp)
-      :hyp (dirdeclor-obj-formalp dirdeclor)
+      :hyp (dirdeclor-obj-file-formalp dirdeclor)
       :fn ldm-dirdeclor-obj)
-    :hints (("Goal" :in-theory (enable declor-obj-formalp
-                                       dirdeclor-obj-formalp))))
+    :hints (("Goal" :in-theory (enable declor-obj-file-formalp
+                                       dirdeclor-obj-file-formalp))))
 
   (defret-mutual
     ldm-declors/dirdeclors-obj-ok-when-declors/dirdeclors-obj-block-formalp
@@ -1485,12 +1486,12 @@
 
   ///
 
-  (defret ldm-declon-obj-ok-when-declon-obj-formalp
+  (defret ldm-declon-obj-ok-when-declon-obj-file-formalp
     (not erp)
-    :hyp (declon-obj-formalp declon)
-    :hints (("Goal" :in-theory (enable declon-obj-formalp
-                                       init-declor-list-obj-formalp
-                                       init-declor-obj-formalp))))
+    :hyp (declon-obj-file-formalp declon)
+    :hints (("Goal" :in-theory (enable declon-obj-file-formalp
+                                       init-declor-list-obj-file-formalp
+                                       init-declor-obj-file-formalp))))
 
   (defret ldm-declon-obj-ok-when-declon-obj-block-formalp
     (not erp)
