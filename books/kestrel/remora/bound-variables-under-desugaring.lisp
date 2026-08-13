@@ -65,4 +65,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: expr vars
+(defsection bound-expr-vars-of-desugar
+  :short "Desugaring preserves the bound expression variables."
+
+  (defrule bind-bound-expr-vars-of-bind-desugar
+    (equal (bind-bound-expr-vars (bind-desugar bind))
+           (bind-bound-expr-vars bind))
+    :expand ((bind-desugar bind))
+    :enable bind-bound-expr-vars)
+
+  (defrule bind-list-bound-expr-vars-of-bind-list-desugar
+    (equal (bind-list-bound-expr-vars (bind-list-desugar binds))
+           (bind-list-bound-expr-vars binds))
+    :induct t
+    :expand ((bind-list-desugar binds))
+    :enable bind-list-bound-expr-vars))
