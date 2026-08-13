@@ -25,6 +25,7 @@
 
 (local (in-theory (enable* ast-free-ispace-vars-rules
                            ast-free-type-vars-rules
+                           ast-free-expr-vars-rules
                            ast-wfp-rules
                            ast-desugar-rules)))
 
@@ -326,4 +327,66 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: expr vars
+(defsection free-expr-vars-of-desugar
+  :short "Desugaring preserves the free expression variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There are no theorems for the desugaring of
+     shapes, ispaces, types, optional types,
+     and variables with optional types,
+     which contain no expression variables."))
+
+  (defret-mutual free-expr-vars-of-exprs/atoms/binds-desugar
+    (defret expr-free-expr-vars-of-expr-desugar
+      (equal (expr-free-expr-vars result)
+             (expr-free-expr-vars expr))
+      :hyp (expr-wfp expr)
+      :fn expr-desugar)
+    (defret expr-list-free-expr-vars-of-expr-list-desugar
+      (equal (expr-list-free-expr-vars result)
+             (expr-list-free-expr-vars expr-list))
+      :hyp (expr-list-wfp expr-list)
+      :fn expr-list-desugar)
+    (defret atom-free-expr-vars-of-atom-desugar
+      (equal (atom-free-expr-vars result)
+             (atom-free-expr-vars atom))
+      :hyp (atom-wfp atom)
+      :fn atom-desugar)
+    (defret atom-list-free-expr-vars-of-atom-list-desugar
+      (equal (atom-list-free-expr-vars result)
+             (atom-list-free-expr-vars atom-list))
+      :hyp (atom-list-wfp atom-list)
+      :fn atom-list-desugar)
+    (defret bind-free-expr-vars-of-bind-desugar
+      (equal (bind-free-expr-vars result)
+             (bind-free-expr-vars bind))
+      :hyp (bind-wfp bind)
+      :fn bind-desugar)
+    (defret bind-list-free-expr-vars-of-bind-list-desugar
+      (equal (bind-list-free-expr-vars result)
+             (bind-list-free-expr-vars bind-list))
+      :hyp (bind-list-wfp bind-list)
+      :fn bind-list-desugar)
+    :mutual-recursion exprs/atoms/binds-desugar
+    :hints (("Goal" :in-theory (enable expr-desugar
+                                       expr-list-desugar
+                                       atom-desugar
+                                       atom-list-desugar
+                                       bind-desugar
+                                       bind-list-desugar
+                                       expr-free-expr-vars
+                                       expr-list-free-expr-vars
+                                       atom-free-expr-vars
+                                       atom-list-free-expr-vars
+                                       bind-free-expr-vars
+                                       bind-list-free-expr-vars
+                                       expr-wfp
+                                       expr-list-wfp
+                                       atom-wfp
+                                       atom-list-wfp
+                                       bind-wfp
+                                       bind-list-wfp
+                                       var+type?-list->var
+                                       acl2::consp-of-cdr
+                                       mergesort-when-consp)))))
