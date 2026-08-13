@@ -118,7 +118,10 @@
               (:e c::iconst-base-oct)
               (:e c::iconst-length-none)
               (:e c::iconst-length-llong)
-              (:e c::iconst-length-long))))
+              (:e c::iconst-length-long)
+              (:e ldm-isuffix)
+              (:e ldm-isuffix-option)
+              (:e ldm-lsuffix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -349,7 +352,23 @@
                                   :info nil)
                                nil)))))
   :measure (c::obj-declor-count declor)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule ldm-declor-obj-of-ildm-obj-declor
+    (equal (ldm-declor-obj (ildm-obj-declor declor))
+           (mv nil (c::obj-declor-dec0-to-oct0 declor)))
+    :induct t
+    :enable (ldm-declor-obj
+             ldm-declor-obj-loop
+             ldm-dirdeclor-obj
+             check-expr-iconst
+             c::obj-declor-dec0-to-oct0
+             c::iconst-option-dec0-to-oct0
+             c::iconst-option-some->val
+             mv-nth-0-ldm-dirdeclor-obj-of-declor-to-dirdeclor
+             mv-nth-1-ldm-dirdeclor-obj-of-declor-to-dirdeclor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -378,7 +397,23 @@
                                    :info nil)
                                 nil)))))
   :measure (c::obj-adeclor-count adeclor)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule ldm-absdeclor-obj-of-ildm-obj-adeclor
+    (equal (ldm-absdeclor-obj (ildm-obj-adeclor adeclor))
+           (mv nil (c::obj-adeclor-dec0-to-oct0 adeclor)))
+    :induct t
+    :enable (ldm-absdeclor-obj
+             ldm-absdeclor-obj-loop
+             ldm-dirabsdeclor-obj
+             absdeclor-to-dirabsdeclor?
+             check-expr-iconst
+             c::obj-adeclor-dec0-to-oct0
+             c::iconst-option-dec0-to-oct0
+             c::iconst-option-some->val
+             dirabsdeclor-option-some->val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

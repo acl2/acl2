@@ -16,7 +16,11 @@
 
 (include-book "std/util/error-value-tuples" :dir :system)
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+
 (local (in-theory (enable* abstract-syntax-unambp-rules)))
+
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -81,7 +85,6 @@
        ((unless (stringp string))
         (reterr (msg "Unsupported identifier with non-string ~x0." string))))
     (retok (c::ident string)))
-  :hooks (:fix)
 
   ///
 
@@ -101,8 +104,7 @@
    :locase-l (c::iconst-length-long)
    :upcase-l (c::iconst-length-long)
    :locase-ll (c::iconst-length-llong)
-   :upcase-ll (c::iconst-length-llong))
-  :hooks (:fix))
+   :upcase-ll (c::iconst-length-llong)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -117,8 +119,7 @@
    :u (mv (c::iconst-length-none) t)
    :l (mv (ldm-lsuffix isuffix.length) nil)
    :ul (mv (ldm-lsuffix isuffix.length) t)
-   :lu (mv (ldm-lsuffix isuffix.length) t))
-  :hooks (:fix))
+   :lu (mv (ldm-lsuffix isuffix.length) t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -131,8 +132,7 @@
   (isuffix-option-case
    isuffix?
    :some (ldm-isuffix isuffix?.val)
-   :none (mv (c::iconst-length-none) nil))
-  :hooks (:fix))
+   :none (mv (c::iconst-length-none) nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -145,8 +145,7 @@
    const
    :dec (mv const.value (c::iconst-base-dec))
    :oct (mv const.value (c::iconst-base-oct))
-   :hex (mv (str::hex-digit-chars-value const.digits) (c::iconst-base-hex)))
-  :hooks (:fix))
+   :hex (mv (str::hex-digit-chars-value const.digits) (c::iconst-base-hex))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -160,8 +159,7 @@
     (c::make-iconst :value value
                     :base base
                     :unsignedp unsignedp
-                    :length length))
-  :hooks (:fix))
+                    :length length)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -172,8 +170,7 @@
   (iconst-option-case
    iconst?
    :some (ldm-iconst iconst?.val)
-   :none nil)
-  :hooks (:fix))
+   :none nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -189,7 +186,6 @@
      :enum (b* (((erp ident1) (ldm-ident const.ident)))
              (retok (c::const-enum ident1)))
      :char (reterr (msg "Unsupported character constant ~x0." const.cconst))))
-  :hooks (:fix)
 
   ///
 
@@ -362,7 +358,6 @@
            ((erp ident1) (ldm-ident ident)))
         (retok (c::make-tyspecseq-typedef :name ident1))))
      (t (reterr (msg "Unsupported type specifier sequence ~x0." tyspecs)))))
-  :hooks (:fix)
 
   ///
 
@@ -399,7 +394,6 @@
      (t
       (reterr (msg "Unsupported storage class specifier sequence ~x0."
                    stor-specs)))))
-  :hooks (:fix)
 
   ///
 
@@ -412,7 +406,7 @@
 
 (defines ldm-declors/dirdeclors-obj
   :short "Map declarators and direct declarators to
-          object declarators and direct declarators in the language definition."
+          object declarators in the language definition."
 
   (define ldm-declor-obj ((declor declorp))
     :guard (declor-unambp declor)
@@ -464,6 +458,8 @@
           (b* ((ident (dirdeclor-ident->ident dirdeclor))
                ((erp ident1) (ldm-ident ident)))
             (retok (c::obj-declor-ident ident1))))
+         ((when (dirdeclor-case dirdeclor :paren))
+          (ldm-declor-obj (dirdeclor-paren->inner dirdeclor)))
          ((when (dirdeclor-case dirdeclor :array))
           (b* (((dirdeclor-array dirdeclor) dirdeclor)
                ((erp declor1) (ldm-dirdeclor-obj dirdeclor.declor))
@@ -496,15 +492,15 @@
      :parents nil
      (b* (((reterr) (c::obj-declor-ident (c::ident "irrelevant")))
           ((when (endp pointers)) (retok (c::obj-declor-fix declor1)))
-          (tyqualattribs (car pointers))
-          ((unless (endp tyqualattribs))
+          (qualspecs (car pointers))
+          ((unless (endp qualspecs))
            (reterr (msg "Unsupported type qualifiers ~
                          or attribute specifiers ~
                          ~x0 in pointer."
-                        (typequal/attribspec-list-fix tyqualattribs))))
+                        (typequal/attribspec-list-fix qualspecs))))
           ((erp declor2) (ldm-declor-obj-loop declor1 (cdr pointers))))
        (retok (c::obj-declor-pointer declor2)))
-     :hooks (:fix)
+     :verify-guards :after-returns
 
      ///
 
@@ -515,108 +511,134 @@
 
   ///
 
-  (defret-mutual ldm-declors/dirdeclors-ok-when-declors/dirdeclors-obj-formalp
-    (defret ldm-declor-obj-ok-when-declor-obj-formalp
+  (defret-mutual
+    ldm-declors/dirdeclors-ok-when-declors/dirdeclors-obj-file-formalp
+    (defret ldm-declor-obj-ok-when-declor-obj-file-formalp
       (not erp)
-      :hyp (declor-obj-formalp declor)
+      :hyp (declor-obj-file-formalp declor)
       :fn ldm-declor-obj)
-    (defret ldm-dirdeclor-obj-ok-when-dirdeclor-obj-formalp
+    (defret ldm-dirdeclor-obj-ok-when-dirdeclor-obj-file-formalp
       (not erp)
-      :hyp (dirdeclor-obj-formalp dirdeclor)
+      :hyp (dirdeclor-obj-file-formalp dirdeclor)
       :fn ldm-dirdeclor-obj)
-    :hints (("Goal" :in-theory (enable declor-obj-formalp
-                                       dirdeclor-obj-formalp))))
+    :hints (("Goal" :in-theory (enable declor-obj-file-formalp
+                                       dirdeclor-obj-file-formalp))))
 
   (defret-mutual
-    ldm-declors/dirdeclors-obj-ok-when-declors/dirdeclors-block-formalp
-    (defret ldm-declor-obj-ok-when-declor-block-formalp
+    ldm-declors/dirdeclors-obj-ok-when-declors/dirdeclors-obj-block-formalp
+    (defret ldm-declor-obj-ok-when-declor-obj-block-formalp
       (not erp)
-      :hyp (declor-block-formalp declor)
+      :hyp (declor-obj-block-formalp declor)
       :fn ldm-declor-obj)
-    (defret ldm-dirdeclor-obj-ok-when-dirdeclor-block-formalp
+    (defret ldm-dirdeclor-obj-ok-when-dirdeclor-obj-block-formalp
       (not erp)
-      :hyp (dirdeclor-block-formalp dirdeclor)
+      :hyp (dirdeclor-obj-block-formalp dirdeclor)
       :fn ldm-dirdeclor-obj)
-    :hints (("Goal" :in-theory (enable declor-block-formalp
-                                       dirdeclor-block-formalp))))
+    :hints (("Goal" :in-theory (enable declor-obj-block-formalp
+                                       dirdeclor-obj-block-formalp))))
 
-  (fty::deffixequiv-mutual ldm-declors/dirdeclors-obj))
+  (fty::deffixequiv-mutual ldm-declors/dirdeclors-obj)
+
+  (defrule mv-nth-0-ldm-dirdeclor-obj-of-declor-to-dirdeclor
+    (equal (mv-nth 0 (ldm-dirdeclor-obj (declor-to-dirdeclor declor)))
+           (mv-nth 0 (ldm-declor-obj declor)))
+    :enable declor-to-dirdeclor)
+
+  (defrule mv-nth-1-ldm-dirdeclor-obj-of-declor-to-dirdeclor
+    (implies (not (mv-nth 0 (ldm-declor-obj declor)))
+             (equal (mv-nth 1 (ldm-dirdeclor-obj (declor-to-dirdeclor declor)))
+                    (mv-nth 1 (ldm-declor-obj declor))))
+    :enable (declor-to-dirdeclor
+             ldm-declor-obj-loop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-dirabsdeclor-obj ((dirabsdeclor dirabsdeclorp))
-  :guard (dirabsdeclor-unambp dirabsdeclor)
-  :returns (mv erp (adeclor1 c::obj-adeclorp))
-  :short "Map a direct abstract declarator to
-          an abstract object declarator in the language definition."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is analogous to @(tsee ldm-dirdeclor-obj),
-     but for abstract declarators.
-     But it has a different recursive structure because
-     we must always have an array declarator,
-     and the recursion ends when the nested direct declarator is absent.")
-   (xdoc::p
-    "This function is called when we expect an abstract object declarator,
-     not a function declarator, for which we have a separate function."))
-  (b* (((reterr) (c::obj-adeclor-none))
-       ((unless (dirabsdeclor-case dirabsdeclor :array))
-        (reterr (msg "Unsupported direct abstract declarator ~x0 for object."
-                     (dirabsdeclor-fix dirabsdeclor))))
-       ((dirabsdeclor-array dirabsdeclor) dirabsdeclor)
-       ((when dirabsdeclor.qualspecs)
-        (reterr (msg "Unsupported type qualifiers ~
-                      or attribute specifiers ~
-                      in direct abstract declarator ~x0 for object."
-                     (dirabsdeclor-fix dirabsdeclor))))
-       ((erp iconst?)
-        (if dirabsdeclor.size?
-            (b* ((iconst (check-expr-iconst dirabsdeclor.size?)))
-              (if iconst
-                  (retok (ldm-iconst iconst))
-                (reterr (msg "Unsupported non-integer-constant size ~
-                              in direct abstract declarator ~x0 for object."
-                             (dirabsdeclor-fix dirabsdeclor)))))
-          (retok nil)))
-       ((when (dirabsdeclor-option-case dirabsdeclor.declor? :none))
-        (retok (c::make-obj-adeclor-array :decl (c::obj-adeclor-none)
-                                          :size iconst?)))
-       (dirabsdeclor.decl (dirabsdeclor-option-some->val dirabsdeclor.declor?))
-       ((erp adeclor1) (ldm-dirabsdeclor-obj dirabsdeclor.decl)))
-    (retok (c::make-obj-adeclor-array :decl adeclor1
-                                      :size iconst?)))
-  :measure (dirabsdeclor-count dirabsdeclor)
+(defines ldm-absdeclors/dirabsdeclors-obj
+  :short "Map abstract declarators and direct abstract declarators to
+          abstract object declarators in the language definition."
+
+  (define ldm-absdeclor-obj ((absdeclor absdeclorp))
+    :guard (absdeclor-unambp absdeclor)
+    :returns (mv erp (adeclor1 c::obj-adeclorp))
+    :parents (abstract-syntax-formal-mapping-direct
+              ldm-absdeclors/dirabsdeclors-obj)
+    :short "Map an abstract declarator to
+            an abstract object declarator in the language definition."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is analogous to @(tsee ldm-declor-obj),
+       but for abstract declarators.
+       But there is a difference
+       in how we handle the direct abstract declarator,
+       since that may be present or not.
+       If not present, we wrap pointers around
+       the @(':none') case of @(tsee c::obj-adeclor).")
+     (xdoc::p
+      "This function is called when we expect an abstract object declarator,
+       not a function declarator, for which we have a separate function."))
+    (b* (((reterr) (c::obj-adeclor-none))
+         ((absdeclor absdeclor) absdeclor)
+         ((erp adeclor1)
+          (dirabsdeclor-option-case
+           absdeclor.direct?
+           :some (ldm-dirabsdeclor-obj absdeclor.direct?.val)
+           :none (retok (c::obj-adeclor-none)))))
+      (ldm-absdeclor-obj-loop adeclor1 absdeclor.pointers))
+    :measure (absdeclor-count absdeclor))
+
+  (define ldm-dirabsdeclor-obj ((dirabsdeclor dirabsdeclorp))
+    :guard (dirabsdeclor-unambp dirabsdeclor)
+    :returns (mv erp (adeclor1 c::obj-adeclorp))
+    :parents (abstract-syntax-formal-mapping-direct
+              ldm-absdeclors/dirabsdeclors-obj)
+    :short "Map a direct abstract declarator to
+            an abstract object declarator in the language definition."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is analogous to @(tsee ldm-dirdeclor-obj),
+       but for abstract declarators.
+       An array is handled recursively until its nested direct declarator
+       is absent. A parenthesized abstract declarator is handled by
+       the mutually recursive function.")
+     (xdoc::p
+      "This function is called when we expect an abstract object declarator,
+       not a function declarator, for which we have a separate function."))
+    (b* (((reterr) (c::obj-adeclor-none))
+         ((when (dirabsdeclor-case dirabsdeclor :paren))
+          (ldm-absdeclor-obj (dirabsdeclor-paren->inner dirabsdeclor)))
+         ((unless (dirabsdeclor-case dirabsdeclor :array))
+          (reterr (msg "Unsupported direct abstract declarator ~x0 for object."
+                       (dirabsdeclor-fix dirabsdeclor))))
+         ((dirabsdeclor-array dirabsdeclor) dirabsdeclor)
+         ((when dirabsdeclor.qualspecs)
+          (reterr (msg "Unsupported type qualifiers ~
+                        or attribute specifiers ~
+                        in direct abstract declarator ~x0 for object."
+                       (dirabsdeclor-fix dirabsdeclor))))
+         ((erp iconst?)
+          (if dirabsdeclor.size?
+              (b* ((iconst (check-expr-iconst dirabsdeclor.size?)))
+                (if iconst
+                    (retok (ldm-iconst iconst))
+                  (reterr (msg "Unsupported non-integer-constant size ~
+                                in direct abstract declarator ~x0 for object."
+                               (dirabsdeclor-fix dirabsdeclor)))))
+            (retok nil)))
+         ((when (dirabsdeclor-option-case dirabsdeclor.declor? :none))
+          (retok (c::make-obj-adeclor-array :decl (c::obj-adeclor-none)
+                                            :size iconst?)))
+         (dirabsdeclor.decl
+          (dirabsdeclor-option-some->val dirabsdeclor.declor?))
+         ((erp adeclor1) (ldm-dirabsdeclor-obj dirabsdeclor.decl)))
+      (retok (c::make-obj-adeclor-array :decl adeclor1
+                                        :size iconst?)))
+    :measure (dirabsdeclor-count dirabsdeclor))
+
+  :ruler-extenders :all
+
   :verify-guards :after-returns
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ldm-absdeclor-obj ((absdeclor absdeclorp))
-  :guard (absdeclor-unambp absdeclor)
-  :returns (mv erp (adeclor1 c::obj-adeclorp))
-  :short "Map an abstract declarator to
-          an abstract object declarator in the language definition."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is analogous to @(tsee ldm-declor-obj),
-     but for abstract declarators.
-     But there is a difference in how we handle the direct abstract declarator,
-     since that may be present or not.
-     If not present, we wrap pointers around
-     the @(':none') case of @(tsee c::obj-adeclor).")
-   (xdoc::p
-    "This function is called when we expect an abstract object declarator,
-     not a function declarator, for which we have a separate function."))
-  (b* (((reterr) (c::obj-adeclor-none))
-       ((absdeclor absdeclor) absdeclor)
-       ((erp adeclor1)
-        (if absdeclor.direct?
-            (ldm-dirabsdeclor-obj absdeclor.direct?)
-          (retok (c::obj-adeclor-none)))))
-    (ldm-absdeclor-obj-loop adeclor1 absdeclor.pointers))
-  :hooks (:fix)
 
   :prepwork
   ((define ldm-absdeclor-obj-loop ((adeclor1 c::obj-adeclorp)
@@ -633,14 +655,22 @@
                         (typequal/attribspec-list-fix qualspecs))))
           ((erp adeclor2) (ldm-absdeclor-obj-loop adeclor1 (cdr pointers))))
        (retok (c::obj-adeclor-pointer adeclor2)))
-     :hooks (:fix)
+     :verify-guards :after-returns
 
      ///
 
      (defret ldm-absdeclor-obj-loop-ok-when-pointers-formalp
        (not erp)
        :hyp (pointers-formalp pointers)
-       :hints (("Goal" :in-theory (enable pointers-formalp)))))))
+       :hints (("Goal" :induct t :in-theory (enable pointers-formalp))))))
+
+  ///
+
+  ;; No theorems saying that the FORMALP predicates imply no ERP,
+  ;; because there are no FORMALP predicates for abstract declarators;
+  ;; see abstract-syntax-formal-subset.lisp.
+
+  (fty::deffixequiv-mutual ldm-absdeclors/dirabsdeclors-obj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -667,7 +697,6 @@
        ((erp adeclor1) (ldm-absdeclor-obj tyname.declor?)))
     (retok (c::make-tyname :tyspec tyspecseq
                            :declor adeclor1)))
-  :hooks (:fix)
 
   ///
 
@@ -712,8 +741,7 @@
    :asg-shr (c::binop-asg-shr)
    :asg-and (c::binop-asg-and)
    :asg-xor (c::binop-asg-xor)
-   :asg-ior (c::binop-asg-ior))
-  :hooks (:fix))
+   :asg-ior (c::binop-asg-ior)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -843,7 +871,11 @@
 
 (define ldm-expr-option ((expr? expr-optionp))
   :guard (expr-option-unambp expr?)
-  :returns (mv erp (expr?1 c::expr-optionp))
+  :returns (mv erp (expr?1 c::expr-optionp
+                           :hints
+                           (("Goal"
+                             :in-theory
+                             (enable c::expr-optionp)))))
   :short "Map an optional expression to
           an optional expression in the language definition."
   (b* (((reterr) nil))
@@ -851,7 +883,6 @@
      expr?
      :some (ldm-expr expr?.val)
      :none (retok nil)))
-  :hooks (:fix)
 
   ///
 
@@ -918,7 +949,6 @@
                       in structure declaration ~x0."
                      (struct-declon-fix structdeclon)))))
     (retok (c::make-struct-declon :tyspec tyspecseq :declor objdeclor)))
-  :hooks (:fix)
 
   ///
 
@@ -940,7 +970,6 @@
        ((erp structdeclon1) (ldm-struct-declon (car structdeclons)))
        ((erp structdeclons1) (ldm-struct-declon-list (cdr structdeclons))))
     (retok (cons structdeclon1 structdeclons1)))
-  :hooks (:fix)
 
   ///
 
@@ -965,8 +994,7 @@
        ((enumer enumer) enumer)
        ((when enumer.value?)
         (reterr (msg "Unsupported enumerator ~x0." (enumer-fix enumer)))))
-    (ldm-ident enumer.name))
-  :hooks (:fix))
+    (ldm-ident enumer.name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -979,8 +1007,7 @@
        ((when (endp enumers)) (retok nil))
        ((erp ident) (ldm-enumer (car enumers)))
        ((erp idents) (ldm-enumer-list (cdr enumers))))
-    (retok (cons ident idents)))
-  :hooks (:fix))
+    (retok (cons ident idents))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1050,7 +1077,6 @@
     (reterr (msg "Unsupported type specifier ~x0 ~
                   for tag (i.e. structure/union/enumeration) declaration."
                  tyspec)))
-  :hooks (:fix)
 
   ///
 
@@ -1084,7 +1110,6 @@
         (prog2$ (impossible) (reterr t)))
        (declor (param-declor-nonabstract->declor paramdeclor)))
     (ldm-declor-obj declor))
-  :hooks (:fix)
 
   ///
 
@@ -1126,7 +1151,6 @@
        ((erp tyspecseq) (ldm-type-spec-list tyspecs))
        ((erp objdeclor) (ldm-param-declor declor)))
     (retok (c::make-param-declon :tyspec tyspecseq :declor objdeclor)))
-  :hooks (:fix)
 
   ///
 
@@ -1147,14 +1171,15 @@
        ((erp paramdecl1) (ldm-param-declon (car paramdecls)))
        ((erp paramdecls1) (ldm-param-declon-list (cdr paramdecls))))
     (retok (cons paramdecl1 paramdecls1)))
-  :hooks (:fix)
 
   ///
 
   (defret ldm-param-declon-list-ok-when-param-declon-list-formalp
     (not erp)
     :hyp (param-declon-list-formalp paramdecls)
-    :hints (("Goal" :in-theory (enable param-declon-list-formalp)))))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable param-declon-list-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1198,7 +1223,6 @@
        ((erp ident1) (ldm-ident ident))
        ((erp params1) (ldm-param-declon-list params)))
     (retok (c::make-fun-declor-base :name ident1 :params params1)))
-  :hooks (:fix)
 
   ///
 
@@ -1227,7 +1251,6 @@
        ((declor declor) declor)
        ((erp declor1) (ldm-dirdeclor-fun declor.direct)))
     (ldm-declor-fun-loop declor1 declor.pointers))
-  :hooks (:fix)
 
   :prepwork
   ((define ldm-declor-fun-loop ((declor1 c::fun-declorp)
@@ -1242,7 +1265,7 @@
                         (typequal/attribspec-list-fix qualspecs))))
           ((erp declor2) (ldm-declor-fun-loop declor1 (cdr pointers))))
        (retok (c::fun-declor-pointer declor2)))
-     :hooks (:fix)
+     :verify-guards :after-returns
 
      ///
 
@@ -1315,7 +1338,6 @@
                      initdeclor.attribs)))
        ((erp fundeclor) (ldm-declor-fun initdeclor.declor)))
     (retok (c::make-fun-declon :tyspec tyspecseq :declor fundeclor)))
-  :hooks (:fix)
 
   ///
 
@@ -1345,7 +1367,6 @@
        ((unless (initer-case desiniter.initer :single))
         (reterr (msg "Unsupported nested initializer ~x0." desiniter.initer))))
     (ldm-expr (initer-single->expr desiniter.initer)))
-  :hooks (:fix)
 
   ///
 
@@ -1366,14 +1387,15 @@
        ((erp expr1) (ldm-desiniter (car desiniters)))
        ((erp exprs1) (ldm-desiniter-list (cdr desiniters))))
     (retok (cons expr1 exprs1)))
-  :hooks (:fix)
 
   ///
 
   (defret ldm-desiniter-list-ok-when-desiniter-list-formalp
     (not erp)
     :hyp (desiniter-list-formalp desiniters)
-    :hints (("Goal" :in-theory (enable desiniter-list-formalp)))))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable desiniter-list-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1389,7 +1411,6 @@
                (retok (c::initer-single expr1)))
      :list (b* (((erp exprs1) (ldm-desiniter-list initer.elems)))
              (retok (c::initer-list exprs1)))))
-  :hooks (:fix)
 
   ///
 
@@ -1462,26 +1483,25 @@
                                :tyspec tyspecseq
                                :declor objdeclor
                                :init? initer)))
-  :hooks (:fix)
 
   ///
 
-  (defret ldm-declon-obj-ok-when-declon-obj-formalp
+  (defret ldm-declon-obj-ok-when-declon-obj-file-formalp
     (not erp)
-    :hyp (declon-obj-formalp declon)
-    :hints (("Goal" :in-theory (enable declon-obj-formalp
-                                       init-declor-list-obj-formalp
-                                       init-declor-obj-formalp))))
+    :hyp (declon-obj-file-formalp declon)
+    :hints (("Goal" :in-theory (enable declon-obj-file-formalp
+                                       init-declor-list-obj-file-formalp
+                                       init-declor-obj-file-formalp))))
 
-  (defret ldm-declon-obj-ok-when-declon-block-formalp
+  (defret ldm-declon-obj-ok-when-declon-obj-block-formalp
     (not erp)
-    :hyp (declon-block-formalp declon)
+    :hyp (declon-obj-block-formalp declon)
     :hints
     (("Goal"
       :in-theory
-      (enable declon-block-formalp
-              init-declor-list-block-formalp
-              init-declor-block-formalp
+      (enable declon-obj-block-formalp
+              init-declor-list-obj-block-formalp
+              init-declor-obj-block-formalp
               check-decl-spec-list-all-typespec/stoclass-when-all-typespec)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1503,8 +1523,7 @@
                     (reterr (msg "Unsupported case range ~x0."
                                  (label-fix label)))))
                 (retok (c::label-cas expr)))
-     :default (retok (c::label-default))))
-  :hooks (:fix))
+     :default (retok (c::label-default)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1698,7 +1717,6 @@
     (retok (c::make-fundef :tyspec tyspecseq
                            :declor fundeclor
                            :body body)))
-  :hooks (:fix)
 
   ///
 
@@ -1746,7 +1764,6 @@
         (retok (c::ext-declon-tag-declon tagdeclon))))
     (reterr (msg "Unsupported external declaration ~x0."
                  (ext-declon-fix extdecl))))
-  :hooks (:fix)
 
   ///
 
@@ -1773,7 +1790,6 @@
      :undef (reterr (msg "Unsupported #undef directives."))
      :cond (reterr (msg "Unsupported conditional directives."))
      :line-comment (reterr (msg "Unsupported line comment."))))
-  :hooks (:fix)
 
   ///
 
@@ -1793,7 +1809,6 @@
        ((erp extdecl1) (ldm-trans-item (car items)))
        ((erp extdecls1) (ldm-trans-item-list (cdr items))))
     (retok (cons extdecl1 extdecls1)))
-  :hooks (:fix)
 
   ///
 
@@ -1819,7 +1834,6 @@
        (items (trans-unit->items tunit))
        ((erp extdecls1) (ldm-trans-item-list items)))
     (retok (c::make-trans-unit :declons extdecls1)))
-  :hooks (:fix)
 
   ///
 
@@ -1857,7 +1871,6 @@
                                    :dot-h nil
                                    :dot-c tunit1)))
   :guard-hints (("Goal" :in-theory (enable omap::unfold-equal-size-const)))
-  :hooks (:fix)
 
   ///
 
