@@ -666,6 +666,10 @@
 
   ///
 
+  ;; No theorems saying that the FORMALP predicates imply no ERP,
+  ;; because there are no FORMALP predicates for abstract declarators;
+  ;; see abstract-syntax-formal-subset.lisp.
+
   (fty::deffixequiv-mutual ldm-absdeclors/dirabsdeclors-obj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
