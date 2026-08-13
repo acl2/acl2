@@ -536,7 +536,19 @@
     :hints (("Goal" :in-theory (enable declor-block-formalp
                                        dirdeclor-block-formalp))))
 
-  (fty::deffixequiv-mutual ldm-declors/dirdeclors-obj))
+  (fty::deffixequiv-mutual ldm-declors/dirdeclors-obj)
+
+  (defrule mv-nth-0-ldm-dirdeclor-obj-of-declor-to-dirdeclor
+    (equal (mv-nth 0 (ldm-dirdeclor-obj (declor-to-dirdeclor declor)))
+           (mv-nth 0 (ldm-declor-obj declor)))
+    :enable declor-to-dirdeclor)
+
+  (defrule mv-nth-1-ldm-dirdeclor-obj-of-declor-to-dirdeclor
+    (implies (not (mv-nth 0 (ldm-declor-obj declor)))
+             (equal (mv-nth 1 (ldm-dirdeclor-obj (declor-to-dirdeclor declor)))
+                    (mv-nth 1 (ldm-declor-obj declor))))
+    :enable (declor-to-dirdeclor
+             ldm-declor-obj-loop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
