@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "bound-and-free-variable-operations")
+(include-book "free-variable-operations")
 (include-book "expression-values-and-environments")
 (include-book "primitives-evaluation-on-types")
 (include-book "primitives-evaluation-on-ispaces")

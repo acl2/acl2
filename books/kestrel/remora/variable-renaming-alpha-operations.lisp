@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "variable-renaming-operations")
+(include-book "bound-and-free-variable-operations")
 (include-book "fresh-variable-operations")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))

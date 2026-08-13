@@ -1528,7 +1528,7 @@
   ; with (CAR NEW-ISPACES).  This rewrites (LIST (CAR NEW-ISPACES)) back to
   ; NEW-ISPACES (whose length is 1, via LEN-OF-UNIQ-ISPACE-VAR-PARAMS), so that
   ; the binder names match UNIQ-ISPACE-VAR-PARAMS-FACTS as in the :UNBOXN case.
- 
+
   (defret-mutual uniquify-names-impl-facts
     (defret uniq-expr-facts
       (b* ((names (expr-binder-names new-x)))
