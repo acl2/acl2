@@ -316,23 +316,23 @@
              type-free-ispace-vars))
 
   (defrule type-free-ispace-vars-of-nest-pi-types
-    (implies (ispace-var-listp params)
-             (equal (type-free-ispace-vars (nest-pi-types params body))
-                    (set::difference (type-free-ispace-vars body)
-                                     (set::mergesort params))))
+    (equal (type-free-ispace-vars (nest-pi-types params body))
+           (set::difference (type-free-ispace-vars body)
+                            (set::mergesort (ispace-var-list-fix params))))
     :induct t
     :enable (nest-pi-types
              type-free-ispace-vars
+             ispace-var-list-fix
              mergesort-of-cons))
 
   (defrule type-free-ispace-vars-of-nest-sigma-types
-    (implies (ispace-var-listp params)
-             (equal (type-free-ispace-vars (nest-sigma-types params body))
-                    (set::difference (type-free-ispace-vars body)
-                                     (set::mergesort params))))
+    (equal (type-free-ispace-vars (nest-sigma-types params body))
+           (set::difference (type-free-ispace-vars body)
+                            (set::mergesort (ispace-var-list-fix params))))
     :induct t
     :enable (nest-sigma-types
              type-free-ispace-vars
+             ispace-var-list-fix
              mergesort-of-cons))
 
   (defrule expr-free-ispace-vars-of-nest-app-exprs
@@ -377,38 +377,37 @@
     :enable nest-tlambda-exprs)
 
   (defrule expr-free-ispace-vars-of-nest-ilambda-exprs
-    (implies (ispace-var-listp params)
-             (equal (expr-free-ispace-vars (nest-ilambda-exprs params body))
-                    (set::difference (expr-free-ispace-vars body)
-                                     (set::mergesort params))))
+    (equal (expr-free-ispace-vars (nest-ilambda-exprs params body))
+           (set::difference (expr-free-ispace-vars body)
+                            (set::mergesort (ispace-var-list-fix params))))
     :induct t
     :enable (nest-ilambda-exprs
              atom-free-ispace-vars
+             ispace-var-list-fix
              mergesort-of-cons))
 
   (defrule expr-free-ispace-vars-of-nest-unbox-exprs
-    (implies (ispace-var-listp ispaces)
-             (equal (expr-free-ispace-vars
-                     (nest-unbox-exprs ispaces var target body type?))
-                    (if (consp ispaces)
-                        (set::union (expr-free-ispace-vars target)
-                                    (set::difference
-                                     (expr-free-ispace-vars body)
-                                     (set::mergesort ispaces)))
-                      (expr-free-ispace-vars body))))
+    (equal (expr-free-ispace-vars
+            (nest-unbox-exprs ispaces var target body type?))
+           (if (consp ispaces)
+               (set::union (expr-free-ispace-vars target)
+                           (set::difference
+                            (expr-free-ispace-vars body)
+                            (set::mergesort (ispace-var-list-fix ispaces))))
+             (expr-free-ispace-vars body)))
     :enable (nest-unbox-exprs
              expr-free-ispace-vars
              mergesort-of-cons)
     :prep-lemmas
     ((defrule expr-free-ispace-vars-of-nest-unbox-exprs-loop
-       (implies (ispace-var-listp ispaces)
-                (equal (expr-free-ispace-vars
-                        (nest-unbox-exprs-loop ispaces var body))
-                       (set::difference (expr-free-ispace-vars body)
-                                        (set::mergesort ispaces))))
+       (equal (expr-free-ispace-vars
+               (nest-unbox-exprs-loop ispaces var body))
+              (set::difference (expr-free-ispace-vars body)
+                               (set::mergesort (ispace-var-list-fix ispaces))))
        :induct t
        :enable (nest-unbox-exprs-loop
                 expr-free-ispace-vars
+                ispace-var-list-fix
                 mergesort-of-cons))))
 
   (defrule expr-free-ispace-vars-of-nest-box-exprs
