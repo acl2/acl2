@@ -808,10 +808,9 @@
        (equal (expr-wfp expr)
               (if (consp ispaces)
                   (and (ispace-var-list-wfp ispaces)
-                       (valid-identifier-string-p var)
+                       (valid-identifier-string-p (str-fix var))
                        (expr-wfp body))
                 (expr-wfp body)))
-       :hyp (stringp var)
        :hints (("Goal" :induct t :in-theory (enable expr-wfp))))))
 
   ///
@@ -820,12 +819,11 @@
     (equal (expr-wfp expr)
            (if (consp ispaces)
                (and (ispace-var-list-wfp ispaces)
-                    (valid-identifier-string-p var)
+                    (valid-identifier-string-p (str-fix var))
                     (expr-wfp target)
                     (expr-wfp body)
                     (type-option-wfp type?))
              (expr-wfp body)))
-    :hyp (stringp var)
     :hints (("Goal" :in-theory (enable expr-wfp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
