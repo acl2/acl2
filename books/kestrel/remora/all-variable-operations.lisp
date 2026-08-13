@@ -62,6 +62,25 @@
    (type :sigman
          (set::union (set::mergesort type.params)
                      (type-all-ispace-vars type.body)))
+   (expr :unbox
+         (set::insert expr.ispace
+                      (set::union
+                       (expr-all-ispace-vars expr.target)
+                       (set::union
+                        (expr-all-ispace-vars expr.body)
+                        (type-option-all-ispace-vars expr.type?)))))
+   (expr :unboxn
+         (set::union (set::mergesort expr.ispaces)
+                     (set::union
+                      (expr-all-ispace-vars expr.target)
+                      (set::union
+                       (expr-all-ispace-vars expr.body)
+                       (type-option-all-ispace-vars expr.type?)))))
+   (atom :ilambda (set::insert atom.param (expr-all-ispace-vars atom.body)))
+   (atom :ilambdan
+         (set::union (set::mergesort atom.params)
+                     (expr-all-ispace-vars atom.body)))
+   (bind :ispace (set::insert bind.var (ispace-all-ispace-vars bind.ispace)))
    (bind :ifun
          (set::union (set::mergesort bind.params)
                      (set::union (type-option-all-ispace-vars bind.type?)
