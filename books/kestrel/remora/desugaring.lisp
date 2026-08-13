@@ -432,6 +432,23 @@
                     car-of-ispace-list-desugar
                     cdr-of-ispace-list-desugar)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection desugar-theorems-about-structurals
+  :short "Some theorems about desugaring functions and structural operations."
+
+  (defrule var+type?->var-of-var+type?-desugar
+    (equal (var+type?->var (var+type?-desugar var+type?))
+           (var+type?->var var+type?))
+    :enable var+type?-desugar)
+
+  (defrule var+type?-list->var-of-var+type?-list-desugar
+    (equal (var+type?-list->var (var+type?-list-desugar var+type?s))
+           (var+type?-list->var var+type?s))
+    :induct t
+    :enable (var+type?-list-desugar
+             var+type?-list->var)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection corep-of-desugar
