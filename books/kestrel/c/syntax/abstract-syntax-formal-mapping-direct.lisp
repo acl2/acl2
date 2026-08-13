@@ -579,9 +579,10 @@
     (b* (((reterr) (c::obj-adeclor-none))
          ((absdeclor absdeclor) absdeclor)
          ((erp adeclor1)
-          (if absdeclor.direct?
-              (ldm-dirabsdeclor-obj absdeclor.direct?)
-            (retok (c::obj-adeclor-none)))))
+          (dirabsdeclor-option-case
+           absdeclor.direct?
+           :some (ldm-dirabsdeclor-obj absdeclor.direct?.val)
+           :none (retok (c::obj-adeclor-none)))))
       (ldm-absdeclor-obj-loop adeclor1 absdeclor.pointers))
     :measure (absdeclor-count absdeclor))
 
@@ -632,11 +633,9 @@
          ((erp adeclor1) (ldm-dirabsdeclor-obj dirabsdeclor.decl)))
       (retok (c::make-obj-adeclor-array :decl adeclor1
                                         :size iconst?)))
-    :measure (dirabsdeclor-option-count dirabsdeclor))
+    :measure (dirabsdeclor-count dirabsdeclor))
 
-  :hints (("Goal"
-           :expand ((dirabsdeclor-option-count dirabsdeclor))
-           :in-theory (enable dirabsdeclor-option-some->val)))
+  :ruler-extenders :all
 
   :verify-guards :after-returns
 
