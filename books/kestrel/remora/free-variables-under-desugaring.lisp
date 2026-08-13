@@ -84,16 +84,17 @@
       :fn ispace-list-desugar)
     :mutual-recursion shapes/ispaces-desugar
     :hints (("Goal"
-             :in-theory (enable shape-desugar
-                                shape-list-desugar
-                                ispace-desugar
-                                ispace-list-desugar
-                                shape-free-ispace-vars
-                                shape-list-free-ispace-vars
-                                ispace-free-ispace-vars
-                                ispace-list-free-ispace-vars
-                                dim-list-free-ispace-vars
-                                shape-list-free-ispace-vars-of-shape-dims-list))))
+             :in-theory
+             (enable shape-desugar
+                     shape-list-desugar
+                     ispace-desugar
+                     ispace-list-desugar
+                     shape-free-ispace-vars
+                     shape-list-free-ispace-vars
+                     ispace-free-ispace-vars
+                     ispace-list-free-ispace-vars
+                     dim-list-free-ispace-vars
+                     shape-list-free-ispace-vars-of-shape-dims-list))))
 
   (defret-mutual free-ispace-vars-of-types-desugar
     (defret type-free-ispace-vars-of-type-desugar
