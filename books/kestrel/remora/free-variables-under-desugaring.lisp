@@ -24,6 +24,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local (in-theory (enable* ast-free-ispace-vars-rules
+                           ast-free-type-vars-rules
                            ast-wfp-rules
                            ast-desugar-rules)))
 
@@ -210,4 +211,119 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: type vars & expr vars
+(defsection free-type-vars-of-desugar
+  :short "Desugaring preserves the free type variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There is no theorem for the desugaring of shapes and ispaces,
+     which contain no type variables."))
+
+  (defret-mutual free-type-vars-of-types-desugar
+    (defret type-free-type-vars-of-type-desugar
+      (equal (type-free-type-vars result)
+             (type-free-type-vars type))
+      :fn type-desugar)
+    (defret type-list-free-type-vars-of-type-list-desugar
+      (equal (type-list-free-type-vars result)
+             (type-list-free-type-vars type-list))
+      :fn type-list-desugar)
+    :mutual-recursion types-desugar
+    :hints (("Goal" :in-theory (enable type-desugar
+                                       type-list-desugar
+                                       type-free-type-vars
+                                       type-list-free-type-vars))))
+
+  (defret type-option-free-type-vars-of-type-option-desugar
+    (equal (type-option-free-type-vars result)
+           (type-option-free-type-vars type-option))
+    :fn type-option-desugar
+    :hints (("Goal" :in-theory (enable type-option-desugar
+                                       type-option-free-type-vars
+                                       type-option-some->val))))
+
+  (defret var+type?-free-type-vars-of-var+type?-desugar
+    (equal (var+type?-free-type-vars result)
+           (var+type?-free-type-vars var+type?))
+    :fn var+type?-desugar
+    :hints (("Goal" :in-theory (enable var+type?-desugar
+                                       var+type?-free-type-vars))))
+
+  (defret var+type?-list-free-type-vars-of-var+type?-list-desugar
+    (equal (var+type?-list-free-type-vars result)
+           (var+type?-list-free-type-vars var+type?-list))
+    :fn var+type?-list-desugar
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable var+type?-list-desugar
+                                var+type?-list-free-type-vars))))
+
+  (defrulel var+type?-list-free-type-vars-fold
+    (implies (consp var+type?s)
+             (equal (set::union (var+type?-free-type-vars (car var+type?s))
+                                (var+type?-list-free-type-vars
+                                 (cdr var+type?s)))
+                    (var+type?-list-free-type-vars var+type?s))))
+
+  (defret-mutual free-type-vars-of-exprs/atoms/binds-desugar
+    (defret expr-free-type-vars-of-expr-desugar
+      (equal (expr-free-type-vars result)
+             (expr-free-type-vars expr))
+      :hyp (expr-wfp expr)
+      :fn expr-desugar)
+    (defret expr-list-free-type-vars-of-expr-list-desugar
+      (equal (expr-list-free-type-vars result)
+             (expr-list-free-type-vars expr-list))
+      :hyp (expr-list-wfp expr-list)
+      :fn expr-list-desugar)
+    (defret atom-free-type-vars-of-atom-desugar
+      (equal (atom-free-type-vars result)
+             (atom-free-type-vars atom))
+      :hyp (atom-wfp atom)
+      :fn atom-desugar)
+    (defret atom-list-free-type-vars-of-atom-list-desugar
+      (equal (atom-list-free-type-vars result)
+             (atom-list-free-type-vars atom-list))
+      :hyp (atom-list-wfp atom-list)
+      :fn atom-list-desugar)
+    (defret bind-free-type-vars-of-bind-desugar
+      (equal (bind-free-type-vars result)
+             (bind-free-type-vars bind))
+      :hyp (bind-wfp bind)
+      :fn bind-desugar)
+    (defret bind-list-free-type-vars-of-bind-list-desugar
+      (equal (bind-list-free-type-vars result)
+             (bind-list-free-type-vars bind-list))
+      :hyp (bind-list-wfp bind-list)
+      :fn bind-list-desugar)
+    :mutual-recursion exprs/atoms/binds-desugar
+    :hints (("Goal" :in-theory (enable expr-desugar
+                                       expr-list-desugar
+                                       atom-desugar
+                                       atom-list-desugar
+                                       bind-desugar
+                                       bind-list-desugar
+                                       expr-free-type-vars
+                                       expr-list-free-type-vars
+                                       atom-free-type-vars
+                                       atom-list-free-type-vars
+                                       bind-free-type-vars
+                                       bind-list-free-type-vars
+                                       type-option-free-type-vars
+                                       type-list-option-free-type-vars
+                                       expr-wfp
+                                       expr-list-wfp
+                                       atom-wfp
+                                       atom-list-wfp
+                                       bind-wfp
+                                       bind-list-wfp
+                                       type-option-some->val
+                                       acl2::consp-of-cdr
+                                       union-of-differences
+                                       mergesort-when-consp
+                                       set::union-symmetric
+                                       set::union-commutative)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: expr vars

@@ -418,3 +418,135 @@
     :induct t
     :enable (nest-box-exprs
              ispace-list-free-ispace-vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection free-type-vars-theorems-about-structurals
+  :short "Some theorems about
+          the free type variables over some structural operations."
+
+  (local (in-theory (enable* ast-free-type-vars-rules)))
+
+  (defrule atom-list-free-type-vars-of-atom-base-list
+    (equal (atom-list-free-type-vars (atom-base-list lits))
+           nil)
+    :induct t
+    :enable atom-base-list)
+
+  (defrule type-list-free-type-vars-of-var+type?-list->type-list-or-err
+    (implies (not (reserrp (var+type?-list->type-list-or-err var+type?s)))
+             (equal (type-list-free-type-vars
+                     (var+type?-list->type-list-or-err var+type?s))
+                    (var+type?-list-free-type-vars var+type?s)))
+    :induct t
+    :enable (var+type?-list->type-list-or-err
+             var+type?->type-or-err
+             type-list-free-type-vars
+             var+type?-list-free-type-vars
+             var+type?-free-type-vars
+             type-option-free-type-vars
+             type-option-some->val))
+
+  (defrule type-free-type-vars-of-nest-fun-types
+    (equal (type-free-type-vars (nest-fun-types in out))
+           (set::union (type-list-free-type-vars in)
+                       (type-free-type-vars out)))
+    :induct t
+    :enable (nest-fun-types
+             type-free-type-vars
+             type-list-free-type-vars))
+
+  (defrule type-free-type-vars-of-nest-forall-types
+    (implies (type-var-listp params)
+             (equal (type-free-type-vars (nest-forall-types params body))
+                    (set::difference (type-free-type-vars body)
+                                     (set::mergesort params))))
+    :induct t
+    :enable (nest-forall-types
+             type-free-type-vars
+             mergesort-of-cons))
+
+  (defrule type-free-type-vars-of-nest-pi-types
+    (equal (type-free-type-vars (nest-pi-types params body))
+           (type-free-type-vars body))
+    :induct t
+    :enable (nest-pi-types
+             type-free-type-vars))
+
+  (defrule type-free-type-vars-of-nest-sigma-types
+    (equal (type-free-type-vars (nest-sigma-types params body))
+           (type-free-type-vars body))
+    :induct t
+    :enable (nest-sigma-types
+             type-free-type-vars))
+
+  (defrule expr-free-type-vars-of-nest-app-exprs
+    (equal (expr-free-type-vars (nest-app-exprs fun args))
+           (set::union (expr-free-type-vars fun)
+                       (expr-list-free-type-vars args)))
+    :induct t
+    :enable (nest-app-exprs
+             expr-list-free-type-vars))
+
+  (defrule expr-free-type-vars-of-nest-tapp-exprs
+    (equal (expr-free-type-vars (nest-tapp-exprs fun args))
+           (set::union (expr-free-type-vars fun)
+                       (type-list-free-type-vars args)))
+    :induct t
+    :enable (nest-tapp-exprs
+             type-list-free-type-vars))
+
+  (defrule expr-free-type-vars-of-nest-iapp-exprs
+    (equal (expr-free-type-vars (nest-iapp-exprs fun args))
+           (expr-free-type-vars fun))
+    :induct t
+    :enable nest-iapp-exprs)
+
+  (defrule expr-free-type-vars-of-nest-lambda-exprs
+    (equal (expr-free-type-vars (nest-lambda-exprs params body type?))
+           (if (consp params)
+               (set::union (var+type?-list-free-type-vars params)
+                           (set::union (expr-free-type-vars body)
+                                       (type-option-free-type-vars type?)))
+             (expr-free-type-vars body)))
+    :induct t
+    :enable (nest-lambda-exprs
+             var+type?-list-free-type-vars))
+
+  (defrule expr-free-type-vars-of-nest-tlambda-exprs
+    (implies (type-var-listp params)
+             (equal (expr-free-type-vars (nest-tlambda-exprs params body))
+                    (set::difference (expr-free-type-vars body)
+                                     (set::mergesort params))))
+    :induct t
+    :enable (nest-tlambda-exprs
+             atom-free-type-vars
+             mergesort-of-cons))
+
+  (defrule expr-free-type-vars-of-nest-ilambda-exprs
+    (equal (expr-free-type-vars (nest-ilambda-exprs params body))
+           (expr-free-type-vars body))
+    :induct t
+    :enable nest-ilambda-exprs)
+
+  (defrule expr-free-type-vars-of-nest-unbox-exprs
+    (equal (expr-free-type-vars
+            (nest-unbox-exprs ispaces var target body type?))
+           (if (consp ispaces)
+               (set::union (expr-free-type-vars target)
+                           (set::union (expr-free-type-vars body)
+                                       (type-option-free-type-vars type?)))
+             (expr-free-type-vars body)))
+    :enable nest-unbox-exprs
+    :prep-lemmas
+    ((defrule expr-free-type-vars-of-nest-unbox-exprs-loop
+       (equal (expr-free-type-vars (nest-unbox-exprs-loop ispaces var body))
+              (expr-free-type-vars body))
+       :induct t
+       :enable nest-unbox-exprs-loop)))
+
+  (defrule expr-free-type-vars-of-nest-box-exprs
+    (equal (expr-free-type-vars (nest-box-exprs ispaces body))
+           (expr-free-type-vars body))
+    :induct t
+    :enable nest-box-exprs))

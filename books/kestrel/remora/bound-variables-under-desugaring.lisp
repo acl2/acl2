@@ -47,4 +47,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: type vars & expr vars
+(defsection bound-type-vars-of-desugar
+  :short "Desugaring preserves the bound type variables."
+
+  (defrule bind-bound-type-vars-of-bind-desugar
+    (equal (bind-bound-type-vars (bind-desugar bind))
+           (bind-bound-type-vars bind))
+    :expand ((bind-desugar bind))
+    :enable bind-bound-type-vars)
+
+  (defrule bind-list-bound-type-vars-of-bind-list-desugar
+    (equal (bind-list-bound-type-vars (bind-list-desugar binds))
+           (bind-list-bound-type-vars binds))
+    :induct t
+    :expand ((bind-list-desugar binds))
+    :enable bind-list-bound-type-vars))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: expr vars
