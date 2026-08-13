@@ -754,7 +754,7 @@
        ,body
        ,@(and (or mutrecp recp)
               `(:measure (,type-count ,type)
-                :hints (("Goal" :in-theory (enable o< o-finp)))))
+                :hints (("Goal" :in-theory (enable o-p o< o-finp)))))
        ,@(and (not mutrecp)
               `(:verify-guards ,(if defer-guards-p nil :after-returns)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -832,7 +832,7 @@
        ,body
        ,@(and (or mutrecp recp)
               `(:measure (,type-count ,type)
-                :hints (("Goal" :in-theory (enable o< o-finp)))))
+                :hints (("Goal" :in-theory (enable o-p o< o-finp)))))
        ,@(and (not mutrecp)
               `(:verify-guards ,(if defer-guards-p nil :after-returns)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -908,7 +908,7 @@
        ,body
        ,@(and (or mutrecp recp)
               `(:measure (,type-count ,type)
-                :hints (("Goal" :in-theory (enable o< o-finp)))))
+                :hints (("Goal" :in-theory (enable o-p o< o-finp)))))
        ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix)))
        ///
@@ -1099,7 +1099,7 @@
        ,body
        ,@(and (or mutrecp recp)
               `(:measure (,type-count ,type)
-                :hints (("Goal" :in-theory (enable o< o-finp)))))
+                :hints (("Goal" :in-theory (enable o-p o< o-finp)))))
        ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix)))
        ///
@@ -1220,7 +1220,7 @@
        ,body
        ,@(and (or mutrecp recp)
               `(:measure (,type-count ,type)
-                :hints (("Goal" :in-theory (enable o< o-finp)))))
+                :hints (("Goal" :in-theory (enable o-p o< o-finp)))))
        ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix)))
        ///
@@ -1391,7 +1391,7 @@
      `(defines ,clique-name-suffix
         :parents (,name)
         ,@events
-        :hints (("Goal" :in-theory (enable o< o-finp)))
+        :hints (("Goal" :in-theory (enable o-p o< o-finp)))
         :verify-guards ,(if require-rules nil :after-returns)
         :flag-local nil
         :prepwork ((set-bogus-mutual-recursion-ok t))
