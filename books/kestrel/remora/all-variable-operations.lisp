@@ -208,6 +208,171 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection all-ispace-vars-theorems-about-structurals
+  :short "Some theorems about
+          all the ispace variables over some structural operations."
+
+  (local (in-theory (enable* ast-all-ispace-vars-rules)))
+
+  (defrule shape-list-all-ispace-vars-of-shape-dims-list
+    (equal (shape-list-all-ispace-vars (shape-dims-list dimss))
+           (dim-list-list-all-ispace-vars dimss))
+    :induct t
+    :enable shape-dims-list)
+
+  (defrule shape-list-all-ispace-vars-of-ispace-shape-list->shape
+    (implies (ispace-list-case-shape ispaces)
+             (equal (shape-list-all-ispace-vars
+                     (ispace-shape-list->shape ispaces))
+                    (ispace-list-all-ispace-vars ispaces)))
+    :induct t
+    :enable (ispace-shape-list->shape
+             ispace-all-ispace-vars))
+
+  (defrule atom-list-all-ispace-vars-of-atom-base-list
+    (equal (atom-list-all-ispace-vars (atom-base-list lits))
+           nil)
+    :induct t
+    :enable atom-base-list)
+
+  (defrule type-list-all-ispace-vars-of-var+type?-list->type-list-or-err
+    (implies (not (reserrp (var+type?-list->type-list-or-err var+type?s)))
+             (equal (type-list-all-ispace-vars
+                     (var+type?-list->type-list-or-err var+type?s))
+                    (var+type?-list-all-ispace-vars var+type?s)))
+    :induct t
+    :enable (var+type?-list->type-list-or-err
+             var+type?->type-or-err
+             type-list-all-ispace-vars
+             var+type?-list-all-ispace-vars
+             var+type?-all-ispace-vars
+             type-option-all-ispace-vars
+             type-option-some->val))
+
+  (defrule type-all-ispace-vars-of-nest-fun-types
+    (equal (type-all-ispace-vars (nest-fun-types in out))
+           (set::union (type-list-all-ispace-vars in)
+                       (type-all-ispace-vars out)))
+    :induct t
+    :enable (nest-fun-types
+             type-all-ispace-vars
+             type-list-all-ispace-vars))
+
+  (defrule type-all-ispace-vars-of-nest-forall-types
+    (equal (type-all-ispace-vars (nest-forall-types params body))
+           (type-all-ispace-vars body))
+    :induct t
+    :enable (nest-forall-types
+             type-all-ispace-vars))
+
+  (defrule type-all-ispace-vars-of-nest-pi-types
+    (equal (type-all-ispace-vars (nest-pi-types params body))
+           (set::union (set::mergesort (ispace-var-list-fix params))
+                       (type-all-ispace-vars body)))
+    :induct t
+    :enable (nest-pi-types
+             type-all-ispace-vars
+             ispace-var-list-fix
+             mergesort-of-cons))
+
+  (defrule type-all-ispace-vars-of-nest-sigma-types
+    (equal (type-all-ispace-vars (nest-sigma-types params body))
+           (set::union (set::mergesort (ispace-var-list-fix params))
+                       (type-all-ispace-vars body)))
+    :induct t
+    :enable (nest-sigma-types
+             type-all-ispace-vars
+             ispace-var-list-fix
+             mergesort-of-cons))
+
+  (defrule expr-all-ispace-vars-of-nest-app-exprs
+    (equal (expr-all-ispace-vars (nest-app-exprs fun args))
+           (set::union (expr-all-ispace-vars fun)
+                       (expr-list-all-ispace-vars args)))
+    :induct t
+    :enable (nest-app-exprs
+             expr-list-all-ispace-vars))
+
+  (defrule expr-all-ispace-vars-of-nest-tapp-exprs
+    (equal (expr-all-ispace-vars (nest-tapp-exprs fun args))
+           (set::union (expr-all-ispace-vars fun)
+                       (type-list-all-ispace-vars args)))
+    :induct t
+    :enable (nest-tapp-exprs
+             type-list-all-ispace-vars))
+
+  (defrule expr-all-ispace-vars-of-nest-iapp-exprs
+    (equal (expr-all-ispace-vars (nest-iapp-exprs fun args))
+           (set::union (expr-all-ispace-vars fun)
+                       (ispace-list-all-ispace-vars args)))
+    :induct t
+    :enable (nest-iapp-exprs
+             ispace-list-all-ispace-vars))
+
+  (defrule expr-all-ispace-vars-of-nest-lambda-exprs
+    (equal (expr-all-ispace-vars (nest-lambda-exprs params body type?))
+           (if (consp params)
+               (set::union (var+type?-list-all-ispace-vars params)
+                           (set::union (expr-all-ispace-vars body)
+                                       (type-option-all-ispace-vars type?)))
+             (expr-all-ispace-vars body)))
+    :induct t
+    :enable (nest-lambda-exprs
+             var+type?-list-all-ispace-vars))
+
+  (defrule expr-all-ispace-vars-of-nest-tlambda-exprs
+    (equal (expr-all-ispace-vars (nest-tlambda-exprs params body))
+           (expr-all-ispace-vars body))
+    :induct t
+    :enable nest-tlambda-exprs)
+
+  (defrule expr-all-ispace-vars-of-nest-ilambda-exprs
+    (equal (expr-all-ispace-vars (nest-ilambda-exprs params body))
+           (set::union (set::mergesort (ispace-var-list-fix params))
+                       (expr-all-ispace-vars body)))
+    :induct t
+    :enable (nest-ilambda-exprs
+             atom-all-ispace-vars
+             ispace-var-list-fix
+             mergesort-of-cons))
+
+  (defrule expr-all-ispace-vars-of-nest-unbox-exprs
+    (equal (expr-all-ispace-vars
+            (nest-unbox-exprs ispaces var target body type?))
+           (if (consp ispaces)
+               (set::union (set::mergesort (ispace-var-list-fix ispaces))
+                           (set::union
+                            (expr-all-ispace-vars target)
+                            (set::union
+                             (expr-all-ispace-vars body)
+                             (type-option-all-ispace-vars type?))))
+             (expr-all-ispace-vars body)))
+    :enable (nest-unbox-exprs
+             expr-all-ispace-vars
+             mergesort-of-cons
+             set::union-symmetric
+             set::union-commutative)
+    :prep-lemmas
+    ((defrule expr-all-ispace-vars-of-nest-unbox-exprs-loop
+       (equal (expr-all-ispace-vars (nest-unbox-exprs-loop ispaces var body))
+              (set::union (set::mergesort (ispace-var-list-fix ispaces))
+                          (expr-all-ispace-vars body)))
+       :induct t
+       :enable (nest-unbox-exprs-loop
+                expr-all-ispace-vars
+                ispace-var-list-fix
+                mergesort-of-cons))))
+
+  (defrule expr-all-ispace-vars-of-nest-box-exprs
+    (equal (expr-all-ispace-vars (nest-box-exprs ispaces body))
+           (set::union (ispace-list-all-ispace-vars ispaces)
+                       (expr-all-ispace-vars body)))
+    :induct t
+    :enable (nest-box-exprs
+             ispace-list-all-ispace-vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection all-type-vars-theorems-about-structurals
   :short "Some theorems about
           all the type variables over some structural operations."
