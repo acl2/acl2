@@ -492,12 +492,12 @@
      :parents nil
      (b* (((reterr) (c::obj-declor-ident (c::ident "irrelevant")))
           ((when (endp pointers)) (retok (c::obj-declor-fix declor1)))
-          (tyqualattribs (car pointers))
-          ((unless (endp tyqualattribs))
+          (qualspecs (car pointers))
+          ((unless (endp qualspecs))
            (reterr (msg "Unsupported type qualifiers ~
                          or attribute specifiers ~
                          ~x0 in pointer."
-                        (typequal/attribspec-list-fix tyqualattribs))))
+                        (typequal/attribspec-list-fix qualspecs))))
           ((erp declor2) (ldm-declor-obj-loop declor1 (cdr pointers))))
        (retok (c::obj-declor-pointer declor2)))
      :verify-guards :after-returns
