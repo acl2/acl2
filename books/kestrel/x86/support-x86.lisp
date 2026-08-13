@@ -172,11 +172,11 @@
 ;;   :hints (("Goal" :in-theory (enable ;x86isa::xw-xr
 ;;                               ))))
 
-(defthm member-p-of-create-canonical-address-list-same
-  (implies (canonical-address-p addr)
-           (equal (x86isa::member-p addr (x86isa::create-canonical-address-list count addr))
-                  (posp count)))
-  :hints (("Goal" :in-theory (enable x86isa::create-canonical-address-list))))
+;; (defthm member-p-of-create-canonical-address-list-same
+;;   (implies (canonical-address-p addr)
+;;            (equal (x86isa::member-p addr (x86isa::create-canonical-address-list count addr))
+;;                   (posp count)))
+;;   :hints (("Goal" :in-theory (enable x86isa::create-canonical-address-list))))
 
 ;; ;could restrict k and k2 to constants
 ;; (defthm canonical-address-p-of-+-when-canonical-address-p-of-+

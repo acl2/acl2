@@ -214,13 +214,13 @@
     acl2::consp-of-cons
     cdr-cons
     ;; lists as sets:
-    x86isa::subset-p-of-singleton-arg1
-    x86isa::disjoint-p-subset-p ;has free vars, somewhat aggressive
-    x86isa::subset-p-reflexive  ;strengthen?
-    x86isa::disjoint-p-nil-1
+    ;; x86isa::subset-p-of-singleton-arg1
+    ;; x86isa::disjoint-p-subset-p ;has free vars, somewhat aggressive
+    ;; x86isa::subset-p-reflexive  ;strengthen?
+    ;; x86isa::disjoint-p-nil-1
     ;;disjoint-p-cons-1 ;this may require more rules (e.g., (disjointp y z) and (subsetp x y) and (memberp a z) => (not (memberp a x)))
     ;;not-member-p-when-disjoint-p ;todo: make an alt version
-    x86isa::subset-p-reflexive
+    ;; x86isa::subset-p-reflexive
     ))
 
 ;; For 64-bit mode and low-level 32-bit mode proofs.
@@ -2543,7 +2543,7 @@
             ;; stuff from the timessix example:
             ;acl2::getbit-of-bvchop
 
-            x86isa::disjoint-p-cons-1 ;restrict to a singleton?
+            ;x86isa::disjoint-p-cons-1 ;restrict to a singleton?
             ;x86isa::disjoint-p-nil-1
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk
             ;acl2::bvplus-combine-constants
