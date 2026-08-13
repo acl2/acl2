@@ -18,6 +18,7 @@
 (include-book "variable-renaming-alpha-operations")
 (include-book "variable-substitution-operations")
 (include-book "variable-substitution-alpha-operations")
+(include-book "bound-variables-under-desugaring")
 (include-book "free-variables-under-desugaring")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -33,4 +34,5 @@
                     variable-renaming-alpha-operations
                     variable-substitution-operations
                     variable-substitution-alpha-operations
+                    bound-variables-under-desugaring
                     free-variables-under-desugaring))

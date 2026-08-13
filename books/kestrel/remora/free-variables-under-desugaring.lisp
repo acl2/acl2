@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-well-formedness")
+(include-book "bound-variables-under-desugaring")
 (include-book "free-variable-operations")
 (include-book "desugaring")
 
@@ -132,19 +133,6 @@
              :induct t
              :in-theory (enable var+type?-list-desugar
                                 var+type?-list-free-ispace-vars))))
-
-  (defrule bind-bound-ispace-vars-of-bind-desugar
-    (equal (bind-bound-ispace-vars (bind-desugar bind))
-           (bind-bound-ispace-vars bind))
-    :expand ((bind-desugar bind))
-    :enable bind-bound-ispace-vars)
-
-  (defrule bind-list-bound-ispace-vars-of-bind-list-desugar
-    (equal (bind-list-bound-ispace-vars (bind-list-desugar binds))
-           (bind-list-bound-ispace-vars binds))
-    :induct t
-    :expand ((bind-list-desugar binds))
-    :enable bind-list-bound-ispace-vars)
 
   (defrulel ispace-list-free-ispace-vars-fold
     (implies (consp ispaces)
