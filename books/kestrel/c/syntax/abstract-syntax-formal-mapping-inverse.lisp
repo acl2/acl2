@@ -397,7 +397,23 @@
                                    :info nil)
                                 nil)))))
   :measure (c::obj-adeclor-count adeclor)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule ldm-absdeclor-obj-of-ildm-obj-adeclor
+    (equal (ldm-absdeclor-obj (ildm-obj-adeclor adeclor))
+           (mv nil (c::obj-adeclor-dec0-to-oct0 adeclor)))
+    :induct t
+    :enable (ldm-absdeclor-obj
+             ldm-absdeclor-obj-loop
+             ldm-dirabsdeclor-obj
+             absdeclor-to-dirabsdeclor?
+             check-expr-iconst
+             c::obj-adeclor-dec0-to-oct0
+             c::iconst-option-dec0-to-oct0
+             c::iconst-option-some->val
+             dirabsdeclor-option-some->val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
