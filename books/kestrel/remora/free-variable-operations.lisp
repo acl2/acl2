@@ -457,13 +457,13 @@
              type-list-free-type-vars))
 
   (defrule type-free-type-vars-of-nest-forall-types
-    (implies (type-var-listp params)
-             (equal (type-free-type-vars (nest-forall-types params body))
-                    (set::difference (type-free-type-vars body)
-                                     (set::mergesort params))))
+    (equal (type-free-type-vars (nest-forall-types params body))
+           (set::difference (type-free-type-vars body)
+                            (set::mergesort (type-var-list-fix params))))
     :induct t
     :enable (nest-forall-types
              type-free-type-vars
+             type-var-list-fix
              mergesort-of-cons))
 
   (defrule type-free-type-vars-of-nest-pi-types
@@ -514,13 +514,13 @@
              var+type?-list-free-type-vars))
 
   (defrule expr-free-type-vars-of-nest-tlambda-exprs
-    (implies (type-var-listp params)
-             (equal (expr-free-type-vars (nest-tlambda-exprs params body))
-                    (set::difference (expr-free-type-vars body)
-                                     (set::mergesort params))))
+    (equal (expr-free-type-vars (nest-tlambda-exprs params body))
+           (set::difference (expr-free-type-vars body)
+                            (set::mergesort (type-var-list-fix params))))
     :induct t
     :enable (nest-tlambda-exprs
              atom-free-type-vars
+             type-var-list-fix
              mergesort-of-cons))
 
   (defrule expr-free-type-vars-of-nest-ilambda-exprs
