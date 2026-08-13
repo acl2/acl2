@@ -83,17 +83,16 @@
       :fn ispace-list-desugar)
     :mutual-recursion shapes/ispaces-desugar
     :hints (("Goal"
-             :in-theory
-             (enable shape-desugar
-                     shape-list-desugar
-                     ispace-desugar
-                     ispace-list-desugar
-                     shape-free-ispace-vars
-                     shape-list-free-ispace-vars
-                     ispace-free-ispace-vars
-                     ispace-list-free-ispace-vars
-                     dim-list-free-ispace-vars
-                     shape-list-free-ispace-vars-of-shape-dims-list))))
+             :in-theory (enable shape-desugar
+                                shape-list-desugar
+                                ispace-desugar
+                                ispace-list-desugar
+                                shape-free-ispace-vars
+                                shape-list-free-ispace-vars
+                                ispace-free-ispace-vars
+                                ispace-list-free-ispace-vars
+                                dim-list-free-ispace-vars
+                                shape-list-free-ispace-vars-of-shape-dims-list))))
 
   (defret-mutual free-ispace-vars-of-types-desugar
     (defret type-free-ispace-vars-of-type-desugar
@@ -192,36 +191,33 @@
       :hyp (bind-list-wfp bind-list)
       :fn bind-list-desugar)
     :mutual-recursion exprs/atoms/binds-desugar
-    :hints
-    (("Goal"
-      :in-theory
-      (enable expr-desugar
-              expr-list-desugar
-              atom-desugar
-              atom-list-desugar
-              bind-desugar
-              bind-list-desugar
-              expr-free-ispace-vars
-              expr-list-free-ispace-vars
-              atom-free-ispace-vars
-              atom-list-free-ispace-vars
-              bind-free-ispace-vars
-              bind-list-free-ispace-vars
-              type-option-free-ispace-vars
-              type-list-option-free-ispace-vars
-              ispace-list-option-free-ispace-vars
-              expr-wfp
-              expr-list-wfp
-              atom-wfp
-              atom-list-wfp
-              bind-wfp
-              bind-list-wfp
-              type-option-some->val
-              acl2::consp-of-cdr
-              union-of-differences
-              mergesort-when-consp
-              set::union-symmetric
-              set::union-commutative)))))
+    :hints (("Goal" :in-theory (enable expr-desugar
+                                       expr-list-desugar
+                                       atom-desugar
+                                       atom-list-desugar
+                                       bind-desugar
+                                       bind-list-desugar
+                                       expr-free-ispace-vars
+                                       expr-list-free-ispace-vars
+                                       atom-free-ispace-vars
+                                       atom-list-free-ispace-vars
+                                       bind-free-ispace-vars
+                                       bind-list-free-ispace-vars
+                                       type-option-free-ispace-vars
+                                       type-list-option-free-ispace-vars
+                                       ispace-list-option-free-ispace-vars
+                                       expr-wfp
+                                       expr-list-wfp
+                                       atom-wfp
+                                       atom-list-wfp
+                                       bind-wfp
+                                       bind-list-wfp
+                                       type-option-some->val
+                                       acl2::consp-of-cdr
+                                       union-of-differences
+                                       mergesort-when-consp
+                                       set::union-symmetric
+                                       set::union-commutative)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
