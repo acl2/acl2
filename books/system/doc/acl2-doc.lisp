@@ -15371,7 +15371,9 @@ way to split up large ACL2 developments into separate modules."
  extends the usual ASCII coding of characters.  We also check that Space, Tab,
  Newline, Page, Rubout, and Return correspond to characters with respective
  @(tsee char-code)s @('32'), @('9'), @('10'), @('12'), @('127'), and
- @('13').</p>
+ @('13').  (Starting in 2026 or 2027, some versions of Allegro CL might not
+ recogize the Page character as the value of @('(code-char 12)'), but ACL2
+ arranges this to be the case inside the ACL2 read-eval-print loop.)</p>
 
  <p>@(tsee Code-char) has an inverse, @(tsee char-code).  Thus, when @(tsee
  char-code) is applied to an ACL2 character, @('c'), it returns a number @('n')
@@ -110004,6 +110006,13 @@ it."
  })</li>
 
  </ul>
+
+ <p>Future Common Lisp implementations might not recognize @('#\\Page') as the
+ traditional &ldquo;Page&rdquo; character (with character-code 12), for
+ compatibility with Unicode.  We made updates to accommodate such a change that
+ is probably coming to Allegro CL, so that @('#\\Page') continues to be
+ suitable input for character 12 inside the ACL2 read-eval-print loop.  Thanks
+ to Duane Rettig for bringing this issue to our attention for Allegro CL.</p>
 
  <h3>EMACS Support</h3>
 

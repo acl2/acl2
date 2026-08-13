@@ -1279,7 +1279,7 @@ notation causes an error and (b) the use of ,. is not permitted."
                   ((string-equal x "NEWLINE")
                    #\Newline)
                   ((string-equal x "PAGE")
-                   #\Page)
+                   *acl2-page-char*)
                   ((string-equal x "RUBOUT")
                    #\Rubout)
                   ((string-equal x "RETURN")
@@ -1342,7 +1342,8 @@ notation causes an error and (b) the use of ,. is not permitted."
                   (symbol-value 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD)))
     (return-from sharp-dot-read
                  (funcall *old-sharp-dot-read* stream char n)))
-  (let ((whitespace-chars '(#\Backspace #\Tab #\Newline #\Linefeed #\Page
+  (let ((whitespace-chars '(#\Backspace #\Tab #\Newline #\Linefeed
+                            #.*acl2-page-char*
                             #\Return #\Space)))
     (when (member (peek-char nil stream nil nil t)
                   whitespace-chars)
