@@ -524,17 +524,17 @@
                                        dirdeclor-obj-formalp))))
 
   (defret-mutual
-    ldm-declors/dirdeclors-obj-ok-when-declors/dirdeclors-block-formalp
-    (defret ldm-declor-obj-ok-when-declor-block-formalp
+    ldm-declors/dirdeclors-obj-ok-when-declors/dirdeclors-obj-block-formalp
+    (defret ldm-declor-obj-ok-when-declor-obj-block-formalp
       (not erp)
-      :hyp (declor-block-formalp declor)
+      :hyp (declor-obj-block-formalp declor)
       :fn ldm-declor-obj)
-    (defret ldm-dirdeclor-obj-ok-when-dirdeclor-block-formalp
+    (defret ldm-dirdeclor-obj-ok-when-dirdeclor-obj-block-formalp
       (not erp)
-      :hyp (dirdeclor-block-formalp dirdeclor)
+      :hyp (dirdeclor-obj-block-formalp dirdeclor)
       :fn ldm-dirdeclor-obj)
-    :hints (("Goal" :in-theory (enable declor-block-formalp
-                                       dirdeclor-block-formalp))))
+    :hints (("Goal" :in-theory (enable declor-obj-block-formalp
+                                       dirdeclor-obj-block-formalp))))
 
   (fty::deffixequiv-mutual ldm-declors/dirdeclors-obj)
 
@@ -1492,15 +1492,15 @@
                                        init-declor-list-obj-formalp
                                        init-declor-obj-formalp))))
 
-  (defret ldm-declon-obj-ok-when-declon-block-formalp
+  (defret ldm-declon-obj-ok-when-declon-obj-block-formalp
     (not erp)
-    :hyp (declon-block-formalp declon)
+    :hyp (declon-obj-block-formalp declon)
     :hints
     (("Goal"
       :in-theory
-      (enable declon-block-formalp
-              init-declor-list-block-formalp
-              init-declor-block-formalp
+      (enable declon-obj-block-formalp
+              init-declor-list-obj-block-formalp
+              init-declor-obj-block-formalp
               check-decl-spec-list-all-typespec/stoclass-when-all-typespec)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

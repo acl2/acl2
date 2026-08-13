@@ -712,12 +712,12 @@
     expr-formalp
     expr-option-formalp
     initer-formalp
-    dirdeclor-block-formalp
-    declor-block-formalp
+    dirdeclor-obj-block-formalp
+    declor-obj-block-formalp
     declor-fun-formalp
-    init-declor-block-formalp
-    init-declor-list-block-formalp
-    declon-block-formalp
+    init-declor-obj-block-formalp
+    init-declor-list-obj-block-formalp
+    declon-obj-block-formalp
     stmt-formalp
     comp-stmt-formalp
     block-item-formalp

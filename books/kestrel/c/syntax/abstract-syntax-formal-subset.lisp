@@ -521,11 +521,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dirdeclor-block-formalp ((dirdeclor dirdeclorp))
+(define dirdeclor-obj-block-formalp ((dirdeclor dirdeclorp))
   :guard (dirdeclor-unambp dirdeclor)
   :returns (yes/no booleanp)
   :short "Check if a direct declarator has formal dynamic semantics,
-          as part of a block item declaration."
+          as part of a block item object declaration."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -538,26 +538,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define declor-block-formalp ((declor declorp))
+(define declor-obj-block-formalp ((declor declorp))
   :guard (declor-unambp declor)
   :returns (yes/no booleanp)
   :short "Check if a declarator has formal dynamic semantics,
-          as part of a block item declaration."
+          as part of a block item object declaration."
   :long
   (xdoc::topstring
    (xdoc::p
     "The direct declarator part must be supported,
      and we can have any number of supported pointers."))
   (and (pointers-formalp (declor->pointers declor))
-       (dirdeclor-block-formalp (declor->direct declor))))
+       (dirdeclor-obj-block-formalp (declor->direct declor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-declor-block-formalp ((initdeclor init-declorp))
+(define init-declor-obj-block-formalp ((initdeclor init-declorp))
   :guard (init-declor-unambp initdeclor)
   :returns (yes/no booleanp)
   :short "Check if an initializer declarator has formal dynamic semantics,
-          as part of a block item declaration."
+          as part of a block item object declaration."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -566,7 +566,7 @@
      The declarator must be supported too.
      There must be no assembler name specifier and no attribute specifiers."))
   (b* (((init-declor initdeclor) initdeclor))
-    (and (declor-block-formalp initdeclor.declor)
+    (and (declor-obj-block-formalp initdeclor.declor)
          (not initdeclor.asm?)
          (endp initdeclor.attribs)
          initdeclor.initer?
@@ -574,12 +574,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-declor-list-block-formalp ((ideclors init-declor-listp))
+(define init-declor-list-obj-block-formalp ((ideclors init-declor-listp))
   :guard (init-declor-list-unambp ideclors)
   :returns (yes/no booleanp)
   :short "Check if a list of initializer declarators
           has formal dynamic semantics,
-          as part of a block item declaration."
+          as part of a block item object declaration."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -587,14 +587,14 @@
      and its element must have formal semantics."))
   (and (consp ideclors)
        (endp (cdr ideclors))
-       (init-declor-block-formalp (car ideclors))))
+       (init-declor-obj-block-formalp (car ideclors))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define declon-block-formalp ((declon declonp))
+(define declon-obj-block-formalp ((declon declonp))
   :guard (declon-unambp declon)
   :returns (yes/no booleanp)
-  :short "Check if a declaration has formal dynamic semantics,
+  :short "Check if an object declaration has formal dynamic semantics,
           as a block item."
   :long
   (xdoc::topstring
@@ -614,7 +614,7 @@
                       (check-decl-spec-list-all-typespec declon.specs)))
                   (and okp
                        (type-spec-list-formalp tyspecs)))
-                (init-declor-list-block-formalp declon.declors))
+                (init-declor-list-obj-block-formalp declon.declors))
    :statassert nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -688,7 +688,7 @@
       "This reduces to checking the underlying statement or declarations."))
     (block-item-case
      item
-     :declon (declon-block-formalp item.declon)
+     :declon (declon-obj-block-formalp item.declon)
      :stmt (stmt-formalp item.stmt)
      :ambig (impossible))
     :measure (block-item-count item))
