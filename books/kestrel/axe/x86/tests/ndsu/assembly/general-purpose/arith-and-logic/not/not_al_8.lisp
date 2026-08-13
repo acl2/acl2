@@ -17,13 +17,7 @@
 ;; (depends-on "not_al_8.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
-
-
-;; Rewrite al to bvchop-of-rax so proofs reduce to the existing rax form.
-(local (defthm al-rewrite
-  (equal (al x86) (bvchop 8 (rax x86)))
-  :hints (("Goal" :in-theory (enable al rax)))))
+(include-book "../../../support")
 
 ;; Lifts the subroutine into logic: Creates the function not_al_8, which
 ;; represents the effect of the program on the x86 state.
