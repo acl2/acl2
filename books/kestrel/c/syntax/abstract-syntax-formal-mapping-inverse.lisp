@@ -449,7 +449,14 @@
                 :plus (unop-plus)
                 :minus (unop-minus)
                 :bitnot (unop-bitnot)
-                :lognot (unop-lognot)))
+                :lognot (unop-lognot))
+
+  ///
+
+  (defrule ldm-unop-of-ildm-unop
+    (equal (ldm-unop (ildm-unop unop))
+           (mv nil (c::unop-fix unop)))
+    :enable ldm-unop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
