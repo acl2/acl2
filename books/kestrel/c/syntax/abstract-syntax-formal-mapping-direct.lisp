@@ -707,6 +707,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ldm-unop ((unop unopp))
+  :returns (mv erp (unop1 c::unopp))
+  :short "Map a unary operator to
+          a unary operator in the language definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The language definition actually has
+     pre/post-increment/decrement expressions,
+     but they are not represented as unary expressions with unary operators,
+     but more directly.
+     This is why this mapping function does not support those operators,
+     in the sense that there is nothing they can be directly mapped to.
+     But see @(tsee ldm-expr) for how we map
+     unary expressions with those operators
+     to specific expressions in the language definition."))
+  (b* (((reterr) (c::unop-plus)))
+    (unop-case
+     unop
+     :address (retok (c::unop-address))
+     :indir (retok (c::unop-indir))
+     :plus (retok (c::unop-plus))
+     :minus (retok (c::unop-minus))
+     :bitnot (retok (c::unop-bitnot))
+     :lognot (retok (c::unop-lognot))
+     :preinc (reterr (msg "Unsupported preincrement operator."))
+     :predec (reterr (msg "Unsupported predecrement operator."))
+     :postinc (reterr (msg "Unsupported postincrement operator."))
+     :postdec (reterr (msg "Unsupported postdecrement operator."))
+     :sizeof (reterr (msg "Unsupported sizeof operator."))
+     :alignof (reterr (msg "Unsupported _Alignof operator."))
+     :real (reterr (msg "Unsupported __real__ operator."))
+     :imag (reterr (msg "Unsupported __imag__ operator.")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ldm-binop ((binop binopp))
   :returns (binop1 c::binopp)
   :short "Map a binary operator to
@@ -753,6 +789,15 @@
     :returns (mv erp (expr1 c::exprp))
     :parents (abstract-syntax-formal-mapping-direct ldm-exprs)
     :short "Map an expression to an expression in the language definition."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The abstract syntax of the language definition
+       represents pre/post-increment/decrement expressions
+       as their own fixtype summands,
+       not as unary expressions with unary operators.
+       So we first check for those expressions,
+       and then we resort to @(tsee ldm-unop)."))
     (b* (((reterr) (c::expr-ident (c::ident "irrelevant"))))
       (expr-case
        expr
