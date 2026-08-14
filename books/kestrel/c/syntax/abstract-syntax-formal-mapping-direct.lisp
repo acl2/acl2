@@ -825,24 +825,15 @@
                      ((erp ident1) (ldm-ident expr.name)))
                   (retok (c::make-expr-memberp :target target1 :name ident1)))
        :complit (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
-       :unary
-       (b* (((erp arg) (ldm-expr expr.arg)))
-         (unop-case
-          expr.op
-          :address (retok (c::make-expr-unary :op (c::unop-address) :arg arg))
-          :indir (retok (c::make-expr-unary :op (c::unop-indir) :arg arg))
-          :plus (retok (c::make-expr-unary :op (c::unop-plus) :arg arg))
-          :minus (retok (c::make-expr-unary :op (c::unop-minus) :arg arg))
-          :bitnot (retok (c::make-expr-unary :op (c::unop-bitnot) :arg arg))
-          :lognot (retok (c::make-expr-unary :op (c::unop-lognot) :arg arg))
-          :preinc (retok (c::expr-preinc arg))
-          :predec (retok (c::expr-predec arg))
-          :postinc (retok (c::expr-postinc arg))
-          :postdec (retok (c::expr-postdec arg))
-          :sizeof (reterr (msg "Unsupported sizeof operator."))
-          :alignof (reterr (msg "Unsupported _Alignof operator."))
-          :real (reterr (msg "Unsupported __real__ operator."))
-          :imag (reterr (msg "Unsupported __imag__ operator."))))
+       :unary (b* (((erp arg) (ldm-expr expr.arg)))
+                (unop-case
+                 expr.op
+                 :preinc (retok (c::expr-preinc arg))
+                 :predec (retok (c::expr-predec arg))
+                 :postinc (retok (c::expr-postinc arg))
+                 :postdec (retok (c::expr-postdec arg))
+                 :otherwise (b* (((erp op) (ldm-unop expr.op)))
+                              (retok (c::make-expr-unary :op op :arg arg)))))
        :label-addr (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
        :sizeof (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
        :sizeof-ambig (prog2$ (impossible) (reterr t))
@@ -910,7 +901,8 @@
              :expand (expr-formalp expr)
              :in-theory (enable expr-formalp
                                 expr-list-formalp
-                                check-expr-ident)))))
+                                check-expr-ident
+                                ldm-unop)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
