@@ -11203,7 +11203,7 @@ such that feature :acl2-loop-only is true."))
         (cond
          (gcl-flg
           #+gcl
-          (compile-file
+          (acl2-compile-file
            (our-truename (pathname-unix-to-os fn-file state)
                          "Note: Calling OUR-TRUENAME from ~
                           COMPILE-UNCOMPILED-DEFUNS (under gcl-flg and #+gcl).")
@@ -11217,7 +11217,7 @@ such that feature :acl2-loop-only is true."))
                  (our-truename (pathname-unix-to-os fn-file state)
                                "Note: Calling OUR-TRUENAME from ~
                                 COMPILE-UNCOMPILED-DEFUNS.")))
-            (compile-file lisp-file)
+            (acl2-compile-file lisp-file)
             (when (not (keep-tmp-files state))
               (delete-file lisp-file)
               #+clisp
@@ -11437,7 +11437,7 @@ such that feature :acl2-loop-only is true."))
         (cond
          (gcl-flg
           #+gcl
-          (compile-file
+          (acl2-compile-file
            (our-truename (pathname-unix-to-os fn-file state)
                          "Note: Calling OUR-TRUENAME from ~
                           COMPILE-UNCOMPILED-*1*-DEFUNS (under gcl-flg and ~
@@ -11452,7 +11452,7 @@ such that feature :acl2-loop-only is true."))
                  (our-truename (pathname-unix-to-os fn-file state)
                                "Note: Calling OUR-TRUENAME from ~
                                 COMPILE-UNCOMPILED-*1*-DEFUNS.")))
-            (compile-file lisp-file)
+            (acl2-compile-file lisp-file)
             (when (not (keep-tmp-files state))
               (delete-file lisp-file)
               #+clisp

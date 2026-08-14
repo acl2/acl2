@@ -1280,6 +1280,15 @@ notation causes an error and (b) the use of ,. is not permitted."
                    #\Newline)
                   ((string-equal x "PAGE")
                    *acl2-page-char*)
+                  #+allegro
+                  ((string-equal x "FORMFEED")
+
+; See *acl2-page-char*.  We allow #\Formfeed in case it has been printed by
+; print-object$: that function prints using prin1, and Allegro CL may print the
+; character with char-code 12 as #\Formfeed.  We want ACL2 to be able to read
+; forms that have been printed using print-object$.
+
+                   *acl2-page-char*)
                   ((string-equal x "RUBOUT")
                    #\Rubout)
                   ((string-equal x "RETURN")

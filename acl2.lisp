@@ -1836,9 +1836,10 @@ ACL2 from scratch.")
 
 (defconstant *acl2-page-char*
 
-; Starting some time in 2026 or 2027, Allegro CL might not recognize #\Page as
-; (code-char 12), and this might eventually be the case for other Common Lisps.
-; So we introduce this constant to use as that character
+; Starting some time after 2025, Allegro CL might not recognize #\Page as
+; (code-char 12), recognizing #\Formfeed (and printing it with prin1) instead.
+; Some such situation might eventually be the case for other Common Lisps.  So
+; we introduce this constant to use as that character
 
 ; Note however that ACL2 supports #\Page in its read-eval-print loop.
 
