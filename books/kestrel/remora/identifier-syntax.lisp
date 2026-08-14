@@ -333,3 +333,374 @@
        (codepoints (acl2::utf8=>ustring bytes))
        ((unless (nat-listp codepoints)) nil))
     (valid-identifier-codepoints-p codepoints)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Identifier extension.
+;;
+;; Theorems for reasoning about identifiers extended with suffixes, and
+;; in particular with decimal digit suffixes, which is how fresh
+;; variants of existing names are generated (see
+;; fresh-variable-operations).  The general fact is that appending
+;; identifier continuation characters to a valid identifier yields a
+;; valid identifier, provided the result is not a keyword; digits are
+;; such characters, and no Remora keyword ends in a digit, so a digit
+;; suffix also settles the keyword proviso.
+;;
+;; Since VALID-IDENTIFIER-STRING-P checks a string by decoding its bytes
+;; as UTF-8, lifting the code-point-level facts to strings needs the
+;; byte level as well: a digit suffix is ASCII, hence its own UTF-8
+;; encoding, and UTF-8 is self-synchronizing, so decoding the bytes of
+;; an extended identifier does not cross the boundary between the
+;; original bytes and the suffix (see
+;; UTF8=>USTRING-OF-APPEND-WHEN-UTF8-PARTITION in unicode/utf8-decode).
+;;
+;; All rules are left disabled: they are aimed at specific proofs about
+;; name generation, not at general use.
+
+(define dec-nat-listp (x)
+  :returns (yes/no booleanp)
+  :short "Check that a list consists of decimal digit code points."
+  (if (consp x)
+      (and (natp (car x))
+           (<= 48 (car x))
+           (<= (car x) 57)
+           (dec-nat-listp (cdr x)))
+    (null x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection identifier-extension-theorems
+  :short "Theorems about extending identifiers with suffixes."
+
+  ;; The code-point level.
+
+  (defruled id-continue-list-p-of-append
+    (equal (id-continue-list-p (append a b))
+           (and (id-continue-list-p a)
+                (id-continue-list-p b)))
+    :induct (len a)
+    :enable id-continue-list-p)
+
+  (defruled id-continue-list-p-when-dec-nat-listp
+    (implies (dec-nat-listp x)
+             (id-continue-list-p x))
+    :induct (len x)
+    :enable (dec-nat-listp id-continue-list-p id-continuep))
+
+  (defruled valid-identifier-codepoints-p-of-append-id-continues
+    (implies (and (valid-identifier-codepoints-p cps)
+                  (id-continue-list-p d)
+                  (not (remora-keyword-p (append cps d))))
+             (valid-identifier-codepoints-p (append cps d)))
+    :enable (valid-identifier-codepoints-p
+             id-continue-list-p-of-append))
+
+  ;; REMORA-KEYWORD-P is membership in a constant list, so the keyword
+  ;; check on a given last code point is a finite computation.
+
+  (defruled not-remora-keyword-p-of-append-digits
+    (implies (and (dec-nat-listp d)
+                  (consp d))
+             (not (remora-keyword-p (append cps d))))
+    :use ((:instance not-remora-keyword-p-when-last-is-digit
+                     (cps (append cps d)))
+          (:instance car-of-last-when-dec-nat-listp (x d)))
+    :enable last-of-append-when-consp
+    :prep-lemmas
+    ((defruled last-of-append-when-consp
+       (implies (consp b)
+                (equal (last (append a b)) (last b)))
+       :induct (len a))
+     (defruled car-of-last-when-dec-nat-listp
+       (implies (and (dec-nat-listp x) (consp x))
+                (and (natp (car (last x)))
+                     (<= 48 (car (last x)))
+                     (<= (car (last x)) 57)))
+       :induct (len x)
+       :enable (dec-nat-listp last))
+     (defruled not-remora-keyword-p-when-last-is-digit
+       (implies (and (<= 48 (car (last cps)))
+                     (<= (car (last cps)) 57))
+                (not (remora-keyword-p cps)))
+       :enable remora-keyword-p)))
+
+  ;; The byte level: ASCII digit bytes are a Unicode string that is its
+  ;; own UTF-8 encoding, so via the encode/decode round trip of
+  ;; unicode/utf8-decode they partition and decode to themselves.
+
+  (defruled utf8-identity-when-dec-nat-listp
+    (implies (dec-nat-listp x)
+             (and (mv-nth 0 (acl2::utf8-partition x))
+                  (equal (acl2::utf8=>ustring x) x)))
+    :use ((:instance acl2::utf8=>ustring-of-ustring=>utf8 (acl2::x x))
+          (:instance utf8-partition-of-ustring=>utf8)
+          (:instance ascii-ustring-when-dec-nat-listp))
+    :disable acl2::utf8=>ustring-of-ustring=>utf8
+    :prep-lemmas
+    ((defruled ascii-ustring-when-dec-nat-listp
+       (implies (dec-nat-listp x)
+                (and (acl2::ustring? x)
+                     (equal (acl2::ustring=>utf8 x) x)))
+       :induct (len x)
+       :enable (dec-nat-listp acl2::ustring? acl2::uchar?
+                acl2::ustring=>utf8 acl2::uchar=>utf8))
+     (defruled utf8-partition-of-ustring=>utf8
+       (implies (acl2::ustring? x)
+                (mv-nth 0 (acl2::utf8-partition (acl2::ustring=>utf8 x))))
+       :induct (acl2::ustring=>utf8 x)
+       :enable (acl2::utf8-partition acl2::ustring=>utf8 acl2::ustring?))))
+
+  ;; A successful decoding is exactly a successful partitioning; this is
+  ;; how VALID-IDENTIFIER-STRING-P of an identifier supplies the other
+  ;; hypothesis of the self-synchronization rule.
+
+  (defruled utf8-partition-when-decoding-succeeds
+    (implies (nat-listp (acl2::utf8=>ustring bytes))
+             (mv-nth 0 (acl2::utf8-partition bytes)))
+    :enable acl2::utf8=>ustring)
+
+  ;; The bytes of a concatenation of strings.
+
+  (defruled string=>nats-of-string-append
+    (implies (and (stringp a) (stringp b))
+             (equal (acl2::string=>nats (string-append a b))
+                    (append (acl2::string=>nats a) (acl2::string=>nats b))))
+    :enable (acl2::string=>nats string-append acl2::chars=>nats)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Extending an identifier with an ASCII suffix.
+;;
+;; VALID-IDENTIFIER-STRING-P-OF-STRING-APPEND says when appending a
+;; suffix string to an identifier string yields an identifier.  The
+;; suffix must consist of ASCII identifier continuation characters: the
+;; ASCII restriction makes the suffix its own UTF-8 encoding, which is
+;; what lets the byte-level reasoning above (UTF-8 self-synchronization)
+;; apply.  The decimal digit suffixes used by fresh-variable-operations
+;; are a special case (see ASCII-ID-CONTINUE-LISTP-WHEN-DEC-NAT-LISTP).
+;;
+;; Validity is not preserved by such an extension unconditionally: the
+;; extended text could be a reserved keyword (e.g. extending "le" with
+;; "t" yields the keyword "let").  Hence the extra condition that the
+;; result is not a keyword; it is a finite check, since
+;; REMORA-KEYWORD-STRING-P is membership in a constant list.
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ascii-id-continue-listp (x)
+  :returns (yes/no booleanp)
+  :short "Check that a list consists of ASCII identifier continuation
+          code points."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each element must be below @('#x80') and satisfy
+     @(tsee id-continuep).  The ASCII restriction is what makes such a
+     list its own UTF-8 encoding."))
+  (if (consp x)
+      (and (natp (car x))
+           (< (car x) #x80)
+           (id-continuep (car x))
+           (ascii-id-continue-listp (cdr x)))
+    (null x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ascii-id-continue-string-p ((str stringp))
+  :returns (yes/no booleanp)
+  :hooks nil
+  :short "Check that a string consists of ASCII identifier continuation
+          characters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since the characters are ASCII, no UTF-8 decoding is needed: the
+     bytes of the string are the code points."))
+  (ascii-id-continue-listp (acl2::string=>nats (str-fix str))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ascii-id-continue-string-list-p ((strs string-listp))
+  :returns (yes/no booleanp)
+  :short "Check that every string in a list consists of ASCII identifier
+          continuation characters."
+  (or (endp strs)
+      (and (ascii-id-continue-string-p (car strs))
+           (ascii-id-continue-string-list-p (cdr strs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define remora-keyword-string-p ((str stringp))
+  :returns (yes/no booleanp)
+  :hooks nil
+  :short "Check whether an ACL2 string denotes a Remora reserved keyword."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The string-level counterpart of @(tsee remora-keyword-p):
+     the string is decoded as UTF-8 (see @(tsee
+     valid-identifier-string-p)) and the resulting code-point sequence
+     is looked up in @(tsee *remora-keywords-as-natlists*)."))
+  (remora-keyword-p (acl2::utf8=>ustring (acl2::string=>nats (str-fix str)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection ascii-id-continue-theorems
+  :short "Theorems about ASCII identifier continuation suffixes."
+
+  (defruled ascii-id-continue-listp-when-dec-nat-listp
+    :short "Decimal digit suffixes are a special case of ASCII
+            continuation suffixes."
+    (implies (dec-nat-listp x)
+             (ascii-id-continue-listp x))
+    :induct (len x)
+    :enable (dec-nat-listp ascii-id-continue-listp id-continuep))
+
+  (defruled id-continue-list-p-when-ascii-id-continue-listp
+    (implies (ascii-id-continue-listp x)
+             (id-continue-list-p x))
+    :induct (len x)
+    :enable (ascii-id-continue-listp id-continue-list-p))
+
+  (defruled ascii-id-continue-listp-of-append
+    (equal (ascii-id-continue-listp (append a b))
+           (and (ascii-id-continue-listp (acl2::list-fix a))
+                (ascii-id-continue-listp b)))
+    :induct (len a)
+    :enable (ascii-id-continue-listp acl2::list-fix))
+
+  (defruled ascii-id-continue-string-p-of-string-append
+    (implies (and (stringp a)
+                  (stringp b))
+             (equal (ascii-id-continue-string-p (string-append a b))
+                    (and (ascii-id-continue-string-p a)
+                         (ascii-id-continue-string-p b))))
+    :enable (ascii-id-continue-string-p
+             string=>nats-of-string-append
+             ascii-id-continue-listp-of-append)
+    :disable string-append)
+
+  ;; ASCII code points are a Unicode string that is its own UTF-8
+  ;; encoding; cf. UTF8-IDENTITY-WHEN-DEC-NAT-LISTP.
+
+  (defruled utf8-identity-when-ascii-id-continue-listp
+    (implies (ascii-id-continue-listp x)
+             (and (mv-nth 0 (acl2::utf8-partition x))
+                  (equal (acl2::utf8=>ustring x) x)))
+    :use ((:instance acl2::utf8=>ustring-of-ustring=>utf8 (acl2::x x))
+          (:instance utf8-partition-of-ustring=>utf8-ascii)
+          (:instance ascii-ustring-when-ascii-id-continue-listp))
+    :disable acl2::utf8=>ustring-of-ustring=>utf8
+    :prep-lemmas
+    ((defruled ascii-ustring-when-ascii-id-continue-listp
+       (implies (ascii-id-continue-listp x)
+                (and (acl2::ustring? x)
+                     (equal (acl2::ustring=>utf8 x) x)))
+       :induct (len x)
+       :enable (ascii-id-continue-listp acl2::ustring? acl2::uchar?
+                acl2::ustring=>utf8 acl2::uchar=>utf8))
+     (defruled utf8-partition-of-ustring=>utf8-ascii
+       (implies (acl2::ustring? x)
+                (mv-nth 0 (acl2::utf8-partition (acl2::ustring=>utf8 x))))
+       :induct (acl2::ustring=>utf8 x)
+       :enable (acl2::utf8-partition acl2::ustring=>utf8 acl2::ustring?))))
+
+  ;; The string level.  The keyword condition is necessary, not an
+  ;; artifact of the proof: extending "le" with "t" yields the keyword
+  ;; "let", which is not a valid identifier.
+
+  (defruled valid-identifier-string-p-of-string-append
+    :short "Extending a valid identifier with ASCII continuation
+            characters yields a valid identifier,
+            unless the result is a reserved keyword."
+    (implies (and (stringp id)
+                  (stringp suffix)
+                  (valid-identifier-string-p id)
+                  (ascii-id-continue-string-p suffix)
+                  (not (remora-keyword-string-p (string-append id suffix))))
+             (valid-identifier-string-p (string-append id suffix)))
+    :enable (remora-keyword-string-p
+             ascii-id-continue-string-p
+             valid-identifier-string-p
+             string=>nats-of-string-append
+             utf8-partition-when-decoding-succeeds
+             utf8-identity-when-ascii-id-continue-listp
+             valid-identifier-codepoints-p-of-append-id-continues
+             id-continue-list-p-when-ascii-id-continue-listp)
+    :disable string-append)
+
+  ;; A suffix that contains a slash settles the keyword condition on
+  ;; its own: no Remora keyword contains a slash, so no extension by
+  ;; such a suffix is a keyword.  This is how the monomorphizer's
+  ;; instance names are known to be identifiers (see
+  ;; VALID-IDENTIFIER-STRING-P-OF-CFUN-INST-NAME in monomorphize).
+
+  (defruled not-remora-keyword-p-when-member-slash
+    (implies (member-equal #x2F cps)
+             (not (remora-keyword-p cps)))
+    :enable remora-keyword-p)
+
+  (defruled not-remora-keyword-string-p-of-string-append-when-slash
+    (implies (and (stringp id)
+                  (stringp suffix)
+                  (valid-identifier-string-p id)
+                  (ascii-id-continue-string-p suffix)
+                  (member-equal #x2F (acl2::string=>nats suffix)))
+             (not (remora-keyword-string-p (string-append id suffix))))
+    :enable (remora-keyword-string-p
+             valid-identifier-string-p
+             ascii-id-continue-string-p
+             string=>nats-of-string-append
+             utf8-partition-when-decoding-succeeds
+             utf8-identity-when-ascii-id-continue-listp
+             not-remora-keyword-p-when-member-slash
+             member-equal-of-append-when-member-of-second)
+    :disable string-append
+    :prep-lemmas
+    ((defruled member-equal-of-append-when-member-of-second
+       (implies (member-equal e b)
+                (member-equal e (append a b)))
+       :induct (len a))))
+
+  (defruled valid-identifier-string-p-of-string-append-when-slash
+    :short "Extending a valid identifier with ASCII continuation
+            characters that include a slash always yields a valid
+            identifier."
+    (implies (and (stringp id)
+                  (stringp suffix)
+                  (valid-identifier-string-p id)
+                  (ascii-id-continue-string-p suffix)
+                  (member-equal #x2F (acl2::string=>nats suffix)))
+             (valid-identifier-string-p (string-append id suffix)))
+    :enable (valid-identifier-string-p-of-string-append
+             not-remora-keyword-string-p-of-string-append-when-slash)
+    :disable string-append)
+
+  ;; The two facts that discharge the conditions above for a decimal
+  ;; digit suffix, which is how fresh variants of existing names are
+  ;; generated (see fresh-variable-operations): such a suffix consists
+  ;; of ASCII continuation characters, and no Remora keyword ends in a
+  ;; digit.
+
+  (defruled ascii-id-continue-string-p-when-dec-bytes
+    (implies (and (stringp str)
+                  (dec-nat-listp (acl2::string=>nats str)))
+             (ascii-id-continue-string-p str))
+    :enable (ascii-id-continue-string-p
+             ascii-id-continue-listp-when-dec-nat-listp))
+
+  (defruled not-remora-keyword-string-p-of-string-append-digits
+    (implies (and (stringp id)
+                  (stringp suffix)
+                  (valid-identifier-string-p id)
+                  (dec-nat-listp (acl2::string=>nats suffix))
+                  (consp (acl2::string=>nats suffix)))
+             (not (remora-keyword-string-p (string-append id suffix))))
+    :enable (remora-keyword-string-p
+             valid-identifier-string-p
+             string=>nats-of-string-append
+             utf8-partition-when-decoding-succeeds
+             utf8-identity-when-dec-nat-listp
+             not-remora-keyword-p-of-append-digits)
+    :disable string-append))

@@ -203,6 +203,79 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; The instance name is a legal Remora identifier if the base name is and
+; the type names are made of identifier characters.  Everything the
+; suffixes add -- decimal digits, dashes, and the slashes that separate
+; the base from them -- are identifier continuation characters, and the
+; slash also settles the reserved-keyword side condition, since no
+; Remora keyword contains a slash.  The general facts live with
+; IDENTIFIER-SYNTAX; what is specific to this book is that the two
+; dash-separated suffixes consist of such characters.
+
+(local
+ (defsection cfun-inst-name-support
+
+   (defruled digit-bytes-of-nat-to-dec-string
+     (b* ((bytes (acl2::string=>nats (str::nat-to-dec-string n))))
+       (and (dec-nat-listp bytes)
+            (consp bytes)))
+     :enable acl2::string=>nats
+     :use ((:instance str::nat-to-dec-string-nonempty (str::n n))
+           (:instance dec-nat-listp-of-chars=>nats-when-dec-digits
+                      (chars (str::explode (str::nat-to-dec-string n)))))
+     :prep-lemmas
+     ((defruled dec-nat-listp-of-chars=>nats-when-dec-digits
+        (implies (str::dec-digit-char-list*p chars)
+                 (dec-nat-listp (acl2::chars=>nats chars)))
+        :induct (len chars)
+        :enable (acl2::chars=>nats
+                 dec-nat-listp
+                 len
+                 str::dec-digit-char-list*p
+                 str::dec-digit-char-p))))
+
+   (defruled ascii-id-continue-string-p-of-nat-list-dash-suffix
+     (ascii-id-continue-string-p (nat-list-dash-suffix nats))
+     :induct (len nats)
+     :enable (nat-list-dash-suffix
+              str::fast-string-append
+              ascii-id-continue-string-p-of-string-append
+              ascii-id-continue-string-p-when-dec-bytes
+              digit-bytes-of-nat-to-dec-string)
+     :disable string-append)
+
+   (defruled ascii-id-continue-string-p-of-string-list-dash-suffix
+     (implies (and (string-listp strs)
+                   (ascii-id-continue-string-list-p strs))
+              (ascii-id-continue-string-p (string-list-dash-suffix strs)))
+     :induct (len strs)
+     :enable (string-list-dash-suffix
+              ascii-id-continue-string-list-p
+              str::fast-string-append
+              ascii-id-continue-string-p-of-string-append)
+     :disable string-append)))
+
+(defrule valid-identifier-string-p-of-cfun-inst-name
+  :parents (monomorphize)
+  :short "The generated instance name is a legal Remora identifier
+          if the base name is and the type names are made of
+          identifier continuation characters."
+  (implies (and (stringp base)
+                (string-listp strs)
+                (valid-identifier-string-p base)
+                (ascii-id-continue-string-list-p strs))
+           (valid-identifier-string-p (cfun-inst-name base strs nats)))
+  :enable (cfun-inst-name
+           str::fast-string-append
+           valid-identifier-string-p-of-string-append-when-slash
+           ascii-id-continue-string-p-of-string-append
+           ascii-id-continue-string-p-of-nat-list-dash-suffix
+           ascii-id-continue-string-p-of-string-list-dash-suffix
+           string=>nats-of-string-append)
+  :disable string-append)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Extend dim-var-map by pairing up ispace vars with nat values.  We use the
 ; library acl2::string-nat-map omap so that this map is handled the same way
 ; as the string-type-map used for type arguments.

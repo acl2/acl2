@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-trees")
+(include-book "identifier-syntax")
 
 (include-book "kestrel/fty/string-set" :dir :system)
 
@@ -819,6 +820,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Support for the identifier-validity theorem of EXPR-VAR-WITH-INDEX
+; below.  That theorem is an instance of
+; VALID-IDENTIFIER-STRING-P-OF-STRING-APPEND (xdoc topic
+; identifier-syntax), whose conditions are that the suffix consists of
+; ASCII identifier continuation characters and that the extension is
+; not a reserved keyword; the facts that discharge those conditions for
+; a digit suffix live with IDENTIFIER-SYNTAX as well.  All that is
+; specific to this book is the connection to STR::NAT-TO-DEC-STRING:
+; the decimal representation of an index is a non-empty sequence of
+; digit code points.
+
+(local
+ (defsection expr-var-with-index-support
+
+   (defruled digit-bytes-of-nat-to-dec-string
+     (b* ((bytes (acl2::string=>nats (str::nat-to-dec-string n))))
+       (and (dec-nat-listp bytes)
+            (consp bytes)))
+     :enable acl2::string=>nats
+     :use ((:instance str::nat-to-dec-string-nonempty (str::n n))
+           (:instance dec-nat-listp-of-chars=>nats-when-dec-digits
+                      (chars (str::explode (str::nat-to-dec-string n)))))
+     :prep-lemmas
+     ((defruled dec-nat-listp-of-chars=>nats-when-dec-digits
+        (implies (str::dec-digit-char-list*p chars)
+                 (dec-nat-listp (acl2::chars=>nats chars)))
+        :induct (len chars)
+        :enable (acl2::chars=>nats
+                 dec-nat-listp
+                 len
+                 str::dec-digit-char-list*p
+                 str::dec-digit-char-p))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define expr-var-with-index ((prefix stringp) (index natp))
   :returns (var stringp)
   :short "Generate an expression variable
@@ -842,7 +878,32 @@
                   (expr-var-with-index prefix index2))
            (equal (nfix index1)
                   (nfix index2)))
-    :enable string-append))
+    :enable string-append)
+
+  (defrule valid-identifier-string-p-of-expr-var-with-index
+    :short "The generated variable's name is a legal Remora identifier
+            if the prefix is."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is an instance of @(tsee
+       valid-identifier-string-p-of-string-append): the generated
+       variable is the prefix extended with the decimal representation
+       of the index, and that extension satisfies the conditions of
+       that theorem, since digits are ASCII identifier continuation
+       characters and no Remora keyword ends in a digit."))
+    (implies (and (stringp prefix)
+                  (valid-identifier-string-p prefix))
+             (valid-identifier-string-p (expr-var-with-index prefix index)))
+    :use ((:instance valid-identifier-string-p-of-string-append
+                     (id prefix)
+                     (suffix (str::nat-to-dec-string (nfix index))))
+          (:instance digit-bytes-of-nat-to-dec-string (n (nfix index))))
+    :enable (expr-var-with-index
+             str::fast-string-append
+             ascii-id-continue-string-p-when-dec-bytes
+             not-remora-keyword-string-p-of-string-append-digits)
+    :disable string-append))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -991,4 +1052,19 @@
   ///
 
   (defret fresh-expr-var-is-fresh
-    (not (set::in var (string-sfix used)))))
+    (not (set::in var (string-sfix used))))
+
+  (defrule valid-identifier-string-p-of-fresh-expr-var-loop
+    (implies (and (stringp prefix)
+                  (valid-identifier-string-p prefix))
+             (valid-identifier-string-p (fresh-expr-var-loop prefix index used)))
+    :induct (fresh-expr-var-loop prefix index used)
+    :enable fresh-expr-var-loop)
+
+  ; The generated variable's name is a legal Remora identifier if the
+  ; prefix is.
+  (defret valid-identifier-string-p-of-fresh-expr-var
+    (implies (and (stringp prefix)
+                  (valid-identifier-string-p prefix))
+             (valid-identifier-string-p var))
+    :hints (("Goal" :in-theory (enable fresh-expr-var)))))
