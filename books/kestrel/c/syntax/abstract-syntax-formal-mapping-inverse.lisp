@@ -493,7 +493,14 @@
                  :asg-shr (binop-asg-shr)
                  :asg-and (binop-asg-and)
                  :asg-xor (binop-asg-xor)
-                 :asg-ior (binop-asg-ior)))
+                 :asg-ior (binop-asg-ior))
+
+  ///
+
+  (defrule ldm-binop-of-ildm-binop
+    (equal (ldm-binop (ildm-binop binop))
+           (c::binop-fix binop))
+    :enable ldm-binop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
