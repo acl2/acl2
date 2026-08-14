@@ -384,6 +384,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(defruled tree-in-when-not-tree-in-of-tree-split.right-and-left
+  (implies (and (not (tree-in x (mv-nth 2 (tree-split y tree))))
+                (not (tree-in x (mv-nth 1 (tree-split y tree)))))
+           (equal (tree-in x tree)
+                  (and (equal x y)
+                       (mv-nth 0 (tree-split y tree)))))
+  :induct (tree-split y tree)
+  :enable tree-split)
+
+;;;;;;;;;;;;;;;;;;;;
+
 ;; TODO: useful?
 (defruled tree-in-becomes-tree-in-of-tree-split
   (equal (tree-in x tree)
