@@ -427,7 +427,15 @@
        (declor? (ildm-obj-adeclor tyname.declor)))
     (make-tyname :specquals specquals
                  :declor? declor?
-                 :info nil)))
+                 :info nil))
+
+  ///
+
+  (defrule ldm-tyname-of-ildm-tyname
+    (equal (ldm-tyname (ildm-tyname tyname))
+           (mv nil (c::tyname-dec0-to-oct0 tyname)))
+    :enable (ldm-tyname
+             c::tyname-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
