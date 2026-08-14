@@ -10897,7 +10897,7 @@ such that feature :acl2-loop-only is true."))
   (and (symbolp fn)
        (not (gethash fn *stack-access-defeat-hook-cert-ht*))))
 
-(defun acl2-compile-file (full-book-string os-expansion-filename)
+(defun acl2-compile-file (full-book-string &optional os-expansion-filename)
 
 ; Full-book-string is an ACL2 pathname, while os-expansion-filename is an OS
 ; pathname; see the Essay on Pathnames.  We compile os-expansion-filename but
@@ -10911,6 +10911,10 @@ such that feature :acl2-loop-only is true."))
 ; full-book-string have already been evaluated and (if appropriate) proclaimed,
 ; hence in particular so that macros have been defined.
 
+  (when (null os-expansion-filename)
+    (setq os-expansion-filename
+          (pathname-unix-to-os (expansion-filename full-book-string)
+                               *the-live-state*)))
   (let ((*defeat-slow-alist-action* t)
         (*readtable* *acl2-readtable*)
         (ofile (convert-book-string-to-compiled
