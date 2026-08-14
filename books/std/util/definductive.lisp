@@ -6147,7 +6147,7 @@
   :returns (mv (defsection-event pseudo-event-formp
                  :hints (("Goal" :in-theory (enable true-listp))))
                (print-events pseudo-event-form-listp))
-  :short "Generate a @(tsee defsection) or @(tsee progn) with
+  :short "Generate a @(tsee defsection) or @(tsee encapsulate) with
           all the @('p[l[k]]-2-rule[k]') theorems,
           depending on whether XDOC is to be generated."
   (b* (((mv thm-events print-events)
@@ -6158,7 +6158,7 @@
                 :short "Theorems corresponding to the inference rules,
                         for the second representation of proofs."
                 ,@thm-events)
-           `(progn ,@thm-events))))
+           `(encapsulate () ,@thm-events))))
     (mv defsection-event print-events))
 
   ///
@@ -6179,7 +6179,7 @@
   :returns (mv (defsection-event pseudo-event-formp
                  :hints (("Goal" :in-theory (enable true-listp))))
                (print-events pseudo-event-form-listp))
-  :short "Generate a @(tsee defsection) or @(tsee progn) with
+  :short "Generate a @(tsee defsection) or @(tsee encapsulate) with
           all the @('p[l[k]]-rule[k]') theorems,
           depending on whether XDOC is to be generated."
   (b* (((mv thm-events print-events)
@@ -6189,7 +6189,7 @@
              `(defsection ,(defind-rule-thm-section-name name)
                 :short "Theorems corresponding to the inference rules."
                 ,@thm-events)
-           `(progn ,@thm-events))))
+           `(encapsulate () ,@thm-events))))
     (mv defsection-event print-events))
 
   ///
@@ -6940,7 +6940,7 @@
   :returns (mv (defsection-event pseudo-event-formp
                  :hints (("Goal" :in-theory (enable true-listp))))
                (print-events pseudo-event-form-listp))
-  :short "Generate a @(tsee defsection) or @(tsee progn) with
+  :short "Generate a @(tsee defsection) or @(tsee encapsulate) with
           the @(tsee encapsulate) that introduces
           the @('p[i]-2-alt') constrained functions
           with the @('p[l[k]]-2-alt-rule[k]') constraints,
@@ -6962,7 +6962,7 @@
                 :short "Minimality of the predicates,
                         for the second representation of proofs."
                 ,@events)
-           `(progn ,@events)))
+           `(encapsulate () ,@events)))
        (print-events (append encapsulate-print-events
                              valid-thm-print-events
                              min-thm-print-events)))
@@ -7595,7 +7595,7 @@
   :returns (mv (defsection-event pseudo-event-formp
                  :hints (("Goal" :in-theory (enable true-listp))))
                (print-events pseudo-event-form-listp))
-  :short "Generate a @(tsee defsection) or @(tsee progn) with
+  :short "Generate a @(tsee defsection) or @(tsee encapsulate) with
           the @(tsee encapsulate) that introduces
           the @('p[i]-alt') constrained functions
           with the @('p[l[k]]-alt-rule[k]') constraints,
@@ -7617,7 +7617,7 @@
              `(defsection ,(defind-minimality-section-name name)
                 :short "Minimality of the predicates."
                 ,@events)
-           `(progn ,@events)))
+           `(encapsulate () ,@events)))
        (print-events (append encapsulate-print-events
                              valid-thm-print-events
                              min-thm-print-events)))
@@ -7795,7 +7795,7 @@
   :returns (mv (defsection-event pseudo-event-formp
                  :hints (("Goal" :in-theory (enable true-listp))))
                (print-events pseudo-event-form-listp))
-  :short "Generate a @(tsee defsection) or @(tsee progn) with
+  :short "Generate a @(tsee defsection) or @(tsee encapsulate) with
           all the theorems that relate the two representations of proofs."
   (b* ((pred-names (defind-pred-info-list->name pred-infos))
        ((mv thm-events print-events)
@@ -7807,7 +7807,7 @@
                 :short "Sameness of the predicates of
                         the two representations of proofs."
                 ,@thm-events)
-           `(progn ,@thm-events))))
+           `(encapsulate () ,@thm-events))))
     (mv defsection-event print-events))
 
   :prepwork

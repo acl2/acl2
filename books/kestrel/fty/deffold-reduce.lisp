@@ -887,7 +887,7 @@
            ,fn-body
            ,@(and (or mutrecp recp)
                   `(:measure (,type-count ,type)
-                    :hints (("Goal" :in-theory (enable o< o-finp)))))
+                    :hints (("Goal" :in-theory (enable o-p o< o-finp)))))
            ,@(and (not mutrecp) '(:verify-guards :after-returns))
            ,@(and (not mutrecp) '(:hooks (:fix))))))
     (mv fn-event thm-events)))
@@ -965,7 +965,7 @@
            ,body
            ,@(and (or mutrecp recp)
                   `(:measure (,type-count ,type)
-                    :hints (("Goal" :in-theory (enable o< o-finp)))))
+                    :hints (("Goal" :in-theory (enable o-p o< o-finp)))))
            ,@(and (not mutrecp) '(:verify-guards :after-returns))
            ,@(and (not mutrecp) '(:hooks (:fix))))))
     (mv fn-event thm-events)))
@@ -1020,7 +1020,7 @@
            ,body
            ,@(and (or mutrecp recp)
                   `(:measure (,type-count ,type)
-                    :hints (("Goal" :in-theory (enable o< o-finp)))))
+                    :hints (("Goal" :in-theory (enable o-p o< o-finp)))))
            ,@(and (not mutrecp) '(:verify-guards :after-returns))
            ,@(and (not mutrecp) '(:hooks (:fix)))))
        (type-suffix-when-base-type-suffix
@@ -1145,7 +1145,7 @@
                ,(cdr term-assoc)
                ,@(and (or mutrecp recp)
                       `(:measure (,type-count ,type)
-                        :hints (("Goal" :in-theory (enable o< o-finp)))))
+                        :hints (("Goal" :in-theory (enable o-p o< o-finp)))))
                ,@(and (not mutrecp) '(:verify-guards :after-returns))
                ,@(and (not mutrecp) '(:hooks (:fix))))
             nil))
@@ -1167,7 +1167,7 @@
            ,body
            ,@(and (or mutrecp recp)
                   `(:measure (,type-count ,type)
-                    :hints (("Goal" :in-theory (enable o< o-finp)))))
+                    :hints (("Goal" :in-theory (enable o-p o< o-finp)))))
            ,@(and (not mutrecp) '(:verify-guards :after-returns))
            ,@(and (not mutrecp) '(:hooks (:fix)))))
        (elt-type-suffix (deffoldred-gen-fold-name elt-type suffix))
@@ -1303,7 +1303,7 @@
            ,body
            ,@(and (or mutrecp recp)
                   `(:measure (,type-count ,type)
-                    :hints (("Goal" :in-theory (enable o< o-finp)))))
+                    :hints (("Goal" :in-theory (enable o-p o< o-finp)))))
            ,@(and (not mutrecp) '(:verify-guards :after-returns))
            ,@(and (not mutrecp) '(:hooks (:fix)))))
        (type-suffix-when-emptyp
@@ -1511,7 +1511,7 @@
     `((defines ,clique-name-suffix
         :parents (,name)
         ,@fn-events
-        :hints (("Goal" :in-theory (enable o< o-finp)))
+        :hints (("Goal" :in-theory (enable o-p o< o-finp)))
         :verify-guards :after-returns
         :flag-local nil
         :prepwork ((set-bogus-mutual-recursion-ok t))
