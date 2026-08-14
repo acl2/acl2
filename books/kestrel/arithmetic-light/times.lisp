@@ -180,6 +180,7 @@
 
 ;; A stronger rewrite rule than <-of-*-and-*.  This is a cancellation rule.
 ;; See also <-of-*-and-*-cancel-gen
+;; todo: make x be the name of the term being cancelled
 (defthm <-of-*-and-*-cancel
   (implies (and (< 0 y) ;move to conc
                 (rationalp x1)
@@ -443,27 +444,48 @@
   :rule-classes :linear)
 
 (defthm <-of-*-cancel-1
-  (implies (and (< 0 y)
-                (rationalp y)
+  (implies (and (rationalp y)
                 (rationalp x))
            (equal (< y (* x y))
-                  (< 1 x)))
-  :hints (("Goal" :use (:instance <-of-*-and-*-cancel
+                  (if (< 0 y)
+                      (< 1 x)
+                    (if (equal 0 y)
+                        nil
+                      (< x 1)))))
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel-gen
+                                  (x1 1)
+                                  (x2 x))
+           :in-theory (disable <-of-*-and-*-cancel))))
+
+(defthm <-of-*-cancel-1-1+
+  (implies (and (rationalp y)
+                (rationalp x))
+           (equal (< y (* y x))
+                  (if (< 0 y)
+                      (< 1 x)
+                    (if (equal 0 y)
+                        nil
+                      (< x 1)))))
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel-gen
                                   (x1 1)
                                   (x2 x))
            :in-theory (disable <-of-*-and-*-cancel))))
 
 (defthm <-of-*-cancel-2
-  (implies (and (< 0 y)
-                (rationalp y)
+  (implies (and (rationalp y)
                 (rationalp x))
            (equal (< (* x y) y)
-                  (< x 1)))
-  :hints (("Goal" :use (:instance <-of-*-and-*-cancel
+                  (if (< 0 y)
+                      (< x 1)
+                    (if (equal 0 y)
+                        nil
+                      (< 1 x)))))
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel-gen
                                   (x1 x)
                                   (x2 1))
            :in-theory (disable <-of-*-and-*-cancel))))
 
+;drop?
 (defthm <-of-*-same-arg2
   (implies (and (<= 0 x)
                 (rationalp y)
@@ -478,6 +500,7 @@
                                   (y x))
            :in-theory (disable <-of-*-and-*-cancel))))
 
+;drop?
 (defthm <-of-*-same-arg3
   (implies (and (<= 0 x)
                 (rationalp y)
@@ -511,8 +534,7 @@
                 ;; (rationalp y)
                 )
            (<= x (* x y)))
-  :rule-classes :linear
-)
+  :rule-classes :linear)
 
 (defthm <-of-*-and-*-linear
   (implies (and (< x1 x2)  ; strict
@@ -560,12 +582,15 @@
                                <-OF-*-AND-*-SAME-FORWARD-1
                                <-OF-*-AND-*-SAME-FORWARD-2))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; The proof given here avoids needing the book about /.
 (defthm equal-of-*-and-constant
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)))
                 (acl2-numberp k2)
-                (not (equal 0 k2)))
+                (not (equal 0 k2)) ; move to conclusion?
+                )
            (equal (equal k1 (* k2 x))
                   (and (acl2-numberp k1)
                        (equal (/ k1 k2) (fix x)))))
@@ -573,10 +598,6 @@
                                       associativity-of-*)
            :use ((:instance inverse-of-* (x k2))
                  (:instance associativity-of-* (x k2) (y (/ k2)) (z x))))))
-
-
-
-
 
 (defthm <-of-constant-and-*-of-constant
   (implies (and (syntaxp (and (quotep k1)
@@ -607,6 +628,8 @@
                                       associativity-of-*)
            :use ((:instance inverse-of-* (x k2))
                  (:instance associativity-of-* (x k2) (y (/ k2)) (z x))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm <-of---of-*-same-arg1
   (implies (and (rationalp i)

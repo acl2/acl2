@@ -18,9 +18,7 @@
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (include-book "std/basic/controlled-configuration" :dir :system)
-(acl2::controlled-configuration
-  ;; Necessary for the deffold-map termination.
-  :tau t)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
