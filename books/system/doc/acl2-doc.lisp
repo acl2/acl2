@@ -110014,8 +110014,8 @@ it."
  suitable input for character 12 inside the ACL2 read-eval-print loop.
  Moreover, when the host Lisp is Allegro CL, @('#\\Formfeed') is accepted as
  input since that representation of character 12 may be printed by @(tsee
- print-object$).  We also modified some calls of the compiler to deal with this
- issue.  Thanks to Duane Rettig for bringing this issue to our attention.</p>
+ print-object$).  Thanks to Duane Rettig for bringing this issue to our
+ attention.</p>
 
  <h3>EMACS Support</h3>
 
