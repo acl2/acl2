@@ -18,6 +18,7 @@
               bvlt sbvlt
               bvle sbvle
               bvshl bvshr bvashr
+              bvif
               bv-array-read
               bv-array-read-chunk-little
               bv-list-read-chunk-little
