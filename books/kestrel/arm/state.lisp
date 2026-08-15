@@ -20,6 +20,7 @@
 (include-book "kestrel/bv/bvplus-def" :dir :system)
 (local (include-book "kestrel/bv/bvplus" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
+(include-book "kestrel/bv/bvif" :dir :system) ;todo: just the def
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 ;(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
@@ -227,6 +228,20 @@
          (if test
              (set-reg reg val arm1)
            (set-reg reg val arm2))))
+
+;; maybe only do it for the pc (see set-reg-of-pc-and-bvif)
+(defthmd set-reg-of-bvif
+  (equal (set-reg reg (bvif size test tp ep) arm)
+         (if test
+             (set-reg reg (bvchop size tp) arm)
+           (set-reg reg (bvchop size ep) arm))))
+
+;; special case for the PC
+(defthmd set-reg-of-pc-and-bvif
+  (equal (set-reg *pc* (bvif size test tp ep) arm)
+         (if test
+             (set-reg *pc* (bvchop size tp) arm)
+           (set-reg *pc* (bvchop size ep) arm))))
 
 (defthm isetstate-of-set-reg
   (equal (isetstate (set-reg n val arm))

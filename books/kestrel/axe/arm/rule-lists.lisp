@@ -510,6 +510,7 @@
      arm::set-reg-of-set-reg-same
      arm::set-reg-of-set-reg-diff-2
      arm::set-reg-of-if-arg3
+     arm::set-reg-of-pc-and-bvif
 
      arm::decodeimmshift
      arm::decoderegshift
