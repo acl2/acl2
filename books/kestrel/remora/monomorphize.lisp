@@ -215,25 +215,6 @@
 (local
  (defsection cfun-inst-name-support
 
-   (defruled digit-bytes-of-nat-to-dec-string
-     (b* ((bytes (acl2::string=>nats (str::nat-to-dec-string n))))
-       (and (dec-nat-listp bytes)
-            (consp bytes)))
-     :enable acl2::string=>nats
-     :use ((:instance str::nat-to-dec-string-nonempty (str::n n))
-           (:instance dec-nat-listp-of-chars=>nats-when-dec-digits
-                      (chars (str::explode (str::nat-to-dec-string n)))))
-     :prep-lemmas
-     ((defruled dec-nat-listp-of-chars=>nats-when-dec-digits
-        (implies (str::dec-digit-char-list*p chars)
-                 (dec-nat-listp (acl2::chars=>nats chars)))
-        :induct (len chars)
-        :enable (acl2::chars=>nats
-                 dec-nat-listp
-                 len
-                 str::dec-digit-char-list*p
-                 str::dec-digit-char-p))))
-
    (defruled ascii-id-continue-string-p-of-nat-list-dash-suffix
      (ascii-id-continue-string-p (nat-list-dash-suffix nats))
      :induct (len nats)
@@ -241,7 +222,7 @@
               str::fast-string-append
               ascii-id-continue-string-p-of-string-append
               ascii-id-continue-string-p-when-dec-bytes
-              digit-bytes-of-nat-to-dec-string)
+              dec-digit-listp-of-string=>nats-of-nat-to-dec-string)
      :disable string-append)
 
    (defruled ascii-id-continue-string-p-of-string-list-dash-suffix
@@ -271,7 +252,7 @@
            ascii-id-continue-string-p-of-string-append
            ascii-id-continue-string-p-of-nat-list-dash-suffix
            ascii-id-continue-string-p-of-string-list-dash-suffix
-           string=>nats-of-string-append)
+           acl2::string=>nats-of-string-append)
   :disable string-append)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -715,6 +696,8 @@
 (defines monomorphize-impl
   :verify-guards :after-returns
   :ruler-extenders :all
+  ; The flag function is used by the DEFRET-MUTUAL in monomorphize-properties.
+  :flag-local nil
 
   (define mono-expr ((x exprp) (defs bind-mapp) (fn-info-map fn-info-mapp) (dim-var-map acl2::string-nat-mapp) (type-map string-type-mapp))
     :short "Monomorphize an expression."
@@ -887,8 +870,19 @@
                              :nats nats
                              :targ-tys (type-list-subst-type-vars
                                         targ-tys type-map type-map)))))
+                       ; An :appn of fewer than two arguments is not well
+                       ; formed (see ast-wfp): a one-argument call is an
+                       ; :app, and a call with no value arguments is just
+                       ; a reference to the instance, all of whose
+                       ; parameters have been instantiated.
                        (mv nil fn-info-map
-                           (expr-appn (expr-var inst-name) new-args)))
+                           (cond ((not (consp new-args))
+                                  (expr-var inst-name))
+                                 ((not (consp (cdr new-args)))
+                                  (expr-app (expr-var inst-name)
+                                            (car new-args)))
+                                 (t (expr-appn (expr-var inst-name)
+                                               new-args)))))
                 :otherwise (mv nil fn-info-map (expr-capp fun x.targs x.iargs new-args)))))
            ((when err) (mv err fn-info-map new-expr)))
         (mv nil fn-info-map new-expr))

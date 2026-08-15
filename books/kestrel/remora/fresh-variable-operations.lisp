@@ -78,6 +78,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Every generator below builds the name of its variable the same way,
+; appending the decimal representation of the index to the prefix.  So
+; each generator's identifier-validity theorem --- if the prefix is a
+; legal Remora identifier, so is the generated name --- is an instance
+; of VALID-IDENTIFIER-STRING-P-OF-STRING-APPEND-NAT-TO-DEC-STRING (xdoc
+; topic identifier-syntax): digits are ASCII identifier continuation
+; characters, and no Remora keyword ends in a digit, so the extension is
+; neither ill-formed nor a keyword.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ispace-var-dim-with-index ((prefix stringp) (index natp))
   :returns (var ispace-varp)
   :short "Generate a dimension ispace variable
@@ -104,7 +115,19 @@
                   (ispace-var-dim-with-index prefix index2))
            (equal (nfix index1)
                   (nfix index2)))
-    :enable string-append))
+    :enable string-append)
+
+  (defrule valid-identifier-string-p-of-ispace-var-dim-with-index
+    :short "The generated variable's name is a legal Remora identifier
+            if the prefix is."
+    (implies (and (stringp prefix)
+                  (valid-identifier-string-p prefix))
+             (valid-identifier-string-p
+              (ispace-var-dim->name (ispace-var-dim-with-index prefix index))))
+    :enable (ispace-var-dim-with-index
+             str::fast-string-append
+             valid-identifier-string-p-of-string-append-nat-to-dec-string)
+    :disable string-append))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -252,7 +275,15 @@
 
      (defret fresh-dim-ispace-var-loop-is-fresh
        (not (set::in var (ispace-var-set-fix used)))
-       :hints (("Goal" :induct t)))))
+       :hints (("Goal" :induct t)))
+
+     (defrule valid-identifier-string-p-of-fresh-dim-ispace-var-loop
+       (implies (and (stringp prefix)
+                     (valid-identifier-string-p prefix))
+                (valid-identifier-string-p
+                 (ispace-var-dim->name
+                  (fresh-dim-ispace-var-loop prefix index used))))
+       :induct (fresh-dim-ispace-var-loop prefix index used))))
 
   ///
 
@@ -260,7 +291,15 @@
     (equal (ispace-var-kind var) :dim))
 
   (defret fresh-dim-ispace-var-is-fresh
-    (not (set::in var (ispace-var-set-fix used)))))
+    (not (set::in var (ispace-var-set-fix used))))
+
+  ; The generated variable's name is a legal Remora identifier if the
+  ; prefix is.
+  (defret valid-identifier-string-p-of-fresh-dim-ispace-var
+    (implies (and (stringp prefix)
+                  (valid-identifier-string-p prefix))
+             (valid-identifier-string-p (ispace-var-dim->name var)))
+    :hints (("Goal" :in-theory (enable fresh-dim-ispace-var)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -290,7 +329,20 @@
                   (ispace-var-shape-with-index prefix index2))
            (equal (nfix index1)
                   (nfix index2)))
-    :enable string-append))
+    :enable string-append)
+
+  (defrule valid-identifier-string-p-of-ispace-var-shape-with-index
+    :short "The generated variable's name is a legal Remora identifier
+            if the prefix is."
+    (implies (and (stringp prefix)
+                  (valid-identifier-string-p prefix))
+             (valid-identifier-string-p
+              (ispace-var-shape->name
+               (ispace-var-shape-with-index prefix index))))
+    :enable (ispace-var-shape-with-index
+             str::fast-string-append
+             valid-identifier-string-p-of-string-append-nat-to-dec-string)
+    :disable string-append))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -439,7 +491,15 @@
 
      (defret fresh-shape-ispace-var-loop-is-fresh
        (not (set::in var (ispace-var-set-fix used)))
-       :hints (("Goal" :induct t)))))
+       :hints (("Goal" :induct t)))
+
+     (defrule valid-identifier-string-p-of-fresh-shape-ispace-var-loop
+       (implies (and (stringp prefix)
+                     (valid-identifier-string-p prefix))
+                (valid-identifier-string-p
+                 (ispace-var-shape->name
+                  (fresh-shape-ispace-var-loop prefix index used))))
+       :induct (fresh-shape-ispace-var-loop prefix index used))))
 
   ///
 
@@ -447,7 +507,15 @@
     (equal (ispace-var-kind var) :shape))
 
   (defret fresh-shape-ispace-var-is-fresh
-    (not (set::in var (ispace-var-set-fix used)))))
+    (not (set::in var (ispace-var-set-fix used))))
+
+  ; The generated variable's name is a legal Remora identifier if the
+  ; prefix is.
+  (defret valid-identifier-string-p-of-fresh-shape-ispace-var
+    (implies (and (stringp prefix)
+                  (valid-identifier-string-p prefix))
+             (valid-identifier-string-p (ispace-var-shape->name var)))
+    :hints (("Goal" :in-theory (enable fresh-shape-ispace-var)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -477,7 +545,19 @@
                   (type-var-atom-with-index prefix index2))
            (equal (nfix index1)
                   (nfix index2)))
-    :enable string-append))
+    :enable string-append)
+
+  (defrule valid-identifier-string-p-of-type-var-atom-with-index
+    :short "The generated variable's name is a legal Remora identifier
+            if the prefix is."
+    (implies (and (stringp prefix)
+                  (valid-identifier-string-p prefix))
+             (valid-identifier-string-p
+              (type-var-atom->name (type-var-atom-with-index prefix index))))
+    :enable (type-var-atom-with-index
+             str::fast-string-append
+             valid-identifier-string-p-of-string-append-nat-to-dec-string)
+    :disable string-append))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -624,7 +704,15 @@
 
      (defret fresh-atom-type-var-loop-is-fresh
        (not (set::in var (type-var-set-fix used)))
-       :hints (("Goal" :induct t)))))
+       :hints (("Goal" :induct t)))
+
+     (defrule valid-identifier-string-p-of-fresh-atom-type-var-loop
+       (implies (and (stringp prefix)
+                     (valid-identifier-string-p prefix))
+                (valid-identifier-string-p
+                 (type-var-atom->name
+                  (fresh-atom-type-var-loop prefix index used))))
+       :induct (fresh-atom-type-var-loop prefix index used))))
 
   ///
 
@@ -632,7 +720,15 @@
     (equal (type-var-kind var) :atom))
 
   (defret fresh-atom-type-var-is-fresh
-    (not (set::in var (type-var-set-fix used)))))
+    (not (set::in var (type-var-set-fix used))))
+
+  ; The generated variable's name is a legal Remora identifier if the
+  ; prefix is.
+  (defret valid-identifier-string-p-of-fresh-atom-type-var
+    (implies (and (stringp prefix)
+                  (valid-identifier-string-p prefix))
+             (valid-identifier-string-p (type-var-atom->name var)))
+    :hints (("Goal" :in-theory (enable fresh-atom-type-var)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -661,7 +757,19 @@
                   (type-var-array-with-index prefix index2))
            (equal (nfix index1)
                   (nfix index2)))
-    :enable string-append))
+    :enable string-append)
+
+  (defrule valid-identifier-string-p-of-type-var-array-with-index
+    :short "The generated variable's name is a legal Remora identifier
+            if the prefix is."
+    (implies (and (stringp prefix)
+                  (valid-identifier-string-p prefix))
+             (valid-identifier-string-p
+              (type-var-array->name (type-var-array-with-index prefix index))))
+    :enable (type-var-array-with-index
+             str::fast-string-append
+             valid-identifier-string-p-of-string-append-nat-to-dec-string)
+    :disable string-append))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -808,7 +916,15 @@
 
      (defret fresh-array-type-var-loop-is-fresh
        (not (set::in var (type-var-set-fix used)))
-       :hints (("Goal" :induct t)))))
+       :hints (("Goal" :induct t)))
+
+     (defrule valid-identifier-string-p-of-fresh-array-type-var-loop
+       (implies (and (stringp prefix)
+                     (valid-identifier-string-p prefix))
+                (valid-identifier-string-p
+                 (type-var-array->name
+                  (fresh-array-type-var-loop prefix index used))))
+       :induct (fresh-array-type-var-loop prefix index used))))
 
   ///
 
@@ -816,42 +932,15 @@
     (equal (type-var-kind var) :array))
 
   (defret fresh-array-type-var-is-fresh
-    (not (set::in var (type-var-set-fix used)))))
+    (not (set::in var (type-var-set-fix used))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Support for the identifier-validity theorem of EXPR-VAR-WITH-INDEX
-; below.  That theorem is an instance of
-; VALID-IDENTIFIER-STRING-P-OF-STRING-APPEND (xdoc topic
-; identifier-syntax), whose conditions are that the suffix consists of
-; ASCII identifier continuation characters and that the extension is
-; not a reserved keyword; the facts that discharge those conditions for
-; a digit suffix live with IDENTIFIER-SYNTAX as well.  All that is
-; specific to this book is the connection to STR::NAT-TO-DEC-STRING:
-; the decimal representation of an index is a non-empty sequence of
-; digit code points.
-
-(local
- (defsection expr-var-with-index-support
-
-   (defruled digit-bytes-of-nat-to-dec-string
-     (b* ((bytes (acl2::string=>nats (str::nat-to-dec-string n))))
-       (and (dec-nat-listp bytes)
-            (consp bytes)))
-     :enable acl2::string=>nats
-     :use ((:instance str::nat-to-dec-string-nonempty (str::n n))
-           (:instance dec-nat-listp-of-chars=>nats-when-dec-digits
-                      (chars (str::explode (str::nat-to-dec-string n)))))
-     :prep-lemmas
-     ((defruled dec-nat-listp-of-chars=>nats-when-dec-digits
-        (implies (str::dec-digit-char-list*p chars)
-                 (dec-nat-listp (acl2::chars=>nats chars)))
-        :induct (len chars)
-        :enable (acl2::chars=>nats
-                 dec-nat-listp
-                 len
-                 str::dec-digit-char-list*p
-                 str::dec-digit-char-p))))))
+  ; The generated variable's name is a legal Remora identifier if the
+  ; prefix is.
+  (defret valid-identifier-string-p-of-fresh-array-type-var
+    (implies (and (stringp prefix)
+                  (valid-identifier-string-p prefix))
+             (valid-identifier-string-p (type-var-array->name var)))
+    :hints (("Goal" :in-theory (enable fresh-array-type-var)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -883,26 +972,12 @@
   (defrule valid-identifier-string-p-of-expr-var-with-index
     :short "The generated variable's name is a legal Remora identifier
             if the prefix is."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "This is an instance of @(tsee
-       valid-identifier-string-p-of-string-append): the generated
-       variable is the prefix extended with the decimal representation
-       of the index, and that extension satisfies the conditions of
-       that theorem, since digits are ASCII identifier continuation
-       characters and no Remora keyword ends in a digit."))
     (implies (and (stringp prefix)
                   (valid-identifier-string-p prefix))
              (valid-identifier-string-p (expr-var-with-index prefix index)))
-    :use ((:instance valid-identifier-string-p-of-string-append
-                     (id prefix)
-                     (suffix (str::nat-to-dec-string (nfix index))))
-          (:instance digit-bytes-of-nat-to-dec-string (n (nfix index))))
     :enable (expr-var-with-index
              str::fast-string-append
-             ascii-id-continue-string-p-when-dec-bytes
-             not-remora-keyword-string-p-of-string-append-digits)
+             valid-identifier-string-p-of-string-append-nat-to-dec-string)
     :disable string-append))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1047,19 +1122,18 @@
 
      (defret fresh-expr-var-loop-is-fresh
        (not (set::in var (string-sfix used)))
-       :hints (("Goal" :induct t)))))
+       :hints (("Goal" :induct t)))
+
+     (defrule valid-identifier-string-p-of-fresh-expr-var-loop
+       (implies (and (stringp prefix)
+                     (valid-identifier-string-p prefix))
+                (valid-identifier-string-p (fresh-expr-var-loop prefix index used)))
+       :induct (fresh-expr-var-loop prefix index used))))
 
   ///
 
   (defret fresh-expr-var-is-fresh
     (not (set::in var (string-sfix used))))
-
-  (defrule valid-identifier-string-p-of-fresh-expr-var-loop
-    (implies (and (stringp prefix)
-                  (valid-identifier-string-p prefix))
-             (valid-identifier-string-p (fresh-expr-var-loop prefix index used)))
-    :induct (fresh-expr-var-loop prefix index used)
-    :enable fresh-expr-var-loop)
 
   ; The generated variable's name is a legal Remora identifier if the
   ; prefix is.
