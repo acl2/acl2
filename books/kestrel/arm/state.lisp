@@ -8,7 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 (in-package "ARM")
 
 ;; STATUS: In-progress / incomplete
@@ -220,11 +219,21 @@
          (set-reg n val1 arm))
   :hints (("Goal" :in-theory (enable set-reg))))
 
+;; Here the IF is over states
+;; TODO: Maybe refrain if the PCs are the same, to prevent splitting
+;; todo: more if lifters (or maybe set-reg will always be on top)?
+(defthmd set-reg-of-if-arg3
+  (equal (set-reg reg val (if test arm1 arm2))
+         (if test
+             (set-reg reg val arm1)
+           (set-reg reg val arm2))))
+
 (defthm isetstate-of-set-reg
   (equal (isetstate (set-reg n val arm))
          (isetstate arm))
   :hints (("Goal" :in-theory (enable set-reg))))
 
+;move
 (defthm isetstate-of-if
   (equal (isetstate (if test tp ep))
          (if test (isetstate tp) (isetstate ep))))
