@@ -83,7 +83,9 @@
 
   :irules
 
-  ((refl ((dimp x))
+  (;; equivalence of dimensions:
+
+   (refl ((dimp x))
          (dim= x x))
 
    (symm ((dimp x)
@@ -97,6 +99,8 @@
            (dim= x y)
            (dim= y z))
           (dim= x z))
+
+   ;; equivalence of lists of dimensions:
 
    (refl ((dim-listp xs))
          (dims= xs xs))
@@ -112,6 +116,8 @@
            (dims= xs ys)
            (dims= ys zs))
           (dims= xs zs))
+
+   ;; congruence of dimensions:
 
    (cong-add ((dim-listp xs)
               (dim-listp ys)
@@ -131,6 +137,8 @@
              (dim= (dim-mul xs)
                    (dim-mul ys)))
 
+   ;; congruence of lists of dimensions:
+
    (cong-cons ((dimp x)
                (dimp y)
                (dim-listp xs)
@@ -139,6 +147,8 @@
                (dims= xs ys))
               (dims= (cons x xs)
                      (cons y ys)))
+
+   ;; normalization of addition:
 
    (add0 ()
          (dim= (dim+)
@@ -155,6 +165,8 @@
           (dim= (dim-add (list* x y z ws))
                 (dim-add (cons (dim+ (dim+ x y) z) ws))))
 
+   ;; normalization of multiplication:
+
    (mul0 ()
          (dim= (dim*)
                (dim-const 1)))
@@ -170,11 +182,15 @@
           (dim= (dim-mul (list* x y z ws))
                 (dim-mul (cons (dim* (dim* x y) z) ws))))
 
+   ;; normalization of subtraction:
+
    (sub2m ((dimp x)
            (dim-listp ys)
            (consp ys))
           (dim= (dim-sub (cons x ys))
                 (dim+ x (dim- (dim-add ys)))))
+
+   ;; abelian group properties of addition:
 
    (add-comm ((dimp x)
               (dimp y))
@@ -195,10 +211,14 @@
             (dim= (dim+ x (dim- x))
                   (dim-const 0)))
 
+   ;; addition of constants:
+
    (add-const ((natp d1)
                (natp d2))
               (dim= (dim+ (dim-const d1) (dim-const d2))
                     (dim-const (+ d1 d2))))
+
+   ;; commutative monoid properties of multiplication:
 
    (mul-comm ((dimp x)
               (dimp y))
@@ -215,10 +235,14 @@
            (dim= (dim* 1 x)
                  x))
 
+   ;; multiplication of constants:
+
    (mul-const ((natp d1)
                (natp d2))
               (dim= (dim* (dim-const d1) (dim-const d2))
                     (dim-const (* d1 d2))))
+
+   ;; distributivity of multiplication over addition:
 
    (distrib ((dimp x)
              (dimp y)
