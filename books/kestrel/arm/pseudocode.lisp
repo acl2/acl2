@@ -589,6 +589,16 @@
                   (getbit (+ -1 n) (acl2::rightrotate n shift x))))
   :hints (("Goal" :in-theory (enable ror_c acl2::rightrotate bvshl bvshr))))
 
+;; This prevenst a ground call of ror_c from generating a warning (before the
+;; overarching mv-nth calls are simplified).
+(defthm ror_c-redef
+  (implies (and (unsigned-byte-p n x)
+                (integerp shift))
+           (equal (ror_c n x shift)
+                  (mv (acl2::rightrotate n shift x)
+                      (getbit (+ -1 n) (acl2::rightrotate n shift x)))))
+  :hints (("Goal" :in-theory (enable ror_c acl2::rightrotate bvshl bvshr))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund ROR (n x shift)

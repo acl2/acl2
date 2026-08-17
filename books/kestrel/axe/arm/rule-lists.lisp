@@ -263,7 +263,20 @@
      arm::gt-condition-constant-opener
      arm::le-condition-constant-opener
 
+     arm::lsl_c-constant-opener
+     arm::lsl-constant-opener
+     arm::lsr_c-constant-opener
+     arm::lsr-constant-opener
+     arm::SignExtend-constant-opener
+     arm::asr_c-constant-opener
+     arm::ror_c-constant-opener
+     arm::ror-constant-opener
+     arm::rrx_c-constant-opener
+     arm::rrx-constant-opener
+     arm::shift_c-constant-opener
+     arm::shift-constant-opener
      arm::addwithcarry-constant-opener ; more?
+
      arm::sint-constant-opener
 
      acl2::lookup-eq-becomes-lookup-equal
@@ -474,8 +487,9 @@
      arm::lsr-becomes-bvshr ; arm::lsr
 
      ;; right rotation:
-     arm::mv-nth-0-of-ror_c-becomes-rightrotate ; arm::ror_c
-     arm::mv-nth-1-of-ror_c-becomes-getbit-of-rightrotate
+     arm::ror_c-redef
+     ;; arm::mv-nth-0-of-ror_c-becomes-rightrotate ; arm::ror_c
+     ;; arm::mv-nth-1-of-ror_c-becomes-getbit-of-rightrotate
      arm::ror-becomes-rightrotate ; arm::ror
 
      arm::bitcount
@@ -498,6 +512,8 @@
      arm::write-of-set-reg
      arm::set-reg-of-set-reg-same
      arm::set-reg-of-set-reg-diff-2
+     arm::set-reg-of-if-arg3
+     arm::set-reg-of-pc-and-bvif
 
      arm::decodeimmshift
      arm::decoderegshift
