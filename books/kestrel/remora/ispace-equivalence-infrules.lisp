@@ -18,21 +18,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ dimension-equivalence-inference-rules
+(defxdoc+ ispace-equivalence-inference-rules
   :parents (static-semantics)
-  :short "Inference rules for dimension equivalence."
+  :short "Inference rules for ispace equivalence."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We formalize the equivalence of dimensions via inference rules.
+    "We formalize the equivalence of ispaces via inference rules.
      Although [thesis], [arxiv], and [esop] do not explicate these rules,
      their existence is arguably implied;
      those publications make use of judgements
      asserting the equivalence of ispaces (called `indices' there),
      and describe the equations according to which
      dimensions are considered equivalent.
-     Unlike [impl], those publications only have addition,
-     but our rules also include multiplication and subtraction."))
+     Unlike [impl], those publications only have addition of dimensions,
+     but our rules also include their multiplication and subtraction."))
   :order-subtopics t
   :default-parent t)
 
