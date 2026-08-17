@@ -13367,3 +13367,18 @@
 ;;            (equal (sbvlt 32 k (bvsx 32 8 x))
 ;;                   (sbvlt 8 k x)))
 ;;   :hints (("Goal" :in-theory (enable bvlt bvsx sbvlt-rewrite))))
+
+;move, but this needs slice-of-bvplus-cases-no-split-case-no-carry
+; k1 + 2^low(k2 + x) becomes (k1 + 2^low*k2) + 2^low*x
+;useful to simplify the PC (combine the constants) for certain switch statements
+(defthm bvplus-of-bvcat-of-bvplus-combine-constants
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)
+                              (quotep highsize)
+                              (quotep lowsize)
+                              (quotep size)))
+                (equal size (+ highsize lowsize)))
+           (equal (bvplus size k1 (bvcat highsize (bvplus highsize k2 x) lowsize 0))
+                  (bvplus size
+                          (bvplus size k1 (bvcat highsize k2 lowsize 0)) ; gets computed
+                          (bvcat highsize x lowsize 0)))))
