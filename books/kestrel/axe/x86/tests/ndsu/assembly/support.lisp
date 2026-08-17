@@ -32,7 +32,6 @@
 (include-book "kestrel/bv/bvlt" :dir :system) ; drop?
 (include-book "kestrel/bv/bvcount" :dir :system)
 (include-book "kestrel/bv/bitops" :dir :system) ; for ACL2::PART-SELECT-WIDTH-LOW-BECOMES-SLICE-GEN -- or build that into the lifter
-(include-book "kestrel/axe/rules3" :dir :system) ; reduce?
 ;; todo: reduce this?:
 (include-book "kestrel/x86/read-and-write" :dir :system)
 
@@ -71,6 +70,7 @@
                 (x::read-of-bvplus
                  x::read-of-bvplus-normalize
                  x::bvcat-of-read-and-read-combine ; loops with the blasting rules
+                 acl2::unsigned-byte-p-of-+-of-constant-strong ; turns unsigned-byte-p claims into < claims
                  )))
 
 (make-event `(in-theory (enable ,@(x::register-aliases64)
