@@ -271,7 +271,7 @@
                                 print
                                 print-base
                                 max-printed-term-size
-                                untranslatep
+                                untranslate
                                 state)
   (declare (xargs :guard (and (lifter-targetp target)
                               (parsed-executablep parsed-executable)
@@ -306,7 +306,7 @@
                               (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
-                              (booleanp untranslatep))
+                              (booleanp untranslate))
                   :stobjs state
                   :mode :program ; todo: because of maybe-wrap-in-output-extractor
                   ))
@@ -346,7 +346,6 @@
             ;state
             )
         (assumptions-elf32 parsed-executable stack-slots existing-stack-slots position-independentp)
-        ;; todo: do we need to simplify the assumptions (maybe to get disjointness claims into reduced form by cancelling constants, since that will happen during rewriting)
         ;; (assumptions-new target
         ;;                  parsed-executable
         ;;                  extra-assumptions
@@ -394,6 +393,7 @@
        ;; (assumptions (set-difference-equal assumptions remove-assumptions))
 
        ;; Simplify assumptions (todo: skip if no extra-assumptions?):
+       ;; (maybe to get disjointness claims into reduced form by cancelling constants, since that will happen during rewriting)
        (assumption-rules (assumption-simplification-rules))
        ;; Add the extra-assumption-rules:
        (assumption-rules (append extra-assumption-rules assumption-rules))
@@ -495,7 +495,7 @@
                         *non-stp-assumption-functions*
                         *incomplete-run-fns*
                         *error-fns*
-                        untranslatep memoizep state))
+                        untranslate memoizep state))
        ((when erp) (mv erp nil ;nil nil nil nil nil
                        state))
        (- (maybe-print-hits hits))
@@ -544,7 +544,7 @@
                         print
                         print-base
                         max-printed-term-size
-                        untranslatep
+                        untranslate
                         ;;produce-function
                         ;;non-executable
                         ;;produce-theorem
@@ -587,7 +587,7 @@
                               (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
-                              (booleanp untranslatep)
+                              (booleanp untranslate)
                               ;; (booleanp produce-function)
                               ;; (member-eq non-executable '(t nil :auto))
                               ;; (booleanp produce-theorem)
@@ -633,7 +633,7 @@
                                  extra-assumption-rules remove-assumption-rules
                                  step-limit step-increment
                                  ;;stop-pcs
-                                 memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslatep state))
+                                 memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslate state))
        ((when erp) (mv erp nil state))
        ;; Extract info from the result:
        (result-size (dag-or-quotep-size result-dag-or-quotep))
@@ -703,7 +703,7 @@
        ;;                                                             ',(acl2::make-interpreted-function-alist (acl2::get-non-built-in-supporting-fns-list result-fns acl2::*axe-evaluator-functions* (w state)) (w state))
        ;;                                                             '0 ;array depth (not very important)
        ;;                                                             )))
-       ;;         (function-body-untranslated (if untranslatep (untranslate function-body nil (w state)) function-body)) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
+       ;;         (function-body-untranslated (if untranslate (untranslate function-body nil (w state)) function-body)) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
        ;;         (function-body-retranslated (acl2::translate-term function-body-untranslated 'def-unrolled-fn (w state)))
        ;;         ;; TODO: I've seen this check fail when (if x y t) got turned into (if (not x) (not x) y):
        ;;         ((when (not (equal function-body function-body-retranslated))) ;todo: make a safe-untranslate that does this check?
@@ -801,7 +801,7 @@
                                   (print ':brief)             ;how much to print
                                   (print-base '10)
                                   (max-printed-term-size '10000)
-                                  (untranslatep 't)
+                                  (untranslate 't)
                                   ;;(produce-function 't)
                                   ;;(non-executable ':auto)
                                   ;;(produce-theorem 'nil)
@@ -841,7 +841,7 @@
         ',print
         ',print-base
         ',max-printed-term-size
-        ',untranslatep
+        ',untranslate
         ;; ',produce-function
         ;; ',non-executable
         ;; ',produce-theorem
@@ -890,7 +890,7 @@
          (print "Verbosity level.") ; todo: values
          (print-base "Base to use when printing during lifting.  Must be either 10 or 16.")
          (max-printed-term-size "Max term-size of a DAG that is allowed to be printed as a term.  Larger DAGs will be printed as DAGs, not terms.")
-         (untranslatep "Whether to untranslate terms when printing.")
+         (untranslate "Whether to untranslate terms when printing.  Must be a boolean.")
 ;;         (produce-function "Whether to produce a function, not just a constant DAG, representing the result of the lifting.")
 ;;         (non-executable "Whether to make the generated function non-executable, e.g., because stobj updates are not properly let-bound.  Either t or nil or :auto.")
 ;;         (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
