@@ -272,7 +272,17 @@
      (reflexivity, symmetry, and transitivity),
      for shapes, lists of shapes, ispaces, and lists of ispaces.
      And congruence rules corresponding to the construction of
-     shapes, ispaces, lists of shapes, and lists of ispaces."))
+     shapes, ispaces, lists of shapes, and lists of ispaces.")
+   (xdoc::p
+    "We normalize the different forms of dimension concatenation
+     to consists of
+     (i) shape variables,
+     (ii) shapes consisting of single dimensions, and
+     (iii) binary @('++') concatenations.
+     The rule @('dims0') and @('dims2m') reduce
+     shapes consisting of lists of zero or more dimensions
+     to @('++') concatenations of zero or more shapes,
+     each consisting of a single dimension."))
 
   :preds ((shp= shp1 shp2)
           (shps= shps1 shps2)
@@ -373,6 +383,15 @@
                       (isp= i1 i2)
                       (isps= is1 is2))
                      (isps= (cons i1 is1) (cons i2 is2)))
+
+   ;; normalization of shapes built from dimensions:
+
+   (dims0 ()
+          (shp= (shp) (shp++)))
+
+   (dims2m ((dimp d) (dim-listp ds) (consp ds))
+           (shp= (shape-dims (cons d ds))
+                 (shp++ (shp d) (shape-dims ds))))
 
    ;; TODO: add more rules
 
