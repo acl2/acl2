@@ -203,6 +203,21 @@
                   (bvle 32 x y)))
   :hints (("Goal" :in-theory (enable ls-condition cmp-zero-elim cmp-carry-elim))))
 
+;;todo: more like this?
+(defthm cs-condition-of-cmp-carry
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cs-condition (cmp-carry x y))
+                  (not (bvlt 32 x y))))
+  :hints (("Goal" :in-theory (enable cs-condition cmp-carry-elim))))
+
+(defthm cc-condition-of-cmp-carry
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cc-condition (cmp-carry x y))
+                  (bvlt 32 x y)))
+  :hints (("Goal" :in-theory (enable cc-condition cmp-carry-elim))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::def-constant-opener eq-condition)
