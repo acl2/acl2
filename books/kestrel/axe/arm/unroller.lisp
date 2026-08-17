@@ -448,8 +448,8 @@
                              (let ((assumptions (untranslate$-list assumptions nil state))) ; for readable output
                                (if (print-level-at-least-tp print)
                                    (print-list assumptions)
-                                 (print-terms-elided assumptions '(;(program-at t nil t) ; the program can be huge
-                                                                         (equal t nil)))))
+                                 (print-terms-elided assumptions '((equal nil nil) ; nil means don't print if argument is a big list (todo: change that to be represented by t?)
+                                                                   ))))
                              (cw ")~%"))))
        ((when (not (acl2::term-listp assumptions (w state))))
         (er hard? 'unroll-arm-code-core "Some assumption is not a valid term: ~x0." assumptions)
