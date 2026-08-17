@@ -249,3 +249,131 @@
              (dimp z))
             (dim= (dim* x (dim+ y z))
                   (dim+ (dim* x y) (dim* x z))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(definductive shape/ispace-equiv-infrules
+  :short "Equivalence of shapes, ispaces, and lists thereof."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is essentially an equational theory over sequences of dimensions,
+     but there are different ways to concatenate:
+     turning sequences of dimensions to single shapes,
+     concatenating shapes,
+     and splicing ispaces into shapes.
+     Because of the mutual recursion of shape and ispace ASTs,
+     the inference rules are also mutually recursive.
+     The following rules build upon
+     the equivalence of dimensions and lists of dimensions,
+     defined in @(see dim-equiv-infrules).")
+   (xdoc::p
+    "We start with the equivalence rules
+     (reflexivity, symmetry, and transitivity),
+     for shapes, lists of shapes, ispaces, and lists of ispaces.
+     And congruence rules corresponding to the construction of
+     shapes, ispaces, lists of shapes, and lists of ispaces."))
+
+  :preds ((shp= shp1 shp2)
+          (shps= shps1 shps2)
+          (isp= isp1 isp2)
+          (isps= isps1 isps2))
+
+  :irules
+
+  (;; equivalence of shapes:
+
+   (refl ((shapep s))
+         (shp= s s))
+
+   (symm ((shapep s1) (shapep s2)
+          (shp= s1 s2))
+         (shp= s2 s1))
+
+   (trans ((shapep s1) (shapep s2) (shapep s3)
+           (shp= s1 s2) (shp= s2 s3))
+          (shp= s1 s3))
+
+   ;; equivalence of lists of shapes:
+
+   (refl ((shape-listp ss))
+         (shps= ss ss))
+
+   (symm ((shape-listp ss1) (shape-listp ss2)
+          (shps= ss1 ss2))
+         (shps= ss2 ss1))
+
+   (trans ((shape-listp ss1) (shape-listp ss2) (shape-listp ss3)
+           (shps= ss1 ss2) (shps= ss2 ss3))
+          (shps= ss1 ss3))
+
+   ;; equivalence of ispaces:
+
+   (refl ((ispacep i))
+         (isp= i i))
+
+   (symm ((ispacep i1) (ispacep i2)
+          (isp= i1 i2))
+         (isp= i2 i1))
+
+   (trans ((ispacep i1) (ispacep i2) (ispacep i3)
+           (isp= i1 i2) (isp= i2 i3))
+          (isp= i1 i3))
+
+   ;; equivalence of lists of ispaces:
+
+   (refl ((ispace-listp is))
+         (isps= is is))
+
+   (symm ((ispace-listp is1) (ispace-listp is2)
+          (isps= is1 is2))
+         (isps= is2 is1))
+
+   (trans ((ispace-listp is1) (ispace-listp is2) (ispace-listp is3)
+           (isps= is1 is2) (isps= is2 is3))
+          (isps= is1 is3))
+
+   ;; congruence of shapes:
+
+   (cong-dims ((dim-listp ds1) (dim-listp ds2)
+               (dims= ds1 ds2))
+              (shp= (shape-dims ds1) (shape-dims ds2)))
+
+   (cong-append ((shape-listp ss1) (shape-listp ss2)
+                 (shps= ss1 ss2))
+                (shp= (shape-append ss1) (shape-append ss2)))
+
+   (cong-splice ((ispace-listp is1) (ispace-listp is2)
+                 (isps= is1 is2))
+                (shp= (shape-splice is1)
+                      (shape-splice is2)))
+
+   ;; congruence of ispaces:
+
+   (cong-dim ((dimp d1) (dimp d2)
+              (dim= d1 d2))
+             (isp= (ispace-dim d1) (ispace-dim d2)))
+
+   (cong-shape ((shapep s1) (shapep s2)
+                (shp= s1 s2))
+               (isp= (ispace-shape s1) (ispace-shape s2)))
+
+   ;; congruence of lists of shapes:
+
+   (cong-shape-cons ((shapep s1) (shapep s2)
+                     (shape-listp ss1) (shape-listp ss2)
+                     (shp= s1 s2)
+                     (shps= ss1 ss2))
+                    (shps= (cons s1 ss1) (cons s2 ss2)))
+
+   ;; congruence of lists of ispaces:
+
+   (cong-ispace-cons ((ispacep i1) (ispacep i2)
+                      (ispace-listp is1) (ispace-listp is2)
+                      (isp= i1 i2)
+                      (isps= is1 is2))
+                     (isps= (cons i1 is1) (cons i2 is2)))
+
+   ;; TODO: add more rules
+
+  ))
