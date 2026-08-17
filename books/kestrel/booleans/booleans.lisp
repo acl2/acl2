@@ -129,11 +129,15 @@
          (boolif test x (not y)))
   :hints (("Goal" :in-theory (enable boolif))))
 
+;rename to mention boolor
+;maybe remove (use the -alt rule first)
 (defthm boolif-of-not-same-arg3
   (equal (boolif x y (not x))
          (boolor y (not x)))
   :hints (("Goal" :in-theory (enable boolif))))
 
+;rename to mention booland
+;maybe remove (use the -alt rule first)
 (defthm boolif-of-not-same-arg2
   (equal (boolif x (not x) y)
          (booland y (not x)))
