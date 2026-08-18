@@ -678,7 +678,7 @@
                              print
                              print-base
                              max-printed-term-size
-                             untranslatep
+                             untranslate
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
                               (parsed-executablep parsed-executable)
@@ -715,7 +715,7 @@
                               (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
-                              (booleanp untranslatep)
+                              (booleanp untranslate)
                               )
                   :stobjs state
                   :mode :program ; because of wrap-in-output-extractor
@@ -867,7 +867,7 @@
                         *non-stp-assumption-functions*
                         *incomplete-run-fns*
                         *error-fns*
-                        untranslatep memoizep state))
+                        untranslate memoizep state))
        ((when erp) (mv erp nil nil nil nil nil nil state))
        (hits (combine-hits hits hits2))
        (state (unwiden-margins state))
@@ -919,7 +919,7 @@
                         print
                         print-base
                         max-printed-term-size
-                        untranslatep
+                        untranslate
                         produce-function
                         non-executable
                         produce-theorem
@@ -964,7 +964,7 @@
                               (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
-                              (booleanp untranslatep)
+                              (booleanp untranslate)
                               (booleanp produce-function)
                               (member-eq non-executable '(t nil :auto))
                               (booleanp produce-theorem)
@@ -1009,7 +1009,7 @@
         (unroll-x86-code-core target parsed-executable
                               extra-assumptions suppress-assumptions inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags
                               inputs type-assumptions-for-array-varsp output-indicator prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
-                              step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslatep state))
+                              step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslate state))
        ((when erp) (mv erp nil state))
        ;; Extract info from the result-dag:
        (result-size (dag-or-quotep-size result-dag-or-quotep)) ; this could be somewhat expensive, due to bignums
@@ -1078,7 +1078,7 @@
                                                              ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list result-fns *axe-evaluator-functions* (w state)) (w state))
                                                              '0 ;array depth (not very important)
                                                              )))
-               (function-body-untranslated (if untranslatep (untranslate function-body nil (w state)) function-body)) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
+               (function-body-untranslated (if untranslate (untranslate function-body nil (w state)) function-body)) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
                (function-body-retranslated (translate-term function-body-untranslated 'def-unrolled-fn (w state)))
                ;; TODO: I've seen this check fail when (if x y t) got turned into (if (not x) (not x) y):
                ((when (not (equal function-body function-body-retranslated))) ;todo: make a safe-untranslate that does this check?
@@ -1177,7 +1177,7 @@
                                   (print ':brief) ;how much to print
                                   (print-base '10)
                                   (max-printed-term-size '10000)
-                                  (untranslatep 't)
+                                  (untranslate 't)
                                   (produce-function 't)
                                   (non-executable ':auto)
                                   (produce-theorem 'nil)
@@ -1219,7 +1219,7 @@
         ',print
         ',print-base
         ',max-printed-term-size
-        ',untranslatep
+        ',untranslate
         ',produce-function
         ',non-executable
         ',produce-theorem
@@ -1271,7 +1271,7 @@
          (print "Verbosity level.") ; todo: values
          (print-base "Base to use when printing during lifting.  Must be either 10 or 16.")
          (max-printed-term-size "Max term-size of a DAG that is allowed to be printed as a term.  Larger DAGs will be printed as DAGs, not terms.")
-         (untranslatep "Whether to untranslate terms when printing.")
+         (untranslate "Whether to untranslate terms when printing.")
          (produce-function "Whether to produce a function, not just a constant DAG, representing the result of the lifting.")
          (non-executable "Whether to make the generated function non-executable, e.g., because stobj updates are not properly let-bound.  Either t or nil or :auto.")
          (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")

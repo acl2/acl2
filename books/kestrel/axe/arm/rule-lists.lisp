@@ -245,6 +245,9 @@
      ;; sub rules: ; todo: add more!
      arm::lt-condition-of-sub-sign-and-sub-overflow
 
+     arm::cs-condition-of-cmp-carry
+     arm::cc-condition-of-cmp-carry
+
      arm::eq-condition-constant-opener
      arm::ne-condition-constant-opener
      arm::cs-condition-constant-opener
@@ -523,6 +526,9 @@
      arm::iszerobit
      arm::iszero
 
+     arm::unsigned-byte-p-of-mv-nth-0-of-asr_c ; todo: more like this!
+     arm::mv-nth-0-of-asr_c-becomes-rightrotate
+
      arm::unsigned-byte-p-of-cmn-sign
      arm::unsigned-byte-p-of-cmn-zero
      arm::unsigned-byte-p-of-cmn-carry
@@ -609,7 +615,7 @@
 
      ;; UNCOMMENT
      arm::read-when-equal-of-read-bytes-and-subregion32p ; for when the bytes are a constant
-     arm::read-when-equal-of-read-bytes-and-subregion32p-alt ; for when the bytes are not a constant
+     arm::read-when-equal-of-read-bytes-and-subregion32p-alt ; for when the bytes are a constant
      arm::read-when-equal-of-read-bytes ; note rule priority
      arm::read-when-equal-of-read-bytes-alt
      ;; acl2::len-of-cons ;  for when read-when-equal-of-read-bytes-and-subregion32p-alt introduces a cons nest

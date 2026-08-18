@@ -7873,66 +7873,70 @@
           leveled-cliques name xdocp print))
        (assert-type-events
         (defind-gen-proof2-assertion-defprods pred-infos name xdocp print))
-       (proof2-type-events
+       (?proof2-type-events
         (defind-gen-proof2-fixtypes pred-infos irule-infos
           leveled-cliques name xdocp print))
-       (proof2-concl-events
+       (?proof2-concl-events
         (defind-gen-proof2-concl-fns pred-infos irule-infos name xdocp print))
        (irule-valid-events
         (defind-gen-irule-valid-fns
           irule-infos pred-infos name xdocp print))
-       (proof2-irule-valid-events
+       (?proof2-irule-valid-events
         (defind-gen-proof2-irule-valid-fns irule-infos name xdocp print))
        (proof-valid-events
         (defind-gen-proof-valid-fns
           pred-infos irule-infos leveled-cliques name xdocp print))
-       (proof2-valid-events
+       (?proof2-valid-events
         (defind-gen-proof2-valid-fns
           pred-infos irule-infos leveled-cliques name xdocp print))
        (pred-events
         (defind-gen-preds pred-infos leveled-cliques name xdocp print))
-       (proof2-pred-events
+       (?proof2-pred-events
         (defind-gen-proof2-preds pred-infos name xdocp print))
-       (proof2-irule-proof-events
+       (?proof2-irule-proof-events
         (defind-gen-proof2-irule-proof-fns
           irule-infos pred-infos name xdocp print))
        ((mv irules-event irules-print-events)
         (defind-gen-irule-defsection
           irule-infos pred-infos name xdocp print))
-       ((mv proof2-irules-event proof2-irules-print-events)
+       ((mv ?proof2-irules-event ?proof2-irules-print-events)
         (defind-gen-proof2-irule-defsection
           irule-infos pred-infos name xdocp print))
        ((mv minimality-event minimality-print-events)
         (defind-gen-minimality-defsection
           pred-infos irule-infos leveled-cliques name xdocp print))
-       ((mv proof2-minimality-event proof2-minimality-print-events)
+       ((mv ?proof2-minimality-event ?proof2-minimality-print-events)
         (defind-gen-proof2-minimality-defsection
           pred-infos irule-infos leveled-cliques name xdocp print))
-       ((mv proof2-same-event proof2-same-print-events)
+       ((mv ?proof2-same-event ?proof2-same-print-events)
         (defind-gen-proof2-same-defsection
           pred-infos irule-infos name xdocp print))
+       ;; The commented-out events below are not submitted to ACL2.
+       ;; They are still calculated (see code above), but not submitted.
+       ;; We will eventually remove them.
        (all-events (append name-doc-events
                            proof-type-events
                            assert-type-events
-                           proof2-type-events
-                           proof2-concl-events
+                           ;; proof2-type-events
+                           ;; proof2-concl-events
                            irule-valid-events
-                           proof2-irule-valid-events
+                           ;; proof2-irule-valid-events
                            proof-valid-events
-                           proof2-valid-events
+                           ;; proof2-valid-events
                            pred-events
-                           proof2-pred-events
-                           proof2-irule-proof-events
+                           ;; proof2-pred-events
+                           ;; proof2-irule-proof-events
                            (list irules-event)
                            irules-print-events
-                           (list proof2-irules-event)
-                           proof2-irules-print-events
+                           ;; (list proof2-irules-event)
+                           ;; proof2-irules-print-events
                            (list minimality-event)
                            minimality-print-events
-                           (list proof2-minimality-event)
-                           proof2-minimality-print-events
-                           (list proof2-same-event)
-                           proof2-same-print-events))
+                           ;; (list proof2-minimality-event)
+                           ;; proof2-minimality-print-events
+                           ;; (list proof2-same-event)
+                           ;; proof2-same-print-events
+                           ))
        (event `(progn
                  ,@all-events
                  (value-triple :invisible)))

@@ -80,6 +80,7 @@
 (include-book "kestrel/executable-parsers/elf-tools" :dir :system)
 (include-book "kestrel/axe/utilities" :dir :system) ; for the user's convenience
 (include-book "kestrel/utilities/untranslate-dollar-list" :dir :system)
+(include-book "kestrel/lists-light/set-difference-equal-fast" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/utilities/w" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -294,8 +295,8 @@
                              prune-approx
                              extra-rules
                              remove-rules
-                             ;; extra-assumption-rules ; todo: why "extra"?
-                             ;; remove-assumption-rules
+                             extra-assumption-rules
+                             remove-assumption-rules
                              step-limit
                              step-increment
                              stop-pcs
@@ -307,7 +308,7 @@
                              print
                              print-base
                              max-printed-term-size
-                             untranslatep
+                             untranslate
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
                               (parsed-executablep parsed-executable)
@@ -329,8 +330,8 @@
                                   (natp prune-approx))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
-                              ;; (symbol-listp extra-assumption-rules)
-                              ;; (symbol-listp remove-assumption-rules)
+                              (symbol-listp extra-assumption-rules)
+                              (symbol-listp remove-assumption-rules)
                               (natp step-limit)
                               (step-incrementp step-increment)
                               (nat-listp stop-pcs)
@@ -342,7 +343,7 @@
                               (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
-                              (booleanp untranslatep))
+                              (booleanp untranslate))
                   :stobjs state
                   :mode :program ; todo: because of maybe-wrap-in-output-extractor
                   ))
@@ -382,7 +383,6 @@
             ;state
             )
         (assumptions-elf32 parsed-executable stack-slots existing-stack-slots position-independentp)
-        ;; todo: do we need to simplify the assumptions (maybe to get disjointness claims into reduced form by cancelling constants, since that will happen during rewriting)
         ;; (assumptions-new target
         ;;                  parsed-executable
         ;;                  extra-assumptions
@@ -430,12 +430,26 @@
        (assumptions (union-equal extra-assumptions assumptions))
        ;; (assumptions (set-difference-equal assumptions remove-assumptions))
 
+       ;; Simplify assumptions (todo: skip if no extra-assumptions?):
+       ;; (maybe to get disjointness claims into reduced form by cancelling constants, since that will happen during rewriting)
+       (assumption-rules (lifter-rules32)  ; todo make (assumption-simplification-rules), which excludes run, step, the instruction semantics, etc.
+                         )
+       ;; Add the extra-assumption-rules:
+       (assumption-rules (append extra-assumption-rules assumption-rules))
+       ;; Remove the remove-assumption-rules:
+       (assumption-rules (set-difference-eq-fast assumption-rules remove-assumption-rules))
+       ((mv erp assumptions & state) ; todo: use the hits?
+        (acl2::simplify-assumptions assumptions assumption-rules count-hits
+                                    nil ; no-warn-ground-functions
+                                    state))
+       ((when erp) (mv erp nil state))
+
        (- (and print (progn$ (cw "(Assumptions for lifting (~x0):~%" (len assumptions))
                              (let ((assumptions (untranslate$-list assumptions nil state))) ; for readable output
                                (if (print-level-at-least-tp print)
                                    (print-list assumptions)
-                                 (print-terms-elided assumptions '(;(program-at t nil t) ; the program can be huge
-                                                                         (equal t nil)))))
+                                 (print-terms-elided assumptions '((equal nil nil) ; nil means don't print if argument is a big list (todo: change that to be represented by t?)
+                                                                   ))))
                              (cw ")~%"))))
        ((when (not (acl2::term-listp assumptions (w state))))
         (er hard? 'unroll-arm-code-core "Some assumption is not a valid term: ~x0." assumptions)
@@ -511,7 +525,7 @@
                         *non-stp-assumption-functions*
                         *incomplete-run-fns*
                         *error-fns*
-                        untranslatep memoizep state))
+                        untranslate memoizep state))
        ((when erp) (mv erp nil ;nil nil nil nil nil
                        state))
        (- (maybe-print-hits hits))
@@ -548,8 +562,8 @@
                         prune-approx
                         extra-rules
                         remove-rules
-                        ;; extra-assumption-rules
-                        ;; remove-assumption-rules
+                        extra-assumption-rules
+                        remove-assumption-rules
                         step-limit
                         step-increment
                         stop-pcs
@@ -561,7 +575,7 @@
                         print
                         print-base
                         max-printed-term-size
-                        untranslatep
+                        untranslate
                         produce-function
                         non-executable
                         ;;produce-theorem
@@ -591,8 +605,8 @@
                                   (natp prune-approx))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
-                              ;; (symbol-listp extra-assumption-rules)
-                              ;; (symbol-listp remove-assumption-rules)
+                              (symbol-listp extra-assumption-rules)
+                              (symbol-listp remove-assumption-rules)
                               (natp step-limit)
                               (step-incrementp step-increment)
                               (nat-listp stop-pcs)
@@ -605,7 +619,7 @@
                               (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
-                              (booleanp untranslatep)
+                              (booleanp untranslate)
                               (booleanp produce-function)
                               (member-eq non-executable '(t nil :auto))
                               ;; (booleanp produce-theorem)
@@ -648,11 +662,11 @@
                                  ;inputs type-assumptions-for-array-varsp
                                  output-indicator
                                  prune-precise prune-approx extra-rules remove-rules
-                                 ;; extra-assumption-rules remove-assumption-rules
+                                 extra-assumption-rules remove-assumption-rules
                                  step-limit step-increment
                                  stop-pcs
                                  trace
-                                 memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslatep state))
+                                 memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslate state))
        ((when erp) (mv erp nil state))
        ;; Extract info from the result:
        (result-size (dag-or-quotep-size result-dag-or-quotep))
@@ -722,7 +736,7 @@
                                                                    ',(acl2::make-interpreted-function-alist (acl2::get-non-built-in-supporting-fns-list result-fns acl2::*axe-evaluator-functions* (w state)) (w state))
                                                                    '0 ;array depth (not very important)
                                                                    )))
-               (function-body-untranslated (if untranslatep (untranslate function-body nil (w state)) function-body)) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
+               (function-body-untranslated (if untranslate (untranslate function-body nil (w state)) function-body)) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
                (function-body-retranslated (acl2::translate-term function-body-untranslated 'def-unrolled-fn (w state)))
                ;; TODO: I've seen this check fail when (if x y t) got turned into (if (not x) (not x) y):
                ((when (not (equal function-body function-body-retranslated))) ;todo: make a safe-untranslate that does this check?
@@ -815,8 +829,8 @@
                                   (prune-approx 't)
                                   (extra-rules 'nil)
                                   (remove-rules 'nil)
-;;                                  (extra-assumption-rules 'nil)
-;;                                  (remove-assumption-rules 'nil)
+                                  (extra-assumption-rules 'nil)
+                                  (remove-assumption-rules 'nil)
                                   (step-limit '1000000)
                                   (step-increment '100)
                                   (stop-pcs 'nil)
@@ -828,7 +842,7 @@
                                   (print ':brief)             ;how much to print
                                   (print-base '10)
                                   (max-printed-term-size '10000)
-                                  (untranslatep 't)
+                                  (untranslate 't)
                                   (produce-function 't)
                                   (non-executable ':auto)
                                   ;;(produce-theorem 'nil)
@@ -856,8 +870,8 @@
         ',prune-approx
         ,extra-rules ; gets evaluated since not quoted
         ,remove-rules ; gets evaluated since not quoted
-        ;;      ,extra-assumption-rules ; gets evaluated since not quoted
-        ;;      ,remove-assumption-rules ; gets evaluated since not quoted
+        ,extra-assumption-rules ; gets evaluated since not quoted
+        ,remove-assumption-rules ; gets evaluated since not quoted
         ',step-limit
         ',step-increment
         ,stop-pcs
@@ -869,7 +883,7 @@
         ',print
         ',print-base
         ',max-printed-term-size
-        ',untranslatep
+        ',untranslate
         ',produce-function
         ',non-executable
         ;; ',produce-theorem
@@ -906,8 +920,8 @@
          ;; todo: how do these affect assumption simp:
          (extra-rules "Rules to use in addition to (unroller-rules32) or (unroller-rules64) plus a few others.")
          (remove-rules "Rules to turn off.")
-         ;; (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
-         ;; (remove-assumption-rules "Rules to be removed when simplifying assumptions.")
+         (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
+         (remove-assumption-rules "Rules to be removed when simplifying assumptions.")
          (step-limit "Limit on the total number of symbolic executions steps to allow (total number of steps over all branches, if the simulation splits).")
          (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
          (stop-pcs "A list of program counters (natural numbers) at which to stop the execution, for debugging.")
@@ -919,7 +933,7 @@
          (print "Verbosity level.") ; todo: values
          (print-base "Base to use when printing during lifting.  Must be either 10 or 16.")
          (max-printed-term-size "Max term-size of a DAG that is allowed to be printed as a term.  Larger DAGs will be printed as DAGs, not terms.")
-         (untranslatep "Whether to untranslate terms when printing.")
+         (untranslate "Whether to untranslate terms when printing.   Must be a boolean.")
          (produce-function "Whether to produce a function, not just a constant DAG, representing the result of the lifting.")
          (non-executable "Whether to make the generated function non-executable, e.g., because stobj updates are not properly let-bound.  Either t or nil or :auto.")
 ;;         (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
