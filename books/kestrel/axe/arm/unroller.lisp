@@ -685,6 +685,7 @@
        ;;            (set-print-base-radix print-base state)
        ;;          state)) ; todo: do this better
        ((when (intersection-eq result-fns *incomplete-run-fns*))
+        ;; todo: use the print-base:
         (print-as-term-or-dag result-dag-or-quotep
                               100000 ; todo: make customizable.  since there was an error, we want to print as a term if at all possible
                               result-size nil "Error result" t state)
