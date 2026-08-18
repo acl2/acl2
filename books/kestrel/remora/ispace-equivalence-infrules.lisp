@@ -139,9 +139,9 @@
    (add1 ((dimp d))
          (dim= (dim+ d) d))
 
-   (add3m ((dimp d1) (dimp d2) (dimp d3) (dim-listp ds))
-          (dim= (dim-add (list* d1 d2 d3 ds))
-                (dim-add (cons (dim+ (dim+ d1 d2) d3) ds))))
+   (add3m ((dimp d1) (dimp d2) (dim-listp ds) (consp ds))
+          (dim= (dim-add (list* d1 d2 ds))
+                (dim-add (cons (dim+ d1 d2) ds))))
 
    ;; normalization of multiplication:
 
@@ -151,9 +151,9 @@
    (mul1 ((dimp d))
          (dim= (dim* d) d))
 
-   (mul3m ((dimp d1) (dimp d2) (dimp d3) (dim-listp ds))
-          (dim= (dim-mul (list* d1 d2 d3 ds))
-                (dim-mul (cons (dim* (dim* d1 d2) d3) ds))))
+   (mul3m ((dimp d1) (dimp d2) (dim-listp ds) (consp ds))
+          (dim= (dim-mul (list* d1 d2 ds))
+                (dim-mul (cons (dim* d1 d2) ds))))
 
    ;; normalization of subtraction:
 
