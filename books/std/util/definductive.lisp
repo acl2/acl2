@@ -5003,8 +5003,6 @@
        (proof-type-events
         (defind-gen-proof-fixtypes pred-infos irule-infos
           leveled-cliques name xdocp print))
-       (assert-type-events
-        (defind-gen-proof2-assertion-defprods pred-infos name xdocp print))
        (irule-valid-events
         (defind-gen-irule-valid-fns
           irule-infos pred-infos name xdocp print))
@@ -5021,7 +5019,6 @@
           pred-infos irule-infos leveled-cliques name xdocp print))
        (all-events (append name-doc-events
                            proof-type-events
-                           assert-type-events
                            irule-valid-events
                            proof-valid-events
                            pred-events
