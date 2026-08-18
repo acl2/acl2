@@ -17,7 +17,9 @@
 (include-book "utilities/def-equality-transformation")
 (include-book "kestrel/axe/rewriter-basic" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate-dollar" :dir :system)
+(include-book "kestrel/utilities/defthm-forms" :dir :system)
 (local (include-book "kestrel/terms-light/all-fnnames1" :dir :system))
+(local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
 ;; The core function for simplify-conjunctions.  Such functions always take:
 ;; fn, untranslated-body, state, and then transformation-specific args (none
@@ -29,23 +31,27 @@
                                                         state
                                                         ;; extra-function-renaming
                                                         untranslate
-                                                        rule-names)
+                                                        rule-names
+                                                        monitor)
   (declare (xargs :guard (and (symbolp fn)
                               ;; (doublet-listp extra-function-renaming)
                               (member-eq untranslate '(t nil :nice))
-                              (symbol-listp rule-names))
+                              (symbol-listp rule-names)
+                              (symbol-listp monitor))
                   :stobjs state
                   :mode :program ;; because of translate
                   )
            (ignore fn))
   (b* ((wrld (w state))
        (translated-body (translate-term untranslated-body 'simplify-conjunctions-function-body-transformer wrld)) ; todo: untranslate later
+       ;; needed for the body of a defun-nx, for example:
+       (translated-body (remove-guard-holders-and-clean-up-lambdas translated-body))
        (conjuncts (get-conjuncts-of-term2 translated-body))
        ;; todo: handle conjunctions not at the top level:
        ((mv erp new-conjuncts &) (simplify-conjunction-basic conjuncts
                                                              (make-rule-alist! rule-names (w state))
                                                              (known-booleans wrld)
-                                                             nil ; monitored-symbols
+                                                             monitor
                                                              nil ; no-warn-ground-functions
                                                              nil ; memoizep
                                                              nil ; count-hits
@@ -67,12 +73,35 @@
     ;; todo: consider returning only those rule-names that got used:
     (mv new-body (acons :enables rule-names nil))))
 
-(defund simplify-conjunctions-enables (fn wrld)
+;move
+(defund rule-bodies (names wrld)
+  (declare (xargs :guard (and (symbol-listp names)
+                              (plist-worldp wrld))))
+
+  (if (endp names)
+      nil
+    (let ((name (first names)))
+      (cons (if (and (function-symbolp name wrld)
+                     (fn-definedp name wrld))
+                (fn-body name t wrld)
+              (if (defthm-or-defaxiom-symbolp name wrld)
+                  (defthm-body name wrld)
+                (er hard? 'rule-bodies "Unknown kind of item: ~x0." name)))
+            (rule-bodies (rest names) wrld)))))
+
+(defthm pseudo-term-listp-of-rule-bodies
+  (pseudo-term-listp (rule-bodies names wrld))
+  :hints (("Goal" :in-theory (enable rule-bodies))))
+
+(defund simplify-conjunctions-enables (fn rule-names wrld)
   (declare (xargs :guard (and (symbolp fn)
+                              (symbol-listp rule-names)
                               (plist-worldp wrld))))
   (b* ((body (fn-body fn t wrld))
-       (fns (all-fnnames body)))
-    ;; enable the :executable-counterpart of every function in the body:
+       (fns (union-eq (all-fnnames body)
+                      (all-fnnames-lst (rule-bodies rule-names wrld)))))
+    ;; enable the :executable-counterpart of every function in the body and in
+    ;; all the rules:
     (make-doublets (repeat (len fns) :executable-counterpart) fns)))
 
 (def-equality-transformation
@@ -83,9 +112,10 @@
    )
   ;; transform-specific-keyword-args-and-defaults:
   ((untranslate 't)
-   (rule-names 'nil))
+   (rule-names 'nil)
+   (monitor 'nil))
   :infop t ; because we return the rule-names as extra enables for the proof
-  :enables (simplify-conjunctions-enables fn (w state)) ; form to compute the enables for the 'becomes theorem' ; TODO: Allow the function-body-transformer to return pre-events and hints?
+  :enables (simplify-conjunctions-enables fn rule-names (w state)) ; form to compute the enables for the 'becomes theorem' ; TODO: Allow the function-body-transformer to return pre-events and hints?
   :short "Simplify conjunctions in a function using the Axe Rewriter."
   ;; todo: put this sort of thing in automatically?:
   :description "<p>To inspect the resulting forms, call @('show-simplify-conjunctions') on the same
@@ -95,4 +125,4 @@ arguments.</p>"
   (;; (extra-function-renaming "The renaming to apply to called functions (each entry should have a corresponding entry in the renaming-rule-table).")
    (untranslate "How to untranslate the function body after changing it.")
    (rule-names "Names of rules to use when simplifying.  These should be usable both as ACL2 rules and as Axe rules.")
-   ))
+   (monitor "Rule names to monitor.")))
