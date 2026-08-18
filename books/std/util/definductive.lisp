@@ -1867,6 +1867,68 @@
 
 ;;;;;;;;;;
 
+(define defind-proof-minimal-fn-name ((pred-name symbolp) (name symbolp))
+  :returns (fn-name symbolp)
+  :short "Name of a @('p[i]-proof-minimalp') predicate."
+  (packn-pos (list (defind-proof-type-name pred-name name) '-minimalp)
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-minimal-return-thm-name ((pred-name symbolp)
+                                              (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of the boolean return theorem of
+          a @('p[i]-proof-minimalp') predicate."
+  (packn-pos (list 'booleanp-of-
+                   (defind-proof-minimal-fn-name pred-name name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-minimal-witness-fn-name ((pred-name symbolp)
+                                              (name symbolp))
+  :returns (fn-name symbolp)
+  :short "Name of the witness function of
+          a @('p[i]-proof-minimalp') predicate."
+  (packn-pos (list (defind-proof-minimal-fn-name pred-name name) '-witness)
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-minimal-var-name ((name symbolp))
+  :returns (var-name symbolp)
+  :short "Name of the proof variable quantified over by
+          a @('p[i]-proof-minimalp') predicate."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This cannot clash with anything:
+     the other formals of the predicate are
+     the proof variable (see @(tsee defind-proof-var-name))
+     and the variables for the arguments of the conclusion,
+     which are all prefixed (see @(tsee defind-concl-formal-var-name));
+     and the body mentions no user-supplied term."))
+  (packn-pos (list (defind-proof-var-name name) '2) (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-descend-fn-name ((pred-name symbolp) (name symbolp))
+  :returns (fn-name symbolp)
+  :short "Name of a @('p[i]-descend') function."
+  (packn-pos (list (symbol-lfix pred-name) '-descend) (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-pred-when-valid-proof-thm-name ((pred-name symbolp)
+                                               (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of a @('p[i]-when-valid-proof') theorem."
+  (packn-pos (list (symbol-lfix pred-name) '-when-valid-proof)
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
 (define defind-proof-for-rule-fn-name ((pred-name symbolp)
                                        (irule-name symbolp)
                                        (name symbolp))
@@ -2168,6 +2230,29 @@
                    (defind-proof-count-fn-name pred-name name)
                    '.count)
              (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-count-natp-thm-name ((pred-name symbolp)
+                                          (standalonep booleanp)
+                                          (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of the theorem saying that
+          the count function of a @('p[i]-proof') fixtype
+          returns a natural number."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As with @(tsee defind-proof-valid-return-thm-name),
+     the name depends on whether the predicate forms a singleton clique:
+     FTY names this theorem after the return type and the function
+     for a standalone fixtype,
+     and in its own way for a fixtype of a clique of two or more."))
+  (if standalonep
+      (packn-pos (list 'natp-of-
+                       (defind-proof-count-fn-name pred-name name))
+                 (symbol-lfix name))
+    (defind-proof-count-return-thm-name pred-name name)))
 
 ;;;;;;;;;;
 
@@ -5483,12 +5568,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defind-gen-pred ((pred-info defind-pred-infop)
+                         (irule-infos defind-irule-info-listp)
                          (standalonep booleanp)
                          (name symbolp)
                          (xdocp booleanp)
                          (print evmac-input-print-p))
   :returns (events pseudo-event-form-listp)
-  :short "Generate a @('p[i]') predicate."
+  :short "Generate a @('p[i]') predicate,
+          along with its @('p[i]-proof-minimalp') predicate
+          and its @('p[i]-when-valid-proof') theorem."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -5509,14 +5597,80 @@
      because every conclusion has at least one argument
      and so every case of the function ends with an equality;
      but that is a property of the shape of the generated body,
-     not something established."))
+     not something established.
+     It also needs to know that
+     the minimality predicate returns a boolean,
+     for the conjunct described next.")
+   (xdoc::p
+    "The proof whose existence the predicate asserts
+     is also required to be minimal.
+     This does not change the meaning of the predicate,
+     because a minimal valid proof exists
+     exactly when any valid proof exists;
+     it makes the witness a minimal proof,
+     which is what supports reasoning by induction on proofs.")
+   (xdoc::p
+    "That requirement weakens the @('p[i]-suff') theorem
+     that @(tsee defun-sk) generates,
+     which now applies only to minimal proofs.
+     So we generate @('p[i]-when-valid-proof'),
+     which applies to any valid proof,
+     and disable @('p[i]-suff') in favor of it;
+     the former is exactly the latter
+     as it was before the minimality requirement.
+     It is proved by descending from the given proof to a minimal one:
+     if the proof is not minimal,
+     the negation of the minimality predicate
+     yields a valid proof with a strictly smaller count,
+     which need not be minimal either,
+     so the descent is by induction,
+     carried by the local @('p[i]-descend') function,
+     whose value is irrelevant."))
   (b* (((defind-pred-info pred-info))
        (proof (defind-proof-var-name name))
+       (proof2 (defind-proof-minimal-var-name name))
        (proofp (defind-proof-recog-name pred-info.name name))
        (proof-validp (defind-proof-valid-fn-name pred-info.name name))
        (valid-return-thm (defind-proof-valid-return-thm-name
                            pred-info.name standalonep name))
        (witness (defind-proof-witness-fn-name pred-info.name name))
+       (minimalp (defind-proof-minimal-fn-name pred-info.name name))
+       (minimalp-witness
+        (defind-proof-minimal-witness-fn-name pred-info.name name))
+       (minimalp-return-thm
+        (defind-proof-minimal-return-thm-name pred-info.name name))
+       ;; FTY generates a count function only for a recursive proof fixtype;
+       ;; for a non-recursive one, ACL2-COUNT serves just as well, since the
+       ;; descent below only needs some measure that the minimality witness
+       ;; strictly decreases.
+       (recursivep (defind-pred-recursivep pred-info.name irule-infos))
+       (count-fn (if recursivep
+                     (defind-proof-count-fn-name pred-info.name name)
+                   'acl2-count))
+       ;; For ACL2-COUNT the type prescription suffices.
+       (count-natp-thms
+        (and recursivep
+             (list (defind-proof-count-natp-thm-name
+                     pred-info.name standalonep name))))
+       (descend (defind-proof-descend-fn-name pred-info.name name))
+       (when-valid-proof
+        (defind-pred-when-valid-proof-thm-name pred-info.name name))
+       (suff (defind-pred-suff-thm-name pred-info.name name))
+       (concl-vars (defind-proof-concl-var-names pred-info.formals name))
+       (minimalp-event
+        `(define-sk ,minimalp (,proof ,@concl-vars)
+           ,@(and xdocp
+                  `(:parents (,(symbol-lfix name))
+                    :short ,(str::cat "Minimality of a proof for predicate @('"
+                                      (str::downcase-string
+                                       (symbol-name pred-info.name))
+                                      "').")))
+           (forall (,proof2)
+                   (implies (and (,proofp ,proof2)
+                                 (,proof-validp ,proof2 ,@concl-vars))
+                            (<= (,count-fn ,proof)
+                                (,count-fn ,proof2))))
+           :verify-guards nil))
        (fn-event
         `(define-sk ,pred-info.name (,@pred-info.formals)
            :returns (yes/no booleanp
@@ -5525,7 +5679,9 @@
                                      '(,pred-info.name
                                        booleanp
                                        (:type-prescription
-                                        ,valid-return-thm)))))
+                                        ,valid-return-thm)
+                                       (:type-prescription
+                                        ,minimalp-return-thm)))))
            ,@(and xdocp
                   `(:parents (,(symbol-lfix name))
                     :short ,(str::cat "Definition of the predicate @('"
@@ -5534,13 +5690,45 @@
                                       "') via proof existence.")))
            (exists (,proof)
                    (and (,proofp ,proof)
-                        (,proof-validp ,proof ,@pred-info.formals)))
+                        (,proof-validp ,proof ,@pred-info.formals)
+                        (,minimalp ,proof ,@pred-info.formals)))
            :skolem-name ,witness
            :verify-guards nil))
+       (when-valid-proof-event
+        `(encapsulate ()
+           (local
+            (defun ,descend (,proof ,@concl-vars)
+              (declare (xargs :measure (,count-fn ,proof)
+                              :hints (("Goal"
+                                       :use ,minimalp
+                                       :in-theory '(o-p
+                                                    o-finp
+                                                    o<
+                                                    natp
+                                                    (:t ,count-fn)
+                                                    ,@count-natp-thms)))))
+              (if (and (,proofp ,proof)
+                       (,proof-validp ,proof ,@concl-vars)
+                       (not (,minimalp ,proof ,@concl-vars)))
+                  (,descend (,minimalp-witness ,proof ,@concl-vars)
+                            ,@concl-vars)
+                nil)))
+           (defthm ,when-valid-proof
+             (implies (and (,proof-validp ,proof ,@concl-vars)
+                           (,proofp ,proof))
+                      (,pred-info.name ,@concl-vars))
+             :hints (("Goal"
+                      :induct (,descend ,proof ,@concl-vars)
+                      :in-theory (enable ,suff ,minimalp))))))
+       (disable-suff-event `(in-theory (disable ,suff)))
        (print-event?
         (and (evmac-input-print->= print :result)
-             `((cw-event "Function ~x0.~%" ',pred-info.name)))))
-    (cons fn-event print-event?)))
+             `((cw-event "Function ~x0.~%" ',minimalp)
+               (cw-event "Function ~x0.~%" ',pred-info.name)
+               (cw-event "Theorem ~x0.~%" ',when-valid-proof)))))
+    (append (list minimalp-event fn-event when-valid-proof-event
+                  disable-suff-event)
+            print-event?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5560,6 +5748,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defind-gen-preds ((pred-infos defind-pred-info-listp)
+                          (irule-infos defind-irule-info-listp)
                           (leveled-cliques symbol-set-list-listp)
                           (name symbolp)
                           (xdocp booleanp)
@@ -5582,19 +5771,21 @@
        (standalonep (and (consp clique-pred-infos)
                          (endp (cdr clique-pred-infos))))
        (events (defind-gen-preds
-                 pred-infos (cdr leveled-cliques) name xdocp print)))
+                 pred-infos irule-infos (cdr leveled-cliques)
+                 name xdocp print)))
     (append (defind-gen-preds-loop
-              clique-pred-infos standalonep name xdocp print)
+              clique-pred-infos irule-infos standalonep name xdocp print)
             events))
   :no-function nil
   :guard-hints
   (("Goal" :in-theory (enable set-listp-when-symbol-set-listp)))
   :type-prescription (true-listp (defind-gen-preds
-                                   pred-infos leveled-cliques
+                                   pred-infos irule-infos leveled-cliques
                                    name xdocp print))
 
   :prepwork
   ((define defind-gen-preds-loop ((pred-infos defind-pred-info-listp)
+                                  (irule-infos defind-irule-info-listp)
                                   (standalonep booleanp)
                                   (name symbolp)
                                   (xdocp booleanp)
@@ -5603,9 +5794,11 @@
      :parents nil
      (cond ((endp pred-infos) nil)
            (t (append (defind-gen-pred
-                        (car pred-infos) standalonep name xdocp print)
+                        (car pred-infos) irule-infos
+                        standalonep name xdocp print)
                       (defind-gen-preds-loop
-                        (cdr pred-infos) standalonep name xdocp print)))))))
+                        (cdr pred-infos) irule-infos
+                        standalonep name xdocp print)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6073,7 +6266,8 @@
        ((mv pred-hyps other-hyps)
         (defind-gen-irule-thm-hyps info.premises))
        (thm-name (defind-pred-irule-thm-name cinfo.name info.name name))
-       (pred-suff (defind-pred-suff-thm-name cinfo.name name))
+       (pred-when-valid-proof
+        (defind-pred-when-valid-proof-thm-name cinfo.name name))
        (vars (defind-irule-info-free-vars info))
        ((mv proofcalls prem-of-constr-thms fix-id-thms)
         (defind-gen-irule-thm-prems
@@ -6085,7 +6279,8 @@
         (raise "Internal error: predicate ~x0 not found." cinfo.name)
         (mv '(_) nil))
        (formals (defind-pred-info->formals pinfo))
-       (formals-inst (alist-to-doublets (pairlis$ formals concl-args)))
+       (concl-vars (defind-proof-concl-var-names formals name))
+       (formals-inst (alist-to-doublets (pairlis$ concl-vars concl-args)))
        (proof-var (defind-proof-var-name name))
        (proof-validp (defind-proof-valid-fn-name cinfo.name name))
        (irule-validp (defind-irule-valid-fn-name cinfo.name info.name name))
@@ -6098,7 +6293,7 @@
            ,(defind-gen-implication (append pred-hyps other-hyps) concl)
            ,@(and pred-hyps
                   (list :expand pred-hyps))
-           :use (:instance ,pred-suff
+           :use (:instance ,pred-when-valid-proof
                            (,proof-var ,proofcall)
                            ,@formals-inst)
            :in-theory '(,proof-validp
@@ -7890,7 +8085,8 @@
         (defind-gen-proof2-valid-fns
           pred-infos irule-infos leveled-cliques name xdocp print))
        (pred-events
-        (defind-gen-preds pred-infos leveled-cliques name xdocp print))
+        (defind-gen-preds
+          pred-infos irule-infos leveled-cliques name xdocp print))
        (?proof2-pred-events
         (defind-gen-proof2-preds pred-infos name xdocp print))
        (?proof2-irule-proof-events

@@ -475,6 +475,28 @@
 
     (xdoc::desc
      (list
+      "@('p[1]-proof-minimalp')"
+      "@('...')"
+      "@('p[n]-proof-minimalp')")
+     (xdoc::p
+      "Predicates saying that a proof tree is minimal,
+       i.e. that no valid proof tree of the same conclusion
+       has a smaller count.
+       Each takes a proof and the arguments of the conclusion,
+       and universally quantifies over the other proof trees.")
+     (xdoc::p
+      "The count is @('p[i]-proof-count') when
+       the fixtype of proofs is recursive;
+       otherwise FTY generates no count function for that fixtype,
+       and @(tsee acl2-count) is used instead,
+       which serves the same purpose.")
+     (xdoc::p
+      "These predicates are currently not guard-verified,
+       because they call the non-guard-verified
+       @('p[i]-proof-validp') predicates."))
+
+    (xdoc::desc
+     (list
       "@('p[1]')"
       "@('...')"
       "@('p[n]')")
@@ -485,11 +507,57 @@
        there is a proof that is valid for those arguments,
        which are passed to @('p[i]-proof-validp').")
      (xdoc::p
+      "The proof whose existence is asserted is also required to be minimal,
+       according to @('p[i]-proof-minimalp').
+       This does not change the meaning of the predicates,
+       because a minimal valid proof tree exists
+       exactly when any valid proof tree exists.
+       It makes the witness @('p[i]-proof') a minimal proof,
+       which is what supports reasoning by induction on proofs.
+       (A minimal proof tree need not be unique:
+       there may be several valid proof trees for the same conclusion
+       with the same count.)")
+     (xdoc::p
       "These predicates are currently not guard-verified,
        because they call the non-guard-verified
        @('p[i]-proof-validp') predicates.
        The @('p[i]') predicates do not have fixing theorems,
        because the formals are currently untyped."))
+
+    (xdoc::desc
+     (list
+      "@('p[1]-when-valid-proof')"
+      "@('...')"
+      "@('p[n]-when-valid-proof')")
+     (xdoc::p
+      "Theorems saying that @('(p[i] x[i,1] ... x[i,m[i]])') holds
+       if there is any valid proof tree for those arguments,
+       whether or not that proof tree is minimal.")
+     (xdoc::p
+      "Because of the minimality requirement described above,
+       the @('p[i]-suff') theorems that @(tsee defun-sk) generates
+       require the proof tree to be minimal,
+       which is inconvenient.
+       These theorems drop that requirement,
+       and are therefore exactly the @('p[i]-suff') theorems
+       that this macro generated
+       before the minimality requirement was introduced;
+       the @('p[i]-suff') theorems are disabled,
+       since these stronger ones replace them.")
+     (xdoc::p
+      "Each is proved by descending from the given proof tree
+       to a minimal one:
+       if the proof tree is not minimal,
+       the negation of @('p[i]-proof-minimalp')
+       yields a valid proof tree with a strictly smaller count,
+       which need not be minimal either,
+       so the descent is by induction,
+       carried by a local function @('p[i]-descend').")
+     (xdoc::p
+      "The validity hypothesis precedes the recognizer hypothesis,
+       so that, when the theorem is used as a rewrite rule,
+       free variable matching binds the proof tree from the former
+       rather than from the weaker latter."))
 
     (xdoc::desc
      (list
