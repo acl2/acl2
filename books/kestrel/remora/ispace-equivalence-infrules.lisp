@@ -234,7 +234,7 @@
      And congruence rules corresponding to the construction of
      shapes, ispaces, lists of shapes, and lists of ispaces.")
    (xdoc::p
-    "We normalize the different forms of dimension concatenation
+    "We reduce the different forms of dimension concatenation
      to consists of
      (i) shape variables,
      (ii) shapes consisting of single dimensions,
@@ -249,7 +249,12 @@
      and @('++') concatenations of three or more shapes to
      left-associated nests of binary @('++') concatenations.
      The rules @('splice0'), @('splice1m-dim'), and @('splice1m-shape') reduce
-     splices to empty or binary @('++') concatenations."))
+     splices to empty or binary @('++') concatenations.")
+   (xdoc::p
+    "With the above reductions available,
+     we are in a standard situation with empty and binary concatenation,
+     where the empty one plays the role of identity.
+     We have rules for associativity as well as left and right identity."))
 
   :preds ((shp= shp1 shp2)
           (shps= shps1 shps2)
@@ -381,6 +386,14 @@
                    (shp= (shape-splice (cons (ispace-shape s) is))
                          (shp++ s (shape-splice is))))
 
-   ;; TODO: add more rules
+   ;; monoid properties of concatenation:
 
-  ))
+   (append-assoc ((shapep s1) (shapep s2) (shapep s3))
+                 (shp= (shp++ (shp++ s1 s2) s3)
+                       (shp++ s1 (shp++ s2 s3))))
+
+   (append-id-left ((shapep s))
+                   (shp= (shp++ (shp++) s) s))
+
+   (append-id-right ((shapep s))
+                    (shp= (shp++ s (shp++)) s))))
