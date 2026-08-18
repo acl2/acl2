@@ -45,7 +45,7 @@
                                          (set-apsr.n (getbit 31 (bvmult 32 (reg 5 arm) (reg 4 arm)))
                                                      (set-reg 3 (bvmult 32 (reg 5 arm) (reg 4 arm))
                                                               arm))))))
- :hints (("Goal" :in-theory (enable step arm32-decode execute-inst execute-mul-alt conditionpassed))))
+ :hints (("Goal" :in-theory (enable step-opener step-core-opener arm32-decode execute-inst execute-mul-alt conditionpassed))))
 
 ;; a 2 step program
 (thm
@@ -76,6 +76,6 @@
                                                                                         (bvmult 32 (bvmult 32 (reg 5 arm) (reg 4 arm))
                                                                                                 (reg 4 arm))))
                                                                     arm)))))))
- :hints (("Goal" :in-theory (enable run step arm32-decode execute-inst execute-mul-alt conditionpassed
+ :hints (("Goal" :in-theory (enable run step-opener step-core-opener arm32-decode execute-inst execute-mul-alt conditionpassed
                                     advance-pc
                                     add-to-address))))

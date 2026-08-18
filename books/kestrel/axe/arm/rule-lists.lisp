@@ -20,6 +20,7 @@
     update-call-stack-height-aux-base
     update-call-stack-height-aux-of-if-arg1
     stack-height-adjustment
+    arm::step-core-opener
     arm::step-opener
     arm::execute-inst-base ; requires the instruction to be known
     arm::step-of-if

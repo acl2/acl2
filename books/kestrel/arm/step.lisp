@@ -38,6 +38,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund step-core (inst-address arm)
+  (declare (xargs :guard (addressp inst-address)
+                  :stobjs arm))
+  (b* ((inst (read 4 inst-address arm))
+       ((mv erp mnemonic args)
+        (arm32-decode inst))
+       ((when erp)
+        (update-error :decoding-error arm)))
+  (execute-inst mnemonic args inst-address arm)))
+
+(defthmd step-core-opener
+  (implies (and  ;; todo: use a binding-hyp?
+             (not (mv-nth 0 (arm32-decode (read 4 inst-address arm)))))
+           (equal (step-core inst-address arm)
+                  (b* ((inst (read 4 inst-address arm))
+                       ((mv & mnemonic args)
+                        (arm32-decode inst))
+                       ;; ((when erp)
+                       ;;  (update-error :decoding-error arm))
+                       )
+                    (execute-inst mnemonic args inst-address arm))))
+  :hints (("Goal" :in-theory (enable step-core))))
+
+
 ;; Returns a new state, which might have the error flag set
 (defund step (arm)
   (declare (xargs :stobjs arm))
@@ -45,29 +69,17 @@
       arm ; errors persist
     (if (not (equal *InstrSet_ARM* (isetstate arm)))
         (update-error :not-in-arm-state arm)
-      (b* ((inst-address (pc arm))
-           (inst (read 4 inst-address arm))
-           ((mv erp mnemonic args)
-            (arm32-decode inst))
-           ((when erp)
-            (update-error :decoding-error arm)))
-        (execute-inst mnemonic args inst-address arm)))))
+      (b* ((pc (pc arm))
+           ;; todo: redirections to API models go here
+           )
+        (step-core pc arm)))))
 
 (defthm step-opener
   (implies (and (not (error arm)) ; avoids loops
                 (equal *InstrSet_ARM* (isetstate arm)) ; for now
-                ;; todo: use a binding-hyp?
-                (not (mv-nth 0 (arm32-decode (read 4 (pc arm) arm)))))
+                )
            (equal (step arm)
-                  (b* ((inst-address (pc arm))
-                       (inst (read 4 inst-address arm))
-                       ((mv & ;erp
-                            mnemonic args)
-                        (arm32-decode inst))
-                       ;; ((when erp)
-                       ;;  (update-error :decoding-error arm))
-                       )
-                    (execute-inst mnemonic args inst-address arm))))
+                  (step-core (pc arm) arm)))
   :hints (("Goal" :in-theory (enable step))))
 
 (defthm step-of-if
