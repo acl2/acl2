@@ -241,6 +241,8 @@
      arm::ls-condition-of-cmp-carry-and-cmp-zero
      arm::le-condition-cmp-idiom
      arm::gt-condition-cmp-idiom
+     arm::ge-condition-cmp-idiom
+     arm::lt-condition-cmp-idiom
 
      ;; sub rules: ; todo: add more!
      arm::lt-condition-of-sub-sign-and-sub-overflow
