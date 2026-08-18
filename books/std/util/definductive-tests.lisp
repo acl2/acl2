@@ -1590,3 +1590,44 @@
    :preds ((r a))
    :irules ((ax ((natp proof$))
                 (r proof$)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The generated induction scheme supports rule induction.
+
+(must-succeed*
+
+ (defstub r (* *) => *)
+
+ (definductive rtc-ind
+   :preds ((r* a b))
+   :irules ((base ((r x y))
+                  (r* x y))
+            (refl ()
+                  (r* x x))
+            (trans ((r* x y) (r* y z))
+                   (r* x z))))
+
+ (encapsulate
+   (((f *) => *))
+   (local (defun f (x) x))
+   (defthm f-preserves
+     (implies (r x y)
+              (r (f x) (f y)))))
+
+ ; A plain :INDUCT hint on a call of the predicate suffices,
+ ; via the generated R*-INDUCTION rule; no proof tree is mentioned.
+
+ (defthm r*-of-f
+   (implies (r* a b)
+            (r* (f a) (f b)))
+   :hints (("Goal" :induct (r* a b)
+                   :expand ((r* a b)
+                            (r*-proof-validp (r*-proof a b) a b))
+                   :in-theory (enable r*-base-validp
+                                      r*-refl-validp
+                                      r*-trans-validp
+                                      r*-base
+                                      r*-refl
+                                      r*-trans))))
+)

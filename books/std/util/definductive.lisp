@@ -1929,6 +1929,47 @@
 
 ;;;;;;;;;;
 
+(define defind-proof-minimal-necc-thm-name ((pred-name symbolp)
+                                            (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of the necessity theorem of
+          a @('p[i]-proof-minimalp') predicate."
+  (packn-pos (list (defind-proof-minimal-fn-name pred-name name) '-necc)
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-count-bound-thm-name ((pred-name symbolp)
+                                           (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of a @('p[i]-proof-count-bound') theorem."
+  (packn-pos (list (defind-proof-count-fn-name pred-name name) '-bound)
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-ind-fn-name ((pred-name symbolp) (name symbolp))
+  :returns (fn-name symbolp)
+  :short "Name of a @('p[i]-ind') function."
+  (packn-pos (list (symbol-lfix pred-name) '-ind) (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-ind-fn-clique-name ((pred-name symbolp) (name symbolp))
+  :returns (defines-name symbolp)
+  :short "Name of a @(tsee defines) of @('p[i]-ind') functions."
+  (packn-pos (list (defind-ind-fn-name pred-name name) '-clique)
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-induction-thm-name ((pred-name symbolp) (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of a @('p[i]-induction') theorem."
+  (packn-pos (list (symbol-lfix pred-name) '-induction) (symbol-lfix name)))
+
+;;;;;;;;;;
+
 (define defind-proof-for-rule-fn-name ((pred-name symbolp)
                                        (irule-name symbolp)
                                        (name symbolp))
@@ -5639,6 +5680,8 @@
         (defind-proof-minimal-witness-fn-name pred-info.name name))
        (minimalp-return-thm
         (defind-proof-minimal-return-thm-name pred-info.name name))
+       (minimalp-necc (defind-proof-minimal-necc-thm-name pred-info.name name))
+       (count-bound (defind-proof-count-bound-thm-name pred-info.name name))
        ;; FTY generates a count function only for a recursive proof fixtype;
        ;; for a non-recursive one, ACL2-COUNT serves just as well, since the
        ;; descent below only needs some measure that the minimality witness
@@ -5721,13 +5764,40 @@
                       :induct (,descend ,proof ,@concl-vars)
                       :in-theory (enable ,suff ,minimalp))))))
        (disable-suff-event `(in-theory (disable ,suff)))
+       ;; The count bound is what ties the proof tree obtained from the
+       ;; existential back to a concrete proof tree, which the measure of an
+       ;; induction scheme needs. It is meaningful only for a recursive
+       ;; predicate, which is also the only kind that can have such a scheme.
+       (count-bound-events
+        (and recursivep
+             (list
+              `(defthm ,count-bound
+                 (implies (and (,proof-validp ,proof ,@concl-vars)
+                               (,proofp ,proof))
+                          (<= (,count-fn (,witness ,@concl-vars))
+                              (,count-fn ,proof)))
+                 :rule-classes
+                 ((:linear :trigger-terms
+                           ((,count-fn (,witness ,@concl-vars)))))
+                 :hints (("Goal"
+                          :use ((:instance ,pred-info.name
+                                           ,@(alist-to-doublets
+                                              (pairlis$ pred-info.formals
+                                                        concl-vars)))
+                                (:instance ,minimalp-necc
+                                           (,proof (,witness ,@concl-vars))
+                                           (,proof2 ,proof)))
+                          :in-theory (disable ,minimalp-necc)))))))
        (print-event?
         (and (evmac-input-print->= print :result)
              `((cw-event "Function ~x0.~%" ',minimalp)
                (cw-event "Function ~x0.~%" ',pred-info.name)
-               (cw-event "Theorem ~x0.~%" ',when-valid-proof)))))
+               (cw-event "Theorem ~x0.~%" ',when-valid-proof)
+               ,@(and recursivep
+                      `((cw-event "Theorem ~x0.~%" ',count-bound)))))))
     (append (list minimalp-event fn-event when-valid-proof-event
                   disable-suff-event)
+            count-bound-events
             print-event?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5744,6 +5814,293 @@
                      (cdr pred-infos) name xdocp print))))
   :type-prescription
   (true-listp (defind-gen-proof2-preds pred-infos name xdocp print)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-ind-fn-case-calls ((infos defind-premise-info-listp)
+                                      (clique-preds symbol-setp)
+                                      (name symbolp))
+  :returns (calls true-listp)
+  :short "Generate the recursive calls of a case of a @('p[i]-ind') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There is one call for each premise that calls
+     a predicate of the same clique.
+     Premises that call predicates of preceding cliques are skipped:
+     those predicates are already defined,
+     and their induction schemes are separate.
+     Premises that are not calls of the predicates being defined
+     are skipped as well.")
+   (xdoc::p
+    "The arguments of the call are the arguments of the premise,
+     used as written:
+     the variables of the rule are bound, around the whole case,
+     to the fields of the proof
+     (see @(tsee defind-gen-proof-valid-fn-case-bindings))."))
+  (b* (((when (endp infos)) nil)
+       (calls (defind-gen-ind-fn-case-calls (cdr infos) clique-preds name))
+       (info (car infos)))
+    (defind-premise-info-case
+      info
+      :pred (if (set::in info.name (symbol-sfix clique-preds))
+                (cons `(,(defind-ind-fn-name info.name name)
+                        ,@(defind-term-info-list->uterm info.args))
+                      calls)
+              calls)
+      :other calls)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-ind-fn-case ((info defind-irule-infop)
+                                (clique-preds symbol-setp)
+                                (name symbolp))
+  :returns (keyword+term true-listp)
+  :short "Generate a case of a @('p[i]-ind') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A rule with no premises that call predicates of the same clique
+     is a base case of the induction, and yields @('nil');
+     the value of the function is irrelevant,
+     only its recursive structure matters."))
+  (b* (((defind-irule-info info))
+       (tag (defind-irule-tag info.name))
+       (calls (defind-gen-ind-fn-case-calls info.premises clique-preds name))
+       ((when (endp calls)) (list tag nil))
+       (term (if (endp (cdr calls)) (car calls) `(list ,@calls)))
+       (vars (defind-irule-info-free-vars info))
+       (bindings (defind-gen-proof-valid-fn-case-bindings vars name)))
+    (list tag (if bindings `(let ,bindings ,term) term)))
+  :guard-hints (("Goal" :in-theory (enable symbol-listp-when-symbol-setp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-ind-fn-cases ((pred-name symbolp)
+                                 (infos defind-irule-info-listp)
+                                 (clique-preds symbol-setp)
+                                 (name symbolp))
+  :returns (keywords+terms true-listp)
+  :short "Generate the cases of a @('p[i]-ind') function."
+  (b* (((when (endp infos)) nil)
+       ((defind-irule-info info) (car infos))
+       (rest (defind-gen-ind-fn-cases
+               pred-name (cdr infos) clique-preds name))
+       ((unless (equal (defind-conclusion-info->name info.conclusion)
+                       (symbol-lfix pred-name)))
+        rest))
+    (cons (defind-gen-ind-fn-case (car infos) clique-preds name) rest)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-ind-fn-body ((pred-info defind-pred-infop)
+                                (irule-infos defind-irule-info-listp)
+                                (clique-preds symbol-setp)
+                                (name symbolp))
+  :returns (body "An untranslated term.")
+  :short "Generate the body of a @('p[i]-ind') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The function recurses on the arguments of the conclusions
+     of the premises of the rule that the witness proof used,
+     so it never mentions a proof;
+     that is what lets it serve as an induction scheme
+     for the predicate itself.
+     The guard that the predicate holds is essential:
+     the witness is meaningful only then,
+     and the measure argument depends on it."))
+  (b* (((defind-pred-info pred-info))
+       (proof (defind-proof-var-name name))
+       (witness (defind-proof-witness-fn-name pred-info.name name))
+       (proof-case (defind-proof-case-name pred-info.name name))
+       (cases (defind-gen-ind-fn-cases
+                pred-info.name irule-infos clique-preds name)))
+    `(and (,pred-info.name ,@pred-info.formals)
+          (let ((,proof (,witness ,@pred-info.formals)))
+            (,proof-case ,proof ,@cases)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-ind-fn-hint-parts ((pred-infos defind-pred-info-listp)
+                                      (standalonep booleanp)
+                                      (name symbolp))
+  :returns (mv (expands true-listp)
+               (uses true-listp)
+               (enables true-listp))
+  :short "Generate the pieces of the termination hints of
+          the @('p[i]-ind') functions of a clique."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For each predicate of the clique we expand
+     the validity and the count of its witness proof,
+     and we supply the kind of that proof.
+     The latter is needed because a fixtype of proofs with a single summand
+     yields no case split, and so never establishes its kind,
+     which leaves the FTY linear rules for the counts of its accessors,
+     which are conditional on the kind, unable to fire.")
+   (xdoc::p
+    "The @('p[i]-proof-count-bound') theorems are not supplied explicitly:
+     they are @(':linear') rules whose trigger terms
+     occur in the measure conjecture,
+     and whose validity hypothesis comes first,
+     so that free variable matching binds the proof from it
+     rather than from the weaker recognizer hypothesis."))
+  (b* (((when (endp pred-infos)) (mv nil nil nil))
+       ((defind-pred-info pred-info) (car pred-infos))
+       (witness (defind-proof-witness-fn-name pred-info.name name))
+       (wcall `(,witness ,@pred-info.formals))
+       (proof-validp (defind-proof-valid-fn-name pred-info.name name))
+       (count-fn (defind-proof-count-fn-name pred-info.name name))
+       (poss-thm (defind-proof-kind-poss-thm-name pred-info.name name))
+       (xvar (defind-proof-xvar-name name))
+       (count-natp-thm (defind-proof-count-natp-thm-name
+                         pred-info.name standalonep name))
+       ((mv expands uses enables)
+        (defind-gen-ind-fn-hint-parts (cdr pred-infos) standalonep name)))
+    (mv (list* `(,proof-validp ,wcall ,@pred-info.formals)
+               `(,count-fn ,wcall)
+               expands)
+        (cons `(:instance ,poss-thm (,xvar ,wcall)) uses)
+        (list* pred-info.name count-natp-thm enables))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-ind-fns-for-clique ((pred-infos defind-pred-info-listp)
+                                       (irule-infos defind-irule-info-listp)
+                                       (clique-preds symbol-setp)
+                                       (name symbolp)
+                                       (print evmac-input-print-p))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate the @('p[i]-ind') functions of a clique,
+          and the induction rules if any."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Nothing is generated for a non-recursive predicate:
+     it admits no induction scheme at all.")
+   (xdoc::p
+    "For a clique of a single predicate, the scheme is a @(tsee defun),
+     and we turn it into an @(':induction') rule,
+     so that a plain @(':induct') hint on a call of the predicate works.")
+   (xdoc::p
+    "For a clique of two or more predicates,
+     the schemes are mutually recursive, and the event is a @(tsee defines).
+     No @(':induction') rule is possible then:
+     ACL2 derives no induction scheme from mutually recursive functions.
+     Nor would one suffice,
+     since the induction hypothesis for a premise that calls
+     a different predicate of the clique
+     would be about the predicate being defined instead.
+     Mutual rule induction needs the whole clique proved together,
+     so the interface is the flag macro that @(tsee defines) generates.
+     We pass @(':flag-local nil'),
+     because otherwise the flag function is local
+     and that macro cannot be used afterwards."))
+  (b* (((when (endp pred-infos)) nil)
+       ((defind-pred-info pred-info1) (car pred-infos))
+       ((unless (defind-pred-recursivep pred-info1.name irule-infos)) nil)
+       (standalonep (endp (cdr pred-infos)))
+       ((mv expands uses enables)
+        (defind-gen-ind-fn-hint-parts pred-infos standalonep name))
+       ;; The ordinal and arithmetic facts are enabled explicitly, because
+       ;; the surrounding book may have restricted the theory; without them
+       ;; the measure conjecture resorts to induction, which fails outright
+       ;; where the induction depth limit is 0.
+       (hints `(("Goal" :expand ,expands
+                        :use ,uses
+                        :in-theory (enable o-p o-finp o< natp ,@enables))))
+       (fn-name1 (defind-ind-fn-name pred-info1.name name))
+       (count-fn1 (defind-proof-count-fn-name pred-info1.name name))
+       (witness1 (defind-proof-witness-fn-name pred-info1.name name))
+       (measure1 `(,count-fn1 (,witness1 ,@pred-info1.formals)))
+       (body1 (defind-gen-ind-fn-body
+                (car pred-infos) irule-infos clique-preds name))
+       (print-events
+        (and (evmac-input-print->= print :result)
+             (defind-gen-ind-fns-print-events pred-infos name)))
+       ((when (endp (cdr pred-infos)))
+        (b* ((induction-thm
+              (defind-induction-thm-name pred-info1.name name)))
+          (append
+           (list `(defun ,fn-name1 (,@pred-info1.formals)
+                    (declare (xargs :measure ,measure1
+                                    :hints ,hints
+                                    :verify-guards nil))
+                    ,body1)
+                 `(defthm ,induction-thm
+                    t
+                    :rule-classes
+                    ((:induction
+                      :pattern (,pred-info1.name ,@pred-info1.formals)
+                      :scheme (,fn-name1 ,@pred-info1.formals)))))
+           print-events)))
+       (clique-name (defind-ind-fn-clique-name pred-info1.name name))
+       (defines-event
+         `(defines ,clique-name
+            :flag-local nil
+            :hints ,hints
+            ,@(defind-gen-ind-fns-defines
+                pred-infos irule-infos clique-preds name))))
+    (append (list defines-event) print-events))
+
+  :prepwork
+
+  ((define defind-gen-ind-fns-defines ((pred-infos defind-pred-info-listp)
+                                       (irule-infos defind-irule-info-listp)
+                                       (clique-preds symbol-setp)
+                                       (name symbolp))
+     :returns (defines true-listp)
+     :parents nil
+     (b* (((when (endp pred-infos)) nil)
+          ((defind-pred-info pred-info) (car pred-infos))
+          (fn-name (defind-ind-fn-name pred-info.name name))
+          (count-fn (defind-proof-count-fn-name pred-info.name name))
+          (witness (defind-proof-witness-fn-name pred-info.name name))
+          (body (defind-gen-ind-fn-body
+                  (car pred-infos) irule-infos clique-preds name)))
+       (cons `(define ,fn-name (,@pred-info.formals)
+                :measure (,count-fn (,witness ,@pred-info.formals))
+                ,body
+                :verify-guards nil)
+             (defind-gen-ind-fns-defines
+               (cdr pred-infos) irule-infos clique-preds name))))
+
+   (define defind-gen-ind-fns-print-events ((pred-infos defind-pred-info-listp)
+                                            (name symbolp))
+     :returns (events pseudo-event-form-listp)
+     :parents nil
+     (b* (((when (endp pred-infos)) nil)
+          ((defind-pred-info pred-info) (car pred-infos))
+          (fn-name (defind-ind-fn-name pred-info.name name)))
+       (cons `(cw-event "Function ~x0.~%" ',fn-name)
+             (defind-gen-ind-fns-print-events (cdr pred-infos) name))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-ind-fns ((pred-infos defind-pred-info-listp)
+                            (irule-infos defind-irule-info-listp)
+                            (leveled-cliques symbol-set-list-listp)
+                            (name symbolp)
+                            (print evmac-input-print-p))
+  :guard (defind-pred-names-unambp pred-infos)
+  :returns (events pseudo-event-form-listp)
+  :short "Generate all the @('p[i]-ind') functions and induction rules."
+  (b* (((when (endp leveled-cliques)) nil)
+       (levels (symbol-set-list-fix (car leveled-cliques)))
+       (clique-preds (set::set-list-union levels))
+       (clique-pred-infos (defind-lookup-pred-set clique-preds pred-infos)))
+    (append (defind-gen-ind-fns-for-clique
+              clique-pred-infos irule-infos clique-preds name print)
+            (defind-gen-ind-fns
+              pred-infos irule-infos (cdr leveled-cliques) name print)))
+  :no-function nil
+  :guard-hints
+  (("Goal" :in-theory (enable set-listp-when-symbol-set-listp)))
+  :type-prescription (true-listp (defind-gen-ind-fns
+                                   pred-infos irule-infos leveled-cliques
+                                   name print)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -8087,6 +8444,9 @@
        (pred-events
         (defind-gen-preds
           pred-infos irule-infos leveled-cliques name xdocp print))
+       (ind-events
+        (defind-gen-ind-fns
+          pred-infos irule-infos leveled-cliques name print))
        (?proof2-pred-events
         (defind-gen-proof2-preds pred-infos name xdocp print))
        (?proof2-irule-proof-events
@@ -8120,6 +8480,7 @@
                            proof-valid-events
                            ;; proof2-valid-events
                            pred-events
+                           ind-events
                            ;; proof2-pred-events
                            ;; proof2-irule-proof-events
                            (list irules-event)
