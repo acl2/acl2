@@ -43,7 +43,9 @@
             run-until-return-with-tracing-aux-opener-axe
             run-until-return-with-tracing-aux-of-if-arg2
             run-until-return-with-tracing
-            run-subroutine-with-tracing)))
+            run-subroutine-with-tracing
+            acl2::append-of-nil-arg1 acl2::append-of-cons-arg1 ; clarifies the trace
+            )))
 
 (defun symbolic-execution-rules-with-stop-pcs32 ()
   (declare (xargs :guard t))
@@ -63,6 +65,7 @@
             run-until-return-with-tracing-or-reach-pc-aux-of-if-arg2
             run-until-return-with-tracing-or-reach-pc
             acl2::memberp-constant-opener ; for resolving the stop-pcs check (when non-position-independent)
+            acl2::append-of-nil-arg1 acl2::append-of-cons-arg1 ; clarifies the trace
             )))
 
 (defun debug-rules32 ()
