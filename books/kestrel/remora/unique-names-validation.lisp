@@ -77,18 +77,30 @@
      side of all the renamings (including the renaming of the environments
      captured in lambda and type values) and its commutation with the
      evaluator's rank-polymorphic application machinery: see @(see
-     renaming-evaluation).  This book proves that all
-     the value renamings are the identity on ground values (see e.g.
-     @(tsee expr-value-rename-expr-vars-when-groundp)), which will
-     discharge the groundness proviso of the main theorem: the eventual
-     induction yields results equal modulo renaming, which on ground
-     values collapses to literal equality.  The remaining pieces are the
-     relations between dynamic environments under the renamings reduced at
-     binders, and the expression level itself, by mutual induction over
-     the @(see eval-exprs/atoms/binds) clique with the dynamic
-     environments of the two evaluations related modulo the in-scope
-     renaming of their keys (and with expression values related modulo
-     renaming, because of lambda values and their captured environments).
+     renaming-evaluation).  The invariant of the eventual induction is the
+     alpha-relatedness of ASTs and of expression values modulo in-scope
+     renamings, defined in @(see uniquify-alpha-relations); of its three
+     consumers, the first two are proved: the bridge theorem, that the
+     output of @(tsee expr-uniquify-names) is alpha-related to its input
+     (see @(tsee expr-alpha-related-p-of-expr-uniquify-names)), and the
+     groundness collapse, proved in this book (see @(tsee
+     expr-value-alpha-related-p-when-groundp)): alpha-related values are
+     literally equal when the original is ground, since ground values
+     embed no abstract syntax and their type values are unmoved by the
+     renamings (see e.g. @(tsee
+     expr-value-rename-expr-vars-when-groundp)).  This will discharge the
+     groundness proviso of the main theorem: the eventual induction yields
+     alpha-related results, which on ground values collapses to literal
+     equality.  The remaining piece is the expression level itself, by
+     mutual induction over the @(see eval-exprs/atoms/binds) clique with
+     the dynamic environments of the two evaluations related pointwise
+     modulo the in-scope renaming of their keys and alpha-relatedness of
+     their values; before it can be attempted, the value relation needs to
+     be strengthened with the no-capture conditions on the left-hand
+     binder names (see the caveat at the end of
+     @('uniquify-alpha-relations.lisp'): the drafted relation admits
+     capturing closures, for which the application cases of the induction
+     are false).
      Because of the @(tsee acl2::skip-proofs), this book is not included
      in @('top.lisp'), so that the rest of the library remains free of
      skipped proofs."))
@@ -244,6 +256,104 @@
                                      expr-value-list-rename-type-vars
                                      expr-value-groundp
                                      expr-value-list-groundp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Alpha-relatedness collapses to equality on ground values.
+;
+; This is the second consumer of the relations of UNIQUIFY-ALPHA-RELATIONS
+; (see the comment at the end of that book): ground values contain no
+; lambdas, so neither the AST relation nor the environment relations are
+; reached, and the embedded type values are ground, so the composed
+; renaming that the relation requires of them is the identity.  It will
+; discharge the groundness proviso of the main theorem below: the eventual
+; induction yields alpha-related results, which on ground values collapse
+; to literal equality.
+;
+; The local lemmas supply the final step of each case: two values of the
+; same kind with equal components have equal fixes.  They are stated as
+; conditional equalities of fixes (rather than by enabling the generated
+; EXPR-VALUE-FIX-WHEN-* rules) because those rules loop with the enabled
+; EXPR-VALUE-*-OF-FIELDS rules.
+
+(defruledl equal-of-expr-value-fix-when-both-base
+  (implies (and (equal (expr-value-kind x) :base)
+                (equal (expr-value-kind y) :base)
+                (equal (expr-value-base->val x) (expr-value-base->val y)))
+           (equal (equal (expr-value-fix x) (expr-value-fix y)) t))
+  :use ((:instance expr-value-fix-when-base (x x))
+        (:instance expr-value-fix-when-base (x y))))
+
+(defruledl equal-of-expr-value-fix-when-both-primop
+  (implies (and (equal (expr-value-kind x) :primop)
+                (equal (expr-value-kind y) :primop)
+                (equal (expr-value-primop->val x) (expr-value-primop->val y)))
+           (equal (equal (expr-value-fix x) (expr-value-fix y)) t))
+  :use ((:instance expr-value-fix-when-primop (x x))
+        (:instance expr-value-fix-when-primop (x y))))
+
+(defruledl equal-of-expr-value-fix-when-both-box
+  (implies (and (equal (expr-value-kind x) :box)
+                (equal (expr-value-kind y) :box)
+                (equal (expr-value-box->ispace x) (expr-value-box->ispace y))
+                (equal (expr-value-box->array x) (expr-value-box->array y))
+                (equal (expr-value-box->type x) (expr-value-box->type y)))
+           (equal (equal (expr-value-fix x) (expr-value-fix y)) t))
+  :use ((:instance expr-value-fix-when-box (x x))
+        (:instance expr-value-fix-when-box (x y))))
+
+(defruledl equal-of-expr-value-fix-when-both-vector
+  (implies (and (equal (expr-value-kind x) :vector)
+                (equal (expr-value-kind y) :vector)
+                (equal (expr-value-vector->elems x) (expr-value-vector->elems y)))
+           (equal (equal (expr-value-fix x) (expr-value-fix y)) t))
+  :use ((:instance expr-value-fix-when-vector (x x))
+        (:instance expr-value-fix-when-vector (x y))))
+
+(defruledl equal-of-expr-value-fix-when-both-vector-empty
+  (implies (and (equal (expr-value-kind x) :vector-empty)
+                (equal (expr-value-kind y) :vector-empty)
+                (equal (expr-value-vector-empty->dims x)
+                       (expr-value-vector-empty->dims y))
+                (equal (expr-value-vector-empty->elem x)
+                       (expr-value-vector-empty->elem y)))
+           (equal (equal (expr-value-fix x) (expr-value-fix y)) t))
+  :use ((:instance expr-value-fix-when-vector-empty (x x))
+        (:instance expr-value-fix-when-vector-empty (x y))))
+
+; The same collapses for the witness-indexed relations (see
+; TYPE-VALUE-ALPHA-RELATED-VIA-P and EXPR-VALUE-ALPHA-RELATED-VIA-P in
+; uniquify-alpha-relations.lisp), over which the main induction is to be
+; carried out: the witnesses are unused in the ground cases, so the proofs
+; are the same, with the type-value collapse first (the expression-value
+; relation reaches type values in its box and empty-vector cases).
+
+(defruledl equal-of-type-value-fix-when-both-base
+  (implies (and (equal (type-value-kind x) :base)
+                (equal (type-value-kind y) :base)
+                (equal (type-value-base->type x) (type-value-base->type y)))
+           (equal (equal (type-value-fix x) (type-value-fix y)) t))
+  :use ((:instance type-value-fix-when-base (x x))
+        (:instance type-value-fix-when-base (x y))))
+
+(defruledl equal-of-type-value-fix-when-both-array
+  (implies (and (equal (type-value-kind x) :array)
+                (equal (type-value-kind y) :array)
+                (equal (type-value-array->elem x) (type-value-array->elem y))
+                (equal (type-value-array->dims x) (type-value-array->dims y)))
+           (equal (equal (type-value-fix x) (type-value-fix y)) t))
+  :use ((:instance type-value-fix-when-array (x x))
+        (:instance type-value-fix-when-array (x y))))
+
+(defruledl equal-of-type-value-fix-when-both-fun
+  (implies (and (equal (type-value-kind x) :fun)
+                (equal (type-value-kind y) :fun)
+                (equal (type-value-fun->in x) (type-value-fun->in y))
+                (equal (type-value-fun->out x) (type-value-fun->out y)))
+           (equal (equal (type-value-fix x) (type-value-fix y)) t))
+  :use ((:instance type-value-fix-when-fun (x x))
+        (:instance type-value-fix-when-fun (x y))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -427,7 +427,15 @@
        (declor? (ildm-obj-adeclor tyname.declor)))
     (make-tyname :specquals specquals
                  :declor? declor?
-                 :info nil)))
+                 :info nil))
+
+  ///
+
+  (defrule ldm-tyname-of-ildm-tyname
+    (equal (ldm-tyname (ildm-tyname tyname))
+           (mv nil (c::tyname-dec0-to-oct0 tyname)))
+    :enable (ldm-tyname
+             c::tyname-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -441,7 +449,14 @@
                 :plus (unop-plus)
                 :minus (unop-minus)
                 :bitnot (unop-bitnot)
-                :lognot (unop-lognot)))
+                :lognot (unop-lognot))
+
+  ///
+
+  (defrule ldm-unop-of-ildm-unop
+    (equal (ldm-unop (ildm-unop unop))
+           (mv nil (c::unop-fix unop)))
+    :enable ldm-unop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -478,7 +493,14 @@
                  :asg-shr (binop-asg-shr)
                  :asg-and (binop-asg-and)
                  :asg-xor (binop-asg-xor)
-                 :asg-ior (binop-asg-ior)))
+                 :asg-ior (binop-asg-ior))
+
+  ///
+
+  (defrule ldm-binop-of-ildm-binop
+    (equal (ldm-binop (ildm-binop binop))
+           (c::binop-fix binop))
+    :enable ldm-binop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

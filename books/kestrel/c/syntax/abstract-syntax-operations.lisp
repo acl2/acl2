@@ -984,7 +984,16 @@
        ((mv yes/no tyspecs) (check-spec/qual-list-all-typespec (cdr specquals))))
     (if yes/no
         (mv t (cons (spec/qual-typespec->spec specqual) tyspecs))
-      (mv nil nil))))
+      (mv nil nil)))
+
+  ///
+
+  (defrule check-spec/qual-list-all-typespec-of-spec/qual-typespec-list
+    (equal (check-spec/qual-list-all-typespec
+            (spec/qual-typespec-list tyspecs))
+           (mv t (type-spec-list-fix tyspecs)))
+    :induct t
+    :enable spec/qual-typespec-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
