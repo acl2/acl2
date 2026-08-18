@@ -216,7 +216,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is essentially an equational theory over sequences of dimensions,
+    "This is essentially an equational theory over
+     sequences (i.e. free monoid) of dimensions,
      but there are different ways to concatenate:
      turning sequences of dimensions to single shapes,
      concatenating shapes,
@@ -246,7 +247,9 @@
      The rules @('append1') and @('append3m') reduce
      singleton @('++') concatenations to their single shapes
      and @('++') concatenations of three or more shapes to
-     left-associated nests of binary @('++') concatenations."))
+     left-associated nests of binary @('++') concatenations.
+     The rules @('splice0'), @('splice1m-dim'), and @('splice1m-shape') reduce
+     splices to empty or binary @('++') concatenations."))
 
   :preds ((shp= shp1 shp2)
           (shps= shps1 shps2)
@@ -364,6 +367,19 @@
    (append3m ((shapep s1) (shapep s2) (shape-listp ss) (consp ss))
              (shp= (shape-append (list* s1 s2 ss))
                    (shape-append (cons (shp++ s1 s2) ss))))
+
+   ;; normalization of splices:
+
+   (splice0 ()
+            (shp= (shp[]) (shp++)))
+
+   (splice1m-dim ((dimp d) (ispace-listp is))
+                 (shp= (shape-splice (cons (ispace-dim d) is))
+                       (shp++ (shp d) (shape-splice is))))
+
+   (splice1m-shape ((shapep s) (ispace-listp is))
+                   (shp= (shape-splice (cons (ispace-shape s) is))
+                         (shp++ s (shape-splice is))))
 
    ;; TODO: add more rules
 
