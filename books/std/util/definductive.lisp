@@ -1354,25 +1354,16 @@
 
 (define defind-pred2-name ((pred-name symbolp) (name symbolp))
   :returns (pred2-name symbolp)
-  :short "Name of a @('p[i]-2') predicate."
+  :short "Name of the @('p[i]-2') symbol for a predicate."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Besides each predicate @('p[i]'), we define a predicate @('p[i]-2'),
-     which denotes the same relation,
-     but whose proofs are represented differently:
-     a proof records the conclusion of the rule that builds it,
-     while a proof for @('p[i]') records the variables of the rule,
-     with the conclusion arguments
-     passed to the proof validity predicate.
-     We generate the two representations side by side,
-     so that they can be compared;
-     we may eventually drop the @('p[i]-2') one.")
-   (xdoc::p
-    "All the events for the second representation
-     are named after @('p[i]-2'),
-     via the same naming functions used for @('p[i]');
-     so this is the only naming function specific to that representation."))
+    "These names originate from a second representation of proofs,
+     which used to be generated alongside the current one
+     and is no longer generated;
+     the assertion fixtypes
+     (see @(tsee defind-gen-proof2-assertion-defprod))
+     are the only events still named after @('p[i]-2')."))
   (packn-pos (list (symbol-lfix pred-name) '-2) (symbol-lfix name)))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1512,9 +1503,8 @@
      for each variable of the rule, named after the variable.
      This is the variable that the case macro of the fixtype
      binds to that field;
-     @(tsee defind-proof-prem-var-name) and
-     @(tsee defind-proof-concl-var-name)
-     are the analogous names for the other kinds of field.")
+     @(tsee defind-proof-prem-var-name)
+     is the analogous name for the premise fields.")
    (xdoc::p
     "The cases of a @('p[i]-proof-validp') function use these variables
      either as the right-hand sides of the bindings of the rule's variables
@@ -1763,8 +1753,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This differs from @(tsee defind-proof2-kind-fixing-thm-name)
-     only in the variable that ends the name;
+    "The variable that ends the name is the @(':xvar') of the fixtype;
      see @(tsee defind-proof-prem-fixing-thm-name)."))
   (packn-pos (list (defind-proof-type-name pred-name name)
                    '-kind$inline-of-
@@ -1863,11 +1852,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This differs from @(tsee defind-proof2-prem-fixing-thm-name)
-     only in the variable that ends the name,
-     which is the @(':xvar') of the fixtype:
-     the @('p[i]-2-proof') fixtypes use the default @('x'),
-     while the @('p[i]-proof') fixtypes cannot
+    "The variable that ends the name is the @(':xvar') of the fixtype,
+     which is not the default @('x')
      (see @(tsee defind-gen-proof-deftagsum))."))
   (packn-pos (list (defind-proof-prem-acc-name pred-name irule-name num name)
                    '$inline-of-
@@ -1889,9 +1875,9 @@
   (xdoc::topstring
    (xdoc::p
     "These are the counterparts of
-     @(tsee defind-proof2-concl-acc-fixing-thm-name),
+     @(tsee defind-proof-prem-fixing-thm-name),
      for the fields named after the variables of the rule;
-     see @(tsee defind-proof-prem-fixing-thm-name)
+     see that function
      for the variable that ends the names."))
   (cond ((endp vars) nil)
         (t (cons (packn-pos
@@ -1919,7 +1905,7 @@
   (xdoc::topstring
    (xdoc::p
     "These are the counterparts of
-     @(tsee defind-proof-concl-of-constr-thm-name),
+     @(tsee defind-proof-prem-of-constr-thm-name),
      for the fields named after the variables of the rule."))
   (cond ((endp vars) nil)
         (t (cons (packn-pos
@@ -1975,14 +1961,7 @@
      which names it in its own way instead,
      ignoring even an explicit @(':name') in the return specifier.
      So the name depends on
-     whether the predicate forms a singleton clique.")
-   (xdoc::p
-    "The events for the second representation of proofs
-     never refer to this theorem,
-     because the bodies of the @('p[i]-2') predicates
-     end with an equality, which is a boolean by type reasoning,
-     while the ones of the @('p[i]') predicates
-     end with a call of the proof validity predicate."))
+     whether the predicate forms a singleton clique."))
   (if standalonep
       (packn-pos (list 'booleanp-of-
                        (defind-proof-valid-fn-name pred-name name))
@@ -2670,7 +2649,7 @@
   :guard (defind-pred-names-unambp pred-infos)
   :returns (erp "@('nil') or an error message.")
   :short "Check that the variables of the rules do not clash with
-          the names that the first representation of proofs reserves."
+          the names that the generated events reserve."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2696,18 +2675,11 @@
      it also needs the name of the macro call,
      which is not available in that phase.")
    (xdoc::p
-    "These names are reserved only by the first representation of proofs:
-     if that representation is dropped, so is this check.")
-   (xdoc::p
-    "We do not check the proof variable, @(tsee defind-proof-var-name).
-     A rule variable with that name does make the macro fail,
-     but in the events for the second representation,
-     at the theorem about the conclusion of a proof built by a rule.
-     That failure does not involve the first representation,
-     so it belongs with the second representation;
-     until it is fixed,
-     such a rule is rejected by a proof failure
-     instead of by a message from here."))
+    "We do not check the proof variable, @(tsee defind-proof-var-name):
+     a rule variable with that name may shadow it without harm,
+     because the case macro binds the fields of the proof
+     before the shadowing takes place;
+     see @(tsee defind-proof-xvar-name)."))
   (b* (((reterr))
        ((when (endp irule-infos)) (retok))
        ((defind-irule-info info) (car irule-infos))
@@ -2937,8 +2909,7 @@
     "The summand corresponds to an inference rule,
      and it has one field for each variable of the rule:
      the field is named after the variable and has no type.
-     These fields, which the @('p[i]-2-proof') fixtypes do not have,
-     are what lets the conclusion be
+     These fields are what lets the conclusion be
      an argument of the proof validity predicate,
      instead of a field of the proof."))
   (if (endp vars)
@@ -3289,15 +3260,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the counterpart of @(tsee defind-gen-proof2-irule-valid-fn).
-     It checks the conditions of the rule
+    "This checks the conditions of the rule
      that do not involve the proofs of the premises,
      i.e. the premises that are not calls of the predicates being defined,
      and the equalities between the arguments of the conclusion
      and the ones that the rule derives.")
    (xdoc::p
-    "Unlike @(tsee defind-gen-proof2-irule-valid-fn),
-     this is never a @(tsee std::define-sk):
+    "This is never a @(tsee std::define-sk):
      the variables of the rule are formals of the function,
      which the caller supplies from the fields of the proof,
      and so there is nothing to quantify.
@@ -3420,25 +3389,32 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As in @(tsee defind-gen-proof2-valid-fn-case-prems),
-     only the premises that are calls of the predicates being defined
+    "Only the premises that are calls of the predicates being defined
      contribute.
      Each becomes a call of @('p[j]-proof-validp')
      on the proof of the premise
      and on the arguments of the premise as written.")
    (xdoc::p
-    "As in @(tsee defind-gen-proof2-valid-fn-case-prems),
-     two different predicates are involved:
+    "Two different predicates are involved:
      the one of the premise, which determines
      the validity predicate applied to the proof of the premise,
      and the one of the conclusion of the rule, i.e. @('pred-name'),
      which determines the fixtype of proofs
      that has the summand for the rule,
      and thus the accessors of the proofs of the premises
-     along with the theorems about them.
-     We return a count theorem only for the premises
-     whose predicate is the one of the conclusion;
-     see that function for why."))
+     along with the theorems about them.")
+   (xdoc::p
+    "We return a count theorem only for the premises
+     whose predicate is the one of the conclusion.
+     These theorems are used in the termination proof of
+     a standalone proof validity function,
+     where those are exactly the premises that
+     give rise to the recursive calls.
+     FTY generates no such theorem for a premise
+     whose fixtype of proofs is not in the same clique
+     as the one of the conclusion:
+     for a clique of multiple predicates,
+     the termination proof expands the count functions instead."))
   (b* (((when (endp infos)) (mv nil nil nil))
        (info (car infos)))
     (defind-premise-info-case
@@ -3570,9 +3546,31 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is like @(tsee defind-gen-proof2-valid-fn);
-     see that function for the @('standalonep') input
-     and for the treatment of non-recursive predicates.")
+    "The @('standalonep') input says whether the function is standalone,
+     which is the case when the predicate forms a singleton clique;
+     otherwise, the function is a member of the @(tsee defines)
+     generated for a clique of multiple predicates.")
+   (xdoc::p
+    "For a standalone function,
+     we generate termination hints as part of the function,
+     as well as fixing theorems and hints for the function.
+     If the predicate is not recursive,
+     the @('p[i]-proof') fixtype is not recursive,
+     so the function is not recursive either:
+     in that case, we omit the @(':measure'),
+     termination hints,
+     and @(':induct') hints.
+     For a predicate that forms a singleton clique,
+     the predicate is recursive
+     exactly when some rule with the predicate as conclusion
+     also has the predicate in some premise.")
+   (xdoc::p
+    "For a function that is not standalone,
+     the measure is always generated,
+     but the termination hints,
+     the fixing equivalence,
+     and the guard non-verification
+     are in the enclosing @(tsee defines).")
    (xdoc::p
     "This takes the information about the predicate, not just its name,
      because the arguments of the conclusion are formals of this function;
@@ -3665,15 +3663,36 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is like @(tsee defind-gen-proof2-valid-fn-clique),
-     including the quoted theories of
-     the termination hints and of the fixing equivalence,
-     and the @(':expand') hints of the fixing equivalence
-     (with the additional conclusion arguments here).")
+    "The @(tsee defines) is named after
+     the first predicate of the clique.
+     The termination hints expand the count functions of
+     the fixtypes of proofs of the clique:
+     the generated linear rules that relate the counts of the fields
+     to the counts of the containing values
+     have hypotheses about the summand kinds,
+     which are not in the context for fixtypes with a single summand.
+     The flag function is non-local because
+     the minimality theorems, generated later,
+     are proved by flag induction.
+     The fixing equivalence of the functions
+     is proved at the end, all together.")
    (xdoc::p
-    "Where that function uses the type prescriptions that ACL2 infers
+    "The hints for the fixing equivalence include @(':expand') hints
+     for the calls of the validity functions
+     on the proof variable and on its fixed version
+     (in both cases with the conclusion arguments).
+     Since the functions of the clique are mutually recursive,
+     ACL2's heuristics do not expand those calls during the flag induction.
+     This is unlike the case of a predicate that forms a singleton clique,
+     where the induction is on the (single) validity function itself,
+     and thus the calls of that function in the fixing equivalence
+     are expanded as part of the induction.")
+   (xdoc::p
+    "The quoted theories of
+     the termination hints and of the fixing equivalence use,
      for the count functions and for the rule validity predicates,
-     we use the proved ones instead:
+     the proved theorems instead of
+     the type prescriptions that ACL2 infers:
      the return theorem of the count function,
      and the @(':returns') theorem of each rule validity predicate,
      which is also a type prescription rule
@@ -3859,7 +3878,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is like @(tsee defind-gen-proof2-valid-fns)."))
+    "We generate one event per clique, in dependency order.
+     For a clique of a single predicate,
+     the event is the standalone proof validity function
+     of the predicate.
+     For a clique of multiple predicates,
+     the event is a @(tsee defines) with
+     the mutually recursive proof validity functions
+     of the predicates of the clique.
+     A rule may have premises with predicates in preceding cliques:
+     the resulting calls of proof validity functions
+     of preceding cliques are not part of the mutual recursion,
+     and those functions are defined by the time they are called,
+     since the cliques are in dependency order."))
   (defind-gen-proof-valid-fns-loop
     leveled-cliques pred-infos irule-infos name xdocp print)
   :type-prescription (true-listp (defind-gen-proof-valid-fns
@@ -3915,13 +3946,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is like @(tsee defind-gen-proof2-pred),
-     but the arguments of the conclusion are arguments of
-     the proof validity predicate,
-     instead of being compared with the conclusion of the proof.
-     So this needs neither the @('p[i]-2-proof->conclusion') functions
-     nor the @('p[i]-2-assertion') fixtypes,
-     which exist only for the @('p[i]-2') predicates.")
+    "The predicate is defined as the existence of a valid proof,
+     with the arguments of the conclusion passed to
+     the proof validity predicate.")
    (xdoc::p
     "The @(':returns') proof needs to know that
      the proof validity predicate returns a boolean.
@@ -4098,12 +4125,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The statement is the one of @(tsee defind-gen-proof2-irule-thm).")
+    "The theorem is an implication
+     with the premises of the rule as antecedents
+     and with its conclusion as consequent;
+     the premises that are calls of the predicates being defined
+     become calls of those predicates.")
    (xdoc::p
-    "Unlike @(tsee defind-gen-proof2-irule-thm),
-     the proof does not go through a function that builds the proof:
-     the constructor of the fixtype of proofs is that proof,
-     so we use the @('p[i]-suff') theorem on it directly.
+    "The proof of the conclusion is built directly by
+     the constructor of the fixtype of proofs,
+     so we use the @('p[i]-suff') theorem on it.
      Expanding the hypotheses that are calls of the @('p[i]') predicates
      yields the proofs of those premises,
      which the constructor takes as its subproofs.
@@ -4409,14 +4439,9 @@
   (xdoc::topstring
    (xdoc::p
     "Each variable of the rule is bound to
-     the field of the proof named after it.
-     This is where this representation of proofs pays off
-     in this theorem: the variables of the rule are fields of the proof,
-     so these are plain accessor calls,
-     while @(tsee defind-gen-proof2-pred-alt-when-proof-valid-thm)
-     must extract them
-     from the witness of the validity of the rule
-     (see @(tsee defind-gen-proof2-irule-mv-nth-doublets))."))
+     the field of the proof named after it:
+     since the variables of the rule are fields of the proof,
+     these are plain accessor calls."))
   (b* (((when (endp vars)) nil)
        (var (symbol-lfix (car vars)))
        (acc (defind-proof-var-acc-name pred-name irule-name var name))
@@ -4441,8 +4466,7 @@
      on the arguments of the conclusion,
      which are arguments of the proof validity predicate,
      rather than fields of the proof to be extracted;
-     so, unlike @(tsee defind-gen-proof2-pred-alt-when-proof-valid-thm-formula),
-     there is nothing to destructure."))
+     so there is nothing to destructure."))
   (b* ((valid-fn (defind-proof-valid-fn-name pred-name name))
        (proof (defind-proof-var-name name))
        (pred-alt (defind-pred-alt-fn-name pred-name name))
@@ -4469,41 +4493,99 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is like @(tsee defind-gen-proof2-pred-alt-irule-hints);
-     see that function for the shape of the computed conditions,
-     including the treatment of the last branch,
-     and for the theorems of the predicates of the premises
-     in preceding cliques.
-     Using a single @(':use') hint with all the instances instead
-     is much slower, as noted there:
-     with eight rules we measured about sixty times as many prover steps.")
+    "The rules are the ones whose conclusion is the predicate
+     (see @(tsee defind-irules-of-pred)), in order.")
+   (xdoc::p
+    "We generate computed hints with @(':use') hints
+     of the constraint theorems for the various rules,
+     each targeted to the inference rule that it pertains to.
+     Putting them all in a single @(':use') hint makes the proofs slow,
+     even with a moderate number of inference rules
+     (that is what an initial implementation did):
+     with eight rules we measured about sixty times as many prover steps.
+     So we return, for each inference rule,
+     a branch of a computed @(tsee cond) hint,
+     used when the theorem is proved by induction,
+     along with the constraint theorem instance
+     and the rule validity function used,
+     for when the theorem is proved without induction.")
+   (xdoc::p
+    "The computed condition says that the clause contains
+     the equality of the summand kind of the proof value
+     with the one corresponding to the inference rule;
+     more precisely, that the negation appears in the clause,
+     because it is a clause, and the equality is a hypothesis.
+     But for the last branch and inference rule,
+     the clause actually contains the positive equalities
+     with all the summand kinds before the last one,
+     which are conjunctive hypotheses saying that
+     the proof kind is not any of those kinds
+     (i.e. it is the last kind, since kinds are exhaustive).
+     This is why this function takes the very first proof kind as argument,
+     so that, for the last branch, we can check the presence of
+     the equality of the proof kind with that kind.")
+   (xdoc::p
+    "If the predicate has a single inference rule,
+     as indicated by the @('singlep') argument,
+     the fixtype of proofs has a single summand,
+     and thus no kind at all occurs in the clause.
+     In this case the condition says that the clause contains
+     the negation of the validity of the rule,
+     which is a hypothesis of the case of the rule,
+     applied to the arguments of the conclusion and to
+     the fields of the proof named after the variables of the rule.
+     The accessors are the @('$inline') ones because
+     those are the ones that occur in the clause.
+     This happens only if the predicate is
+     in a clique with other predicates,
+     because a predicate with a single rule
+     is recursive only via other predicates.")
    (xdoc::p
     "The conclusion of the theorem is
      the @('p[i]-alt') constrained function
      on the arguments of the conclusion,
      which are arguments of the proof validity predicate,
      rather than fields of the proof to be extracted;
-     so, unlike @(tsee defind-gen-proof2-pred-alt-irule-hints),
-     there is nothing to destructure,
+     so there is nothing to destructure,
      and each branch needs just the proof validity predicate,
      the one for the rule,
      and the theorems of the predicates of the premises
      in preceding cliques.")
    (xdoc::p
-    "In the @('singlep') case the condition takes the same form as in
-     @(tsee defind-gen-proof2-pred-alt-irule-hints),
-     but with the arguments of the conclusion and
-     the fields of the proof named after the variables of the rule
-     in place of the conclusion of the proof and of those of the premises.
-     The accessors are the @('$inline') ones because
-     those are the ones that occur in the clause.")
+    "If a premise has a predicate in a preceding clique,
+     i.e. not in @('clique-preds'),
+     the theory of the branch includes
+     the @('p[i]-alt-when-proof-validp') theorem of that predicate,
+     which has been already proved at that point:
+     it plays the role that,
+     for a predicate in the same clique,
+     is played by the induction hypothesis.")
    (xdoc::p
-    "The @('flag-equivs-thm') input is
-     the name of the flag equivalence theorem of the clique,
-     or @('nil') for a predicate that forms a singleton clique;
-     when non-@('nil'), it is included in the theory of each branch,
-     for the reason explained in
-     @(tsee defind-gen-proof2-pred-alt-irule-hints)."))
+    "For a predicate in a clique with other predicates,
+     the @('flag-equivs-thm') input is
+     the name of the flag equivalence theorem of the clique
+     (see @(tsee defind-proof-valid-fn-clique-flag-equivs-name)),
+     which we include in the theory of each branch;
+     for a predicate that forms a singleton clique,
+     there is no flag function,
+     and that input is @('nil').
+     The theorem is needed because,
+     in the flag induction,
+     a rule with two or more premises
+     that call predicates of the clique
+     gives rise to induction cases in which
+     the recursive call for a premise
+     governs the recursive calls for the subsequent premises:
+     in the cases in which that governing call is false,
+     the hypothesis is phrased in terms of the flag function,
+     and there are no induction hypotheses for the subsequent premises;
+     those cases are vacuous,
+     because the negated call of the flag function
+     contradicts the validity of the proofs of the premises
+     (obtained by expanding the proof validity hypothesis of the theorem),
+     but the contradiction can only be exposed by rewriting
+     the call of the flag function
+     into a call of the corresponding validity function."))
   (b* (((when (endp infos)) (mv nil nil nil))
        ((defind-irule-info info) (car infos))
        ((defind-conclusion-info cinfo) info.conclusion)
@@ -4567,8 +4649,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is like @(tsee defind-gen-proof2-pred-alt-when-proof-valid-thm);
-     see that function for the treatment of non-recursive predicates."))
+    "The theorem is proved by induction on the proof validity function
+     when the predicate is recursive
+     (see @(tsee defind-pred-recursivep)):
+     then there are at least two proof kinds,
+     namely at least one recursive rule and at least one base rule,
+     which the last-branch logic of the @(tsee cond) hint relies on.")
+   (xdoc::p
+    "When the predicate is not recursive,
+     the proof validity function is not recursive,
+     so there is no induction,
+     and the goal is a bounded case analysis on the proof kind.
+     In that case we prove the theorem directly,
+     with a single @(':use') of the constraint theorems of all the rules,
+     opening the relevant functions."))
   (b* ((recursivep (defind-pred-recursivep pred-name irule-infos))
        (thm-name (defind-pred-alt-when-proof-valid-thm-name pred-name name))
        (valid-fn (defind-proof-valid-fn-name pred-name name))
@@ -4629,11 +4723,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is like
-     @(tsee defind-gen-proof2-pred-alt-when-proof-valid-thm-clique),
-     except that we do not supply the induction hint.
+    "The theorems are proved together, by mutual induction,
+     via the macro generated by the flag machinery
+     along with the flag function of the clique.
+     Since the induction is on all the proof validity functions,
+     the @(tsee cond) hint has a branch for
+     every rule of every predicate of the clique.")
+   (xdoc::p
+    "We do not supply the induction hint.
      The proof validity functions of a clique
-     do not all have the same formals here,
+     do not all have the same formals,
      since each one takes the arguments of the conclusion of its predicate,
      so the flag function takes the ones of all of them;
      the macro generated by the flag machinery
@@ -4643,7 +4742,7 @@
    (xdoc::p
     "The theory of each branch of the @(tsee cond) hint
      includes the flag equivalence theorem of the clique;
-     see @(tsee defind-gen-proof2-pred-alt-irule-hints) for the reason."))
+     see @(tsee defind-gen-pred-alt-irule-hints) for the reason."))
   (b* ((first-pred (defind-pred-info->name (car clique-pred-infos)))
        (macro (defind-proof-valid-fn-clique-defthm-macro-name first-pred name))
        (flag-fn (defind-proof-valid-fn-clique-flag-name first-pred name))
@@ -4730,8 +4829,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is like @(tsee defind-gen-proof2-pred-alt-when-proof-valid-thms):
-     one event per clique, in dependency order."))
+    "We generate one event per clique, in dependency order:
+     a single theorem for a clique of a single predicate,
+     and a bundle of theorems proved by mutual induction
+     for a clique of multiple predicates.
+     The cliques must be the same ones used for
+     the fixtypes of proofs and the proof validity functions,
+     since the induction follows those definitions."))
   (defind-gen-pred-alt-when-proof-valid-thms-loop
     leveled-cliques pred-infos irule-infos name print)
 
@@ -4889,7 +4993,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The events are wrapped into an @(tsee encapsulate).")
+    "The events are wrapped into a @(tsee progn).")
    (xdoc::p
     "If the @(':print') input is @(':all'),
      we use @(tsee restore-output?) to restore all the output,
