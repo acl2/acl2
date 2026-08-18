@@ -118,7 +118,10 @@
               (:e c::iconst-base-oct)
               (:e c::iconst-length-none)
               (:e c::iconst-length-llong)
-              (:e c::iconst-length-long))))
+              (:e c::iconst-length-long)
+              (:e ldm-isuffix)
+              (:e ldm-isuffix-option)
+              (:e ldm-lsuffix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -349,7 +352,23 @@
                                   :info nil)
                                nil)))))
   :measure (c::obj-declor-count declor)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule ldm-declor-obj-of-ildm-obj-declor
+    (equal (ldm-declor-obj (ildm-obj-declor declor))
+           (mv nil (c::obj-declor-dec0-to-oct0 declor)))
+    :induct t
+    :enable (ldm-declor-obj
+             ldm-declor-obj-loop
+             ldm-dirdeclor-obj
+             check-expr-iconst
+             c::obj-declor-dec0-to-oct0
+             c::iconst-option-dec0-to-oct0
+             c::iconst-option-some->val
+             mv-nth-0-ldm-dirdeclor-obj-of-declor-to-dirdeclor
+             mv-nth-1-ldm-dirdeclor-obj-of-declor-to-dirdeclor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -378,7 +397,23 @@
                                    :info nil)
                                 nil)))))
   :measure (c::obj-adeclor-count adeclor)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule ldm-absdeclor-obj-of-ildm-obj-adeclor
+    (equal (ldm-absdeclor-obj (ildm-obj-adeclor adeclor))
+           (mv nil (c::obj-adeclor-dec0-to-oct0 adeclor)))
+    :induct t
+    :enable (ldm-absdeclor-obj
+             ldm-absdeclor-obj-loop
+             ldm-dirabsdeclor-obj
+             absdeclor-to-dirabsdeclor?
+             check-expr-iconst
+             c::obj-adeclor-dec0-to-oct0
+             c::iconst-option-dec0-to-oct0
+             c::iconst-option-some->val
+             dirabsdeclor-option-some->val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -392,7 +427,15 @@
        (declor? (ildm-obj-adeclor tyname.declor)))
     (make-tyname :specquals specquals
                  :declor? declor?
-                 :info nil)))
+                 :info nil))
+
+  ///
+
+  (defrule ldm-tyname-of-ildm-tyname
+    (equal (ldm-tyname (ildm-tyname tyname))
+           (mv nil (c::tyname-dec0-to-oct0 tyname)))
+    :enable (ldm-tyname
+             c::tyname-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -406,7 +449,14 @@
                 :plus (unop-plus)
                 :minus (unop-minus)
                 :bitnot (unop-bitnot)
-                :lognot (unop-lognot)))
+                :lognot (unop-lognot))
+
+  ///
+
+  (defrule ldm-unop-of-ildm-unop
+    (equal (ldm-unop (ildm-unop unop))
+           (mv nil (c::unop-fix unop)))
+    :enable ldm-unop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -443,7 +493,14 @@
                  :asg-shr (binop-asg-shr)
                  :asg-and (binop-asg-and)
                  :asg-xor (binop-asg-xor)
-                 :asg-ior (binop-asg-ior)))
+                 :asg-ior (binop-asg-ior))
+
+  ///
+
+  (defrule ldm-binop-of-ildm-binop
+    (equal (ldm-binop (ildm-binop binop))
+           (c::binop-fix binop))
+    :enable ldm-binop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

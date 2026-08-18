@@ -127,6 +127,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "arithmetic-5" "Arithmetic-5 library"))
+
+   (xdoc::p
+    "The @(see arithmetic-5) library has been improved.  See the new section of
+     @('arithmetic-5/README') entitled, &ldquo;1.D. The Moore Modifications to
+     Prevent Some Rewrite Loops&rdquo;.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "data::data-lib" "Data-lib"))
 
    (xdoc::p

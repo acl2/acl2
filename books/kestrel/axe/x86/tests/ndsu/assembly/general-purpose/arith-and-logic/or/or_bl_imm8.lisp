@@ -17,13 +17,7 @@
 ;; (depends-on "or_bl_imm8.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
-
-
-;; Rewrite bl to bvchop-of-rbx so proofs reduce to the rbx form.
-(local (defthm bl-rewrite
-  (equal (bl x86) (bvchop 8 (rbx x86)))
-  :hints (("Goal" :in-theory (enable bl rbx)))))
+(include-book "../../../support")
 
 ;; Lifts the subroutine into logic: Creates the function or_bl_imm8, which
 ;; represents the effect of the program on the x86 state.
@@ -98,4 +92,4 @@
                 (not (member-eq flag *standard-flags*)))
            (equal (get-flag flag (or_bl_imm8 x86))
                   (get-flag flag x86)))
-  :hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant))))
+  )

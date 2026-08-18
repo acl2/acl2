@@ -8196,20 +8196,6 @@
   :hints (("Goal" :use (:instance +-of-minus-of-shifted-slice-of-same)
            :in-theory (disable +-of-minus-of-shifted-slice-of-same))))
 
-(defthm equal-of-slice-and-constant-when-equal-of-bvchop-and-constant
-  (implies (and (syntaxp (or (want-to-strengthen (equal k2 (slice high low y)))
-                             (want-to-strengthen (equal (slice high low y) k2))))
-                (syntaxp (quotep k2))
-                (equal (bvchop low y) k1)
-                (syntaxp (quotep k1))
-                (natp low)
-                (natp high)
-                (<= low high))
-           (equal (equal k2 (slice high low y))
-                  (and (unsigned-byte-p (- (+ 1 high) low) k2)
-                       (equal (bvchop (+ 1 high) y) (bvcat (- (+ 1 high) low) k2 low k1)))))
-  :hints (("Goal" :in-theory (disable BVCHOP-SUBST-CONSTANT SLICE-SUBST-CONSTANT))))
-
 ;gen
 (defthm bvchop-of-+-of-*-lemma
   (implies (and (integerp x)
@@ -13381,3 +13367,18 @@
 ;;            (equal (sbvlt 32 k (bvsx 32 8 x))
 ;;                   (sbvlt 8 k x)))
 ;;   :hints (("Goal" :in-theory (enable bvlt bvsx sbvlt-rewrite))))
+
+;move, but this needs slice-of-bvplus-cases-no-split-case-no-carry
+; k1 + 2^low(k2 + x) becomes (k1 + 2^low*k2) + 2^low*x
+;useful to simplify the PC (combine the constants) for certain switch statements
+(defthm bvplus-of-bvcat-of-bvplus-combine-constants
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)
+                              (quotep highsize)
+                              (quotep lowsize)
+                              (quotep size)))
+                (equal size (+ highsize lowsize)))
+           (equal (bvplus size k1 (bvcat highsize (bvplus highsize k2 x) lowsize 0))
+                  (bvplus size
+                          (bvplus size k1 (bvcat highsize k2 lowsize 0)) ; gets computed
+                          (bvcat highsize x lowsize 0)))))

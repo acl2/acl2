@@ -17,13 +17,7 @@
 ;; (depends-on "not_ebx_32.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
-(include-book "kestrel/x86/register-readers-and-writers32" :dir :system)
-
-;; Rewrite ebx to bvchop-of-rbx so proofs reduce to the rbx form.
-(local (defthm ebx-rewrite
-  (equal (ebx x86) (bvchop 32 (rbx x86)))
-  :hints (("Goal" :in-theory (enable ebx rbx)))))
+(include-book "../../../support")
 
 ;; Lifts the subroutine into logic: Creates the function not_ebx_32, which
 ;; represents the effect of the program on the x86 state.

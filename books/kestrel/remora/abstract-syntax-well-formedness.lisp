@@ -14,6 +14,8 @@
 (include-book "abstract-syntax-trees")
 (include-book "identifier-syntax")
 
+(include-book "lists")
+
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -82,6 +84,7 @@
 (fty::deffold-reduce wfp
   :short "Well-formedness predicate over ASTs."
   :types (dims
+          dim-list-list
           shapes/ispaces
           ispace-list-option
           ispace-var
@@ -109,9 +112,6 @@
    (ispace-var :shape (valid-identifier-string-p ispace-var.name))
    (type-var :atom (valid-identifier-string-p type-var.name))
    (type-var :array (valid-identifier-string-p type-var.name))
-   (type :foralln (and (type-var-list-wfp type.params)
-                       (type-wfp type.body)
-                       (>= (len type.params) 2)))
    (type :pin (and (ispace-var-list-wfp type.params)
                    (type-wfp type.body)
                    (>= (len type.params) 2)))
@@ -190,4 +190,19 @@
                      (var+type?-list-wfp decl.params)
                      (type-option-wfp decl.type?)
                      (expr-wfp decl.expr))))
-  :name abstract-syntax-wfp)
+  :name ast-wfp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection ast-wfp-additional-theorems
+  :short "Additional theorems about the AST well-formedness predicates."
+
+  (defruled dim-list-list-wfp-of-lists-to-singletons
+    (equal (dim-list-list-wfp (list-to-singletons dims))
+           (dim-list-wfp dims))
+    :induct t
+    :enable (list-to-singletons
+             ast-wfp-rules))
+
+  (add-to-ruleset ast-wfp-rules
+                  '(dim-list-list-wfp-of-lists-to-singletons)))

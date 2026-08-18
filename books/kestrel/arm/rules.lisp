@@ -203,6 +203,21 @@
                   (bvle 32 x y)))
   :hints (("Goal" :in-theory (enable ls-condition cmp-zero-elim cmp-carry-elim))))
 
+;;todo: more like this?
+(defthm cs-condition-of-cmp-carry
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cs-condition (cmp-carry x y))
+                  (not (bvlt 32 x y))))
+  :hints (("Goal" :in-theory (enable cs-condition cmp-carry-elim))))
+
+(defthm cc-condition-of-cmp-carry
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cc-condition (cmp-carry x y))
+                  (bvlt 32 x y)))
+  :hints (("Goal" :in-theory (enable cc-condition cmp-carry-elim))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::def-constant-opener eq-condition)
@@ -309,6 +324,20 @@
            (equal (gt-condition (cmp-sign x y) (cmp-overflow x y) (cmp-zero x y))
                   (sbvlt 32 y x)))
   :hints (("Goal" :in-theory (enable gt-condition cmp-zero-elim sbvlt-when-not-equal-weaken))))
+
+(defthm ge-condition-cmp-idiom
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (ge-condition (cmp-sign x y) (cmp-overflow x y))
+                  (sbvge 32 x y)))
+  :hints (("Goal" :in-theory (enable ge-condition cmp-zero-elim sbvlt-when-not-equal-weaken))))
+
+(defthm lt-condition-cmp-idiom
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (lt-condition (cmp-sign x y) (cmp-overflow x y))
+                  (sbvlt 32 x y)))
+  :hints (("Goal" :in-theory (enable lt-condition cmp-zero-elim sbvlt-when-not-equal-weaken))))
 
 ; restrict to constant k?
 (defthm getbit-32-of-bvplus-helper

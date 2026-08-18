@@ -77,7 +77,13 @@
   (defrule string=>nats-of-implode
     (implies (character-listp chars)
              (equal (string=>nats (implode chars))
-                    (chars=>nats chars)))))
+                    (chars=>nats chars))))
+
+  (defruled string=>nats-of-string-append
+    (implies (and (stringp a) (stringp b))
+             (equal (string=>nats (string-append a b))
+                    (append (string=>nats a) (string=>nats b))))
+    :enable (string-append chars=>nats)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

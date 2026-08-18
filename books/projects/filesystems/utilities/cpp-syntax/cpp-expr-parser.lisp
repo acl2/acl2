@@ -26,7 +26,8 @@
 ;    the parser does not recognize "[ ] ( ) { ... }")
 ;  - C++ named casts: static_cast<T>(e), dynamic_cast, reinterpret_cast,
 ;    const_cast, typeid
-;  - C-style casts: (T)e (always parsed as parenthesized expr)
+;  - C-style casts: (keyword)e always cast; (ident)e cast only when
+;    followed by ident/literal/(/++/--)~!/; * + - & are treated as binary
 ;  - new, delete expressions
 ;  - sizeof, alignof expressions
 ;  - try-catch statements (the parser produces a generic statement instead);
@@ -245,9 +246,7 @@
                                      parsize-of-parse-cpp-exception-handler-header-uncond
                                      parsize-of-parse-cpp-exception-handler-header-cond
                                      parsize-of-parse-cpp-param-list-uncond
-                                     parsize-of-parse-cpp-param-list-cond
-                                     parsize-of-parse-cpp-capture-list-uncond
-                                     parsize-of-parse-cpp-capture-list-cond)))
+                                     parsize-of-parse-cpp-param-list-cond)))
 
   :ruler-extenders :all
 
@@ -976,6 +975,8 @@
                             (reterr :impossible)))
                         (parse-cpp-postfix-rest prim prim-span parstate)))
                      ((erp next? & parstate) (read-token parstate))
+                     ;; Excluded from cast context: * + - & (also binary ops).
+                     ;; (x) * y stays as multiplication, not a cast of x.
                      (is-cast-context
                       (or (and next? (token-case next? :ident))
                           (and next? (token-case next? :const))
@@ -984,11 +985,7 @@
                           (token-punctuatorp next? "++")
                           (token-punctuatorp next? "--")
                           (token-punctuatorp next? "~")
-                          (token-punctuatorp next? "!")
-                          (token-punctuatorp next? "-")
-                          (token-punctuatorp next? "+")
-                          (token-punctuatorp next? "*")
-                          (token-punctuatorp next? "&")))
+                          (token-punctuatorp next? "!")))
                      ((unless is-cast-context)
                       (b* ((parstate (if next? (unread-token parstate) parstate))
                            (parstate (unread-token parstate)) ; ')'
@@ -2388,14 +2385,12 @@
       :rule-classes :linear
       :flag parse-cpp-capture-list-full)
     :hints (("Goal"
-             :in-theory (enable c$::parsize-of-read-token-cond
-                                c$::parsize-of-read-token-uncond
+             :in-theory (enable c$::parsize-of-read-token-uncond
                                 c$::parsize-of-unread-token
                                 parsize-of-parse-cpp-type-spec-uncond
                                 parsize-of-parse-cpp-type-spec-suffix-uncond
                                 parsize-of-parse-cpp-exception-handler-header-uncond
-                                parsize-of-parse-cpp-param-list-uncond
-                                parsize-of-parse-cpp-capture-list-uncond)
+                                parsize-of-parse-cpp-param-list-uncond)
              :expand ((parse-cpp-primary parstate)
                       (parse-cpp-arg-list-rest acc parstate)
                       (parse-cpp-postfix-rest lhs lhs-span parstate)
@@ -2534,9 +2529,7 @@
                                 parsize-of-parse-cpp-exception-handler-header-uncond
                                 parsize-of-parse-cpp-exception-handler-header-cond
                                 parsize-of-parse-cpp-param-list-uncond
-                                parsize-of-parse-cpp-param-list-cond
-                                parsize-of-parse-cpp-capture-list-uncond
-                                parsize-of-parse-cpp-capture-list-cond)
+                                parsize-of-parse-cpp-param-list-cond)
              :expand ((parse-cpp-primary parstate)
                       (parse-cpp-arg-list-rest acc parstate)
                       (parse-cpp-postfix-rest lhs lhs-span parstate)
@@ -2567,8 +2560,6 @@
                                        parsize-of-parse-cpp-type-spec-suffix-uncond
                                        parsize-of-parse-cpp-param-list-uncond
                                        parsize-of-parse-cpp-param-list-cond
-                                       parsize-of-parse-cpp-capture-list-full-uncond
-                                       parsize-of-parse-cpp-capture-list-full-cond
                                        parsize-of-parse-cpp-exception-handler-header-uncond
                                        parsize-of-parse-cpp-exception-handler-header-cond
                                        parsize-of-parse-cpp-assign-or-cond-uncond

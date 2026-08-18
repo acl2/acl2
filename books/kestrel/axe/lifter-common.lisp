@@ -35,34 +35,36 @@
     (cw "~X01" dag nil)))
 
 ;; Returns state.
-;; restores the print-base to 10 (do better?)
-(defund print-dag-nicely-with-base (dag max-term-size descriptor untranslatep print-base state)
+(defund print-dag-nicely-with-base (dag max-term-size description untranslatep print-base state)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (natp max-term-size)
-                              (stringp descriptor)
+                              (or (stringp description)
+                                  (null description))
                               (booleanp untranslatep)
                               (member print-base '(10 16)))
                   :stobjs state))
-  (if (dag-or-quotep-size-less-than dag max-term-size) ; todo: drop the "-or-quotep"
-      (b* ((- (cw "(Term ~x0:~%" descriptor))
-           (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
-                      (set-print-base-radix print-base state)
-                    state))
-           (term (dag2term dag))
-           (term (if untranslatep (untranslate$ term nil state) term))
-           (- (cw "~X01" term nil))
-           (state (set-print-base-radix 10 state)) ;make-event sets it to 10
-           (- (cw ")~%"))) ; matches "(Term after"
-        state)
-    (b* ((- (cw "(DAG ~x0:~%" descriptor))
-         (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
-                    (set-print-base-radix print-base state)
-                  state))
-         (- (cw "~X01" dag nil))
-         (state (set-print-base-radix 10 state))
-         (- (cw "(DAG has ~x0 IF-branches.)~%" (count-top-level-if-branches-in-dag dag))) ; todo: if 1, say "no ifs"
-         (- (cw ")~%"))) ; matches "(DAG after"
-      state)))
+  (let* ((old-print-base (if (boundp-global 'print-base state) ; for guards
+                             (f-get-global 'print-base state)
+                           10))
+         (change-basep (not (eql old-print-base print-base)))
+         )
+    (if (dag-or-quotep-size-less-than dag max-term-size) ; todo: drop the "-or-quotep"
+        (b* ((- (if description (cw "(Term ~x0:~%" description) (cw "(Term:~%")))
+             (state (if change-basep (set-print-base-radix print-base state) state))
+             (term (dag2term dag))
+             (term (if untranslatep (untranslate$ term nil state) term))
+             (- (cw "~X01" term nil))
+             (state (if change-basep (set-print-base-radix old-print-base state) state))
+             (- (cw ")~%"))) ; matches "(Term after"
+          state)
+      ;; It's large, so print as a DAG:
+      (b* ((- (if description (cw "(DAG ~x0:~%" description) (cw "(DAG:~%")))
+           (state (if change-basep (set-print-base-radix print-base state) state))
+           (- (cw "~X01" dag nil))
+           (state (if change-basep (set-print-base-radix old-print-base state) state))
+           (- (cw "(DAG has ~x0 IF-branches.)~%" (count-top-level-if-branches-in-dag dag))) ; todo: if 1, say "no ifs"
+           (- (cw ")~%"))) ; matches "(DAG after"
+        state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -442,10 +444,12 @@
                          (er hard? ',name "Unresolved error branches are present (see calls of ~&0 in the term or DAG above)." error-branch-functions)
                          (mv :unresolved-error-branches nil hits state))
                         ((when remaining-incomplete-run-fns)
-                         (cw "~%")
-                         (print-dag-nicely dag max-printed-term-size) ; use the print-base?
-                         (er hard? ',name " Incomplete run (see calls of ~&0 in the term or DAG above)." remaining-incomplete-run-fns)
-                         (mv :incomplete-run nil hits state)))
+                         (b* ((- (cw "~%"))
+                              (state (print-dag-nicely-with-base dag max-printed-term-size nil
+                                                                 nil ; t would turn IF into COND
+                                                                 print-base state))
+                              (- (er hard? ',name " Incomplete run (see calls of ~&0 in the term or DAG above)." remaining-incomplete-run-fns)))
+                           (mv :incomplete-run nil hits state))))
                      (mv :error-incomplete-run ; is this case possible?
                          dag hits state))
                  ;; Something changed, so continue the symbolic execution:

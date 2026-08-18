@@ -14,16 +14,19 @@
 (include-book "std/portcullis" :dir :system) ; for xdoc package
 
 (defpkg "ARM"
-    (append '(bvnot bvor bvand bvxor slice getbit bvchop bvplus bvminus bvuminus bvmult bvcat bvsx bvcount repeatbit putbit
-              bvlt sbvlt
-              bvle sbvle
-              bvshl bvshr bvashr
-              bv-array-read
-              bv-array-read-chunk-little
-              bv-list-read-chunk-little
-              bool-to-bit bit-to-bool
-              putbyte
-              putbits
+  (append '(bvnot bvand bvor bvxor
+            slice getbit bvchop
+            bvplus bvminus bvuminus bvmult
+            bvcat bvsx bvcount repeatbit
+            bvlt bvle bvgt bvge
+            sbvlt sbvle sbvgt sbvge
+            bvshl bvshr bvashr
+            bvif
+            bv-array-read
+            bv-array-read-chunk-little
+            bv-list-read-chunk-little
+            bool-to-bit bit-to-bool
+            putbit putbyte putbits
             logext logtail
             defstobj+
             lookup-eq
@@ -43,5 +46,4 @@
           (set-difference-eq *acl2-exports*
                              '(pc ; needed for the ARM program counter
                                read ; needed for our memory read function
-                               ; ; we have our own
                                ))))
