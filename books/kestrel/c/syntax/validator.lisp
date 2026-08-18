@@ -316,8 +316,10 @@
    (xdoc::p
     "If no entry exists for the identifier,
      add a new @(tsee valid-ext-info).
-     If an entry does exist, update the @('declared-in') field to include
-     the name of the current translation unit.")
+     If an entry does exist, replace its type with the supplied type
+     and update the @('declared-in') field to include
+     the name of the current translation unit,
+     while preserving its UID.")
    (xdoc::p
     "When an existing entry already exists,
      type compatibility is not checked, nor is the UID.
@@ -331,6 +333,7 @@
          info?
          :some (change-valid-ext-info
                 info?
+                :type type
                 :declared-in (insert table.filepath
                                      (valid-ext-info->declared-in
                                       info?.val)))
@@ -344,35 +347,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define vstate-update-ext-type ((ident identp)
-                                (type typep)
-                                (vstate vstatep))
-  :returns (new-vstate vstatep)
-  :short "Update the type of an identifier in the @('externals') map."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The identifier must already have external information.
-     We replace its type with the supplied type,
-     preserving its UID and the set of translation units
-     in which it has been declared."))
-  (b* (((vstate vstate) vstate)
-       (info? (vstate-lookup-ext ident vstate))
-       ((unless info?)
-        (raise "Internal error: no external information for ~x0."
-               (ident-fix ident))
-        (vstate-fix vstate))
-       (new-info (change-valid-ext-info info? :type type))
-       (new-externals
-        (omap::update (ident-fix ident) new-info vstate.externals)))
-    (change-vstate vstate :externals new-externals))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define vstate-add-ord ((ident identp)
                         (info valid-ord-infop)
-                        (vstate vstatep))
+                        (vstate vstatep)
+                        &key
+                        ((update-extp booleanp) 't))
   :returns (new-vstate vstatep)
   :short "Add an ordinary identifier to the validation state."
   :long
@@ -393,7 +372,8 @@
      We could consider adding a guard to this function
      that characterizes the acceptable overwriting.")
    (xdoc::p
-    "If @('info') indicates external linkage, we update the @('externals') map.
+    "If @('info') indicates external linkage and @('update-extp') is true,
+     we update the @('externals') map.
      See @(tsee vstate-update-ext)."))
   (b* (((vstate vstate) vstate)
        ((valid-table table) vstate.table)
@@ -410,14 +390,16 @@
        (table (change-valid-table table :scopes new-scopes))
        (vstate (change-vstate vstate :table table))
        (vstate
-        (valid-ord-info-case
-         info
-         :objfun (linkage-case
-                  info.linkage
-                  :external
-                  (vstate-update-ext ident info.type info.uid vstate)
-                  :otherwise vstate)
-         :otherwise vstate)))
+        (if update-extp
+            (valid-ord-info-case
+             info
+             :objfun (linkage-case
+                      info.linkage
+                      :external
+                      (vstate-update-ext ident info.type info.uid vstate)
+                      :otherwise vstate)
+             :otherwise vstate)
+          vstate)))
     vstate)
   :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
   :no-function nil)
@@ -426,7 +408,9 @@
 
 (define vstate-add-ord-file-scope ((ident identp)
                                    (info valid-ord-infop)
-                                   (vstate vstatep))
+                                   (vstate vstatep)
+                                   &key
+                                   ((update-extp booleanp) 't))
   :returns (new-vstate vstatep)
   :short "Add an ordinary identifier
           to the file scope of a validation table."
@@ -438,7 +422,7 @@
      It is used in some situations.")
    (xdoc::p
     "As in @(tsee vstate-add-ord), we update the @('externals') map
-     if @('info') indicates external linkage."))
+     if @('info') indicates external linkage and @('update-extp') is true."))
   (b* (((vstate vstate) vstate)
        ((valid-table table) vstate.table)
        (scopes (valid-table->scopes table))
@@ -455,14 +439,16 @@
        (table (change-valid-table table :scopes new-scopes))
        (vstate (change-vstate vstate :table table))
        (vstate
-        (valid-ord-info-case
-         info
-         :objfun (linkage-case
-                  info.linkage
-                  :external
-                  (vstate-update-ext ident info.type info.uid vstate)
-                  :otherwise vstate)
-         :otherwise vstate)))
+        (if update-extp
+            (valid-ord-info-case
+             info
+             :objfun (linkage-case
+                      info.linkage
+                      :external
+                      (vstate-update-ext ident info.type info.uid vstate)
+                      :otherwise vstate)
+             :otherwise vstate)
+          vstate)))
     vstate)
   :guard-hints (("Goal" :in-theory (enable acons)))
   :no-function nil)
@@ -7065,10 +7051,13 @@
                     :linkage linkage
                     :defstatus defstatus
                     :uid uid))
-         (vstate (vstate-add-ord ident new-info vstate))
          (update-ext-p
           (and (linkage-case linkage :external)
                ext-info?))
+         (vstate (vstate-add-ord ident
+                                 new-info
+                                 vstate
+                                 :update-extp (not update-ext-p)))
          ((mv ext-type vstate)
           (if update-ext-p
               (vstate-make-type-composite
@@ -7076,7 +7065,7 @@
             (mv (irr-type) vstate)))
          (vstate
           (if update-ext-p
-              (vstate-update-ext-type ident ext-type vstate)
+              (vstate-update-ext ident ext-type uid vstate)
             vstate))
          ((erp new-initer? more-types vstate)
           (valid-initer-option initdeclor.initer? type lifetime? vstate))
@@ -7089,11 +7078,15 @@
                      :kind (make-type-array-kind-const-len :len nil)))
                    (new-info
                     (change-valid-ord-info-objfun new-info :type type))
-                   (vstate (vstate-add-ord ident new-info vstate))
                    (ext-info? (vstate-lookup-ext ident vstate))
                    (update-ext-p
                     (and (linkage-case linkage :external)
                          ext-info?))
+                   (vstate (vstate-add-ord ident
+                                           new-info
+                                           vstate
+                                           :update-extp
+                                           (not update-ext-p)))
                    ((mv ext-type vstate)
                     (if update-ext-p
                         (vstate-make-type-composite
@@ -7101,7 +7094,7 @@
                       (mv (irr-type) vstate)))
                    (vstate
                     (if update-ext-p
-                        (vstate-update-ext-type ident ext-type vstate)
+                        (vstate-update-ext ident ext-type uid vstate)
                       vstate)))
                 (mv type vstate))
             (mv type vstate)))
@@ -8151,6 +8144,7 @@
                  ident))
        (declared-type type)
        (info? (vstate-lookup-ord-file-scope ident vstate))
+       (update-ext-p (and (linkage-case linkage :external) ext-info?))
        ((erp fundef-uid type vstate)
         (b* (((reterr) (irr-uid) (irr-type) (irr-vstate))
              ((when (not info?))
@@ -8162,7 +8156,11 @@
                           :uid uid)))
                 (retok uid
                        (type-fix type)
-                       (vstate-add-ord-file-scope ident info vstate))))
+                       (vstate-add-ord-file-scope
+                        ident
+                        info
+                        vstate
+                        :update-extp (not update-ext-p)))))
              (info info?)
              ((unless (valid-ord-info-case info :objfun))
               (retmsg$ "The name of the function definition ~x0 ~
@@ -8204,8 +8202,11 @@
                     :uid uid)))
           (retok uid
                  type
-                 (vstate-add-ord-file-scope ident info vstate))))
-       (update-ext-p (and (linkage-case linkage :external) ext-info?))
+                 (vstate-add-ord-file-scope
+                  ident
+                  info
+                  vstate
+                  :update-extp (not update-ext-p)))))
        ((mv ext-type vstate)
         (if update-ext-p
             (vstate-make-type-composite
@@ -8213,7 +8214,7 @@
           (mv (irr-type) vstate)))
        (vstate
         (if update-ext-p
-            (vstate-update-ext-type ident ext-type vstate)
+            (vstate-update-ext ident ext-type fundef-uid vstate)
           vstate))
        ((erp new-declons types vstate)
         (valid-declon-list fundef.declons vstate))
