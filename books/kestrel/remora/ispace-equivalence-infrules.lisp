@@ -236,12 +236,17 @@
     "We normalize the different forms of dimension concatenation
      to consists of
      (i) shape variables,
-     (ii) shapes consisting of single dimensions, and
-     (iii) binary @('++') concatenations.
-     The rule @('dims0') and @('dims2m') reduce
+     (ii) shapes consisting of single dimensions,
+     (iii) empty @('++') concatenations, and
+     (iv) binary @('++') concatenations.
+     The rules @('dims0') and @('dims2m') reduce
      shapes consisting of lists of zero or more dimensions
      to @('++') concatenations of zero or more shapes,
-     each consisting of a single dimension."))
+     each consisting of a single dimension.
+     The rules @('append1') and @('append3m') reduce
+     singleton @('++') concatenations to their single shapes
+     and @('++') concatenations of three or more shapes to
+     left-associated nests of binary @('++') concatenations."))
 
   :preds ((shp= shp1 shp2)
           (shps= shps1 shps2)
@@ -350,6 +355,15 @@
    (dims2m ((dimp d) (dim-listp ds) (consp ds))
            (shp= (shape-dims (cons d ds))
                  (shp++ (shp d) (shape-dims ds))))
+
+   ;; normalization of non-empty and non-binary concatenations:
+
+   (append1 ((shapep s))
+            (shp= (shp++ s) s))
+
+   (append3m ((shapep s1) (shapep s2) (shape-listp ss) (consp ss))
+             (shp= (shape-append (list* s1 s2 ss))
+                   (shape-append (cons (shp++ s1 s2) ss))))
 
    ;; TODO: add more rules
 
