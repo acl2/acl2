@@ -164,7 +164,8 @@
    ;; abelian group properties of addition:
 
    (add-comm ((dimp d1) (dimp d2))
-             (dim= (dim+ d1 d2) (dim+ d2 d1)))
+             (dim= (dim+ d1 d2)
+                   (dim+ d2 d1)))
 
    (add-assoc ((dimp d1) (dimp d2) (dimp d3))
               (dim= (dim+ (dim+ d1 d2) d3)
