@@ -339,19 +339,19 @@
 
    ;; congruence of lists of shapes:
 
-   (cong-shape-cons ((shapep s1) (shapep s2)
-                     (shape-listp ss1) (shape-listp ss2)
-                     (shp= s1 s2)
-                     (shps= ss1 ss2))
-                    (shps= (cons s1 ss1) (cons s2 ss2)))
+   (cong-cons ((shapep s1) (shapep s2)
+               (shape-listp ss1) (shape-listp ss2)
+               (shp= s1 s2)
+               (shps= ss1 ss2))
+              (shps= (cons s1 ss1) (cons s2 ss2)))
 
    ;; congruence of lists of ispaces:
 
-   (cong-ispace-cons ((ispacep i1) (ispacep i2)
-                      (ispace-listp is1) (ispace-listp is2)
-                      (isp= i1 i2)
-                      (isps= is1 is2))
-                     (isps= (cons i1 is1) (cons i2 is2)))
+   (cong-cons ((ispacep i1) (ispacep i2)
+               (ispace-listp is1) (ispace-listp is2)
+               (isp= i1 i2)
+               (isps= is1 is2))
+              (isps= (cons i1 is1) (cons i2 is2)))
 
    ;; normalization of shapes built from dimensions:
 
