@@ -116,10 +116,11 @@
              (dim= (dim-add ds1) (dim-add ds2)))
 
    (cong-sub ((dim-listp ds1) (dim-listp ds2)
-              (dims= ds1 ds3))
+              (dims= ds1 ds2))
              (dim= (dim-sub ds1) (dim-sub ds2)))
 
-   (cong-mul ((dim-listp ds1) (dim-listp ds2) (dims= ds1 ds2))
+   (cong-mul ((dim-listp ds1) (dim-listp ds2)
+              (dims= ds1 ds2))
              (dim= (dim-mul ds1) (dim-mul ds2)))
 
    ;; congruence of lists of dimensions:
@@ -162,8 +163,7 @@
 
    ;; abelian group properties of addition:
 
-   (add-comm ((dimp d1)
-              (dimp d2))
+   (add-comm ((dimp d1) (dimp d2))
              (dim= (dim+ d1 d2) (dim+ d2 d1)))
 
    (add-assoc ((dimp d1) (dimp d2) (dimp d3))
@@ -171,8 +171,7 @@
                     (dim+ d1 (dim+ d2 d3))))
 
    (add-id ((dimp d))
-           (dim= (dim+ 0 d)
-                 d))
+           (dim= (dim+ 0 d) d))
 
    (add-inv ((dimp d))
             (dim= (dim+ d (dim- d))
@@ -234,8 +233,7 @@
      And congruence rules corresponding to the construction of
      shapes, ispaces, lists of shapes, and lists of ispaces.")
    (xdoc::p
-    "We reduce the different forms of dimension concatenation
-     to consists of
+    "We reduce the different forms of dimension concatenation to consist of
      (i) shape variables,
      (ii) shapes consisting of single dimensions,
      (iii) empty @('++') concatenations, and
