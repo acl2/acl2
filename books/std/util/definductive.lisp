@@ -1970,6 +1970,33 @@
 
 ;;;;;;;;;;
 
+(define defind-ind-flag-fn-name ((pred-name symbolp) (name symbolp))
+  :returns (fn-name symbolp)
+  :short "Name of the flag function of a @(tsee defines) of
+          @('p[i]-ind') functions."
+  (packn-pos (list (defind-ind-fn-name pred-name name) '-flag)
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-ind-flag-macro-name ((pred-name symbolp) (name symbolp))
+  :returns (macro-name symbolp)
+  :short "Name of the flag macro of a @(tsee defines) of
+          @('p[i]-ind') functions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the interface for rule induction
+     over a clique of two or more predicates,
+     so we name it after the @('p[i]-induction') rules,
+     which serve that purpose for a clique of a single predicate,
+     rather than leaving it the longer default name
+     derived from the name of the @(tsee defines)."))
+  (packn-pos (list 'defthm- (defind-induction-thm-name pred-name name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
 (define defind-proof-for-rule-fn-name ((pred-name symbolp)
                                        (irule-name symbolp)
                                        (name symbolp))
@@ -6039,6 +6066,9 @@
        (clique-name (defind-ind-fn-clique-name pred-info1.name name))
        (defines-event
          `(defines ,clique-name
+            :flag ,(defind-ind-flag-fn-name pred-info1.name name)
+            :flag-defthm-macro ,(defind-ind-flag-macro-name
+                                  pred-info1.name name)
             :flag-local nil
             :hints ,hints
             ,@(defind-gen-ind-fns-defines

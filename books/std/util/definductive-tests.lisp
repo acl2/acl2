@@ -1631,3 +1631,42 @@
                                       r*-refl
                                       r*-trans))))
 )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; For a clique of two or more predicates, rule induction is via the flag macro.
+
+(must-succeed*
+
+ (definductive evenodd-ind
+   :preds ((evn n)
+           (odd n))
+   :irules ((zero ()
+                  (evn 0))
+            (evn-step ((evn n))
+                      (odd (1+ n)))
+            (odd-step ((odd n))
+                      (evn (1+ n)))))
+
+ ; Both predicates are proved together, by mutual rule induction,
+ ; with no proof tree mentioned in either statement.
+
+ (defthm-evn-induction
+   (defthm natp-when-evn
+     (implies (evn n)
+              (natp n))
+     :flag evn-ind)
+   (defthm natp-when-odd
+     (implies (odd n)
+              (natp n))
+     :flag odd-ind)
+   :hints (("Goal" :expand ((evn-proof-validp (evn-proof n) n)
+                            (odd-proof-validp (odd-proof n) n))
+                   :in-theory (enable evn
+                                      odd
+                                      evn-zero-validp
+                                      odd-evn-step-validp
+                                      evn-odd-step-validp
+                                      evn-when-valid-proof
+                                      odd-when-valid-proof))))
+)
