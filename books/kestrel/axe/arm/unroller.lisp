@@ -41,6 +41,7 @@
 (include-book "kestrel/bv-arrays/bv-array-conversions" :dir :system)
 (include-book "kestrel/bv-arrays/array-patterns" :dir :system)
 (include-book "kestrel/lists-light/nth" :dir :system)
+(include-book "kestrel/lists-light/append" :dir :system)
 (include-book "kestrel/axe/rules1" :dir :system)
 (include-book "rewriter")
 (include-book "support")

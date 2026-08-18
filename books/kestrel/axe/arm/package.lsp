@@ -64,9 +64,10 @@
     arm::r14
     arm::r15
     arm::error
-    arm::*pc*
+    arm::*fp*
     arm::*sp*
     arm::*lr*
+    arm::*pc*
     arm::register-numberp
 
     arm::apsr.n

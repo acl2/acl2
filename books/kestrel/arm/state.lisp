@@ -134,9 +134,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defconst *sp* #b1101)
-(defconst *lr* #b1110)
-(defconst *pc* #b1111)
+(defconst *fp* #b1011) ; register 11 is the frame pointer (FP)
+(defconst *sp* #b1101) ; register 13 is the stack pointer (SP)
+(defconst *lr* #b1110) ; register 14 is the link register (LR)
+(defconst *pc* #b1111) ; register 15 is the program counter (PC)
 
 ;; Gets the stack pointer (register 13 = #b1101).
 ;; We consider this an abbreviation to be kept enabled.
