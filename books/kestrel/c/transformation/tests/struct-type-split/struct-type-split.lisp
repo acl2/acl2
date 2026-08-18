@@ -1586,3 +1586,36 @@ int main(void) {
 ")
 
  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This tests correct safety checks of incomplete structure types.
+
+(acl2::must-succeed*
+
+ (c$::input-files :files '("opaque.c")
+                  :const *old*)
+
+ (struct-type-split *old*
+                    *new*
+                    :struct-tag "target"
+                    :right-members ("right")
+                    :new-tag "target2")
+
+ (c$::output-files :const *new*
+                   :base-dir "new")
+
+ (assert-file-contents
+  :file "new/opaque.c"
+  :content "struct opaque;
+
+struct target {
+  int left;
+};
+
+struct target2 {
+  int right;
+};
+")
+
+ :with-output-off nil)
