@@ -1441,7 +1441,7 @@
 
 (define defind-concl-var-name ((name symbolp))
   :returns (var-name symbolp)
-  :short "Name of the conclusion variable."
+  :short "Prefix of the names of the conclusion argument variables."
   (packn-pos (list 'concl) (symbol-lfix name)))
 
 ;;;;;;;;;;
@@ -1492,8 +1492,8 @@
 
 (define defind-concl-formal-var-name ((formal symbolp) (name symbolp))
   :returns (var-name symbolp)
-  :short "Name of the variable bound to a formal of
-          a conclusion variable for an assertion."
+  :short "Name of the conclusion argument variable
+          corresponding to a formal of a predicate."
   (packn-pos (list (defind-concl-var-name name)
                    #\.
                    (symbol-lfix formal))
@@ -1503,8 +1503,8 @@
 
 (define defind-concl-formal-var-names ((formals symbol-listp) (name symbolp))
   :returns (var-names symbol-listp)
-  :short "Name of all the variables bound to the formals of
-          a conclusion variable for an assertion."
+  :short "Names of the conclusion argument variables
+          corresponding to the formals of a predicate."
   (cond ((endp formals) nil)
         (t (cons (defind-concl-formal-var-name (car formals) name)
                  (defind-concl-formal-var-names (cdr formals) name)))))
@@ -1517,8 +1517,6 @@
           uses for the arguments of the conclusion."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "These are the same names used for the formals of a conclusion assertion.")
    (xdoc::p
     "These names must differ from the variables of the rules,
      which are bound, in each case of the function,
@@ -2947,15 +2945,13 @@
      a clique of mutually recursive fixtypes,
      the limit is in the enclosing @(tsee fty::deftypes) instead.")
    (xdoc::p
-    "Here the @(':xvar') option is not just advisable but necessary:
+    "The @(':xvar') option is necessary:
      since the fields are named after the variables of the rules,
      the default @('x') would clash with a rule variable @('x'),
      which FTY rejects with a hard error.
      We use @(tsee defind-proof-xvar-name),
      which @(tsee defind-check-proof-names) establishes to be distinct from
-     the variables of the rules;
-     this is the caveat noted in @(tsee defind-gen-proof2-assertion-defprod),
-     discharged here."))
+     the variables of the rules."))
   (b* ((xvar (defind-proof-xvar-name name))
        (summands (defind-gen-proof-summands pred-name infos name))
        (measurep (consp (cdr (symbol-set-list-fix levels))))
