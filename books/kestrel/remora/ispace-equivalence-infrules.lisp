@@ -252,7 +252,10 @@
     "With the above reductions available,
      we are in a standard situation with empty and binary concatenation,
      where the empty one plays the role of identity.
-     We have rules for associativity as well as left and right identity."))
+     We have rules for associativity as well as left and right identity.")
+   (xdoc::p
+    "Finally, the rule @('ispace-dim-shape') states the equivalence of
+     a dimension ispace and a shape ispace that consists of that dimension."))
 
   :preds ((shp= shp1 shp2)
           (shps= shps1 shps2)
@@ -394,4 +397,9 @@
                    (shp= (shp++ (shp++) s) s))
 
    (append-id-right ((shapep s))
-                    (shp= (shp++ s (shp++)) s))))
+                    (shp= (shp++ s (shp++)) s))
+
+   ;; equivalence of dimension ispace and singleton shape ispace:
+
+   (ispace-dim-shape ((dimp d))
+                     (isp= (ispace-dim d) (ispace-shape (shp d))))))
