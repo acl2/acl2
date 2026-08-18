@@ -1352,29 +1352,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defind-pred2-name ((pred-name symbolp) (name symbolp))
-  :returns (pred2-name symbolp)
-  :short "Name of the @('p[i]-2') symbol for a predicate."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These names originate from a second representation of proofs,
-     which used to be generated alongside the current one
-     and is no longer generated;
-     the assertion fixtypes
-     (see @(tsee defind-gen-proof2-assertion-defprod))
-     are the only events still named after @('p[i]-2')."))
-  (packn-pos (list (symbol-lfix pred-name) '-2) (symbol-lfix name)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define defind-assert-type-name ((pred-name symbolp) (name symbolp))
-  :returns (type-name symbolp)
-  :short "Name of a @('p[i]-assertion') fixtype."
-  (packn-pos (list (symbol-lfix pred-name) '-assertion) (symbol-lfix name)))
-
-;;;;;;;;;;
-
 (define defind-proof-type-name ((pred-name symbolp) (name symbolp))
   :returns (type-name symbolp)
   :short "Name of a @('p[i]-proof') fixtype."
@@ -1389,13 +1366,6 @@
              (symbol-lfix name)))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(define defind-assert-recog-name ((pred-name symbolp) (name symbolp))
-  :returns (recog-name symbolp)
-  :short "Name of the recognizer of a @('p[i]-assertion') fixtype."
-  (packn-pos (list (symbol-lfix pred-name) '-assertionp) (symbol-lfix name)))
-
-;;;;;;;;;;
 
 (define defind-proof-recog-name ((pred-name symbolp) (name symbolp))
   :returns (recog-name symbolp)
@@ -1440,13 +1410,6 @@
   :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(define defind-assert-var-name ((name symbolp))
-  :returns (var-name symbolp)
-  :short "Name of the assertion variable."
-  (packn-pos (list 'assertion) (symbol-lfix name)))
-
-;;;;;;;;;;
 
 (define defind-proof-var-name ((name symbolp))
   :returns (var-name symbolp)
@@ -2823,63 +2786,6 @@
     (cons xdoc-event print-event?))
   :type-prescription
   (true-listp (defind-gen-name-defxdoc+ name parents short long xdocp print)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-gen-proof2-assertion-defprod ((info defind-pred-infop)
-                                             (name symbolp)
-                                             (xdocp booleanp)
-                                             (print evmac-input-print-p))
-  :returns (events pseudo-event-form-listp)
-  :short "Generate a @('p[i]-2-assertion') fixtype."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Since the parameters are currently untyped,
-     we can just list them as field names in the fixtype definition.")
-   (xdoc::p
-    "We use the @(':xvar') option to avoid possible collisions with @('x'),
-     which could be a commonly chosen name for a predicate formal.
-     Although @('assertion') seems unlikely to clash,
-     at some point we should pick an @(':xvar') name
-     that we establish to be distinct from the formals
-     (maybe even leaving @('x') as is if it is not a formal)."))
-  (b* (((defind-pred-info info))
-       (pred2-name (defind-pred2-name info.name name))
-       (type-name (defind-assert-type-name pred2-name name))
-       (defprod-event
-         `(fty::defprod ,type-name
-            ,@(and xdocp
-                   `(:parents (,(symbol-lfix name))
-                     :short ,(str::cat
-                              "Fixtype of assertions for predicate @('"
-                              (str::downcase-string (symbol-name pred2-name))
-                              "').")))
-            ,info.formals
-            :xvar ,(defind-assert-var-name name)
-            :pred ,(defind-assert-recog-name pred2-name name)))
-       (print-event?
-        (and (evmac-input-print->= print :result)
-             `((cw-event "Fixtype ~x0.~%" ',type-name)))))
-    (cons defprod-event print-event?)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-gen-proof2-assertion-defprods ((infos defind-pred-info-listp)
-                                              (name symbolp)
-                                              (xdocp booleanp)
-                                              (print evmac-input-print-p))
-  :guard (defind-pred-names-unambp infos)
-  :returns (defprods pseudo-event-form-listp)
-  :short "Generate the @('p[i]-2-assertion') fixtypes."
-  (b* (((when (endp infos)) nil)
-       (events
-        (defind-gen-proof2-assertion-defprod (car infos) name xdocp print))
-       (more-events
-        (defind-gen-proof2-assertion-defprods (cdr infos) name xdocp print)))
-    (append events more-events))
-  :type-prescription
-  (true-listp (defind-gen-proof2-assertion-defprods infos name xdocp print)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
