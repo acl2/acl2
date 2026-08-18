@@ -203,6 +203,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; The instance name is a legal Remora identifier if the base name is and
+; the type names are made of identifier characters.  Everything the
+; suffixes add -- decimal digits, dashes, and the slashes that separate
+; the base from them -- are identifier continuation characters, and the
+; slash also settles the reserved-keyword side condition, since no
+; Remora keyword contains a slash.  The general facts live with
+; IDENTIFIER-SYNTAX; what is specific to this book is that the two
+; dash-separated suffixes consist of such characters.
+
+(local
+ (defsection cfun-inst-name-support
+
+   (defruled ascii-id-continue-string-p-of-nat-list-dash-suffix
+     (ascii-id-continue-string-p (nat-list-dash-suffix nats))
+     :induct (len nats)
+     :enable (nat-list-dash-suffix
+              str::fast-string-append
+              ascii-id-continue-string-p-of-string-append
+              ascii-id-continue-string-p-when-dec-bytes
+              dec-digit-listp-of-string=>nats-of-nat-to-dec-string)
+     :disable string-append)
+
+   (defruled ascii-id-continue-string-p-of-string-list-dash-suffix
+     (implies (and (string-listp strs)
+                   (ascii-id-continue-string-list-p strs))
+              (ascii-id-continue-string-p (string-list-dash-suffix strs)))
+     :induct (len strs)
+     :enable (string-list-dash-suffix
+              ascii-id-continue-string-list-p
+              str::fast-string-append
+              ascii-id-continue-string-p-of-string-append)
+     :disable string-append)))
+
+(defrule valid-identifier-string-p-of-cfun-inst-name
+  :parents (monomorphize)
+  :short "The generated instance name is a legal Remora identifier
+          if the base name is and the type names are made of
+          identifier continuation characters."
+  (implies (and (stringp base)
+                (string-listp strs)
+                (valid-identifier-string-p base)
+                (ascii-id-continue-string-list-p strs))
+           (valid-identifier-string-p (cfun-inst-name base strs nats)))
+  :enable (cfun-inst-name
+           str::fast-string-append
+           valid-identifier-string-p-of-string-append-when-slash
+           ascii-id-continue-string-p-of-string-append
+           ascii-id-continue-string-p-of-nat-list-dash-suffix
+           ascii-id-continue-string-p-of-string-list-dash-suffix
+           acl2::string=>nats-of-string-append)
+  :disable string-append)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Extend dim-var-map by pairing up ispace vars with nat values.  We use the
 ; library acl2::string-nat-map omap so that this map is handled the same way
 ; as the string-type-map used for type arguments.
@@ -642,6 +696,8 @@
 (defines monomorphize-impl
   :verify-guards :after-returns
   :ruler-extenders :all
+  ; The flag function is used by the DEFRET-MUTUAL in monomorphize-properties.
+  :flag-local nil
 
   (define mono-expr ((x exprp) (defs bind-mapp) (fn-info-map fn-info-mapp) (dim-var-map acl2::string-nat-mapp) (type-map string-type-mapp))
     :short "Monomorphize an expression."
@@ -814,8 +870,19 @@
                              :nats nats
                              :targ-tys (type-list-subst-type-vars
                                         targ-tys type-map type-map)))))
+                       ; An :appn of fewer than two arguments is not well
+                       ; formed (see ast-wfp): a one-argument call is an
+                       ; :app, and a call with no value arguments is just
+                       ; a reference to the instance, all of whose
+                       ; parameters have been instantiated.
                        (mv nil fn-info-map
-                           (expr-appn (expr-var inst-name) new-args)))
+                           (cond ((not (consp new-args))
+                                  (expr-var inst-name))
+                                 ((not (consp (cdr new-args)))
+                                  (expr-app (expr-var inst-name)
+                                            (car new-args)))
+                                 (t (expr-appn (expr-var inst-name)
+                                               new-args)))))
                 :otherwise (mv nil fn-info-map (expr-capp fun x.targs x.iargs new-args)))))
            ((when err) (mv err fn-info-map new-expr)))
         (mv nil fn-info-map new-expr))
