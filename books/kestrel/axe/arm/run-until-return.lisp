@@ -18,6 +18,7 @@
 (include-book "misc/defpun" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/lists-light/memberp" :dir :system)
+(include-book "kestrel/alists-light/acons" :dir :system)
 
 (defstub error-wrapper (* *) => *)
 
@@ -30,13 +31,18 @@
 
 ;; (defstub stub (x) t)
 ;; (defstub stub2 (x y) t)
+(local (in-theory (disable alistp)))
+
+;; (thm
+;;   (integerp (lookup-equal 'arm::register_list (mv-nth 2 (arm32-decode instr))))
+;;   :hints (("Goal" :in-theory (enable arm32-decode))))
 
 ;; Adjustmust to the stack height for instr (+ 1 for call, -1 for return)
+;; todo: speed this up
 (defund stack-height-adjustment (instr)
   (declare (xargs :guard (and (unsigned-byte-p 32 instr) ; todo: use a recognizer
                               )
-                  :guard-hints (("Goal" :in-theory (enable arm32-decode)))
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable arm32-decode)))))
   (mv-let (erp mnemonic args) ;; where ARGS is an alist from field names
     (arm::arm32-decode instr)
     (if erp
