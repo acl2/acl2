@@ -135,7 +135,10 @@
                    (concatenate
                     'string "__DEFFIXTYPE-" (symbol-name equiv) "-MEANS-EQUAL-OF-"
                     (symbol-name fix))
-                   'fty)))
+                   ;; Interned in the equiv's own package so that fixtypes
+                   ;; whose equiv and fix share symbol names across packages
+                   ;; do not collide.
+                   equiv)))
       `(with-output ,@(and (not verbosep) '(:off :all)) :stack :push
          (progn (make-event
                  '(:or (encapsulate nil
