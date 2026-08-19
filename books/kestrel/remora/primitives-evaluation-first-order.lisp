@@ -2294,6 +2294,23 @@
                                                       :dval op.dval
                                                       :sval op.sval
                                                       :fval arg))
+     :fold-t-t2-d-s-s2 (expr-value-primop
+                        (make-primop-value-fold-t-t2-d-s-s2-f
+                         :tval op.tval
+                         :t2val op.t2val
+                         :dval op.dval
+                         :sval op.sval
+                         :s2val op.s2val
+                         :fval arg))
+     :fold-t-t2-d-s-s2-f (expr-value-primop
+                          (make-primop-value-fold-t-t2-d-s-s2-f-z
+                           :tval op.tval
+                           :t2val op.t2val
+                           :dval op.dval
+                           :sval op.sval
+                           :s2val op.s2val
+                           :fval op.fval
+                           :zval arg))
      :otherwise (prog2$ (impossible) (reserr nil))))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp
                                            primop-value-fun-fo-p)))

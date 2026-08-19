@@ -110,6 +110,7 @@
      which stores the ispace values received
      (a dimension and a shape
      for @('head'), @('tail'), @('length'), @('reverse'), and @('reduce');
+     a dimension and two shapes for @('fold');
      two dimensions and a shape for @('append') and @('flatten');
      a dimension for @('index');
      two dimensions for @('index2d');
@@ -281,6 +282,31 @@
                         (make-primop-value-reduce-t-d-s :tval op.tval
                                                         :dval op.dval
                                                         :sval ival.val)))
+   :fold-t-t2 (ispace-value-case
+               ival
+               :dim (expr-value-primop
+                     (make-primop-value-fold-t-t2-d :tval op.tval
+                                                    :t2val op.t2val
+                                                    :dval ival.val))
+               :shape (reserr nil))
+   :fold-t-t2-d (ispace-value-case
+                 ival
+                 :dim (reserr nil)
+                 :shape (expr-value-primop
+                         (make-primop-value-fold-t-t2-d-s :tval op.tval
+                                                          :t2val op.t2val
+                                                          :dval op.dval
+                                                          :sval ival.val)))
+   :fold-t-t2-d-s (ispace-value-case
+                   ival
+                   :dim (reserr nil)
+                   :shape (expr-value-primop
+                           (make-primop-value-fold-t-t2-d-s-s2
+                            :tval op.tval
+                            :t2val op.t2val
+                            :dval op.dval
+                            :sval op.sval
+                            :s2val ival.val)))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp)))
 

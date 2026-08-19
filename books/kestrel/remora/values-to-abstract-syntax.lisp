@@ -630,7 +630,8 @@
      (xdoc::p
       "A stage that stores an argument value
        (the @('-x') summands, for the binary operations,
-       and the @('-f') summand, for @('reduce'))
+       the @('-f') summand, for @('reduce'),
+       and the @('-f') and @('-f-z') summands, for @('fold'))
        becomes a unary term application (see @(tsee expr))
        of the operation, at the stage before that argument was stored,
        to the expression converted from the stored argument value.
@@ -967,7 +968,100 @@
                           :arg (ispace-dim (dim-const pval.dval)))
                     :arg (ispace-shape
                           (shape-dims (dim-const-list pval.sval))))
-              :arg argexpr)))))
+              :arg argexpr)))
+       :fold (mv nil opvar)
+       :fold-t (mv nil
+                   (make-expr-tapp
+                    :fun opvar
+                    :arg (type-value-to-type pval.tval)))
+       :fold-t-t2 (mv nil
+                      (make-expr-tapp
+                       :fun (make-expr-tapp
+                             :fun opvar
+                             :arg (type-value-to-type pval.tval))
+                       :arg (type-value-to-type pval.t2val)))
+       :fold-t-t2-d (mv nil
+                        (make-expr-iapp
+                         :fun (make-expr-tapp
+                               :fun (make-expr-tapp
+                                     :fun opvar
+                                     :arg (type-value-to-type pval.tval))
+                               :arg (type-value-to-type pval.t2val))
+                         :arg (ispace-dim (dim-const pval.dval))))
+       :fold-t-t2-d-s (mv nil
+                          (make-expr-iapp
+                           :fun (make-expr-iapp
+                                 :fun (make-expr-tapp
+                                       :fun (make-expr-tapp
+                                             :fun opvar
+                                             :arg (type-value-to-type
+                                                   pval.tval))
+                                       :arg (type-value-to-type pval.t2val))
+                                 :arg (ispace-dim (dim-const pval.dval)))
+                           :arg (ispace-shape
+                                 (shape-dims (dim-const-list pval.sval)))))
+       :fold-t-t2-d-s-s2 (mv nil
+                             (make-expr-iapp
+                              :fun (make-expr-iapp
+                                    :fun (make-expr-iapp
+                                          :fun (make-expr-tapp
+                                                :fun (make-expr-tapp
+                                                      :fun opvar
+                                                      :arg (type-value-to-type
+                                                            pval.tval))
+                                                :arg (type-value-to-type
+                                                      pval.t2val))
+                                          :arg (ispace-dim
+                                                (dim-const pval.dval)))
+                                    :arg (ispace-shape
+                                          (shape-dims
+                                           (dim-const-list pval.sval))))
+                              :arg (ispace-shape
+                                    (shape-dims
+                                     (dim-const-list pval.s2val)))))
+       :fold-t-t2-d-s-s2-f
+       (b* (((mv err2 fexpr) (expr-value-to-expr pval.fval)))
+         (mv err2
+             (make-expr-app
+              :fun (make-expr-iapp
+                    :fun (make-expr-iapp
+                          :fun (make-expr-iapp
+                                :fun (make-expr-tapp
+                                      :fun (make-expr-tapp
+                                            :fun opvar
+                                            :arg (type-value-to-type
+                                                  pval.tval))
+                                      :arg (type-value-to-type pval.t2val))
+                                :arg (ispace-dim (dim-const pval.dval)))
+                          :arg (ispace-shape
+                                (shape-dims (dim-const-list pval.sval))))
+                    :arg (ispace-shape
+                          (shape-dims (dim-const-list pval.s2val))))
+              :arg fexpr)))
+       :fold-t-t2-d-s-s2-f-z
+       (b* (((mv err2 fexpr) (expr-value-to-expr pval.fval))
+            ((mv err3 zexpr) (expr-value-to-expr pval.zval)))
+         (mv (or err2 err3)
+             (make-expr-app
+              :fun (make-expr-app
+                    :fun (make-expr-iapp
+                          :fun (make-expr-iapp
+                                :fun (make-expr-iapp
+                                      :fun (make-expr-tapp
+                                            :fun (make-expr-tapp
+                                                  :fun opvar
+                                                  :arg (type-value-to-type
+                                                        pval.tval))
+                                            :arg (type-value-to-type
+                                                  pval.t2val))
+                                      :arg (ispace-dim (dim-const pval.dval)))
+                                :arg (ispace-shape
+                                      (shape-dims
+                                       (dim-const-list pval.sval))))
+                          :arg (ispace-shape
+                                (shape-dims (dim-const-list pval.s2val))))
+                    :arg fexpr)
+              :arg zexpr)))))
     :measure (primop-value-count pval))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1073,4 +1167,5 @@
                                  primop-value-fix-when-flatten
                                  primop-value-fix-when-transpose2d
                                  primop-value-fix-when-iota/static
-                                 primop-value-fix-when-reduce)))))
+                                 primop-value-fix-when-reduce
+                                 primop-value-fix-when-fold)))))
