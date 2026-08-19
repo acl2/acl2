@@ -241,6 +241,12 @@
      arm::eq-condition-of-cmn-zero
      arm::ne-condition-of-cmn-zero
 
+     arm::eq-condition-of-sub-zero
+     arm::ne-condition-of-sub-zero
+
+     arm::cs-condition-of-sub-carry
+     arm::cc-condition-of-sub-carry
+
      ;; cmp rules: ; todo: add the rest!
      arm::eq-condition-of-cmp-zero
      arm::ne-condition-of-cmp-zero
@@ -256,6 +262,20 @@
 
      arm::cs-condition-of-cmp-carry
      arm::cc-condition-of-cmp-carry
+
+     ;; hope these are ok:
+     arm::cmn-sign-constant-opener
+     arm::cmn-zero-constant-opener
+     arm::cmn-carry-constant-opener
+     arm::cmn-overflow-constant-opener
+     arm::cmp-sign-constant-opener
+     arm::cmp-zero-constant-opener
+     arm::cmp-carry-constant-opener
+     arm::cmp-overflow-constant-opener
+     arm::sub-sign-constant-opener
+     arm::sub-zero-constant-opener
+     arm::sub-carry-constant-opener
+     arm::sub-overflow-constant-opener
 
      arm::eq-condition-constant-opener
      arm::ne-condition-constant-opener
@@ -285,8 +305,13 @@
      arm::shift_c-constant-opener
      arm::shift-constant-opener
      arm::addwithcarry-constant-opener ; more?
+     arm::addwithcarry-overflow-constant-opener ; more?
 
      arm::sint-constant-opener
+
+     arm::countleadingzerobits-constant-opener
+     arm::highestsetbit-constant-opener
+     arm::highestsetbit-aux-constant-opener
 
      acl2::lookup-eq-becomes-lookup-equal
      arm::==$inline
