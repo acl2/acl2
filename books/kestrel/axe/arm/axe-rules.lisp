@@ -226,7 +226,11 @@
 (def-constant-opener cmp-carry)
 (def-constant-opener cmp-overflow)
 (def-constant-opener arm::addwithcarry)
+(def-constant-opener arm::addwithcarry-overflow)
 (def-constant-opener arm::sint)
+(def-constant-opener arm::countleadingzerobits)
+(def-constant-opener arm::highestsetbit-aux)
+(def-constant-opener arm::highestsetbit)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
