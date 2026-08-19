@@ -30,7 +30,24 @@
    (xdoc::p
     "We prove properties of the equivalence predicates
      defined via inference rules in
-     @(see ispace-equivalence-inference-rules)."))
+     @(see ispace-equivalence-inference-rules).
+     These properties help validating the definition of the predicates,
+     and also provide reasoning tools for them.")
+   (xdoc::ul
+    (xdoc::li
+     "We show that the predicates hold
+      only of values of the expected types
+      (e.g. @(tsee dim=) only holds on @(tsee dim) values).")
+    (xdoc::li
+     "We prove some derived rules to help reason about the predicates.
+      Some of these rely on the properties described in the previous bullet
+      to shed hypotheses about types of values.")
+    (xdoc::li
+     "We prove that some of the rules in fact realize
+      the reductions claimed in @(see dim-equiv-infrules),
+      e.g. that @('add0'), @('add1'), and @('add3m')
+      reduce all variadic additions to binary ones
+      (while nullary and unary ones reduce to constants).")))
   :order-subtopics t
   :default-parent t)
 
