@@ -264,10 +264,18 @@
      arm::cc-condition-of-cmp-carry
 
      ;; hope these are ok:
+     arm::cmn-sign-constant-opener
+     arm::cmn-zero-constant-opener
+     arm::cmn-carry-constant-opener
+     arm::cmn-overflow-constant-opener
      arm::cmp-sign-constant-opener
      arm::cmp-zero-constant-opener
      arm::cmp-carry-constant-opener
      arm::cmp-overflow-constant-opener
+     arm::sub-sign-constant-opener
+     arm::sub-zero-constant-opener
+     arm::sub-carry-constant-opener
+     arm::sub-overflow-constant-opener
 
      arm::eq-condition-constant-opener
      arm::ne-condition-constant-opener
