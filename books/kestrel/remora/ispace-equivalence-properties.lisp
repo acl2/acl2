@@ -34,7 +34,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection dim-equiv-holds-only-on-dimensions
-  :short "The equivalence of dimensions and lists of dimensiont
+  :short "The equivalence of dimensions and lists of dimensions
           holds only on dimensions and lists of dimensions."
 
   (defthm-dim=-proof-validp-clique-flag
@@ -89,3 +89,89 @@
              (and (dim-listp dims1)
                   (dim-listp dims2)))
     :enable (dims= dim-listp-when-dims=-proof-validp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection shape/ispace-equiv-holds-only-on-shapes/ispaces
+  :short "The equivalence of shapes, ispaces, and lists thereof
+          holds only on shapes, ispaces, and lists thereof."
+
+  (defthm-shp=-proof-validp-clique-flag
+    (defthmd shapep-when-shp=-proof-validp
+      (implies (shp=-proof-validp proof concl.shp1 concl.shp2)
+               (and (shapep concl.shp1)
+                    (shapep concl.shp2)))
+      :flag shp=-proof-validp)
+    (defthmd shape-listp-when-shps=-proof-validp
+      (implies (shps=-proof-validp proof concl.shps1 concl.shps2)
+               (and (shape-listp concl.shps1)
+                    (shape-listp concl.shps2)))
+      :flag shps=-proof-validp)
+    (defthmd ispacep-when-isp=-proof-validp
+      (implies (isp=-proof-validp proof concl.isp1 concl.isp2)
+               (and (ispacep concl.isp1)
+                    (ispacep concl.isp2)))
+      :flag isp=-proof-validp)
+    (defthmd ispace-listp-when-isps=-proof-validp
+      (implies (isps=-proof-validp proof concl.isps1 concl.isps2)
+               (and (ispace-listp concl.isps1)
+                    (ispace-listp concl.isps2)))
+      :flag isps=-proof-validp)
+    :hints (("Goal" :in-theory (enable shp=-proof-validp
+                                       shps=-proof-validp
+                                       isp=-proof-validp
+                                       isps=-proof-validp
+                                       shp=-refl-validp
+                                       shp=-symm-validp
+                                       shp=-trans-validp
+                                       shps=-refl-validp
+                                       shps=-symm-validp
+                                       shps=-trans-validp
+                                       isp=-refl-validp
+                                       isp=-symm-validp
+                                       isp=-trans-validp
+                                       isps=-refl-validp
+                                       isps=-symm-validp
+                                       isps=-trans-validp
+                                       shp=-cong-dims-validp
+                                       shp=-cong-append-validp
+                                       shp=-cong-splice-validp
+                                       isp=-cong-dim-validp
+                                       isp=-cong-shape-validp
+                                       shps=-cong-cons-validp
+                                       isps=-cong-cons-validp
+                                       shp=-dims0-validp
+                                       shp=-dims2m-validp
+                                       shp=-append1-validp
+                                       shp=-append3m-validp
+                                       shp=-splice0-validp
+                                       shp=-splice1m-dim-validp
+                                       shp=-splice1m-shape-validp
+                                       shp=-append-assoc-validp
+                                       shp=-append-id-left-validp
+                                       shp=-append-id-right-validp
+                                       isp=-ispace-dim-shape-validp))))
+
+  (defruled shapep-when-shp=
+    (implies (shp= shp1 shp2)
+             (and (shapep shp1)
+                  (shapep shp2)))
+    :enable (shp= shapep-when-shp=-proof-validp))
+
+  (defruled shape-listp-when-shps=
+    (implies (shps= shps1 shps2)
+             (and (shape-listp shps1)
+                  (shape-listp shps2)))
+    :enable (shps= shape-listp-when-shps=-proof-validp))
+
+  (defruled ispacep-when-isp=
+    (implies (isp= isp1 isp2)
+             (and (ispacep isp1)
+                  (ispacep isp2)))
+    :enable (isp= ispacep-when-isp=-proof-validp))
+
+  (defruled ispace-listp-when-isps=
+    (implies (isps= isps1 isps2)
+             (and (ispace-listp isps1)
+                  (ispace-listp isps2)))
+    :enable (isps= ispace-listp-when-isps=-proof-validp)))
