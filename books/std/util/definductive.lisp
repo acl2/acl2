@@ -2696,6 +2696,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(define defind-valid-proof-thm-section-name ((name symbolp))
+  :returns (topic symbolp)
+  :short "Name of the @(tsee defsection) containing
+          the @('p[i]-when-valid-proof') theorems
+          and the @('p[i]-proof-count-bound') theorems."
+  (packn-pos (list (symbol-lfix name) '-valid-proofs) (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-induction-thm-section-name ((name symbolp))
+  :returns (topic symbolp)
+  :short "Name of the @(tsee defsection) containing
+          the @('p[i]-induction') theorems."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The suffix is @('-induction-rules') and not @('-induction'),
+     because the latter is the name of
+     the @('p[i]-induction') theorem of a predicate named
+     as the @('name') input, which is a common case."))
+  (packn-pos (list (symbol-lfix name) '-induction-rules) (symbol-lfix name)))
+
+;;;;;;;;;;
+
 (define defind-rule-thm-section-name ((name symbolp))
   :returns (topic symbolp)
   :short "Name of the @(tsee defsection) containing
@@ -5641,7 +5665,9 @@
                          (name symbolp)
                          (xdocp booleanp)
                          (print evmac-input-print-p))
-  :returns (events pseudo-event-form-listp)
+  :returns (mv (def-events pseudo-event-form-listp)
+               (thm-events pseudo-event-form-listp)
+               (print-events pseudo-event-form-listp))
   :short "Generate a @('p[i]') predicate,
           along with its @('p[i]-proof-minimalp') predicate
           and its @('p[i]-when-valid-proof') theorem."
@@ -5693,7 +5719,13 @@
      which need not be minimal either,
      so the descent is by induction,
      carried by the local @('p[i]-descend') function,
-     whose value is irrelevant."))
+     whose value is irrelevant.")
+   (xdoc::p
+    "We return the theorem, along with the disabling of @('p[i]-suff'),
+     separately from the definitions,
+     so that the caller can collect the theorems of all the predicates
+     into a single @(tsee defsection);
+     see @(tsee defind-gen-preds)."))
   (b* (((defind-pred-info pred-info))
        (proof (defind-proof-var-name name))
        (proof2 (defind-proof-minimal-var-name name))
@@ -5787,13 +5819,6 @@
              (implies (and (,proof-validp ,proof ,@concl-vars)
                            (,proofp ,proof))
                       (,pred-info.name ,@concl-vars))
-             ,@(and xdocp
-                    `(:parents (,(symbol-lfix name))
-                      :short ,(str::cat
-                               "Sufficiency of a valid proof for predicate @('"
-                               (str::downcase-string
-                                (symbol-name pred-info.name))
-                               "').")))
              :hints (("Goal"
                       :induct (,descend ,proof ,@concl-vars)
                       :in-theory (enable ,suff ,minimalp))))))
@@ -5810,13 +5835,6 @@
                                (,proofp ,proof))
                           (<= (,count-fn (,witness ,@concl-vars))
                               (,count-fn ,proof)))
-                 ,@(and xdocp
-                        `(:parents (,(symbol-lfix name))
-                          :short ,(str::cat
-                                   "Minimality of the witness proof for @('"
-                                   (str::downcase-string
-                                    (symbol-name pred-info.name))
-                                   "').")))
                  :rule-classes
                  ((:linear :trigger-terms
                            ((,count-fn (,witness ,@concl-vars)))))
@@ -5836,10 +5854,16 @@
                (cw-event "Theorem ~x0.~%" ',when-valid-proof)
                ,@(and recursivep
                       `((cw-event "Theorem ~x0.~%" ',count-bound)))))))
-    (append (list minimalp-event fn-event when-valid-proof-event
-                  disable-suff-event)
-            count-bound-events
-            print-event?)))
+    (mv (list minimalp-event fn-event)
+        (list* when-valid-proof-event disable-suff-event count-bound-events)
+        print-event?))
+
+  ///
+
+  (more-returns
+   (def-events true-listp :rule-classes :type-prescription)
+   (thm-events true-listp :rule-classes :type-prescription)
+   (print-events true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6014,7 +6038,9 @@
                                        (name symbolp)
                                        (xdocp booleanp)
                                        (print evmac-input-print-p))
-  :returns (events pseudo-event-form-listp)
+  :returns (mv (fn-events pseudo-event-form-listp)
+               (thm-events pseudo-event-form-listp)
+               (print-events pseudo-event-form-listp))
   :short "Generate the @('p[i]-ind') functions of a clique,
           and the induction rules if any."
   :long
@@ -6039,10 +6065,16 @@
      so the interface is the flag macro that @(tsee defines) generates.
      We pass @(':flag-local nil'),
      because otherwise the flag function is local
-     and that macro cannot be used afterwards."))
-  (b* (((when (endp pred-infos)) nil)
+     and that macro cannot be used afterwards.")
+   (xdoc::p
+    "As with the predicates,
+     we return the induction rules separately from the functions,
+     so that the caller can put them into a single @(tsee defsection);
+     see @(tsee defind-gen-ind-fns)."))
+  (b* (((when (endp pred-infos)) (mv nil nil nil))
        ((defind-pred-info pred-info1) (car pred-infos))
-       ((unless (defind-pred-recursivep pred-info1.name irule-infos)) nil)
+       ((unless (defind-pred-recursivep pred-info1.name irule-infos))
+        (mv nil nil nil))
        (standalonep (endp (cdr pred-infos)))
        ((mv expands uses enables)
         (defind-gen-ind-fn-hint-parts pred-infos standalonep name))
@@ -6065,7 +6097,7 @@
        ((when (endp (cdr pred-infos)))
         (b* ((induction-thm
               (defind-induction-thm-name pred-info1.name name)))
-          (append
+          (mv
            (list `(define ,fn-name1 (,@pred-info1.formals)
                     ,@(and xdocp
                            `(:parents (,(symbol-lfix name))
@@ -6077,16 +6109,9 @@
                     :measure ,measure1
                     :hints ,hints
                     ,body1
-                    :verify-guards nil)
-                 `(defrule ,induction-thm
+                    :verify-guards nil))
+           (list `(defrule ,induction-thm
                     t
-                    ,@(and xdocp
-                           `(:parents (,(symbol-lfix name))
-                             :short ,(str::cat
-                                      "Induction rule for predicate @('"
-                                      (str::downcase-string
-                                       (symbol-name pred-info1.name))
-                                      "').")))
                     :rule-classes
                     ((:induction
                       :pattern (,pred-info1.name ,@pred-info1.formals)
@@ -6102,7 +6127,7 @@
             :hints ,hints
             ,@(defind-gen-ind-fns-defines
                 pred-infos irule-infos clique-preds name xdocp))))
-    (append (list defines-event) print-events))
+    (mv (list defines-event) nil print-events))
 
   :prepwork
 
@@ -6142,7 +6167,14 @@
           ((defind-pred-info pred-info) (car pred-infos))
           (fn-name (defind-ind-fn-name pred-info.name name)))
        (cons `(cw-event "Function ~x0.~%" ',fn-name)
-             (defind-gen-ind-fns-print-events (cdr pred-infos) name))))))
+             (defind-gen-ind-fns-print-events (cdr pred-infos) name)))))
+
+  ///
+
+  (more-returns
+   (fn-events true-listp :rule-classes :type-prescription)
+   (thm-events true-listp :rule-classes :type-prescription)
+   (print-events true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6153,23 +6185,44 @@
                             (xdocp booleanp)
                             (print evmac-input-print-p))
   :guard (defind-pred-names-unambp pred-infos)
-  :returns (events pseudo-event-form-listp)
+  :returns (mv (fn-events pseudo-event-form-listp)
+               (thm-events pseudo-event-form-listp)
+               (print-events pseudo-event-form-listp))
   :short "Generate all the @('p[i]-ind') functions and induction rules."
-  (b* (((when (endp leveled-cliques)) nil)
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As for the predicates,
+     we keep the induction rules separate from the functions,
+     so that the caller can put them into a single @(tsee defsection);
+     see @(tsee defind-gen-ind-fns-for-clique).
+     Each induction rule mentions only
+     the functions of its own clique,
+     so it may follow the functions of all the cliques."))
+  (b* (((when (endp leveled-cliques)) (mv nil nil nil))
        (levels (symbol-set-list-fix (car leveled-cliques)))
        (clique-preds (set::set-list-union levels))
-       (clique-pred-infos (defind-lookup-pred-set clique-preds pred-infos)))
-    (append (defind-gen-ind-fns-for-clique
-              clique-pred-infos irule-infos clique-preds name xdocp print)
-            (defind-gen-ind-fns
-              pred-infos irule-infos (cdr leveled-cliques)
-              name xdocp print)))
+       (clique-pred-infos (defind-lookup-pred-set clique-preds pred-infos))
+       ((mv fns thms prints)
+        (defind-gen-ind-fns-for-clique
+          clique-pred-infos irule-infos clique-preds name xdocp print))
+       ((mv more-fns more-thms more-prints)
+        (defind-gen-ind-fns
+          pred-infos irule-infos (cdr leveled-cliques)
+          name xdocp print)))
+    (mv (append fns more-fns)
+        (append thms more-thms)
+        (append prints more-prints)))
   :no-function nil
   :guard-hints
   (("Goal" :in-theory (enable set-listp-when-symbol-set-listp)))
-  :type-prescription (true-listp (defind-gen-ind-fns
-                                   pred-infos irule-infos leveled-cliques
-                                   name xdocp print)))
+
+  ///
+
+  (more-returns
+   (fn-events true-listp :rule-classes :type-prescription)
+   (thm-events true-listp :rule-classes :type-prescription)
+   (print-events true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6180,7 +6233,9 @@
                           (xdocp booleanp)
                           (print evmac-input-print-p))
   :guard (defind-pred-names-unambp pred-infos)
-  :returns (events pseudo-event-form-listp)
+  :returns (mv (def-events pseudo-event-form-listp)
+               (thm-events pseudo-event-form-listp)
+               (print-events pseudo-event-form-listp))
   :short "Generate all the @('p[i]') predicates."
   :long
   (xdoc::topstring
@@ -6189,25 +6244,35 @@
      because each predicate needs to know whether
      its proof validity predicate is standalone
      or a member of a clique of two or more;
-     see @(tsee defind-proof-valid-return-thm-name)."))
-  (b* (((when (endp leveled-cliques)) nil)
+     see @(tsee defind-proof-valid-return-thm-name).")
+   (xdoc::p
+    "We keep the theorems separate from the definitions,
+     so that the caller can put them into a single @(tsee defsection);
+     see @(tsee defind-gen-pred).
+     Thus all the theorems follow all the definitions,
+     which is fine:
+     no definition depends on any of these theorems,
+     and each theorem depends only on
+     the definitions of its own predicate."))
+  (b* (((when (endp leveled-cliques)) (mv nil nil nil))
        (levels (symbol-set-list-fix (car leveled-cliques)))
        (clique-preds (set::set-list-union levels))
        (clique-pred-infos (defind-lookup-pred-set clique-preds pred-infos))
        (standalonep (and (consp clique-pred-infos)
                          (endp (cdr clique-pred-infos))))
-       (events (defind-gen-preds
-                 pred-infos irule-infos (cdr leveled-cliques)
-                 name xdocp print)))
-    (append (defind-gen-preds-loop
-              clique-pred-infos irule-infos standalonep name xdocp print)
-            events))
+       ((mv defs thms prints)
+        (defind-gen-preds-loop
+          clique-pred-infos irule-infos standalonep name xdocp print))
+       ((mv more-defs more-thms more-prints)
+        (defind-gen-preds
+          pred-infos irule-infos (cdr leveled-cliques)
+          name xdocp print)))
+    (mv (append defs more-defs)
+        (append thms more-thms)
+        (append prints more-prints)))
   :no-function nil
   :guard-hints
   (("Goal" :in-theory (enable set-listp-when-symbol-set-listp)))
-  :type-prescription (true-listp (defind-gen-preds
-                                   pred-infos irule-infos leveled-cliques
-                                   name xdocp print))
 
   :prepwork
   ((define defind-gen-preds-loop ((pred-infos defind-pred-info-listp)
@@ -6216,15 +6281,32 @@
                                   (name symbolp)
                                   (xdocp booleanp)
                                   (print evmac-input-print-p))
-     :returns (events pseudo-event-form-listp)
+     :returns (mv (def-events pseudo-event-form-listp)
+                  (thm-events pseudo-event-form-listp)
+                  (print-events pseudo-event-form-listp))
      :parents nil
-     (cond ((endp pred-infos) nil)
-           (t (append (defind-gen-pred
-                        (car pred-infos) irule-infos
-                        standalonep name xdocp print)
-                      (defind-gen-preds-loop
-                        (cdr pred-infos) irule-infos
-                        standalonep name xdocp print)))))))
+     (b* (((when (endp pred-infos)) (mv nil nil nil))
+          ((mv defs thms prints)
+           (defind-gen-pred
+             (car pred-infos) irule-infos standalonep name xdocp print))
+          ((mv more-defs more-thms more-prints)
+           (defind-gen-preds-loop
+             (cdr pred-infos) irule-infos standalonep name xdocp print)))
+       (mv (append defs more-defs)
+           (append thms more-thms)
+           (append prints more-prints)))
+     ///
+     (more-returns
+      (def-events true-listp :rule-classes :type-prescription)
+      (thm-events true-listp :rule-classes :type-prescription)
+      (print-events true-listp :rule-classes :type-prescription))))
+
+  ///
+
+  (more-returns
+   (def-events true-listp :rule-classes :type-prescription)
+   (thm-events true-listp :rule-classes :type-prescription)
+   (print-events true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -8466,6 +8548,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-gen-defsection ((topic symbolp)
+                               (short stringp)
+                               (events pseudo-event-form-listp)
+                               (xdocp booleanp))
+  :returns (section-events pseudo-event-form-listp
+                           :hints (("Goal" :in-theory (enable true-listp))))
+  :short "Wrap generated events into a @(tsee defsection)
+          or @(tsee encapsulate),
+          depending on whether XDOC is to be generated."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for events that are collected from several predicates,
+     and whose theorems are therefore documented as a group
+     instead of individually,
+     like the theorems corresponding to the inference rules;
+     see @(tsee defind-gen-irule-defsection).")
+   (xdoc::p
+    "We generate nothing if there are no events,
+     to avoid an empty XDOC topic."))
+  (b* ((events (true-list-fix events))
+       ((when (endp events)) nil))
+    (list (if xdocp
+              `(defsection ,(symbol-lfix topic)
+                 :short ,(str-fix short)
+                 ,@events)
+            `(encapsulate () ,@events))))
+
+  ///
+
+  (more-returns
+   (section-events true-listp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-gen-events ((name symbolp)
                            (pred-infos defind-pred-info-listp)
                            (irule-infos defind-irule-info-listp)
@@ -8510,12 +8627,24 @@
        (?proof2-valid-events
         (defind-gen-proof2-valid-fns
           pred-infos irule-infos leveled-cliques name xdocp print))
-       (pred-events
+       ((mv pred-events pred-thm-events pred-print-events)
         (defind-gen-preds
           pred-infos irule-infos leveled-cliques name xdocp print))
-       (ind-events
+       (pred-thms-events
+        (defind-gen-defsection
+          (defind-valid-proof-thm-section-name name)
+          "Theorems about valid proofs."
+          pred-thm-events
+          xdocp))
+       ((mv ind-events ind-thm-events ind-print-events)
         (defind-gen-ind-fns
           pred-infos irule-infos leveled-cliques name xdocp print))
+       (ind-thms-events
+        (defind-gen-defsection
+          (defind-induction-thm-section-name name)
+          "Rules for reasoning by rule induction."
+          ind-thm-events
+          xdocp))
        (?proof2-pred-events
         (defind-gen-proof2-preds pred-infos name xdocp print))
        (?proof2-irule-proof-events
@@ -8549,7 +8678,11 @@
                            proof-valid-events
                            ;; proof2-valid-events
                            pred-events
+                           pred-thms-events
+                           pred-print-events
                            ind-events
+                           ind-thms-events
+                           ind-print-events
                            ;; proof2-pred-events
                            ;; proof2-irule-proof-events
                            (list irules-event)
