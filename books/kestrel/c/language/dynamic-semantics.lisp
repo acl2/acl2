@@ -181,9 +181,7 @@
     "We only support the evaluation of integer constants for now."))
   (const-case c
               :int (eval-iconst c.get)
-              :float (error :exec-const-float)
-              :enum (error :exec-const-enum)
-              :char (error :exec-const-char)))
+              :enum (error :exec-const-enum)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
