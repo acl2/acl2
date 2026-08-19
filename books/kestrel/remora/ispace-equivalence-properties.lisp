@@ -213,7 +213,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce binaddp
-  :short "Check if all the dimension additions are binary."
+  :short "Check if all the dimension additions in dimensions are binary."
   :types (dims)
   :result booleanp
   :default t
@@ -242,15 +242,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used, along with @(tsee binarize-add-in-dims),
-     to show that every dimension is equivalent to
-     one with only binary additions."))
+    "This is called on the dimension arguments of an addition dimension."))
   (cond ((endp dims) (dim-const 0))
         ((endp (cdr dims)) (dim-fix (car dims)))
         ((endp (cddr dims)) (dim-add dims))
         (t (binarize-dims-in-add (cons (dim-add (list (car dims)
-                                                   (cadr dims)))
-                                    (cddr dims)))))
+                                                      (cadr dims)))
+                                       (cddr dims)))))
   :measure (len dims)
   :verify-guards :after-returns)
 
@@ -258,12 +256,6 @@
 
 (defines binarize-add-in-dims
   :short "Turn dimensions into equivalent ones with only binary additions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are used, along with @(tsee binarize-dims-in-add),
-     to show that every dimension is equivalent to
-     one with only binary additions."))
 
   (define binarize-add-in-dim ((dim dimp))
     :returns (new-dim dimp)
@@ -304,7 +296,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This serves to validate the intention of
+    "This validates the intention of
      rules @('add0'), @('add1'), and @('add3m'),
      described in @(see dim-equiv-infrules).")
    (xdoc::p
