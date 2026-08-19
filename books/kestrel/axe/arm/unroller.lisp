@@ -86,6 +86,8 @@
 (local (include-book "kestrel/utilities/w" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (ensure-rules-known (lifter-rules32))
 (ensure-rules-known (symbolic-execution-rules32))
 (ensure-rules-known (symbolic-execution-rules-with-stop-pcs32))
@@ -310,6 +312,7 @@
                              print-base
                              max-printed-term-size
                              untranslate
+                             library-map
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
                               (parsed-executablep parsed-executable)
@@ -344,7 +347,8 @@
                               (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
-                              (booleanp untranslate))
+                              (booleanp untranslate)
+                              (arm::my-library-mapp library-map))
                   :stobjs state
                   :mode :program ; todo: because of maybe-wrap-in-output-extractor
                   ))
@@ -424,9 +428,9 @@
                                     `(bvplus '32 ',target-offset ,base-address-var)))
                               ;; Not position-independent, so the target is a concrete address:
                               (enquote target-offset)))
-       (assumptions (append  `((equal (reg '15 arm) ,target-address-term) ; the PC
-                               (armp arm)
-                               )
+       (assumptions (append `((equal (reg '15 arm) ,target-address-term) ; the PC
+                              (armp arm)
+                              (equal (library-map arm) ',library-map))
                           assumptions))
        (assumptions (union-equal extra-assumptions assumptions))
        ;; (assumptions (set-difference-equal assumptions remove-assumptions))
@@ -583,6 +587,7 @@
                         ;;prove-theorem ;whether to try to prove the theorem with ACL2 (rarely works)
                         max-result-term-size
                         ;; restrict-theory
+                        library-map
                         whole-form
                         state)
   (declare (xargs :guard (and (symbolp lifted-name)
@@ -627,7 +632,7 @@
                               ;; (booleanp prove-theorem)
                               (natp max-result-term-size)
                               ;; (booleanp restrict-theory)
-                              )
+                              (arm::my-library-mapp library-map))
                   :stobjs state
                   :mode :program ; todo
                   ))
@@ -667,7 +672,8 @@
                                  step-limit step-increment
                                  stop-pcs
                                  trace
-                                 memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslate state))
+                                 memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslate
+                                 library-map state))
        ((when erp) (mv erp nil state))
        ;; Extract info from the result:
        (result-size (dag-or-quotep-size result-dag-or-quotep))
@@ -851,6 +857,7 @@
                                   ;;(prove-theorem 'nil)
                                   (max-result-term-size '10000)
                                   ;;(restrict-theory 't)       ;todo: deprecate
+                                  (library-map 'nil)
                                   )
   `(,(if (print-level-at-least-tp print) 'make-event 'make-event-quiet)
     (acl2-unwind-protect ; enable cleanup on errors/interrupts
@@ -892,6 +899,7 @@
         ;; ',prove-theorem
         ',max-result-term-size
         ;; ',restrict-theory
+        ,library-map
         ',whole-form
         state)
       ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
@@ -941,7 +949,8 @@
 ;;         (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
 ;;         (prove-theorem "Whether to try to prove the theorem with ACL2 (rarely works, since Axe's Rewriter is different and more scalable than ACL2's rewriter).")
          ;;         (restrict-theory "To be deprecated...")
-         (max-result-term-size "Max term-size of a result if it is to be represented as a term (when printing it, and in the generated function).  A larger result will be represented as a DAG, embedded in the function using an evaluator."))
+         (max-result-term-size "Max term-size of a result if it is to be represented as a term (when printing it, and in the generated function).  A larger result will be represented as a DAG, embedded in the function using an evaluator.")
+         (library-map "Map from PCs to library names (strings)."))
   :description ("Lift some arm binary code into an ACL2 representation, by symbolic execution including inlining all functions and unrolling all loops."
                 "Usually, @('def-unrolled') creates both a function representing the lifted code (in term or DAG form, depending on the size) and a @(tsee defconst) whose value is the corresponding DAG (or, rarely, a quoted constant).  The function's name is @('lifted-name') and the @('defconst')'s name is created by adding stars around  @('lifted-name')."
                 "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))

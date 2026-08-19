@@ -31,6 +31,8 @@
     arm::itstate
     arm::endianstate
     arm::memory
+    arm::oracle
+    arm::library-map
 
     arm::read-byte
     arm::read-bytes
@@ -42,6 +44,8 @@
     arm::pc
 
     arm::step
+    arm::step-aux
+    arm::step-core
     arm::run
 
     arm::reg
@@ -108,6 +112,15 @@
     arm::cmp-zero
     arm::cmp-carry
     arm::cmp-overflow
+    arm::sub-sign
+    arm::sub-zero
+    arm::sub-carry
+    arm::sub-overflow
+
+    arm::addwithcarry
+    arm::addwithcarry-overflow
+    arm::countleadingzerobits
+    arm::highestsetbit
 
     arm::eq-condition
     arm::ne-condition
