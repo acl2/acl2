@@ -237,7 +237,8 @@
   (define binarize-add-in-dim ((dim dimp))
     :returns (new-dim dimp)
     :parents (ispace-equivalence-properties binarize-add-in-dims)
-    :short "Turn a dimension into an equivalent one with only binary additions."
+    :short "Turn a dimension into
+            an equivalent one with only binary additions."
     (dim-case
      dim
      :var (dim-var dim.name)
@@ -250,7 +251,8 @@
   (define binarize-add-in-dim-list ((dims dim-listp))
     :returns (new-dims dim-listp)
     :parents (ispace-equivalence-properties binarize-add-in-dims)
-    :short "Turn a list of dimensions."
+    :short "Turn a list of dimensions into
+            an equivalent one with only binary additions."
     (cond ((endp dims) nil)
           (t (cons (binarize-add-in-dim (car dims))
                    (binarize-add-in-dim-list (cdr dims)))))
