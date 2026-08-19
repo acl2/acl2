@@ -31,6 +31,8 @@
     arm::itstate
     arm::endianstate
     arm::memory
+    arm::oracle
+    arm::library-map
 
     arm::read-byte
     arm::read-bytes

@@ -13,6 +13,7 @@
 (include-book "portcullis")
 (include-book "../rule-lists")
 (include-book "kestrel/arm/encodings" :dir :system)
+(include-book "kestrel/arm/library-models" :dir :system) ; for the library-model-rules
 
 (defun symbolic-execution-rules32-common ()
   (declare (xargs :guard t))
@@ -21,6 +22,7 @@
     update-call-stack-height-aux-of-if-arg1
     stack-height-adjustment
     arm::step-core-opener
+    arm::step-aux-base ; requires the PC to be a constant
     arm::step-opener
     arm::execute-inst-base ; requires the instruction to be known
     arm::step-of-if
@@ -115,6 +117,7 @@
                                arm::execute-cmn-register
                                arm::execute-cmn-register-shifted-register
                                arm::execute-sub-immediate))
+          (arm::library-model-rules)
           '(arm::execute-cmp-immediate-alt
             arm::execute-cmp-register-alt
             arm::execute-cmp-register-shifted-register-alt
@@ -388,8 +391,20 @@
      arm::isetstate-of-set-apsr.q
      arm::isetstate-of-write
      arm::isetstate-of-if
-
      arm::update-isetstate-when-equal-of-isetstate
+
+     arm::library-map-of-set-reg
+     arm::library-map-of-update-isetstate
+     arm::library-map-of-set-apsr.n
+     arm::library-map-of-set-apsr.z
+     arm::library-map-of-set-apsr.c
+     arm::library-map-of-set-apsr.v
+     arm::library-map-of-set-apsr.q
+     arm::library-map-of-write
+     arm::library-map-of-if
+
+     acl2::lookup-becomes-lookup-equal ; for when the library map is empty
+     acl2::lookup-equal-of-nil ; for when the library map is empty
 
      ;;;
 

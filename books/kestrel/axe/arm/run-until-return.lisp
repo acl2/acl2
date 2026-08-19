@@ -55,7 +55,7 @@
         ;; TODO: Add support for other return idioms, including moving to the PC and
         ;; popping values into a register set that includes the PC is a return:
         ((:pop-encoding-a1 :ldm/ldmia/ldmfd)
-         (if (equal 1 (getbit 15 (lookup-eq 'arm::register_list args)))
+         (if (equal 1 (getbit *pc* (lookup-eq 'arm::register_list args)))
              -1
            0))
         ;; This is a return (todo: what if the register is not LR?):
@@ -87,8 +87,13 @@
   (declare (xargs :guard (integerp call-stack-height)
                   :stobjs arm))
   (let* ((pc (pc arm))
-         (instr (read 4 pc arm)))
-    (update-call-stack-height-aux instr call-stack-height arm)))
+         (maybe-library-function (acl2::lookup pc (library-map arm))))
+    (if maybe-library-function
+        ;; if this is the first instr of a library function, the model of that
+        ;; function will include returning from the stack frame:
+        (+ -1 call-stack-height)
+      (let ((instr (read 4 pc arm)))
+        (update-call-stack-height-aux instr call-stack-height arm)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

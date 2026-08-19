@@ -939,6 +939,12 @@
          (isetstate arm))
   :hints (("Goal" :in-theory (enable write-byte isetstate))))
 
+(defthm library-map-of-write-byte
+  (equal (library-map (write-byte addr byte arm))
+         (library-map arm))
+  :hints (("Goal" :in-theory (enable write-byte library-map))))
+
+
 (defthm apsr.n-of-write-byte (equal (apsr.n (write-byte addr byte arm)) (apsr.n arm)) :hints (("Goal" :in-theory (enable apsr.n write-byte))))
 (defthm apsr.z-of-write-byte (equal (apsr.z (write-byte addr byte arm)) (apsr.z arm)) :hints (("Goal" :in-theory (enable apsr.z write-byte))))
 (defthm apsr.c-of-write-byte (equal (apsr.c (write-byte addr byte arm)) (apsr.c arm)) :hints (("Goal" :in-theory (enable apsr.c write-byte))))
@@ -1155,6 +1161,11 @@
 (defthm isetstate-of-write
   (equal (isetstate (write n addr val arm))
          (isetstate arm))
+  :hints (("Goal" :in-theory (enable write))))
+
+(defthm library-map-of-write
+  (equal (library-map (write n addr val arm))
+         (library-map arm))
   :hints (("Goal" :in-theory (enable write))))
 
 (defthm apsr.n-of-write (equal (apsr.n (write n addr val arm)) (apsr.n arm)) :hints (("Goal" :in-theory (enable write))))

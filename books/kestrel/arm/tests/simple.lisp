@@ -39,7 +39,8 @@
            (not (error arm)) ; no error yet
            (== (ArchVersion arm) 5)
            (equal *InstrSet_ARM* (isetstate arm))
-           (armp arm))
+           (armp arm)
+           (equal (library-map arm) nil))
           (equal (step arm)
                  (advance-pc (set-apsr.z (bool-to-bit (equal 0 (bvmult 32 (reg 5 arm) (reg 4 arm))))
                                          (set-apsr.n (getbit 31 (bvmult 32 (reg 5 arm) (reg 4 arm)))
@@ -61,7 +62,8 @@
            (not (error arm)) ; no error yet
            (== (ArchVersion arm) 5)
            (equal *InstrSet_ARM* (isetstate arm))
-           (armp arm))
+           (armp arm)
+           (equal (library-map arm) nil))
           (equal (run 2 arm)
                  ;; state after execution:
                  (set-reg 2 ; register 2 gets (r5*r4)*r4

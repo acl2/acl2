@@ -12,6 +12,8 @@
 
 (include-book "instructions")
 (include-book "decoder")
+(include-book "library-models")
+(include-book "kestrel/alists-light/lookup" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -62,6 +64,30 @@
   :hints (("Goal" :in-theory (enable step-core))))
 
 
+(defund step-aux (pc arm)
+  (declare (xargs :guard (addressp pc)
+                  :stobjs arm
+                  :guard-hints (("Goal" :in-theory (enable alistp-when-my-library-mapp)))))
+  (b* ((maybe-library-function (acl2::lookup pc (library-map arm)))
+       ((when (not maybe-library-function))
+        ;; normal instruction:
+        (step-core pc arm))
+       (library-function maybe-library-function) ; no longer a "maybe"
+       ((when (equal "isdigit" library-function))
+        (run-isdigit arm))
+       ;; ((when (equal "memcpy" library-function))
+       ;;  (run-memcpy arm))
+       ;; ... todo: more ...
+       )
+    (update-error (list :unhandled-library-function library-function) arm)))
+
+(acl2::defopeners step-aux
+  ;; :hyps ((syntaxp (quotep pc))) ; didn't work for PIE examples
+  )
+
+(acl2::defopeners step-aux :suffix when-constant
+  :hyps ((syntaxp (quotep pc))))
+
 ;; Returns a new state, which might have the error flag set
 (defund step (arm)
   (declare (xargs :stobjs arm))
@@ -69,17 +95,14 @@
       arm ; errors persist
     (if (not (equal *InstrSet_ARM* (isetstate arm)))
         (update-error :not-in-arm-state arm)
-      (b* ((pc (pc arm))
-           ;; todo: redirections to API models go here
-           )
-        (step-core pc arm)))))
+      (step-aux (pc arm) arm))))
 
 (defthm step-opener
   (implies (and (not (error arm)) ; avoids loops
                 (equal *InstrSet_ARM* (isetstate arm)) ; for now
                 )
            (equal (step arm)
-                  (step-core (pc arm) arm)))
+                  (step-aux (pc arm) arm)))
   :hints (("Goal" :in-theory (enable step))))
 
 (defthm step-of-if
