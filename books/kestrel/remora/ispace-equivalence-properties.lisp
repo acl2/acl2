@@ -47,7 +47,9 @@
       the reductions claimed in @(see dim-equiv-infrules),
       e.g. that @('add0'), @('add1'), and @('add3m')
       reduce all variadic additions to binary ones
-      (while nullary and unary ones reduce to constants).")))
+      (while nullary and unary ones reduce to constants).
+      To do that, we introduce predicates to formalize these notions,
+      and functions to witness the ability to perform the reduction.")))
   :order-subtopics t
   :default-parent t)
 
