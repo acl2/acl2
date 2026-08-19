@@ -321,7 +321,14 @@
        because it means that we have not found the struct type being split.
        If we visit the members, we add the tag to the set of encountered ones.")
      (xdoc::p
-      "If instead we have members, we recursively check them."))
+      "If instead we have members, we recursively check them.")
+     (xdoc::p
+      "When we look up a tag in the validation information,
+       we may not find anything, if the tag is that of an incomplete struct type
+       (e.g. @('struct incomplete;')).
+       In this case, we return @('nil'),
+       because in this branch of control
+       we found no references to the struct type being split."))
     (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
       (type-struni-tag/members-case
        tystr-tag/mems
@@ -337,10 +344,7 @@
                     (uid (c$::valid-tag-info->uid info))
                     (members?
                      (hons-get uid (c$::type-completions-fix completions)))
-                    ((unless members?)
-                     (raise "Internal error: ~
-                             no members for ~x0 in ~x0."
-                            uid completions))
+                    ((unless members?) nil)
                     (members (cdr members?))
                     (tags (set::insert tystr-tag/mems.tag
                                        (ident-set-fix tags))))
@@ -659,7 +663,13 @@
        any unsafe use of the struct type being split.
        If we visit the members, we add the tag to the set of encountered ones.")
      (xdoc::p
-      "If instead we have members, we recursively check them."))
+      "If instead we have members, we recursively check them.")
+     (xdoc::p
+      "When we look up a tag in the validation information,
+       we may not find anything, if the tag is that of an incomplete struct type
+       (e.g. @('struct incomplete;')).
+       In this case, we return @('t'),
+       because in this branch of control we found no unsafety."))
     (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
       (type-struni-tag/members-case
        tystr-tag/mems
@@ -675,10 +685,7 @@
                     (uid (c$::valid-tag-info->uid info))
                     (members?
                      (hons-get uid (c$::type-completions-fix completions)))
-                    ((unless members?)
-                     (raise "Internal error: ~
-                             no members for ~x0 in ~x0."
-                            uid completions))
+                    ((unless members?) t)
                     (members (cdr members?))
                     (tags (set::insert tystr-tag/mems.tag
                                        (ident-set-fix tags))))
