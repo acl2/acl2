@@ -20,25 +20,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Move to ABNF library.
-
-(defrule abnf::tree-terminatedp-of-check-tree-path
-  (b* ((tree? (abnf::check-tree-path path tree)))
-    (implies (and (abnf::tree-terminatedp tree)
-                  tree?)
-             (abnf::tree-terminatedp tree?)))
-  :induct t
-  :enable (abnf::check-tree-path
-           abnf::tree-terminatedp))
-
-(defrule abnf::tree-terminatedp-of-tree-at-path
-  (implies (and (abnf::tree-path-validp path tree)
-                (abnf::tree-terminatedp tree))
-           (abnf::tree-terminatedp (abnf::tree-at-path path tree)))
-  :enable (abnf::tree-path-validp abnf::tree-at-path))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ extra-grammatical-restrictions
   :parents (concrete-syntax)
   :short "Extra-grammatical restrictions on the syntax of Remora."
