@@ -15,6 +15,9 @@
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 (include-book "std/util/defund-sk" :dir :system)
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -175,3 +178,201 @@
              (and (ispace-listp isps1)
                   (ispace-listp isps2)))
     :enable (isps= ispace-listp-when-isps=-proof-validp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce binaddp
+  :short "Check if all the dimension additions are binary."
+  :types (dims)
+  :result booleanp
+  :default t
+  :combine and
+  :override
+  ((dim :add (and (dim-list-binaddp dim.dims)
+                  (equal (len dim.dims) 2))))
+  :name ast-binaddp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-equiv-to-binadd-p
+  :short "Check whether a dimension is equivalent to
+          one with only binary additions."
+  (defund-sk dim-equiv-to-binadd-p (dim)
+    (exists (dim1)
+            (and (dim= dim dim1)
+                 (dim-binaddp dim1)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define binarize-add-dims ((dims dim-listp))
+  :returns (new-dim dimp)
+  :short "Turn a list of dimensions in an addition
+          into a dimension with only binary additions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used, along with @(tsee binarize-add-in-dims),
+     to show that every dimension is equivalent to
+     one with only binary additions."))
+  (cond ((endp dims) (dim-const 0))
+        ((endp (cdr dims)) (dim-fix (car dims)))
+        ((endp (cddr dims)) (dim-add dims))
+        (t (binarize-add-dims (cons (dim-add (list (car dims)
+                                                   (cadr dims)))
+                                    (cddr dims)))))
+  :measure (len dims)
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defines binarize-add-in-dims
+  :short "Turn dimensions into equivalent ones with only binary additions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used, along with @(tsee binarize-add-dims),
+     to show that every dimension is equivalent to
+     one with only binary additions."))
+
+  (define binarize-add-in-dim ((dim dimp))
+    :returns (new-dim dimp)
+    :parents (ispace-equivalence-properties binarize-add-in-dims)
+    :short "Turn a dimension into an equivalent one with only binary additions."
+    (dim-case
+     dim
+     :var (dim-var dim.name)
+     :const (dim-const dim.val)
+     :add (binarize-add-dims (binarize-add-in-dim-list dim.dims))
+     :mul (dim-mul (binarize-add-in-dim-list dim.dims))
+     :sub (dim-sub (binarize-add-in-dim-list dim.dims)))
+    :measure (dim-count dim))
+
+  (define binarize-add-in-dim-list ((dims dim-listp))
+    :returns (new-dims dim-listp)
+    :parents (ispace-equivalence-properties binarize-add-in-dims)
+    :short "Turn a list of dimensions."
+    (cond ((endp dims) nil)
+          (t (cons (binarize-add-in-dim (car dims))
+                   (binarize-add-in-dim-list (cdr dims)))))
+    :measure (dim-list-count dims))
+
+  :verify-guards :after-returns
+
+  :flag-local nil
+
+  ///
+
+  (fty::deffixequiv-mutual binarize-add-in-dims))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-equiv-to-binadd-p-when-dimp
+  :short "Every dimension is equivalent to one with only binary additions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This serves to validate the intention of
+     rules @('add0'), @('add1'), and @('add3m'),
+     described in @(see dim-equiv-infrules).")
+   (xdoc::p
+    "We show that the functions that we have defined
+     to reduce variadic additions to binary ones
+     (including eliminating nullary and unary additions),
+     yield equivalent dimensions with only binary additions."))
+
+  (defret dim=-of-binarize-add-dims
+    (implies (dim-listp dims)
+             (dim= (dim-add dims) new-dim))
+    :fn binarize-add-dims
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable binarize-add-dims
+                                dim=-refl
+                                dim=-add0
+                                dim=-add1))
+            '(:use (dim=-add0
+                    (:instance dim=-add3m
+                               (d1 (car dims))
+                               (d2 (cadr dims))
+                               (ds (cddr dims)))
+                    (:instance dim=-trans
+                               (d1 (dim-add dims))
+                               (d2 (dim-add (cons (dim-add
+                                                   (list (car dims)
+                                                         (cadr dims)))
+                                                  (cddr dims))))
+                               (d3 (binarize-add-dims
+                                    (cons (dim-add (list (car dims)
+                                                         (cadr dims)))
+                                          (cddr dims)))))))))
+
+  (defret dim-binaddp-of-binarize-add-dims
+    (implies (dim-list-binaddp dims)
+             (dim-binaddp new-dim))
+    :fn binarize-add-dims
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* binarize-add-dims
+                                 ast-binaddp-rules))
+            '(:expand ((dim-binaddp (dim-add dims))
+                       (dim-binaddp (dim-add (list (car dims)
+                                                   (cadr dims))))))))
+
+  (defret-mutual dim=-of-binarize-add-in-dims
+    (defret dim=-of-binarize-add-in-dim
+      (implies (dimp dim)
+               (dim= dim new-dim))
+      :fn binarize-add-in-dim)
+    (defret dims=-of-binarize-add-in-dim-list
+      (implies (dim-listp dims)
+               (dims= dims new-dims))
+      :fn binarize-add-in-dim-list)
+    :hints (("Goal"
+             :in-theory (enable binarize-add-in-dim
+                                binarize-add-in-dim-list
+                                dim=-refl
+                                dims=-refl
+                                dims=-cong-cons))
+            '(:use ((:instance dim=-of-binarize-add-dims
+                               (dims (binarize-add-in-dim-list
+                                      (dim-add->dims dim))))
+                    (:instance dim=-cong-add
+                               (ds1 (dim-add->dims dim))
+                               (ds2 (binarize-add-in-dim-list
+                                     (dim-add->dims dim))))
+                    (:instance dim=-trans
+                               (d1 dim)
+                               (d2 (dim-add (binarize-add-in-dim-list
+                                             (dim-add->dims dim))))
+                               (d3 (binarize-add-dims
+                                    (binarize-add-in-dim-list
+                                     (dim-add->dims dim)))))
+                    (:instance dim=-cong-mul
+                               (ds1 (dim-mul->dims dim))
+                               (ds2 (binarize-add-in-dim-list
+                                     (dim-mul->dims dim))))
+                    (:instance dim=-cong-sub
+                               (ds1 (dim-sub->dims dim))
+                               (ds2 (binarize-add-in-dim-list
+                                     (dim-sub->dims dim)))))))
+    :mutual-recursion binarize-add-in-dims)
+
+  (defret-mutual dim-binaddp-of-binarize-add-in-dims
+    (defret dim-binaddp-of-binarize-add-in-dim
+      (dim-binaddp new-dim)
+      :fn binarize-add-in-dim)
+    (defret dim-list-binaddp-of-binarize-add-in-dim-list
+      (dim-list-binaddp new-dims)
+      :fn binarize-add-in-dim-list)
+    :hints (("Goal"
+             :in-theory (enable* binarize-add-in-dim
+                                 binarize-add-in-dim-list
+                                 ast-binaddp-rules))
+            '(:expand ((dim-binaddp dim))))
+    :mutual-recursion binarize-add-in-dims)
+
+  (defruled dim-equiv-to-binadd-p-when-dimp
+    (implies (dimp dim)
+             (dim-equiv-to-binadd-p dim))
+    :use (:instance dim-equiv-to-binadd-p-suff
+                    (dim1 (binarize-add-in-dim dim)))))
