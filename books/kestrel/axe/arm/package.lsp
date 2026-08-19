@@ -44,6 +44,8 @@
     arm::pc
 
     arm::step
+    arm::step-aux
+    arm::step-core
     arm::run
 
     arm::reg
@@ -110,6 +112,15 @@
     arm::cmp-zero
     arm::cmp-carry
     arm::cmp-overflow
+    arm::sub-sign
+    arm::sub-zero
+    arm::sub-carry
+    arm::sub-overflow
+
+    arm::addwithcarry
+    arm::addwithcarry-overflow
+    arm::countleadingzerobits
+    arm::highestsetbit
 
     arm::eq-condition
     arm::ne-condition
