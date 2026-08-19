@@ -200,6 +200,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection dim-equiv-derived-rules
+  :short "Some derived inference rules about dimension equivalence."
+
+  (defruled dim=-trans-swapped
+    (implies (and (dim= d2 d3)
+                  (dim= d1 d2))
+             (dim= d1 d3))
+    :use dim=-trans
+    :enable dimp-when-dim=))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deffold-reduce binaddp
   :short "Check if all the dimension additions are binary."
   :types (dims)
@@ -223,7 +235,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define binarize-add-dims ((dims dim-listp))
+(define binarize-dims-in-add ((dims dim-listp))
   :returns (new-dim dimp)
   :short "Turn a list of dimensions in an addition
           into a dimension with only binary additions."
@@ -236,7 +248,7 @@
   (cond ((endp dims) (dim-const 0))
         ((endp (cdr dims)) (dim-fix (car dims)))
         ((endp (cddr dims)) (dim-add dims))
-        (t (binarize-add-dims (cons (dim-add (list (car dims)
+        (t (binarize-dims-in-add (cons (dim-add (list (car dims)
                                                    (cadr dims)))
                                     (cddr dims)))))
   :measure (len dims)
@@ -249,7 +261,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are used, along with @(tsee binarize-add-dims),
+    "These are used, along with @(tsee binarize-dims-in-add),
      to show that every dimension is equivalent to
      one with only binary additions."))
 
@@ -262,7 +274,7 @@
      dim
      :var (dim-var dim.name)
      :const (dim-const dim.val)
-     :add (binarize-add-dims (binarize-add-in-dim-list dim.dims))
+     :add (binarize-dims-in-add (binarize-add-in-dim-list dim.dims))
      :mul (dim-mul (binarize-add-in-dim-list dim.dims))
      :sub (dim-sub (binarize-add-in-dim-list dim.dims)))
     :measure (dim-count dim))
@@ -301,33 +313,26 @@
      (including eliminating nullary and unary additions),
      yield equivalent dimensions with only binary additions."))
 
-  (defruled dim=-trans-swapped
-    (implies (and (dim= d2 d3)
-                  (dim= d1 d2))
-             (dim= d1 d3))
-    :use dim=-trans
-    :enable dimp-when-dim=)
-
-  (defret dim=-of-binarize-add-dims
+  (defret dim=-of-binarize-dims-in-add
     (implies (dim-listp dims)
              (dim= (dim-add dims) new-dim))
-    :fn binarize-add-dims
+    :fn binarize-dims-in-add
     :hints (("Goal"
              :induct t
-             :in-theory (enable binarize-add-dims
+             :in-theory (enable binarize-dims-in-add
                                 dim=-refl
                                 dim=-add1
                                 dim=-add3m
                                 dim=-trans-swapped))
             '(:use (dim=-add0))))
 
-  (defret dim-binaddp-of-binarize-add-dims
+  (defret dim-binaddp-of-binarize-dims-in-add
     (implies (dim-list-binaddp dims)
              (dim-binaddp new-dim))
-    :fn binarize-add-dims
+    :fn binarize-dims-in-add
     :hints (("Goal"
              :induct t
-             :in-theory (enable* binarize-add-dims
+             :in-theory (enable* binarize-dims-in-add
                                  ast-binaddp-rules))
             '(:expand ((dim-binaddp (dim-add dims))
                        (dim-binaddp (dim-add (list (car dims)
@@ -349,8 +354,8 @@
                               dim=-trans-swapped
                               dims=-refl
                               dims=-cong-cons)
-                             (dim=-of-binarize-add-dims)))
-            '(:use ((:instance dim=-of-binarize-add-dims
+                             (dim=-of-binarize-dims-in-add)))
+            '(:use ((:instance dim=-of-binarize-dims-in-add
                                (dims (binarize-add-in-dim-list
                                       (dim-add->dims dim))))
                     (:instance dim=-cong-add
