@@ -75,6 +75,10 @@
        (library-function maybe-library-function) ; no longer a "maybe"
        ((when (equal "isdigit" library-function))
         (run-isdigit arm))
+       ((when (equal "ntohl" library-function))
+        (run-ntohl arm))
+       ((when (equal "ntohs" library-function))
+        (run-ntohs arm))
        ;; ((when (equal "memcpy" library-function))
        ;;  (run-memcpy arm))
        ;; ... todo: more ...
