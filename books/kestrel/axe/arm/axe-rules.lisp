@@ -51,6 +51,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthmd run-until-reach-pc-aux-base-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if arm dag-array)))
+                (memberp (reg *pc* arm) ; (pc arm)
+                             stop-pcs))
+           (equal (run-until-reach-pc-aux stop-pcs arm)
+                  arm)))
+
+(defthmd run-until-reach-pc-aux-opener-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if arm dag-array)))
+                (not (memberp (reg *pc* arm) ; (pc arm)
+                                  stop-pcs)))
+           (equal (run-until-reach-pc-aux stop-pcs arm)
+                  (run-until-reach-pc-aux stop-pcs (step arm)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthmd run-until-return-with-tracing-aux-base-axe
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if arm dag-array)))
                 (< call-stack-height 0))

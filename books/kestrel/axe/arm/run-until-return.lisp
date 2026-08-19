@@ -206,3 +206,43 @@
    0 ; initial call-stack-height
    stop-pcs
    arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defpun run-until-reach-pc-aux (stop-pcs arm)
+  ;; (declare (xargs :stobjs arm))
+  (if (memberp (reg *pc* arm) ; (pc arm)
+               stop-pcs)
+      arm ; stop since we've reached a stop-pc
+    ;; Step the state:
+    (run-until-reach-pc-aux stop-pcs (step arm))))
+
+;; This is a non-Axe rule
+(defthm run-until-reach-pc-aux-base
+  (implies (and (syntaxp (not (and (consp arm) (eq 'if (ffn-symb arm)))))
+                (memberp (reg *pc* arm) ; (pc arm)
+                         stop-pcs))
+           (equal (run-until-reach-pc-aux stop-pcs arm)
+                  arm)))
+
+;; This is a non-Axe rule
+(defthm run-until-reach-pc-aux-opener
+  (implies (and (syntaxp (not (and (consp arm) (eq 'if (ffn-symb arm)))))
+                (not (memberp (reg *pc* arm) ; (pc arm)
+                                  stop-pcs)))
+           (equal (run-until-reach-pc-aux stop-pcs arm)
+                  (run-until-reach-pc-aux stop-pcs (step arm)))))
+
+;; todo: add "smart" if handling, like we do elsewhere
+(defthm run-until-reach-pc-aux-of-if-arg2
+  (equal (run-until-reach-pc-aux stop-pcs (if test arma armb))
+         (if test
+             (run-until-reach-pc-aux stop-pcs arma)
+           (run-until-reach-pc-aux stop-pcs armb))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Run until we hit one of the STOP-PCS.
+(defund run-until-reach-pc (stop-pcs arm)
+  ;; (declare (xargs :stobjs arm))
+  (run-until-reach-pc-aux stop-pcs arm))
