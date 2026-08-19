@@ -5783,10 +5783,17 @@
                   (,descend (,minimalp-witness ,proof ,@concl-vars)
                             ,@concl-vars)
                 nil)))
-           (defthm ,when-valid-proof
+           (defrule ,when-valid-proof
              (implies (and (,proof-validp ,proof ,@concl-vars)
                            (,proofp ,proof))
                       (,pred-info.name ,@concl-vars))
+             ,@(and xdocp
+                    `(:parents (,(symbol-lfix name))
+                      :short ,(str::cat
+                               "Sufficiency of a valid proof for predicate @('"
+                               (str::downcase-string
+                                (symbol-name pred-info.name))
+                               "').")))
              :hints (("Goal"
                       :induct (,descend ,proof ,@concl-vars)
                       :in-theory (enable ,suff ,minimalp))))))
@@ -5798,11 +5805,18 @@
        (count-bound-events
         (and recursivep
              (list
-              `(defthm ,count-bound
+              `(defrule ,count-bound
                  (implies (and (,proof-validp ,proof ,@concl-vars)
                                (,proofp ,proof))
                           (<= (,count-fn (,witness ,@concl-vars))
                               (,count-fn ,proof)))
+                 ,@(and xdocp
+                        `(:parents (,(symbol-lfix name))
+                          :short ,(str::cat
+                                   "Minimality of the witness proof for @('"
+                                   (str::downcase-string
+                                    (symbol-name pred-info.name))
+                                   "').")))
                  :rule-classes
                  ((:linear :trigger-terms
                            ((,count-fn (,witness ,@concl-vars)))))
@@ -6064,8 +6078,15 @@
                     :hints ,hints
                     ,body1
                     :verify-guards nil)
-                 `(defthm ,induction-thm
+                 `(defrule ,induction-thm
                     t
+                    ,@(and xdocp
+                           `(:parents (,(symbol-lfix name))
+                             :short ,(str::cat
+                                      "Induction rule for predicate @('"
+                                      (str::downcase-string
+                                       (symbol-name pred-info1.name))
+                                      "').")))
                     :rule-classes
                     ((:induction
                       :pattern (,pred-info1.name ,@pred-info1.formals)
