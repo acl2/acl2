@@ -1670,3 +1670,32 @@
                                       evn-when-valid-proof
                                       odd-when-valid-proof))))
 )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; XDOC is generated when :PARENTS, :SHORT, or :LONG is supplied.
+; This exercises the XDOC of all the generated events,
+; for a clique of a single predicate and for a clique of two.
+
+(must-succeed
+ (definductive rtc-xdoc
+   :preds ((r* a b))
+   :irules ((refl ()
+                  (r* a a))
+            (step ((r* a b))
+                  (r* a b)))
+   :parents (acl2::top)
+   :short "Reflexive transitive closure."))
+
+(must-succeed
+ (definductive evenodd-xdoc
+   :preds ((evn n)
+           (odd n))
+   :irules ((zero ()
+                  (evn 0))
+            (evn-step ((evn n))
+                      (odd (1+ n)))
+            (odd-step ((odd n))
+                      (evn (1+ n))))
+   :parents (acl2::top)
+   :short "Even and odd natural numbers."))

@@ -5998,6 +5998,7 @@
                                        (irule-infos defind-irule-info-listp)
                                        (clique-preds symbol-setp)
                                        (name symbolp)
+                                       (xdocp booleanp)
                                        (print evmac-input-print-p))
   :returns (events pseudo-event-form-listp)
   :short "Generate the @('p[i]-ind') functions of a clique,
@@ -6051,11 +6052,18 @@
         (b* ((induction-thm
               (defind-induction-thm-name pred-info1.name name)))
           (append
-           (list `(defun ,fn-name1 (,@pred-info1.formals)
-                    (declare (xargs :measure ,measure1
-                                    :hints ,hints
-                                    :verify-guards nil))
-                    ,body1)
+           (list `(define ,fn-name1 (,@pred-info1.formals)
+                    ,@(and xdocp
+                           `(:parents (,(symbol-lfix name))
+                             :short ,(str::cat
+                                      "Rule induction scheme for predicate @('"
+                                      (str::downcase-string
+                                       (symbol-name pred-info1.name))
+                                      "').")))
+                    :measure ,measure1
+                    :hints ,hints
+                    ,body1
+                    :verify-guards nil)
                  `(defthm ,induction-thm
                     t
                     :rule-classes
@@ -6072,7 +6080,7 @@
             :flag-local nil
             :hints ,hints
             ,@(defind-gen-ind-fns-defines
-                pred-infos irule-infos clique-preds name))))
+                pred-infos irule-infos clique-preds name xdocp))))
     (append (list defines-event) print-events))
 
   :prepwork
@@ -6080,7 +6088,8 @@
   ((define defind-gen-ind-fns-defines ((pred-infos defind-pred-info-listp)
                                        (irule-infos defind-irule-info-listp)
                                        (clique-preds symbol-setp)
-                                       (name symbolp))
+                                       (name symbolp)
+                                       (xdocp booleanp))
      :returns (defines true-listp)
      :parents nil
      (b* (((when (endp pred-infos)) nil)
@@ -6091,11 +6100,18 @@
           (body (defind-gen-ind-fn-body
                   (car pred-infos) irule-infos clique-preds name)))
        (cons `(define ,fn-name (,@pred-info.formals)
+                ,@(and xdocp
+                       `(:parents (,(symbol-lfix name))
+                         :short ,(str::cat
+                                  "Rule induction scheme for predicate @('"
+                                  (str::downcase-string
+                                   (symbol-name pred-info.name))
+                                  "').")))
                 :measure (,count-fn (,witness ,@pred-info.formals))
                 ,body
                 :verify-guards nil)
              (defind-gen-ind-fns-defines
-               (cdr pred-infos) irule-infos clique-preds name))))
+               (cdr pred-infos) irule-infos clique-preds name xdocp))))
 
    (define defind-gen-ind-fns-print-events ((pred-infos defind-pred-info-listp)
                                             (name symbolp))
@@ -6113,6 +6129,7 @@
                             (irule-infos defind-irule-info-listp)
                             (leveled-cliques symbol-set-list-listp)
                             (name symbolp)
+                            (xdocp booleanp)
                             (print evmac-input-print-p))
   :guard (defind-pred-names-unambp pred-infos)
   :returns (events pseudo-event-form-listp)
@@ -6122,15 +6139,16 @@
        (clique-preds (set::set-list-union levels))
        (clique-pred-infos (defind-lookup-pred-set clique-preds pred-infos)))
     (append (defind-gen-ind-fns-for-clique
-              clique-pred-infos irule-infos clique-preds name print)
+              clique-pred-infos irule-infos clique-preds name xdocp print)
             (defind-gen-ind-fns
-              pred-infos irule-infos (cdr leveled-cliques) name print)))
+              pred-infos irule-infos (cdr leveled-cliques)
+              name xdocp print)))
   :no-function nil
   :guard-hints
   (("Goal" :in-theory (enable set-listp-when-symbol-set-listp)))
   :type-prescription (true-listp (defind-gen-ind-fns
                                    pred-infos irule-infos leveled-cliques
-                                   name print)))
+                                   name xdocp print)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -8476,7 +8494,7 @@
           pred-infos irule-infos leveled-cliques name xdocp print))
        (ind-events
         (defind-gen-ind-fns
-          pred-infos irule-infos leveled-cliques name print))
+          pred-infos irule-infos leveled-cliques name xdocp print))
        (?proof2-pred-events
         (defind-gen-proof2-preds pred-infos name xdocp print))
        (?proof2-irule-proof-events
