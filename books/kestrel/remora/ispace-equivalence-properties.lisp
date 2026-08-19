@@ -282,6 +282,13 @@
      (including eliminating nullary and unary additions),
      yield equivalent dimensions with only binary additions."))
 
+  (defruled dim=-trans-swapped
+    (implies (and (dim= d2 d3)
+                  (dim= d1 d2))
+             (dim= d1 d3))
+    :use dim=-trans
+    :enable dimp-when-dim=)
+
   (defret dim=-of-binarize-add-dims
     (implies (dim-listp dims)
              (dim= (dim-add dims) new-dim))
@@ -290,23 +297,10 @@
              :induct t
              :in-theory (enable binarize-add-dims
                                 dim=-refl
-                                dim=-add0
-                                dim=-add1))
-            '(:use (dim=-add0
-                    (:instance dim=-add3m
-                               (d1 (car dims))
-                               (d2 (cadr dims))
-                               (ds (cddr dims)))
-                    (:instance dim=-trans
-                               (d1 (dim-add dims))
-                               (d2 (dim-add (cons (dim-add
-                                                   (list (car dims)
-                                                         (cadr dims)))
-                                                  (cddr dims))))
-                               (d3 (binarize-add-dims
-                                    (cons (dim-add (list (car dims)
-                                                         (cadr dims)))
-                                          (cddr dims)))))))))
+                                dim=-add1
+                                dim=-add3m
+                                dim=-trans-swapped))
+            '(:use (dim=-add0))))
 
   (defret dim-binaddp-of-binarize-add-dims
     (implies (dim-list-binaddp dims)
@@ -330,11 +324,13 @@
                (dims= dims new-dims))
       :fn binarize-add-in-dim-list)
     :hints (("Goal"
-             :in-theory (enable binarize-add-in-dim
-                                binarize-add-in-dim-list
-                                dim=-refl
-                                dims=-refl
-                                dims=-cong-cons))
+             :in-theory (e/d (binarize-add-in-dim
+                              binarize-add-in-dim-list
+                              dim=-refl
+                              dim=-trans-swapped
+                              dims=-refl
+                              dims=-cong-cons)
+                             (dim=-of-binarize-add-dims)))
             '(:use ((:instance dim=-of-binarize-add-dims
                                (dims (binarize-add-in-dim-list
                                       (dim-add->dims dim))))
@@ -342,13 +338,6 @@
                                (ds1 (dim-add->dims dim))
                                (ds2 (binarize-add-in-dim-list
                                      (dim-add->dims dim))))
-                    (:instance dim=-trans
-                               (d1 dim)
-                               (d2 (dim-add (binarize-add-in-dim-list
-                                             (dim-add->dims dim))))
-                               (d3 (binarize-add-dims
-                                    (binarize-add-in-dim-list
-                                     (dim-add->dims dim)))))
                     (:instance dim=-cong-mul
                                (ds1 (dim-mul->dims dim))
                                (ds2 (binarize-add-in-dim-list
