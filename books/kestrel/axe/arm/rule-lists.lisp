@@ -13,6 +13,7 @@
 (include-book "portcullis")
 (include-book "../rule-lists")
 (include-book "kestrel/arm/encodings" :dir :system)
+(include-book "kestrel/arm/library-models" :dir :system) ; for the library-model-rules
 
 (defun symbolic-execution-rules32-common ()
   (declare (xargs :guard t))
@@ -20,6 +21,8 @@
     update-call-stack-height-aux-base
     update-call-stack-height-aux-of-if-arg1
     stack-height-adjustment
+    arm::step-core-opener
+    arm::step-aux-base ; requires the PC to be a constant
     arm::step-opener
     arm::execute-inst-base ; requires the instruction to be known
     arm::step-of-if
@@ -43,7 +46,9 @@
             run-until-return-with-tracing-aux-opener-axe
             run-until-return-with-tracing-aux-of-if-arg2
             run-until-return-with-tracing
-            run-subroutine-with-tracing)))
+            run-subroutine-with-tracing
+            acl2::append-of-nil-arg1 acl2::append-of-cons-arg1 ; clarifies the trace
+            )))
 
 (defun symbolic-execution-rules-with-stop-pcs32 ()
   (declare (xargs :guard t))
@@ -63,6 +68,7 @@
             run-until-return-with-tracing-or-reach-pc-aux-of-if-arg2
             run-until-return-with-tracing-or-reach-pc
             acl2::memberp-constant-opener ; for resolving the stop-pcs check (when non-position-independent)
+            acl2::append-of-nil-arg1 acl2::append-of-cons-arg1 ; clarifies the trace
             )))
 
 (defun debug-rules32 ()
@@ -111,6 +117,7 @@
                                arm::execute-cmn-register
                                arm::execute-cmn-register-shifted-register
                                arm::execute-sub-immediate))
+          (arm::library-model-rules)
           '(arm::execute-cmp-immediate-alt
             arm::execute-cmp-register-alt
             arm::execute-cmp-register-shifted-register-alt
@@ -234,6 +241,12 @@
      arm::eq-condition-of-cmn-zero
      arm::ne-condition-of-cmn-zero
 
+     arm::eq-condition-of-sub-zero
+     arm::ne-condition-of-sub-zero
+
+     arm::cs-condition-of-sub-carry
+     arm::cc-condition-of-sub-carry
+
      ;; cmp rules: ; todo: add the rest!
      arm::eq-condition-of-cmp-zero
      arm::ne-condition-of-cmp-zero
@@ -249,6 +262,20 @@
 
      arm::cs-condition-of-cmp-carry
      arm::cc-condition-of-cmp-carry
+
+     ;; hope these are ok:
+     arm::cmn-sign-constant-opener
+     arm::cmn-zero-constant-opener
+     arm::cmn-carry-constant-opener
+     arm::cmn-overflow-constant-opener
+     arm::cmp-sign-constant-opener
+     arm::cmp-zero-constant-opener
+     arm::cmp-carry-constant-opener
+     arm::cmp-overflow-constant-opener
+     arm::sub-sign-constant-opener
+     arm::sub-zero-constant-opener
+     arm::sub-carry-constant-opener
+     arm::sub-overflow-constant-opener
 
      arm::eq-condition-constant-opener
      arm::ne-condition-constant-opener
@@ -278,8 +305,13 @@
      arm::shift_c-constant-opener
      arm::shift-constant-opener
      arm::addwithcarry-constant-opener ; more?
+     arm::addwithcarry-overflow-constant-opener ; more?
 
      arm::sint-constant-opener
+
+     arm::countleadingzerobits-constant-opener
+     arm::highestsetbit-constant-opener
+     arm::highestsetbit-aux-constant-opener
 
      acl2::lookup-eq-becomes-lookup-equal
      arm::==$inline
@@ -384,8 +416,20 @@
      arm::isetstate-of-set-apsr.q
      arm::isetstate-of-write
      arm::isetstate-of-if
-
      arm::update-isetstate-when-equal-of-isetstate
+
+     arm::library-map-of-set-reg
+     arm::library-map-of-update-isetstate
+     arm::library-map-of-set-apsr.n
+     arm::library-map-of-set-apsr.z
+     arm::library-map-of-set-apsr.c
+     arm::library-map-of-set-apsr.v
+     arm::library-map-of-set-apsr.q
+     arm::library-map-of-write
+     arm::library-map-of-if
+
+     acl2::lookup-becomes-lookup-equal ; for when the library map is empty
+     acl2::lookup-equal-of-nil ; for when the library map is empty
 
      ;;;
 
