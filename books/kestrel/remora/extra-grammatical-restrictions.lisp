@@ -213,4 +213,81 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define-sk cst-longest-num-escapes-p ((cst abnf::treep))
+  :guard (abnf::tree-terminatedp cst)
+  :returns (yes/no booleanp)
+  :short "Check if a CST does not contain any extensible @('num-escape') CST."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Numeric escapes must extend as long as they can:
+     each of the three alternatives of the @('num-escape') rule
+     (decimal, octal, and hexadecimal)
+     ends with a repetition of digits of the appropriate kind,
+     which must include every such digit that follows.")
+   (xdoc::p
+    "Without this restriction,
+     a string literal like @('\"\\57\"') would have two possible CSTs:
+     one whose (only) element is the escape @('\\57'),
+     and one with the escape @('\\5')
+     followed by the ordinary character @('7');
+     similarly for octal and hexadecimal escapes,
+     e.g. @('\"\\o17\"') and @('\"\\x4F\"').")
+   (xdoc::p
+    "We state the restriction by saying that
+     if we have a CST matching @('num-escape') at a path,
+     the fringe of the CST at the adjacent path (if any)
+     must not be usable to extend the escape,
+     i.e. any extension within the adjacent fringe
+     must not be the fringe of any possible @('num-escape') CST.
+     A single formulation covers all three alternatives
+     (decimal, octal, and hexadecimal digits),
+     because the extension is checked against
+     the whole @('num-escape') rule.")
+   (xdoc::p
+    "A @('num-escape') can only occur just after a backslash,
+     in a string literal.
+     An extension of a @('num-escape') can only be
+     another @('num-escape'),
+     in fact one of the same alternative:
+     the fringe of a @('num-escape') CST starts with
+     a (decimal) digit for the decimal alternative,
+     and with an @('o') or @('x') of either case
+     for the octal and hexadecimal alternatives;
+     among the escapes that may follow a backslash,
+     no other kind starts with such a character
+     (the @('char-escape') ones are
+     lowercase letters, none of them @('o') or @('x'), or punctuation,
+     the @('ascii-escape') ones are uppercase names,
+     none starting with @('O') or @('X'),
+     and the @('caret-escape') ones start with a caret),
+     and an extended fringe starts with the same character as the fringe,
+     so it belongs to the same alternative.
+     Consequently, only decimal digits can extend a decimal escape,
+     only octal digits an octal escape,
+     and only hexadecimal digits a hexadecimal escape:
+     e.g. the escape @('\\o1') followed by
+     the ordinary character @('8') is allowed,
+     since @('8') is not an octal digit.")
+   (xdoc::p
+    "Note that a numeric escape followed by
+     the empty escape @('\\&') and then more digits is allowed,
+     since the adjacent fringe starts with a backslash,
+     which cannot extend the escape."))
+  (forall (path1 path2)
+          (implies (and (abnf::tree-pathp path1)
+                        (abnf::tree-pathp path2)
+                        (abnf::tree-path-validp path1 cst)
+                        (abnf::tree-path-validp path2 cst)
+                        (abnf::tree-paths-adjacentp path1 path2 cst))
+                   (b* ((cst1 (abnf::tree-at-path path1 cst))
+                        (cst2 (abnf::tree-at-path path2 cst)))
+                     (implies (cst-matchp cst1 "num-escape")
+                              (not (extensible-to-cst-fringe-p
+                                    (abnf::tree->string cst1)
+                                    (abnf::tree->string cst2)
+                                    (list "num-escape"))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: more predicates
