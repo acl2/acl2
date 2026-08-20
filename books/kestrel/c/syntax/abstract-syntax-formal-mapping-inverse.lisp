@@ -717,12 +717,15 @@
 (define ildm-param-declon ((pdeclon c::param-declonp))
   :returns (pdeclon1 param-declonp)
   :short "Map a parameter declaration in the language definition
-          to a parameter declaration in th syntax for tools."
+          to a parameter declaration in the syntax for tools."
   (b* (((c::param-declon pdeclon) pdeclon)
        (tyspecs (ildm-tyspecseq pdeclon.tyspec))
-       (declspecs (decl-spec-typespec-list tyspecs)))
+       (declspecs (decl-spec-typespec-list tyspecs))
+       (declor (ildm-obj-declor pdeclon.declor)))
     (make-param-declon :specs declspecs
-                       :declor (param-declor-none nil)
+                       :declor (make-param-declor-nonabstract
+                                :declor declor
+                                :info nil)
                        :attribs nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
