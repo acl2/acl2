@@ -321,7 +321,7 @@
    (xdoc::p
     "We also show that this function preserves
      the binary status of multiplications
-     and the unary status of subtractions,
+     and the unary and non-nullary statuses of subtractions,
      which this function does not affect.
      This serves to compose this transformation
      with the ones for multiplications and subtractions."))
@@ -370,7 +370,14 @@
              (dim-unisubp new-dim))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* ast-unisubp-rules)))))
+             :in-theory (enable* ast-unisubp-rules))))
+
+  (defret dim-nonullsubp-of-binarize-dims-in-add
+    (implies (dim-list-nonullsubp dims)
+             (dim-nonullsubp new-dim))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* ast-nonullsubp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -386,7 +393,7 @@
    (xdoc::p
     "We also show that these functions preserve
      the binary status of multiplications
-     and the unary status of subtractions,
+     and the unary and non-nullary statuses of subtractions,
      which these functions do not affect.
      This serves to compose this transformation
      with the ones for multiplications and subtractions."))
@@ -471,6 +478,12 @@
              :induct (len dims)
              :in-theory (enable (:induction len)))))
 
+  (defret consp-of-binarize-add-in-dim-list
+    (equal (consp new-dims)
+           (consp dims))
+    :fn binarize-add-in-dim-list
+    :hints (("Goal" :expand ((binarize-add-in-dim-list dims)))))
+
   (defret-mutual dim-binmulp-of-binarize-add-in-dims
     (defret dim-binmulp-of-binarize-add-in-dim
       (implies (dim-binmulp dim)
@@ -499,7 +512,22 @@
              :in-theory (enable* ast-unisubp-rules))
             '(:expand ((dim-unisubp dim)
                        (dim-unisubp (dim-sub (binarize-add-in-dim-list
-                                              (dim-sub->dims dim)))))))))
+                                              (dim-sub->dims dim))))))))
+
+  (defret-mutual dim-nonullsubp-of-binarize-add-in-dims
+    (defret dim-nonullsubp-of-binarize-add-in-dim
+      (implies (dim-nonullsubp dim)
+               (dim-nonullsubp new-dim))
+      :fn binarize-add-in-dim)
+    (defret dim-list-nonullsubp-of-binarize-add-in-dim-list
+      (implies (dim-list-nonullsubp dims)
+               (dim-list-nonullsubp new-dims))
+      :fn binarize-add-in-dim-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-nonullsubp-rules))
+            '(:expand ((dim-nonullsubp dim)
+                       (dim-nonullsubp (dim-sub (binarize-add-in-dim-list
+                                                 (dim-sub->dims dim)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
