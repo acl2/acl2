@@ -159,9 +159,9 @@
     "ASCII escapes must extend as long as they can;
      if one is a prefix of another,
      and the Unicode characters forming the latter occur,
-     the latter must picked instead of the former.
+     the latter must be picked instead of the former.
      This can only happen with @('SO') and @('SOH'),
-     which are the only non-prefix free pair among the 34 ASCII escapes.")
+     which are the only non-prefix-free pair among the 34 ASCII escapes.")
    (xdoc::p
     "Without this restriction,
      a string literal like @('\"\\SOH\"') would have two possible CSTs:
