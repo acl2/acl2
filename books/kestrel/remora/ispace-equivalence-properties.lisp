@@ -562,7 +562,14 @@
      passed as arguments to this function (see caller);
      that establishes the hypothesis of the theorem.
      This is proved without using the proof trees,
-     similarly to additions."))
+     similarly to additions.")
+   (xdoc::p
+    "We also show that this function preserves
+     the binary status of additions
+     and the unary and non-nullary statuses of subtractions,
+     which this function does not affect.
+     This serves to compose this transformation
+     with the ones for additions and subtractions."))
   (cond ((endp dims) (mv (dim-const 1)
                          (dim=-proof-mul0)))
         ((endp (cdr dims)) (mv (dim-fix (car dims))
@@ -610,7 +617,28 @@
              :in-theory (enable* ast-binmulp-rules))
             '(:expand ((dim-binmulp (dim-mul dims))
                        (dim-binmulp (dim-mul (list (car dims)
-                                                   (cadr dims)))))))))
+                                                   (cadr dims))))))))
+
+  (defret dim-binaddp-of-binarize-dims-in-mul
+    (implies (dim-list-binaddp dims)
+             (dim-binaddp new-dim))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* ast-binaddp-rules))))
+
+  (defret dim-unisubp-of-binarize-dims-in-mul
+    (implies (dim-list-unisubp dims)
+             (dim-unisubp new-dim))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* ast-unisubp-rules))))
+
+  (defret dim-nonullsubp-of-binarize-dims-in-mul
+    (implies (dim-list-nonullsubp dims)
+             (dim-nonullsubp new-dim))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* ast-nonullsubp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -625,7 +653,14 @@
      the argument ones.
      This is done via the constructed proof trees.")
    (xdoc::p
-    "We show that the resulting dimensions only have binary multiplications."))
+    "We show that the resulting dimensions only have binary multiplications.")
+   (xdoc::p
+    "We also show that these functions preserve
+     the binary status of additions
+     and the unary and non-nullary statuses of subtractions,
+     which these functions do not affect.
+     This serves to compose this transformation
+     with the ones for additions and subtractions."))
 
   (define binarize-mul-in-dim ((dim dimp))
     :returns (mv (new-dim dimp)
@@ -725,7 +760,66 @@
       :fn binarize-mul-in-dim-list)
     :hints (("Goal"
              :in-theory (enable* ast-binmulp-rules))
-            '(:expand ((dim-binmulp dim))))))
+            '(:expand ((dim-binmulp dim)))))
+
+  (defret len-of-binarize-mul-in-dim-list
+    (equal (len new-dims)
+           (len dims))
+    :fn binarize-mul-in-dim-list
+    :hints (("Goal"
+             :induct (len dims)
+             :in-theory (enable (:induction len)))))
+
+  (defret consp-of-binarize-mul-in-dim-list
+    (equal (consp new-dims)
+           (consp dims))
+    :fn binarize-mul-in-dim-list
+    :hints (("Goal" :expand ((binarize-mul-in-dim-list dims)))))
+
+  (defret-mutual dim-binaddp-of-binarize-mul-in-dims
+    (defret dim-binaddp-of-binarize-mul-in-dim
+      (implies (dim-binaddp dim)
+               (dim-binaddp new-dim))
+      :fn binarize-mul-in-dim)
+    (defret dim-list-binaddp-of-binarize-mul-in-dim-list
+      (implies (dim-list-binaddp dims)
+               (dim-list-binaddp new-dims))
+      :fn binarize-mul-in-dim-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-binaddp-rules))
+            '(:expand ((dim-binaddp dim)
+                       (dim-binaddp (dim-add (mv-nth 0 (binarize-mul-in-dim-list
+                                                        (dim-add->dims dim)))))))))
+
+  (defret-mutual dim-unisubp-of-binarize-mul-in-dims
+    (defret dim-unisubp-of-binarize-mul-in-dim
+      (implies (dim-unisubp dim)
+               (dim-unisubp new-dim))
+      :fn binarize-mul-in-dim)
+    (defret dim-list-unisubp-of-binarize-mul-in-dim-list
+      (implies (dim-list-unisubp dims)
+               (dim-list-unisubp new-dims))
+      :fn binarize-mul-in-dim-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-unisubp-rules))
+            '(:expand ((dim-unisubp dim)
+                       (dim-unisubp (dim-sub (mv-nth 0 (binarize-mul-in-dim-list
+                                                        (dim-sub->dims dim)))))))))
+
+  (defret-mutual dim-nonullsubp-of-binarize-mul-in-dims
+    (defret dim-nonullsubp-of-binarize-mul-in-dim
+      (implies (dim-nonullsubp dim)
+               (dim-nonullsubp new-dim))
+      :fn binarize-mul-in-dim)
+    (defret dim-list-nonullsubp-of-binarize-mul-in-dim-list
+      (implies (dim-list-nonullsubp dims)
+               (dim-list-nonullsubp new-dims))
+      :fn binarize-mul-in-dim-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-nonullsubp-rules))
+            '(:expand ((dim-nonullsubp dim)
+                       (dim-nonullsubp (dim-sub (mv-nth 0 (binarize-mul-in-dim-list
+                                                           (dim-sub->dims dim))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
