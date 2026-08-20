@@ -617,7 +617,15 @@
     (make-struct-declon-member :extension nil
                                :specquals specquals
                                :declors (list sdeclor)
-                               :attribs nil)))
+                               :attribs nil))
+
+  ///
+
+  (defrule ldm-struct-declon-of-ildm-struct-declon
+    (equal (ldm-struct-declon (ildm-struct-declon sdeclon))
+           (mv nil (c::struct-declon-dec0-to-oct0 sdeclon)))
+    :enable (ldm-struct-declon
+             c::struct-declon-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
